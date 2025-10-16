@@ -726,21 +726,22 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       {/* Orders Table */}
       <Card>
         <CardContent className="p-0 sm:p-6">
-          <DataTable
-            data={filteredOrders}
-            columns={visibleColumnsFiltered}
-            bulkActions={bulkActions}
-            tableId="all-orders"
-            getRowKey={(order) => order.id}
-            itemsPerPageOptions={[10, 20, 50, 100]}
-            defaultItemsPerPage={20}
-            defaultExpandAll={expandAll}
-            compact={true}
-            onRowClick={(order) => {
-              sessionStorage.setItem('orderDetailsReferrer', location);
-              navigate(`/orders/${order.id}`);
-            }}
-            renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
+          {viewMode === 'normal' ? (
+            <DataTable
+              data={filteredOrders}
+              columns={visibleColumnsFiltered}
+              bulkActions={bulkActions}
+              tableId="all-orders"
+              getRowKey={(order) => order.id}
+              itemsPerPageOptions={[10, 20, 50, 100]}
+              defaultItemsPerPage={20}
+              defaultExpandAll={expandAll}
+              compact={true}
+              onRowClick={(order) => {
+                sessionStorage.setItem('orderDetailsReferrer', location);
+                navigate(`/orders/${order.id}`);
+              }}
+              renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
               <div className="px-4 sm:px-0 pb-6">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -929,7 +930,74 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                 </div>
               ),
             }}
-          />
+            />
+          ) : (
+            <div className="space-y-2">
+              <div className="px-4 sm:px-0 pb-4">
+                <h2 className="text-mobile-lg font-semibold">Orders ({filteredOrders?.length || 0})</h2>
+              </div>
+              <div className="space-y-1">
+                {filteredOrders.map((order: any) => (
+                  <div
+                    key={order.id}
+                    className="border-b border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors"
+                    onClick={() => {
+                      sessionStorage.setItem('orderDetailsReferrer', location);
+                      navigate(`/orders/${order.id}`);
+                    }}
+                    data-testid={`compact-order-${order.id}`}
+                  >
+                    <div className="px-3 py-2">
+                      <div className="flex items-start justify-between gap-3 mb-1">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-sm">{order.orderId}</span>
+                            <Badge
+                              variant={
+                                order.status === 'to_fulfill' ? 'default' :
+                                order.status === 'ready_to_ship' ? 'secondary' :
+                                order.status === 'shipped' ? 'outline' : 'secondary'
+                              }
+                              className="text-xs h-5 px-1.5"
+                            >
+                              {order.status?.replace('_', ' ')}
+                            </Badge>
+                            <Badge
+                              variant={order.paymentStatus === 'paid' ? 'default' : 'secondary'}
+                              className="text-xs h-5 px-1.5"
+                            >
+                              {order.paymentStatus}
+                            </Badge>
+                          </div>
+                          <div className="text-xs text-slate-600 mt-0.5">
+                            {order.customer?.name || 'N/A'} • {formatDate(order.createdAt)}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-sm">{formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</div>
+                        </div>
+                      </div>
+                      {order.items && order.items.length > 0 && (
+                        <div className="mt-1 text-xs text-slate-700 space-y-0.5">
+                          {order.items.map((item: any, idx: number) => (
+                            <div key={idx} className="flex items-center justify-between">
+                              <span className="truncate">
+                                {item.quantity}× {item.productName}
+                                {item.sku && <span className="text-slate-500"> ({item.sku})</span>}
+                              </span>
+                              <span className="ml-2 text-slate-600">
+                                {formatCurrency(item.total || 0, order.currency || 'EUR')}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
