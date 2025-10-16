@@ -80,12 +80,6 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     return (saved === 'compact' ? 'compact' : 'normal') as 'normal' | 'compact';
   });
 
-  // Compact view expand state with localStorage persistence (default to true)
-  const [compactExpanded, setCompactExpanded] = useState(() => {
-    const saved = localStorage.getItem('ordersCompactExpanded');
-    return saved === null ? true : saved === 'true';
-  });
-
   // Column visibility state - all columns visible by default (localStorage disabled for now)
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
     order: true,
@@ -105,11 +99,6 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     localStorage.setItem('ordersViewMode', mode);
   };
 
-  // Toggle compact view expand and save to localStorage
-  const handleCompactExpandChange = (checked: boolean) => {
-    setCompactExpanded(checked);
-    localStorage.setItem('ordersCompactExpanded', checked.toString());
-  };
 
   // Toggle column visibility (no localStorage persistence for now)
   const toggleColumnVisibility = (columnKey: string) => {
@@ -603,62 +592,35 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       header: "Items",
       sortable: false,
       cell: (order) => (
-        <div className="py-2 px-3 min-w-[400px]">
-          {/* Order Items */}
-          <div className="space-y-1.5 mb-3">
-            {order.items?.map((item: any, index: number) => (
-              <div
-                key={item.id || index}
-                className="flex items-center gap-2 p-2 bg-gradient-to-r from-slate-50 to-white rounded-md border border-slate-200 hover:border-blue-300 transition-colors"
-              >
-                {/* Product Image */}
-                <div className="flex-shrink-0 w-8 h-8 bg-white rounded border border-slate-200 flex items-center justify-center overflow-hidden">
-                  {item.productImage ? (
-                    <img 
-                      src={item.productImage} 
-                      alt={item.productName}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <Package className="h-4 w-4 text-slate-400" />
-                  )}
-                </div>
-
-                {/* Product Info */}
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-xs text-slate-900 truncate">
-                    {item.productName}
-                  </p>
-                  <p className="text-[10px] text-slate-500">
-                    {item.sku || 'N/A'} • Qty: {item.quantity}
-                  </p>
-                </div>
-
-                {/* Price */}
-                <div className="text-right flex-shrink-0">
-                  <p className="font-semibold text-xs text-slate-900">
+        <div className="py-1 min-w-[280px] max-w-[400px]">
+          {/* Order Items - Compact Text Style */}
+          {order.items && order.items.length > 0 && (
+            <div className="space-y-0.5 mb-2 text-xs">
+              {order.items.map((item: any, index: number) => (
+                <div key={item.id || index} className="flex items-center justify-between text-slate-700">
+                  <span className="truncate mr-2">
+                    <span className="font-medium">{item.quantity}×</span> {item.productName}
+                    {item.sku && <span className="text-slate-500"> ({item.sku})</span>}
+                    <span className="text-slate-500"> · {formatCurrency(item.price || 0, order.currency || 'EUR')}/ea</span>
+                  </span>
+                  <span className="text-slate-900 font-medium whitespace-nowrap">
                     {formatCurrency(item.total || 0, order.currency || 'EUR')}
-                  </p>
-                  <p className="text-[10px] text-slate-500">
-                    {formatCurrency(item.price || 0, order.currency || 'EUR')} each
-                  </p>
+                  </span>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
-          {/* Order Summary */}
-          <div className="pt-2 border-t border-slate-200 space-y-1 bg-gradient-to-br from-blue-50/50 to-slate-50/30 rounded-lg p-2">
-            <div className="flex justify-between text-[11px]">
-              <span className="text-slate-600 font-medium">Subtotal</span>
-              <span className="font-semibold text-slate-900">
-                {formatCurrency(order.subtotal || 0, order.currency || 'EUR')}
-              </span>
+          {/* Order Summary - Compact */}
+          <div className="pt-1.5 border-t border-slate-200 space-y-0.5 text-[11px]">
+            <div className="flex justify-between text-slate-600">
+              <span>Subtotal</span>
+              <span className="font-medium">{formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</span>
             </div>
             {order.discountValue > 0 && (
-              <div className="flex justify-between text-[11px]">
-                <span className="text-slate-600 font-medium">Discount</span>
-                <span className="font-semibold text-green-600">
+              <div className="flex justify-between text-green-600">
+                <span>Discount</span>
+                <span className="font-medium">
                   -{formatCurrency(
                     order.discountType === 'rate' 
                       ? (order.subtotal * order.discountValue / 100) 
@@ -669,18 +631,14 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               </div>
             )}
             {order.shippingCost > 0 && (
-              <div className="flex justify-between text-[11px]">
-                <span className="text-slate-600 font-medium">Shipping</span>
-                <span className="font-semibold text-slate-900">
-                  {formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}
-                </span>
+              <div className="flex justify-between text-slate-600">
+                <span>Shipping</span>
+                <span className="font-medium">{formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</span>
               </div>
             )}
-            <div className="flex justify-between text-xs font-bold border-t border-slate-300 pt-1.5 mt-1">
+            <div className="flex justify-between text-xs font-bold border-t border-slate-300 pt-1 mt-1">
               <span className="text-slate-900">Total</span>
-              <span className="text-blue-600">
-                {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
-              </span>
+              <span className="text-blue-600">{formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</span>
             </div>
           </div>
         </div>
@@ -928,19 +886,6 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     Compact
                   </Button>
                 </div>
-                {viewMode === 'compact' && (
-                  <>
-                    <Label htmlFor="compact-expand" className="text-sm text-slate-600 cursor-pointer">
-                      {compactExpanded ? 'Collapse All' : 'Expand All'}
-                    </Label>
-                    <Switch
-                      id="compact-expand"
-                      checked={compactExpanded}
-                      onCheckedChange={handleCompactExpandChange}
-                      className="data-[state=checked]:bg-blue-600"
-                    />
-                  </>
-                )}
                 {viewMode === 'normal' && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -1121,7 +1066,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                           <div className="font-bold text-sm">{formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</div>
                         </div>
                       </div>
-                      {compactExpanded && order.items && order.items.length > 0 && (
+                      {order.items && order.items.length > 0 && (
                         <div className="mt-1 text-xs text-slate-700 space-y-0.5">
                           {order.items.map((item: any, idx: number) => (
                             <div key={idx} className="flex items-center justify-between">
