@@ -464,7 +464,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <item.icon className={cn("mr-4 h-5 w-5 flex-shrink-0 transition-colors", item.color)} />
-                <div className="flex flex-col items-start">
+                <div className="flex flex-col items-start flex-1">
                   <span className="text-sm font-medium text-gray-900 dark:text-white">{item.name}</span>
                   <span className="text-xs text-gray-500 dark:text-gray-400">{item.description}</span>
                 </div>
