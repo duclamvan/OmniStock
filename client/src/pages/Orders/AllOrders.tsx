@@ -984,10 +984,15 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                               {order.orderStatus?.replace('_', ' ')}
                             </Badge>
                             <Badge
-                              variant={order.paymentStatus === 'paid' ? 'default' : 'secondary'}
-                              className="text-xs h-5 px-1.5"
+                              className={cn(
+                                "text-xs h-5 px-1.5 border",
+                                order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800 border-green-200' :
+                                order.paymentStatus === 'pending' ? 'bg-amber-100 text-amber-800 border-amber-200' :
+                                order.paymentStatus === 'pay_later' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                'bg-slate-100 text-slate-800 border-slate-200'
+                              )}
                             >
-                              {order.paymentStatus}
+                              {order.paymentStatus?.replace('_', ' ')}
                             </Badge>
                           </div>
                           <div className="text-xs mt-0.5">
