@@ -815,117 +815,48 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                 navigate(`/orders/${order.id}`);
               }}
               renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
-              <div className="px-4 sm:px-0 pb-6">
-                <div className="flex items-center justify-between gap-3">
+              selectedRows.size > 0 ? (
+                <div className="px-4 sm:px-0 pb-6">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-mobile-lg font-semibold">Orders ({filteredOrders?.length || 0})</h2>
-                    {selectedRows.size > 0 && (
-                      <>
-                        <Badge variant="secondary" className="text-xs h-6 px-2">
-                          {selectedRows.size}
-                        </Badge>
-                        {actions.map((action, index) => {
-                          if (action.type === "select") {
-                            return (
-                              <Select
-                                key={index}
-                                onValueChange={(value) => action.action(selectedItems, value)}
-                              >
-                                <SelectTrigger className="h-6 w-auto min-w-[100px] text-xs">
-                                  <SelectValue placeholder={action.placeholder || action.label} />
-                                </SelectTrigger>
-                                <SelectContent align="start">
-                                  {action.options.map((option) => (
-                                    <SelectItem key={option.value} value={option.value}>
-                                      {option.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            );
-                          } else {
-                            return (
-                              <Button
-                                key={index}
-                                size="sm"
-                                variant={action.variant || "ghost"}
-                                onClick={() => action.action(selectedItems)}
-                                className="h-6 px-2 text-xs"
-                              >
-                                {action.label}
-                              </Button>
-                            );
-                          }
-                        })}
-                      </>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1 border rounded-md">
-                      <Button
-                        variant={viewMode === 'normal' ? 'default' : 'ghost'}
-                        size="sm"
-                        onClick={() => handleViewModeChange('normal')}
-                        className="h-7 px-2 text-xs rounded-r-none"
-                        data-testid="button-viewNormal"
-                      >
-                        <List className="h-3 w-3 mr-1" />
-                        Normal
-                      </Button>
-                      <Button
-                        variant={viewMode === 'compact' ? 'default' : 'ghost'}
-                        size="sm"
-                        onClick={() => handleViewModeChange('compact')}
-                        className="h-7 px-2 text-xs rounded-l-none"
-                        data-testid="button-viewCompact"
-                      >
-                        <AlignJustify className="h-3 w-3 mr-1" />
-                        Compact
-                      </Button>
-                    </div>
-                    {viewMode === 'normal' && (
-                      <>
-                        <Label htmlFor="expand-all" className="text-sm text-slate-600 cursor-pointer">
-                          {expandAll ? 'Collapse All' : 'Expand All'}
-                        </Label>
-                        <Switch
-                          id="expand-all"
-                          checked={expandAll}
-                          onCheckedChange={handleExpandAllChange}
-                          className="data-[state=checked]:bg-blue-600"
-                        />
-                      </>
-                    )}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Settings className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <div className="px-2 py-1.5 text-sm font-semibold">Show Columns</div>
-                        {columns.map((column) => (
-                          <DropdownMenuItem
-                            key={column.key}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              toggleColumnVisibility(column.key);
-                            }}
-                            className="cursor-pointer"
+                    <Badge variant="secondary" className="text-xs h-6 px-2">
+                      {selectedRows.size} selected
+                    </Badge>
+                    {actions.map((action, index) => {
+                      if (action.type === "select") {
+                        return (
+                          <Select
+                            key={index}
+                            onValueChange={(value) => action.action(selectedItems, value)}
                           >
-                            <div className="flex items-center justify-between w-full">
-                              <span>{column.header}</span>
-                              {visibleColumns[column.key] !== false && (
-                                <Check className="h-4 w-4 text-blue-600" />
-                              )}
-                            </div>
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                            <SelectTrigger className="h-6 w-auto min-w-[100px] text-xs">
+                              <SelectValue placeholder={action.placeholder || action.label} />
+                            </SelectTrigger>
+                            <SelectContent align="start">
+                              {action.options.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        );
+                      } else {
+                        return (
+                          <Button
+                            key={index}
+                            size="sm"
+                            variant={action.variant || "ghost"}
+                            onClick={() => action.action(selectedItems)}
+                            className="h-6 px-2 text-xs"
+                          >
+                            {action.label}
+                          </Button>
+                        );
+                      }
+                    })}
                   </div>
                 </div>
-              </div>
+              ) : null
             )}
             expandable={{
               render: (order) => (
