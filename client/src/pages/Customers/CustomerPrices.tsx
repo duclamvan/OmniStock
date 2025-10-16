@@ -16,7 +16,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, Plus, Upload, Edit, FileSpreadsheet, Download, Tag } from 'lucide-react';
+import { Trash2, Plus, Upload, Edit, FileSpreadsheet, Download, Tag, X } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -48,6 +48,8 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [csvContent, setCsvContent] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<string>('');
+  const [productSearch, setProductSearch] = useState('');
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
 
   const { data: prices = [], isLoading } = useQuery<CustomerPrice[]>({
     queryKey: [`/api/customers/${customerId}/prices`],
@@ -61,6 +63,11 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
     queryKey: [`/api/products/${selectedProduct}/variants`],
     enabled: !!selectedProduct,
   });
+
+  const filteredProducts = products.filter((product) =>
+    product.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+    product.sku?.toLowerCase().includes(productSearch.toLowerCase())
+  );
 
   const form = useForm<CreateCustomerPriceInput>({
     resolver: zodResolver(createCustomerPriceSchema),
@@ -83,15 +90,18 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
       queryClient.invalidateQueries({ queryKey: [`/api/customers/${customerId}/prices`] });
       setIsAddDialogOpen(false);
       form.reset();
+      setProductSearch("");
+      setSelectedProduct("");
+      setShowProductDropdown(false);
       toast({
         title: 'Success',
         description: 'Customer price created successfully',
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: 'Error',
-        description: 'Failed to create customer price',
+        description: error?.message || 'Failed to create customer price',
         variant: 'destructive',
       });
     },
@@ -340,7 +350,15 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
             </DialogContent>
           </Dialog>
 
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
+            setIsAddDialogOpen(open);
+            if (!open) {
+              form.reset();
+              setProductSearch("");
+              setSelectedProduct("");
+              setShowProductDropdown(false);
+            }
+          }}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <DialogTrigger asChild>
@@ -365,26 +383,59 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Product</FormLabel>
-                        <Select 
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            setSelectedProduct(value);
-                          }} 
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a product" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {products.map((product) => (
-                              <SelectItem key={product.id} value={product.id}>
-                                {product.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              placeholder="Type to search products..."
+                              value={productSearch}
+                              onChange={(e) => {
+                                setProductSearch(e.target.value);
+                                setShowProductDropdown(true);
+                              }}
+                              onFocus={() => setShowProductDropdown(true)}
+                              data-testid="input-productSearch"
+                            />
+                            {productSearch && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="absolute right-1 top-1 h-8 w-8 p-0"
+                                onClick={() => {
+                                  setProductSearch("");
+                                  field.onChange("");
+                                  setSelectedProduct("");
+                                  setShowProductDropdown(false);
+                                }}
+                                data-testid="button-clearProductSearch"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {showProductDropdown && filteredProducts.length > 0 && (
+                              <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-64 overflow-y-auto z-50">
+                                {filteredProducts.map((product) => (
+                                  <div
+                                    key={product.id}
+                                    className="p-3 hover:bg-slate-100 cursor-pointer border-b last:border-b-0 transition-colors"
+                                    onClick={() => {
+                                      field.onChange(product.id);
+                                      setSelectedProduct(product.id);
+                                      setProductSearch(product.name);
+                                      setShowProductDropdown(false);
+                                    }}
+                                    data-testid={`option-product-${product.id}`}
+                                  >
+                                    <div className="font-medium">{product.name}</div>
+                                    {product.sku && (
+                                      <div className="text-xs text-slate-500">SKU: {product.sku}</div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
