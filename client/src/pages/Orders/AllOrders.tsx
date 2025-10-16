@@ -509,96 +509,116 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     };
   }, [filter, filteredOrders, orders]);
 
-  // Define table columns
+  // Define table columns - Clean professional design
   const columns: DataTableColumn<any>[] = [
     {
       key: "order",
-      header: "",
+      header: "Order",
+      sortable: true,
+      sortKey: "orderId",
+      cell: (order) => (
+        <div className="flex items-center gap-3">
+          <div className="font-semibold text-slate-900">{order.orderId}</div>
+        </div>
+      ),
+    },
+    {
+      key: "customer",
+      header: "Customer",
       sortable: false,
-      cell: (order) => {
-        const statusColors: Record<string, string> = {
-          'pending': 'bg-amber-500',
-          'to_fulfill': 'bg-blue-500',
-          'ready_to_ship': 'bg-blue-500',
-          'shipped': 'bg-green-500',
-          'cancelled': 'bg-red-500',
-        };
-        const bulletColor = statusColors[order.orderStatus] || 'bg-slate-500';
-        const customerName = order.customer?.name || 'N/A';
-        
-        return (
-          <div className="py-2">
-            {/* Order header with badges and total */}
-            <div className="flex items-start justify-between gap-3 mb-1.5">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 flex-wrap mb-1">
-                  <div className="flex items-center gap-1.5">
-                    <div className={`w-2 h-2 rounded-full ${bulletColor} flex-shrink-0`} />
-                    <span className="font-semibold text-sm text-slate-900">{order.orderId}</span>
-                  </div>
-                  <Badge
-                    className={cn(
-                      "text-xs h-5 px-1.5 border",
-                      order.orderStatus === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                      order.orderStatus === 'to_fulfill' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                      order.orderStatus === 'ready_to_ship' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                      order.orderStatus === 'shipped' ? 'bg-green-50 text-green-700 border-green-200' :
-                      order.orderStatus === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200' :
-                      'bg-slate-50 text-slate-700 border-slate-200'
-                    )}
-                  >
-                    {order.orderStatus?.replace('_', ' ')}
-                  </Badge>
-                  <Badge
-                    className={cn(
-                      "text-xs h-5 px-1.5 border",
-                      order.paymentStatus === 'paid' ? 'bg-green-50 text-green-700 border-green-200' :
-                      order.paymentStatus === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                      order.paymentStatus === 'pay_later' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                      'bg-slate-50 text-slate-700 border-slate-200'
-                    )}
-                  >
-                    {order.paymentStatus?.replace('_', ' ')}
-                  </Badge>
-                </div>
-                <div className="text-xs text-slate-600">
-                  {customerName} • {formatDate(order.createdAt)}
-                </div>
-              </div>
-              <div className="text-right flex-shrink-0">
-                <div className="font-bold text-base text-slate-900">
-                  {formatCurrency(parseFloat(order.grandTotal || '0'), order.currency)}
-                </div>
-              </div>
-            </div>
-            {/* Order items inline like Compact view */}
-            {order.items && order.items.length > 0 && (
-              <div className="mt-2 text-xs text-slate-700 space-y-1 pl-3 border-l-2 border-slate-200">
-                {order.items.map((item: any, idx: number) => (
-                  <div key={idx} className="flex items-center justify-between">
-                    <span className="truncate">
-                      {item.quantity}× {item.productName}
-                      {item.sku && <span className="text-slate-500"> ({item.sku})</span>}
-                    </span>
-                    <span className="ml-3 text-slate-600 flex-shrink-0">
-                      {formatCurrency(item.total || 0, order.currency || 'EUR')}
-                    </span>
-                  </div>
-                ))}
-              </div>
+      cell: (order) => (
+        <div className="text-sm text-slate-700">
+          {order.customer?.name || 'N/A'}
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      sortable: true,
+      sortKey: "orderStatus",
+      cell: (order) => (
+        <div className="flex gap-2">
+          <Badge
+            className={cn(
+              "text-xs font-medium",
+              order.orderStatus === 'pending' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+              order.orderStatus === 'to_fulfill' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+              order.orderStatus === 'ready_to_ship' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+              order.orderStatus === 'shipped' ? 'bg-green-100 text-green-700 border-green-200' :
+              order.orderStatus === 'cancelled' ? 'bg-red-100 text-red-700 border-red-200' :
+              'bg-slate-100 text-slate-700 border-slate-200'
             )}
-          </div>
-        );
-      },
+          >
+            {order.orderStatus?.replace('_', ' ')}
+          </Badge>
+        </div>
+      ),
+    },
+    {
+      key: "payment",
+      header: "Payment",
+      sortable: true,
+      sortKey: "paymentStatus",
+      cell: (order) => (
+        <Badge
+          className={cn(
+            "text-xs font-medium",
+            order.paymentStatus === 'paid' ? 'bg-green-100 text-green-700 border-green-200' :
+            order.paymentStatus === 'pending' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+            order.paymentStatus === 'pay_later' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+            'bg-slate-100 text-slate-700 border-slate-200'
+          )}
+        >
+          {order.paymentStatus?.replace('_', ' ')}
+        </Badge>
+      ),
+    },
+    {
+      key: "date",
+      header: "Date",
+      sortable: true,
+      sortKey: "createdAt",
+      cell: (order) => (
+        <div className="text-sm text-slate-600">
+          {formatDate(order.createdAt)}
+        </div>
+      ),
+    },
+    {
+      key: "items",
+      header: "Items",
+      sortable: false,
+      cell: (order) => (
+        <div className="text-sm text-slate-600">
+          {order.items?.length || 0}
+        </div>
+      ),
+      className: "text-center",
+    },
+    {
+      key: "total",
+      header: "Total",
+      sortable: true,
+      sortKey: "grandTotal",
+      cell: (order) => (
+        <div className="font-semibold text-slate-900">
+          {formatCurrency(parseFloat(order.grandTotal || '0'), order.currency)}
+        </div>
+      ),
+      className: "text-right",
     },
     {
       key: "profit",
-      header: "Total Profit",
-      sortable: false, // Disable sorting for calculated values
+      header: "Profit",
+      sortable: false,
       cell: (order) => {
         const profit = calculateOrderProfit(order);
         return (
-          <span className={profit >= 0 ? 'text-green-600' : 'text-red-600'}>
+          <span className={cn(
+            "font-medium",
+            profit >= 0 ? 'text-green-600' : 'text-red-600'
+          )}>
             {formatCurrency(profit, order.currency)}
           </span>
         );
@@ -609,7 +629,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       key: "tracking",
       header: "Tracking",
       sortable: true,
-      sortKey: "trackingNumber", // Sort by trackingNumber property
+      sortKey: "trackingNumber",
       cell: (order) => (
         <div className="text-sm">
           {order.trackingNumber ? (
@@ -865,7 +885,6 @@ export default function AllOrders({ filter }: AllOrdersProps) {
           </div>
 
           {viewMode === 'normal' ? (
-            <div className="[&_.rounded-md.border]:border-0 [&_table]:border-separate [&_table]:border-spacing-0 [&_tbody_tr]:border-b [&_tbody_tr]:border-slate-200 [&_tbody_tr]:hover:bg-slate-50 [&_thead]:hidden">
             <DataTable
               data={filteredOrders}
               columns={visibleColumnsFiltered}
@@ -875,7 +894,6 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               itemsPerPageOptions={[10, 20, 50, 100]}
               defaultItemsPerPage={20}
               defaultExpandAll={expandAll}
-              compact={true}
               onRowClick={(order) => {
                 sessionStorage.setItem('orderDetailsReferrer', location);
                 navigate(`/orders/${order.id}`);
@@ -926,135 +944,113 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             )}
             expandable={{
               render: (order) => (
-                <div className="space-y-4">
-                  {/* Header */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Package className="h-5 w-5 text-blue-600" />
-                      <h4 className="text-base font-semibold text-slate-900">
-                        Order Contents
-                      </h4>
-                      <Badge variant="secondary" className="text-xs">
-                        {order.items?.length || 0} items
-                      </Badge>
-                    </div>
-                    <Link href={`/orders/${order.id}`}>
-                      <Button size="sm" variant="outline" className="gap-2">
-                        <Eye className="h-4 w-4" />
-                        Full Details
-                      </Button>
-                    </Link>
-                  </div>
-
-                  {/* Order Items - Card Grid */}
-                  <div className="grid gap-2">
-                    {order.items?.map((item: any, index: number) => (
-                      <div
-                        key={item.id || index}
-                        className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors"
-                      >
-                        {/* Product Image/Icon */}
-                        <div className="flex-shrink-0 w-12 h-12 bg-white rounded-md border border-slate-200 flex items-center justify-center overflow-hidden">
-                          {item.productImage ? (
-                            <img 
-                              src={item.productImage} 
-                              alt={item.productName}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <Package className="h-6 w-6 text-slate-400" />
-                          )}
-                        </div>
-
-                        {/* Product Info */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0 flex-1">
-                              <p className="font-medium text-sm text-slate-900 truncate">
-                                {item.productName}
-                              </p>
-                              <p className="text-xs text-slate-500 mt-0.5">
-                                SKU: {item.sku || 'N/A'}
-                              </p>
-                            </div>
-                            <div className="text-right flex-shrink-0">
-                              <p className="font-semibold text-sm text-slate-900">
-                                {formatCurrency(item.total || 0, order.currency || 'EUR')}
-                              </p>
-                              <p className="text-xs text-slate-500 mt-0.5">
-                                {item.quantity}× {formatCurrency(item.price || 0, order.currency || 'EUR')}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                <div className="px-6 py-4 bg-slate-50 border-t border-slate-200">
+                  <div className="space-y-4">
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Package className="h-5 w-5 text-blue-600" />
+                        <h4 className="text-base font-semibold text-slate-900">
+                          Order Items
+                        </h4>
+                        <Badge variant="secondary" className="text-xs">
+                          {order.items?.length || 0}
+                        </Badge>
                       </div>
-                    ))}
-                  </div>
-
-                  {/* Order Summary - Cards */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2">
-                    <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
-                          <span className="text-blue-600 text-xs font-semibold">S</span>
-                        </div>
-                        <p className="text-xs font-medium text-blue-700">Subtotal</p>
-                      </div>
-                      <p className="font-semibold text-sm text-blue-900">
-                        {formatCurrency(order.subtotal || 0, order.currency || 'EUR')}
-                      </p>
+                      <Link href={`/orders/${order.id}`}>
+                        <Button size="sm" variant="outline" className="gap-2">
+                          <Eye className="h-4 w-4" />
+                          View Details
+                        </Button>
+                      </Link>
                     </div>
 
-                    {order.discountValue > 0 && (
-                      <div className="bg-green-50 rounded-lg p-3 border border-green-100">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
-                            <span className="text-green-600 text-xs font-semibold">D</span>
+                    {/* Order Items - Clean List */}
+                    <div className="space-y-2">
+                      {order.items?.map((item: any, index: number) => (
+                        <div
+                          key={item.id || index}
+                          className="flex items-center gap-3 p-3 bg-white rounded-md border border-slate-200"
+                        >
+                          {/* Product Image */}
+                          <div className="flex-shrink-0 w-10 h-10 bg-slate-50 rounded border border-slate-200 flex items-center justify-center overflow-hidden">
+                            {item.productImage ? (
+                              <img 
+                                src={item.productImage} 
+                                alt={item.productName}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <Package className="h-5 w-5 text-slate-400" />
+                            )}
                           </div>
-                          <p className="text-xs font-medium text-green-700">Discount</p>
-                        </div>
-                        <p className="font-semibold text-sm text-green-900">
-                          -{formatCurrency(
-                            order.discountType === 'rate' 
-                              ? (order.subtotal * order.discountValue / 100) 
-                              : order.discountValue || 0, 
-                            order.currency || 'EUR'
-                          )}
-                        </p>
-                      </div>
-                    )}
 
-                    {order.shippingCost > 0 && (
-                      <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center">
-                            <span className="text-amber-600 text-xs font-semibold">📦</span>
+                          {/* Product Info */}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm text-slate-900">
+                              {item.productName}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {item.sku || 'N/A'} • Qty: {item.quantity}
+                            </p>
                           </div>
-                          <p className="text-xs font-medium text-amber-700">Shipping</p>
-                        </div>
-                        <p className="font-semibold text-sm text-amber-900">
-                          {formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}
-                        </p>
-                      </div>
-                    )}
 
-                    <div className="bg-slate-900 rounded-lg p-3 border border-slate-800">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center">
-                          <span className="text-white text-xs font-semibold">T</span>
+                          {/* Price */}
+                          <div className="text-right flex-shrink-0">
+                            <p className="font-semibold text-sm text-slate-900">
+                              {formatCurrency(item.total || 0, order.currency || 'EUR')}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {formatCurrency(item.price || 0, order.currency || 'EUR')} each
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-xs font-medium text-slate-300">Total</p>
+                      ))}
+                    </div>
+
+                    {/* Order Summary */}
+                    <div className="flex justify-end pt-3 border-t border-slate-200">
+                      <div className="w-full max-w-sm space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-600">Subtotal</span>
+                          <span className="font-medium text-slate-900">
+                            {formatCurrency(order.subtotal || 0, order.currency || 'EUR')}
+                          </span>
+                        </div>
+                        {order.discountValue > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-600">Discount</span>
+                            <span className="font-medium text-green-600">
+                              -{formatCurrency(
+                                order.discountType === 'rate' 
+                                  ? (order.subtotal * order.discountValue / 100) 
+                                  : order.discountValue || 0, 
+                                order.currency || 'EUR'
+                              )}
+                            </span>
+                          </div>
+                        )}
+                        {order.shippingCost > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-600">Shipping</span>
+                            <span className="font-medium text-slate-900">
+                              {formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-base font-bold border-t border-slate-200 pt-2">
+                          <span className="text-slate-900">Total</span>
+                          <span className="text-slate-900">
+                            {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
+                          </span>
+                        </div>
                       </div>
-                      <p className="font-bold text-base text-white">
-                        {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
-                      </p>
                     </div>
                   </div>
                 </div>
               ),
             }}
             />
-            </div>
           ) : (
             <div className="space-y-1">
                 {filteredOrders.map((order: any) => (
