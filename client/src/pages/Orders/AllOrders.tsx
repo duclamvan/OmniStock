@@ -16,7 +16,7 @@ import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
 import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { getCountryFlag } from "@/lib/countries";
-import { Plus, Search, Filter, Download, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check } from "lucide-react";
+import { Plus, Search, Filter, Download, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,6 +55,12 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     return saved === 'true';
   });
 
+  // View mode state with localStorage persistence
+  const [viewMode, setViewMode] = useState<'normal' | 'compact'>(() => {
+    const saved = localStorage.getItem('ordersViewMode');
+    return (saved === 'compact' ? 'compact' : 'normal') as 'normal' | 'compact';
+  });
+
   // Column visibility state with localStorage persistence
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
     const saved = localStorage.getItem('ordersVisibleColumns');
@@ -88,6 +94,12 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const handleExpandAllChange = (checked: boolean) => {
     setExpandAll(checked);
     localStorage.setItem('ordersExpandAll', checked.toString());
+  };
+
+  // Toggle view mode and save to localStorage
+  const handleViewModeChange = (mode: 'normal' | 'compact') => {
+    setViewMode(mode);
+    localStorage.setItem('ordersViewMode', mode);
   };
 
   // Toggle column visibility
@@ -775,15 +787,41 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <Label htmlFor="expand-all" className="text-sm text-slate-600 cursor-pointer">
-                      {expandAll ? 'Collapse All' : 'Expand All'}
-                    </Label>
-                    <Switch
-                      id="expand-all"
-                      checked={expandAll}
-                      onCheckedChange={handleExpandAllChange}
-                      className="data-[state=checked]:bg-blue-600"
-                    />
+                    <div className="flex items-center gap-1 border rounded-md">
+                      <Button
+                        variant={viewMode === 'normal' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => handleViewModeChange('normal')}
+                        className="h-7 px-2 text-xs rounded-r-none"
+                        data-testid="button-viewNormal"
+                      >
+                        <List className="h-3 w-3 mr-1" />
+                        Normal
+                      </Button>
+                      <Button
+                        variant={viewMode === 'compact' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => handleViewModeChange('compact')}
+                        className="h-7 px-2 text-xs rounded-l-none"
+                        data-testid="button-viewCompact"
+                      >
+                        <AlignJustify className="h-3 w-3 mr-1" />
+                        Compact
+                      </Button>
+                    </div>
+                    {viewMode === 'normal' && (
+                      <>
+                        <Label htmlFor="expand-all" className="text-sm text-slate-600 cursor-pointer">
+                          {expandAll ? 'Collapse All' : 'Expand All'}
+                        </Label>
+                        <Switch
+                          id="expand-all"
+                          checked={expandAll}
+                          onCheckedChange={handleExpandAllChange}
+                          className="data-[state=checked]:bg-blue-600"
+                        />
+                      </>
+                    )}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
