@@ -1060,14 +1060,14 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                               );
                             }
                             
-                            // Loyal Customer (10+ orders)
+                            // Super Loyal (10+ orders)
                             if (totalOrders >= 10) {
                               badges.push(
-                                <Tooltip key="loyal">
+                                <Tooltip key="superloyal">
                                   <TooltipTrigger asChild>
                                     <Badge className="bg-rose-50 text-rose-700 border-rose-300 text-xs cursor-help">
                                       <Heart className="h-3 w-3 mr-1" />
-                                      Loyal Customer
+                                      Super Loyal
                                     </Badge>
                                   </TooltipTrigger>
                                   <TooltipContent>
@@ -1076,14 +1076,14 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                 </Tooltip>
                               );
                             } 
-                            // Repeat Customer (2-9 orders) - renamed from "Returning" to avoid confusion
+                            // Loyal Customer (2-9 orders)
                             else if (totalOrders > 1) {
                               badges.push(
-                                <Tooltip key="repeat">
+                                <Tooltip key="loyal">
                                   <TooltipTrigger asChild>
                                     <Badge className="bg-indigo-50 text-indigo-700 border-indigo-300 text-xs cursor-help">
                                       <RefreshCw className="h-3 w-3 mr-1" />
-                                      Repeat Customer
+                                      Loyal Customer
                                     </Badge>
                                   </TooltipTrigger>
                                   <TooltipContent>
