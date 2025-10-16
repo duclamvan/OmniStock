@@ -81,6 +81,12 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     return (saved === 'compact' ? 'compact' : 'normal') as 'normal' | 'compact';
   });
 
+  // Expand/collapse all state with localStorage persistence
+  const [expandAll, setExpandAll] = useState<boolean>(() => {
+    const saved = localStorage.getItem('ordersExpandAll');
+    return saved === 'true';
+  });
+
   // Column visibility state - all columns visible by default (localStorage disabled for now)
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
     order: true,
@@ -100,6 +106,11 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     localStorage.setItem('ordersViewMode', mode);
   };
 
+  // Toggle expand/collapse all and save to localStorage
+  const handleExpandAllChange = (expand: boolean) => {
+    setExpandAll(expand);
+    localStorage.setItem('ordersExpandAll', String(expand));
+  };
 
   // Toggle column visibility (no localStorage persistence for now)
   const toggleColumnVisibility = (columnKey: string) => {
@@ -805,9 +816,10 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         <CardContent className="p-0 sm:p-6">
           {/* Header with view toggle - always visible */}
           <div className="px-4 sm:px-0 pb-4 pt-4 sm:pt-0">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
               <h2 className="text-mobile-lg font-semibold">Orders ({filteredOrders?.length || 0})</h2>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* View Mode Toggle */}
                 <div className="flex items-center gap-1 border rounded-md">
                   <Button
                     variant={viewMode === 'normal' ? 'default' : 'ghost'}
@@ -828,6 +840,30 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                   >
                     <AlignJustify className="h-3 w-3 mr-1" />
                     Compact
+                  </Button>
+                </div>
+
+                {/* Expand/Collapse All Toggle */}
+                <div className="flex items-center gap-1 border rounded-md">
+                  <Button
+                    variant={!expandAll ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => handleExpandAllChange(false)}
+                    className="h-7 px-2 text-xs rounded-r-none"
+                    data-testid="button-collapseAll"
+                  >
+                    <ChevronUp className="h-3 w-3 mr-1" />
+                    Collapsed
+                  </Button>
+                  <Button
+                    variant={expandAll ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => handleExpandAllChange(true)}
+                    className="h-7 px-2 text-xs rounded-l-none"
+                    data-testid="button-expandAll"
+                  >
+                    <ChevronDown className="h-3 w-3 mr-1" />
+                    Expanded
                   </Button>
                 </div>
                 {viewMode === 'normal' && (
@@ -872,6 +908,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               getRowKey={(order) => order.id}
               itemsPerPageOptions={[10, 20, 50, 100]}
               defaultItemsPerPage={20}
+              defaultExpandAll={expandAll}
               expandable={{
                 render: (order) => (
                   <div className="space-y-4 max-w-4xl">
@@ -1346,7 +1383,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                           <div className="font-bold text-sm">{formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</div>
                         </div>
                       </div>
-                      {order.items && order.items.length > 0 && (
+                      {expandAll && order.items && order.items.length > 0 && (
                         <div className="mt-1 text-xs text-slate-700 space-y-0.5">
                           {order.items.map((item: any, idx: number) => (
                             <div key={idx} className="flex items-center justify-between">
