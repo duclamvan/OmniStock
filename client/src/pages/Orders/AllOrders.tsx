@@ -960,7 +960,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                 'pending': 'bg-slate-400',        // Gray - Waiting
                                 'cancelled': 'bg-red-500',        // Red - Cancelled
                               };
-                              const bulletColor = statusColors[order.status] || 'bg-slate-500';
+                              const bulletColor = statusColors[order.orderStatus] || 'bg-slate-500';
                               
                               return (
                                 <div className="flex items-center gap-1.5">
@@ -971,13 +971,13 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                             })()}
                             <Badge
                               variant={
-                                order.status === 'to_fulfill' ? 'default' :
-                                order.status === 'ready_to_ship' ? 'secondary' :
-                                order.status === 'shipped' ? 'outline' : 'secondary'
+                                order.orderStatus === 'to_fulfill' ? 'default' :
+                                order.orderStatus === 'ready_to_ship' ? 'secondary' :
+                                order.orderStatus === 'shipped' ? 'outline' : 'secondary'
                               }
                               className="text-xs h-5 px-1.5"
                             >
-                              {order.status?.replace('_', ' ')}
+                              {order.orderStatus?.replace('_', ' ')}
                             </Badge>
                             <Badge
                               variant={order.paymentStatus === 'paid' ? 'default' : 'secondary'}
