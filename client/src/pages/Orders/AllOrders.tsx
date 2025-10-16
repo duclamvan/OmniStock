@@ -80,6 +80,12 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     return (saved === 'compact' ? 'compact' : 'normal') as 'normal' | 'compact';
   });
 
+  // Compact view expand state with localStorage persistence (default to true)
+  const [compactExpanded, setCompactExpanded] = useState(() => {
+    const saved = localStorage.getItem('ordersCompactExpanded');
+    return saved === null ? true : saved === 'true';
+  });
+
   // Column visibility state - all columns visible by default (localStorage disabled for now)
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
     order: true,
@@ -97,6 +103,12 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const handleViewModeChange = (mode: 'normal' | 'compact') => {
     setViewMode(mode);
     localStorage.setItem('ordersViewMode', mode);
+  };
+
+  // Toggle compact view expand and save to localStorage
+  const handleCompactExpandChange = (checked: boolean) => {
+    setCompactExpanded(checked);
+    localStorage.setItem('ordersCompactExpanded', checked.toString());
   };
 
   // Toggle column visibility (no localStorage persistence for now)
@@ -916,6 +928,19 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     Compact
                   </Button>
                 </div>
+                {viewMode === 'compact' && (
+                  <>
+                    <Label htmlFor="compact-expand" className="text-sm text-slate-600 cursor-pointer">
+                      {compactExpanded ? 'Collapse All' : 'Expand All'}
+                    </Label>
+                    <Switch
+                      id="compact-expand"
+                      checked={compactExpanded}
+                      onCheckedChange={handleCompactExpandChange}
+                      className="data-[state=checked]:bg-blue-600"
+                    />
+                  </>
+                )}
                 {viewMode === 'normal' && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -1096,7 +1121,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                           <div className="font-bold text-sm">{formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</div>
                         </div>
                       </div>
-                      {order.items && order.items.length > 0 && (
+                      {compactExpanded && order.items && order.items.length > 0 && (
                         <div className="mt-1 text-xs text-slate-700 space-y-0.5">
                           {order.items.map((item: any, idx: number) => (
                             <div key={idx} className="flex items-center justify-between">
