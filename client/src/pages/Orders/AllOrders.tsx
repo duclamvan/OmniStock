@@ -88,23 +88,35 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
   // Column visibility state with localStorage persistence
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
+    const defaultColumns = {
+      order: true,
+      customer: true,
+      status: true,
+      payment: true,
+      date: true,
+      items: true,
+      total: true,
+      profit: true,
+      tracking: true,
+    };
+    
     const saved = localStorage.getItem('ordersVisibleColumns');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // Start with defaults (all visible), then apply only saved preferences for existing columns
+        const merged = { ...defaultColumns };
+        for (const key in parsed) {
+          if (key in defaultColumns) {
+            merged[key] = parsed[key];
+          }
+        }
+        return merged;
       } catch {
-        return {
-          order: true,
-          profit: false,
-          tracking: false,
-        };
+        return defaultColumns;
       }
     }
-    return {
-      order: true,
-      profit: false,
-      tracking: false,
-    };
+    return defaultColumns;
   });
   
   // Save expand preference to localStorage
@@ -526,11 +538,34 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       key: "customer",
       header: "Customer",
       sortable: false,
-      cell: (order) => (
-        <div className="text-sm text-slate-700">
-          {order.customer?.name || 'N/A'}
-        </div>
-      ),
+      cell: (order) => {
+        const customerName = order.customer?.name || 'N/A';
+        const country = order.customer?.country;
+        const countryFlagMap: Record<string, string> = {
+          'CZ': '🇨🇿',
+          'DE': '🇩🇪',
+          'AT': '🇦🇹',
+          'SK': '🇸🇰',
+          'PL': '🇵🇱',
+          'HU': '🇭🇺',
+          'US': '🇺🇸',
+          'GB': '🇬🇧',
+          'FR': '🇫🇷',
+          'IT': '🇮🇹',
+          'ES': '🇪🇸',
+          'NL': '🇳🇱',
+          'BE': '🇧🇪',
+          'CH': '🇨🇭',
+        };
+        const flag = country ? countryFlagMap[country] : null;
+
+        return (
+          <div className="flex items-center gap-2">
+            {flag && <span className="text-lg">{flag}</span>}
+            <div className="text-sm text-slate-700">{customerName}</div>
+          </div>
+        );
+      },
     },
     {
       key: "status",
