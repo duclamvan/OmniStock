@@ -952,12 +952,12 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             {(() => {
-                              // Color based on order status
+                              // Color based on order status (matching Add/Edit Order colors)
                               const statusColors: Record<string, string> = {
+                                'pending': 'bg-amber-500',        // Amber - Waiting
                                 'to_fulfill': 'bg-blue-500',      // Blue - Action needed
-                                'ready_to_ship': 'bg-amber-500',  // Amber - Ready to go
+                                'ready_to_ship': 'bg-blue-500',   // Blue - Ready (same as to_fulfill)
                                 'shipped': 'bg-green-500',        // Green - Completed
-                                'pending': 'bg-slate-400',        // Gray - Waiting
                                 'cancelled': 'bg-red-500',        // Red - Cancelled
                               };
                               const bulletColor = statusColors[order.orderStatus] || 'bg-slate-500';
