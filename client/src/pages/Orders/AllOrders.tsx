@@ -56,6 +56,30 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     return saved === 'true';
   });
 
+  // Scroll position restoration
+  useEffect(() => {
+    const savedScrollPosition = sessionStorage.getItem('ordersScrollPosition');
+    if (savedScrollPosition) {
+      // Use setTimeout to ensure DOM is ready
+      setTimeout(() => {
+        window.scrollTo(0, parseInt(savedScrollPosition, 10));
+        sessionStorage.removeItem('ordersScrollPosition');
+      }, 100);
+    }
+  }, []);
+
+  // Save scroll position before navigating away
+  useEffect(() => {
+    const saveScrollPosition = () => {
+      sessionStorage.setItem('ordersScrollPosition', window.scrollY.toString());
+    };
+
+    // Save on route change (when clicking a link to order details)
+    return () => {
+      saveScrollPosition();
+    };
+  }, []);
+
   // View mode state with localStorage persistence
   const [viewMode, setViewMode] = useState<'normal' | 'compact'>(() => {
     const saved = localStorage.getItem('ordersViewMode');
