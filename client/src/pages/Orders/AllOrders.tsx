@@ -138,6 +138,28 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     localStorage.setItem('ordersVisibleColumns_v2', JSON.stringify(updated));
   };
 
+  // Clear old column visibility settings on mount
+  useEffect(() => {
+    const oldKey = localStorage.getItem('ordersVisibleColumns');
+    if (oldKey) {
+      localStorage.removeItem('ordersVisibleColumns');
+      // Force all columns to be visible by resetting to defaults
+      const allVisible = {
+        order: true,
+        customer: true,
+        status: true,
+        payment: true,
+        date: true,
+        items: true,
+        total: true,
+        profit: true,
+        tracking: true,
+      };
+      setVisibleColumns(allVisible);
+      localStorage.setItem('ordersVisibleColumns_v2', JSON.stringify(allVisible));
+    }
+  }, []);
+
   const { data: orders = [], isLoading, error } = useQuery({
     queryKey: filter ? ['/api/orders', 'status', filter] : ['/api/orders'],
     queryFn: async () => {
