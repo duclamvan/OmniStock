@@ -726,6 +726,79 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       {/* Orders Table */}
       <Card>
         <CardContent className="p-0 sm:p-6">
+          {/* Header with view toggle - always visible */}
+          <div className="px-4 sm:px-0 pb-4 pt-4 sm:pt-0">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-mobile-lg font-semibold">Orders ({filteredOrders?.length || 0})</h2>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 border rounded-md">
+                  <Button
+                    variant={viewMode === 'normal' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => handleViewModeChange('normal')}
+                    className="h-7 px-2 text-xs rounded-r-none"
+                    data-testid="button-viewNormal"
+                  >
+                    <List className="h-3 w-3 mr-1" />
+                    Normal
+                  </Button>
+                  <Button
+                    variant={viewMode === 'compact' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => handleViewModeChange('compact')}
+                    className="h-7 px-2 text-xs rounded-l-none"
+                    data-testid="button-viewCompact"
+                  >
+                    <AlignJustify className="h-3 w-3 mr-1" />
+                    Compact
+                  </Button>
+                </div>
+                {viewMode === 'normal' && (
+                  <>
+                    <Label htmlFor="expand-all" className="text-sm text-slate-600 cursor-pointer">
+                      {expandAll ? 'Collapse All' : 'Expand All'}
+                    </Label>
+                    <Switch
+                      id="expand-all"
+                      checked={expandAll}
+                      onCheckedChange={handleExpandAllChange}
+                      className="data-[state=checked]:bg-blue-600"
+                    />
+                  </>
+                )}
+                {viewMode === 'normal' && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <div className="px-2 py-1.5 text-sm font-semibold">Show Columns</div>
+                      {columns.map((column) => (
+                        <DropdownMenuItem
+                          key={column.key}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            toggleColumnVisibility(column.key);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span>{column.header}</span>
+                            {visibleColumns[column.key] !== false && (
+                              <Check className="h-4 w-4 text-blue-600" />
+                            )}
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
+            </div>
+          </div>
+
           {viewMode === 'normal' ? (
             <DataTable
               data={filteredOrders}
@@ -932,11 +1005,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             }}
             />
           ) : (
-            <div className="space-y-2">
-              <div className="px-4 sm:px-0 pb-4">
-                <h2 className="text-mobile-lg font-semibold">Orders ({filteredOrders?.length || 0})</h2>
-              </div>
-              <div className="space-y-1">
+            <div className="space-y-1">
                 {filteredOrders.map((order: any) => (
                   <div
                     key={order.id}
@@ -1034,7 +1103,6 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                   </div>
                 ))}
               </div>
-            </div>
           )}
         </CardContent>
       </Card>
