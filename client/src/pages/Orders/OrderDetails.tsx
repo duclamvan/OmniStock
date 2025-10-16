@@ -67,8 +67,15 @@ import { cn } from "@/lib/utils";
 import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from "recharts";
 import { getCountryFlag } from "@/lib/countries";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Crown, Trophy, Sparkles, Heart, RefreshCw, AlertTriangle } from "lucide-react";
 
 export default function OrderDetails() {
   const { id } = useParams();
@@ -1133,11 +1140,256 @@ export default function OrderDetails() {
                       {order.customer.name}
                     </p>
                   </Link>
-                  {order.customer.type && (
-                    <Badge variant={order.customer.type === 'vip' ? 'default' : 'secondary'} className="mt-1">
-                      {order.customer.type === 'vip' ? 'VIP Customer' : 'Regular Customer'}
-                    </Badge>
-                  )}
+                  
+                  {/* Customer Badges with Tooltips */}
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    <TooltipProvider>
+                      {/* VIP Badge */}
+                      {order.customer.type === 'vip' && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge className="bg-purple-50 text-purple-700 border-purple-300 text-xs cursor-help">
+                              <Crown className="h-3 w-3 mr-1" />
+                              VIP
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">Manually marked as VIP customer</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+
+                      {/* Spending Tier Badges */}
+                      {(() => {
+                        const lifetimeSpending = parseFloat(order.customer?.lifetimeSpending || '0');
+                        
+                        if (lifetimeSpending >= 100000) {
+                          return (
+                            <Tooltip key="diamond">
+                              <TooltipTrigger asChild>
+                                <Badge className="bg-cyan-50 text-cyan-700 border-cyan-300 text-xs cursor-help">
+                                  <TrendingUp className="h-3 w-3 mr-1" />
+                                  Diamond
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">Lifetime spending ≥ {formatCurrency(100000, order.currency || 'EUR')}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        } else if (lifetimeSpending >= 50000) {
+                          return (
+                            <Tooltip key="platinum">
+                              <TooltipTrigger asChild>
+                                <Badge className="bg-slate-50 text-slate-700 border-slate-300 text-xs cursor-help">
+                                  <TrendingUp className="h-3 w-3 mr-1" />
+                                  Platinum
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">Lifetime spending ≥ {formatCurrency(50000, order.currency || 'EUR')}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        } else if (lifetimeSpending >= 25000) {
+                          return (
+                            <Tooltip key="gold">
+                              <TooltipTrigger asChild>
+                                <Badge className="bg-amber-50 text-amber-700 border-amber-300 text-xs cursor-help">
+                                  <TrendingUp className="h-3 w-3 mr-1" />
+                                  Gold
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">Lifetime spending ≥ {formatCurrency(25000, order.currency || 'EUR')}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        }
+                        return null;
+                      })()}
+
+                      {/* TOP Rankings */}
+                      {(() => {
+                        const badges = [];
+                        const topRank = order.customer?.topRank;
+                        const topRankCountry = order.customer?.topRankCountry;
+                        
+                        // General TOP badge
+                        if (topRank && topRank <= 100) {
+                          const rankText = topRank <= 10 ? 'TOP 10' : topRank <= 50 ? 'TOP 50' : 'TOP 100';
+                          const bgColor = topRank <= 10 ? 'bg-yellow-50' : topRank <= 50 ? 'bg-orange-50' : 'bg-red-50';
+                          const textColor = topRank <= 10 ? 'text-yellow-700' : topRank <= 50 ? 'text-orange-700' : 'text-red-700';
+                          const borderColor = topRank <= 10 ? 'border-yellow-300' : topRank <= 50 ? 'border-orange-300' : 'border-red-300';
+                          
+                          badges.push(
+                            <Tooltip key="toprank">
+                              <TooltipTrigger asChild>
+                                <Badge className={`${bgColor} ${textColor} ${borderColor} text-xs cursor-help`}>
+                                  <Trophy className="h-3 w-3 mr-1" />
+                                  {rankText}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">Top {topRank} customer by revenue</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        }
+                        
+                        // Country-specific TOP badge
+                        if (topRankCountry && order.customer?.country) {
+                          const countryRank = topRankCountry <= 10 ? 'TOP 10' : topRankCountry <= 50 ? 'TOP 50' : 'TOP 100';
+                          badges.push(
+                            <Tooltip key="topcountry">
+                              <TooltipTrigger asChild>
+                                <Badge className="bg-blue-50 text-blue-700 border-blue-300 text-xs cursor-help">
+                                  <Trophy className="h-3 w-3 mr-1" />
+                                  {countryRank} in {order.customer.country}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">Top {topRankCountry} customer by revenue in {order.customer.country}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        }
+                        
+                        return badges;
+                      })()}
+
+                      {/* Pay Later Badge */}
+                      {order.paymentStatus === 'pay_later' && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge className="bg-purple-50 text-purple-700 border-purple-300 text-xs cursor-help">
+                              <Clock className="h-3 w-3 mr-1" />
+                              Pay Later
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">Payment scheduled for later</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+
+                      {/* Customer Behavior Badges */}
+                      {(() => {
+                        const totalOrders = order.customer?.totalOrders || 0;
+                        const firstOrderDate = order.customer?.firstOrderDate ? new Date(order.customer.firstOrderDate) : null;
+                        const lastOrderDate = order.customer?.lastOrderDate ? new Date(order.customer.lastOrderDate) : null;
+                        const avgOrderValue = parseFloat(order.customer?.averageOrderValue || '0');
+                        const now = new Date();
+                        const daysSinceFirstOrder = firstOrderDate ? Math.floor((now.getTime() - firstOrderDate.getTime()) / (1000 * 60 * 60 * 24)) : null;
+                        const daysSinceLastOrder = lastOrderDate ? Math.floor((now.getTime() - lastOrderDate.getTime()) / (1000 * 60 * 60 * 24)) : null;
+                        
+                        const badges = [];
+                        
+                        // New Customer (first order within 30 days)
+                        if (daysSinceFirstOrder !== null && daysSinceFirstOrder <= 30) {
+                          badges.push(
+                            <Tooltip key="new">
+                              <TooltipTrigger asChild>
+                                <Badge className="bg-green-50 text-green-700 border-green-300 text-xs cursor-help">
+                                  <Sparkles className="h-3 w-3 mr-1" />
+                                  New Customer
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">First order placed within the last 30 days</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        }
+                        
+                        // First Timer (only 1 order)
+                        if (totalOrders === 1) {
+                          badges.push(
+                            <Tooltip key="first">
+                              <TooltipTrigger asChild>
+                                <Badge className="bg-cyan-50 text-cyan-700 border-cyan-300 text-xs cursor-help">
+                                  <Sparkles className="h-3 w-3 mr-1" />
+                                  First Timer
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">Has placed only 1 order so far</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        }
+                        
+                        // Super Loyal (10+ orders)
+                        if (totalOrders >= 10) {
+                          badges.push(
+                            <Tooltip key="superloyal">
+                              <TooltipTrigger asChild>
+                                <Badge className="bg-rose-50 text-rose-700 border-rose-300 text-xs cursor-help">
+                                  <Heart className="h-3 w-3 mr-1" />
+                                  Super Loyal
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">Has placed 10+ orders ({totalOrders} orders total)</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        } 
+                        // Loyal Customer (2-9 orders)
+                        else if (totalOrders > 1) {
+                          badges.push(
+                            <Tooltip key="loyal">
+                              <TooltipTrigger asChild>
+                                <Badge className="bg-indigo-50 text-indigo-700 border-indigo-300 text-xs cursor-help">
+                                  <RefreshCw className="h-3 w-3 mr-1" />
+                                  Loyal Customer
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">Has placed {totalOrders} orders - coming back for more!</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        }
+                        
+                        // At Risk (no order in 90+ days, but has ordered before)
+                        if (daysSinceLastOrder !== null && daysSinceLastOrder > 90 && totalOrders > 0) {
+                          badges.push(
+                            <Tooltip key="risk">
+                              <TooltipTrigger asChild>
+                                <Badge className="bg-orange-50 text-orange-700 border-orange-300 text-xs cursor-help">
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                  At Risk
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">No orders in {daysSinceLastOrder} days - may need re-engagement</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        }
+                        
+                        // High Value (avg order > 500)
+                        if (avgOrderValue > 500) {
+                          badges.push(
+                            <Tooltip key="highvalue">
+                              <TooltipTrigger asChild>
+                                <Badge className="bg-emerald-50 text-emerald-700 border-emerald-300 text-xs cursor-help">
+                                  <TrendingUp className="h-3 w-3 mr-1" />
+                                  High Value
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">Average order value: {formatCurrency(avgOrderValue, order.currency || 'EUR')}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        }
+                        
+                        return badges;
+                      })()}
+                    </TooltipProvider>
+                  </div>
                 </div>
                 
                 <div className="space-y-2 text-sm">
