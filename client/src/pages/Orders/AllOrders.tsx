@@ -976,56 +976,93 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             expandable={{
               render: (order) => (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                      <Package className="h-4 w-4" />
-                      Order Items ({order.items?.length || 0})
-                    </h4>
+                  {/* Header */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Package className="h-5 w-5 text-blue-600" />
+                      <h4 className="text-base font-semibold text-slate-900">
+                        Order Contents
+                      </h4>
+                      <Badge variant="secondary" className="text-xs">
+                        {order.items?.length || 0} items
+                      </Badge>
+                    </div>
                     <Link href={`/orders/${order.id}`}>
-                      <Button size="sm" variant="outline">
-                        <Eye className="mr-2 h-4 w-4" />
-                        View Details
+                      <Button size="sm" variant="outline" className="gap-2">
+                        <Eye className="h-4 w-4" />
+                        Full Details
                       </Button>
                     </Link>
                   </div>
-                  <div className="border rounded-lg overflow-hidden">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-slate-50">
-                          <TableHead className="text-xs">Product</TableHead>
-                          <TableHead className="text-xs text-center">Qty</TableHead>
-                          <TableHead className="text-xs text-right">Unit Price</TableHead>
-                          <TableHead className="text-xs text-right">Total</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {order.items?.map((item: any, index: number) => (
-                          <TableRow key={item.id || index} className="text-sm">
-                            <TableCell className="font-medium">
-                              {item.productName}
-                              <div className="text-xs text-slate-500">SKU: {item.sku}</div>
-                            </TableCell>
-                            <TableCell className="text-center">{item.quantity}</TableCell>
-                            <TableCell className="text-right">
-                              {formatCurrency(item.price || 0, order.currency || 'EUR')}
-                            </TableCell>
-                            <TableCell className="text-right font-medium">
-                              {formatCurrency(item.total || 0, order.currency || 'EUR')}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+
+                  {/* Order Items - Card Grid */}
+                  <div className="grid gap-2">
+                    {order.items?.map((item: any, index: number) => (
+                      <div
+                        key={item.id || index}
+                        className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors"
+                      >
+                        {/* Product Image/Icon */}
+                        <div className="flex-shrink-0 w-12 h-12 bg-white rounded-md border border-slate-200 flex items-center justify-center overflow-hidden">
+                          {item.productImage ? (
+                            <img 
+                              src={item.productImage} 
+                              alt={item.productName}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Package className="h-6 w-6 text-slate-400" />
+                          )}
+                        </div>
+
+                        {/* Product Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-sm text-slate-900 truncate">
+                                {item.productName}
+                              </p>
+                              <p className="text-xs text-slate-500 mt-0.5">
+                                SKU: {item.sku || 'N/A'}
+                              </p>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <p className="font-semibold text-sm text-slate-900">
+                                {formatCurrency(item.total || 0, order.currency || 'EUR')}
+                              </p>
+                              <p className="text-xs text-slate-500 mt-0.5">
+                                {item.quantity}× {formatCurrency(item.price || 0, order.currency || 'EUR')}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
-                    <div className="text-sm">
-                      <p className="text-slate-500">Subtotal</p>
-                      <p className="font-medium">{formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</p>
+
+                  {/* Order Summary - Cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2">
+                    <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+                          <span className="text-blue-600 text-xs font-semibold">S</span>
+                        </div>
+                        <p className="text-xs font-medium text-blue-700">Subtotal</p>
+                      </div>
+                      <p className="font-semibold text-sm text-blue-900">
+                        {formatCurrency(order.subtotal || 0, order.currency || 'EUR')}
+                      </p>
                     </div>
+
                     {order.discountValue > 0 && (
-                      <div className="text-sm">
-                        <p className="text-slate-500">Discount</p>
-                        <p className="font-medium text-green-600">
+                      <div className="bg-green-50 rounded-lg p-3 border border-green-100">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
+                            <span className="text-green-600 text-xs font-semibold">D</span>
+                          </div>
+                          <p className="text-xs font-medium text-green-700">Discount</p>
+                        </div>
+                        <p className="font-semibold text-sm text-green-900">
                           -{formatCurrency(
                             order.discountType === 'rate' 
                               ? (order.subtotal * order.discountValue / 100) 
@@ -1035,15 +1072,31 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                         </p>
                       </div>
                     )}
+
                     {order.shippingCost > 0 && (
-                      <div className="text-sm">
-                        <p className="text-slate-500">Shipping</p>
-                        <p className="font-medium">{formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</p>
+                      <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center">
+                            <span className="text-amber-600 text-xs font-semibold">📦</span>
+                          </div>
+                          <p className="text-xs font-medium text-amber-700">Shipping</p>
+                        </div>
+                        <p className="font-semibold text-sm text-amber-900">
+                          {formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}
+                        </p>
                       </div>
                     )}
-                    <div className="text-sm">
-                      <p className="text-slate-500">Grand Total</p>
-                      <p className="font-bold text-lg">{formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</p>
+
+                    <div className="bg-slate-900 rounded-lg p-3 border border-slate-800">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center">
+                          <span className="text-white text-xs font-semibold">T</span>
+                        </div>
+                        <p className="text-xs font-medium text-slate-300">Total</p>
+                      </div>
+                      <p className="font-bold text-base text-white">
+                        {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
+                      </p>
                     </div>
                   </div>
                 </div>
