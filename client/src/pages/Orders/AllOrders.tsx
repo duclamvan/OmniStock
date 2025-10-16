@@ -16,6 +16,7 @@ import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
 import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { getCountryFlag } from "@/lib/countries";
+import { cn } from "@/lib/utils";
 import { Plus, Search, Filter, Download, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify } from "lucide-react";
 import {
   AlertDialog,
@@ -970,12 +971,15 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                               );
                             })()}
                             <Badge
-                              variant={
-                                order.orderStatus === 'to_fulfill' ? 'default' :
-                                order.orderStatus === 'ready_to_ship' ? 'secondary' :
-                                order.orderStatus === 'shipped' ? 'outline' : 'secondary'
-                              }
-                              className="text-xs h-5 px-1.5"
+                              className={cn(
+                                "text-xs h-5 px-1.5 border",
+                                order.orderStatus === 'pending' ? 'bg-amber-100 text-amber-800 border-amber-200' :
+                                order.orderStatus === 'to_fulfill' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                order.orderStatus === 'ready_to_ship' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                order.orderStatus === 'shipped' ? 'bg-green-100 text-green-800 border-green-200' :
+                                order.orderStatus === 'cancelled' ? 'bg-red-100 text-red-800 border-red-200' :
+                                'bg-slate-100 text-slate-800 border-slate-200'
+                              )}
                             >
                               {order.orderStatus?.replace('_', ' ')}
                             </Badge>
