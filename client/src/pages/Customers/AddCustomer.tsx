@@ -83,6 +83,8 @@ const billingAddressSchema = z.object({
   zipCode: z.string().optional(),
   country: z.string().optional(),
   state: z.string().optional(),
+  vatId: z.string().optional(),
+  ico: z.string().optional(),
   isPrimary: z.boolean().default(false),
 });
 
@@ -247,6 +249,8 @@ export default function AddCustomer() {
       zipCode: "",
       country: "",
       state: "",
+      vatId: "",
+      ico: "",
       isPrimary: false,
     },
   });
@@ -2112,6 +2116,8 @@ export default function AddCustomer() {
                   {addr.country && <p>{addr.country}</p>}
                   {addr.tel && <p>Tel: {addr.tel}</p>}
                   {addr.email && <p>Email: {addr.email}</p>}
+                  {addr.ico && <p>IČO: {addr.ico}</p>}
+                  {addr.vatId && <p>VAT ID: {addr.vatId}</p>}
                 </div>
               </div>
             ))}
@@ -2394,6 +2400,33 @@ export default function AddCustomer() {
                       className={cn(getConfidenceClass('state', billingAddressFieldConfidence))}
                       data-testid="input-billingState"
                     />
+                  </div>
+
+                  <Separator className="my-6" />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {billingAddressForm.watch('country') === 'Czech Republic' && (
+                      <div>
+                        <Label htmlFor="billingIco">IČO (Company ID)</Label>
+                        <Input
+                          id="billingIco"
+                          {...billingAddressForm.register('ico')}
+                          placeholder="12345678"
+                          data-testid="input-billingIco"
+                        />
+                        <p className="text-xs text-slate-500 mt-1">Czech company registration number</p>
+                      </div>
+                    )}
+                    <div className={billingAddressForm.watch('country') === 'Czech Republic' ? '' : 'md:col-span-2'}>
+                      <Label htmlFor="billingVatId">VAT ID</Label>
+                      <Input
+                        id="billingVatId"
+                        {...billingAddressForm.register('vatId')}
+                        placeholder="e.g., DE123456789"
+                        data-testid="input-billingVatId"
+                      />
+                      <p className="text-xs text-slate-500 mt-1">Company VAT identification number</p>
+                    </div>
                   </div>
 
                   <Separator className="my-6" />

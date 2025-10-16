@@ -313,6 +313,8 @@ export const customerBillingAddresses = pgTable('customer_billing_addresses', {
   zipCode: varchar('zip_code'),
   country: varchar('country'),
   state: varchar('state'),
+  vatId: varchar('vat_id'), // VAT ID for all countries
+  ico: varchar('ico'), // IČO for Czech Republic only
   isPrimary: boolean('is_primary').default(false), // Mark one as default
   label: varchar('label'), // e.g., "Main Office", "Secondary Office", "Accounting"
   createdAt: timestamp('created_at').defaultNow(),
