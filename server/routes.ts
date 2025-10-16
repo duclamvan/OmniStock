@@ -512,6 +512,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI translation for category names
+  app.post('/api/categories/translate', async (req, res) => {
+    try {
+      const { categoryName } = req.body;
+      
+      if (!categoryName || typeof categoryName !== 'string') {
+        return res.status(400).json({ message: 'Category name is required' });
+      }
+
+      const apiKey = process.env.DEEPSEEK_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ message: 'Translation API not configured' });
+      }
+
+      const OpenAI = (await import('openai')).default;
+      const openai = new OpenAI({ 
+        apiKey,
+        baseURL: 'https://api.deepseek.com'
+      });
+
+      const prompt = `Translate the following product category name into Czech (CZ) and Vietnamese (VN).
+Return ONLY a valid JSON object with this exact structure:
+{
+  "nameCz": "Czech translation",
+  "nameVn": "Vietnamese translation"
+}
+
+Category name: ${categoryName}
+
+Important:
+- Keep the translation concise and appropriate for product categories
+- Use proper diacritics for both languages
+- Return ONLY the JSON, no additional text`;
+
+      const completion = await openai.chat.completions.create({
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a professional translator specializing in product category names. Always respond with valid JSON only.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 150
+      });
+
+      const translationText = completion.choices[0]?.message?.content?.trim();
+      if (!translationText) {
+        throw new Error('No translation received from API');
+      }
+
+      // Extract JSON from the response
+      const jsonMatch = translationText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('Invalid translation format');
+      }
+
+      const translations = JSON.parse(jsonMatch[0]);
+      res.json(translations);
+    } catch (error) {
+      console.error('Translation error:', error);
+      res.status(500).json({ message: 'Failed to translate category name' });
+    }
+  });
+
   // Warehouses endpoints
   app.get('/api/warehouses', async (req, res) => {
     try {
