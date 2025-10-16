@@ -17,7 +17,7 @@ import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { getCountryFlag } from "@/lib/countries";
 import { cn } from "@/lib/utils";
-import { Plus, Search, Filter, Download, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify } from "lucide-react";
+import { Plus, Search, Filter, Download, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -874,6 +874,47 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               expandable={{
                 render: (order) => (
                   <div className="space-y-4 max-w-4xl">
+                    {/* Customer Info Header */}
+                    <div className="flex items-center gap-3 pb-3 border-b border-slate-200">
+                      <div className="flex-1">
+                        <h3 className="text-base font-semibold text-slate-900">
+                          {order.customer?.name || 'Unknown Customer'}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          {order.customer?.type === 'vip' && (
+                            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 text-xs">
+                              <Star className="h-3 w-3 mr-1" />
+                              VIP
+                            </Badge>
+                          )}
+                          {order.customer?.customerRank === 'TOP10' && (
+                            <Badge className="bg-yellow-50 text-yellow-700 border-yellow-300 text-xs">
+                              <Trophy className="h-3 w-3 mr-1" />
+                              TOP 10
+                            </Badge>
+                          )}
+                          {order.customer?.customerRank === 'TOP50' && (
+                            <Badge className="bg-blue-50 text-blue-700 border-blue-300 text-xs">
+                              <Award className="h-3 w-3 mr-1" />
+                              TOP 50
+                            </Badge>
+                          )}
+                          {order.customer?.customerRank === 'TOP100' && (
+                            <Badge className="bg-slate-50 text-slate-700 border-slate-300 text-xs">
+                              <Star className="h-3 w-3 mr-1" />
+                              TOP 100
+                            </Badge>
+                          )}
+                          {order.paymentStatus === 'pay_later' && (
+                            <Badge className="bg-purple-50 text-purple-700 border-purple-300 text-xs">
+                              <Clock className="h-3 w-3 mr-1" />
+                              Pay Later
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Order Items */}
                     {order.items && order.items.length > 0 && (
                       <div>
