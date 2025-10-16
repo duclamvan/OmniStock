@@ -17,7 +17,7 @@ import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { getCountryFlag } from "@/lib/countries";
 import { cn } from "@/lib/utils";
-import { Plus, Search, Filter, Download, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal } from "lucide-react";
+import { Plus, Search, Filter, Download, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal, Sparkles, RefreshCw, Heart, AlertTriangle, TrendingUp } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -955,6 +955,80 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                               Pay Later
                             </Badge>
                           )}
+                          
+                          {/* Customer Behavior Badges */}
+                          {(() => {
+                            const totalOrders = order.customer?.totalOrders || 0;
+                            const firstOrderDate = order.customer?.firstOrderDate ? new Date(order.customer.firstOrderDate) : null;
+                            const lastOrderDate = order.customer?.lastOrderDate ? new Date(order.customer.lastOrderDate) : null;
+                            const avgOrderValue = parseFloat(order.customer?.averageOrderValue || '0');
+                            const now = new Date();
+                            const daysSinceFirstOrder = firstOrderDate ? Math.floor((now.getTime() - firstOrderDate.getTime()) / (1000 * 60 * 60 * 24)) : null;
+                            const daysSinceLastOrder = lastOrderDate ? Math.floor((now.getTime() - lastOrderDate.getTime()) / (1000 * 60 * 60 * 24)) : null;
+                            
+                            const badges = [];
+                            
+                            // New Customer (first order within 30 days)
+                            if (daysSinceFirstOrder !== null && daysSinceFirstOrder <= 30) {
+                              badges.push(
+                                <Badge key="new" className="bg-green-50 text-green-700 border-green-300 text-xs">
+                                  <Sparkles className="h-3 w-3 mr-1" />
+                                  New Customer
+                                </Badge>
+                              );
+                            }
+                            
+                            // First Timer (only 1 order)
+                            if (totalOrders === 1) {
+                              badges.push(
+                                <Badge key="first" className="bg-cyan-50 text-cyan-700 border-cyan-300 text-xs">
+                                  <Sparkles className="h-3 w-3 mr-1" />
+                                  First Timer
+                                </Badge>
+                              );
+                            }
+                            
+                            // Loyal Customer (10+ orders)
+                            if (totalOrders >= 10) {
+                              badges.push(
+                                <Badge key="loyal" className="bg-rose-50 text-rose-700 border-rose-300 text-xs">
+                                  <Heart className="h-3 w-3 mr-1" />
+                                  Loyal Customer
+                                </Badge>
+                              );
+                            } 
+                            // Returning Customer (2-9 orders)
+                            else if (totalOrders > 1) {
+                              badges.push(
+                                <Badge key="returning" className="bg-indigo-50 text-indigo-700 border-indigo-300 text-xs">
+                                  <RefreshCw className="h-3 w-3 mr-1" />
+                                  Returning
+                                </Badge>
+                              );
+                            }
+                            
+                            // At Risk (no order in 90+ days, but has ordered before)
+                            if (daysSinceLastOrder !== null && daysSinceLastOrder > 90 && totalOrders > 0) {
+                              badges.push(
+                                <Badge key="risk" className="bg-orange-50 text-orange-700 border-orange-300 text-xs">
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                  At Risk
+                                </Badge>
+                              );
+                            }
+                            
+                            // High Value (avg order > 500)
+                            if (avgOrderValue > 500) {
+                              badges.push(
+                                <Badge key="highvalue" className="bg-emerald-50 text-emerald-700 border-emerald-300 text-xs">
+                                  <TrendingUp className="h-3 w-3 mr-1" />
+                                  High Value
+                                </Badge>
+                              );
+                            }
+                            
+                            return badges;
+                          })()}
                         </div>
                       </div>
                     </div>
