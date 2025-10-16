@@ -1825,61 +1825,14 @@ export default function AddCustomer() {
                     </Button>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="shippingAddressAutocomplete">Search Address</Label>
-                    <div className="relative">
-                      <Input
-                        id="shippingAddressAutocomplete"
-                        value={shippingAddressQuery}
-                        onChange={(e) => {
-                          setShippingAddressQuery(e.target.value);
-                          searchShippingAddress(e.target.value);
-                        }}
-                        placeholder="Start typing to search..."
-                        data-testid="input-shippingAddressAutocomplete"
-                      />
-                      {shippingAddressQuery && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-1 top-1 h-8 w-8 p-0"
-                          onClick={() => {
-                            setShippingAddressQuery("");
-                            setShippingAddressSuggestions([]);
-                            setShowShippingDropdown(false);
-                          }}
-                          data-testid="button-clearShippingAutocomplete"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {showShippingDropdown && (
-                        <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-72 overflow-y-auto z-50">
-                          {isLoadingShippingAutocomplete ? (
-                            <div className="p-4 text-center" data-testid="text-shippingAutocompleteLoading">
-                              <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                            </div>
-                          ) : shippingAddressSuggestions.length > 0 ? (
-                            shippingAddressSuggestions.map((suggestion, index) => (
-                              <div
-                                key={index}
-                                className="p-3 hover:bg-slate-100 cursor-pointer border-b last:border-b-0 transition-colors"
-                                onClick={() => selectShippingAddress(suggestion)}
-                                data-testid={`button-shippingAddressSuggestion-${index}`}
-                              >
-                                {suggestion.displayName}
-                              </div>
-                            ))
-                          ) : (
-                            <div className="p-4 text-center text-slate-500">No addresses found</div>
-                          )}
-                        </div>
-                      )}
+                  <div className="relative my-8">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t-2 border-slate-300" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-slate-50 px-2 text-slate-500 font-semibold">Address Details</span>
                     </div>
                   </div>
-
-                  <Separator className="my-6" />
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -2250,61 +2203,14 @@ export default function AddCustomer() {
                     </Button>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="billingAddressAutocomplete">Search Address</Label>
-                    <div className="relative">
-                      <Input
-                        id="billingAddressAutocomplete"
-                        value={billingAddressQuery}
-                        onChange={(e) => {
-                          setBillingAddressQuery(e.target.value);
-                          searchBillingAddress(e.target.value);
-                        }}
-                        placeholder="Start typing to search..."
-                        data-testid="input-billingAddressAutocomplete"
-                      />
-                      {billingAddressQuery && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-1 top-1 h-8 w-8 p-0"
-                          onClick={() => {
-                            setBillingAddressQuery("");
-                            setBillingAddressSuggestions([]);
-                            setShowBillingDropdown(false);
-                          }}
-                          data-testid="button-clearBillingAutocomplete"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {showBillingDropdown && (
-                        <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-72 overflow-y-auto z-50">
-                          {isLoadingBillingAutocomplete ? (
-                            <div className="p-4 text-center" data-testid="text-billingAutocompleteLoading">
-                              <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                            </div>
-                          ) : billingAddressSuggestions.length > 0 ? (
-                            billingAddressSuggestions.map((suggestion, index) => (
-                              <div
-                                key={index}
-                                className="p-3 hover:bg-slate-100 cursor-pointer border-b last:border-b-0 transition-colors"
-                                onClick={() => selectBillingAddress(suggestion)}
-                                data-testid={`button-billingAddressSuggestion-${index}`}
-                              >
-                                {suggestion.displayName}
-                              </div>
-                            ))
-                          ) : (
-                            <div className="p-4 text-center text-slate-500">No addresses found</div>
-                          )}
-                        </div>
-                      )}
+                  <div className="relative my-8">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t-2 border-slate-300" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-slate-50 px-2 text-slate-500 font-semibold">Address Details</span>
                     </div>
                   </div>
-
-                  <Separator className="my-6" />
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
