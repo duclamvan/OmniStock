@@ -86,7 +86,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     return (saved === 'compact' ? 'compact' : 'normal') as 'normal' | 'compact';
   });
 
-  // Column visibility state with localStorage persistence
+  // Column visibility state with localStorage persistence (v2 - fresh start with new columns)
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
     const defaultColumns = {
       order: true,
@@ -100,7 +100,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       tracking: true,
     };
     
-    const saved = localStorage.getItem('ordersVisibleColumns');
+    const saved = localStorage.getItem('ordersVisibleColumns_v2');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -135,7 +135,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const toggleColumnVisibility = (columnKey: string) => {
     const updated = { ...visibleColumns, [columnKey]: !visibleColumns[columnKey] };
     setVisibleColumns(updated);
-    localStorage.setItem('ordersVisibleColumns', JSON.stringify(updated));
+    localStorage.setItem('ordersVisibleColumns_v2', JSON.stringify(updated));
   };
 
   const { data: orders = [], isLoading, error } = useQuery({
