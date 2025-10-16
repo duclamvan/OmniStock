@@ -462,57 +462,6 @@ export default function ProductDetails() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* Stock & Warehouse Locations */}
-        <AccordionItem value="stock" className="border-slate-200 rounded-xl bg-white shadow-sm">
-          <AccordionTrigger className="px-4 py-3 hover:no-underline" data-testid="accordion-stock">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-50 rounded-lg">
-                <Package className="h-5 w-5 text-green-600" />
-              </div>
-              <span className="text-lg font-semibold text-slate-900">Stock & Warehouse Locations</span>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="px-4 pb-4 space-y-8 pt-2">
-            {/* Stock Summary */}
-            <div>
-              <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4">Stock Summary</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Current Quantity</label>
-                  <p className="text-2xl font-bold text-slate-900 mt-2" data-testid="text-quantity">{product.quantity}</p>
-                </div>
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Unit</label>
-                  <p className="text-2xl font-bold text-slate-900 mt-2" data-testid="text-unit">{product.unit || 'units'}</p>
-                </div>
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Low Stock Alert</label>
-                  <p className="text-2xl font-bold text-slate-900 mt-2" data-testid="text-low-stock">{product.lowStockAlert || 5}</p>
-                </div>
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Barcode</label>
-                  <p className="text-lg font-mono text-slate-900 mt-2" data-testid="text-barcode-detail">{product.barcode || "Not set"}</p>
-                </div>
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Warehouse</label>
-                  <p className="text-lg text-slate-900 mt-2" data-testid="text-warehouse">{warehouse?.name || "Not assigned"}</p>
-                </div>
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Warehouse Location</label>
-                  <p className="text-lg font-mono text-slate-900 mt-2" data-testid="text-location">{product.warehouseLocation || "Not specified"}</p>
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Warehouse Locations */}
-            <div>
-              <ProductLocations productId={id!} productName={product.name} readOnly={true} />
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
         {/* Pricing & Costs */}
         <AccordionItem value="pricing" className="border-slate-200 rounded-xl bg-white shadow-sm">
           <AccordionTrigger className="px-4 py-3 hover:no-underline" data-testid="accordion-pricing">
@@ -697,6 +646,90 @@ export default function ProductDetails() {
           </AccordionContent>
         </AccordionItem>
 
+        {/* Stock & Warehouse Locations */}
+        <AccordionItem value="stock" className="border-slate-200 rounded-xl bg-white shadow-sm">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline" data-testid="accordion-stock">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-50 rounded-lg">
+                <Package className="h-5 w-5 text-green-600" />
+              </div>
+              <span className="text-lg font-semibold text-slate-900">Stock & Warehouse Locations</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4 space-y-8 pt-2">
+            {/* Stock Summary */}
+            <div>
+              <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4">Stock Summary</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Current Quantity</label>
+                  <p className="text-2xl font-bold text-slate-900 mt-2" data-testid="text-quantity">{product.quantity}</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Unit</label>
+                  <p className="text-2xl font-bold text-slate-900 mt-2" data-testid="text-unit">{product.unit || 'units'}</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Low Stock Alert</label>
+                  <p className="text-2xl font-bold text-slate-900 mt-2" data-testid="text-low-stock">{product.lowStockAlert || 5}</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Barcode</label>
+                  <p className="text-lg font-mono text-slate-900 mt-2" data-testid="text-barcode-detail">{product.barcode || "Not set"}</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Warehouse</label>
+                  <p className="text-lg text-slate-900 mt-2" data-testid="text-warehouse">{warehouse?.name || "Not assigned"}</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Warehouse Location</label>
+                  <p className="text-lg font-mono text-slate-900 mt-2" data-testid="text-location">{product.warehouseLocation || "Not specified"}</p>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Warehouse Locations */}
+            <div>
+              <ProductLocations productId={id!} productName={product.name} readOnly={true} />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Variants */}
+        <AccordionItem value="variants" className="border-slate-200 rounded-xl bg-white shadow-sm">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline" data-testid="accordion-variants">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-cyan-50 rounded-lg">
+                <Box className="h-5 w-5 text-cyan-600" />
+              </div>
+              <span className="text-lg font-semibold text-slate-900">Product Variants</span>
+              {variantsLoading && <Skeleton className="h-5 w-16 ml-2" />}
+              {!variantsLoading && variants.length > 0 && (
+                <Badge variant="secondary" className="ml-2">{variants.length} variants</Badge>
+              )}
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            {variantsLoading ? (
+              <div className="space-y-2 pt-2">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-32 w-full" />
+              </div>
+            ) : variants.length > 0 ? (
+              <div className="pt-2">
+                <ProductVariants productId={id!} />
+              </div>
+            ) : (
+              <div className="text-center py-12 text-slate-500">
+                <Box className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="font-medium">No variants configured</p>
+              </div>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+
         {/* Supplier Information */}
         {supplier && (
           <AccordionItem value="supplier" className="border-slate-200 rounded-xl bg-white shadow-sm">
@@ -758,39 +791,6 @@ export default function ProductDetails() {
             </AccordionContent>
           </AccordionItem>
         )}
-
-        {/* Variants */}
-        <AccordionItem value="variants" className="border-slate-200 rounded-xl bg-white shadow-sm">
-          <AccordionTrigger className="px-4 py-3 hover:no-underline" data-testid="accordion-variants">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-cyan-50 rounded-lg">
-                <Box className="h-5 w-5 text-cyan-600" />
-              </div>
-              <span className="text-lg font-semibold text-slate-900">Product Variants</span>
-              {variantsLoading && <Skeleton className="h-5 w-16 ml-2" />}
-              {!variantsLoading && variants.length > 0 && (
-                <Badge variant="secondary" className="ml-2">{variants.length} variants</Badge>
-              )}
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="px-4 pb-4">
-            {variantsLoading ? (
-              <div className="space-y-2 pt-2">
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-32 w-full" />
-              </div>
-            ) : variants.length > 0 ? (
-              <div className="pt-2">
-                <ProductVariants productId={id!} />
-              </div>
-            ) : (
-              <div className="text-center py-12 text-slate-500">
-                <Box className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p className="font-medium">No variants configured</p>
-              </div>
-            )}
-          </AccordionContent>
-        </AccordionItem>
 
         {/* Packing & Shipping Details */}
         <AccordionItem value="packing" className="border-slate-200 rounded-xl bg-white shadow-sm">
