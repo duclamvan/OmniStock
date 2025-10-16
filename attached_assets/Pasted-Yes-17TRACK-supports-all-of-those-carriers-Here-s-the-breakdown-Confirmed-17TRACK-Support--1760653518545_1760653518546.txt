@@ -1,0 +1,110 @@
+Yes! 17TRACK supports all of those carriers. Here's the breakdown:
+
+## ✅ Confirmed 17TRACK Support
+
+**German Carriers:**
+- **DHL DE** - Full support (slug: `dhl-germany`)
+- **Deutsche Post** - Full support (slug: `deutsche-post`)
+- **GLS Germany** - Full support (slug: `gls-germany`)
+
+**Czech Carriers:**
+- **PPL CZ** - Full support (slug: `ppl-cz`)
+- **GLS Czech** - Full support (slug: `gls-czech`)
+
+## How to Use Them
+
+```javascript
+// 17TRACK with your specific carriers
+const track17 = axios.create({
+  baseURL: 'https://api.17track.net/track/v2',
+  headers: {
+    '17token': process.env.TRACK17_API_KEY
+  }
+});
+
+// Track a DHL Germany package
+const tracking = await track17.post('/register', {
+  number: 'YOUR_TRACKING_NUMBER',
+  carrier: 'dhl-germany', // or 'ppl-cz', 'gls-czech', etc
+  auto_detect: false
+});
+
+// Or let it auto-detect the carrier
+const autoTracking = await track17.post('/register', {
+  number: 'YOUR_TRACKING_NUMBER',
+  auto_detect: true // It'll figure out if it's PPL, GLS, DHL etc
+});
+```
+
+## The Full Czech/German Coverage
+
+17TRACK also supports these related carriers you might need:
+- **Česká pošta** (Czech Post) - `ceska-posta`
+- **DPD CZ** - `dpd-cz`
+- **DPD DE** - `dpd-de`
+- **Hermes DE** - `hermes-de`
+- **UPS** - `ups` (works for both regions)
+- **FedEx** - `fedex` (works for both regions)
+- **Zásilkovna** - `zasilkovna`
+
+## Pricing Reality Check
+
+17TRACK for your volume would be:
+- **Free tier**: 100 trackings/month
+- **Basic**: $9/month for 1000 trackings
+- **Pro**: $35/month for 10,000 trackings
+- **API calls**: About $0.01-0.02 per tracking after that
+
+Compare to AfterShip:
+- Same 10,000 trackings would be like $200+/month
+
+## Pro Tips for Your Setup
+
+1. **Use auto-detect** - Works great for these carriers
+2. **Batch tracking** - Can register up to 40 tracking numbers in one API call
+3. **Webhooks available** - Real-time updates for status changes
+4. **Status normalization** - They standardize status across all carriers (delivered, transit, pickup, etc)
+
+## Quick Integration for Replit
+
+```javascript
+// Add to your .env
+TRACK17_API_KEY=your_api_key_here
+
+// Simple tracking endpoint
+app.post('/api/track-shipment', async (req, res) => {
+  const { trackingNumber, carrier } = req.body;
+  
+  try {
+    // Register for tracking
+    const response = await track17.post('/register', {
+      number: trackingNumber,
+      carrier: carrier || null,
+      auto_detect: !carrier
+    });
+    
+    // Get tracking info
+    const tracking = await track17.post('/gettrackinfo', {
+      numbers: [trackingNumber]
+    });
+    
+    res.json(tracking.data);
+  } catch (error) {
+    console.error('Tracking failed:', error);
+    res.status(500).json({ error: 'Tracking failed' });
+  }
+});
+```
+
+## Should You Use It?
+
+For your Czech + German shipping needs, 17TRACK is actually perfect:
+- ✅ All your carriers supported
+- ✅ 10x cheaper than AfterShip
+- ✅ Good API documentation
+- ✅ Auto-detect works well for EU carriers
+- ⚠️ Just remember it's Chinese-owned (data sovereignty)
+
+If GDPR is super critical, maybe stick with Sendcloud or Packeta. But for pure functionality and price, 17TRACK beats AfterShip for your carrier mix.
+
+Want me to help you set up the webhook endpoint for real-time tracking updates?

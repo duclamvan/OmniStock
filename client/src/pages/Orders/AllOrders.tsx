@@ -49,12 +49,6 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [ordersToDelete, setOrdersToDelete] = useState<any[]>([]);
-  
-  // Load saved expand preference from localStorage
-  const [expandAll, setExpandAll] = useState(() => {
-    const saved = localStorage.getItem('ordersExpandAll');
-    return saved === 'true';
-  });
 
   // Prevent initial scroll to top and restore position
   useEffect(() => {
@@ -98,12 +92,6 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     profit: true,
     tracking: true,
   });
-  
-  // Save expand preference to localStorage
-  const handleExpandAllChange = (checked: boolean) => {
-    setExpandAll(checked);
-    localStorage.setItem('ordersExpandAll', checked.toString());
-  };
 
   // Toggle view mode and save to localStorage
   const handleViewModeChange = (mode: 'normal' | 'compact') => {
@@ -447,8 +435,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     if (filter !== 'to_fulfill' || !filteredOrders.length) return null;
 
     const totalOrders = filteredOrders.length;
-    const totalRevenue = filteredOrders.reduce((sum, order) => sum + parseFloat(order.grandTotal || '0'), 0);
-    const totalProfit = filteredOrders.reduce((sum, order) => sum + calculateOrderProfit(order), 0);
+    const totalRevenue = filteredOrders.reduce((sum: number, order: any) => sum + parseFloat(order.grandTotal || '0'), 0);
+    const totalProfit = filteredOrders.reduce((sum: number, order: any) => sum + calculateOrderProfit(order), 0);
 
     // Calculate new vs returning customers
     const customerIds = new Set<string>();
@@ -603,11 +591,88 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       header: "Items",
       sortable: false,
       cell: (order) => (
-        <div className="text-sm text-slate-600">
-          {order.items?.length || 0}
+        <div className="py-2 px-3 min-w-[400px]">
+          {/* Order Items */}
+          <div className="space-y-1.5 mb-3">
+            {order.items?.map((item: any, index: number) => (
+              <div
+                key={item.id || index}
+                className="flex items-center gap-2 p-2 bg-gradient-to-r from-slate-50 to-white rounded-md border border-slate-200 hover:border-blue-300 transition-colors"
+              >
+                {/* Product Image */}
+                <div className="flex-shrink-0 w-8 h-8 bg-white rounded border border-slate-200 flex items-center justify-center overflow-hidden">
+                  {item.productImage ? (
+                    <img 
+                      src={item.productImage} 
+                      alt={item.productName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Package className="h-4 w-4 text-slate-400" />
+                  )}
+                </div>
+
+                {/* Product Info */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-xs text-slate-900 truncate">
+                    {item.productName}
+                  </p>
+                  <p className="text-[10px] text-slate-500">
+                    {item.sku || 'N/A'} • Qty: {item.quantity}
+                  </p>
+                </div>
+
+                {/* Price */}
+                <div className="text-right flex-shrink-0">
+                  <p className="font-semibold text-xs text-slate-900">
+                    {formatCurrency(item.total || 0, order.currency || 'EUR')}
+                  </p>
+                  <p className="text-[10px] text-slate-500">
+                    {formatCurrency(item.price || 0, order.currency || 'EUR')} each
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Order Summary */}
+          <div className="pt-2 border-t border-slate-200 space-y-1 bg-gradient-to-br from-blue-50/50 to-slate-50/30 rounded-lg p-2">
+            <div className="flex justify-between text-[11px]">
+              <span className="text-slate-600 font-medium">Subtotal</span>
+              <span className="font-semibold text-slate-900">
+                {formatCurrency(order.subtotal || 0, order.currency || 'EUR')}
+              </span>
+            </div>
+            {order.discountValue > 0 && (
+              <div className="flex justify-between text-[11px]">
+                <span className="text-slate-600 font-medium">Discount</span>
+                <span className="font-semibold text-green-600">
+                  -{formatCurrency(
+                    order.discountType === 'rate' 
+                      ? (order.subtotal * order.discountValue / 100) 
+                      : order.discountValue || 0, 
+                    order.currency || 'EUR'
+                  )}
+                </span>
+              </div>
+            )}
+            {order.shippingCost > 0 && (
+              <div className="flex justify-between text-[11px]">
+                <span className="text-slate-600 font-medium">Shipping</span>
+                <span className="font-semibold text-slate-900">
+                  {formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between text-xs font-bold border-t border-slate-300 pt-1.5 mt-1">
+              <span className="text-slate-900">Total</span>
+              <span className="text-blue-600">
+                {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
+              </span>
+            </div>
+          </div>
         </div>
       ),
-      className: "text-center",
     },
     {
       key: "total",
@@ -852,19 +917,6 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                   </Button>
                 </div>
                 {viewMode === 'normal' && (
-                  <>
-                    <Label htmlFor="expand-all" className="text-sm text-slate-600 cursor-pointer">
-                      {expandAll ? 'Collapse All' : 'Expand All'}
-                    </Label>
-                    <Switch
-                      id="expand-all"
-                      checked={expandAll}
-                      onCheckedChange={handleExpandAllChange}
-                      className="data-[state=checked]:bg-blue-600"
-                    />
-                  </>
-                )}
-                {viewMode === 'normal' && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -906,7 +958,6 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               getRowKey={(order) => order.id}
               itemsPerPageOptions={[10, 20, 50, 100]}
               defaultItemsPerPage={20}
-              defaultExpandAll={expandAll}
               onRowClick={(order) => {
                 sessionStorage.setItem('orderDetailsReferrer', location);
                 navigate(`/orders/${order.id}`);
@@ -955,114 +1006,6 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                 </div>
               ) : null
             )}
-            expandable={{
-              render: (order) => (
-                <div className="px-6 py-4 bg-slate-50 border-t border-slate-200">
-                  <div className="space-y-4">
-                    {/* Header */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Package className="h-5 w-5 text-blue-600" />
-                        <h4 className="text-base font-semibold text-slate-900">
-                          Order Items
-                        </h4>
-                        <Badge variant="secondary" className="text-xs">
-                          {order.items?.length || 0}
-                        </Badge>
-                      </div>
-                      <Link href={`/orders/${order.id}`}>
-                        <Button size="sm" variant="outline" className="gap-2">
-                          <Eye className="h-4 w-4" />
-                          View Details
-                        </Button>
-                      </Link>
-                    </div>
-
-                    {/* Order Items - Clean List */}
-                    <div className="space-y-2">
-                      {order.items?.map((item: any, index: number) => (
-                        <div
-                          key={item.id || index}
-                          className="flex items-center gap-3 p-3 bg-white rounded-md border border-slate-200"
-                        >
-                          {/* Product Image */}
-                          <div className="flex-shrink-0 w-10 h-10 bg-slate-50 rounded border border-slate-200 flex items-center justify-center overflow-hidden">
-                            {item.productImage ? (
-                              <img 
-                                src={item.productImage} 
-                                alt={item.productName}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <Package className="h-5 w-5 text-slate-400" />
-                            )}
-                          </div>
-
-                          {/* Product Info */}
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm text-slate-900">
-                              {item.productName}
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              {item.sku || 'N/A'} • Qty: {item.quantity}
-                            </p>
-                          </div>
-
-                          {/* Price */}
-                          <div className="text-right flex-shrink-0">
-                            <p className="font-semibold text-sm text-slate-900">
-                              {formatCurrency(item.total || 0, order.currency || 'EUR')}
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              {formatCurrency(item.price || 0, order.currency || 'EUR')} each
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Order Summary */}
-                    <div className="flex justify-end pt-3 border-t border-slate-200">
-                      <div className="w-full max-w-sm space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-slate-600">Subtotal</span>
-                          <span className="font-medium text-slate-900">
-                            {formatCurrency(order.subtotal || 0, order.currency || 'EUR')}
-                          </span>
-                        </div>
-                        {order.discountValue > 0 && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-slate-600">Discount</span>
-                            <span className="font-medium text-green-600">
-                              -{formatCurrency(
-                                order.discountType === 'rate' 
-                                  ? (order.subtotal * order.discountValue / 100) 
-                                  : order.discountValue || 0, 
-                                order.currency || 'EUR'
-                              )}
-                            </span>
-                          </div>
-                        )}
-                        {order.shippingCost > 0 && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-slate-600">Shipping</span>
-                            <span className="font-medium text-slate-900">
-                              {formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}
-                            </span>
-                          </div>
-                        )}
-                        <div className="flex justify-between text-base font-bold border-t border-slate-200 pt-2">
-                          <span className="text-slate-900">Total</span>
-                          <span className="text-slate-900">
-                            {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ),
-            }}
             />
           ) : (
             <div className="space-y-1">
@@ -1127,7 +1070,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                             {(() => {
                               const customerName = order.customer?.name || 'N/A';
                               // Generate consistent color based on customer name hash
-                              const hash = customerName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                              const hash = customerName.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
                               const colors = [
                                 'text-blue-600',
                                 'text-emerald-600', 
