@@ -56,18 +56,6 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     return saved === 'true';
   });
 
-  // Scroll position restoration
-  useEffect(() => {
-    const savedScrollPosition = sessionStorage.getItem('ordersScrollPosition');
-    if (savedScrollPosition) {
-      // Use setTimeout to ensure DOM is ready
-      setTimeout(() => {
-        window.scrollTo(0, parseInt(savedScrollPosition, 10));
-        sessionStorage.removeItem('ordersScrollPosition');
-      }, 100);
-    }
-  }, []);
-
   // Save scroll position before navigating away
   useEffect(() => {
     const saveScrollPosition = () => {
@@ -159,6 +147,25 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       });
     }
   }, [error, toast]);
+
+  // Scroll position restoration - wait for data to load
+  useEffect(() => {
+    if (!isLoading && orders.length > 0) {
+      const savedScrollPosition = sessionStorage.getItem('ordersScrollPosition');
+      if (savedScrollPosition) {
+        // Use requestAnimationFrame for better timing after render
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            window.scrollTo({
+              top: parseInt(savedScrollPosition, 10),
+              behavior: 'instant' as ScrollBehavior
+            });
+            sessionStorage.removeItem('ordersScrollPosition');
+          });
+        });
+      }
+    }
+  }, [isLoading, orders]);
 
   const updateOrderMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
