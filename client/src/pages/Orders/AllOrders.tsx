@@ -86,37 +86,17 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     return (saved === 'compact' ? 'compact' : 'normal') as 'normal' | 'compact';
   });
 
-  // Column visibility state with localStorage persistence (v2 - fresh start with new columns)
-  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
-    const defaultColumns = {
-      order: true,
-      customer: true,
-      status: true,
-      payment: true,
-      date: true,
-      items: true,
-      total: true,
-      profit: true,
-      tracking: true,
-    };
-    
-    const saved = localStorage.getItem('ordersVisibleColumns_v2');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // Start with defaults (all visible), then apply only saved preferences for existing columns
-        const merged = { ...defaultColumns };
-        for (const key in parsed) {
-          if (key in defaultColumns) {
-            merged[key] = parsed[key];
-          }
-        }
-        return merged;
-      } catch {
-        return defaultColumns;
-      }
-    }
-    return defaultColumns;
+  // Column visibility state - all columns visible by default (localStorage disabled for now)
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
+    order: true,
+    customer: true,
+    status: true,
+    payment: true,
+    date: true,
+    items: true,
+    total: true,
+    profit: true,
+    tracking: true,
   });
   
   // Save expand preference to localStorage
@@ -131,34 +111,10 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     localStorage.setItem('ordersViewMode', mode);
   };
 
-  // Toggle column visibility
+  // Toggle column visibility (no localStorage persistence for now)
   const toggleColumnVisibility = (columnKey: string) => {
-    const updated = { ...visibleColumns, [columnKey]: !visibleColumns[columnKey] };
-    setVisibleColumns(updated);
-    localStorage.setItem('ordersVisibleColumns_v2', JSON.stringify(updated));
+    setVisibleColumns({ ...visibleColumns, [columnKey]: !visibleColumns[columnKey] });
   };
-
-  // Clear old column visibility settings on mount
-  useEffect(() => {
-    const oldKey = localStorage.getItem('ordersVisibleColumns');
-    if (oldKey) {
-      localStorage.removeItem('ordersVisibleColumns');
-      // Force all columns to be visible by resetting to defaults
-      const allVisible = {
-        order: true,
-        customer: true,
-        status: true,
-        payment: true,
-        date: true,
-        items: true,
-        total: true,
-        profit: true,
-        tracking: true,
-      };
-      setVisibleColumns(allVisible);
-      localStorage.setItem('ordersVisibleColumns_v2', JSON.stringify(allVisible));
-    }
-  }, []);
 
   const { data: orders = [], isLoading, error } = useQuery({
     queryKey: filter ? ['/api/orders', 'status', filter] : ['/api/orders'],
