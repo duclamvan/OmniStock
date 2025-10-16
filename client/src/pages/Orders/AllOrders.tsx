@@ -588,63 +588,6 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       ),
     },
     {
-      key: "items",
-      header: "Items",
-      sortable: false,
-      cell: (order) => (
-        <div className="py-1 min-w-[280px] max-w-[400px]">
-          {/* Order Items - Compact Text Style */}
-          {order.items && order.items.length > 0 && (
-            <div className="space-y-0.5 mb-2 text-xs">
-              {order.items.map((item: any, index: number) => (
-                <div key={item.id || index} className="flex items-center justify-between text-slate-700">
-                  <span className="truncate mr-2">
-                    <span className="font-medium">{item.quantity}×</span> {item.productName}
-                    {item.sku && <span className="text-slate-500"> ({item.sku})</span>}
-                    <span className="text-slate-500"> · {formatCurrency(item.price || 0, order.currency || 'EUR')}/ea</span>
-                  </span>
-                  <span className="text-slate-900 font-medium whitespace-nowrap">
-                    {formatCurrency(item.total || 0, order.currency || 'EUR')}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Order Summary - Compact */}
-          <div className="pt-1.5 border-t border-slate-200 space-y-0.5 text-[11px]">
-            <div className="flex justify-between text-slate-600">
-              <span>Subtotal</span>
-              <span className="font-medium">{formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</span>
-            </div>
-            {order.discountValue > 0 && (
-              <div className="flex justify-between text-green-600">
-                <span>Discount</span>
-                <span className="font-medium">
-                  -{formatCurrency(
-                    order.discountType === 'rate' 
-                      ? (order.subtotal * order.discountValue / 100) 
-                      : order.discountValue || 0, 
-                    order.currency || 'EUR'
-                  )}
-                </span>
-              </div>
-            )}
-            {order.shippingCost > 0 && (
-              <div className="flex justify-between text-slate-600">
-                <span>Shipping</span>
-                <span className="font-medium">{formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</span>
-              </div>
-            )}
-            <div className="flex justify-between text-xs font-bold border-t border-slate-300 pt-1 mt-1">
-              <span className="text-slate-900">Total</span>
-              <span className="text-blue-600">{formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</span>
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
       key: "total",
       header: "Total",
       sortable: true,
@@ -928,6 +871,83 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               getRowKey={(order) => order.id}
               itemsPerPageOptions={[10, 20, 50, 100]}
               defaultItemsPerPage={20}
+              expandable={{
+                render: (order) => (
+                  <div className="space-y-4 max-w-4xl">
+                    {/* Order Items */}
+                    {order.items && order.items.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-slate-900 mb-3">Order Items</h4>
+                        <div className="space-y-2">
+                          {order.items.map((item: any, index: number) => (
+                            <div
+                              key={item.id || index}
+                              className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
+                            >
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm text-slate-900">
+                                  <span className="text-blue-600">{item.quantity}×</span> {item.productName}
+                                </p>
+                                {item.sku && (
+                                  <p className="text-xs text-slate-500 mt-0.5">SKU: {item.sku}</p>
+                                )}
+                              </div>
+                              <div className="text-right ml-4">
+                                <p className="font-semibold text-sm text-slate-900">
+                                  {formatCurrency(item.total || 0, order.currency || 'EUR')}
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                  {formatCurrency(item.price || 0, order.currency || 'EUR')} each
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Order Summary */}
+                    <div className="bg-gradient-to-br from-blue-50 to-slate-50 rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-slate-900 mb-3">Order Summary</h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-600">Subtotal</span>
+                          <span className="font-medium text-slate-900">
+                            {formatCurrency(order.subtotal || 0, order.currency || 'EUR')}
+                          </span>
+                        </div>
+                        {order.discountValue > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-600">Discount</span>
+                            <span className="font-medium text-green-600">
+                              -{formatCurrency(
+                                order.discountType === 'rate' 
+                                  ? (order.subtotal * order.discountValue / 100) 
+                                  : order.discountValue || 0, 
+                                order.currency || 'EUR'
+                              )}
+                            </span>
+                          </div>
+                        )}
+                        {order.shippingCost > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-600">Shipping</span>
+                            <span className="font-medium text-slate-900">
+                              {formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-base font-bold border-t border-slate-300 pt-2 mt-2">
+                          <span className="text-slate-900">Total</span>
+                          <span className="text-blue-600">
+                            {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ),
+              }}
               onRowClick={(order) => {
                 sessionStorage.setItem('orderDetailsReferrer', location);
                 navigate(`/orders/${order.id}`);
