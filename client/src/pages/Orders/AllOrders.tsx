@@ -952,14 +952,15 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             {(() => {
-                              const orderType = order.orderId?.split('-')[0] || 'ORD';
-                              const typeColors: Record<string, string> = {
-                                'ORD': 'bg-blue-500',
-                                'POS': 'bg-green-500',
-                                'SER': 'bg-purple-500',
-                                'PRE': 'bg-orange-500',
+                              // Color based on order status
+                              const statusColors: Record<string, string> = {
+                                'to_fulfill': 'bg-blue-500',      // Blue - Action needed
+                                'ready_to_ship': 'bg-amber-500',  // Amber - Ready to go
+                                'shipped': 'bg-green-500',        // Green - Completed
+                                'pending': 'bg-slate-400',        // Gray - Waiting
+                                'cancelled': 'bg-red-500',        // Red - Cancelled
                               };
-                              const bulletColor = typeColors[orderType] || 'bg-slate-500';
+                              const bulletColor = statusColors[order.status] || 'bg-slate-500';
                               
                               return (
                                 <div className="flex items-center gap-1.5">
