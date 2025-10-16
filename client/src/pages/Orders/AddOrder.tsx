@@ -1840,40 +1840,6 @@ export default function AddOrder() {
                   </div>
                 </div>
 
-                {/* Contact Information */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="customerEmail">Email</Label>
-                    <Input
-                      id="customerEmail"
-                      type="email"
-                      value={newCustomer.email}
-                      onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
-                      placeholder="email@example.com"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="customerPhone">Phone</Label>
-                    <Input
-                      id="customerPhone"
-                      value={newCustomer.phone}
-                      onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
-                      placeholder="Type here"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="company">Company</Label>
-                    <Input
-                      id="company"
-                      value={newCustomer.company}
-                      onChange={(e) => setNewCustomer({ ...newCustomer, company: e.target.value })}
-                      placeholder="Type here"
-                    />
-                  </div>
-                </div>
-
-                <Separator className="my-6" />
-
                 {/* Smart Paste */}
                 <div className="space-y-2">
                   <Label htmlFor="rawNewCustomerAddress">Smart Paste</Label>
@@ -2029,6 +1995,43 @@ export default function AddOrder() {
                       />
                     </div>
                   </div>
+                </div>
+
+                <Separator className="my-6" />
+
+                {/* Contact Information - Below Shipping Address */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="customerEmail">Email</Label>
+                    <Input
+                      id="customerEmail"
+                      type="email"
+                      value={newCustomer.email}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                      placeholder="email@example.com"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="customerPhone">Phone</Label>
+                    <Input
+                      id="customerPhone"
+                      value={newCustomer.phone}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                      placeholder="Type here"
+                    />
+                  </div>
+                </div>
+
+                <Separator className="my-6" />
+
+                <div>
+                  <Label htmlFor="company">Company</Label>
+                  <Input
+                    id="company"
+                    value={newCustomer.company}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, company: e.target.value })}
+                    placeholder="Type here"
+                  />
                 </div>
 
                 {/* Add customer to order button */}
