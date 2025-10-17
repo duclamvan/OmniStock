@@ -12,6 +12,7 @@ import {
   insertCustomerSchema,
   insertCustomerBillingAddressSchema,
   insertSupplierSchema,
+  insertWarehouseFinancialContractSchema,
   insertProductSchema,
   insertProductVariantSchema,
   insertProductLocationSchema,
@@ -773,6 +774,101 @@ Important:
     } catch (error) {
       console.error("Error deleting warehouse file:", error);
       res.status(500).json({ message: "Failed to delete warehouse file" });
+    }
+  });
+
+  // Warehouse financial contracts endpoints
+  app.get('/api/warehouses/:warehouseId/financial-contracts', async (req, res) => {
+    try {
+      const contracts = await storage.getWarehouseFinancialContracts(req.params.warehouseId);
+      res.json(contracts);
+    } catch (error) {
+      console.error("Error fetching warehouse financial contracts:", error);
+      res.status(500).json({ message: "Failed to fetch warehouse financial contracts" });
+    }
+  });
+
+  app.get('/api/financial-contracts/:id', async (req, res) => {
+    try {
+      const contract = await storage.getWarehouseFinancialContractById(req.params.id);
+      if (!contract) {
+        return res.status(404).json({ message: "Financial contract not found" });
+      }
+      res.json(contract);
+    } catch (error) {
+      console.error("Error fetching financial contract:", error);
+      res.status(500).json({ message: "Failed to fetch financial contract" });
+    }
+  });
+
+  app.post('/api/warehouses/:warehouseId/financial-contracts', async (req: any, res) => {
+    try {
+      const data = insertWarehouseFinancialContractSchema.parse({
+        ...req.body,
+        warehouseId: req.params.warehouseId
+      });
+      const contract = await storage.createWarehouseFinancialContract(data);
+
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'created',
+        entityType: 'warehouse_financial_contract',
+        entityId: contract.id,
+        description: `Created financial contract: ${contract.contractType}`,
+      });
+
+      res.json(contract);
+    } catch (error) {
+      console.error("Error creating financial contract:", error);
+      res.status(500).json({ message: "Failed to create financial contract" });
+    }
+  });
+
+  app.patch('/api/financial-contracts/:id', async (req: any, res) => {
+    try {
+      const updates = req.body;
+      const contract = await storage.updateWarehouseFinancialContract(req.params.id, updates);
+      
+      if (!contract) {
+        return res.status(404).json({ message: "Financial contract not found" });
+      }
+
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated',
+        entityType: 'warehouse_financial_contract',
+        entityId: contract.id,
+        description: `Updated financial contract: ${contract.contractType}`,
+      });
+
+      res.json(contract);
+    } catch (error) {
+      console.error("Error updating financial contract:", error);
+      res.status(500).json({ message: "Failed to update financial contract" });
+    }
+  });
+
+  app.delete('/api/financial-contracts/:id', async (req: any, res) => {
+    try {
+      const contract = await storage.getWarehouseFinancialContractById(req.params.id);
+      if (!contract) {
+        return res.status(404).json({ message: "Financial contract not found" });
+      }
+
+      await storage.deleteWarehouseFinancialContract(req.params.id);
+
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'deleted',
+        entityType: 'warehouse_financial_contract',
+        entityId: req.params.id,
+        description: `Deleted financial contract: ${contract.contractType}`,
+      });
+
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting financial contract:", error);
+      res.status(500).json({ message: "Failed to delete financial contract" });
     }
   });
 

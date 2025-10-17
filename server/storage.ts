@@ -23,6 +23,7 @@ import {
   orderItems,
   warehouses,
   warehouseFiles,
+  warehouseFinancialContracts,
   services,
   serviceItems,
   preOrders,
@@ -82,6 +83,8 @@ import {
   type InsertWarehouse,
   type WarehouseFile,
   type InsertWarehouseFile,
+  type WarehouseFinancialContract,
+  type InsertWarehouseFinancialContract,
   type Service,
   type InsertService,
   type ServiceItem,
@@ -278,6 +281,13 @@ export interface IStorage {
   getWarehouseFileById(id: string): Promise<WarehouseFile | undefined>;
   createWarehouseFile(data: InsertWarehouseFile): Promise<WarehouseFile>;
   deleteWarehouseFile(fileId: string): Promise<boolean>;
+  
+  // Warehouse Financial Contracts
+  getWarehouseFinancialContracts(warehouseId: string): Promise<WarehouseFinancialContract[]>;
+  getWarehouseFinancialContractById(id: string): Promise<WarehouseFinancialContract | undefined>;
+  createWarehouseFinancialContract(data: InsertWarehouseFinancialContract): Promise<WarehouseFinancialContract>;
+  updateWarehouseFinancialContract(id: string, data: Partial<InsertWarehouseFinancialContract>): Promise<WarehouseFinancialContract>;
+  deleteWarehouseFinancialContract(id: string): Promise<boolean>;
   
   // Suppliers
   getSuppliers(): Promise<Supplier[]>;
@@ -2155,6 +2165,75 @@ export class DatabaseStorage implements IStorage {
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error('Error deleting warehouse file:', error);
+      return false;
+    }
+  }
+
+  async getWarehouseFinancialContracts(warehouseId: string): Promise<WarehouseFinancialContract[]> {
+    try {
+      const contracts = await db
+        .select()
+        .from(warehouseFinancialContracts)
+        .where(eq(warehouseFinancialContracts.warehouseId, warehouseId))
+        .orderBy(desc(warehouseFinancialContracts.createdAt));
+      return contracts;
+    } catch (error) {
+      console.error('Error fetching warehouse financial contracts:', error);
+      return [];
+    }
+  }
+
+  async getWarehouseFinancialContractById(id: string): Promise<WarehouseFinancialContract | undefined> {
+    try {
+      const [contract] = await db
+        .select()
+        .from(warehouseFinancialContracts)
+        .where(eq(warehouseFinancialContracts.id, id));
+      return contract || undefined;
+    } catch (error) {
+      console.error('Error fetching warehouse financial contract:', error);
+      return undefined;
+    }
+  }
+
+  async createWarehouseFinancialContract(data: InsertWarehouseFinancialContract): Promise<WarehouseFinancialContract> {
+    try {
+      const [contract] = await db
+        .insert(warehouseFinancialContracts)
+        .values(data)
+        .returning();
+      return contract;
+    } catch (error) {
+      console.error('Error creating warehouse financial contract:', error);
+      throw error;
+    }
+  }
+
+  async updateWarehouseFinancialContract(id: string, data: Partial<InsertWarehouseFinancialContract>): Promise<WarehouseFinancialContract> {
+    try {
+      const [updated] = await db
+        .update(warehouseFinancialContracts)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(warehouseFinancialContracts.id, id))
+        .returning();
+      if (!updated) {
+        throw new Error('Contract not found');
+      }
+      return updated;
+    } catch (error) {
+      console.error('Error updating warehouse financial contract:', error);
+      throw error;
+    }
+  }
+
+  async deleteWarehouseFinancialContract(id: string): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(warehouseFinancialContracts)
+        .where(eq(warehouseFinancialContracts.id, id));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting warehouse financial contract:', error);
       return false;
     }
   }
