@@ -2529,6 +2529,7 @@ export default function AddOrder() {
                                   onChange={(e) => updateOrderItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
                                   className="w-20 h-10 text-center"
                                   data-testid={`input-quantity-${item.id}`}
+                                  onFocus={(e) => e.target.select()}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                       e.preventDefault();
