@@ -9,7 +9,13 @@ import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
-import { Plus, Search, Edit, Trash2, Warehouse, MapPin, Package, Ruler, Building2, User } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Warehouse, MapPin, Package, Ruler, Building2, User, Settings, Check, MoreVertical } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +32,35 @@ export default function AllWarehouses() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedWarehouses, setSelectedWarehouses] = useState<any[]>([]);
+
+  // Column visibility state with localStorage persistence
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem('warehousesVisibleColumns');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return {};
+      }
+    }
+    return {
+      name: true,
+      itemCount: true,
+      floorArea: true,
+      type: true,
+      status: true,
+      location: true,
+      manager: true,
+      capacity: true,
+    };
+  });
+
+  // Toggle column visibility
+  const toggleColumnVisibility = (columnKey: string) => {
+    const newVisibility = { ...visibleColumns, [columnKey]: !visibleColumns[columnKey] };
+    setVisibleColumns(newVisibility);
+    localStorage.setItem('warehousesVisibleColumns', JSON.stringify(newVisibility));
+  };
 
   const { data: warehouses = [], isLoading, error } = useQuery<any[]>({
     queryKey: ['/api/warehouses'],
@@ -236,6 +271,11 @@ export default function AllWarehouses() {
     },
   ];
 
+  // Filter columns based on visibility
+  const visibleColumnsFiltered = columns.filter(col => 
+    col.key === 'actions' || visibleColumns[col.key] !== false
+  );
+
   // Bulk actions
   const bulkActions = [
     {
@@ -368,7 +408,7 @@ export default function AllWarehouses() {
           <div className="overflow-x-auto">
             <DataTable
               data={filteredWarehouses}
-              columns={columns}
+              columns={visibleColumnsFiltered}
               bulkActions={bulkActions}
               getRowKey={(warehouse) => warehouse.id}
               itemsPerPageOptions={[10, 20, 50, 100]}
@@ -392,6 +432,7 @@ export default function AllWarehouses() {
                                   variant={action.variant || "ghost"}
                                   onClick={() => action.action(selectedItems)}
                                   className="h-6 px-2 text-xs"
+                                  data-testid={`button-${action.label.toLowerCase().replace(' ', '-')}`}
                                 >
                                   {action.label}
                                 </Button>
@@ -402,6 +443,43 @@ export default function AllWarehouses() {
                         </>
                       )}
                     </div>
+                    
+                    {/* Column Visibility Settings */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          data-testid="button-column-settings"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <div className="px-2 py-1.5 text-sm font-semibold">Show Columns</div>
+                        {columns
+                          .filter(col => col.key !== 'actions')
+                          .map((column) => (
+                            <DropdownMenuItem
+                              key={column.key}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                toggleColumnVisibility(column.key);
+                              }}
+                              className="cursor-pointer"
+                              data-testid={`toggle-column-${column.key}`}
+                            >
+                              <div className="flex items-center justify-between w-full">
+                                <span>{column.header}</span>
+                                {visibleColumns[column.key] !== false && (
+                                  <Check className="h-4 w-4 text-blue-600" />
+                                )}
+                              </div>
+                            </DropdownMenuItem>
+                          ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               )}
