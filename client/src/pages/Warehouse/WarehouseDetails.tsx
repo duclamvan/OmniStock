@@ -275,122 +275,134 @@ export default function WarehouseDetails() {
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/warehouses")}
-            data-testid="button-back"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900">
-              <WarehouseIcon className="h-6 w-6 text-blue-600 dark:text-blue-300" />
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      {/* Header with Navigation */}
+      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/warehouses")}
+                data-testid="button-back"
+                className="hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+              <Separator orientation="vertical" className="h-8 hidden sm:block" />
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-sm">
+                  <WarehouseIcon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="text-warehouse-name">
+                    {warehouse.name}
+                  </h1>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 font-mono" data-testid="text-warehouse-id">{warehouse.id}</p>
+                </div>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="text-warehouse-name">
-                {warehouse.name}
-              </h1>
-              <p className="text-sm text-slate-600 dark:text-slate-400" data-testid="text-warehouse-id">{warehouse.id}</p>
+            <div className="flex items-center gap-2">
+              <Link href={`/warehouses/${warehouse.id}/mapping`}>
+                <Button variant="outline" size="sm" data-testid="button-warehouse-mapping" className="gap-2">
+                  <MapPin className="h-4 w-4" />
+                  <span className="hidden sm:inline">Mapping</span>
+                </Button>
+              </Link>
+              <Link href={`/warehouses/${warehouse.id}/edit`}>
+                <Button size="sm" data-testid="button-edit-warehouse" className="gap-2">
+                  <Edit className="h-4 w-4" />
+                  <span className="hidden sm:inline">Edit</span>
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href={`/warehouses/${warehouse.id}/mapping`}>
-            <Button variant="outline" size="sm" data-testid="button-warehouse-mapping">
-              <MapPin className="h-4 w-4 mr-2" />
-              Warehouse Mapping
-            </Button>
-          </Link>
-          <Link href={`/warehouses/${warehouse.id}/edit`}>
-            <Button size="sm" data-testid="button-edit-warehouse">
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Warehouse
-            </Button>
-          </Link>
+      </div>
+
+      {/* Overview KPI Cards */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all hover:border-emerald-300 dark:hover:border-emerald-700" data-testid="card-status">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2.5">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Status</p>
+                  {getStatusBadge(warehouse.status || 'active')}
+                </div>
+                <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800">
+                  <Building className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all hover:border-blue-300 dark:hover:border-blue-700" data-testid="card-type">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2.5">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Type</p>
+                  {getTypeBadge(warehouse.type || 'fulfillment')}
+                </div>
+                <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+                  <WarehouseIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all hover:border-violet-300 dark:hover:border-violet-700" data-testid="card-floor-area">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Floor Area</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="text-floor-area">
+                    {warehouse.floorArea ? `${warehouse.floorArea}` : '-'}
+                  </p>
+                  {warehouse.floorArea && <p className="text-xs text-slate-500 dark:text-slate-400">m²</p>}
+                </div>
+                <div className="p-2.5 rounded-lg bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800">
+                  <Package className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all hover:border-amber-300 dark:hover:border-amber-700" data-testid="card-capacity">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Capacity</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="text-capacity">
+                    {warehouse.capacity || '-'}
+                  </p>
+                  {warehouse.capacity && <p className="text-xs text-slate-500 dark:text-slate-400">units</p>}
+                </div>
+                <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800">
+                  <Hash className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="hover:shadow-md transition-shadow" data-testid="card-status">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Status</p>
-                {getStatusBadge(warehouse.status || 'active')}
-              </div>
-              <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
-                <Building className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="hover:shadow-md transition-shadow" data-testid="card-type">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Type</p>
-                {getTypeBadge(warehouse.type || 'fulfillment')}
-              </div>
-              <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
-                <WarehouseIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow" data-testid="card-floor-area">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Floor Area</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="text-floor-area">
-                  {warehouse.floorArea ? `${warehouse.floorArea} m²` : '-'}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-violet-50 dark:bg-violet-900/20">
-                <Package className="h-6 w-6 text-violet-600 dark:text-violet-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow" data-testid="card-capacity">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Capacity</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="text-capacity">
-                  {warehouse.capacity || '-'}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20">
-                <Hash className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Warehouse Information */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card data-testid="card-warehouse-info">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <WarehouseIcon className="h-5 w-5" />
-                Warehouse Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
+      {/* Main Content - Two Column Layout */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Primary Information */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Warehouse Details */}
+            <Card className="border-slate-200 dark:border-slate-800 shadow-sm" data-testid="card-warehouse-info">
+              <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <WarehouseIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  Warehouse Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Location</p>
@@ -841,6 +853,7 @@ export default function WarehouseDetails() {
               )}
             </CardContent>
           </Card>
+        </div>
         </div>
       </div>
 
