@@ -37,6 +37,7 @@ import {
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/currencyUtils";
 import {
   AlertDialog,
@@ -172,31 +173,57 @@ export default function EditWarehouse() {
 
   useEffect(() => {
     if (warehouse) {
+      const warehouseData = warehouse as any;
       form.reset({
-        name: warehouse.name || "",
-        location: warehouse.location || "",
-        status: (warehouse.status as any) || "active",
-        rentedFromDate: warehouse.rentedFromDate ? new Date(warehouse.rentedFromDate).toISOString().split('T')[0] : "",
-        expenseId: warehouse.expenseId?.toString() || "",
-        contact: warehouse.contact || "",
-        notes: warehouse.notes || "",
-        address: warehouse.address || "",
-        city: warehouse.city || "",
-        country: warehouse.country || "Czech Republic",
-        zipCode: warehouse.zipCode || "",
-        phone: warehouse.phone || "",
-        email: warehouse.email || "",
-        manager: warehouse.manager || "",
-        capacity: warehouse.capacity || 0,
-        type: (warehouse.type as any) || "branch",
-        floorArea: warehouse.floorArea ? parseFloat(warehouse.floorArea.toString()) : 0,
+        name: warehouseData.name || "",
+        location: warehouseData.location || "",
+        status: (warehouseData.status as any) || "active",
+        rentedFromDate: warehouseData.rented_from_date || warehouseData.rentedFromDate 
+          ? new Date(warehouseData.rented_from_date || warehouseData.rentedFromDate).toISOString().split('T')[0] 
+          : "",
+        expenseId: (warehouseData.expense_id || warehouseData.expenseId)?.toString() || "",
+        contact: warehouseData.contact || "",
+        notes: warehouseData.notes || "",
+        address: warehouseData.address || "",
+        city: warehouseData.city || "",
+        country: warehouseData.country || "Czech Republic",
+        zipCode: warehouseData.zip_code || warehouseData.zipCode || "",
+        phone: warehouseData.phone || "",
+        email: warehouseData.email || "",
+        manager: warehouseData.manager || "",
+        capacity: warehouseData.capacity || 0,
+        type: (warehouseData.type as any) || "branch",
+        floorArea: (warehouseData.floor_area || warehouseData.floorArea) 
+          ? parseFloat((warehouseData.floor_area || warehouseData.floorArea).toString()) 
+          : 0,
       });
     }
-  }, [warehouse, form]);
+  }, [warehouse]);
 
   const updateWarehouseMutation = useMutation({
-    mutationFn: (data: WarehouseFormData) => 
-      apiRequest('PATCH', `/api/warehouses/${id}`, data),
+    mutationFn: async (data: WarehouseFormData) => {
+      const transformedData = {
+        name: data.name,
+        location: data.location,
+        address: data.address,
+        city: data.city,
+        country: data.country,
+        zip_code: data.zipCode,
+        phone: data.phone,
+        email: data.email,
+        manager: data.manager,
+        capacity: data.capacity,
+        type: data.type,
+        status: data.status,
+        floor_area: data.floorArea?.toString(),
+        notes: data.notes,
+        contact: data.contact,
+        rented_from_date: data.rentedFromDate || null,
+        expense_id: data.expenseId ? parseInt(data.expenseId) : null,
+      };
+      const response = await apiRequest('PATCH', `/api/warehouses/${id}`, transformedData);
+      return await response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/warehouses'] });
       toast({
@@ -320,7 +347,7 @@ export default function EditWarehouse() {
         notes: editingContract.notes || "",
       });
     }
-  }, [editingContract, contractForm]);
+  }, [editingContract]);
 
   const handleGetUploadParameters = async () => {
     const response = await apiRequest('POST', '/api/objects/upload');
@@ -398,8 +425,68 @@ export default function EditWarehouse() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="p-6 max-w-6xl mx-auto space-y-6">
+        <div className="flex items-center justify-between border-b pb-4">
+          <Skeleton className="h-10 w-48" />
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-6 w-16" />
+            <Skeleton className="h-6 w-16" />
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-4 w-96" />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-4 w-64 mt-2" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-4 w-64 mt-2" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Skeleton className="h-10 w-full" />
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-32" />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }

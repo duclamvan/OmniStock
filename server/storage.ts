@@ -2076,27 +2076,32 @@ export class DatabaseStorage implements IStorage {
 
   async updateWarehouse(id: string, warehouse: any): Promise<Warehouse | undefined> {
     try {
-      const result = await db.execute(sql`
-        UPDATE warehouses 
-        SET name = ${warehouse.name},
-            location = ${warehouse.location},
-            address = ${warehouse.address},
-            city = ${warehouse.city},
-            country = ${warehouse.country},
-            zip_code = ${warehouse.zip_code},
-            phone = ${warehouse.phone},
-            email = ${warehouse.email},
-            manager = ${warehouse.manager},
-            capacity = ${warehouse.capacity},
-            type = ${warehouse.type},
-            status = ${warehouse.status},
-            floor_area = ${warehouse.floor_area},
-            code = ${warehouse.code},
-            notes = ${warehouse.notes}
-        WHERE id = ${id}
-        RETURNING *
-      `);
-      return result.rows[0] as Warehouse | undefined;
+      const updateData: any = {};
+      
+      if (warehouse.name !== undefined) updateData.name = warehouse.name;
+      if (warehouse.location !== undefined) updateData.location = warehouse.location;
+      if (warehouse.address !== undefined) updateData.address = warehouse.address;
+      if (warehouse.city !== undefined) updateData.city = warehouse.city;
+      if (warehouse.country !== undefined) updateData.country = warehouse.country;
+      if (warehouse.zip_code !== undefined) updateData.zipCode = warehouse.zip_code;
+      if (warehouse.phone !== undefined) updateData.phone = warehouse.phone;
+      if (warehouse.email !== undefined) updateData.email = warehouse.email;
+      if (warehouse.manager !== undefined) updateData.manager = warehouse.manager;
+      if (warehouse.capacity !== undefined) updateData.capacity = warehouse.capacity;
+      if (warehouse.type !== undefined) updateData.type = warehouse.type;
+      if (warehouse.status !== undefined) updateData.status = warehouse.status;
+      if (warehouse.floor_area !== undefined) updateData.floorArea = warehouse.floor_area;
+      if (warehouse.notes !== undefined) updateData.notes = warehouse.notes;
+      if (warehouse.contact !== undefined) updateData.contact = warehouse.contact;
+      if (warehouse.rented_from_date !== undefined) updateData.rentedFromDate = warehouse.rented_from_date;
+      if (warehouse.expense_id !== undefined) updateData.expenseId = warehouse.expense_id;
+      
+      const [updated] = await db
+        .update(warehouses)
+        .set(updateData)
+        .where(eq(warehouses.id, id))
+        .returning();
+      return updated;
     } catch (error) {
       console.error('Error updating warehouse:', error);
       return undefined;
