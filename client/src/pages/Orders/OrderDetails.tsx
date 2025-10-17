@@ -98,6 +98,17 @@ export default function OrderDetails() {
   const [priceValidTo, setPriceValidTo] = useState("");
   const [pickedItems, setPickedItems] = useState<Set<string>>(new Set());
   const [showPickingMode, setShowPickingMode] = useState(false);
+  const [showBadges, setShowBadges] = useState(() => {
+    const saved = localStorage.getItem('orderDetailsBadgesVisible');
+    return saved === null ? true : saved === 'true';
+  });
+
+  // Toggle badges visibility
+  const toggleBadges = () => {
+    const newValue = !showBadges;
+    setShowBadges(newValue);
+    localStorage.setItem('orderDetailsBadgesVisible', String(newValue));
+  };
 
   // Mutations for updating order status
   const updateOrderStatusMutation = useMutation({
@@ -1140,13 +1151,28 @@ export default function OrderDetails() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Link href={`/customers/${order.customer.id}`}>
-                    <p className="font-medium text-sm text-blue-600 hover:text-blue-800 cursor-pointer">
-                      {order.customer.name}
-                    </p>
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link href={`/customers/${order.customer.id}`}>
+                      <p className="font-medium text-sm text-blue-600 hover:text-blue-800 cursor-pointer">
+                        {order.customer.name}
+                      </p>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleBadges();
+                      }}
+                      className="h-6 w-6 p-0 text-slate-400 hover:text-slate-600 transition-colors"
+                      data-testid="button-toggle-badges"
+                    >
+                      <ChevronDown className={`h-4 w-4 transition-transform ${showBadges ? '' : 'rotate-180'}`} />
+                    </Button>
+                  </div>
                   
                   {/* Customer Badges with Popovers */}
+                  {showBadges && (
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
                     {/* VIP Badge */}
                     {order.customer.type === 'vip' && (
@@ -1393,6 +1419,7 @@ export default function OrderDetails() {
                         return badges;
                       })()}
                   </div>
+                  )}
                 </div>
                 
                 <div className="space-y-2 text-sm">

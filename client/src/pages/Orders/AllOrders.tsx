@@ -118,6 +118,19 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     setVisibleColumns({ ...visibleColumns, [columnKey]: !visibleColumns[columnKey] });
   };
 
+  // Badges visibility state with localStorage persistence
+  const [showBadges, setShowBadges] = useState(() => {
+    const saved = localStorage.getItem('orderDetailsBadgesVisible');
+    return saved === null ? true : saved === 'true';
+  });
+
+  // Toggle badges visibility and save to localStorage
+  const toggleBadges = () => {
+    const newValue = !showBadges;
+    setShowBadges(newValue);
+    localStorage.setItem('orderDetailsBadgesVisible', String(newValue));
+  };
+
   const { data: orders = [], isLoading, error } = useQuery({
     queryKey: filter ? ['/api/orders', 'status', filter] : ['/api/orders'],
     queryFn: async () => {
@@ -916,22 +929,36 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     {/* Customer Info Header */}
                     <div className="flex items-center gap-3 pb-3 border-b border-slate-200">
                       <div className="flex-1">
-                        {order.customerId ? (
-                          <Link 
-                            href={`/customers/${order.customerId}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="group text-base font-semibold text-slate-900 hover:text-blue-600 transition-colors inline-flex items-center gap-1"
+                        <div className="flex items-center gap-2">
+                          {order.customerId ? (
+                            <Link 
+                              href={`/customers/${order.customerId}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="group text-base font-semibold text-slate-900 hover:text-blue-600 transition-colors inline-flex items-center gap-1"
+                            >
+                              {order.customer?.name || 'Unknown Customer'}
+                              <ExternalLink className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </Link>
+                          ) : (
+                            <h3 className="text-base font-semibold text-slate-900">
+                              {order.customer?.name || 'Unknown Customer'}
+                            </h3>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleBadges();
+                            }}
+                            className="h-6 w-6 p-0 text-slate-400 hover:text-slate-600 transition-colors"
+                            data-testid="button-toggle-badges"
                           >
-                            {order.customer?.name || 'Unknown Customer'}
-                            <ExternalLink className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </Link>
-                        ) : (
-                          <h3 className="text-base font-semibold text-slate-900">
-                            {order.customer?.name || 'Unknown Customer'}
-                          </h3>
-                        )}
+                            <ChevronDown className={`h-4 w-4 transition-transform ${showBadges ? '' : 'rotate-180'}`} />
+                          </Button>
+                        </div>
+                        {showBadges && (
                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                          <TooltipProvider delayDuration={0}>
                             {/* VIP Badge */}
                             {order.customer?.type === 'vip' && (
                               <Popover>
@@ -1167,8 +1194,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                             
                             return badges;
                           })()}
-                        </TooltipProvider>
                         </div>
+                        )}
                       </div>
                     </div>
 
