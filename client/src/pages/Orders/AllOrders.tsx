@@ -11,6 +11,7 @@ import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
@@ -930,20 +931,20 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                           </h3>
                         )}
                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                          <TooltipProvider>
+                          <TooltipProvider delayDuration={0}>
                             {/* VIP Badge */}
                             {order.customer?.type === 'vip' && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 text-xs cursor-help">
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 text-xs cursor-pointer">
                                     <Star className="h-3 w-3 mr-1" />
                                     VIP
                                   </Badge>
-                                </TooltipTrigger>
-                                <TooltipContent>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-2" side="top">
                                   <p className="text-xs">Manually marked as VIP customer</p>
-                                </TooltipContent>
-                              </Tooltip>
+                                </PopoverContent>
+                              </Popover>
                             )}
                           
                             {/* Spending Tier Badges */}
@@ -951,45 +952,45 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                               const totalSpent = parseFloat(order.customer?.totalSpent || '0');
                               if (totalSpent >= 100000) {
                                 return (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-900 border-purple-300 text-xs cursor-help">
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-900 border-purple-300 text-xs cursor-pointer">
                                         <Gem className="h-3 w-3 mr-1" />
                                         Diamond
                                       </Badge>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-2" side="top">
                                       <p className="text-xs">Lifetime spending ≥ {formatCurrency(100000, order.currency || 'EUR')}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
+                                    </PopoverContent>
+                                  </Popover>
                                 );
                               } else if (totalSpent >= 50000) {
                                 return (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Badge className="bg-gradient-to-r from-slate-200 to-slate-100 text-slate-800 border-slate-300 text-xs cursor-help">
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Badge className="bg-gradient-to-r from-slate-200 to-slate-100 text-slate-800 border-slate-300 text-xs cursor-pointer">
                                         <Award className="h-3 w-3 mr-1" />
                                         Platinum
                                       </Badge>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-2" side="top">
                                       <p className="text-xs">Lifetime spending ≥ {formatCurrency(50000, order.currency || 'EUR')}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
+                                    </PopoverContent>
+                                  </Popover>
                                 );
                               } else if (totalSpent >= 25000) {
                                 return (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Badge className="bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border-amber-300 text-xs cursor-help">
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Badge className="bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border-amber-300 text-xs cursor-pointer">
                                         <Medal className="h-3 w-3 mr-1" />
                                         Gold
                                       </Badge>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-2" side="top">
                                       <p className="text-xs">Lifetime spending ≥ {formatCurrency(25000, order.currency || 'EUR')}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
+                                    </PopoverContent>
+                                  </Popover>
                                 );
                               }
                               return null;
@@ -997,58 +998,58 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                           
                             {/* Country-Specific TOP Badges */}
                             {order.customer?.customerRank === 'TOP10' && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Badge className="bg-yellow-50 text-yellow-700 border-yellow-300 text-xs cursor-help">
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Badge className="bg-yellow-50 text-yellow-700 border-yellow-300 text-xs cursor-pointer">
                                     <Trophy className="h-3 w-3 mr-1" />
                                     TOP 10{order.customer?.country ? ` in ${order.customer.country}` : ''}
                                   </Badge>
-                                </TooltipTrigger>
-                                <TooltipContent>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-2" side="top">
                                   <p className="text-xs">Top 10 customer by revenue{order.customer?.country ? ` in ${order.customer.country}` : ''}</p>
-                                </TooltipContent>
-                              </Tooltip>
+                                </PopoverContent>
+                              </Popover>
                             )}
                             {order.customer?.customerRank === 'TOP50' && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Badge className="bg-blue-50 text-blue-700 border-blue-300 text-xs cursor-help">
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Badge className="bg-blue-50 text-blue-700 border-blue-300 text-xs cursor-pointer">
                                     <Award className="h-3 w-3 mr-1" />
                                     TOP 50{order.customer?.country ? ` in ${order.customer.country}` : ''}
                                   </Badge>
-                                </TooltipTrigger>
-                                <TooltipContent>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-2" side="top">
                                   <p className="text-xs">Top 50 customer by revenue{order.customer?.country ? ` in ${order.customer.country}` : ''}</p>
-                                </TooltipContent>
-                              </Tooltip>
+                                </PopoverContent>
+                              </Popover>
                             )}
                             {order.customer?.customerRank === 'TOP100' && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Badge className="bg-slate-50 text-slate-700 border-slate-300 text-xs cursor-help">
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Badge className="bg-slate-50 text-slate-700 border-slate-300 text-xs cursor-pointer">
                                     <Star className="h-3 w-3 mr-1" />
                                     TOP 100{order.customer?.country ? ` in ${order.customer.country}` : ''}
                                   </Badge>
-                                </TooltipTrigger>
-                                <TooltipContent>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-2" side="top">
                                   <p className="text-xs">Top 100 customer by revenue{order.customer?.country ? ` in ${order.customer.country}` : ''}</p>
-                                </TooltipContent>
-                              </Tooltip>
+                                </PopoverContent>
+                              </Popover>
                             )}
                             
                             {/* Pay Later Badge */}
                             {order.paymentStatus === 'pay_later' && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Badge className="bg-purple-50 text-purple-700 border-purple-300 text-xs cursor-help">
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Badge className="bg-purple-50 text-purple-700 border-purple-300 text-xs cursor-pointer">
                                     <Clock className="h-3 w-3 mr-1" />
                                     Pay Later
                                   </Badge>
-                                </TooltipTrigger>
-                                <TooltipContent>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-2" side="top">
                                   <p className="text-xs">Payment scheduled for later</p>
-                                </TooltipContent>
-                              </Tooltip>
+                                </PopoverContent>
+                              </Popover>
                             )}
                           
                           {/* Customer Behavior Badges */}
@@ -1066,101 +1067,101 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                             // New Customer (first order within 30 days)
                             if (daysSinceFirstOrder !== null && daysSinceFirstOrder <= 30) {
                               badges.push(
-                                <Tooltip key="new">
-                                  <TooltipTrigger asChild>
-                                    <Badge className="bg-green-50 text-green-700 border-green-300 text-xs cursor-help">
+                                <Popover key="new">
+                                  <PopoverTrigger asChild>
+                                    <Badge className="bg-green-50 text-green-700 border-green-300 text-xs cursor-pointer">
                                       <Sparkles className="h-3 w-3 mr-1" />
                                       New Customer
                                     </Badge>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-2" side="top">
                                     <p className="text-xs">First order placed within the last 30 days</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                                  </PopoverContent>
+                                </Popover>
                               );
                             }
                             
                             // First Timer (only 1 order)
                             if (totalOrders === 1) {
                               badges.push(
-                                <Tooltip key="first">
-                                  <TooltipTrigger asChild>
-                                    <Badge className="bg-cyan-50 text-cyan-700 border-cyan-300 text-xs cursor-help">
+                                <Popover key="first">
+                                  <PopoverTrigger asChild>
+                                    <Badge className="bg-cyan-50 text-cyan-700 border-cyan-300 text-xs cursor-pointer">
                                       <Sparkles className="h-3 w-3 mr-1" />
                                       First Timer
                                     </Badge>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-2" side="top">
                                     <p className="text-xs">Has placed only 1 order so far</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                                  </PopoverContent>
+                                </Popover>
                               );
                             }
                             
                             // Super Loyal (10+ orders)
                             if (totalOrders >= 10) {
                               badges.push(
-                                <Tooltip key="superloyal">
-                                  <TooltipTrigger asChild>
-                                    <Badge className="bg-rose-50 text-rose-700 border-rose-300 text-xs cursor-help">
+                                <Popover key="superloyal">
+                                  <PopoverTrigger asChild>
+                                    <Badge className="bg-rose-50 text-rose-700 border-rose-300 text-xs cursor-pointer">
                                       <Heart className="h-3 w-3 mr-1" />
                                       Super Loyal
                                     </Badge>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-2" side="top">
                                     <p className="text-xs">Has placed 10+ orders ({totalOrders} orders total)</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                                  </PopoverContent>
+                                </Popover>
                               );
                             } 
                             // Loyal Customer (2-9 orders)
                             else if (totalOrders > 1) {
                               badges.push(
-                                <Tooltip key="loyal">
-                                  <TooltipTrigger asChild>
-                                    <Badge className="bg-indigo-50 text-indigo-700 border-indigo-300 text-xs cursor-help">
+                                <Popover key="loyal">
+                                  <PopoverTrigger asChild>
+                                    <Badge className="bg-indigo-50 text-indigo-700 border-indigo-300 text-xs cursor-pointer">
                                       <RefreshCw className="h-3 w-3 mr-1" />
                                       Loyal Customer
                                     </Badge>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-2" side="top">
                                     <p className="text-xs">Has placed {totalOrders} orders - coming back for more!</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                                  </PopoverContent>
+                                </Popover>
                               );
                             }
                             
                             // At Risk (no order in 90+ days, but has ordered before)
                             if (daysSinceLastOrder !== null && daysSinceLastOrder > 90 && totalOrders > 0) {
                               badges.push(
-                                <Tooltip key="risk">
-                                  <TooltipTrigger asChild>
-                                    <Badge className="bg-orange-50 text-orange-700 border-orange-300 text-xs cursor-help">
+                                <Popover key="risk">
+                                  <PopoverTrigger asChild>
+                                    <Badge className="bg-orange-50 text-orange-700 border-orange-300 text-xs cursor-pointer">
                                       <AlertTriangle className="h-3 w-3 mr-1" />
                                       At Risk
                                     </Badge>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-2" side="top">
                                     <p className="text-xs">No orders in {daysSinceLastOrder} days - may need re-engagement</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                                  </PopoverContent>
+                                </Popover>
                               );
                             }
                             
                             // High Value (avg order > 500)
                             if (avgOrderValue > 500) {
                               badges.push(
-                                <Tooltip key="highvalue">
-                                  <TooltipTrigger asChild>
-                                    <Badge className="bg-emerald-50 text-emerald-700 border-emerald-300 text-xs cursor-help">
+                                <Popover key="highvalue">
+                                  <PopoverTrigger asChild>
+                                    <Badge className="bg-emerald-50 text-emerald-700 border-emerald-300 text-xs cursor-pointer">
                                       <TrendingUp className="h-3 w-3 mr-1" />
                                       High Value
                                     </Badge>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-2" side="top">
                                     <p className="text-xs">Average order value: {formatCurrency(avgOrderValue, order.currency || 'EUR')}</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                                  </PopoverContent>
+                                </Popover>
                               );
                             }
                             
