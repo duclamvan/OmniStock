@@ -406,9 +406,9 @@ export default function ServiceDetails() {
                 
                 <Separator className="my-2" />
                 
-                <div className="flex justify-between items-center py-3 bg-slate-900 dark:bg-slate-800 text-white rounded px-4">
-                  <span className="text-base font-bold uppercase">Total Amount:</span>
-                  <span className="text-2xl font-bold" data-testid="text-total-cost">
+                <div className="flex justify-between items-center py-3 border-2 border-slate-900 dark:border-slate-300 rounded px-4">
+                  <span className="text-base font-bold uppercase text-slate-900 dark:text-white">Total Amount:</span>
+                  <span className="text-2xl font-bold text-slate-900 dark:text-white" data-testid="text-total-cost">
                     {formatCurrency(service.totalCost)}
                   </span>
                 </div>
