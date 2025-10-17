@@ -50,6 +50,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { insertServiceSchema } from "@shared/schema";
+import { formatCzechDate } from "@/lib/dateUtils";
 
 // Extend the schema for form validation
 const serviceFormSchema = insertServiceSchema.extend({
@@ -469,7 +470,7 @@ export default function AddService() {
                           data-testid="button-select-date"
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {form.watch("serviceDate") ? format(form.watch("serviceDate")!, "PPP") : "Select date"}
+                          {form.watch("serviceDate") ? formatCzechDate(form.watch("serviceDate")!) : "Select date"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">

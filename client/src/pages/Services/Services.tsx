@@ -30,6 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
+import { formatCzechDate } from "@/lib/dateUtils";
 
 interface Service {
   id: string;
@@ -126,12 +127,7 @@ export default function Services() {
   };
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return '—';
-    try {
-      return format(new Date(dateString), 'dd/MM/yyyy');
-    } catch {
-      return '—';
-    }
+    return formatCzechDate(dateString);
   };
 
   const truncateText = (text: string | null, maxLength: number = 50) => {
