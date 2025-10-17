@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
 import { 
   ArrowLeft, 
@@ -29,7 +30,10 @@ import {
   File as FileGeneric,
   ArrowUpDown,
   UploadCloud,
-  ScrollText
+  ScrollText,
+  Search,
+  Box,
+  Barcode
 } from "lucide-react";
 import { formatDate } from "@/lib/currencyUtils";
 import { useToast } from "@/hooks/use-toast";
@@ -58,6 +62,7 @@ export default function WarehouseDetails() {
   const [fileToDelete, setFileToDelete] = useState<WarehouseFile | null>(null);
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const { data: warehouse, isLoading: warehouseLoading } = useQuery<Warehouse>({
     queryKey: [`/api/warehouses/${id}`],
@@ -71,6 +76,11 @@ export default function WarehouseDetails() {
 
   const { data: financialContracts = [], isLoading: contractsLoading } = useQuery<WarehouseFinancialContract[]>({
     queryKey: ['/api/warehouses', id, 'financial-contracts'],
+    enabled: !!id,
+  });
+
+  const { data: warehouseProducts = [], isLoading: productsLoading } = useQuery<any[]>({
+    queryKey: [`/api/warehouses/${id}/products`],
     enabled: !!id,
   });
 
@@ -151,6 +161,20 @@ export default function WarehouseDetails() {
       setSortOrder('asc');
     }
   };
+
+  // Filter warehouse products based on search term
+  const filteredProducts = useMemo(() => {
+    if (!searchTerm.trim()) return warehouseProducts;
+    
+    const term = searchTerm.toLowerCase();
+    return warehouseProducts.filter(product => 
+      product.name?.toLowerCase().includes(term) ||
+      product.sku?.toLowerCase().includes(term) ||
+      product.barcode?.toLowerCase().includes(term) ||
+      product.warehouseLocation?.toLowerCase().includes(term) ||
+      product.primaryLocation?.toLowerCase().includes(term)
+    );
+  }, [warehouseProducts, searchTerm]);
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -543,6 +567,147 @@ export default function WarehouseDetails() {
                       </CardContent>
                     </Card>
                   ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Warehouse Inventory Section */}
+          <Card data-testid="card-warehouse-inventory">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Box className="h-5 w-5 text-blue-600" />
+                  Warehouse Inventory
+                </span>
+                <Badge variant="secondary" data-testid="badge-product-count">{warehouseProducts.length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* Search Bar */}
+              <div className="mb-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input
+                    type="text"
+                    placeholder="Search by name, SKU, barcode, or location..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                    data-testid="input-search-products"
+                  />
+                </div>
+                {searchTerm && (
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+                    Found {filteredProducts.length} of {warehouseProducts.length} items
+                  </p>
+                )}
+              </div>
+
+              <Separator className="my-4" />
+
+              {/* Products List */}
+              {productsLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24" />)}
+                </div>
+              ) : filteredProducts.length > 0 ? (
+                <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                  {filteredProducts.map((product) => (
+                    <Link key={product.id} href={`/products/${product.id}`}>
+                      <div
+                        className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group"
+                        data-testid={`product-item-${product.id}`}
+                      >
+                        <div className="flex items-start gap-4">
+                          {/* Product Image */}
+                          {product.imageUrl ? (
+                            <img 
+                              src={product.imageUrl} 
+                              alt={product.name}
+                              className="w-16 h-16 object-cover rounded border border-slate-200 dark:border-slate-700"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 flex items-center justify-center">
+                              <Package className="h-8 w-8 text-slate-400" />
+                            </div>
+                          )}
+
+                          {/* Product Info */}
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" data-testid={`text-product-name-${product.id}`}>
+                              {product.name}
+                            </h4>
+                            
+                            <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-slate-600 dark:text-slate-400">
+                              {product.sku && (
+                                <div className="flex items-center gap-1">
+                                  <Barcode className="h-3.5 w-3.5" />
+                                  <span data-testid={`text-sku-${product.id}`}>{product.sku}</span>
+                                </div>
+                              )}
+                              {product.primaryLocation && (
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="h-3.5 w-3.5" />
+                                  <span className="font-medium" data-testid={`text-location-${product.id}`}>{product.primaryLocation}</span>
+                                </div>
+                              )}
+                              {product.barcode && (
+                                <span className="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">
+                                  {product.barcode}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Additional Info Row */}
+                            <div className="flex flex-wrap items-center gap-4 mt-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-slate-600 dark:text-slate-400">Stock:</span>
+                                <Badge 
+                                  variant={(product.quantity || 0) <= (product.lowStockAlert || 5) ? "destructive" : "secondary"}
+                                  data-testid={`badge-quantity-${product.id}`}
+                                >
+                                  {product.quantity || 0}
+                                </Badge>
+                              </div>
+                              
+                              {product.totalLocationQuantity > 0 && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-slate-600 dark:text-slate-400">Bin Locations:</span>
+                                  <span className="text-sm font-medium" data-testid={`text-bin-quantity-${product.id}`}>
+                                    {product.totalLocationQuantity} units
+                                  </span>
+                                  <Badge variant="outline">{product.locations?.length || 0} bins</Badge>
+                                </div>
+                              )}
+
+                              {product.priceEur && (
+                                <span className="text-sm font-semibold text-slate-900 dark:text-white" data-testid={`text-price-${product.id}`}>
+                                  €{parseFloat(product.priceEur).toFixed(2)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : searchTerm ? (
+                <div className="text-center py-12" data-testid="empty-state-search">
+                  <Search className="h-12 w-12 text-slate-400 mx-auto mb-3" />
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-1">No items found</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Try adjusting your search terms
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center py-12" data-testid="empty-state-inventory">
+                  <Box className="h-12 w-12 text-slate-400 mx-auto mb-3" />
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-1">No inventory items</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    This warehouse doesn't have any products assigned
+                  </p>
                 </div>
               )}
             </CardContent>

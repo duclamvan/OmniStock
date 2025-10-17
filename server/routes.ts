@@ -705,29 +705,31 @@ Important:
     try {
       const warehouseId = req.params.id;
       const allProducts = await storage.getProducts();
-      const productLocations = await storage.getProductLocations();
       
-      // Get products that have this warehouse as their primary warehouse OR have locations in this warehouse
+      // Get products that have this warehouse as their primary warehouse
       const warehouseProducts = allProducts.filter(p => p.warehouseId === warehouseId);
       
-      // Enrich products with location information
-      const enrichedProducts = warehouseProducts.map(product => {
-        const locations = productLocations.filter(loc => {
-          // Extract warehouse ID from location code (e.g., "WH-CZ-PRG-A01-R02-L03" -> "WH-CZ-PRG")
-          const locWarehouseId = loc.locationCode.split('-').slice(0, 3).join('-');
-          return loc.productId === product.id && locWarehouseId === warehouseId;
-        });
-        
-        const totalLocationQuantity = locations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
-        const primaryLocation = locations.find(loc => loc.isPrimary);
-        
-        return {
-          ...product,
-          locations,
-          totalLocationQuantity,
-          primaryLocation: primaryLocation?.locationCode || product.warehouseLocation || null
-        };
-      });
+      // Fetch locations for each product
+      const enrichedProducts = await Promise.all(
+        warehouseProducts.map(async (product) => {
+          const locations = await storage.getProductLocations(product.id);
+          const warehouseLocations = locations.filter(loc => {
+            // Extract warehouse ID from location code (e.g., "WH-CZ-PRG-A01-R02-L03" -> "WH-CZ-PRG")
+            const locWarehouseId = loc.locationCode.split('-').slice(0, 3).join('-');
+            return locWarehouseId === warehouseId;
+          });
+          
+          const totalLocationQuantity = warehouseLocations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+          const primaryLocation = warehouseLocations.find(loc => loc.isPrimary);
+          
+          return {
+            ...product,
+            locations: warehouseLocations,
+            totalLocationQuantity,
+            primaryLocation: primaryLocation?.locationCode || product.warehouseLocation || null
+          };
+        })
+      );
       
       res.json(enrichedProducts);
     } catch (error) {
