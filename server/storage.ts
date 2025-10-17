@@ -2582,7 +2582,187 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getReturns(): Promise<Return[]> { return []; }
+  async getReturns(): Promise<Return[]> {
+    // Sample returns data with realistic scenarios
+    return [
+      {
+        id: 'ret-001',
+        returnId: 'RET-2024-001',
+        customerId: 'cust-001',
+        customer: {
+          id: 'cust-001',
+          name: 'Nail Salon Praha',
+          fbName: 'NailSalonPraha_Official',
+          email: 'info@nailsalonpraha.cz',
+          phone: '+420 777 888 999'
+        },
+        orderId: 'ORD-2024-001',
+        returnDate: new Date('2024-10-10T10:00:00Z'),
+        returnType: 'exchange',
+        status: 'completed',
+        notes: 'Customer received wrong color variant - exchanging for correct shade',
+        totalAmount: '450.00',
+        refundAmount: '0.00',
+        restockFee: '0.00',
+        createdAt: new Date('2024-10-10T10:00:00Z'),
+        updatedAt: new Date('2024-10-12T14:30:00Z')
+      },
+      {
+        id: 'ret-002',
+        returnId: 'RET-2024-002',
+        customerId: 'cust-002',
+        customer: {
+          id: 'cust-002',
+          name: 'Beauty Studio Berlin',
+          fbName: 'BeautyStudioBerlin',
+          email: 'orders@beautystudio.de',
+          phone: '+49 30 12345678'
+        },
+        orderId: 'ORD-2024-015',
+        returnDate: new Date('2024-10-12T14:00:00Z'),
+        returnType: 'refund',
+        status: 'processing',
+        notes: 'Damaged items during shipping - full refund requested',
+        totalAmount: '1250.00',
+        refundAmount: '1250.00',
+        restockFee: '0.00',
+        createdAt: new Date('2024-10-12T14:00:00Z'),
+        updatedAt: new Date('2024-10-13T09:15:00Z')
+      },
+      {
+        id: 'ret-003',
+        returnId: 'RET-2024-003',
+        customerId: 'cust-003',
+        customer: {
+          id: 'cust-003',
+          name: 'Nails & More Vienna',
+          fbName: 'NailsMoreVienna',
+          email: 'contact@nailsmore.at',
+          phone: '+43 1 9876543'
+        },
+        orderId: 'ORD-2024-022',
+        returnDate: new Date('2024-10-08T09:30:00Z'),
+        returnType: 'store_credit',
+        status: 'completed',
+        notes: 'Changed mind on gel polish colors - store credit issued',
+        totalAmount: '680.00',
+        refundAmount: '680.00',
+        restockFee: '0.00',
+        createdAt: new Date('2024-10-08T09:30:00Z'),
+        updatedAt: new Date('2024-10-09T16:45:00Z')
+      },
+      {
+        id: 'ret-004',
+        returnId: 'RET-2024-004',
+        customerId: 'cust-004',
+        customer: {
+          id: 'cust-004',
+          name: 'Pro Nails Warsaw',
+          fbName: 'ProNailsWarsaw',
+          email: 'order@pronails.pl',
+          phone: '+48 22 123 4567'
+        },
+        orderId: 'ORD-2024-033',
+        returnDate: new Date('2024-10-14T11:00:00Z'),
+        returnType: 'exchange',
+        status: 'awaiting',
+        notes: 'Ordered wrong drill bit size - waiting for replacement stock',
+        totalAmount: '320.00',
+        refundAmount: '0.00',
+        restockFee: '0.00',
+        createdAt: new Date('2024-10-14T11:00:00Z'),
+        updatedAt: new Date('2024-10-14T11:00:00Z')
+      },
+      {
+        id: 'ret-005',
+        returnId: 'RET-2024-005',
+        customerId: 'cust-005',
+        customer: {
+          id: 'cust-005',
+          name: 'Luxury Nails Budapest',
+          fbName: 'LuxuryNailsBudapest',
+          email: 'admin@luxurynails.hu',
+          phone: '+36 1 234 5678'
+        },
+        orderId: 'ORD-2024-041',
+        returnDate: new Date('2024-10-15T16:00:00Z'),
+        returnType: 'refund',
+        status: 'awaiting',
+        notes: 'Duplicate order placed by mistake - requesting full refund',
+        totalAmount: '890.00',
+        refundAmount: '890.00',
+        restockFee: '45.00',
+        createdAt: new Date('2024-10-15T16:00:00Z'),
+        updatedAt: new Date('2024-10-15T16:00:00Z')
+      },
+      {
+        id: 'ret-006',
+        returnId: 'RET-2024-006',
+        customerId: 'cust-006',
+        customer: {
+          id: 'cust-006',
+          name: 'Glamour Studio Bratislava',
+          fbName: 'GlamourStudioBA',
+          email: 'info@glamourstudio.sk',
+          phone: '+421 2 5555 1234'
+        },
+        orderId: 'ORD-2024-028',
+        returnDate: new Date('2024-10-05T13:45:00Z'),
+        returnType: 'exchange',
+        status: 'completed',
+        notes: 'UV lamp not working properly - exchanged for new unit',
+        totalAmount: '1500.00',
+        refundAmount: '0.00',
+        restockFee: '0.00',
+        createdAt: new Date('2024-10-05T13:45:00Z'),
+        updatedAt: new Date('2024-10-07T10:20:00Z')
+      },
+      {
+        id: 'ret-007',
+        returnId: 'RET-2024-007',
+        customerId: 'cust-007',
+        customer: {
+          id: 'cust-007',
+          name: 'Beauty Clinic Dresden',
+          fbName: 'BeautyClinicDD',
+          email: 'orders@beautyclinic.de',
+          phone: '+49 351 987 6543'
+        },
+        orderId: 'ORD-2024-019',
+        returnDate: new Date('2024-10-11T10:15:00Z'),
+        returnType: 'refund',
+        status: 'cancelled',
+        notes: 'Customer changed mind and decided to keep the items',
+        totalAmount: '540.00',
+        refundAmount: '0.00',
+        restockFee: '0.00',
+        createdAt: new Date('2024-10-11T10:15:00Z'),
+        updatedAt: new Date('2024-10-11T15:30:00Z')
+      },
+      {
+        id: 'ret-008',
+        returnId: 'RET-2024-008',
+        customerId: 'cust-008',
+        customer: {
+          id: 'cust-008',
+          name: 'Nail Art Prague',
+          fbName: 'NailArtPrague_CZ',
+          email: 'shop@nailartprague.cz',
+          phone: '+420 733 444 555'
+        },
+        orderId: 'ORD-2024-037',
+        returnDate: new Date('2024-10-13T12:00:00Z'),
+        returnType: 'store_credit',
+        status: 'processing',
+        notes: 'Received expired products - store credit being processed',
+        totalAmount: '780.00',
+        refundAmount: '780.00',
+        restockFee: '0.00',
+        createdAt: new Date('2024-10-13T12:00:00Z'),
+        updatedAt: new Date('2024-10-14T08:45:00Z')
+      }
+    ] as Return[];
+  }
   async getReturn(id: string): Promise<Return | undefined> { return undefined; }
   async createReturn(returnData: any): Promise<Return> { return { id: Date.now().toString(), ...returnData }; }
   async updateReturn(id: string, returnData: any): Promise<Return | undefined> { return { id, ...returnData }; }
