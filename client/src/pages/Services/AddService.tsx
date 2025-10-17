@@ -507,7 +507,7 @@ export default function AddService() {
                         
                         <div>
                           <Label className="text-xs text-slate-600 dark:text-slate-400 mb-1">
-                            Linked Order <span className="text-xs text-slate-500">(Optional)</span>
+                            Linked Order
                           </Label>
                           <Popover open={orderOpen} onOpenChange={setOrderOpen}>
                             <PopoverTrigger asChild>

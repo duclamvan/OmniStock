@@ -37,6 +37,7 @@ import {
   packingMaterials,
   packingMaterialUsage,
   pmSuppliers,
+  discounts,
   type User,
   type InsertUser,
   type Category,
@@ -110,13 +111,14 @@ import {
   type PackingMaterialUsage,
   type InsertPackingMaterialUsage,
   type PmSupplier,
-  type InsertPmSupplier
+  type InsertPmSupplier,
+  type Discount,
+  type InsertDiscount
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, sql, gte, lte, inArray, ne, asc, isNull, notInArray } from "drizzle-orm";
 
 // Define types for missing entities (these should match what the app expects)
-export type Discount = any;
 export type Return = any;
 export type ReturnItem = any;
 export type Expense = any;
@@ -2038,12 +2040,60 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // All other stub implementations...
-  async getDiscounts(): Promise<Discount[]> { return []; }
-  async getDiscount(id: string): Promise<Discount | undefined> { return undefined; }
-  async createDiscount(discount: any): Promise<Discount> { return { id: Date.now().toString(), ...discount }; }
-  async updateDiscount(id: string, discount: any): Promise<Discount | undefined> { return { id, ...discount }; }
-  async deleteDiscount(id: string): Promise<boolean> { return true; }
+  // Discounts
+  async getDiscounts(): Promise<Discount[]> {
+    try {
+      const result = await db.select().from(discounts).orderBy(discounts.createdAt);
+      return result as Discount[];
+    } catch (error) {
+      console.error('Error fetching discounts:', error);
+      return [];
+    }
+  }
+
+  async getDiscount(id: string): Promise<Discount | undefined> {
+    try {
+      const [result] = await db.select().from(discounts).where(eq(discounts.id, parseInt(id)));
+      return result as Discount | undefined;
+    } catch (error) {
+      console.error('Error fetching discount:', error);
+      return undefined;
+    }
+  }
+
+  async createDiscount(discount: any): Promise<Discount> {
+    try {
+      const [result] = await db.insert(discounts).values(discount).returning();
+      return result as Discount;
+    } catch (error) {
+      console.error('Error creating discount:', error);
+      throw error;
+    }
+  }
+
+  async updateDiscount(id: string, discount: any): Promise<Discount | undefined> {
+    try {
+      const [result] = await db
+        .update(discounts)
+        .set({ ...discount, updatedAt: new Date() })
+        .where(eq(discounts.id, parseInt(id)))
+        .returning();
+      return result as Discount | undefined;
+    } catch (error) {
+      console.error('Error updating discount:', error);
+      return undefined;
+    }
+  }
+
+  async deleteDiscount(id: string): Promise<boolean> {
+    try {
+      const result = await db.delete(discounts).where(eq(discounts.id, parseInt(id)));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting discount:', error);
+      return false;
+    }
+  }
 
   async getWarehouses(): Promise<Warehouse[]> {
     try {
