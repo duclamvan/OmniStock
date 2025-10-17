@@ -58,9 +58,11 @@ import { formatCzechDate } from "@/lib/dateUtils";
 
 const serviceFormSchema = insertServiceSchema.extend({
   customerId: z.string().optional().nullable(),
+  orderId: z.string().optional().nullable(),
   name: z.string().min(1, "Service name is required"),
   serviceDate: z.date().optional().nullable(),
   serviceCost: z.string().optional().default("0"),
+  currency: z.string().default('EUR'),
   notes: z.string().optional(),
 });
 
@@ -81,6 +83,14 @@ interface Customer {
   id: string;
   name: string;
   email: string | null;
+}
+
+interface Order {
+  id: string;
+  orderId: string;
+  customerId: string;
+  currency: string;
+  status: string;
 }
 
 interface Product {
@@ -104,6 +114,7 @@ export default function AddService() {
 
   const [serviceItems, setServiceItems] = useState<ServiceItem[]>([]);
   const [customerOpen, setCustomerOpen] = useState(false);
+  const [orderOpen, setOrderOpen] = useState(false);
   const [productSearchTerms, setProductSearchTerms] = useState<{ [key: number]: string }>({});
 
   const { data: existingService, isLoading: loadingService } = useQuery({
@@ -125,14 +136,20 @@ export default function AddService() {
     queryKey: ['/api/products'],
   });
 
+  const { data: orders = [] } = useQuery<Order[]>({
+    queryKey: ['/api/orders'],
+  });
+
   const form = useForm<ServiceFormData>({
     resolver: zodResolver(serviceFormSchema),
     defaultValues: {
       customerId: null,
+      orderId: null,
       name: '',
       description: '',
       serviceDate: new Date(),
       serviceCost: '0',
+      currency: 'EUR',
       status: 'pending',
       notes: '',
     },
@@ -142,10 +159,12 @@ export default function AddService() {
     if (existingService && isEditing) {
       form.reset({
         customerId: existingService.customerId,
+        orderId: existingService.orderId || null,
         name: existingService.name,
         description: existingService.description || '',
         serviceDate: existingService.serviceDate ? new Date(existingService.serviceDate) : null,
         serviceCost: existingService.serviceCost || '0',
+        currency: existingService.currency || 'EUR',
         status: existingService.status,
         notes: existingService.notes || '',
       });
@@ -168,6 +187,20 @@ export default function AddService() {
       }
     }
   }, [existingService, isEditing, form]);
+
+  // Auto-populate currency when order is selected
+  useEffect(() => {
+    const selectedOrderId = form.watch('orderId');
+    if (selectedOrderId && orders.length > 0) {
+      const selectedOrder = orders.find(o => o.id === selectedOrderId);
+      if (selectedOrder && selectedOrder.currency) {
+        form.setValue('currency', selectedOrder.currency);
+        if (selectedOrder.customerId && !form.watch('customerId')) {
+          form.setValue('customerId', selectedOrder.customerId);
+        }
+      }
+    }
+  }, [form.watch('orderId'), orders, form]);
 
   const partsCost = useMemo(() => {
     return serviceItems.reduce((sum, item) => {
@@ -315,7 +348,18 @@ export default function AddService() {
   };
 
   const formatCurrency = (amount: number) => {
-    return `€${amount.toFixed(2)}`;
+    const currency = form.watch('currency') || 'EUR';
+    const symbols: Record<string, string> = {
+      'USD': '$',
+      'EUR': '€',
+      'CZK': 'Kč',
+      'VND': '₫',
+      'CNY': '¥'
+    };
+    const symbol = symbols[currency] || currency;
+    return currency === 'CZK' 
+      ? `${amount.toFixed(2)} ${symbol}`
+      : `${symbol}${amount.toFixed(2)}`;
   };
 
   const getStatusBadge = (status: string) => {
@@ -411,50 +455,121 @@ export default function AddService() {
                         <User className="h-3 w-3" />
                         Bill To
                       </h3>
-                      <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded border border-slate-200 dark:border-slate-700">
-                        <Popover open={customerOpen} onOpenChange={setCustomerOpen}>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              aria-expanded={customerOpen}
-                              className="w-full justify-between bg-white dark:bg-slate-900"
-                              data-testid="button-select-customer"
-                            >
-                              {form.watch('customerId')
-                                ? customers.find((c) => c.id === form.watch('customerId'))?.name
-                                : "Select customer..."}
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-full p-0">
-                            <Command>
-                              <CommandInput placeholder="Search customer..." />
-                              <CommandEmpty>No customer found.</CommandEmpty>
-                              <CommandGroup>
-                                {customers.map((customer) => (
+                      <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded border border-slate-200 dark:border-slate-700 space-y-3">
+                        <div>
+                          <Label className="text-xs text-slate-600 dark:text-slate-400 mb-1">Customer</Label>
+                          <Popover open={customerOpen} onOpenChange={setCustomerOpen}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={customerOpen}
+                                className="w-full justify-between bg-white dark:bg-slate-900"
+                                data-testid="button-select-customer"
+                              >
+                                {form.watch('customerId')
+                                  ? customers.find((c) => c.id === form.watch('customerId'))?.name
+                                  : "Select customer..."}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-full p-0">
+                              <Command>
+                                <CommandInput placeholder="Search customer..." />
+                                <CommandEmpty>No customer found.</CommandEmpty>
+                                <CommandGroup>
+                                  {customers.map((customer) => (
+                                    <CommandItem
+                                      key={customer.id}
+                                      value={customer.name}
+                                      onSelect={() => {
+                                        form.setValue('customerId', customer.id);
+                                        setCustomerOpen(false);
+                                      }}
+                                      data-testid={`option-customer-${customer.id}`}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          form.watch('customerId') === customer.id ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      {customer.name}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-xs text-slate-600 dark:text-slate-400 mb-1">
+                            Linked Order <span className="text-xs text-slate-500">(Optional)</span>
+                          </Label>
+                          <Popover open={orderOpen} onOpenChange={setOrderOpen}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={orderOpen}
+                                className="w-full justify-between bg-white dark:bg-slate-900"
+                                data-testid="button-select-order"
+                              >
+                                {form.watch('orderId')
+                                  ? orders.find((o) => o.id === form.watch('orderId'))?.orderId
+                                  : "None"}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-full p-0">
+                              <Command>
+                                <CommandInput placeholder="Search order..." />
+                                <CommandEmpty>No order found.</CommandEmpty>
+                                <CommandGroup>
                                   <CommandItem
-                                    key={customer.id}
-                                    value={customer.name}
+                                    value="none"
                                     onSelect={() => {
-                                      form.setValue('customerId', customer.id);
-                                      setCustomerOpen(false);
+                                      form.setValue('orderId', null);
+                                      setOrderOpen(false);
                                     }}
-                                    data-testid={`option-customer-${customer.id}`}
+                                    data-testid="option-order-none"
                                   >
                                     <Check
                                       className={cn(
                                         "mr-2 h-4 w-4",
-                                        form.watch('customerId') === customer.id ? "opacity-100" : "opacity-0"
+                                        !form.watch('orderId') ? "opacity-100" : "opacity-0"
                                       )}
                                     />
-                                    {customer.name}
+                                    None
                                   </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
+                                  {orders.map((order) => (
+                                    <CommandItem
+                                      key={order.id}
+                                      value={order.orderId}
+                                      onSelect={() => {
+                                        form.setValue('orderId', order.id);
+                                        setOrderOpen(false);
+                                      }}
+                                      data-testid={`option-order-${order.id}`}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          form.watch('orderId') === order.id ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      <div className="flex justify-between items-center w-full">
+                                        <span>{order.orderId}</span>
+                                        <span className="text-xs text-slate-500">{order.currency}</span>
+                                      </div>
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
                       </div>
                     </div>
 
@@ -490,6 +605,25 @@ export default function AddService() {
                               />
                             </PopoverContent>
                           </Popover>
+                        </div>
+
+                        <div>
+                          <Label className="text-xs text-slate-600 dark:text-slate-400 mb-1">Currency</Label>
+                          <Select
+                            value={form.watch("currency")}
+                            onValueChange={(value) => form.setValue("currency", value)}
+                          >
+                            <SelectTrigger data-testid="select-currency">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="EUR">EUR (€)</SelectItem>
+                              <SelectItem value="CZK">CZK (Kč)</SelectItem>
+                              <SelectItem value="USD">USD ($)</SelectItem>
+                              <SelectItem value="VND">VND (₫)</SelectItem>
+                              <SelectItem value="CNY">CNY (¥)</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
 
                         <div>
