@@ -33,7 +33,9 @@ import {
   ScrollText,
   Search,
   Box,
-  Barcode
+  Barcode,
+  MoveRight,
+  ExternalLink
 } from "lucide-react";
 import { formatDate } from "@/lib/currencyUtils";
 import { useToast } from "@/hooks/use-toast";
@@ -50,6 +52,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type SortField = 'name' | 'date' | 'size';
 type SortOrder = 'asc' | 'desc';
@@ -63,6 +80,9 @@ export default function WarehouseDetails() {
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
+  const [productToMove, setProductToMove] = useState<any | null>(null);
+  const [targetWarehouseId, setTargetWarehouseId] = useState('');
 
   const { data: warehouse, isLoading: warehouseLoading } = useQuery<Warehouse>({
     queryKey: [`/api/warehouses/${id}`],
@@ -82,6 +102,51 @@ export default function WarehouseDetails() {
   const { data: warehouseProducts = [], isLoading: productsLoading } = useQuery<any[]>({
     queryKey: [`/api/warehouses/${id}/products`],
     enabled: !!id,
+  });
+
+  const { data: allWarehouses = [] } = useQuery<Warehouse[]>({
+    queryKey: ['/api/warehouses'],
+  });
+
+  const moveProductMutation = useMutation({
+    mutationFn: async ({ productId, targetWarehouseId }: { productId: string; targetWarehouseId: string }) => {
+      return apiRequest('POST', `/api/products/${productId}/move-warehouse`, { targetWarehouseId });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/warehouses/${id}/products`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/products', productToMove?.id] });
+      
+      toast({
+        title: "Product Moved",
+        description: (
+          <div className="flex flex-col gap-2">
+            <p>{data.message}</p>
+            <Button
+              variant="link"
+              size="sm"
+              className="p-0 h-auto justify-start text-blue-600 hover:text-blue-700"
+              onClick={() => navigate(`/products/${productToMove?.id}/edit`)}
+              data-testid="button-view-product"
+            >
+              <ExternalLink className="h-3 w-3 mr-1" />
+              View Product
+            </Button>
+          </div>
+        ),
+        duration: 5000,
+      });
+      
+      setShowMoveDialog(false);
+      setProductToMove(null);
+      setTargetWarehouseId('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to move product",
+        variant: "destructive",
+      });
+    },
   });
 
   const deleteFileMutation = useMutation({
@@ -159,6 +224,20 @@ export default function WarehouseDetails() {
     } else {
       setSortField(field);
       setSortOrder('asc');
+    }
+  };
+
+  const handleMoveProduct = (product: any) => {
+    setProductToMove(product);
+    setShowMoveDialog(true);
+  };
+
+  const confirmMoveProduct = () => {
+    if (productToMove && targetWarehouseId) {
+      moveProductMutation.mutate({
+        productId: productToMove.id,
+        targetWarehouseId: targetWarehouseId,
+      });
     }
   };
 
@@ -389,8 +468,169 @@ export default function WarehouseDetails() {
         </div>
       </div>
 
-      {/* Main Content - Two Column Layout */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-8">
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-8 space-y-6">
+        {/* Warehouse Inventory Section - Full Width at Top */}
+        <Card className="border-slate-200 dark:border-slate-800 shadow-sm" data-testid="card-warehouse-inventory">
+          <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Box className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                Warehouse Inventory
+              </CardTitle>
+              <Badge variant="outline" className="font-mono" data-testid="badge-product-count">{warehouseProducts.length} items</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6">
+            {/* Search Bar */}
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  type="text"
+                  placeholder="Search by name, SKU, barcode, or location..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 h-11"
+                  data-testid="input-search-products"
+                />
+              </div>
+              {searchTerm && (
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 flex items-center gap-1">
+                  <span className="font-medium">{filteredProducts.length}</span> of {warehouseProducts.length} items
+                </p>
+              )}
+            </div>
+
+            {/* Products List */}
+            {productsLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24" />)}
+              </div>
+            ) : filteredProducts.length > 0 ? (
+              <div className="space-y-3 max-h-[650px] overflow-y-auto pr-1">
+                {filteredProducts.map((product) => (
+                  <div
+                    key={product.id}
+                    className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:shadow-sm hover:border-blue-300 dark:hover:border-blue-700 hover:bg-white dark:hover:bg-slate-800 transition-all group"
+                    data-testid={`product-item-${product.id}`}
+                  >
+                    <div className="flex items-start gap-4">
+                      {/* Product Image */}
+                      <Link href={`/products/${product.id}`} className="flex-shrink-0">
+                        {product.imageUrl ? (
+                          <img 
+                            src={product.imageUrl} 
+                            alt={product.name}
+                            className="w-16 h-16 object-cover rounded border border-slate-200 dark:border-slate-700 cursor-pointer"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 flex items-center justify-center cursor-pointer">
+                            <Package className="h-8 w-8 text-slate-400" />
+                          </div>
+                        )}
+                      </Link>
+
+                      {/* Product Info */}
+                      <div className="flex-1 min-w-0">
+                        <Link href={`/products/${product.id}`}>
+                          <h4 className="font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer" data-testid={`text-product-name-${product.id}`}>
+                            {product.name}
+                          </h4>
+                        </Link>
+                        
+                        <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-slate-600 dark:text-slate-400">
+                          {product.sku && (
+                            <div className="flex items-center gap-1">
+                              <Barcode className="h-3.5 w-3.5" />
+                              <span data-testid={`text-sku-${product.id}`}>{product.sku}</span>
+                            </div>
+                          )}
+                          {product.primaryLocation && (
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-3.5 w-3.5" />
+                              <span className="font-medium" data-testid={`text-location-${product.id}`}>{product.primaryLocation}</span>
+                            </div>
+                          )}
+                          {product.barcode && (
+                            <span className="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">
+                              {product.barcode}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Additional Info Row */}
+                        <div className="flex flex-wrap items-center gap-4 mt-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-slate-600 dark:text-slate-400">Stock:</span>
+                            <Badge 
+                              variant={(product.quantity || 0) <= (product.lowStockAlert || 5) ? "destructive" : "secondary"}
+                              data-testid={`badge-quantity-${product.id}`}
+                            >
+                              {product.quantity || 0}
+                            </Badge>
+                          </div>
+                          
+                          {product.totalLocationQuantity > 0 && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-slate-600 dark:text-slate-400">Bin Locations:</span>
+                              <span className="text-sm font-medium" data-testid={`text-bin-quantity-${product.id}`}>
+                                {product.totalLocationQuantity} units
+                              </span>
+                              <Badge variant="outline">{product.locations?.length || 0} bins</Badge>
+                            </div>
+                          )}
+
+                          {product.priceEur && (
+                            <span className="text-sm font-semibold text-slate-900 dark:text-white" data-testid={`text-price-${product.id}`}>
+                              €{parseFloat(product.priceEur).toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Move Button */}
+                      <div className="flex-shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleMoveProduct(product);
+                          }}
+                          className="gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          data-testid={`button-move-${product.id}`}
+                        >
+                          <MoveRight className="h-4 w-4" />
+                          Move
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : searchTerm ? (
+              <div className="text-center py-12" data-testid="empty-state-search">
+                <Search className="h-12 w-12 text-slate-400 mx-auto mb-3" />
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-1">No items found</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Try adjusting your search terms
+                </p>
+              </div>
+            ) : (
+              <div className="text-center py-12" data-testid="empty-state-inventory">
+                <Box className="h-12 w-12 text-slate-400 mx-auto mb-3" />
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-1">No inventory items</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  This warehouse doesn't have any products assigned
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Two Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Primary Information */}
           <div className="lg:col-span-2 space-y-6">
@@ -586,145 +826,6 @@ export default function WarehouseDetails() {
               )}
             </CardContent>
           </Card>
-
-          {/* Warehouse Inventory Section */}
-          <Card className="border-slate-200 dark:border-slate-800 shadow-sm" data-testid="card-warehouse-inventory">
-            <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Box className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  Warehouse Inventory
-                </CardTitle>
-                <Badge variant="outline" className="font-mono" data-testid="badge-product-count">{warehouseProducts.length} items</Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="p-6">
-              {/* Search Bar */}
-              <div className="mb-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input
-                    type="text"
-                    placeholder="Search by name, SKU, barcode, or location..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 h-11"
-                    data-testid="input-search-products"
-                  />
-                </div>
-                {searchTerm && (
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 flex items-center gap-1">
-                    <span className="font-medium">{filteredProducts.length}</span> of {warehouseProducts.length} items
-                  </p>
-                )}
-              </div>
-
-              {/* Products List */}
-              {productsLoading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24" />)}
-                </div>
-              ) : filteredProducts.length > 0 ? (
-                <div className="space-y-3 max-h-[650px] overflow-y-auto pr-1">
-                  {filteredProducts.map((product) => (
-                    <Link key={product.id} href={`/products/${product.id}`}>
-                      <div
-                        className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:shadow-sm hover:border-blue-300 dark:hover:border-blue-700 hover:bg-white dark:hover:bg-slate-800 transition-all cursor-pointer group"
-                        data-testid={`product-item-${product.id}`}
-                      >
-                        <div className="flex items-start gap-4">
-                          {/* Product Image */}
-                          {product.imageUrl ? (
-                            <img 
-                              src={product.imageUrl} 
-                              alt={product.name}
-                              className="w-16 h-16 object-cover rounded border border-slate-200 dark:border-slate-700"
-                            />
-                          ) : (
-                            <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 flex items-center justify-center">
-                              <Package className="h-8 w-8 text-slate-400" />
-                            </div>
-                          )}
-
-                          {/* Product Info */}
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" data-testid={`text-product-name-${product.id}`}>
-                              {product.name}
-                            </h4>
-                            
-                            <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-slate-600 dark:text-slate-400">
-                              {product.sku && (
-                                <div className="flex items-center gap-1">
-                                  <Barcode className="h-3.5 w-3.5" />
-                                  <span data-testid={`text-sku-${product.id}`}>{product.sku}</span>
-                                </div>
-                              )}
-                              {product.primaryLocation && (
-                                <div className="flex items-center gap-1">
-                                  <MapPin className="h-3.5 w-3.5" />
-                                  <span className="font-medium" data-testid={`text-location-${product.id}`}>{product.primaryLocation}</span>
-                                </div>
-                              )}
-                              {product.barcode && (
-                                <span className="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">
-                                  {product.barcode}
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Additional Info Row */}
-                            <div className="flex flex-wrap items-center gap-4 mt-2">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm text-slate-600 dark:text-slate-400">Stock:</span>
-                                <Badge 
-                                  variant={(product.quantity || 0) <= (product.lowStockAlert || 5) ? "destructive" : "secondary"}
-                                  data-testid={`badge-quantity-${product.id}`}
-                                >
-                                  {product.quantity || 0}
-                                </Badge>
-                              </div>
-                              
-                              {product.totalLocationQuantity > 0 && (
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm text-slate-600 dark:text-slate-400">Bin Locations:</span>
-                                  <span className="text-sm font-medium" data-testid={`text-bin-quantity-${product.id}`}>
-                                    {product.totalLocationQuantity} units
-                                  </span>
-                                  <Badge variant="outline">{product.locations?.length || 0} bins</Badge>
-                                </div>
-                              )}
-
-                              {product.priceEur && (
-                                <span className="text-sm font-semibold text-slate-900 dark:text-white" data-testid={`text-price-${product.id}`}>
-                                  €{parseFloat(product.priceEur).toFixed(2)}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              ) : searchTerm ? (
-                <div className="text-center py-12" data-testid="empty-state-search">
-                  <Search className="h-12 w-12 text-slate-400 mx-auto mb-3" />
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-1">No items found</p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Try adjusting your search terms
-                  </p>
-                </div>
-              ) : (
-                <div className="text-center py-12" data-testid="empty-state-inventory">
-                  <Box className="h-12 w-12 text-slate-400 mx-auto mb-3" />
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-1">No inventory items</p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    This warehouse doesn't have any products assigned
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
 
         {/* Right Column - Files & Documents */}
@@ -887,6 +988,92 @@ export default function WarehouseDetails() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Move Product Dialog */}
+      <Dialog open={showMoveDialog} onOpenChange={setShowMoveDialog}>
+        <DialogContent className="sm:max-w-md" data-testid="dialog-move-product">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MoveRight className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              Move Product to Another Warehouse
+            </DialogTitle>
+            <DialogDescription>
+              Select the warehouse where you want to move "{productToMove?.name}"
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Current Warehouse Info */}
+            {productToMove && (
+              <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Current Location</p>
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  {warehouse?.name}
+                </p>
+              </div>
+            )}
+
+            {/* Warehouse Selector */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                Target Warehouse
+              </label>
+              <Select value={targetWarehouseId} onValueChange={setTargetWarehouseId}>
+                <SelectTrigger className="w-full" data-testid="select-target-warehouse">
+                  <SelectValue placeholder="Select a warehouse..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {allWarehouses
+                    .filter(w => w.id !== id) // Exclude current warehouse
+                    .map((wh) => (
+                      <SelectItem key={wh.id} value={wh.id}>
+                        <div className="flex items-center gap-2">
+                          <WarehouseIcon className="h-4 w-4 text-slate-400" />
+                          <span>{wh.name}</span>
+                          {wh.location && (
+                            <span className="text-xs text-slate-500">• {wh.location}</span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowMoveDialog(false);
+                setProductToMove(null);
+                setTargetWarehouseId('');
+              }}
+              data-testid="button-cancel-move"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmMoveProduct}
+              disabled={!targetWarehouseId || moveProductMutation.isPending}
+              data-testid="button-confirm-move"
+              className="gap-2"
+            >
+              {moveProductMutation.isPending ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Moving...
+                </>
+              ) : (
+                <>
+                  <MoveRight className="h-4 w-4" />
+                  Move Product
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
