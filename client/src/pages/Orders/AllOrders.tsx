@@ -951,7 +951,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                               e.stopPropagation();
                               toggleBadges();
                             }}
-                            className="h-6 w-6 p-0 text-slate-400 hover:text-slate-600 transition-colors"
+                            className="h-6 w-6 p-0 text-slate-300 hover:text-slate-700 transition-all opacity-50 hover:opacity-100"
                             data-testid="button-toggle-badges"
                           >
                             <ChevronDown className={`h-4 w-4 transition-transform ${showBadges ? '' : 'rotate-180'}`} />
