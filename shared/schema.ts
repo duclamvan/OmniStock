@@ -369,6 +369,24 @@ export const warehouseFiles = pgTable('warehouse_files', {
   createdAt: timestamp('created_at').notNull().defaultNow()
 });
 
+export const warehouseFinancialContracts = pgTable('warehouse_financial_contracts', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  warehouseId: text('warehouse_id').notNull().references(() => warehouses.id, { onDelete: 'cascade' }),
+  contractName: text('contract_name').notNull(),
+  contractType: text('contract_type').notNull().default('rental'),
+  price: decimal('price', { precision: 10, scale: 2 }).notNull().default('0'),
+  currency: text('currency').notNull().default('CZK'),
+  billingPeriod: text('billing_period').notNull().default('monthly'),
+  customBillingDays: integer('custom_billing_days'),
+  rentalDueDate: date('rental_due_date'),
+  startDate: date('start_date'),
+  endDate: date('end_date'),
+  status: text('status').default('active'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
 export const products = pgTable('products', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
   name: varchar('name').notNull(),
@@ -964,7 +982,15 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
 }));
 
 export const warehousesRelations = relations(warehouses, ({ many }) => ({
-  products: many(products)
+  products: many(products),
+  financialContracts: many(warehouseFinancialContracts)
+}));
+
+export const warehouseFinancialContractsRelations = relations(warehouseFinancialContracts, ({ one }) => ({
+  warehouse: one(warehouses, {
+    fields: [warehouseFinancialContracts.warehouseId],
+    references: [warehouses.id]
+  })
 }));
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
@@ -1051,6 +1077,7 @@ export const insertCustomerBillingAddressSchema = createInsertSchema(customerBil
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
 export const insertWarehouseSchema = createInsertSchema(warehouses).omit({ createdAt: true });
 export const insertWarehouseFileSchema = createInsertSchema(warehouseFiles).omit({ id: true, createdAt: true });
+export const insertWarehouseFinancialContractSchema = createInsertSchema(warehouseFinancialContracts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductVariantSchema = createInsertSchema(productVariants).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductTieredPricingSchema = createInsertSchema(productTieredPricing).omit({ id: true, createdAt: true, updatedAt: true });
@@ -1131,6 +1158,8 @@ export type Warehouse = typeof warehouses.$inferSelect;
 export type InsertWarehouse = z.infer<typeof insertWarehouseSchema>;
 export type WarehouseFile = typeof warehouseFiles.$inferSelect;
 export type InsertWarehouseFile = z.infer<typeof insertWarehouseFileSchema>;
+export type WarehouseFinancialContract = typeof warehouseFinancialContracts.$inferSelect;
+export type InsertWarehouseFinancialContract = z.infer<typeof insertWarehouseFinancialContractSchema>;
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type ProductVariant = typeof productVariants.$inferSelect;
