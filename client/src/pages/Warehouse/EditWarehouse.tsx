@@ -29,7 +29,10 @@ import {
   Settings,
   FileText,
   Hash,
-  Ruler
+  Ruler,
+  Plus,
+  Edit,
+  ScrollText
 } from "lucide-react";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { Separator } from "@/components/ui/separator";
@@ -45,6 +48,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { 
+  insertWarehouseFinancialContractSchema,
+  type WarehouseFinancialContract,
+  type InsertWarehouseFinancialContract,
+  type Warehouse 
+} from "@shared/schema";
 
 const warehouseSchema = z.object({
   name: z.string().min(1, "Warehouse name is required"),
@@ -68,15 +85,48 @@ const warehouseSchema = z.object({
 
 type WarehouseFormData = z.infer<typeof warehouseSchema>;
 
+// Contract form schema with validation
+const contractFormSchema = insertWarehouseFinancialContractSchema.omit({ warehouseId: true }).extend({
+  contractName: z.string().min(1, "Contract name is required"),
+  price: z.string().min(1, "Price is required"),
+  billingPeriod: z.enum(["monthly", "yearly", "quarterly", "custom"]),
+  customBillingDays: z.number().optional(),
+}).refine((data) => {
+  if (data.billingPeriod === "custom") {
+    return !!data.customBillingDays && data.customBillingDays > 0;
+  }
+  return true;
+}, {
+  message: "Custom billing days are required when billing period is custom",
+  path: ["customBillingDays"],
+});
+
+type ContractFormData = z.infer<typeof contractFormSchema>;
+
 export default function EditWarehouse() {
   const { id } = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [contractDialogOpen, setContractDialogOpen] = useState(false);
+  const [editingContract, setEditingContract] = useState<WarehouseFinancialContract | null>(null);
+  const [deleteContractId, setDeleteContractId] = useState<string | null>(null);
 
-  const { data: warehouse, isLoading } = useQuery({
+  const { data: warehouse, isLoading } = useQuery<Warehouse>({
     queryKey: ['/api/warehouses', id],
-    queryFn: () => apiRequest('GET', `/api/warehouses/${id}`),
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/warehouses/${id}`);
+      return await response.json();
+    },
+    enabled: !!id,
+  });
+
+  const { data: financialContracts = [], isLoading: contractsLoading } = useQuery({
+    queryKey: ['/api/warehouses', id, 'financial-contracts'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/warehouses/${id}/financial-contracts`);
+      return await response.json();
+    },
     enabled: !!id,
   });
 
@@ -103,14 +153,31 @@ export default function EditWarehouse() {
     },
   });
 
+  const contractForm = useForm<ContractFormData>({
+    resolver: zodResolver(contractFormSchema),
+    defaultValues: {
+      contractName: "",
+      contractType: "rental",
+      price: "0",
+      currency: "CZK",
+      billingPeriod: "monthly",
+      customBillingDays: undefined,
+      rentalDueDate: undefined,
+      startDate: undefined,
+      endDate: undefined,
+      status: "active",
+      notes: "",
+    },
+  });
+
   useEffect(() => {
     if (warehouse) {
       form.reset({
         name: warehouse.name || "",
         location: warehouse.location || "",
-        status: warehouse.status || "active",
+        status: (warehouse.status as any) || "active",
         rentedFromDate: warehouse.rentedFromDate ? new Date(warehouse.rentedFromDate).toISOString().split('T')[0] : "",
-        expenseId: warehouse.expenseId || "",
+        expenseId: warehouse.expenseId?.toString() || "",
         contact: warehouse.contact || "",
         notes: warehouse.notes || "",
         address: warehouse.address || "",
@@ -121,8 +188,8 @@ export default function EditWarehouse() {
         email: warehouse.email || "",
         manager: warehouse.manager || "",
         capacity: warehouse.capacity || 0,
-        type: warehouse.type || "branch",
-        floorArea: warehouse.floorArea || 0,
+        type: (warehouse.type as any) || "branch",
+        floorArea: warehouse.floorArea ? parseFloat(warehouse.floorArea.toString()) : 0,
       });
     }
   }, [warehouse, form]);
@@ -168,11 +235,99 @@ export default function EditWarehouse() {
     },
   });
 
+  // Contract mutations
+  const createContractMutation = useMutation({
+    mutationFn: (data: ContractFormData) => {
+      const dataWithWarehouseId = { ...data, warehouseId: id };
+      return apiRequest('POST', `/api/warehouses/${id}/financial-contracts`, dataWithWarehouseId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/warehouses', id, 'financial-contracts'] });
+      toast({
+        title: "Success",
+        description: "Financial contract created successfully",
+      });
+      setContractDialogOpen(false);
+      contractForm.reset();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create contract",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateContractMutation = useMutation({
+    mutationFn: ({ contractId, data }: { contractId: string; data: Partial<ContractFormData> }) => {
+      const dataWithWarehouseId = { ...data, warehouseId: id };
+      return apiRequest('PATCH', `/api/financial-contracts/${contractId}`, dataWithWarehouseId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/warehouses', id, 'financial-contracts'] });
+      toast({
+        title: "Success",
+        description: "Financial contract updated successfully",
+      });
+      setContractDialogOpen(false);
+      setEditingContract(null);
+      contractForm.reset();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update contract",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteContractMutation = useMutation({
+    mutationFn: (contractId: string) => 
+      apiRequest('DELETE', `/api/financial-contracts/${contractId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/warehouses', id, 'financial-contracts'] });
+      toast({
+        title: "Success",
+        description: "Financial contract deleted successfully",
+      });
+      setDeleteContractId(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete contract",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update contract form when editing
+  useEffect(() => {
+    if (editingContract) {
+      contractForm.reset({
+        contractName: editingContract.contractName || "",
+        contractType: editingContract.contractType as any || "rental",
+        price: editingContract.price?.toString() || "0",
+        currency: editingContract.currency as any || "CZK",
+        billingPeriod: editingContract.billingPeriod as any || "monthly",
+        customBillingDays: editingContract.customBillingDays || undefined,
+        rentalDueDate: editingContract.rentalDueDate ? new Date(editingContract.rentalDueDate).toISOString().split('T')[0] : undefined,
+        startDate: editingContract.startDate ? new Date(editingContract.startDate).toISOString().split('T')[0] : undefined,
+        endDate: editingContract.endDate ? new Date(editingContract.endDate).toISOString().split('T')[0] : undefined,
+        status: editingContract.status as any || "active",
+        notes: editingContract.notes || "",
+      });
+    }
+  }, [editingContract, contractForm]);
+
   const handleGetUploadParameters = async () => {
     const response = await apiRequest('POST', '/api/objects/upload');
+    const data = await response.json();
     return {
       method: 'PUT' as const,
-      url: response.uploadURL,
+      url: data.uploadURL,
     };
   };
 
@@ -196,6 +351,49 @@ export default function EditWarehouse() {
   const confirmDelete = () => {
     deleteWarehouseMutation.mutate();
     setShowDeleteDialog(false);
+  };
+
+  // Contract handlers
+  const handleAddContract = () => {
+    setEditingContract(null);
+    contractForm.reset();
+    setContractDialogOpen(true);
+  };
+
+  const handleEditContract = (contract: WarehouseFinancialContract) => {
+    setEditingContract(contract);
+    setContractDialogOpen(true);
+  };
+
+  const handleDeleteContract = (contractId: string) => {
+    setDeleteContractId(contractId);
+  };
+
+  const confirmDeleteContract = () => {
+    if (deleteContractId) {
+      deleteContractMutation.mutate(deleteContractId);
+    }
+  };
+
+  const onContractSubmit = (data: ContractFormData) => {
+    if (editingContract) {
+      updateContractMutation.mutate({ 
+        contractId: editingContract.id, 
+        data 
+      });
+    } else {
+      createContractMutation.mutate(data);
+    }
+  };
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'active': return 'default';
+      case 'expired': return 'destructive';
+      case 'pending': return 'secondary';
+      case 'cancelled': return 'outline';
+      default: return 'secondary';
+    }
   };
 
   if (isLoading) {
@@ -469,41 +667,148 @@ export default function EditWarehouse() {
               </CardContent>
             </Card>
 
-            {/* Financial & Notes */}
+            {/* Financial Contracts */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <ScrollText className="h-5 w-5 text-orange-600" />
+                      Financial Contracts
+                    </CardTitle>
+                    <CardDescription>Manage rental, lease, and other financial agreements</CardDescription>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleAddContract}
+                    data-testid="button-add-contract"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Contract
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {contractsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : (financialContracts as WarehouseFinancialContract[]).length === 0 ? (
+                  <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg">
+                    <ScrollText className="h-12 w-12 text-slate-400 mx-auto mb-3" />
+                    <p className="text-slate-600 font-medium">No financial contracts</p>
+                    <p className="text-sm text-slate-500 mt-1">Add your first contract to track financial agreements</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {(financialContracts as WarehouseFinancialContract[]).map((contract: WarehouseFinancialContract) => (
+                      <Card key={contract.id} className="border-slate-200" data-testid={`card-contract-${contract.id}`}>
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <CardTitle className="text-base font-semibold text-slate-900" data-testid={`text-contract-name-${contract.id}`}>
+                                {contract.contractName}
+                              </CardTitle>
+                              <p className="text-sm text-slate-500 mt-1 capitalize" data-testid={`text-contract-type-${contract.id}`}>
+                                {contract.contractType}
+                              </p>
+                            </div>
+                            <Badge variant={getStatusBadgeVariant(contract.status || 'active')} data-testid={`badge-status-${contract.id}`}>
+                              {contract.status || 'active'}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-600">Amount:</span>
+                              <span className="font-semibold text-slate-900" data-testid={`text-contract-price-${contract.id}`}>
+                                {contract.price} {contract.currency}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-600">Billing:</span>
+                              <span className="text-slate-900" data-testid={`text-contract-billing-${contract.id}`}>
+                                {contract.billingPeriod === 'custom' 
+                                  ? `Every ${contract.customBillingDays} days`
+                                  : contract.billingPeriod}
+                              </span>
+                            </div>
+                            {contract.rentalDueDate && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-slate-600">Due Date:</span>
+                                <span className="text-slate-900" data-testid={`text-contract-due-${contract.id}`}>
+                                  {formatDate(contract.rentalDueDate)}
+                                </span>
+                              </div>
+                            )}
+                            {contract.startDate && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-slate-600">Start:</span>
+                                <span className="text-slate-900" data-testid={`text-contract-start-${contract.id}`}>
+                                  {formatDate(contract.startDate)}
+                                </span>
+                              </div>
+                            )}
+                            {contract.endDate && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-slate-600">End:</span>
+                                <span className="text-slate-900" data-testid={`text-contract-end-${contract.id}`}>
+                                  {formatDate(contract.endDate)}
+                                </span>
+                              </div>
+                            )}
+                            {contract.notes && (
+                              <div className="pt-2 border-t">
+                                <p className="text-slate-600 text-xs line-clamp-2" data-testid={`text-contract-notes-${contract.id}`}>
+                                  {contract.notes}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => handleEditContract(contract)}
+                              data-testid={`button-edit-contract-${contract.id}`}
+                            >
+                              <Edit className="h-3 w-3 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => handleDeleteContract(contract.id)}
+                              data-testid={`button-delete-contract-${contract.id}`}
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              Delete
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Internal Notes - Separate from contract notes */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Banknote className="h-5 w-5 text-orange-600" />
-                  Financial & Additional Info
+                  <FileText className="h-5 w-5 text-slate-600" />
+                  Internal Notes
                 </CardTitle>
-                <CardDescription>Rental details, expenses, and notes</CardDescription>
+                <CardDescription>General warehouse notes and observations</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="rentedFromDate">Rental Start Date</Label>
-                    <div className="relative mt-1">
-                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <Input
-                        id="rentedFromDate"
-                        type="date"
-                        {...form.register("rentedFromDate")}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="expenseId">Expense Reference ID</Label>
-                    <Input
-                      id="expenseId"
-                      {...form.register("expenseId")}
-                      placeholder="e.g., EXP-2025-001"
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-
                 <div>
                   <Label htmlFor="location">Location Reference/Code</Label>
                   <Input
@@ -511,16 +816,18 @@ export default function EditWarehouse() {
                     {...form.register("location")}
                     placeholder="e.g., WH-BER-01"
                     className="mt-1"
+                    data-testid="input-location"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="notes">Internal Notes</Label>
+                  <Label htmlFor="notes">Notes</Label>
                   <Textarea
                     id="notes"
                     {...form.register("notes")}
                     placeholder="Add any important notes about this warehouse..."
                     className="min-h-[120px] mt-1"
+                    data-testid="input-notes"
                   />
                 </div>
               </CardContent>
@@ -599,7 +906,7 @@ export default function EditWarehouse() {
                 <div className="pt-3 space-y-2 text-sm text-slate-600">
                   <div className="flex items-center gap-2">
                     <AlertCircle className="h-4 w-4" />
-                    <span>Last updated: {warehouse?.updatedAt ? formatDate(warehouse.updatedAt) : 'Never'}</span>
+                    <span>Created: {warehouse?.createdAt ? formatDate(warehouse.createdAt) : 'Never'}</span>
                   </div>
                 </div>
               </CardContent>
@@ -608,7 +915,238 @@ export default function EditWarehouse() {
         </div>
       </form>
 
-      {/* Delete Dialog */}
+      {/* Contract Dialog */}
+      <Dialog open={contractDialogOpen} onOpenChange={setContractDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingContract ? 'Edit Financial Contract' : 'Add Financial Contract'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingContract 
+                ? 'Update the details of this financial contract' 
+                : 'Create a new financial contract for this warehouse'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={contractForm.handleSubmit(onContractSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <Label htmlFor="contractName">Contract Name *</Label>
+                <Input
+                  id="contractName"
+                  {...contractForm.register("contractName")}
+                  placeholder="e.g., Main Warehouse Rental Agreement"
+                  className="mt-1"
+                  data-testid="input-contract-name"
+                />
+                {contractForm.formState.errors.contractName && (
+                  <p className="text-sm text-red-600 mt-1">{contractForm.formState.errors.contractName.message}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="contractType">Contract Type *</Label>
+                <Select 
+                  value={contractForm.watch("contractType")} 
+                  onValueChange={(value) => contractForm.setValue("contractType", value as any)}
+                >
+                  <SelectTrigger className="mt-1" data-testid="select-contract-type">
+                    <SelectValue placeholder="Select contract type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="rental">Rental</SelectItem>
+                    <SelectItem value="lease">Lease</SelectItem>
+                    <SelectItem value="purchase">Purchase</SelectItem>
+                    <SelectItem value="maintenance">Maintenance</SelectItem>
+                    <SelectItem value="utilities">Utilities</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select 
+                  value={contractForm.watch("status") || "active"} 
+                  onValueChange={(value) => contractForm.setValue("status", value as any)}
+                >
+                  <SelectTrigger className="mt-1" data-testid="select-contract-status">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="expired">Expired</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="price">Price/Amount *</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  {...contractForm.register("price")}
+                  placeholder="e.g., 15000"
+                  className="mt-1"
+                  data-testid="input-contract-price"
+                />
+                {contractForm.formState.errors.price && (
+                  <p className="text-sm text-red-600 mt-1">{contractForm.formState.errors.price.message}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="currency">Currency</Label>
+                <Select 
+                  value={contractForm.watch("currency")} 
+                  onValueChange={(value) => contractForm.setValue("currency", value as any)}
+                >
+                  <SelectTrigger className="mt-1" data-testid="select-contract-currency">
+                    <SelectValue placeholder="Select currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CZK">CZK</SelectItem>
+                    <SelectItem value="EUR">EUR</SelectItem>
+                    <SelectItem value="USD">USD</SelectItem>
+                    <SelectItem value="VND">VND</SelectItem>
+                    <SelectItem value="CNY">CNY</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="billingPeriod">Billing Period</Label>
+                <Select 
+                  value={contractForm.watch("billingPeriod")} 
+                  onValueChange={(value) => contractForm.setValue("billingPeriod", value as any)}
+                >
+                  <SelectTrigger className="mt-1" data-testid="select-billing-period">
+                    <SelectValue placeholder="Select billing period" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="yearly">Yearly</SelectItem>
+                    <SelectItem value="quarterly">Quarterly</SelectItem>
+                    <SelectItem value="custom">Custom</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {contractForm.watch("billingPeriod") === "custom" && (
+                <div>
+                  <Label htmlFor="customBillingDays">Custom Billing Days *</Label>
+                  <Input
+                    id="customBillingDays"
+                    type="number"
+                    {...contractForm.register("customBillingDays", { valueAsNumber: true })}
+                    placeholder="e.g., 45"
+                    className="mt-1"
+                    data-testid="input-custom-billing-days"
+                  />
+                  {contractForm.formState.errors.customBillingDays && (
+                    <p className="text-sm text-red-600 mt-1">{contractForm.formState.errors.customBillingDays.message}</p>
+                  )}
+                </div>
+              )}
+
+              <div>
+                <Label htmlFor="rentalDueDate">Rental Due Date</Label>
+                <Input
+                  id="rentalDueDate"
+                  type="date"
+                  {...contractForm.register("rentalDueDate")}
+                  className="mt-1"
+                  data-testid="input-rental-due-date"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="startDate">Start Date</Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  {...contractForm.register("startDate")}
+                  className="mt-1"
+                  data-testid="input-start-date"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="endDate">End Date</Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  {...contractForm.register("endDate")}
+                  className="mt-1"
+                  data-testid="input-end-date"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <Label htmlFor="contractNotes">Notes</Label>
+                <Textarea
+                  id="contractNotes"
+                  {...contractForm.register("notes")}
+                  placeholder="Add any additional notes about this contract..."
+                  className="min-h-[100px] mt-1"
+                  data-testid="input-contract-notes"
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setContractDialogOpen(false);
+                  setEditingContract(null);
+                  contractForm.reset();
+                }}
+                data-testid="button-cancel-contract"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={createContractMutation.isPending || updateContractMutation.isPending}
+                data-testid="button-save-contract"
+              >
+                {(createContractMutation.isPending || updateContractMutation.isPending) 
+                  ? 'Saving...' 
+                  : editingContract ? 'Update Contract' : 'Create Contract'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Contract Dialog */}
+      <AlertDialog open={!!deleteContractId} onOpenChange={() => setDeleteContractId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Financial Contract</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this contract? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteContract}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Warehouse Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
