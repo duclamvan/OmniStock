@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -16,6 +16,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import {
   Select,
@@ -26,41 +27,57 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Save, MapPin, Search } from "lucide-react";
-// import { insertCustomerSchema } from "@shared/schema";
-// Temporary fix - create a proper schema
-const insertCustomerSchema = z.object({
-  name: z.string(),
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  zipCode: z.string().optional(),
-  country: z.string().optional(),
-  notes: z.string().optional(),
-  payLater: z.boolean().optional(),
-  defaultDiscountType: z.string().optional(),
-  defaultDiscountValue: z.number().optional(),
-  currency: z.string().optional(),
-  companyName: z.string().optional(),
-  taxId: z.string().optional(),
-});
+import { ArrowLeft, Save, Globe, Building, Receipt } from "lucide-react";
 
-// Extend the schema for form validation
-const editCustomerSchema = insertCustomerSchema.extend({
+const editCustomerSchema = z.object({
   name: z.string().min(1, "Customer name is required"),
+  country: z.string().optional().nullable(),
+  
+  // Facebook & Profile fields
   facebookName: z.string().optional().nullable(),
+  facebookUrl: z.string().optional().nullable(),
   facebookId: z.string().optional().nullable(),
-  email: z.string().email().optional().or(z.literal("")),
+  profilePictureUrl: z.string().optional().nullable(),
+  
+  // Contact fields
+  email: z.string().email().optional().or(z.literal("")).nullable(),
   phone: z.string().optional().nullable(),
+  
+  // Shipping Address fields (legacy)
   address: z.string().optional().nullable(),
   city: z.string().optional().nullable(),
   state: z.string().optional().nullable(),
   zipCode: z.string().optional().nullable(),
-  country: z.string().optional().nullable(),
+  
+  // Customer type and notes
   type: z.string(),
   notes: z.string().optional().nullable(),
+  
+  // Billing address fields
+  billingCompany: z.string().optional().nullable(),
+  billingFirstName: z.string().optional().nullable(),
+  billingLastName: z.string().optional().nullable(),
+  billingEmail: z.string().email().optional().or(z.literal("")).nullable(),
+  billingTel: z.string().optional().nullable(),
+  billingStreet: z.string().optional().nullable(),
+  billingStreetNumber: z.string().optional().nullable(),
+  billingCity: z.string().optional().nullable(),
+  billingZipCode: z.string().optional().nullable(),
+  billingCountry: z.string().optional().nullable(),
+  billingState: z.string().optional().nullable(),
+  
+  // Tax/VAT information
+  ico: z.string().optional().nullable(),
+  dic: z.string().optional().nullable(),
+  vatNumber: z.string().optional().nullable(),
+  vatValid: z.boolean().optional().nullable(),
+  vatCompanyName: z.string().optional().nullable(),
+  vatCompanyAddress: z.string().optional().nullable(),
+  taxId: z.string().optional().nullable(),
+  vatId: z.string().optional().nullable(),
+  
+  // Preferences
+  preferredLanguage: z.string().optional().nullable(),
 });
 
 type EditCustomerForm = z.infer<typeof editCustomerSchema>;
@@ -70,7 +87,6 @@ export default function EditCustomer() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
-  // Fetch customer data
   const { data: customer, isLoading } = useQuery<any>({
     queryKey: [`/api/customers/${id}`],
     enabled: !!id,
@@ -80,46 +96,87 @@ export default function EditCustomer() {
     resolver: zodResolver(editCustomerSchema),
     defaultValues: {
       name: "",
+      country: "",
       facebookName: "",
+      facebookUrl: "",
       facebookId: "",
+      profilePictureUrl: "",
       email: "",
       phone: "",
       address: "",
       city: "",
       state: "",
       zipCode: "",
-      country: "",
       type: "regular",
       notes: "",
+      billingCompany: "",
+      billingFirstName: "",
+      billingLastName: "",
+      billingEmail: "",
+      billingTel: "",
+      billingStreet: "",
+      billingStreetNumber: "",
+      billingCity: "",
+      billingZipCode: "",
+      billingCountry: "",
+      billingState: "",
+      ico: "",
+      dic: "",
+      vatNumber: "",
+      vatValid: false,
+      vatCompanyName: "",
+      vatCompanyAddress: "",
+      taxId: "",
+      vatId: "",
+      preferredLanguage: "cs",
     },
   });
 
-  // Update form when customer data is loaded
   useEffect(() => {
     if (customer) {
       form.reset({
         name: customer.name || "",
+        country: customer.country || "",
         facebookName: customer.facebookName || "",
+        facebookUrl: customer.facebookUrl || "",
         facebookId: customer.facebookId || "",
+        profilePictureUrl: customer.profilePictureUrl || "",
         email: customer.email || "",
         phone: customer.phone || "",
         address: customer.address || "",
         city: customer.city || "",
         state: customer.state || "",
         zipCode: customer.zipCode || "",
-        country: customer.country || "",
         type: customer.type || "regular",
         notes: customer.notes || "",
+        billingCompany: customer.billingCompany || "",
+        billingFirstName: customer.billingFirstName || "",
+        billingLastName: customer.billingLastName || "",
+        billingEmail: customer.billingEmail || "",
+        billingTel: customer.billingTel || "",
+        billingStreet: customer.billingStreet || "",
+        billingStreetNumber: customer.billingStreetNumber || "",
+        billingCity: customer.billingCity || "",
+        billingZipCode: customer.billingZipCode || "",
+        billingCountry: customer.billingCountry || "",
+        billingState: customer.billingState || "",
+        ico: customer.ico || "",
+        dic: customer.dic || "",
+        vatNumber: customer.vatNumber || "",
+        vatValid: customer.vatValid || false,
+        vatCompanyName: customer.vatCompanyName || "",
+        vatCompanyAddress: customer.vatCompanyAddress || "",
+        taxId: customer.taxId || "",
+        vatId: customer.vatId || "",
+        preferredLanguage: customer.preferredLanguage || "cs",
       });
     }
   }, [customer, form]);
 
-  // Update customer mutation
   const updateCustomerMutation = useMutation({
     mutationFn: async (data: EditCustomerForm) => {
-      // Remove empty strings and convert to null
       const cleanedData = Object.entries(data).reduce((acc, [key, value]) => {
-        acc[key] = value === "" ? null : value;
+        acc[key] = value === "" || value === undefined ? null : value;
         return acc;
       }, {} as any);
       
@@ -144,77 +201,6 @@ export default function EditCustomer() {
     },
   });
 
-  // Address geocoding
-  const handleAddressLookup = async () => {
-    const address = form.getValues("address");
-    const city = form.getValues("city");
-    const country = form.getValues("country");
-    
-    if (!address && !city) {
-      toast({
-        title: "Error",
-        description: "Please enter an address or city to lookup",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const query = [address, city, country].filter(Boolean).join(", ");
-      const response = await apiRequest('GET', `/api/geocode?address=${encodeURIComponent(query)}`);
-      
-      if (response && Array.isArray(response) && response.length > 0) {
-        const result = response[0];
-        
-        // Extract components from the result
-        const addressComponents = result.display_name.split(", ");
-        const houseNumber = result.address?.house_number || "";
-        const road = result.address?.road || "";
-        const suburb = result.address?.suburb || "";
-        const cityDistrict = result.address?.city_district || "";
-        const city = result.address?.city || result.address?.town || result.address?.village || "";
-        const state = result.address?.state || "";
-        const postcode = result.address?.postcode || "";
-        const country = result.address?.country || "";
-
-        // Construct the street address
-        let streetAddress = "";
-        if (houseNumber && road) {
-          streetAddress = `${road} ${houseNumber}`;
-        } else if (road) {
-          streetAddress = road;
-        } else if (addressComponents[0]) {
-          streetAddress = addressComponents[0];
-        }
-
-        // Update form fields
-        form.setValue("address", streetAddress);
-        form.setValue("city", city);
-        form.setValue("state", state);
-        form.setValue("zipCode", postcode);
-        form.setValue("country", country);
-        
-        toast({
-          title: "Success",
-          description: "Address information updated",
-        });
-      } else {
-        toast({
-          title: "Not Found",
-          description: "Could not find address information",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Geocoding error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to lookup address",
-        variant: "destructive",
-      });
-    }
-  };
-
   const onSubmit = (data: EditCustomerForm) => {
     updateCustomerMutation.mutate(data);
   };
@@ -224,7 +210,7 @@ export default function EditCustomer() {
       <div className="flex items-center justify-center min-h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-slate-600">Customer not found</p>
+          <p className="text-slate-600">Loading customer data...</p>
         </div>
       </div>
     );
@@ -248,13 +234,13 @@ export default function EditCustomer() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
             variant="outline"
             size="icon"
             onClick={() => navigate("/customers")}
+            data-testid="button-back"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -262,7 +248,6 @@ export default function EditCustomer() {
         </div>
       </div>
 
-      {/* Form */}
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <Card>
@@ -278,7 +263,11 @@ export default function EditCustomer() {
                     <FormItem>
                       <FormLabel>Customer Name *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter customer name" {...field} />
+                        <Input 
+                          placeholder="Enter customer name" 
+                          {...field} 
+                          data-testid="input-name"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -293,7 +282,7 @@ export default function EditCustomer() {
                       <FormLabel>Customer Type</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger data-testid="select-type">
                             <SelectValue placeholder="Select type" />
                           </SelectTrigger>
                         </FormControl>
@@ -312,12 +301,71 @@ export default function EditCustomer() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Country</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Country" 
+                          {...field} 
+                          value={field.value || ""} 
+                          data-testid="input-country"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="preferredLanguage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        <Globe className="inline-block h-4 w-4 mr-1" />
+                        Preferred Language
+                      </FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || "cs"}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-language">
+                            <SelectValue placeholder="Select language" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="cs">Czech (Čeština)</SelectItem>
+                          <SelectItem value="en">English</SelectItem>
+                          <SelectItem value="vn">Vietnamese (Tiếng Việt)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Facebook & Profile Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
                   name="facebookName"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Facebook Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Facebook display name" {...field} value={field.value || ""} />
+                        <Input 
+                          placeholder="Facebook display name" 
+                          {...field} 
+                          value={field.value || ""} 
+                          data-testid="input-facebook-name"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -331,19 +379,65 @@ export default function EditCustomer() {
                     <FormItem>
                       <FormLabel>Facebook ID/Username</FormLabel>
                       <FormControl>
-                        <Input placeholder="Facebook ID or username" {...field} value={field.value || ""} />
+                        <Input 
+                          placeholder="Facebook ID or username" 
+                          {...field} 
+                          value={field.value || ""} 
+                          data-testid="input-facebook-id"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
+
+              <FormField
+                control={form.control}
+                name="facebookUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Facebook Profile URL</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="https://facebook.com/username" 
+                        {...field} 
+                        value={field.value || ""} 
+                        data-testid="input-facebook-url"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="profilePictureUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Profile Picture URL</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="URL to profile picture" 
+                        {...field} 
+                        value={field.value || ""} 
+                        data-testid="input-profile-picture"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Local path or URL to customer's profile picture
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Contact & Address Information</CardTitle>
+              <CardTitle>Contact Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -354,7 +448,13 @@ export default function EditCustomer() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="customer@example.com" {...field} value={field.value || ""} />
+                        <Input 
+                          type="email" 
+                          placeholder="customer@example.com" 
+                          {...field} 
+                          value={field.value || ""} 
+                          data-testid="input-email"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -368,7 +468,12 @@ export default function EditCustomer() {
                     <FormItem>
                       <FormLabel>Phone</FormLabel>
                       <FormControl>
-                        <Input placeholder="+1 234 567 8900" {...field} value={field.value || ""} />
+                        <Input 
+                          placeholder="+1 234 567 8900" 
+                          {...field} 
+                          value={field.value || ""} 
+                          data-testid="input-phone"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -382,20 +487,18 @@ export default function EditCustomer() {
                   name="address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Street Address</FormLabel>
-                      <div className="flex gap-2">
-                        <FormControl>
-                          <Input placeholder="123 Main Street" {...field} value={field.value || ""} />
-                        </FormControl>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={handleAddressLookup}
-                          title="Lookup address"
-                        >
-                          <Search className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <FormLabel>Street Address (Legacy)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="123 Main Street" 
+                          {...field} 
+                          value={field.value || ""} 
+                          data-testid="input-address"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Note: Use shipping addresses for current orders
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -409,7 +512,12 @@ export default function EditCustomer() {
                       <FormItem>
                         <FormLabel>City</FormLabel>
                         <FormControl>
-                          <Input placeholder="City" {...field} value={field.value || ""} />
+                          <Input 
+                            placeholder="City" 
+                            {...field} 
+                            value={field.value || ""} 
+                            data-testid="input-city"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -423,7 +531,12 @@ export default function EditCustomer() {
                       <FormItem>
                         <FormLabel>State/Province</FormLabel>
                         <FormControl>
-                          <Input placeholder="State" {...field} value={field.value || ""} />
+                          <Input 
+                            placeholder="State" 
+                            {...field} 
+                            value={field.value || ""} 
+                            data-testid="input-state"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -437,21 +550,12 @@ export default function EditCustomer() {
                       <FormItem>
                         <FormLabel>ZIP/Postal Code</FormLabel>
                         <FormControl>
-                          <Input placeholder="12345" {...field} value={field.value || ""} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="country"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Country</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Country" {...field} value={field.value || ""} />
+                          <Input 
+                            placeholder="12345" 
+                            {...field} 
+                            value={field.value || ""} 
+                            data-testid="input-zipcode"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -459,6 +563,370 @@ export default function EditCustomer() {
                   />
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <Building className="inline-block h-5 w-5 mr-2" />
+                Billing Address Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="billingCompany"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company Name</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Company name" 
+                        {...field} 
+                        value={field.value || ""} 
+                        data-testid="input-billing-company"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="billingFirstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First Name</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="First name" 
+                          {...field} 
+                          value={field.value || ""} 
+                          data-testid="input-billing-firstname"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="billingLastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last Name</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Last name" 
+                          {...field} 
+                          value={field.value || ""} 
+                          data-testid="input-billing-lastname"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="billingEmail"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="email" 
+                          placeholder="billing@company.com" 
+                          {...field} 
+                          value={field.value || ""} 
+                          data-testid="input-billing-email"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="billingTel"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="+420 123 456 789" 
+                          {...field} 
+                          value={field.value || ""} 
+                          data-testid="input-billing-tel"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="billingStreet"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Street</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Street name" 
+                          {...field} 
+                          value={field.value || ""} 
+                          data-testid="input-billing-street"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="billingStreetNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Street Number</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="No." 
+                          {...field} 
+                          value={field.value || ""} 
+                          data-testid="input-billing-streetnumber"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <FormField
+                  control={form.control}
+                  name="billingCity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>City</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="City" 
+                          {...field} 
+                          value={field.value || ""} 
+                          data-testid="input-billing-city"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="billingZipCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Zip Code</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Zip" 
+                          {...field} 
+                          value={field.value || ""} 
+                          data-testid="input-billing-zipcode"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="billingCountry"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Country</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Country" 
+                          {...field} 
+                          value={field.value || ""} 
+                          data-testid="input-billing-country"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="billingState"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>State</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="State" 
+                          {...field} 
+                          value={field.value || ""} 
+                          data-testid="input-billing-state"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <Receipt className="inline-block h-5 w-5 mr-2" />
+                Tax & VAT Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="ico"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>IČO (Czech Company ID)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="12345678" 
+                          {...field} 
+                          value={field.value || ""} 
+                          data-testid="input-ico"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="dic"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>DIČ (Czech Tax ID)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="CZ12345678" 
+                          {...field} 
+                          value={field.value || ""} 
+                          data-testid="input-dic"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="vatNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>VAT Number (EU)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="CZ12345678" 
+                          {...field} 
+                          value={field.value || ""} 
+                          data-testid="input-vat-number"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="vatValid"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value || false}
+                        onCheckedChange={field.onChange}
+                        data-testid="checkbox-vat-valid"
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>VAT Number is Valid</FormLabel>
+                      <FormDescription>
+                        Checked if VAT number has been validated
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="vatCompanyName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>VAT Company Name</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Company name from VAT validation" 
+                        {...field} 
+                        value={field.value || ""} 
+                        data-testid="input-vat-company-name"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Auto-filled from VAT validation service
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="vatCompanyAddress"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>VAT Company Address</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Company address from VAT validation" 
+                        {...field} 
+                        value={field.value || ""} 
+                        rows={2}
+                        data-testid="input-vat-company-address"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Auto-filled from VAT validation service
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </CardContent>
           </Card>
 
@@ -480,6 +948,7 @@ export default function EditCustomer() {
                         rows={4}
                         {...field}
                         value={field.value || ""}
+                        data-testid="input-notes"
                       />
                     </FormControl>
                     <FormMessage />
@@ -489,18 +958,20 @@ export default function EditCustomer() {
             </CardContent>
           </Card>
 
-
-
-          {/* Actions */}
           <div className="flex justify-end gap-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => navigate("/customers")}
+              data-testid="button-cancel"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={updateCustomerMutation.isPending}>
+            <Button 
+              type="submit" 
+              disabled={updateCustomerMutation.isPending}
+              data-testid="button-save"
+            >
               <Save className="mr-2 h-4 w-4" />
               {updateCustomerMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
