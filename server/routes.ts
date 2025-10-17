@@ -872,6 +872,94 @@ Important:
     }
   });
 
+  // Warehouse Layout endpoints
+  app.get('/api/warehouses/:id/layout', async (req, res) => {
+    try {
+      const layout = await storage.getWarehouseLayout(req.params.id);
+      if (!layout) {
+        return res.status(404).json({ message: "Warehouse layout not found" });
+      }
+      res.json(layout);
+    } catch (error) {
+      console.error("Error fetching warehouse layout:", error);
+      res.status(500).json({ message: "Failed to fetch warehouse layout" });
+    }
+  });
+
+  app.post('/api/warehouses/:id/layout/generate', async (req: any, res) => {
+    try {
+      const config = req.body;
+      const layout = await storage.generateBinLayout(req.params.id, config);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'generated',
+        entityType: 'warehouse_layout',
+        entityId: layout.id,
+        description: `Generated warehouse layout for warehouse ${req.params.id}`,
+      });
+
+      res.json(layout);
+    } catch (error) {
+      console.error("Error generating warehouse layout:", error);
+      res.status(500).json({ message: "Failed to generate warehouse layout" });
+    }
+  });
+
+  app.get('/api/warehouses/:id/layout/bins', async (req, res) => {
+    try {
+      const layout = await storage.getWarehouseLayout(req.params.id);
+      if (!layout) {
+        return res.status(404).json({ message: "Warehouse layout not found" });
+      }
+      
+      const bins = await storage.getBinsWithInventory(layout.id);
+      res.json(bins);
+    } catch (error) {
+      console.error("Error fetching warehouse bins:", error);
+      res.status(500).json({ message: "Failed to fetch warehouse bins" });
+    }
+  });
+
+  app.get('/api/warehouses/:id/layout/stats', async (req, res) => {
+    try {
+      const layout = await storage.getWarehouseLayout(req.params.id);
+      if (!layout) {
+        return res.status(404).json({ message: "Warehouse layout not found" });
+      }
+      
+      const stats = await storage.getLayoutStatistics(layout.id);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching layout statistics:", error);
+      res.status(500).json({ message: "Failed to fetch layout statistics" });
+    }
+  });
+
+  app.patch('/api/bins/:id', async (req: any, res) => {
+    try {
+      const updates = req.body;
+      const bin = await storage.updateLayoutBin(req.params.id, updates);
+      
+      if (!bin) {
+        return res.status(404).json({ message: "Bin not found" });
+      }
+
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated',
+        entityType: 'layout_bin',
+        entityId: bin.id,
+        description: `Updated bin: ${bin.code}`,
+      });
+
+      res.json(bin);
+    } catch (error) {
+      console.error("Error updating bin:", error);
+      res.status(500).json({ message: "Failed to update bin" });
+    }
+  });
+
   // Suppliers endpoints
   app.get('/api/suppliers', async (req, res) => {
     try {

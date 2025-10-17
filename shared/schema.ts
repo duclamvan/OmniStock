@@ -387,6 +387,36 @@ export const warehouseFinancialContracts = pgTable('warehouse_financial_contract
   updatedAt: timestamp('updated_at').notNull().defaultNow()
 });
 
+export const warehouseLayouts = pgTable('warehouse_layouts', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  warehouseId: text('warehouse_id').notNull().references(() => warehouses.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  width: decimal('width', { precision: 10, scale: 2 }).notNull(),
+  length: decimal('length', { precision: 10, scale: 2 }).notNull(),
+  coordinateSystem: text('coordinate_system').notNull().default('grid'),
+  generatedAt: timestamp('generated_at').notNull().defaultNow(),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+export const layoutBins = pgTable('layout_bins', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  layoutId: varchar('layout_id').notNull().references(() => warehouseLayouts.id, { onDelete: 'cascade' }),
+  code: text('code').notNull(),
+  row: text('row').notNull(),
+  column: integer('column').notNull(),
+  x: decimal('x', { precision: 10, scale: 2 }).notNull(),
+  y: decimal('y', { precision: 10, scale: 2 }).notNull(),
+  width: decimal('width', { precision: 10, scale: 2 }).notNull(),
+  height: decimal('height', { precision: 10, scale: 2 }).notNull(),
+  capacity: integer('capacity').notNull().default(100),
+  type: text('type').notNull().default('standard'),
+  status: text('status').notNull().default('active'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
 export const products = pgTable('products', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
   name: varchar('name').notNull(),
@@ -1078,6 +1108,8 @@ export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: tru
 export const insertWarehouseSchema = createInsertSchema(warehouses).omit({ createdAt: true });
 export const insertWarehouseFileSchema = createInsertSchema(warehouseFiles).omit({ id: true, createdAt: true });
 export const insertWarehouseFinancialContractSchema = createInsertSchema(warehouseFinancialContracts).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertWarehouseLayoutSchema = createInsertSchema(warehouseLayouts).omit({ id: true, generatedAt: true, createdAt: true, updatedAt: true });
+export const insertLayoutBinSchema = createInsertSchema(layoutBins).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductVariantSchema = createInsertSchema(productVariants).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductTieredPricingSchema = createInsertSchema(productTieredPricing).omit({ id: true, createdAt: true, updatedAt: true });
@@ -1160,6 +1192,10 @@ export type WarehouseFile = typeof warehouseFiles.$inferSelect;
 export type InsertWarehouseFile = z.infer<typeof insertWarehouseFileSchema>;
 export type WarehouseFinancialContract = typeof warehouseFinancialContracts.$inferSelect;
 export type InsertWarehouseFinancialContract = z.infer<typeof insertWarehouseFinancialContractSchema>;
+export type WarehouseLayout = typeof warehouseLayouts.$inferSelect;
+export type InsertWarehouseLayout = z.infer<typeof insertWarehouseLayoutSchema>;
+export type LayoutBin = typeof layoutBins.$inferSelect;
+export type InsertLayoutBin = z.infer<typeof insertLayoutBinSchema>;
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type ProductVariant = typeof productVariants.$inferSelect;

@@ -24,6 +24,8 @@ import {
   warehouses,
   warehouseFiles,
   warehouseFinancialContracts,
+  warehouseLayouts,
+  layoutBins,
   services,
   serviceItems,
   preOrders,
@@ -85,6 +87,10 @@ import {
   type InsertWarehouseFile,
   type WarehouseFinancialContract,
   type InsertWarehouseFinancialContract,
+  type WarehouseLayout,
+  type InsertWarehouseLayout,
+  type LayoutBin,
+  type InsertLayoutBin,
   type Service,
   type InsertService,
   type ServiceItem,
@@ -288,6 +294,16 @@ export interface IStorage {
   createWarehouseFinancialContract(data: InsertWarehouseFinancialContract): Promise<WarehouseFinancialContract>;
   updateWarehouseFinancialContract(id: string, data: Partial<InsertWarehouseFinancialContract>): Promise<WarehouseFinancialContract>;
   deleteWarehouseFinancialContract(id: string): Promise<boolean>;
+  
+  // Warehouse Layouts
+  getWarehouseLayout(warehouseId: string): Promise<WarehouseLayout | undefined>;
+  createWarehouseLayout(data: InsertWarehouseLayout): Promise<WarehouseLayout>;
+  generateBinLayout(warehouseId: string, config: any): Promise<WarehouseLayout>;
+  getBinsWithInventory(layoutId: string): Promise<any[]>;
+  getBinOccupancy(binId: string): Promise<number>;
+  getLayoutStatistics(layoutId: string): Promise<any>;
+  getLayoutBins(layoutId: string): Promise<LayoutBin[]>;
+  updateLayoutBin(binId: string, data: Partial<InsertLayoutBin>): Promise<LayoutBin | undefined>;
   
   // Suppliers
   getSuppliers(): Promise<Supplier[]>;
@@ -2240,6 +2256,199 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error deleting warehouse financial contract:', error);
       return false;
+    }
+  }
+
+  async getWarehouseLayout(warehouseId: string): Promise<WarehouseLayout | undefined> {
+    try {
+      const [layout] = await db
+        .select()
+        .from(warehouseLayouts)
+        .where(and(
+          eq(warehouseLayouts.warehouseId, warehouseId),
+          eq(warehouseLayouts.isActive, true)
+        ))
+        .orderBy(desc(warehouseLayouts.createdAt));
+      return layout || undefined;
+    } catch (error) {
+      console.error('Error fetching warehouse layout:', error);
+      return undefined;
+    }
+  }
+
+  async createWarehouseLayout(data: InsertWarehouseLayout): Promise<WarehouseLayout> {
+    try {
+      const [layout] = await db
+        .insert(warehouseLayouts)
+        .values(data)
+        .returning();
+      return layout;
+    } catch (error) {
+      console.error('Error creating warehouse layout:', error);
+      throw error;
+    }
+  }
+
+  async generateBinLayout(warehouseId: string, config: any): Promise<WarehouseLayout> {
+    try {
+      const { generateBinLayout: generateLayout } = await import('./services/layoutGeneratorService.js');
+      
+      const existingLayout = await this.getWarehouseLayout(warehouseId);
+      if (existingLayout) {
+        await db
+          .update(warehouseLayouts)
+          .set({ isActive: false })
+          .where(eq(warehouseLayouts.id, existingLayout.id));
+      }
+
+      const [layout] = await db
+        .insert(warehouseLayouts)
+        .values({
+          warehouseId,
+          name: config.name || 'Auto-generated Layout',
+          width: config.width,
+          length: config.length,
+          coordinateSystem: 'grid',
+          isActive: true
+        })
+        .returning();
+
+      const bins = generateLayout(config).map(bin => ({
+        ...bin,
+        layoutId: layout.id
+      }));
+
+      if (bins.length > 0) {
+        await db.insert(layoutBins).values(bins);
+      }
+
+      return layout;
+    } catch (error) {
+      console.error('Error generating bin layout:', error);
+      throw error;
+    }
+  }
+
+  async getBinsWithInventory(layoutId: string): Promise<any[]> {
+    try {
+      const bins = await db
+        .select()
+        .from(layoutBins)
+        .where(eq(layoutBins.layoutId, layoutId))
+        .orderBy(asc(layoutBins.row), asc(layoutBins.column));
+
+      const binsWithInventory = await Promise.all(
+        bins.map(async (bin) => {
+          const occupancy = await this.getBinOccupancy(bin.id);
+          const inventoryItems = await db
+            .select()
+            .from(productLocations)
+            .where(like(productLocations.locationCode, `%${bin.code}%`));
+
+          return {
+            ...bin,
+            occupancy,
+            inventoryItems: inventoryItems.length,
+            products: inventoryItems
+          };
+        })
+      );
+
+      return binsWithInventory;
+    } catch (error) {
+      console.error('Error fetching bins with inventory:', error);
+      return [];
+    }
+  }
+
+  async getBinOccupancy(binId: string): Promise<number> {
+    try {
+      const [bin] = await db
+        .select()
+        .from(layoutBins)
+        .where(eq(layoutBins.id, binId));
+
+      if (!bin) return 0;
+
+      const inventoryItems = await db
+        .select()
+        .from(productLocations)
+        .where(like(productLocations.locationCode, `%${bin.code}%`));
+
+      const totalQuantity = inventoryItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+      return Math.min(100, (totalQuantity / bin.capacity) * 100);
+    } catch (error) {
+      console.error('Error calculating bin occupancy:', error);
+      return 0;
+    }
+  }
+
+  async getLayoutStatistics(layoutId: string): Promise<any> {
+    try {
+      const bins = await db
+        .select()
+        .from(layoutBins)
+        .where(eq(layoutBins.layoutId, layoutId));
+
+      const totalBins = bins.length;
+      let emptyBins = 0;
+      let occupiedBins = 0;
+      let totalOccupancy = 0;
+
+      for (const bin of bins) {
+        const occupancy = await this.getBinOccupancy(bin.id);
+        if (occupancy === 0) {
+          emptyBins++;
+        } else {
+          occupiedBins++;
+        }
+        totalOccupancy += occupancy;
+      }
+
+      const utilizationRate = totalBins > 0 ? (totalOccupancy / totalBins) : 0;
+
+      return {
+        totalBins,
+        emptyBins,
+        occupiedBins,
+        utilizationRate: Math.round(utilizationRate * 100) / 100
+      };
+    } catch (error) {
+      console.error('Error calculating layout statistics:', error);
+      return {
+        totalBins: 0,
+        emptyBins: 0,
+        occupiedBins: 0,
+        utilizationRate: 0
+      };
+    }
+  }
+
+  async getLayoutBins(layoutId: string): Promise<LayoutBin[]> {
+    try {
+      const bins = await db
+        .select()
+        .from(layoutBins)
+        .where(eq(layoutBins.layoutId, layoutId))
+        .orderBy(asc(layoutBins.row), asc(layoutBins.column));
+      return bins;
+    } catch (error) {
+      console.error('Error fetching layout bins:', error);
+      return [];
+    }
+  }
+
+  async updateLayoutBin(binId: string, data: Partial<InsertLayoutBin>): Promise<LayoutBin | undefined> {
+    try {
+      const [updated] = await db
+        .update(layoutBins)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(layoutBins.id, binId))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating layout bin:', error);
+      return undefined;
     }
   }
 

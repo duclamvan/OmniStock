@@ -55,6 +55,7 @@ import AddCategory from "@/pages/Inventory/AddCategory";
 import EditCategory from "@/pages/Inventory/EditCategory";
 import CategoryDetails from "@/pages/Inventory/CategoryDetails";
 import WarehouseMap from "@/pages/WarehouseMap";
+import WarehouseMapNew from "@/pages/Warehouse/WarehouseMapNew";
 import PickPack from "@/pages/Orders/PickPack";
 import ShippingManagement from "@/pages/Shipping/ShippingManagement";
 import PackingMaterials from "@/pages/PackingMaterials";
@@ -137,6 +138,7 @@ function Router() {
         <Route path="/warehouses/add" component={AddWarehouse} />
         <Route path="/warehouses/map" component={WarehouseMap} />
         <Route path="/warehouses/:id/mapping" component={WarehouseMap} />
+        <Route path="/warehouses/:id/map" component={WarehouseMapNew} />
         <Route path="/warehouses/:id/edit" component={EditWarehouse} />
         <Route path="/warehouses/:id" component={WarehouseDetails} />
         <Route path="/discounts" component={AllDiscounts} />
