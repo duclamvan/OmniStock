@@ -9,7 +9,7 @@ import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
-import { Plus, Search, Edit, Trash2, Warehouse, MapPin, Package } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Warehouse, MapPin, Package, Ruler, Building2, User } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -116,6 +116,102 @@ export default function AllWarehouses() {
       ),
     },
     {
+      key: "floorArea",
+      header: "Floor Area (m²)",
+      sortable: true,
+      className: "text-center",
+      cell: (warehouse) => (
+        <div className="flex items-center justify-center gap-1">
+          <Ruler className="h-4 w-4 text-slate-400" />
+          <span className="text-sm font-medium">
+            {warehouse.floorArea || warehouse.floor_area ? 
+              `${warehouse.floorArea || warehouse.floor_area} m²` : '-'}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: "type",
+      header: "Type",
+      sortable: true,
+      className: "text-center",
+      cell: (warehouse) => {
+        const typeConfig = {
+          'main': { label: 'Main', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
+          'branch': { label: 'Branch', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' },
+          'temporary': { label: 'Temporary', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
+        };
+        
+        if (!warehouse.type || !typeConfig[warehouse.type as keyof typeof typeConfig]) {
+          return <span className="text-sm text-slate-400">-</span>;
+        }
+        
+        const config = typeConfig[warehouse.type as keyof typeof typeConfig];
+        return (
+          <Badge className={config.color} variant="outline">
+            {config.label}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: "status",
+      header: "Status",
+      sortable: true,
+      className: "text-center",
+      cell: (warehouse) => {
+        const statusConfig = {
+          'active': { label: 'Active', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' },
+          'inactive': { label: 'Inactive', color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200' },
+          'maintenance': { label: 'Maintenance', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' },
+          'rented': { label: 'Rented', color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' },
+        };
+        
+        if (!warehouse.status || !statusConfig[warehouse.status as keyof typeof statusConfig]) {
+          return <span className="text-sm text-slate-400">-</span>;
+        }
+        
+        const config = statusConfig[warehouse.status as keyof typeof statusConfig];
+        return (
+          <Badge className={config.color} variant="outline">
+            {config.label}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: "location",
+      header: "Location",
+      sortable: true,
+      className: "min-w-[150px]",
+      cell: (warehouse) => (
+        <div className="flex items-center gap-2">
+          <MapPin className="h-4 w-4 text-slate-400" />
+          <span className="text-sm">
+            {warehouse.city || warehouse.location || '-'}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: "manager",
+      header: "Manager",
+      sortable: true,
+      className: "min-w-[120px]",
+      cell: (warehouse) => (
+        warehouse.manager ? (
+          <div className="flex items-center gap-2">
+            <User className="h-4 w-4 text-slate-400" />
+            <span className="text-sm">
+              {warehouse.manager}
+            </span>
+          </div>
+        ) : (
+          <span className="text-sm text-slate-400">-</span>
+        )
+      ),
+    },
+    {
       key: "capacity",
       header: "Capacity",
       sortable: true,
@@ -193,13 +289,13 @@ export default function AllWarehouses() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
         <Card>
           <CardContent className="p-4 lg:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center">
               <Warehouse className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 mb-2 sm:mb-0" />
               <div className="sm:ml-4">
-                <p className="text-xs lg:text-sm font-medium text-slate-600">Total</p>
+                <p className="text-xs lg:text-sm font-medium text-slate-600">Total Warehouses</p>
                 <p className="text-lg lg:text-2xl font-bold text-slate-900">{warehouses?.length || 0}</p>
               </div>
             </div>
@@ -209,11 +305,11 @@ export default function AllWarehouses() {
         <Card>
           <CardContent className="p-4 lg:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center">
-              <MapPin className="h-6 w-6 lg:h-8 lg:w-8 text-green-600 mb-2 sm:mb-0" />
+              <Package className="h-6 w-6 lg:h-8 lg:w-8 text-green-600 mb-2 sm:mb-0" />
               <div className="sm:ml-4">
-                <p className="text-xs lg:text-sm font-medium text-slate-600">Main</p>
+                <p className="text-xs lg:text-sm font-medium text-slate-600">Total Items</p>
                 <p className="text-lg lg:text-2xl font-bold text-slate-900">
-                  {warehouses?.filter((w: any) => w.type === 'main').length || 0}
+                  {warehouses?.reduce((sum: number, w: any) => sum + (w.itemCount || 0), 0).toLocaleString()}
                 </p>
               </div>
             </div>
@@ -223,9 +319,24 @@ export default function AllWarehouses() {
         <Card>
           <CardContent className="p-4 lg:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center">
-              <Warehouse className="h-6 w-6 lg:h-8 lg:w-8 text-purple-600 mb-2 sm:mb-0" />
+              <Ruler className="h-6 w-6 lg:h-8 lg:w-8 text-orange-600 mb-2 sm:mb-0" />
               <div className="sm:ml-4">
-                <p className="text-xs lg:text-sm font-medium text-slate-600">Capacity</p>
+                <p className="text-xs lg:text-sm font-medium text-slate-600">Total Floor Area</p>
+                <p className="text-lg lg:text-2xl font-bold text-slate-900">
+                  {warehouses?.reduce((sum: number, w: any) => sum + (w.floorArea || w.floor_area || 0), 0).toLocaleString()}
+                  <span className="text-xs lg:text-sm font-normal text-slate-600 ml-1">m²</span>
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center">
+              <Building2 className="h-6 w-6 lg:h-8 lg:w-8 text-purple-600 mb-2 sm:mb-0" />
+              <div className="sm:ml-4">
+                <p className="text-xs lg:text-sm font-medium text-slate-600">Total Capacity</p>
                 <p className="text-lg lg:text-2xl font-bold text-slate-900">
                   {warehouses?.reduce((sum: number, w: any) => sum + (w.capacity || 0), 0).toLocaleString()}
                   <span className="text-xs lg:text-sm font-normal text-slate-600 ml-1">units</span>
