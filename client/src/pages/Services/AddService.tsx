@@ -116,6 +116,7 @@ export default function AddService() {
   const [customerOpen, setCustomerOpen] = useState(false);
   const [orderOpen, setOrderOpen] = useState(false);
   const [productSearchTerms, setProductSearchTerms] = useState<{ [key: number]: string }>({});
+  const [openDropdownIndex, setOpenDropdownIndex] = useState<number | null>(null);
 
   const { data: existingService, isLoading: loadingService } = useQuery({
     queryKey: ['/api/services', params.id],
@@ -332,6 +333,7 @@ export default function AddService() {
       isCustom: false,
     };
     setServiceItems(updated);
+    setOpenDropdownIndex(null); // Close dropdown after selection
   };
 
   const updateServiceItem = (index: number, field: keyof ServiceItem, value: any) => {
@@ -755,10 +757,16 @@ export default function AddService() {
                       {/* Parts List */}
                       {serviceItems.map((item, index) => {
                         const searchTerm = productSearchTerms[index] ?? item.productName ?? '';
-                        const filteredSuggestions = allProducts.filter(p =>
-                          p.name.toLowerCase().includes(searchTerm.toLowerCase())
-                        ).slice(0, 5);
-                        const showSuggestions = searchTerm.length > 0 && filteredSuggestions.length > 0 && !item.productId;
+                        const isDropdownOpen = openDropdownIndex === index;
+                        
+                        // Show filtered suggestions when typing, or top products when dropdown is open without search
+                        const filteredSuggestions = searchTerm.length > 0
+                          ? allProducts.filter(p =>
+                              p.name.toLowerCase().includes(searchTerm.toLowerCase())
+                            ).slice(0, 8)
+                          : allProducts.slice(0, 15);
+                        
+                        const showSuggestions = (isDropdownOpen || searchTerm.length > 0) && filteredSuggestions.length > 0 && !item.productId;
 
                         return (
                           <div
@@ -771,20 +779,32 @@ export default function AddService() {
                               <div className="md:col-span-5 relative">
                                 <Label className="text-xs font-medium mb-1.5 block">Product Name</Label>
                                 <Input
-                                  placeholder="Type product name..."
+                                  placeholder="Click to select or type..."
                                   value={searchTerm}
                                   onChange={(e) => handleProductNameChange(index, e.target.value)}
+                                  onFocus={() => setOpenDropdownIndex(index)}
+                                  onBlur={() => {
+                                    // Delay closing to allow click on dropdown items
+                                    setTimeout(() => setOpenDropdownIndex(null), 200);
+                                  }}
                                   data-testid={`input-product-name-${index}`}
                                   className="w-full"
                                   autoComplete="off"
                                 />
                                 {showSuggestions && (
-                                  <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg max-h-48 overflow-auto">
+                                  <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg max-h-64 overflow-auto">
+                                    {searchTerm.length === 0 && (
+                                      <div className="px-3 py-2 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-600 sticky top-0">
+                                        <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                                          Quick Select - Top Products
+                                        </p>
+                                      </div>
+                                    )}
                                     {filteredSuggestions.map((product) => (
                                       <button
                                         key={product.id}
                                         type="button"
-                                        className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 flex justify-between items-center"
+                                        className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 flex justify-between items-center border-b border-slate-100 dark:border-slate-700 last:border-b-0"
                                         onClick={() => selectProductFromDropdown(index, product.id)}
                                         data-testid={`suggestion-${product.id}`}
                                       >
