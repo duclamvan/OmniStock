@@ -739,32 +739,40 @@ export default function WarehouseDetails() {
                 <Badge variant="outline" className="font-mono" data-testid="badge-file-count">{files.length} files</Badge>
               </div>
             </CardHeader>
-            <CardContent className="p-6 space-y-4">
-              {/* Upload Section */}
-              <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg p-4 sm:p-6 hover:border-blue-400 dark:hover:border-blue-500 transition-colors" data-testid="section-upload">
-                <ObjectUploader
-                  maxNumberOfFiles={10}
-                  maxFileSize={50 * 1024 * 1024}
-                  onGetUploadParameters={handleGetUploadParameters}
-                  onComplete={handleFileUploadComplete}
-                  buttonClassName="w-full"
+            <CardContent className="p-6 space-y-6">
+              {/* Upload Section - Clean Professional Design */}
+              <ObjectUploader
+                maxNumberOfFiles={10}
+                maxFileSize={50 * 1024 * 1024}
+                onGetUploadParameters={handleGetUploadParameters}
+                onComplete={handleFileUploadComplete}
+                buttonClassName="w-full"
+              >
+                <div 
+                  className="relative border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-8 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-all duration-200 cursor-pointer group"
+                  data-testid="section-upload"
                 >
-                  <div className="flex flex-col items-center gap-2 sm:gap-3 py-3 sm:py-4">
-                    <div className="p-2 sm:p-3 rounded-full bg-blue-50 dark:bg-blue-900/20">
-                      <UploadCloud className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 dark:text-blue-400" />
+                  <div className="flex flex-col items-center gap-4">
+                    {/* Icon */}
+                    <div className="p-4 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 group-hover:from-blue-100 group-hover:to-blue-200 dark:group-hover:from-blue-900/50 dark:group-hover:to-blue-800/50 transition-all">
+                      <UploadCloud className="h-8 w-8 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <div className="text-center max-w-xs px-2">
-                      <p className="font-medium text-sm sm:text-base text-slate-900 dark:text-slate-100">Upload Files</p>
-                      <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
-                        Drag & drop or click to browse
+                    
+                    {/* Text Content */}
+                    <div className="text-center">
+                      <p className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-1">
+                        Upload Documents
                       </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
-                        Max 50MB per file
+                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                        Drag and drop files here, or click to browse
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">
+                        Maximum file size: 50MB • Up to 10 files
                       </p>
                     </div>
                   </div>
-                </ObjectUploader>
-              </div>
+                </div>
+              </ObjectUploader>
 
               {/* Files List */}
               {filesLoading ? (
