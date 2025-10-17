@@ -2291,8 +2291,25 @@ export class DatabaseStorage implements IStorage {
 
   async generateBinLayout(warehouseId: string, config: any): Promise<WarehouseLayout> {
     try {
-      const { generateBinLayout: generateLayout } = await import('./services/layoutGeneratorService.js');
+      const { generateBinLayout: generateLayout, validateLayoutConfig } = await import('./services/layoutGeneratorService.js');
       
+      const sanitizedConfig = {
+        name: config.name || 'Auto-generated Layout',
+        width: parseFloat(config.width) || 100,
+        length: parseFloat(config.length) || 100,
+        rows: parseInt(config.rows) || 10,
+        columns: parseInt(config.columns) || 10,
+        binWidth: parseFloat(config.binWidth) || 1,
+        binHeight: parseFloat(config.binHeight) || 1,
+        aisleWidth: parseFloat(config.aisleWidth) || 1,
+        binCapacity: parseInt(config.binCapacity) || 100
+      };
+
+      const validation = validateLayoutConfig(sanitizedConfig);
+      if (!validation.valid) {
+        throw new Error(`Invalid layout configuration: ${validation.errors.join(', ')}`);
+      }
+
       const existingLayout = await this.getWarehouseLayout(warehouseId);
       if (existingLayout) {
         await db
@@ -2305,17 +2322,21 @@ export class DatabaseStorage implements IStorage {
         .insert(warehouseLayouts)
         .values({
           warehouseId,
-          name: config.name || 'Auto-generated Layout',
-          width: config.width,
-          length: config.length,
+          name: sanitizedConfig.name,
+          width: sanitizedConfig.width.toString(),
+          length: sanitizedConfig.length.toString(),
           coordinateSystem: 'grid',
           isActive: true
         })
         .returning();
 
-      const bins = generateLayout(config).map(bin => ({
+      const bins = generateLayout(sanitizedConfig).map(bin => ({
         ...bin,
-        layoutId: layout.id
+        layoutId: layout.id,
+        x: bin.x.toString(),
+        y: bin.y.toString(),
+        width: bin.width.toString(),
+        height: bin.height.toString()
       }));
 
       if (bins.length > 0) {
