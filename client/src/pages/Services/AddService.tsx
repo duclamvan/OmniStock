@@ -104,10 +104,7 @@ export default function AddService() {
 
   const [serviceItems, setServiceItems] = useState<ServiceItem[]>([]);
   const [customerOpen, setCustomerOpen] = useState(false);
-  const [productOpen, setProductOpen] = useState<{ [key: number]: boolean }>({});
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [customToggles, setCustomToggles] = useState<{ [key: number]: boolean }>({});
-  const defaultCategorySet = useRef(false);
+  const [productSearchTerms, setProductSearchTerms] = useState<{ [key: number]: string }>({});
 
   const { data: existingService, isLoading: loadingService } = useQuery({
     queryKey: ['/api/services', params.id],
@@ -124,30 +121,9 @@ export default function AddService() {
     queryKey: ['/api/customers'],
   });
 
-  const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ['/api/categories'],
-  });
-
   const { data: allProducts = [] } = useQuery<Product[]>({
     queryKey: ['/api/products'],
   });
-
-  const filteredProducts = useMemo(() => {
-    if (selectedCategory === 'all') return allProducts;
-    return allProducts.filter(p => p.categoryId === selectedCategory);
-  }, [allProducts, selectedCategory]);
-
-  useEffect(() => {
-    if (categories.length > 0 && !defaultCategorySet.current) {
-      const electronicPartsCategory = categories.find(
-        (cat) => cat.name === 'Electronic Parts'
-      );
-      if (electronicPartsCategory) {
-        setSelectedCategory(electronicPartsCategory.id.toString());
-      }
-      defaultCategorySet.current = true;
-    }
-  }, [categories]);
 
   const form = useForm<ServiceFormData>({
     resolver: zodResolver(serviceFormSchema),
@@ -176,10 +152,7 @@ export default function AddService() {
       
       if (existingService.items && Array.isArray(existingService.items)) {
         const loadedItems = existingService.items.map((item: any, idx: number) => {
-          const isCustom = item.productId === null || item.isCustom;
-          if (isCustom) {
-            setCustomToggles(prev => ({ ...prev, [idx]: true }));
-          }
+          setProductSearchTerms(prev => ({ ...prev, [idx]: item.productName }));
           return {
             productId: item.productId,
             productName: item.productName,
@@ -188,7 +161,7 @@ export default function AddService() {
             unitPrice: item.unitPrice,
             totalPrice: item.totalPrice,
             customProductName: item.customProductName,
-            isCustom,
+            isCustom: item.productId === null || item.isCustom,
           };
         });
         setServiceItems(loadedItems);
@@ -259,38 +232,72 @@ export default function AddService() {
         isCustom: false,
       },
     ]);
-    setCustomToggles(prev => ({ ...prev, [newIndex]: false }));
+    setProductSearchTerms(prev => ({ ...prev, [newIndex]: '' }));
   };
 
   const removeServiceItem = (index: number) => {
-    setServiceItems(serviceItems.filter((_, i) => i !== index));
-    const newToggles = { ...customToggles };
-    delete newToggles[index];
-    setCustomToggles(newToggles);
+    const newItems = serviceItems.filter((_, i) => i !== index);
+    setServiceItems(newItems);
+    
+    // Rebuild productSearchTerms with correct indices
+    const newSearchTerms: { [key: number]: string } = {};
+    newItems.forEach((item, newIndex) => {
+      newSearchTerms[newIndex] = productSearchTerms[newIndex < index ? newIndex : newIndex + 1] || item.productName || '';
+    });
+    setProductSearchTerms(newSearchTerms);
   };
 
-  const toggleCustomProduct = (index: number, isCustom: boolean) => {
-    const updated = [...serviceItems];
-    setCustomToggles(prev => ({ ...prev, [index]: isCustom }));
+  const handleProductNameChange = (index: number, searchTerm: string) => {
+    setProductSearchTerms(prev => ({ ...prev, [index]: searchTerm }));
     
-    if (isCustom) {
+    const updated = [...serviceItems];
+    
+    // Try to find matching product from inventory
+    const matchingProduct = allProducts.find(p => 
+      p.name.toLowerCase() === searchTerm.toLowerCase()
+    );
+    
+    if (matchingProduct) {
+      // Product from inventory - auto-fill price
+      updated[index] = {
+        ...updated[index],
+        productId: matchingProduct.id,
+        productName: matchingProduct.name,
+        sku: matchingProduct.sku,
+        unitPrice: matchingProduct.priceEur || '0',
+        totalPrice: (updated[index].quantity * parseFloat(matchingProduct.priceEur || '0')).toFixed(2),
+        isCustom: false,
+      };
+    } else {
+      // Custom product - keep existing price or default to 0
       updated[index] = {
         ...updated[index],
         productId: null,
-        productName: '',
+        productName: searchTerm,
         sku: null,
-        customProductName: '',
         isCustom: true,
       };
-    } else {
-      updated[index] = {
-        ...updated[index],
-        productId: '',
-        productName: '',
-        customProductName: undefined,
-        isCustom: false,
-      };
     }
+    
+    setServiceItems(updated);
+  };
+
+  const selectProductFromDropdown = (index: number, productId: string) => {
+    const product = allProducts.find(p => p.id === productId);
+    if (!product) return;
+    
+    setProductSearchTerms(prev => ({ ...prev, [index]: product.name }));
+    
+    const updated = [...serviceItems];
+    updated[index] = {
+      ...updated[index],
+      productId: product.id,
+      productName: product.name,
+      sku: product.sku,
+      unitPrice: product.priceEur || '0',
+      totalPrice: (updated[index].quantity * parseFloat(product.priceEur || '0')).toFixed(2),
+      isCustom: false,
+    };
     setServiceItems(updated);
   };
 
@@ -302,16 +309,6 @@ export default function AddService() {
       const quantity = field === 'quantity' ? value : updated[index].quantity;
       const unitPrice = field === 'unitPrice' ? value : updated[index].unitPrice;
       updated[index].totalPrice = (quantity * parseFloat(unitPrice || '0')).toFixed(2);
-    }
-    
-    if (field === 'productId' && value) {
-      const product = allProducts.find(p => p.id === value);
-      if (product) {
-        updated[index].productName = product.name;
-        updated[index].sku = product.sku;
-        updated[index].unitPrice = product.priceEur || '0';
-        updated[index].totalPrice = (updated[index].quantity * parseFloat(product.priceEur || '0')).toFixed(2);
-      }
     }
     
     setServiceItems(updated);
@@ -620,159 +617,54 @@ export default function AddService() {
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      {/* Table Header */}
-                      <div className="hidden md:grid md:grid-cols-12 gap-4 pb-3 border-b border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                        <div className="col-span-5">Item</div>
-                        <div className="col-span-2 text-center">Quantity</div>
-                        <div className="col-span-2 text-right">Unit Price</div>
-                        <div className="col-span-2 text-right">Total</div>
-                        <div className="col-span-1"></div>
-                      </div>
-
+                    <div className="space-y-3">
                       {/* Parts List */}
-                      {serviceItems.map((item, index) => (
-                        <div
-                          key={index}
-                          className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-800 hover:shadow-md transition-shadow"
-                          data-testid={`part-row-${index}`}
-                        >
-                          <div className="space-y-4">
-                            {/* Type Badge & Controls */}
-                            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
-                              <div className="flex items-center gap-2">
-                                {customToggles[index] ? (
-                                  <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-                                    <Edit3 className="h-3 w-3 mr-1" />
-                                    Custom Part
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                    <Box className="h-3 w-3 mr-1" />
-                                    Inventory Part
-                                  </Badge>
-                                )}
-                              </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeServiceItem(index)}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                data-testid={`button-remove-part-${index}`}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
+                      {serviceItems.map((item, index) => {
+                        const searchTerm = productSearchTerms[index] ?? item.productName ?? '';
+                        const filteredSuggestions = allProducts.filter(p =>
+                          p.name.toLowerCase().includes(searchTerm.toLowerCase())
+                        ).slice(0, 5);
+                        const showSuggestions = searchTerm.length > 0 && filteredSuggestions.length > 0 && !item.productId;
 
-                            {/* Custom Toggle */}
-                            <div className="flex items-center space-x-3">
-                              <Checkbox
-                                id={`custom-${index}`}
-                                checked={customToggles[index] || false}
-                                onCheckedChange={(checked) => toggleCustomProduct(index, checked as boolean)}
-                                data-testid={`checkbox-custom-product-${index}`}
-                              />
-                              <Label htmlFor={`custom-${index}`} className="cursor-pointer text-sm font-medium">
-                                Use custom product (not from inventory)
-                              </Label>
-                            </div>
-
-                            {/* Category Filter for Inventory Parts */}
-                            {!customToggles[index] && (
-                              <div>
-                                <Label className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2 mb-2">
-                                  <Filter className="h-3 w-3" />
-                                  Filter by Category
-                                </Label>
-                                <Select
-                                  value={selectedCategory}
-                                  onValueChange={setSelectedCategory}
-                                >
-                                  <SelectTrigger data-testid={`select-category-${index}`}>
-                                    <SelectValue placeholder="Select category" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="all">All Categories</SelectItem>
-                                    {categories.map((category) => (
-                                      <SelectItem key={category.id} value={category.id.toString()}>
-                                        {category.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            )}
-
-                            {/* Product Selection */}
-                            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                              {/* Item Name/Selection - 5 cols */}
-                              <div className="md:col-span-5">
-                                <Label className="text-xs text-slate-600 dark:text-slate-400 mb-2">
-                                  {customToggles[index] ? 'Product Name *' : 'Select Product *'}
-                                </Label>
-                                {customToggles[index] ? (
-                                  <Input
-                                    placeholder="Enter custom product name"
-                                    value={item.customProductName || ''}
-                                    onChange={(e) => {
-                                      updateServiceItem(index, 'customProductName', e.target.value);
-                                      updateServiceItem(index, 'productName', e.target.value);
-                                    }}
-                                    data-testid={`input-custom-name-${index}`}
-                                  />
-                                ) : (
-                                  <Popover
-                                    open={productOpen[index]}
-                                    onOpenChange={(open) => setProductOpen({ ...productOpen, [index]: open })}
-                                  >
-                                    <PopoverTrigger asChild>
-                                      <Button
-                                        variant="outline"
-                                        role="combobox"
-                                        className="w-full justify-between"
-                                        data-testid={`button-select-product-${index}`}
+                        return (
+                          <div
+                            key={index}
+                            className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-800 hover:shadow-sm transition-shadow"
+                            data-testid={`part-row-${index}`}
+                          >
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
+                              {/* Product Name with Autocomplete - 5 cols */}
+                              <div className="md:col-span-5 relative">
+                                <Label className="text-xs font-medium mb-1.5 block">Product Name</Label>
+                                <Input
+                                  placeholder="Type product name..."
+                                  value={searchTerm}
+                                  onChange={(e) => handleProductNameChange(index, e.target.value)}
+                                  data-testid={`input-product-name-${index}`}
+                                  className="w-full"
+                                  autoComplete="off"
+                                />
+                                {showSuggestions && (
+                                  <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg max-h-48 overflow-auto">
+                                    {filteredSuggestions.map((product) => (
+                                      <button
+                                        key={product.id}
+                                        type="button"
+                                        className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 flex justify-between items-center"
+                                        onClick={() => selectProductFromDropdown(index, product.id)}
+                                        data-testid={`suggestion-${product.id}`}
                                       >
-                                        {item.productId
-                                          ? allProducts.find((p) => p.id === item.productId)?.name || "Select..."
-                                          : "Select product..."}
-                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                      </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-full p-0">
-                                      <Command>
-                                        <CommandInput placeholder="Search product..." />
-                                        <CommandEmpty>No product found.</CommandEmpty>
-                                        <CommandGroup>
-                                          {filteredProducts.map((product) => (
-                                            <CommandItem
-                                              key={product.id}
-                                              value={product.name}
-                                              onSelect={() => {
-                                                updateServiceItem(index, 'productId', product.id);
-                                                setProductOpen({ ...productOpen, [index]: false });
-                                              }}
-                                              data-testid={`option-product-${product.id}`}
-                                            >
-                                              <Check
-                                                className={cn(
-                                                  "mr-2 h-4 w-4",
-                                                  item.productId === product.id ? "opacity-100" : "opacity-0"
-                                                )}
-                                              />
-                                              {product.name}
-                                            </CommandItem>
-                                          ))}
-                                        </CommandGroup>
-                                      </Command>
-                                    </PopoverContent>
-                                  </Popover>
+                                        <span className="font-medium">{product.name}</span>
+                                        <span className="text-xs text-slate-500">€{parseFloat(product.priceEur || '0').toFixed(2)}</span>
+                                      </button>
+                                    ))}
+                                  </div>
                                 )}
                               </div>
 
                               {/* Quantity - 2 cols */}
                               <div className="md:col-span-2">
-                                <Label className="text-xs text-slate-600 dark:text-slate-400 mb-2">Quantity</Label>
+                                <Label className="text-xs font-medium mb-1.5 block">Qty</Label>
                                 <Input
                                   type="number"
                                   min="1"
@@ -785,7 +677,7 @@ export default function AddService() {
 
                               {/* Unit Price - 2 cols */}
                               <div className="md:col-span-2">
-                                <Label className="text-xs text-slate-600 dark:text-slate-400 mb-2">Unit Price (€)</Label>
+                                <Label className="text-xs font-medium mb-1.5 block">Price (€)</Label>
                                 <Input
                                   type="number"
                                   step="0.01"
@@ -793,13 +685,12 @@ export default function AddService() {
                                   value={item.unitPrice}
                                   onChange={(e) => updateServiceItem(index, 'unitPrice', e.target.value)}
                                   data-testid={`input-unit-price-${index}`}
-                                  className={customToggles[index] ? "" : ""}
                                 />
                               </div>
 
                               {/* Total - 2 cols */}
                               <div className="md:col-span-2">
-                                <Label className="text-xs text-slate-600 dark:text-slate-400 mb-2">Total (€)</Label>
+                                <Label className="text-xs font-medium mb-1.5 block">Total (€)</Label>
                                 <Input
                                   type="text"
                                   value={formatCurrency(parseFloat(item.totalPrice || '0'))}
@@ -809,10 +700,24 @@ export default function AddService() {
                                   className="font-semibold bg-slate-50 dark:bg-slate-700 text-right"
                                 />
                               </div>
+
+                              {/* Remove Button - 1 col */}
+                              <div className="md:col-span-1 flex items-end">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeServiceItem(index)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full md:w-auto"
+                                  data-testid={`button-remove-part-${index}`}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
