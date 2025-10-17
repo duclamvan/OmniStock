@@ -774,9 +774,15 @@ export default function AddOrder() {
     },
     onSuccess: (data) => {
       setPackingPlan(data);
+      
+      if (data.estimatedShippingCost !== undefined && data.estimatedShippingCost !== null) {
+        form.setValue('shippingCost', data.estimatedShippingCost);
+        form.setValue('actualShippingCost', data.estimatedShippingCost);
+      }
+      
       toast({
         title: "Success",
-        description: "Packing plan optimized successfully",
+        description: `Packing plan optimized successfully${data.estimatedShippingCost ? ` - Suggested shipping: ${formatCurrency(data.estimatedShippingCost, form.watch('currency'))}` : ''}`,
       });
     },
     onError: (error: any) => {
