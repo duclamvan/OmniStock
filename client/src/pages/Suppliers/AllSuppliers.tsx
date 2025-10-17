@@ -448,6 +448,8 @@ export default function AllSuppliers() {
             data={filteredSuppliers}
             bulkActions={bulkActions}
             getRowKey={(supplier) => supplier.id}
+            itemsPerPageOptions={[10, 20, 50, 100]}
+            defaultItemsPerPage={20}
             renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
               <div className="px-4 sm:px-0 pb-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">

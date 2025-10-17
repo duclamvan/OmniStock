@@ -308,6 +308,8 @@ export default function AllExpenses() {
             data={filteredExpenses}
             bulkActions={bulkActions}
             getRowKey={(expense) => expense.id}
+            itemsPerPageOptions={[10, 20, 50, 100]}
+            defaultItemsPerPage={20}
             renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
               <div className="px-4 sm:px-0 pb-3">
                 <div className="flex items-center justify-between gap-3">
