@@ -146,6 +146,9 @@ export default function AddOrder() {
     zipCode: "",
     country: "",
     company: "",
+    firstName: "",
+    lastName: "",
+    pickupPoint: "",
     type: "regular"
   });
   
@@ -1788,6 +1791,9 @@ export default function AddOrder() {
                         zipCode: "",
                         country: "",
                         company: "",
+                        firstName: "",
+                        lastName: "",
+                        pickupPoint: "",
                         type: "regular"
                       });
                     }}
@@ -2045,18 +2051,78 @@ export default function AddOrder() {
 
                 <Separator className="my-6" />
 
-                {/* Contact Information - Below Shipping Address */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="customerEmail">Email</Label>
-                    <Input
-                      id="customerEmail"
-                      type="email"
-                      value={newCustomer.email}
-                      onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
-                      placeholder="email@example.com"
-                    />
+                {/* Additional Details */}
+                <div className="space-y-2">
+                  <Label>Additional Details</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="firstName">First Name</Label>
+                      <Input
+                        id="firstName"
+                        value={newCustomer.firstName || ""}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, firstName: e.target.value })}
+                        placeholder="First name"
+                        data-testid="input-firstName"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="lastName">Last Name</Label>
+                      <Input
+                        id="lastName"
+                        value={newCustomer.lastName || ""}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, lastName: e.target.value })}
+                        placeholder="Last name"
+                        data-testid="input-lastName"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="pickupPoint">Pickup Point</Label>
+                      <Input
+                        id="pickupPoint"
+                        value={newCustomer.pickupPoint || ""}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, pickupPoint: e.target.value })}
+                        placeholder="Branch or pickup location"
+                        data-testid="input-pickupPoint"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="customerEmail">Email</Label>
+                      <div className="relative">
+                        <Input
+                          id="customerEmail"
+                          type="email"
+                          value={newCustomer.email}
+                          onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                          placeholder="email@example.com"
+                          className="pr-10"
+                          data-testid="input-customerEmail"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-1 top-1 h-8 w-8 p-0"
+                          onClick={() => {
+                            setNewCustomer({ ...newCustomer, email: "davienails999@gmail.com" });
+                            toast({
+                              title: "Default email pasted",
+                              description: "davienails999@gmail.com",
+                            });
+                          }}
+                          title="Paste default email"
+                          data-testid="button-paste-default-email"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
+                </div>
+
+                <Separator className="my-6" />
+
+                {/* Contact Information - Phone */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="customerPhone">Phone</Label>
                     <Input
@@ -2064,6 +2130,7 @@ export default function AddOrder() {
                       value={newCustomer.phone}
                       onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
                       placeholder="Type here"
+                      data-testid="input-customerPhone"
                     />
                   </div>
                 </div>
