@@ -491,14 +491,17 @@ export default function WarehouseDetails() {
           </Card>
 
           {/* Financial Contracts */}
-          <Card data-testid="card-financial-contracts">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ScrollText className="h-5 w-5 text-orange-600" />
-                Financial Contracts
-              </CardTitle>
+          <Card className="border-slate-200 dark:border-slate-800 shadow-sm" data-testid="card-financial-contracts">
+            <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <ScrollText className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                  Financial Contracts
+                </CardTitle>
+                <Badge variant="outline" className="font-mono">{financialContracts.length}</Badge>
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               {contractsLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -585,19 +588,19 @@ export default function WarehouseDetails() {
           </Card>
 
           {/* Warehouse Inventory Section */}
-          <Card data-testid="card-warehouse-inventory">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <Box className="h-5 w-5 text-blue-600" />
+          <Card className="border-slate-200 dark:border-slate-800 shadow-sm" data-testid="card-warehouse-inventory">
+            <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Box className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   Warehouse Inventory
-                </span>
-                <Badge variant="secondary" data-testid="badge-product-count">{warehouseProducts.length}</Badge>
-              </CardTitle>
+                </CardTitle>
+                <Badge variant="outline" className="font-mono" data-testid="badge-product-count">{warehouseProducts.length} items</Badge>
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               {/* Search Bar */}
-              <div className="mb-4">
+              <div className="mb-6">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
@@ -605,18 +608,16 @@ export default function WarehouseDetails() {
                     placeholder="Search by name, SKU, barcode, or location..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 h-11"
                     data-testid="input-search-products"
                   />
                 </div>
                 {searchTerm && (
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
-                    Found {filteredProducts.length} of {warehouseProducts.length} items
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 flex items-center gap-1">
+                    <span className="font-medium">{filteredProducts.length}</span> of {warehouseProducts.length} items
                   </p>
                 )}
               </div>
-
-              <Separator className="my-4" />
 
               {/* Products List */}
               {productsLoading ? (
@@ -624,11 +625,11 @@ export default function WarehouseDetails() {
                   {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24" />)}
                 </div>
               ) : filteredProducts.length > 0 ? (
-                <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                <div className="space-y-3 max-h-[650px] overflow-y-auto pr-1">
                   {filteredProducts.map((product) => (
                     <Link key={product.id} href={`/products/${product.id}`}>
                       <div
-                        className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group"
+                        className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:shadow-sm hover:border-blue-300 dark:hover:border-blue-700 hover:bg-white dark:hover:bg-slate-800 transition-all cursor-pointer group"
                         data-testid={`product-item-${product.id}`}
                       >
                         <div className="flex items-start gap-4">
@@ -726,19 +727,19 @@ export default function WarehouseDetails() {
           </Card>
         </div>
 
-        {/* Files Section */}
+        {/* Right Column - Files & Documents */}
         <div className="space-y-6">
-          <Card data-testid="card-files">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Files
-                </span>
-                <Badge variant="secondary" data-testid="badge-file-count">{files.length}</Badge>
-              </CardTitle>
+          <Card className="border-slate-200 dark:border-slate-800 shadow-sm" data-testid="card-files">
+            <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <FileText className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+                  Documents
+                </CardTitle>
+                <Badge variant="outline" className="font-mono" data-testid="badge-file-count">{files.length} files</Badge>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="p-6 space-y-4">
               {/* Upload Section */}
               <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg p-4 sm:p-6 hover:border-blue-400 dark:hover:border-blue-500 transition-colors" data-testid="section-upload">
                 <ObjectUploader
