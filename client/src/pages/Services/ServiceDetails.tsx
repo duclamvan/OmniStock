@@ -48,9 +48,14 @@ interface ServiceItem {
 interface Service {
   id: string;
   customerId: string | null;
+  orderId: string | null;
   customer?: {
     id: string;
     name: string;
+  } | null;
+  order?: {
+    id: string;
+    orderId: string;
   } | null;
   name: string;
   description: string | null;
@@ -58,6 +63,7 @@ interface Service {
   serviceCost: string;
   partsCost: string;
   totalCost: string;
+  currency: string;
   status: string;
   notes: string | null;
   items?: ServiceItem[];
@@ -156,7 +162,18 @@ export default function ServiceDetails() {
 
   const formatCurrency = (amount: string) => {
     const num = parseFloat(amount || '0');
-    return `€${num.toFixed(2)}`;
+    const currency = service?.currency || 'EUR';
+    const symbols: Record<string, string> = {
+      'USD': '$',
+      'EUR': '€',
+      'CZK': 'Kč',
+      'VND': '₫',
+      'CNY': '¥'
+    };
+    const symbol = symbols[currency] || currency;
+    return currency === 'CZK' 
+      ? `${num.toFixed(2)} ${symbol}`
+      : `${symbol}${num.toFixed(2)}`;
   };
 
   const handlePrint = () => {
@@ -291,9 +308,9 @@ export default function ServiceDetails() {
                 </div>
               </div>
 
-              {/* Date Information */}
+              {/* Service Information */}
               <div>
-                <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-3">Date Information</h3>
+                <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-3">Service Information</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between py-2 border-b border-slate-200 dark:border-slate-700">
                     <span className="text-sm text-slate-600 dark:text-slate-400">Service Date:</span>
@@ -307,6 +324,20 @@ export default function ServiceDetails() {
                       {formatCzechDate(service.createdAt)}
                     </span>
                   </div>
+                  <div className="flex justify-between py-2 border-b border-slate-200 dark:border-slate-700">
+                    <span className="text-sm text-slate-600 dark:text-slate-400">Currency:</span>
+                    <span className="text-sm font-semibold text-slate-900 dark:text-white" data-testid="text-currency">
+                      {service.currency || 'EUR'}
+                    </span>
+                  </div>
+                  {service.orderId && service.order && (
+                    <div className="flex justify-between py-2 border-b border-slate-200 dark:border-slate-700">
+                      <span className="text-sm text-slate-600 dark:text-slate-400">Linked Order:</span>
+                      <span className="text-sm font-semibold text-blue-600 hover:text-blue-700 cursor-pointer" data-testid="text-linked-order" onClick={() => navigate(`/orders/${service.orderId}`)}>
+                        {service.order.orderId}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
