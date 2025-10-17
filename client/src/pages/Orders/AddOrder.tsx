@@ -121,6 +121,7 @@ export default function AddOrder() {
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [showProductDropdown, setShowProductDropdown] = useState(false);
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [selectedProductIndex, setSelectedProductIndex] = useState(0);
   
   const productSearchRef = useRef<HTMLInputElement>(null);
   const customerSearchRef = useRef<HTMLInputElement>(null);
@@ -383,6 +384,18 @@ export default function AddOrder() {
     }, 300);
     return () => clearTimeout(timer);
   }, [customerSearch]);
+
+  // Reset selectedProductIndex when search changes
+  useEffect(() => {
+    setSelectedProductIndex(0);
+  }, [productSearch]);
+
+  // Reset selectedProductIndex when dropdown closes
+  useEffect(() => {
+    if (!showProductDropdown) {
+      setSelectedProductIndex(0);
+    }
+  }, [showProductDropdown]);
 
   // Show/hide dropdowns based on search input - Removed length check to show on focus
   // The dropdown will now show all products grouped by category when focused
@@ -1035,100 +1048,127 @@ export default function AddOrder() {
     return frequency;
   }, [allOrders]);
 
-  // Filter products and services with Vietnamese search, grouped by category, ordered by frequency (memoized for performance)
+  // Filter products and services with enhanced fuzzy search and smart scoring (memoized for performance)
   const filteredProducts = useMemo(() => {
-    const categorizedItems: Array<{ category: string; products: any[]; isService?: boolean }> = [];
-    let totalItemsCount = 0;
-    const maxTotalItems = 20; // Limit total items shown
+    const scoredItems: Array<any> = [];
+    const maxTotalItems = 8; // Limit to top 8 results for compact view
+
+    // Helper function to calculate match score
+    const calculateScore = (item: any, searchTerm: string, matcher: (text: string) => boolean) => {
+      if (!searchTerm || searchTerm.length < 2) return 0;
+      
+      const normalizedSearch = searchTerm.toLowerCase().trim();
+      const name = (item.name || '').toLowerCase();
+      const sku = (item.sku || '').toLowerCase();
+      const description = (item.description || '').toLowerCase();
+      
+      let score = 0;
+      
+      // Exact match (highest priority - 1000 points)
+      if (name === normalizedSearch || sku === normalizedSearch) {
+        score += 1000;
+      }
+      
+      // Starts with search term (high priority - 500 points)
+      if (name.startsWith(normalizedSearch)) {
+        score += 500;
+      } else if (sku.startsWith(normalizedSearch)) {
+        score += 450;
+      }
+      
+      // Contains search term (medium priority - 200 points)
+      if (name.includes(normalizedSearch)) {
+        score += 200;
+      } else if (sku.includes(normalizedSearch)) {
+        score += 150;
+      } else if (description.includes(normalizedSearch)) {
+        score += 100;
+      }
+      
+      // Vietnamese matcher bonus (50 points if it matches via Vietnamese search)
+      if (matcher(item.name) || matcher(item.sku || '') || matcher(item.description || '')) {
+        score += 50;
+      }
+      
+      // Multiple word matches bonus (100 points)
+      const searchWords = normalizedSearch.split(/\s+/);
+      if (searchWords.length > 1) {
+        const matchedWords = searchWords.filter(word => 
+          name.includes(word) || sku.includes(word) || description.includes(word)
+        );
+        if (matchedWords.length === searchWords.length) {
+          score += 100;
+        } else if (matchedWords.length > 1) {
+          score += 50;
+        }
+      }
+      
+      // Frequency bonus (up to 50 points based on how often it's ordered)
+      const frequency = productFrequency[item.id] || 0;
+      score += Math.min(frequency * 5, 50);
+      
+      return score;
+    };
+
+    const searchTerm = debouncedProductSearch;
+    const matcher = searchTerm && searchTerm.length >= 2 ? createVietnameseSearchMatcher(searchTerm) : () => true;
 
     // Process products
     if (Array.isArray(allProducts)) {
-      let products = allProducts;
-      if (debouncedProductSearch && debouncedProductSearch.length >= 2) {
-        const matcher = createVietnameseSearchMatcher(debouncedProductSearch);
-        products = allProducts.filter((product: any) => {
-          return matcher(product.name) || 
-                 matcher(product.sku) || 
-                 matcher(product.description || '') ||
-                 matcher(product.categoryName || '');
-        });
-      }
-
-      // Group products by category
-      const groupedByCategory: Record<string, any[]> = {};
-      products.forEach((product: any) => {
-        const categoryName = product.categoryName || 'Uncategorized';
-        if (!groupedByCategory[categoryName]) {
-          groupedByCategory[categoryName] = [];
-        }
-        groupedByCategory[categoryName].push(product);
-      });
-
-      // Sort products within each category by frequency (descending), then alphabetically by name
-      Object.keys(groupedByCategory).forEach(categoryName => {
-        groupedByCategory[categoryName].sort((a, b) => {
-          const freqA = productFrequency[a.id] || 0;
-          const freqB = productFrequency[b.id] || 0;
-          
-          if (freqB !== freqA) {
-            return freqB - freqA; // Higher frequency first
-          }
-          
-          return a.name.localeCompare(b.name);
-        });
-      });
-
-      // Sort categories alphabetically
-      const sortedCategories = Object.keys(groupedByCategory).sort();
-
-      for (const categoryName of sortedCategories) {
-        const categoryProducts = groupedByCategory[categoryName];
-        const remainingSlots = maxTotalItems - totalItemsCount;
-        
-        if (remainingSlots <= 0) break;
-
-        const productsToShow = categoryProducts.slice(0, Math.min(categoryProducts.length, remainingSlots));
-        
-        if (productsToShow.length > 0) {
-          categorizedItems.push({
-            category: categoryName,
-            products: productsToShow,
-            isService: false
+      allProducts.forEach((product: any) => {
+        if (!searchTerm || searchTerm.length < 2) {
+          // No search term - include all products with frequency as score
+          scoredItems.push({
+            ...product,
+            isService: false,
+            score: productFrequency[product.id] || 0
           });
-          totalItemsCount += productsToShow.length;
+        } else {
+          const score = calculateScore(product, searchTerm, matcher);
+          if (score > 0) {
+            scoredItems.push({
+              ...product,
+              isService: false,
+              score
+            });
+          }
         }
-      }
+      });
     }
 
     // Process services
-    if (Array.isArray(allServices) && totalItemsCount < maxTotalItems) {
-      let services = allServices;
-      if (debouncedProductSearch && debouncedProductSearch.length >= 2) {
-        const matcher = createVietnameseSearchMatcher(debouncedProductSearch);
-        services = allServices.filter((service: any) => {
-          return matcher(service.name) || 
-                 matcher(service.description || '');
-        });
-      }
-
-      const remainingSlots = maxTotalItems - totalItemsCount;
-      const servicesToShow = services.slice(0, Math.min(services.length, remainingSlots));
-      
-      if (servicesToShow.length > 0) {
-        categorizedItems.push({
-          category: 'Services',
-          products: servicesToShow.map((service: any) => ({
+    if (Array.isArray(allServices)) {
+      allServices.forEach((service: any) => {
+        if (!searchTerm || searchTerm.length < 2) {
+          // No search term - include all services
+          scoredItems.push({
             ...service,
             isService: true,
-            // Format display name to include price
-            displayName: `${service.name} - €${Number(service.totalCost || 0).toFixed(2)}`
-          })),
-          isService: true
-        });
-      }
+            score: 0
+          });
+        } else {
+          const score = calculateScore(service, searchTerm, matcher);
+          if (score > 0) {
+            scoredItems.push({
+              ...service,
+              isService: true,
+              score
+            });
+          }
+        }
+      });
     }
 
-    return categorizedItems;
+    // Sort by score (highest first), then by name alphabetically
+    scoredItems.sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      return (a.name || '').localeCompare(b.name || '');
+    });
+
+    // Return top 10 items (always return an array)
+    return scoredItems.slice(0, maxTotalItems) || [];
   }, [allProducts, allServices, debouncedProductSearch, productFrequency]);
 
   // Filter customers with Vietnamese search (memoized for performance)
@@ -2214,18 +2254,47 @@ export default function AddOrder() {
                   className="pl-10"
                   onFocus={() => setShowProductDropdown(true)}
                   onKeyDown={(e) => {
+                    const totalProducts = filteredProducts?.length || 0;
+                    
                     if (e.key === 'Escape') {
                       setShowProductDropdown(false);
-                    }
-                    // Enter: Add first product from dropdown
-                    if (e.key === 'Enter' && filteredProducts.length > 0) {
+                      setSelectedProductIndex(0);
+                    } else if (e.key === 'ArrowDown') {
                       e.preventDefault();
-                      const firstProduct = filteredProducts[0]?.products?.[0];
-                      if (firstProduct) {
-                        addProductToOrder(firstProduct);
-                        if (!barcodeScanMode) {
-                          setProductSearch('');
-                          setShowProductDropdown(false);
+                      if (totalProducts > 0) {
+                        setSelectedProductIndex(prev => (prev + 1) % totalProducts);
+                        setShowProductDropdown(true);
+                      }
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      if (totalProducts > 0) {
+                        setSelectedProductIndex(prev => (prev - 1 + totalProducts) % totalProducts);
+                        setShowProductDropdown(true);
+                      }
+                    } else if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (totalProducts > 0) {
+                        const selectedProduct = filteredProducts[selectedProductIndex];
+                        if (selectedProduct) {
+                          addProductToOrder(selectedProduct);
+                          if (!barcodeScanMode) {
+                            setProductSearch('');
+                            setShowProductDropdown(false);
+                            setSelectedProductIndex(0);
+                          }
+                        }
+                      }
+                    } else if (e.key === 'Tab') {
+                      if (totalProducts > 0 && showProductDropdown) {
+                        e.preventDefault();
+                        const selectedProduct = filteredProducts[selectedProductIndex];
+                        if (selectedProduct) {
+                          addProductToOrder(selectedProduct);
+                          if (!barcodeScanMode) {
+                            setProductSearch('');
+                            setShowProductDropdown(false);
+                            setSelectedProductIndex(0);
+                          }
                         }
                       }
                     }
@@ -2248,95 +2317,96 @@ export default function AddOrder() {
                 )}
               </div>
 
-              {/* Real-time dropdown for products - Grouped by Category */}
+              {/* Real-time dropdown for products - Flat list sorted by relevance */}
               {showProductDropdown && filteredProducts && filteredProducts.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-96 overflow-y-auto z-50">
+                <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-64 overflow-y-auto z-50">
                   <div className="p-2 bg-slate-50 border-b text-xs text-slate-600 sticky top-0 z-10">
-                    {(() => {
-                      const totalProducts = filteredProducts.reduce((sum, cat) => sum + cat.products.length, 0);
-                      return `${totalProducts} product${totalProducts !== 1 ? 's' : ''} found - Click to add`;
-                    })()}
+                    {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found - Use ↑↓ arrows to navigate
                   </div>
-                  {filteredProducts.map((categoryGroup) => (
-                    <div key={categoryGroup.category} className="border-b last:border-b-0">
-                      {/* Category Header */}
-                      <div className="bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 sticky top-8 z-10 border-b border-slate-200">
-                        {categoryGroup.category}
-                      </div>
-                      {/* Products/Services in Category */}
-                      {categoryGroup.products.map((product: any) => {
-                        const frequency = productFrequency[product.id] || 0;
-                        const isService = product.isService || categoryGroup.isService;
-                        return (
-                          <button
-                            type="button"
-                            key={product.id}
-                            className="w-full p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-colors text-left"
-                            onClick={() => {
-                              addProductToOrder(product);
-                            }}
-                            data-testid={`${isService ? 'service' : 'product'}-item-${product.id}`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  {isService && <Wrench className="h-4 w-4 text-orange-500" />}
-                                  <div className="font-medium text-slate-900">{product.name}</div>
-                                  {isService && (
-                                    <Badge variant="outline" className="text-xs px-1.5 py-0 border-orange-500 text-orange-600">
-                                      Service
-                                    </Badge>
-                                  )}
-                                  {!isService && frequency > 0 && (
-                                    <Badge variant="secondary" className="text-xs px-1.5 py-0">
-                                      {frequency}x
-                                    </Badge>
-                                  )}
-                                </div>
-                                {!isService && (
-                                  <div className="text-sm text-slate-500">SKU: {product.sku}</div>
-                                )}
-                                {isService && product.description && (
-                                  <div className="text-sm text-slate-500">{product.description}</div>
-                                )}
-                              </div>
-                              <div className="text-right ml-4">
-                                <div className="font-medium text-slate-900">
-                                  {isService ? (
-                                    formatCurrency(parseFloat(product.totalCost || '0'), 'EUR')
-                                  ) : (
-                                    (() => {
-                                      const selectedCurrency = form.watch('currency') || 'EUR';
-                                      let price = 0;
-                                      if (selectedCurrency === 'CZK' && product.priceCzk) {
-                                        price = parseFloat(product.priceCzk);
-                                      } else if (selectedCurrency === 'EUR' && product.priceEur) {
-                                        price = parseFloat(product.priceEur);
-                                      } else {
-                                        // Fallback to any available price
-                                        price = parseFloat(product.priceEur || product.priceCzk || '0');
-                                      }
-                                      return formatCurrency(price, selectedCurrency);
-                                    })()
-                                  )}
-                                </div>
-                                {!isService && (
-                                  <>
-                                    <div className="text-sm text-slate-500">
-                                      Stock: {product.stockQuantity || 0}
-                                    </div>
-                                    {product.warehouseName && (
-                                      <div className="text-xs text-slate-400">{product.warehouseName}</div>
-                                    )}
-                                  </>
-                                )}
-                              </div>
+                  {filteredProducts.map((product: any, index: number) => {
+                    const frequency = productFrequency[product.id] || 0;
+                    const isService = product.isService;
+                    const isBestMatch = index === 0;
+                    const isKeyboardSelected = index === selectedProductIndex;
+                    
+                    return (
+                      <button
+                        type="button"
+                        key={product.id}
+                        className={`w-full p-3 cursor-pointer border-b last:border-b-0 transition-colors text-left ${
+                          isKeyboardSelected ? 'bg-blue-50 ring-2 ring-inset ring-blue-500' : 'hover:bg-blue-50'
+                        } ${
+                          isBestMatch ? 'bg-blue-100 border-l-4 border-l-blue-500' : ''
+                        }`}
+                        onClick={() => {
+                          addProductToOrder(product);
+                          setSelectedProductIndex(0);
+                        }}
+                        data-testid={`${isService ? 'service' : 'product'}-item-${product.id}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              {isService && <Wrench className="h-4 w-4 text-orange-500" />}
+                              <div className="font-medium text-slate-900">{product.name}</div>
+                              {isBestMatch && (
+                                <Badge variant="default" className="text-xs px-1.5 py-0 bg-blue-600">
+                                  Best Match
+                                </Badge>
+                              )}
+                              {isService && (
+                                <Badge variant="outline" className="text-xs px-1.5 py-0 border-orange-500 text-orange-600">
+                                  Service
+                                </Badge>
+                              )}
+                              {!isService && frequency > 0 && (
+                                <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                                  {frequency}x
+                                </Badge>
+                              )}
                             </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ))}
+                            {!isService && (
+                              <div className="text-sm text-slate-500">SKU: {product.sku}</div>
+                            )}
+                            {isService && product.description && (
+                              <div className="text-sm text-slate-500">{product.description}</div>
+                            )}
+                          </div>
+                          <div className="text-right ml-4">
+                            <div className="font-medium text-slate-900">
+                              {isService ? (
+                                formatCurrency(parseFloat(product.totalCost || '0'), 'EUR')
+                              ) : (
+                                (() => {
+                                  const selectedCurrency = form.watch('currency') || 'EUR';
+                                  let price = 0;
+                                  if (selectedCurrency === 'CZK' && product.priceCzk) {
+                                    price = parseFloat(product.priceCzk);
+                                  } else if (selectedCurrency === 'EUR' && product.priceEur) {
+                                    price = parseFloat(product.priceEur);
+                                  } else {
+                                    // Fallback to any available price
+                                    price = parseFloat(product.priceEur || product.priceCzk || '0');
+                                  }
+                                  return formatCurrency(price, selectedCurrency);
+                                })()
+                              )}
+                            </div>
+                            {!isService && (
+                              <>
+                                <div className="text-sm text-slate-500">
+                                  Stock: {product.stockQuantity || 0}
+                                </div>
+                                {product.warehouseName && (
+                                  <div className="text-xs text-slate-400">{product.warehouseName}</div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 

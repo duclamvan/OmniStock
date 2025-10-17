@@ -1172,7 +1172,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(suppliers, eq(products.supplierId, suppliers.id))
       .orderBy(desc(products.createdAt));
       
-      // Include primary location and supplier for each product
+      // Include primary location, supplier, and category for each product
       const productsWithDetails = await Promise.all(
         productsData.map(async (row) => {
           const [primaryLocation] = await db
@@ -1186,8 +1186,23 @@ export class DatabaseStorage implements IStorage {
             )
             .limit(1);
           
+          // Fetch category if categoryId exists
+          let category = null;
+          if (row.product.categoryId) {
+            const categoryId = parseInt(row.product.categoryId);
+            if (!isNaN(categoryId)) {
+              const [cat] = await db
+                .select()
+                .from(categories)
+                .where(eq(categories.id, categoryId))
+                .limit(1);
+              category = cat;
+            }
+          }
+          
           return {
             ...row.product,
+            categoryName: category?.name || category?.nameEn || 'Uncategorized',
             primaryLocation: primaryLocation || null,
             supplier: row.supplier ? {
               id: row.supplier.id,
