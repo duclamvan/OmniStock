@@ -365,11 +365,6 @@ export function DataTable<T>({
         <Table>
           <TableHeader>
             <TableRow>
-              {expandable && (
-                <TableHead className="w-12">
-                  {/* Empty header for expand column */}
-                </TableHead>
-              )}
               {bulkActions && (
                 <TableHead className="w-12">
                   <Checkbox
@@ -406,7 +401,7 @@ export function DataTable<T>({
             {paginatedData.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={displayColumns.length + (bulkActions ? 1 : 0) + (expandable ? 1 : 0)}
+                  colSpan={displayColumns.length + (bulkActions ? 1 : 0)}
                   className="h-24 text-center"
                 >
                   No results found.
@@ -427,25 +422,6 @@ export function DataTable<T>({
                       isExpanded && "border-b-0"
                     )}
                   >
-                    {expandable && (
-                      <TableCell className="w-12">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleToggleExpand(key);
-                          }}
-                        >
-                          {isExpanded ? (
-                            expandable.collapseIcon || <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            expandable.expandIcon || <ChevronDown className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </TableCell>
-                    )}
                     {bulkActions && (
                       <TableCell 
                         className="cursor-pointer"
@@ -463,18 +439,48 @@ export function DataTable<T>({
                         />
                       </TableCell>
                     )}
-                    {displayColumns.map((column) => (
-                      <TableCell 
-                        key={column.key} 
-                        className={cn(
-                          compact && "py-1 px-3",
-                          column.className
-                        )}
-                        onClick={() => onRowClick && onRowClick(item)}
-                      >
-                        {column.cell ? column.cell(item) : (item as any)[column.key]}
-                      </TableCell>
-                    ))}
+                    {displayColumns.map((column, columnIndex) => {
+                      const isLastColumn = columnIndex === displayColumns.length - 1;
+                      const cellContent = column.cell ? column.cell(item) : (item as any)[column.key];
+                      
+                      return (
+                        <TableCell 
+                          key={column.key} 
+                          className={cn(
+                            compact && "py-1 px-3",
+                            column.className
+                          )}
+                          onClick={() => onRowClick && onRowClick(item)}
+                        >
+                          {isLastColumn && expandable ? (
+                            <div className={cn(
+                              "flex items-center gap-2 w-full",
+                              column.className?.includes('text-right') ? 'justify-end' :
+                              column.className?.includes('text-center') ? 'justify-center' :
+                              'justify-start'
+                            )}>
+                              {cellContent}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleExpand(key);
+                                }}
+                                className="h-6 w-6 p-0 flex-shrink-0"
+                              >
+                                {isExpanded 
+                                  ? (expandable.collapseIcon || <ChevronUp className="h-4 w-4" />)
+                                  : (expandable.expandIcon || <ChevronDown className="h-4 w-4" />)
+                                }
+                              </Button>
+                            </div>
+                          ) : (
+                            cellContent
+                          )}
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                 ];
                 
@@ -482,7 +488,7 @@ export function DataTable<T>({
                   elements.push(
                     <TableRow key={`${key}-expanded-1`} className="hover:bg-transparent">
                       <TableCell
-                        colSpan={displayColumns.length + (bulkActions ? 1 : 0) + 1}
+                        colSpan={displayColumns.length + (bulkActions ? 1 : 0)}
                         className="bg-white dark:bg-gray-900 p-6 border-l-4 border-l-blue-500"
                       >
                         <div className="relative">
@@ -494,7 +500,7 @@ export function DataTable<T>({
                   elements.push(
                     <TableRow key={`${key}-expanded-2`} className="hover:bg-transparent border-b border-gray-200 dark:border-gray-700">
                       <TableCell 
-                        colSpan={displayColumns.length + (bulkActions ? 1 : 0) + 1} 
+                        colSpan={displayColumns.length + (bulkActions ? 1 : 0)} 
                         className="p-0 h-0"
                       />
                     </TableRow>
