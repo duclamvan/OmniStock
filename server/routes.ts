@@ -703,8 +703,33 @@ Important:
   // Get products in a warehouse
   app.get('/api/warehouses/:id/products', async (req, res) => {
     try {
-      // Return empty array for now - products functionality not fully implemented
-      res.json([]);
+      const warehouseId = req.params.id;
+      const allProducts = await storage.getProducts();
+      const productLocations = await storage.getProductLocations();
+      
+      // Get products that have this warehouse as their primary warehouse OR have locations in this warehouse
+      const warehouseProducts = allProducts.filter(p => p.warehouseId === warehouseId);
+      
+      // Enrich products with location information
+      const enrichedProducts = warehouseProducts.map(product => {
+        const locations = productLocations.filter(loc => {
+          // Extract warehouse ID from location code (e.g., "WH-CZ-PRG-A01-R02-L03" -> "WH-CZ-PRG")
+          const locWarehouseId = loc.locationCode.split('-').slice(0, 3).join('-');
+          return loc.productId === product.id && locWarehouseId === warehouseId;
+        });
+        
+        const totalLocationQuantity = locations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+        const primaryLocation = locations.find(loc => loc.isPrimary);
+        
+        return {
+          ...product,
+          locations,
+          totalLocationQuantity,
+          primaryLocation: primaryLocation?.locationCode || product.warehouseLocation || null
+        };
+      });
+      
+      res.json(enrichedProducts);
     } catch (error) {
       console.error("Error fetching warehouse products:", error);
       res.status(500).json({ message: "Failed to fetch warehouse products" });
