@@ -754,6 +754,8 @@ export const expenses = pgTable('expenses', {
   status: varchar('status').default('pending'),
   date: timestamp('date').notNull(),
   description: text('description'),
+  invoiceNumber: varchar('invoice_number'),
+  notes: text('notes'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow()
 });
