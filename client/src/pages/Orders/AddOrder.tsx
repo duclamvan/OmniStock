@@ -1819,15 +1819,38 @@ export default function AddOrder() {
                   </div>
                   <div>
                     <Label htmlFor="facebookName">Facebook Name</Label>
-                    <Input
-                      id="facebookName"
-                      value={newCustomer.facebookName || ""}
-                      onChange={(e) => {
-                        console.log('Facebook Name changed to:', e.target.value);
-                        setNewCustomer({ ...newCustomer, facebookName: e.target.value });
-                      }}
-                      placeholder="Facebook display name"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="facebookName"
+                        value={newCustomer.facebookName || ""}
+                        onChange={(e) => {
+                          console.log('Facebook Name changed to:', e.target.value);
+                          setNewCustomer({ ...newCustomer, facebookName: e.target.value });
+                        }}
+                        placeholder="Facebook display name"
+                        className="pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1 h-8 w-8 p-0"
+                        onClick={() => {
+                          if (newCustomer.name) {
+                            setNewCustomer({ ...newCustomer, facebookName: newCustomer.name });
+                            toast({
+                              title: "Name copied",
+                              description: "Customer name copied to Facebook Name",
+                            });
+                          }
+                        }}
+                        disabled={!newCustomer.name}
+                        title="Copy customer name"
+                        data-testid="button-copy-facebook-name"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   <div>
                     <Label htmlFor="facebookUrl">Facebook URL</Label>
