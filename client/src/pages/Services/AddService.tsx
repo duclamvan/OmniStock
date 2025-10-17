@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useLocation, useParams } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { 
   ArrowLeft, 
@@ -19,7 +20,11 @@ import {
   Package,
   Plus,
   Trash2,
-  DollarSign
+  DollarSign,
+  PackagePlus,
+  Box,
+  Edit3,
+  Filter
 } from "lucide-react";
 import {
   Select,
@@ -58,12 +63,14 @@ const serviceFormSchema = insertServiceSchema.extend({
 type ServiceFormData = z.infer<typeof serviceFormSchema>;
 
 interface ServiceItem {
-  productId: string;
+  productId: string | null;
   productName: string;
   sku: string | null;
   quantity: number;
   unitPrice: string;
   totalPrice: string;
+  customProductName?: string;
+  isCustom?: boolean;
 }
 
 interface Customer {
@@ -80,6 +87,11 @@ interface Product {
   categoryId: string | null;
 }
 
+interface Category {
+  id: number;
+  name: string;
+}
+
 export default function AddService() {
   const [, navigate] = useLocation();
   const params = useParams();
@@ -89,6 +101,9 @@ export default function AddService() {
   const [serviceItems, setServiceItems] = useState<ServiceItem[]>([]);
   const [customerOpen, setCustomerOpen] = useState(false);
   const [productOpen, setProductOpen] = useState<{ [key: number]: boolean }>({});
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [customToggles, setCustomToggles] = useState<{ [key: number]: boolean }>({});
+  const defaultCategorySet = useRef(false);
 
   // Fetch existing service data if editing
   const { data: existingService, isLoading: loadingService } = useQuery({
@@ -107,10 +122,34 @@ export default function AddService() {
     queryKey: ['/api/customers'],
   });
 
-  // Fetch products for parts selector (filter to Electronic Parts category if needed)
+  // Fetch categories
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ['/api/categories'],
+  });
+
+  // Fetch products for parts selector
   const { data: allProducts = [] } = useQuery<Product[]>({
     queryKey: ['/api/products'],
   });
+
+  // Filter products by selected category
+  const filteredProducts = useMemo(() => {
+    if (selectedCategory === 'all') return allProducts;
+    return allProducts.filter(p => p.categoryId === selectedCategory);
+  }, [allProducts, selectedCategory]);
+
+  // Set default category to "Electronic Parts" when categories load
+  useEffect(() => {
+    if (categories.length > 0 && !defaultCategorySet.current) {
+      const electronicPartsCategory = categories.find(
+        (cat) => cat.name === 'Electronic Parts'
+      );
+      if (electronicPartsCategory) {
+        setSelectedCategory(electronicPartsCategory.id.toString());
+      }
+      defaultCategorySet.current = true;
+    }
+  }, [categories]);
 
   const form = useForm<ServiceFormData>({
     resolver: zodResolver(serviceFormSchema),
@@ -140,14 +179,23 @@ export default function AddService() {
       
       // Load service items if available
       if (existingService.items && Array.isArray(existingService.items)) {
-        setServiceItems(existingService.items.map((item: any) => ({
-          productId: item.productId,
-          productName: item.productName,
-          sku: item.sku,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          totalPrice: item.totalPrice,
-        })));
+        const loadedItems = existingService.items.map((item: any, idx: number) => {
+          const isCustom = item.productId === null || item.isCustom;
+          if (isCustom) {
+            setCustomToggles(prev => ({ ...prev, [idx]: true }));
+          }
+          return {
+            productId: item.productId,
+            productName: item.productName,
+            sku: item.sku,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice,
+            customProductName: item.customProductName,
+            isCustom,
+          };
+        });
+        setServiceItems(loadedItems);
       }
     }
   }, [existingService, isEditing, form]);
@@ -205,6 +253,7 @@ export default function AddService() {
   };
 
   const addServiceItem = () => {
+    const newIndex = serviceItems.length;
     setServiceItems([
       ...serviceItems,
       {
@@ -214,12 +263,44 @@ export default function AddService() {
         quantity: 1,
         unitPrice: '0',
         totalPrice: '0',
+        isCustom: false,
       },
     ]);
+    setCustomToggles(prev => ({ ...prev, [newIndex]: false }));
   };
 
   const removeServiceItem = (index: number) => {
     setServiceItems(serviceItems.filter((_, i) => i !== index));
+    const newToggles = { ...customToggles };
+    delete newToggles[index];
+    setCustomToggles(newToggles);
+  };
+
+  const toggleCustomProduct = (index: number, isCustom: boolean) => {
+    const updated = [...serviceItems];
+    setCustomToggles(prev => ({ ...prev, [index]: isCustom }));
+    
+    if (isCustom) {
+      // Switch to custom mode - clear product selection
+      updated[index] = {
+        ...updated[index],
+        productId: null,
+        productName: '',
+        sku: null,
+        customProductName: '',
+        isCustom: true,
+      };
+    } else {
+      // Switch to regular mode - clear custom fields
+      updated[index] = {
+        ...updated[index],
+        productId: '',
+        productName: '',
+        customProductName: undefined,
+        isCustom: false,
+      };
+    }
+    setServiceItems(updated);
   };
 
   const updateServiceItem = (index: number, field: keyof ServiceItem, value: any) => {
@@ -451,117 +532,232 @@ export default function AddService() {
 
             {/* Parts Used Card */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Package className="h-5 w-5" />
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5 text-primary" />
                     Parts Used
-                  </div>
+                  </CardTitle>
                   <Button
                     type="button"
-                    size="sm"
                     onClick={addServiceItem}
+                    className="bg-primary hover:bg-primary/90 shadow-md"
                     data-testid="button-add-part"
                   >
-                    <Plus className="h-4 w-4 mr-2" />
+                    <PackagePlus className="h-4 w-4 mr-2" />
                     Add Part
                   </Button>
-                </CardTitle>
+                </div>
+                <CardDescription className="mt-2">
+                  Add parts from inventory or create custom items
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {serviceItems.length === 0 ? (
-                  <div className="text-center py-8 text-slate-500" data-testid="text-no-parts">
-                    No parts added yet
+                  <div className="text-center py-12 border-2 border-dashed rounded-lg" data-testid="text-no-parts">
+                    <Package className="h-12 w-12 mx-auto text-slate-300 mb-3" />
+                    <p className="text-slate-500 font-medium">No parts added yet</p>
+                    <p className="text-sm text-slate-400 mt-1">Click "Add Part" to get started</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     {serviceItems.map((item, index) => (
-                      <div key={index} className="flex gap-4 items-start p-4 border rounded-lg" data-testid={`part-row-${index}`}>
-                        <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4">
-                          {/* Product Selector */}
-                          <div>
-                            <Label>Product</Label>
-                            <Popover
-                              open={productOpen[index]}
-                              onOpenChange={(open) => setProductOpen({ ...productOpen, [index]: open })}
-                            >
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  role="combobox"
-                                  className="w-full justify-between"
-                                  data-testid={`button-select-product-${index}`}
+                      <div key={index} className="border-2 rounded-lg p-5 bg-slate-50/50 relative" data-testid={`part-row-${index}`}>
+                        {/* Visual indicator for custom vs regular product */}
+                        <div className="absolute -top-3 left-4 bg-white px-2 py-1 rounded-md border flex items-center gap-2">
+                          {customToggles[index] ? (
+                            <>
+                              <Edit3 className="h-3 w-3 text-purple-500" />
+                              <span className="text-xs font-medium text-purple-700">Custom Part</span>
+                            </>
+                          ) : (
+                            <>
+                              <Box className="h-3 w-3 text-blue-500" />
+                              <span className="text-xs font-medium text-blue-700">Inventory Part</span>
+                            </>
+                          )}
+                        </div>
+
+                        <div className="space-y-5 mt-2">
+                          {/* Product Selection Section */}
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-3 pb-3 border-b">
+                              <Package className="h-4 w-4 text-primary" />
+                              <h4 className="font-semibold text-sm">Product Selection</h4>
+                            </div>
+
+                            {/* Custom Product Toggle */}
+                            <div className="flex items-center space-x-3 bg-white p-3 rounded-md border">
+                              <Checkbox
+                                id={`custom-${index}`}
+                                checked={customToggles[index] || false}
+                                onCheckedChange={(checked) => toggleCustomProduct(index, checked as boolean)}
+                                data-testid={`checkbox-custom-product-${index}`}
+                              />
+                              <Label htmlFor={`custom-${index}`} className="cursor-pointer font-medium text-sm">
+                                Use Custom Product
+                              </Label>
+                            </div>
+
+                            {/* Category Filter - Only show for regular products */}
+                            {!customToggles[index] && (
+                              <div>
+                                <Label className="text-xs text-slate-600 flex items-center gap-2 mb-2">
+                                  <Filter className="h-3 w-3" />
+                                  Filter by Category
+                                </Label>
+                                <Select
+                                  value={selectedCategory}
+                                  onValueChange={setSelectedCategory}
                                 >
-                                  {item.productId
-                                    ? allProducts.find((p) => p.id === item.productId)?.name || "Select..."
-                                    : "Select product..."}
-                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-full p-0">
-                                <Command>
-                                  <CommandInput placeholder="Search product..." />
-                                  <CommandEmpty>No product found.</CommandEmpty>
-                                  <CommandGroup>
-                                    {allProducts.map((product) => (
-                                      <CommandItem
-                                        key={product.id}
-                                        value={product.name}
-                                        onSelect={() => {
-                                          updateServiceItem(index, 'productId', product.id);
-                                          setProductOpen({ ...productOpen, [index]: false });
-                                        }}
-                                        data-testid={`option-product-${product.id}`}
-                                      >
-                                        <Check
-                                          className={cn(
-                                            "mr-2 h-4 w-4",
-                                            item.productId === product.id ? "opacity-100" : "opacity-0"
-                                          )}
-                                        />
-                                        {product.name}
-                                      </CommandItem>
+                                  <SelectTrigger data-testid={`select-category-${index}`} className="bg-white">
+                                    <SelectValue placeholder="Select category" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="all">All Categories</SelectItem>
+                                    {categories.map((category) => (
+                                      <SelectItem key={category.id} value={category.id.toString()}>
+                                        {category.name}
+                                      </SelectItem>
                                     ))}
-                                  </CommandGroup>
-                                </Command>
-                              </PopoverContent>
-                            </Popover>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+
+                            {/* Product Selector or Custom Fields */}
+                            {customToggles[index] ? (
+                              <div className="grid grid-cols-2 gap-4">
+                                {/* Custom Product Name */}
+                                <div>
+                                  <Label className="text-xs text-slate-600 mb-2">Product Name *</Label>
+                                  <Input
+                                    placeholder="Enter custom product name"
+                                    value={item.customProductName || ''}
+                                    onChange={(e) => {
+                                      updateServiceItem(index, 'customProductName', e.target.value);
+                                      updateServiceItem(index, 'productName', e.target.value);
+                                    }}
+                                    data-testid={`input-custom-name-${index}`}
+                                    className="bg-white"
+                                  />
+                                </div>
+
+                                {/* Custom Unit Price */}
+                                <div>
+                                  <Label className="text-xs text-slate-600 mb-2">Unit Price (€) *</Label>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    value={item.unitPrice}
+                                    onChange={(e) => updateServiceItem(index, 'unitPrice', e.target.value)}
+                                    data-testid={`input-custom-price-${index}`}
+                                    className="bg-white"
+                                  />
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <Label className="text-xs text-slate-600 mb-2">Select Product</Label>
+                                <Popover
+                                  open={productOpen[index]}
+                                  onOpenChange={(open) => setProductOpen({ ...productOpen, [index]: open })}
+                                >
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      className="w-full justify-between bg-white"
+                                      data-testid={`button-select-product-${index}`}
+                                    >
+                                      {item.productId
+                                        ? allProducts.find((p) => p.id === item.productId)?.name || "Select..."
+                                        : "Select product..."}
+                                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-full p-0">
+                                    <Command>
+                                      <CommandInput placeholder="Search product..." />
+                                      <CommandEmpty>No product found.</CommandEmpty>
+                                      <CommandGroup>
+                                        {filteredProducts.map((product) => (
+                                          <CommandItem
+                                            key={product.id}
+                                            value={product.name}
+                                            onSelect={() => {
+                                              updateServiceItem(index, 'productId', product.id);
+                                              setProductOpen({ ...productOpen, [index]: false });
+                                            }}
+                                            data-testid={`option-product-${product.id}`}
+                                          >
+                                            <Check
+                                              className={cn(
+                                                "mr-2 h-4 w-4",
+                                                item.productId === product.id ? "opacity-100" : "opacity-0"
+                                              )}
+                                            />
+                                            {product.name}
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </Command>
+                                  </PopoverContent>
+                                </Popover>
+                              </div>
+                            )}
                           </div>
 
-                          {/* Quantity */}
-                          <div>
-                            <Label>Quantity</Label>
-                            <Input
-                              type="number"
-                              min="1"
-                              value={item.quantity}
-                              onChange={(e) => updateServiceItem(index, 'quantity', parseInt(e.target.value) || 1)}
-                              data-testid={`input-quantity-${index}`}
-                            />
-                          </div>
+                          {/* Pricing Details Section */}
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-3 pb-3 border-b">
+                              <DollarSign className="h-4 w-4 text-primary" />
+                              <h4 className="font-semibold text-sm">Pricing Details</h4>
+                            </div>
 
-                          {/* Unit Price */}
-                          <div>
-                            <Label>Unit Price (€)</Label>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              value={item.unitPrice}
-                              onChange={(e) => updateServiceItem(index, 'unitPrice', e.target.value)}
-                              data-testid={`input-unit-price-${index}`}
-                            />
-                          </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              {/* Quantity */}
+                              <div>
+                                <Label className="text-xs text-slate-600 mb-2">Quantity</Label>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  value={item.quantity}
+                                  onChange={(e) => updateServiceItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                                  data-testid={`input-quantity-${index}`}
+                                  className="bg-white"
+                                />
+                              </div>
 
-                          {/* Total Price */}
-                          <div>
-                            <Label>Total (€)</Label>
-                            <Input
-                              type="text"
-                              value={formatCurrency(parseFloat(item.totalPrice || '0'))}
-                              readOnly
-                              disabled
-                              data-testid={`text-total-price-${index}`}
-                            />
+                              {/* Unit Price - Only editable for custom products */}
+                              {!customToggles[index] && (
+                                <div>
+                                  <Label className="text-xs text-slate-600 mb-2">Unit Price (€)</Label>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    value={item.unitPrice}
+                                    onChange={(e) => updateServiceItem(index, 'unitPrice', e.target.value)}
+                                    data-testid={`input-unit-price-${index}`}
+                                    className="bg-white"
+                                  />
+                                </div>
+                              )}
+
+                              {/* Total Price */}
+                              <div className={customToggles[index] ? "col-span-2" : ""}>
+                                <Label className="text-xs text-slate-600 mb-2">Total (€)</Label>
+                                <Input
+                                  type="text"
+                                  value={formatCurrency(parseFloat(item.totalPrice || '0'))}
+                                  readOnly
+                                  disabled
+                                  data-testid={`text-total-price-${index}`}
+                                  className="font-semibold"
+                                />
+                              </div>
+                            </div>
                           </div>
                         </div>
 
@@ -571,7 +767,7 @@ export default function AddService() {
                           variant="ghost"
                           size="icon"
                           onClick={() => removeServiceItem(index)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 mt-6"
+                          className="absolute -top-3 -right-3 text-red-600 hover:text-red-700 hover:bg-red-50 bg-white border shadow-sm rounded-full h-8 w-8"
                           data-testid={`button-remove-part-${index}`}
                         >
                           <Trash2 className="h-4 w-4" />
