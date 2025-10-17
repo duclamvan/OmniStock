@@ -28,12 +28,13 @@ import {
   FileSpreadsheet,
   File as FileGeneric,
   ArrowUpDown,
-  UploadCloud
+  UploadCloud,
+  ScrollText
 } from "lucide-react";
 import { formatDate } from "@/lib/currencyUtils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Warehouse, WarehouseFile } from "@shared/schema";
+import type { Warehouse, WarehouseFile, WarehouseFinancialContract } from "@shared/schema";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import {
   AlertDialog,
@@ -65,6 +66,11 @@ export default function WarehouseDetails() {
 
   const { data: files = [], isLoading: filesLoading, refetch: refetchFiles } = useQuery<WarehouseFile[]>({
     queryKey: [`/api/warehouses/${id}/files`],
+    enabled: !!id,
+  });
+
+  const { data: financialContracts = [], isLoading: contractsLoading } = useQuery<WarehouseFinancialContract[]>({
+    queryKey: ['/api/warehouses', id, 'financial-contracts'],
     enabled: !!id,
   });
 
@@ -154,6 +160,16 @@ export default function WarehouseDetails() {
     };
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
     return <Badge className={config.color} data-testid={`badge-status-${status}`}>{config.label}</Badge>;
+  };
+
+  const getContractStatusBadgeVariant = (status: string) => {
+    const variants = {
+      'active': 'default' as const,
+      'expired': 'destructive' as const,
+      'pending': 'secondary' as const,
+      'cancelled': 'outline' as const,
+    };
+    return variants[status as keyof typeof variants] || 'default';
   };
 
   const getTypeBadge = (type: string) => {
@@ -405,6 +421,16 @@ export default function WarehouseDetails() {
                 )}
               </div>
 
+              {warehouse.contact && (
+                <div>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Primary Contact Person</p>
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-slate-400" />
+                    <p className="text-slate-900 dark:text-slate-100" data-testid="text-contact">{warehouse.contact}</p>
+                  </div>
+                </div>
+              )}
+
               {warehouse.rentedFromDate && (
                 <div>
                   <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Rented From Date</p>
@@ -423,6 +449,100 @@ export default function WarehouseDetails() {
                   <p className="text-slate-900 dark:text-slate-100 whitespace-pre-wrap p-3 rounded-lg bg-slate-50 dark:bg-slate-800" data-testid="text-notes">
                     {warehouse.notes}
                   </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Financial Contracts */}
+          <Card data-testid="card-financial-contracts">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ScrollText className="h-5 w-5 text-orange-600" />
+                Financial Contracts
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {contractsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : financialContracts.length === 0 ? (
+                <div className="text-center py-12 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg">
+                  <ScrollText className="h-12 w-12 text-slate-400 mx-auto mb-3" />
+                  <p className="text-slate-600 dark:text-slate-400 font-medium">No financial contracts</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-500 mt-1">This warehouse has no financial agreements</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {financialContracts.map((contract: WarehouseFinancialContract) => (
+                    <Card key={contract.id} className="border-slate-200 dark:border-slate-700" data-testid={`card-contract-${contract.id}`}>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100" data-testid={`text-contract-name-${contract.id}`}>
+                              {contract.contractName}
+                            </CardTitle>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 capitalize" data-testid={`text-contract-type-${contract.id}`}>
+                              {contract.contractType}
+                            </p>
+                          </div>
+                          <Badge variant={getContractStatusBadgeVariant(contract.status || 'active')} data-testid={`badge-status-${contract.id}`}>
+                            {contract.status || 'active'}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="space-y-2 text-sm">
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-600 dark:text-slate-400">Amount:</span>
+                            <span className="font-semibold text-slate-900 dark:text-slate-100" data-testid={`text-contract-price-${contract.id}`}>
+                              {contract.price} {contract.currency}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-600 dark:text-slate-400">Billing:</span>
+                            <span className="text-slate-900 dark:text-slate-100" data-testid={`text-contract-billing-${contract.id}`}>
+                              {contract.billingPeriod === 'custom' 
+                                ? `Every ${contract.customBillingDays} days`
+                                : contract.billingPeriod}
+                            </span>
+                          </div>
+                          {contract.rentalDueDate && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-600 dark:text-slate-400">Due Date:</span>
+                              <span className="text-slate-900 dark:text-slate-100" data-testid={`text-contract-due-${contract.id}`}>
+                                {formatDate(contract.rentalDueDate)}
+                              </span>
+                            </div>
+                          )}
+                          {contract.startDate && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-600 dark:text-slate-400">Start:</span>
+                              <span className="text-slate-900 dark:text-slate-100" data-testid={`text-contract-start-${contract.id}`}>
+                                {formatDate(contract.startDate)}
+                              </span>
+                            </div>
+                          )}
+                          {contract.endDate && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-600 dark:text-slate-400">End:</span>
+                              <span className="text-slate-900 dark:text-slate-100" data-testid={`text-contract-end-${contract.id}`}>
+                                {formatDate(contract.endDate)}
+                              </span>
+                            </div>
+                          )}
+                          {contract.notes && (
+                            <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+                              <p className="text-slate-600 dark:text-slate-400 text-xs line-clamp-2" data-testid={`text-contract-notes-${contract.id}`}>
+                                {contract.notes}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               )}
             </CardContent>
