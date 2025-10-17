@@ -2074,6 +2074,56 @@ Important:
     }
   });
 
+  // Move product to another warehouse
+  app.post('/api/products/:id/move-warehouse', async (req: any, res) => {
+    try {
+      const { id: productId } = req.params;
+      const { targetWarehouseId } = req.body;
+
+      if (!targetWarehouseId) {
+        return res.status(400).json({ message: "Target warehouse ID is required" });
+      }
+
+      // Get the product and verify it exists
+      const product = await storage.getProductById(productId);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      // Verify target warehouse exists
+      const targetWarehouse = await storage.getWarehouseById(targetWarehouseId);
+      if (!targetWarehouse) {
+        return res.status(404).json({ message: "Target warehouse not found" });
+      }
+
+      const oldWarehouseId = product.warehouseId;
+
+      // Update product's warehouse
+      const updatedProduct = await storage.updateProduct(productId, { 
+        warehouseId: targetWarehouseId 
+      });
+
+      // Create activity log
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated',
+        entityType: 'product',
+        entityId: productId,
+        description: `Moved "${product.name}" from warehouse ${oldWarehouseId || 'unassigned'} to ${targetWarehouse.name}`,
+      });
+
+      res.json({ 
+        success: true, 
+        product: updatedProduct,
+        targetWarehouse: targetWarehouse,
+        message: `Product moved to ${targetWarehouse.name}` 
+      });
+    } catch (error) {
+      console.error("Error moving product to warehouse:", error);
+      res.status(500).json({ message: "Failed to move product to warehouse" });
+    }
+  });
+
   // Product Variants
   app.get('/api/products/:productId/variants', async (req, res) => {
     try {
