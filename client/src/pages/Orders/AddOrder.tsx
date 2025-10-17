@@ -1854,12 +1854,35 @@ export default function AddOrder() {
                   </div>
                   <div>
                     <Label htmlFor="facebookUrl">Facebook URL</Label>
-                    <Input
-                      id="facebookUrl"
-                      value={newCustomer.facebookUrl}
-                      onChange={(e) => setNewCustomer({ ...newCustomer, facebookUrl: e.target.value })}
-                      placeholder="Place URL or Type"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="facebookUrl"
+                        value={newCustomer.facebookUrl}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, facebookUrl: e.target.value })}
+                        placeholder="Place URL or Type"
+                        className="pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1 h-8 w-8 p-0"
+                        onClick={() => {
+                          if (newCustomer.name) {
+                            setNewCustomer({ ...newCustomer, facebookUrl: newCustomer.name });
+                            toast({
+                              title: "Name copied",
+                              description: "Customer name copied to Facebook URL",
+                            });
+                          }
+                        }}
+                        disabled={!newCustomer.name}
+                        title="Copy customer name"
+                        data-testid="button-copy-facebook-url"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
