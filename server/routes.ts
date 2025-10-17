@@ -5202,11 +5202,11 @@ Important:
   // Sales/Discounts endpoints
   app.get('/api/discounts', async (req, res) => {
     try {
-      const sales = await storage.getSales();
-      res.json(sales);
+      const discounts = await storage.getDiscounts();
+      res.json(discounts);
     } catch (error) {
-      console.error("Error fetching sales:", error);
-      res.status(500).json({ message: "Failed to fetch sales" });
+      console.error("Error fetching discounts:", error);
+      res.status(500).json({ message: "Failed to fetch discounts" });
     }
   });
 
