@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
 import { 
   Plus, 
@@ -17,7 +16,9 @@ import {
   Search, 
   Eye,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  User,
+  Calendar
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -174,91 +175,6 @@ export default function AllTickets() {
     }
   };
 
-  const columns: DataTableColumn<any>[] = [
-    {
-      key: "ticketId",
-      header: "Ticket ID",
-      cell: (row: any) => (
-        <Link href={`/tickets/${row.id}`}>
-          <span className="font-mono text-sm font-medium text-blue-600 hover:underline cursor-pointer" data-testid={`link-ticket-${row.id}`}>
-            {row.ticketId}
-          </span>
-        </Link>
-      ),
-    },
-    {
-      key: "title",
-      header: "Title",
-      cell: (row: any) => (
-        <div className="flex items-start gap-2">
-          <span className="text-lg">{getCategoryIcon(row.category)}</span>
-          <div>
-            <Link href={`/tickets/${row.id}`}>
-              <span className="font-medium hover:underline cursor-pointer" data-testid={`text-title-${row.id}`}>
-                {row.title}
-              </span>
-            </Link>
-            {row.customer && (
-              <p className="text-xs text-slate-500 mt-0.5">
-                Customer: {row.customer.name}
-              </p>
-            )}
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "category",
-      header: "Category",
-      cell: (row: any) => (
-        <span className="text-sm capitalize">
-          {row.category?.replace(/_/g, ' ')}
-        </span>
-      ),
-    },
-    {
-      key: "priority",
-      header: "Priority",
-      cell: (row: any) => getPriorityBadge(row.priority),
-    },
-    {
-      key: "status",
-      header: "Status",
-      cell: (row: any) => getStatusBadge(row.status),
-    },
-    {
-      key: "createdAt",
-      header: "Created",
-      cell: (row: any) => (
-        <span className="text-sm text-slate-600" data-testid={`text-created-${row.id}`}>
-          {formatDate(row.createdAt)}
-        </span>
-      ),
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      cell: (row: any) => (
-        <Link href={`/tickets/${row.id}`}>
-          <Button variant="ghost" size="icon" data-testid={`button-view-${row.id}`}>
-            <Eye className="h-4 w-4" />
-          </Button>
-        </Link>
-      ),
-    },
-  ];
-
-  const bulkActions = [
-    {
-      type: "button" as const,
-      label: "Delete Selected",
-      action: (selectedItems: any[]) => {
-        setSelectedTickets(selectedItems);
-        setShowDeleteDialog(true);
-      },
-      variant: "destructive" as const,
-    },
-  ];
 
   return (
     <div className="space-y-6">
@@ -321,93 +237,124 @@ export default function AllTickets() {
         </Card>
       </div>
 
-      {/* Filters and Table */}
-      <Card>
-        <CardContent className="p-0 sm:p-6">
-          <DataTable
-            columns={columns}
-            data={filteredTickets}
-            bulkActions={bulkActions}
-            getRowKey={(ticket) => ticket.id}
-            itemsPerPageOptions={[10, 20, 50, 100]}
-            defaultItemsPerPage={20}
-            renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
-              <div className="px-4 sm:px-0 pb-3">
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="text-mobile-lg font-semibold">All Tickets ({filteredTickets?.length || 0})</h2>
-                      {selectedRows.size > 0 && (
-                        <>
-                          <Badge variant="secondary" className="text-xs h-6 px-2">
-                            {selectedRows.size}
-                          </Badge>
-                          {actions.map((action, index) => {
-                            if (action.type === "button") {
-                              return (
-                                <Button
-                                  key={index}
-                                  size="sm"
-                                  variant={action.variant || "ghost"}
-                                  onClick={() => action.action(selectedItems)}
-                                  className="h-6 px-2 text-xs"
-                                  data-testid="button-delete-selected"
-                                >
-                                  {action.label}
-                                </Button>
-                              );
-                            }
-                            return null;
-                          })}
-                        </>
-                      )}
-                    </div>
-                    <div className="relative w-full sm:w-80">
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        placeholder="Search tickets..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-9"
-                        data-testid="input-search"
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Filters */}
-                  <div className="flex gap-2 flex-wrap">
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-[150px]" data-testid="select-status-filter">
-                        <SelectValue placeholder="Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="open">Open</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="resolved">Resolved</SelectItem>
-                        <SelectItem value="closed">Closed</SelectItem>
-                      </SelectContent>
-                    </Select>
+      {/* Search and Filters */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search tickets..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+              data-testid="input-search"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[150px]" data-testid="select-status-filter">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="open">Open</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="resolved">Resolved</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+              </SelectContent>
+            </Select>
 
-                    <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                      <SelectTrigger className="w-[150px]" data-testid="select-priority-filter">
-                        <SelectValue placeholder="Priority" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Priority</SelectItem>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
-                      </SelectContent>
-                    </Select>
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="w-[150px]" data-testid="select-priority-filter">
+                <SelectValue placeholder="Priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Priority</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="urgent">Urgent</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Results Count */}
+        <p className="text-sm text-slate-600">
+          Showing {filteredTickets.length} ticket{filteredTickets.length !== 1 ? 's' : ''}
+        </p>
+      </div>
+
+      {/* Tickets Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredTickets.length === 0 ? (
+          <div className="col-span-full text-center py-12">
+            <p className="text-slate-500">No tickets found</p>
+          </div>
+        ) : (
+          filteredTickets.map((ticket) => (
+            <Card 
+              key={ticket.id} 
+              className="hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => navigate(`/tickets/${ticket.id}`)}
+              data-testid={`card-ticket-${ticket.id}`}
+            >
+              <CardContent className="pt-6 space-y-4">
+                {/* Customer - Highlighted at top */}
+                {ticket.customer && (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-blue-600 text-white rounded-full p-1.5">
+                        <User className="h-3 w-3" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Customer</p>
+                        <p className="font-bold text-blue-600 dark:text-blue-400" data-testid={`text-customer-${ticket.id}`}>
+                          {ticket.customer.name}
+                        </p>
+                      </div>
+                    </div>
                   </div>
+                )}
+
+                {/* Ticket ID and Title */}
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-lg">{getCategoryIcon(ticket.category)}</span>
+                    <span className="font-mono text-xs text-blue-600 dark:text-blue-400" data-testid={`text-ticket-id-${ticket.id}`}>
+                      {ticket.ticketId}
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100" data-testid={`text-title-${ticket.id}`}>
+                    {ticket.title}
+                  </h3>
                 </div>
-              </div>
-            )}
-          />
-        </CardContent>
-      </Card>
+
+                {/* Description - Prominent */}
+                {ticket.description && (
+                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
+                    <p className="text-sm text-slate-700 dark:text-slate-300 line-clamp-3" data-testid={`text-description-${ticket.id}`}>
+                      {ticket.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* Badges and Metadata */}
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                  {getStatusBadge(ticket.status)}
+                  {getPriorityBadge(ticket.priority)}
+                </div>
+
+                {/* Footer - Timestamp */}
+                <div className="flex items-center gap-1 text-xs text-slate-500">
+                  <Calendar className="h-3 w-3" />
+                  <span>{formatDate(ticket.createdAt)}</span>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
