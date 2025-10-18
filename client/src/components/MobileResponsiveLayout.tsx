@@ -42,7 +42,8 @@ import {
   Boxes,
   Send,
   FileText,
-  Wrench
+  Wrench,
+  Ticket
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -206,6 +207,13 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       icon: Wrench,
       color: "text-purple-600",
       description: "Repairs & Services"
+    },
+    {
+      name: "Tickets",
+      href: "/tickets",
+      icon: Ticket,
+      color: "text-blue-600",
+      description: "Support Tickets"
     },
     {
       name: "POS",
@@ -561,6 +569,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                  location.includes('/returns') ? 'Returns' :
                  location.includes('/expenses') ? 'Expenses' :
                  location.includes('/services') ? 'Services' :
+                 location.includes('/tickets') ? 'Tickets' :
                  location.includes('/pos') ? 'Point of Sale' :
                  location.includes('/shipping') ? 'Shipping Management' :
                  location.includes('/reports') ? 'Reports' : 'Dashboard'}
