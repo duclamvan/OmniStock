@@ -173,11 +173,12 @@ export default function AddTicket() {
 
     createTicketMutation.mutate({
       customerId: selectedCustomer?.id || null,
-      subject: subject || "Untitled Ticket",
+      title: subject || "Untitled Ticket",
       description: description || "",
       priority: urgency,
       status: "open",
-      notifyDate: notifyDate && notifyDate !== "NONE" && notifyDate !== "custom" ? notifyDate : null,
+      category: "general",
+      dueDate: notifyDate && notifyDate !== "NONE" && notifyDate !== "custom" ? notifyDate : null,
     });
   };
 

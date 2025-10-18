@@ -5074,29 +5074,17 @@ Important:
 
   app.post('/api/tickets', async (req: any, res) => {
     try {
-      // Generate ticket ID (e.g., TKT-20241018-001)
+      // Generate ticket ID (e.g., TKT-20241018-ABC123)
       const date = new Date();
       const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
-      const sequences = await storage.getDailySequences(date);
-      const ticketSeq = sequences.find(s => s.sequenceType === 'ticket');
-      const sequenceNum = ticketSeq ? ticketSeq.lastNumber + 1 : 1;
-      const ticketId = `TKT-${dateStr}-${String(sequenceNum).padStart(3, '0')}`;
-      
-      // Update sequence
-      if (ticketSeq) {
-        await storage.updateDailySequence(ticketSeq.id, sequenceNum);
-      } else {
-        await storage.createDailySequence({
-          date,
-          sequenceType: 'ticket',
-          lastNumber: sequenceNum
-        });
-      }
+      const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const ticketId = `TKT-${dateStr}-${randomSuffix}`;
       
       const bodyWithDefaults = {
         ...req.body,
         ticketId,
-        createdBy: req.user?.id || "test-user"
+        createdBy: req.user?.id || "test-user",
+        category: req.body.category || 'general'
       };
       
       const data = insertTicketSchema.parse(bodyWithDefaults);
