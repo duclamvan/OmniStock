@@ -209,80 +209,80 @@ export default function TicketDetails() {
         <div className="lg:col-span-2 space-y-6">
           {/* Ticket Information */}
           <Card>
-            <CardHeader>
-              <CardTitle>Ticket Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="pt-6 space-y-6">
+              {/* Customer - Highlighted at top */}
+              {ticket.customer && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-blue-600 text-white rounded-full p-2">
+                      <User className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-1">Customer</p>
+                      <Link href={`/customers/${ticket.customer.id}`}>
+                        <span className="text-xl font-bold text-blue-600 dark:text-blue-400 hover:underline" data-testid="link-customer">
+                          {ticket.customer.name}
+                        </span>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Description - Large and prominent */}
               {ticket.description && (
-                <div>
-                  <h3 className="font-semibold mb-2">Description</h3>
-                  <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap" data-testid="text-description">
+                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
+                  <h3 className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3">Description</h3>
+                  <p className="text-lg leading-relaxed text-slate-900 dark:text-slate-100 whitespace-pre-wrap" data-testid="text-description">
                     {ticket.description}
                   </p>
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+              {/* Order - if present */}
+              {ticket.order && (
+                <div className="flex items-center gap-2 text-sm bg-slate-50 dark:bg-slate-800/30 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                  <Package className="h-4 w-4 text-slate-500" />
+                  <span className="text-slate-600 dark:text-slate-400">Related Order:</span>
+                  <Link href={`/orders/${ticket.order.id}`}>
+                    <span className="text-blue-600 dark:text-blue-400 hover:underline font-medium" data-testid="link-order">
+                      {ticket.order.orderId}
+                    </span>
+                  </Link>
+                </div>
+              )}
+
+              {/* Metadata - Small and subtle */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
                 <div>
-                  <p className="text-sm text-slate-500 mb-1">Category</p>
-                  <p className="font-medium capitalize" data-testid="text-category">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Category</p>
+                  <p className="text-sm font-medium capitalize text-slate-700 dark:text-slate-300" data-testid="text-category">
                     {ticket.category?.replace(/_/g, ' ')}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500 mb-1">Created</p>
-                  <p className="font-medium" data-testid="text-created">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Created</p>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300" data-testid="text-created">
                     {formatDate(ticket.createdAt)}
                   </p>
                 </div>
                 {ticket.dueDate && (
                   <div>
-                    <p className="text-sm text-slate-500 mb-1">Due Date</p>
-                    <p className="font-medium" data-testid="text-due-date">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Due Date</p>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300" data-testid="text-due-date">
                       {formatDate(ticket.dueDate)}
                     </p>
                   </div>
                 )}
                 {ticket.resolvedAt && (
                   <div>
-                    <p className="text-sm text-slate-500 mb-1">Resolved</p>
-                    <p className="font-medium text-green-600" data-testid="text-resolved">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Resolved</p>
+                    <p className="text-sm font-medium text-green-600 dark:text-green-400" data-testid="text-resolved">
                       {formatDate(ticket.resolvedAt)}
                     </p>
                   </div>
                 )}
               </div>
-
-              {/* Related Info */}
-              {(ticket.customer || ticket.order) && (
-                <div className="pt-4 border-t">
-                  <h3 className="font-semibold mb-3">Related Information</h3>
-                  <div className="space-y-2">
-                    {ticket.customer && (
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-slate-500" />
-                        <span className="text-sm">Customer:</span>
-                        <Link href={`/customers/${ticket.customer.id}`}>
-                          <span className="text-blue-600 hover:underline font-medium" data-testid="link-customer">
-                            {ticket.customer.name}
-                          </span>
-                        </Link>
-                      </div>
-                    )}
-                    {ticket.order && (
-                      <div className="flex items-center gap-2">
-                        <Package className="h-4 w-4 text-slate-500" />
-                        <span className="text-sm">Order:</span>
-                        <Link href={`/orders/${ticket.order.id}`}>
-                          <span className="text-blue-600 hover:underline font-medium" data-testid="link-order">
-                            {ticket.order.orderId}
-                          </span>
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
 
