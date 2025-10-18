@@ -68,23 +68,23 @@ export default function EditReturn() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Fetch return data
-  const { data: returnData, isLoading: returnLoading } = useQuery({
+  const { data: returnData, isLoading: returnLoading } = useQuery<any>({
     queryKey: [`/api/returns/${id}`],
     enabled: !!id,
   });
 
   // Fetch customers
-  const { data: customers = [] } = useQuery({
+  const { data: customers = [] } = useQuery<any[]>({
     queryKey: ['/api/customers'],
   });
 
   // Fetch orders
-  const { data: orders = [] } = useQuery({
+  const { data: orders = [] } = useQuery<any[]>({
     queryKey: ['/api/orders'],
   });
 
   // Fetch products
-  const { data: products = [] } = useQuery({
+  const { data: products = [] } = useQuery<any[]>({
     queryKey: ['/api/products'],
   });
 
