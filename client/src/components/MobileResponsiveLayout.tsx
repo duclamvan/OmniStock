@@ -73,6 +73,20 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
   const scrollPosition = useRef(0);
   const itemRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const [openItems, setOpenItems] = useState<string[]>([]);
+  
+  // Fetch tickets to count due/overdue notifications
+  const { data: tickets = [] } = useQuery<any[]>({
+    queryKey: ['/api/tickets'],
+  });
+  
+  // Calculate due tickets count
+  const dueTicketsCount = tickets.filter((ticket: any) => {
+    if (!ticket.notifyDate || ticket.status === 'closed') return false;
+    const notifyDate = new Date(ticket.notifyDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return notifyDate <= today;
+  }).length;
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const previousLocation = useRef(location);
@@ -476,6 +490,11 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                   <span className="text-sm font-medium text-gray-900 dark:text-white">{item.name}</span>
                   <span className="text-xs text-gray-500 dark:text-gray-400">{item.description}</span>
                 </div>
+                {item.name === "Tickets" && dueTicketsCount > 0 && (
+                  <Badge className="bg-red-500 text-white text-xs h-5 min-w-[20px] px-1.5 rounded-full flex items-center justify-center">
+                    {dueTicketsCount}
+                  </Badge>
+                )}
               </Button>
             </Link>
           </div>
@@ -589,10 +608,16 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
             {/* Right Section */}
             <div className="flex items-center gap-4">
               {/* Notifications */}
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
-              </Button>
+              <Link href="/tickets">
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="h-5 w-5" />
+                  {dueTicketsCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-semibold">
+                      {dueTicketsCount}
+                    </span>
+                  )}
+                </Button>
+              </Link>
 
               {/* Dark Mode Toggle */}
               <Button
