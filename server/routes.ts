@@ -3055,6 +3055,19 @@ Important:
     }
   });
 
+  // Get customer order history
+  app.get('/api/customers/:customerId/orders', async (req, res) => {
+    try {
+      const { customerId } = req.params;
+      const allOrders = await storage.getOrders();
+      const customerOrders = allOrders.filter(order => order.customerId === customerId);
+      res.json(customerOrders);
+    } catch (error) {
+      console.error("Error fetching customer orders:", error);
+      res.status(500).json({ message: "Failed to fetch customer orders" });
+    }
+  });
+
   app.post('/api/customers/:customerId/shipping-addresses', async (req: any, res) => {
     try {
       const { customerId } = req.params;

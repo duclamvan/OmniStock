@@ -10,6 +10,8 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
 import {
   FileText,
   Shield,
@@ -18,6 +20,9 @@ import {
   Book,
   File,
   Package,
+  CheckCircle,
+  Info,
+  History,
 } from 'lucide-react';
 
 interface ProductFile {
@@ -27,6 +32,7 @@ interface ProductFile {
   fileName: string;
   language: string;
   displayName: string;
+  category?: string;
 }
 
 interface OrderItem {
@@ -40,6 +46,7 @@ interface OrderDocumentSelectorProps {
   orderItems: OrderItem[];
   selectedDocumentIds: string[];
   onDocumentSelectionChange: (documentIds: string[]) => void;
+  customerId?: string;
 }
 
 const FILE_TYPE_ICONS: Record<string, any> = {
@@ -74,6 +81,7 @@ export default function OrderDocumentSelector({
   orderItems,
   selectedDocumentIds,
   onDocumentSelectionChange,
+  customerId,
 }: OrderDocumentSelectorProps) {
   const [localSelectedIds, setLocalSelectedIds] = useState<Set<string>>(
     new Set(selectedDocumentIds)
@@ -105,6 +113,35 @@ export default function OrderDocumentSelector({
       return allFiles;
     },
     enabled: productIds.length > 0,
+  });
+
+  // Fetch customer's order history to check previously sent documents
+  const { data: previouslySentDocuments } = useQuery({
+    queryKey: ['/api/customers', customerId, 'document-history'],
+    queryFn: async () => {
+      if (!customerId) return new Set<string>();
+      
+      try {
+        const response = await fetch(`/api/customers/${customerId}/orders`);
+        if (!response.ok) return new Set<string>();
+        
+        const orders = await response.json();
+        const sentDocIds = new Set<string>();
+        
+        // Extract all document IDs from past orders
+        orders.forEach((order: any) => {
+          if (order.selectedDocumentIds && Array.isArray(order.selectedDocumentIds)) {
+            order.selectedDocumentIds.forEach((id: string) => sentDocIds.add(id));
+          }
+        });
+        
+        return sentDocIds;
+      } catch (error) {
+        console.error('Error fetching customer document history:', error);
+        return new Set<string>();
+      }
+    },
+    enabled: !!customerId,
   });
 
   const handleDocumentToggle = (documentId: string) => {
@@ -141,16 +178,16 @@ export default function OrderDocumentSelector({
 
   if (fileQueries.isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Product Documents</CardTitle>
-          <CardDescription>Loading available documents...</CardDescription>
+      <Card className="shadow-sm">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg">Product Documents & Files</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">Loading available documents...</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
+        <CardContent className="p-4 sm:p-6 pt-0">
+          <div className="space-y-3">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
           </div>
         </CardContent>
       </Card>
@@ -163,33 +200,56 @@ export default function OrderDocumentSelector({
 
   if (!hasAnyDocuments) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Product Documents</CardTitle>
-          <CardDescription>No documents available for selected products</CardDescription>
+      <Card className="shadow-sm">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+            <FileText className="h-5 w-5 text-blue-600" />
+            Product Documents & Files
+          </CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
+            No documents available for selected products
+          </CardDescription>
         </CardHeader>
       </Card>
     );
   }
 
+  const previouslySent = previouslySentDocuments || new Set<string>();
+  const hasHistory = previouslySent.size > 0;
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Product Documents</CardTitle>
-            <CardDescription>
-              Select documents to include with the order
+    <Card className="shadow-sm">
+      <CardHeader className="p-4 sm:p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2 font-semibold">
+              <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
+              Product Documents & Files
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm mt-1">
+              Select documents to include with this order
             </CardDescription>
           </div>
           {localSelectedIds.size > 0 && (
-            <Badge variant="secondary">
+            <Badge variant="default" className="shrink-0 bg-blue-600">
               {localSelectedIds.size} selected
             </Badge>
           )}
         </div>
       </CardHeader>
-      <CardContent>
+
+      <CardContent className="p-4 sm:p-6 space-y-6">
+        {/* Customer Document History Alert */}
+        {hasHistory && (
+          <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+            <History className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <AlertDescription className="text-blue-800 dark:text-blue-200 text-sm">
+              This customer has received {previouslySent.size} document(s) in previous orders.
+              Previously sent documents are marked with a checkmark icon.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="space-y-6">
           {orderItems.map(item => {
             const productFiles = fileQueries.data?.[item.productId] || [];
@@ -199,59 +259,85 @@ export default function OrderDocumentSelector({
             }
             
             const allSelected = productFiles.every(file => localSelectedIds.has(file.id));
-            const someSelected = productFiles.some(file => localSelectedIds.has(file.id));
+            const selectedCount = productFiles.filter(file => localSelectedIds.has(file.id)).length;
             
             return (
               <div key={item.productId} className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Package className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">{item.productName}</span>
-                    <Badge variant="outline">{item.sku}</Badge>
+                {/* Product Header */}
+                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center gap-3 flex-1">
+                    <Package className="h-5 w-5 text-slate-600 dark:text-slate-400 shrink-0" />
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 flex-1 min-w-0">
+                      <span className="font-semibold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">
+                        {item.productName}
+                      </span>
+                      <Badge variant="outline" className="text-xs shrink-0 w-fit">
+                        {item.sku}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">
-                      {productFiles.length} {productFiles.length === 1 ? 'document' : 'documents'}
-                    </span>
-                    <Checkbox
-                      checked={allSelected}
-                      onCheckedChange={() => handleSelectAll(item.productId)}
-                      data-testid={`checkbox-select-all-${item.productId}`}
-                    />
-                    <span className="text-sm">Select All</span>
+                  <div className="flex items-center gap-3 shrink-0 ml-2">
+                    <div className="text-right">
+                      <div className="text-xs text-slate-600 dark:text-slate-400">
+                        {selectedCount}/{productFiles.length} selected
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        checked={allSelected}
+                        onCheckedChange={() => handleSelectAll(item.productId)}
+                        data-testid={`checkbox-select-all-${item.productId}`}
+                      />
+                      <span className="text-xs sm:text-sm font-medium hidden sm:inline">Select All</span>
+                    </div>
                   </div>
                 </div>
                 
-                <div className="ml-6 space-y-2">
+                {/* Document List */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pl-3 sm:pl-6">
                   {productFiles.map(file => {
                     const Icon = FILE_TYPE_ICONS[file.fileType] || FileText;
                     const typeLabel = FILE_TYPE_LABELS[file.fileType] || file.fileType;
                     const flag = LANGUAGE_FLAGS[file.language] || '🌐';
+                    const wasSent = previouslySent.has(file.id);
+                    const isSelected = localSelectedIds.has(file.id);
                     
                     return (
                       <div
                         key={file.id}
-                        className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50 transition-colors"
+                        className={`relative flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                          isSelected 
+                            ? 'bg-blue-50 dark:bg-blue-950 border-blue-300 dark:border-blue-700 shadow-sm' 
+                            : 'bg-white dark:bg-slate-900/20 border-slate-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800'
+                        }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <Checkbox
-                            checked={localSelectedIds.has(file.id)}
-                            onCheckedChange={() => handleDocumentToggle(file.id)}
-                            data-testid={`checkbox-document-${file.id}`}
-                          />
-                          <Icon className="h-4 w-4 text-muted-foreground" />
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium">
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => handleDocumentToggle(file.id)}
+                          data-testid={`checkbox-document-${file.id}`}
+                        />
+                        <Icon className={`h-4 w-4 shrink-0 ${isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-medium truncate ${isSelected ? 'text-blue-900 dark:text-blue-100' : 'text-slate-900 dark:text-slate-100'}`}>
                               {file.displayName}
                             </span>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="secondary" className="text-xs">
-                                {typeLabel}
+                            {wasSent && (
+                              <CheckCircle className="h-3.5 w-3.5 text-green-600 dark:text-green-400 shrink-0" title="Previously sent to this customer" />
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <Badge variant="secondary" className="text-xs">
+                              {typeLabel}
+                            </Badge>
+                            <span className="text-xs text-slate-600 dark:text-slate-400">
+                              {flag} {file.language.toUpperCase()}
+                            </span>
+                            {file.category && (
+                              <Badge variant="outline" className="text-xs">
+                                {file.category}
                               </Badge>
-                              <span className="text-xs text-muted-foreground">
-                                {flag} {file.language.toUpperCase()}
-                              </span>
-                            </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -262,6 +348,21 @@ export default function OrderDocumentSelector({
             );
           })}
         </div>
+
+        {/* Summary Footer */}
+        {localSelectedIds.size > 0 && (
+          <>
+            <Separator className="my-4" />
+            <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                  {localSelectedIds.size} document{localSelectedIds.size !== 1 ? 's' : ''} will be included with this order
+                </span>
+              </div>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );
