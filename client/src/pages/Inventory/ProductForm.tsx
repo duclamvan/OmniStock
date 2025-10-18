@@ -217,6 +217,9 @@ export default function ProductForm() {
     name: string;
     barcode: string;
     quantity: number;
+    priceUsd: string;
+    priceCzk: string;
+    priceEur: string;
     importCostUsd: string;
     importCostCzk: string;
     importCostEur: string;
@@ -226,6 +229,9 @@ export default function ProductForm() {
   const [variantImageLoading, setVariantImageLoading] = useState<Record<string, boolean>>({});
   const [seriesInput, setSeriesInput] = useState("");
   const [seriesQuantity, setSeriesQuantity] = useState(0);
+  const [seriesPriceUsd, setSeriesPriceUsd] = useState("");
+  const [seriesPriceCzk, setSeriesPriceCzk] = useState("");
+  const [seriesPriceEur, setSeriesPriceEur] = useState("");
   const [seriesImportCostUsd, setSeriesImportCostUsd] = useState("");
   const [seriesImportCostCzk, setSeriesImportCostCzk] = useState("");
   const [seriesImportCostEur, setSeriesImportCostEur] = useState("");
@@ -238,6 +244,9 @@ export default function ProductForm() {
     name: "",
     barcode: "",
     quantity: 0,
+    priceUsd: "",
+    priceCzk: "",
+    priceEur: "",
     importCostUsd: "",
     importCostCzk: "",
     importCostEur: "",
@@ -596,6 +605,143 @@ export default function ProductForm() {
     };
   }, [newVariant.importCostUsd, newVariant.importCostCzk, newVariant.importCostEur]);
 
+  // Auto-convert variant price fields after 1 second
+  const variantPriceConversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  useEffect(() => {
+    if (variantPriceConversionTimeoutRef.current) {
+      clearTimeout(variantPriceConversionTimeoutRef.current);
+    }
+
+    variantPriceConversionTimeoutRef.current = setTimeout(() => {
+      const filledFields = [
+        newVariant.priceUsd ? 'USD' : null,
+        newVariant.priceCzk ? 'CZK' : null,
+        newVariant.priceEur ? 'EUR' : null,
+      ].filter(Boolean);
+
+      if (filledFields.length === 1) {
+        const sourceCurrency = filledFields[0] as Currency;
+        let sourceValue = 0;
+
+        switch (sourceCurrency) {
+          case 'USD':
+            sourceValue = parseFloat(newVariant.priceUsd) || 0;
+            break;
+          case 'CZK':
+            sourceValue = parseFloat(newVariant.priceCzk) || 0;
+            break;
+          case 'EUR':
+            sourceValue = parseFloat(newVariant.priceEur) || 0;
+            break;
+        }
+
+        if (sourceValue > 0) {
+          if (sourceCurrency !== 'USD' && !newVariant.priceUsd) {
+            const usdValue = convertCurrency(sourceValue, sourceCurrency, 'USD');
+            setNewVariant((prev) => ({ ...prev, priceUsd: usdValue.toFixed(2) }));
+          }
+          if (sourceCurrency !== 'CZK' && !newVariant.priceCzk) {
+            const czkValue = convertCurrency(sourceValue, sourceCurrency, 'CZK');
+            setNewVariant((prev) => ({ ...prev, priceCzk: czkValue.toFixed(2) }));
+          }
+          if (sourceCurrency !== 'EUR' && !newVariant.priceEur) {
+            const eurValue = convertCurrency(sourceValue, sourceCurrency, 'EUR');
+            setNewVariant((prev) => ({ ...prev, priceEur: eurValue.toFixed(2) }));
+          }
+        }
+      }
+    }, 1000);
+
+    return () => {
+      if (variantPriceConversionTimeoutRef.current) {
+        clearTimeout(variantPriceConversionTimeoutRef.current);
+      }
+    };
+  }, [newVariant.priceUsd, newVariant.priceCzk, newVariant.priceEur]);
+
+  // Auto-convert series price fields after 1 second
+  const seriesPriceConversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  useEffect(() => {
+    if (seriesPriceConversionTimeoutRef.current) {
+      clearTimeout(seriesPriceConversionTimeoutRef.current);
+    }
+
+    seriesPriceConversionTimeoutRef.current = setTimeout(() => {
+      const filledFields = [
+        seriesPriceUsd ? 'USD' : null,
+        seriesPriceCzk ? 'CZK' : null,
+        seriesPriceEur ? 'EUR' : null,
+      ].filter(Boolean);
+
+      if (filledFields.length === 1) {
+        const sourceCurrency = filledFields[0] as Currency;
+        let sourceValue = 0;
+
+        switch (sourceCurrency) {
+          case 'USD':
+            sourceValue = parseFloat(seriesPriceUsd) || 0;
+            break;
+          case 'CZK':
+            sourceValue = parseFloat(seriesPriceCzk) || 0;
+            break;
+          case 'EUR':
+            sourceValue = parseFloat(seriesPriceEur) || 0;
+            break;
+        }
+
+        if (sourceValue > 0) {
+          if (sourceCurrency !== 'USD' && !seriesPriceUsd) {
+            const usdValue = convertCurrency(sourceValue, sourceCurrency, 'USD');
+            setSeriesPriceUsd(usdValue.toFixed(2));
+          }
+          if (sourceCurrency !== 'CZK' && !seriesPriceCzk) {
+            const czkValue = convertCurrency(sourceValue, sourceCurrency, 'CZK');
+            setSeriesPriceCzk(czkValue.toFixed(2));
+          }
+          if (sourceCurrency !== 'EUR' && !seriesPriceEur) {
+            const eurValue = convertCurrency(sourceValue, sourceCurrency, 'EUR');
+            setSeriesPriceEur(eurValue.toFixed(2));
+          }
+        }
+      }
+    }, 1000);
+
+    return () => {
+      if (seriesPriceConversionTimeoutRef.current) {
+        clearTimeout(seriesPriceConversionTimeoutRef.current);
+      }
+    };
+  }, [seriesPriceUsd, seriesPriceCzk, seriesPriceEur]);
+
+  // Auto-fill variant fields when Add Variant dialog opens
+  useEffect(() => {
+    if (isAddDialogOpen && isEditMode && product) {
+      setNewVariant((prev) => ({
+        ...prev,
+        priceUsd: product.priceUsd ? String(product.priceUsd) : "",
+        priceCzk: product.priceCzk ? String(product.priceCzk) : "",
+        priceEur: product.priceEur ? String(product.priceEur) : "",
+        importCostUsd: product.importCostUsd ? String(product.importCostUsd) : "",
+        importCostCzk: product.importCostCzk ? String(product.importCostCzk) : "",
+        importCostEur: product.importCostEur ? String(product.importCostEur) : "",
+      }));
+    }
+  }, [isAddDialogOpen, isEditMode, product]);
+
+  // Auto-fill series fields when Add Series dialog opens
+  useEffect(() => {
+    if (isSeriesDialogOpen && isEditMode && product) {
+      setSeriesPriceUsd(product.priceUsd ? String(product.priceUsd) : "");
+      setSeriesPriceCzk(product.priceCzk ? String(product.priceCzk) : "");
+      setSeriesPriceEur(product.priceEur ? String(product.priceEur) : "");
+      setSeriesImportCostUsd(product.importCostUsd ? String(product.importCostUsd) : "");
+      setSeriesImportCostCzk(product.importCostCzk ? String(product.importCostCzk) : "");
+      setSeriesImportCostEur(product.importCostEur ? String(product.importCostEur) : "");
+    }
+  }, [isSeriesDialogOpen, isEditMode, product]);
+
   // Auto-set low stock alert to 50% of quantity in add mode
   useEffect(() => {
     if (!isEditMode) {
@@ -677,6 +823,9 @@ export default function ProductForm() {
         name: v.name,
         barcode: v.barcode || '',
         quantity: v.quantity || 0,
+        priceUsd: v.priceUsd ? String(v.priceUsd) : '',
+        priceCzk: v.priceCzk ? String(v.priceCzk) : '',
+        priceEur: v.priceEur ? String(v.priceEur) : '',
         importCostUsd: v.importCostUsd ? String(v.importCostUsd) : '',
         importCostCzk: v.importCostCzk ? String(v.importCostCzk) : '',
         importCostEur: v.importCostEur ? String(v.importCostEur) : '',
@@ -1158,6 +1307,9 @@ export default function ProductForm() {
         name: "",
         barcode: "",
         quantity: 0,
+        priceUsd: "",
+        priceCzk: "",
+        priceEur: "",
         importCostUsd: "",
         importCostCzk: "",
         importCostEur: "",
@@ -1205,6 +1357,9 @@ export default function ProductForm() {
           name: `${baseName} ${i}`,
           barcode: "",
           quantity: seriesQuantity,
+          priceUsd: seriesPriceUsd,
+          priceCzk: seriesPriceCzk,
+          priceEur: seriesPriceEur,
           importCostUsd: seriesImportCostUsd,
           importCostCzk: seriesImportCostCzk,
           importCostEur: seriesImportCostEur,
@@ -1214,6 +1369,9 @@ export default function ProductForm() {
       setVariants([...variants, ...newVariantsArray]);
       setSeriesInput("");
       setSeriesQuantity(0);
+      setSeriesPriceUsd("");
+      setSeriesPriceCzk("");
+      setSeriesPriceEur("");
       setSeriesImportCostUsd("");
       setSeriesImportCostCzk("");
       setSeriesImportCostEur("");
@@ -2677,7 +2835,7 @@ export default function ProductForm() {
                           
                           <div className="space-y-3">
                             <div>
-                              <Label className="text-sm font-medium">Variant Pricing (Optional)</Label>
+                              <Label className="text-sm font-medium">Variant Price (Optional)</Label>
                               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                                 Leave blank to use product's default price. Enter value in any currency - others auto-convert.
                               </p>
@@ -2685,7 +2843,60 @@ export default function ProductForm() {
                             
                             <div className="grid grid-cols-3 gap-3">
                               <div>
-                                <Label htmlFor="variant-cost-usd" className="text-xs">Price USD</Label>
+                                <Label htmlFor="variant-price-usd" className="text-xs">Price USD</Label>
+                                <Input
+                                  id="variant-price-usd"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={newVariant.priceUsd}
+                                  onChange={(e) => setNewVariant((prev) => ({ ...prev, priceUsd: e.target.value }))}
+                                  placeholder="Optional"
+                                  data-testid="input-variant-price-usd"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="variant-price-czk" className="text-xs">Price CZK</Label>
+                                <Input
+                                  id="variant-price-czk"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={newVariant.priceCzk}
+                                  onChange={(e) => setNewVariant((prev) => ({ ...prev, priceCzk: e.target.value }))}
+                                  placeholder="Optional"
+                                  data-testid="input-variant-price-czk"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="variant-price-eur" className="text-xs">Price EUR</Label>
+                                <Input
+                                  id="variant-price-eur"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={newVariant.priceEur}
+                                  onChange={(e) => setNewVariant((prev) => ({ ...prev, priceEur: e.target.value }))}
+                                  placeholder="Optional"
+                                  data-testid="input-variant-price-eur"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <Separator />
+                          
+                          <div className="space-y-3">
+                            <div>
+                              <Label className="text-sm font-medium">Variant Import Cost (Optional)</Label>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                Leave blank to use product's default import cost. Enter value in any currency - others auto-convert.
+                              </p>
+                            </div>
+                            
+                            <div className="grid grid-cols-3 gap-3">
+                              <div>
+                                <Label htmlFor="variant-cost-usd" className="text-xs">Import Cost USD</Label>
                                 <Input
                                   id="variant-cost-usd"
                                   type="number"
@@ -2698,7 +2909,7 @@ export default function ProductForm() {
                                 />
                               </div>
                               <div>
-                                <Label htmlFor="variant-cost-czk" className="text-xs">Price CZK</Label>
+                                <Label htmlFor="variant-cost-czk" className="text-xs">Import Cost CZK</Label>
                                 <Input
                                   id="variant-cost-czk"
                                   type="number"
@@ -2711,7 +2922,7 @@ export default function ProductForm() {
                                 />
                               </div>
                               <div>
-                                <Label htmlFor="variant-cost-eur" className="text-xs">Price EUR</Label>
+                                <Label htmlFor="variant-cost-eur" className="text-xs">Import Cost EUR</Label>
                                 <Input
                                   id="variant-cost-eur"
                                   type="number"
@@ -2787,7 +2998,7 @@ export default function ProductForm() {
                           
                           <div className="space-y-3">
                             <div>
-                              <Label className="text-sm font-medium">Variant Pricing (Optional)</Label>
+                              <Label className="text-sm font-medium">Variant Price (Optional)</Label>
                               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                                 Leave blank to use product's default price. Enter value in any currency - others auto-convert.
                               </p>
@@ -2795,7 +3006,60 @@ export default function ProductForm() {
                             
                             <div className="grid grid-cols-3 gap-3">
                               <div>
-                                <Label htmlFor="series-cost-usd" className="text-xs">Price USD</Label>
+                                <Label htmlFor="series-price-usd" className="text-xs">Price USD</Label>
+                                <Input
+                                  id="series-price-usd"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={seriesPriceUsd}
+                                  onChange={(e) => setSeriesPriceUsd(e.target.value)}
+                                  placeholder="Optional"
+                                  data-testid="input-series-price-usd"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="series-price-czk" className="text-xs">Price CZK</Label>
+                                <Input
+                                  id="series-price-czk"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={seriesPriceCzk}
+                                  onChange={(e) => setSeriesPriceCzk(e.target.value)}
+                                  placeholder="Optional"
+                                  data-testid="input-series-price-czk"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="series-price-eur" className="text-xs">Price EUR</Label>
+                                <Input
+                                  id="series-price-eur"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={seriesPriceEur}
+                                  onChange={(e) => setSeriesPriceEur(e.target.value)}
+                                  placeholder="Optional"
+                                  data-testid="input-series-price-eur"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <Separator />
+                          
+                          <div className="space-y-3">
+                            <div>
+                              <Label className="text-sm font-medium">Variant Import Cost (Optional)</Label>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                Leave blank to use product's default import cost. Enter value in any currency - others auto-convert.
+                              </p>
+                            </div>
+                            
+                            <div className="grid grid-cols-3 gap-3">
+                              <div>
+                                <Label htmlFor="series-cost-usd" className="text-xs">Import Cost USD</Label>
                                 <Input
                                   id="series-cost-usd"
                                   type="number"
@@ -2808,7 +3072,7 @@ export default function ProductForm() {
                                 />
                               </div>
                               <div>
-                                <Label htmlFor="series-cost-czk" className="text-xs">Price CZK</Label>
+                                <Label htmlFor="series-cost-czk" className="text-xs">Import Cost CZK</Label>
                                 <Input
                                   id="series-cost-czk"
                                   type="number"
@@ -2821,7 +3085,7 @@ export default function ProductForm() {
                                 />
                               </div>
                               <div>
-                                <Label htmlFor="series-cost-eur" className="text-xs">Price EUR</Label>
+                                <Label htmlFor="series-cost-eur" className="text-xs">Import Cost EUR</Label>
                                 <Input
                                   id="series-cost-eur"
                                   type="number"
@@ -2904,6 +3168,9 @@ export default function ProductForm() {
                             <TableHead className="w-28 text-right">Price USD</TableHead>
                             <TableHead className="w-28 text-right">Price CZK</TableHead>
                             <TableHead className="w-28 text-right">Price EUR</TableHead>
+                            <TableHead className="w-28 text-right">Import Cost USD</TableHead>
+                            <TableHead className="w-28 text-right">Import Cost CZK</TableHead>
+                            <TableHead className="w-28 text-right">Import Cost EUR</TableHead>
                             <TableHead className="w-12"></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -3002,6 +3269,45 @@ export default function ProductForm() {
                                   className="h-8 text-right [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                                   style={{ MozAppearance: 'textfield' } as any}
                                   data-testid={`input-variant-quantity-${variant.id}`}
+                                />
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={variant.priceUsd}
+                                  onChange={(e) => updateVariant(variant.id, 'priceUsd', e.target.value)}
+                                  className="h-8 text-right [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                  style={{ MozAppearance: 'textfield' } as any}
+                                  placeholder="0.00"
+                                  data-testid={`input-variant-price-usd-${variant.id}`}
+                                />
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={variant.priceCzk}
+                                  onChange={(e) => updateVariant(variant.id, 'priceCzk', e.target.value)}
+                                  className="h-8 text-right [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                  style={{ MozAppearance: 'textfield' } as any}
+                                  placeholder="0.00"
+                                  data-testid={`input-variant-price-czk-${variant.id}`}
+                                />
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={variant.priceEur}
+                                  onChange={(e) => updateVariant(variant.id, 'priceEur', e.target.value)}
+                                  className="h-8 text-right [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                  style={{ MozAppearance: 'textfield' } as any}
+                                  placeholder="0.00"
+                                  data-testid={`input-variant-price-eur-${variant.id}`}
                                 />
                               </TableCell>
                               <TableCell className="text-right">
