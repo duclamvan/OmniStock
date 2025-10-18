@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -24,14 +25,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, ArrowLeft, Save } from "lucide-react";
+import { Loader2, ArrowLeft, Save, Sparkles } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { format, addDays, addWeeks } from "date-fns";
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 
@@ -56,6 +57,11 @@ interface TicketFormProps {
 export default function TicketForm({ ticket, mode }: TicketFormProps) {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const [isGeneratingSubject, setIsGeneratingSubject] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [hasManuallyEditedTitle, setHasManuallyEditedTitle] = useState(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch customers for dropdown
   const { data: customers = [] } = useQuery<any[]>({
@@ -80,6 +86,126 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
       dueDate: ticket?.dueDate ? new Date(ticket.dueDate) : undefined,
     },
   });
+
+  // Memoize notify date options
+  const notifyDateOptions = useMemo(() => {
+    const today = new Date();
+    return [
+      { value: "NONE", label: "No reminder" },
+      { value: format(addDays(today, 1), "yyyy-MM-dd"), label: "Tomorrow" },
+      { value: format(addDays(today, 2), "yyyy-MM-dd"), label: "In 2 days" },
+      { value: format(addDays(today, 3), "yyyy-MM-dd"), label: "In 3 days" },
+      { value: format(addDays(today, 5), "yyyy-MM-dd"), label: "In 5 days" },
+      { value: format(addWeeks(today, 1), "yyyy-MM-dd"), label: "In 1 week" },
+      { value: format(addWeeks(today, 2), "yyyy-MM-dd"), label: "In 2 weeks" },
+      { value: format(addWeeks(today, 3), "yyyy-MM-dd"), label: "In 3 weeks" },
+      { value: format(addWeeks(today, 4), "yyyy-MM-dd"), label: "In 1 month" },
+      { value: "custom", label: "Custom date..." },
+    ];
+  }, []);
+
+  // Initialize customer search from existing ticket (wait for both ticket data AND customers to be loaded)
+  useEffect(() => {
+    if (ticket?.customerId && customers && customers.length > 0) {
+      const customer = customers.find((c: any) => c.id === ticket.customerId);
+      if (customer) {
+        setCustomerSearch(customer.name);
+      }
+    }
+  }, [ticket?.customerId, customers]);
+
+  // AI Subject Generation function
+  const generateSubject = async (descriptionText: string) => {
+    if (!descriptionText.trim() || descriptionText.length < 10) return;
+
+    setIsGeneratingSubject(true);
+    try {
+      const response: any = await apiRequest("POST", "/api/tickets/generate-subject", {
+        description: descriptionText,
+      });
+
+      const generatedSubject = response.subject || "";
+      if (generatedSubject) {
+        form.setValue("title", generatedSubject);
+        toast({
+          title: "Subject Generated",
+          description: "AI has generated a subject for your ticket",
+        });
+      }
+    } catch (error) {
+      console.error("Error generating subject:", error);
+      toast({
+        title: "AI Generation Failed",
+        description: "Could not auto-generate subject. Please enter manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingSubject(false);
+    }
+  };
+
+  // Manual generate handler
+  const handleManualGenerate = () => {
+    const description = form.getValues("description");
+    if (!description || description.trim().length < 10) {
+      toast({
+        title: "Need More Details",
+        description: "Please write at least a few sentences in the description first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    generateSubject(description);
+  };
+
+  // Auto-generate subject when description changes (only in add mode and if user hasn't manually edited title)
+  useEffect(() => {
+    if (mode !== "add") return;
+    if (hasManuallyEditedTitle) return;
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    const description = form.watch("description");
+    const title = form.watch("title");
+
+    if (description && description.trim().length > 20 && !title) {
+      debounceTimerRef.current = setTimeout(() => {
+        generateSubject(description);
+      }, 2000);
+    }
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [form.watch("description"), mode, hasManuallyEditedTitle]);
+
+  // Reset hasManuallyEditedTitle when description changes AND title is empty
+  useEffect(() => {
+    const title = form.watch("title");
+    if (!title || title.trim() === "") {
+      setHasManuallyEditedTitle(false);
+    }
+  }, [form.watch("description"), form.watch("title")]);
+
+  // Filter customers based on search
+  const filteredCustomers = useMemo(() => {
+    return customers
+      .filter((customer: any) =>
+        customer.name.toLowerCase().includes(customerSearch.toLowerCase())
+      )
+      .slice(0, 8);
+  }, [customers, customerSearch]);
+
+  // Handle customer selection
+  const handleCustomerSelect = (customer: any) => {
+    setCustomerSearch(customer.name);
+    form.setValue("customerId", customer.id);
+    setShowCustomerDropdown(false);
+  };
 
   const mutation = useMutation({
     mutationFn: async (data: TicketFormValues) => {
@@ -149,13 +275,34 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Title *</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Brief description of the issue" 
-                            {...field} 
-                            data-testid="input-title"
-                          />
-                        </FormControl>
+                        <div className="flex gap-2">
+                          <FormControl>
+                            <Input 
+                              placeholder="Brief description of the issue" 
+                              {...field}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                setHasManuallyEditedTitle(true);
+                              }}
+                              data-testid="input-title"
+                            />
+                          </FormControl>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={handleManualGenerate}
+                            disabled={isGeneratingSubject}
+                            title="Generate subject with AI"
+                            data-testid="button-generate-subject"
+                          >
+                            {isGeneratingSubject ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Sparkles className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -283,6 +430,32 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                               </FormControl>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
+                              <div className="p-3 border-b space-y-2">
+                                <p className="text-sm font-medium">Quick Options</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {notifyDateOptions.map((option) => (
+                                    <Button
+                                      key={option.value}
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="justify-start"
+                                      onClick={() => {
+                                        if (option.value === "NONE") {
+                                          field.onChange(undefined);
+                                        } else if (option.value === "custom") {
+                                          return;
+                                        } else {
+                                          field.onChange(new Date(option.value));
+                                        }
+                                      }}
+                                      data-testid={`button-quick-date-${option.value}`}
+                                    >
+                                      {option.label}
+                                    </Button>
+                                  ))}
+                                </div>
+                              </div>
                               <Calendar
                                 mode="single"
                                 selected={field.value}
@@ -310,27 +483,65 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                   <FormField
                     control={form.control}
                     name="customerId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Customer</FormLabel>
-                        <Select onValueChange={(value) => field.onChange(value === "NONE" ? null : value)} value={field.value || "NONE"}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-customer">
-                              <SelectValue placeholder="Select customer (optional)" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="NONE">None</SelectItem>
-                            {customers.map((customer: any) => (
-                              <SelectItem key={customer.id} value={customer.id}>
-                                {customer.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                    render={({ field }) => {
+                      const customerNotFound = field.value && customers.length > 0 && !customers.find((c: any) => c.id === field.value);
+                      
+                      return (
+                        <FormItem>
+                          <FormLabel>Customer</FormLabel>
+                          <div className="relative">
+                            <FormControl>
+                              <Input
+                                placeholder="Start typing customer name..."
+                                value={customerSearch}
+                                onChange={(e) => {
+                                  setCustomerSearch(e.target.value);
+                                  setShowCustomerDropdown(true);
+                                  if (!e.target.value) {
+                                    field.onChange("");
+                                  }
+                                }}
+                                onFocus={() => setShowCustomerDropdown(true)}
+                                onBlur={() => {
+                                  setTimeout(() => setShowCustomerDropdown(false), 200);
+                                }}
+                                data-testid="input-customer-search"
+                              />
+                            </FormControl>
+                            {showCustomerDropdown && customerSearch && filteredCustomers.length > 0 && (
+                              <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg max-h-64 overflow-auto">
+                                {filteredCustomers.map((customer: any) => (
+                                  <button
+                                    key={customer.id}
+                                    type="button"
+                                    onClick={() => handleCustomerSelect(customer)}
+                                    className="w-full px-4 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-between"
+                                    data-testid={`button-customer-${customer.id}`}
+                                  >
+                                    <span className="font-medium">{customer.name}</span>
+                                    {customer.email && (
+                                      <span className="text-xs text-slate-500">{customer.email}</span>
+                                    )}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          {customerNotFound && (
+                            <div className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 px-3 py-2 rounded border border-amber-200 dark:border-amber-800 flex items-center gap-2">
+                              <span className="font-medium">⚠️ Warning:</span>
+                              <span>Selected customer not found in system</span>
+                            </div>
+                          )}
+                          {field.value && customerSearch && !customerNotFound && (
+                            <div className="text-sm text-slate-600 bg-slate-50 dark:bg-slate-900 px-3 py-2 rounded border border-slate-200 dark:border-slate-700">
+                              Selected: <span className="font-medium">{customerSearch}</span>
+                            </div>
+                          )}
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
                   />
 
                   <FormField
@@ -339,7 +550,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Related Order</FormLabel>
-                        <Select onValueChange={(value) => field.onChange(value === "NONE" ? null : value)} value={field.value || "NONE"}>
+                        <Select onValueChange={(value) => field.onChange(value === "NONE" ? undefined : value)} value={field.value || "NONE"}>
                           <FormControl>
                             <SelectTrigger data-testid="select-order">
                               <SelectValue placeholder="Select order (optional)" />
@@ -391,7 +602,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                         <div className="flex justify-between text-sm">
                           <span className="text-slate-600 dark:text-slate-400">Due Date:</span>
                           <span className="font-medium">
-                            {format(form.watch("dueDate"), "dd/MM/yyyy")}
+                            {format(form.watch("dueDate")!, "dd/MM/yyyy")}
                           </span>
                         </div>
                       )}
