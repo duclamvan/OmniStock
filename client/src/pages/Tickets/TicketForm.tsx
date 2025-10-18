@@ -253,7 +253,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
           <h1 className="text-3xl font-bold tracking-tight">
             {mode === "edit" ? "Edit Ticket" : "New Ticket"}
           </h1>
-          <p className="text-slate-600 mt-1">
+          <p className="text-slate-600 dark:text-slate-400 mt-1">
             {mode === "edit" ? "Update ticket details" : "Create a new support ticket"}
           </p>
         </div>
@@ -264,12 +264,12 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left: Main Form */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Customer Selection - Highlighted */}
-              <Card className="border-2 border-blue-300 dark:border-blue-600 bg-blue-50/30 dark:bg-blue-950/20">
-                <CardHeader className="bg-blue-100 dark:bg-blue-900/30">
-                  <CardTitle className="text-blue-900 dark:text-blue-100">Customer</CardTitle>
+              {/* Customer Selection */}
+              <Card>
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg font-semibold">Customer Information</CardTitle>
                 </CardHeader>
-                <CardContent className="pt-6">
+                <CardContent className="pt-2">
                   <FormField
                     control={form.control}
                     name="customerId"
@@ -336,12 +336,12 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                 </CardContent>
               </Card>
 
-              {/* Description - Highlighted */}
-              <Card className="border-2 border-green-300 dark:border-green-600 bg-green-50/30 dark:bg-green-950/20">
-                <CardHeader className="bg-green-100 dark:bg-green-900/30">
-                  <CardTitle className="text-green-900 dark:text-green-100">Description</CardTitle>
+              {/* Description */}
+              <Card>
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg font-semibold">Ticket Description</CardTitle>
                 </CardHeader>
-                <CardContent className="pt-6">
+                <CardContent className="pt-2">
                   <FormField
                     control={form.control}
                     name="description"
@@ -364,16 +364,16 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
 
               {/* Additional Details */}
               <Card>
-                <CardHeader>
-                  <CardTitle>Additional Details</CardTitle>
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg font-semibold">Ticket Details</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-5 pt-2">
                   <FormField
                     control={form.control}
                     name="title"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Subject</FormLabel>
+                        <FormLabel className="text-sm font-medium">Subject</FormLabel>
                         <div className="flex gap-2">
                           <FormControl>
                             <Input 
@@ -384,6 +384,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                                 setHasManuallyEditedTitle(true);
                               }}
                               data-testid="input-title"
+                              className="h-10"
                             />
                           </FormControl>
                           <Button
@@ -394,6 +395,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                             disabled={isGeneratingSubject}
                             title="Generate subject with AI"
                             data-testid="button-generate-subject"
+                            className="h-10 w-10 shrink-0"
                           >
                             {isGeneratingSubject ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
@@ -413,7 +415,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                       name="category"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Category</FormLabel>
+                          <FormLabel className="text-sm font-medium">Category</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value || "general"}>
                             <FormControl>
                               <SelectTrigger data-testid="select-category">
@@ -438,7 +440,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                       name="priority"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Priority</FormLabel>
+                          <FormLabel className="text-sm font-medium">Priority</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value || "medium"}>
                             <FormControl>
                               <SelectTrigger data-testid="select-priority">
@@ -464,7 +466,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                       name="status"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Status</FormLabel>
+                          <FormLabel className="text-sm font-medium">Status</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value || "open"}>
                             <FormControl>
                               <SelectTrigger data-testid="select-status">
@@ -488,7 +490,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                       name="dueDate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Due Date</FormLabel>
+                          <FormLabel className="text-sm font-medium">Due Date</FormLabel>
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
@@ -558,7 +560,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                     name="orderId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Related Order</FormLabel>
+                        <FormLabel className="text-sm font-medium">Related Order</FormLabel>
                         <Select onValueChange={(value) => field.onChange(value === "NONE" ? undefined : value)} value={field.value || "NONE"}>
                           <FormControl>
                             <SelectTrigger data-testid="select-order">
@@ -585,9 +587,9 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
             {/* Right: Summary/Actions */}
             <div className="lg:col-span-1">
               <div className="sticky top-20">
-                <Card className="border-2 border-blue-200 dark:border-blue-700">
-                  <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 text-white">
-                    <CardTitle>Ticket Summary</CardTitle>
+                <Card className="shadow-md">
+                  <CardHeader className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-b">
+                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100">Ticket Summary</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4 pt-6">
                     <div className="space-y-2">
