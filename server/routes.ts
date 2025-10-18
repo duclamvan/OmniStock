@@ -5081,11 +5081,21 @@ Important:
       const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
       const ticketId = `TKT-${dateStr}-${randomSuffix}`;
       
+      // Convert dueDate string to Date object if present
+      let dueDate = null;
+      if (req.body.dueDate && req.body.dueDate !== 'null' && req.body.dueDate !== '') {
+        dueDate = new Date(req.body.dueDate);
+      }
+      
+      // Remove dueDate from req.body to avoid overwriting
+      const { dueDate: _, ...restBody } = req.body;
+      
       const bodyWithDefaults = {
-        ...req.body,
+        ...restBody,
         ticketId,
         createdBy: req.user?.id || "test-user",
-        category: req.body.category || 'general'
+        category: req.body.category || 'general',
+        dueDate
       };
       
       const data = insertTicketSchema.parse(bodyWithDefaults);
