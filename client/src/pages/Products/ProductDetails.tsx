@@ -214,17 +214,13 @@ export default function ProductDetails() {
   // Landing cost (prefer latest_landing_cost, fallback to import costs)
   const landingCostEur = parseFloat(product.latest_landing_cost) || parseFloat(product.importCostEur) || 0;
   const landingCostCzk = parseFloat(product.importCostCzk) || 0;
-  const landingCostUsd = parseFloat(product.importCostUsd) || 0;
 
-  // Calculate margins for each currency
+  // Calculate margins for each currency (CZK and EUR only)
   const marginEur = product.priceEur && landingCostEur ? calculateMargin(parseFloat(product.priceEur), landingCostEur) : null;
   const marginCzk = product.priceCzk && landingCostCzk ? calculateMargin(parseFloat(product.priceCzk), landingCostCzk) : null;
-  const marginUsd = product.priceUsd && landingCostUsd ? calculateMargin(parseFloat(product.priceUsd), landingCostUsd) : null;
-  const marginVnd = product.priceVnd && landingCostEur ? calculateMargin(parseFloat(product.priceVnd), landingCostEur * 27000) : null;
-  const marginCny = product.priceCny && landingCostEur ? calculateMargin(parseFloat(product.priceCny), landingCostEur * 7.8) : null;
 
   // Primary margin for display (use first available)
-  const primaryMargin = marginEur || marginCzk || marginUsd || marginVnd || marginCny || '0';
+  const primaryMargin = marginEur || marginCzk || '0';
 
   return (
     <div className="max-w-7xl mx-auto p-4 lg:p-6 space-y-4">
@@ -477,7 +473,7 @@ export default function ProductDetails() {
               {/* Selling Prices */}
               <div>
                 <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4">Selling Prices</h3>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {product.priceCzk && (
                     <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 border border-blue-200">
                       <div className="text-xs font-medium text-blue-700">CZK</div>
@@ -488,24 +484,6 @@ export default function ProductDetails() {
                     <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 border border-purple-200">
                       <div className="text-xs font-medium text-purple-700">EUR</div>
                       <div className="text-lg font-bold text-purple-900 mt-1" data-testid="text-price-eur">{formatCurrency(product.priceEur, "EUR")}</div>
-                    </div>
-                  )}
-                  {product.priceUsd && (
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3 border border-green-200">
-                      <div className="text-xs font-medium text-green-700">USD</div>
-                      <div className="text-lg font-bold text-green-900 mt-1" data-testid="text-price-usd">{formatCurrency(product.priceUsd, "USD")}</div>
-                    </div>
-                  )}
-                  {product.priceVnd && (
-                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-3 border border-orange-200">
-                      <div className="text-xs font-medium text-orange-700">VND</div>
-                      <div className="text-lg font-bold text-orange-900 mt-1" data-testid="text-price-vnd">{formatCurrency(product.priceVnd, "VND")}</div>
-                    </div>
-                  )}
-                  {product.priceCny && (
-                    <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-3 border border-red-200">
-                      <div className="text-xs font-medium text-red-700">CNY</div>
-                      <div className="text-lg font-bold text-red-900 mt-1" data-testid="text-price-cny">{formatCurrency(product.priceCny, "CNY")}</div>
                     </div>
                   )}
                 </div>
@@ -543,8 +521,8 @@ export default function ProductDetails() {
               {/* Profit Margin - Multi-Currency */}
               <div>
                 <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4">Profit Analysis</h3>
-                {(marginEur || marginCzk || marginUsd || marginVnd || marginCny) ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {(marginEur || marginCzk) ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {marginEur && (
                       <div className="border-2 border-slate-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
                         <div className="flex items-center justify-between mb-3">
@@ -581,58 +559,6 @@ export default function ProductDetails() {
                           <div className="flex justify-between text-sm">
                             <span className="text-slate-600">Price:</span>
                             <span className="font-semibold">{formatCurrency(product.priceCzk, "CZK")}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    {marginUsd && (
-                      <div className="border-2 border-slate-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-sm font-bold text-slate-700">USD</span>
-                          <Badge variant="outline" className={`font-bold ${getMarginColor(Number(marginUsd))}`}>
-                            {marginUsd}%
-                          </Badge>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-slate-600">Cost:</span>
-                            <span className="font-semibold">{formatCurrency(landingCostUsd, "USD")}</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-slate-600">Price:</span>
-                            <span className="font-semibold">{formatCurrency(product.priceUsd, "USD")}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    {marginVnd && (
-                      <div className="border-2 border-slate-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-sm font-bold text-slate-700">VND</span>
-                          <Badge variant="outline" className={`font-bold ${getMarginColor(Number(marginVnd))}`}>
-                            {marginVnd}%
-                          </Badge>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-slate-600">Price:</span>
-                            <span className="font-semibold">{formatCurrency(product.priceVnd, "VND")}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    {marginCny && (
-                      <div className="border-2 border-slate-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-sm font-bold text-slate-700">CNY</span>
-                          <Badge variant="outline" className={`font-bold ${getMarginColor(Number(marginCny))}`}>
-                            {marginCny}%
-                          </Badge>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-slate-600">Price:</span>
-                            <span className="font-semibold">{formatCurrency(product.priceCny, "CNY")}</span>
                           </div>
                         </div>
                       </div>
@@ -997,7 +923,6 @@ export default function ProductDetails() {
                       <TableHead className="font-semibold">Max Quantity</TableHead>
                       <TableHead className="font-semibold">Price (CZK)</TableHead>
                       <TableHead className="font-semibold">Price (EUR)</TableHead>
-                      <TableHead className="font-semibold">Price (USD)</TableHead>
                       <TableHead className="font-semibold">Type</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1008,7 +933,6 @@ export default function ProductDetails() {
                         <TableCell className="font-medium" data-testid={`text-tier-max-${idx}`}>{tier.maxQuantity || '∞'}</TableCell>
                         <TableCell>{tier.priceCzk ? formatCurrency(tier.priceCzk, "CZK") : '-'}</TableCell>
                         <TableCell>{tier.priceEur ? formatCurrency(tier.priceEur, "EUR") : '-'}</TableCell>
-                        <TableCell>{tier.priceUsd ? formatCurrency(tier.priceUsd, "USD") : '-'}</TableCell>
                         <TableCell>
                           <Badge variant="outline">{tier.priceType || 'tiered'}</Badge>
                         </TableCell>

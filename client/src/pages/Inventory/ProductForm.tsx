@@ -119,9 +119,6 @@ const productSchema = z.object({
   lowStockAlert: z.coerce.number().min(0).default(5),
   priceCzk: z.coerce.number().min(0).optional(),
   priceEur: z.coerce.number().min(0).optional(),
-  priceUsd: z.coerce.number().min(0).optional(),
-  priceVnd: z.coerce.number().min(0).optional(),
-  priceCny: z.coerce.number().min(0).optional(),
   importCostUsd: z.coerce.number().min(0).optional(),
   importCostCzk: z.coerce.number().min(0).optional(),
   importCostEur: z.coerce.number().min(0).optional(),
@@ -138,12 +135,9 @@ const tieredPricingSchema = z.object({
   maxQuantity: z.coerce.number().optional(),
   priceCzk: z.coerce.number().min(0).optional(),
   priceEur: z.coerce.number().min(0).optional(),
-  priceUsd: z.coerce.number().min(0).optional(),
-  priceVnd: z.coerce.number().min(0).optional(),
-  priceCny: z.coerce.number().min(0).optional(),
   priceType: z.enum(['tiered', 'wholesale']).default('tiered'),
 }).refine((data) => {
-  return data.priceCzk || data.priceEur || data.priceUsd || data.priceVnd || data.priceCny;
+  return data.priceCzk || data.priceEur;
 }, {
   message: "At least one price must be specified",
   path: ["priceCzk"],
@@ -229,7 +223,6 @@ export default function ProductForm() {
   const [variantImageLoading, setVariantImageLoading] = useState<Record<string, boolean>>({});
   const [seriesInput, setSeriesInput] = useState("");
   const [seriesQuantity, setSeriesQuantity] = useState(0);
-  const [seriesPriceUsd, setSeriesPriceUsd] = useState("");
   const [seriesPriceCzk, setSeriesPriceCzk] = useState("");
   const [seriesPriceEur, setSeriesPriceEur] = useState("");
   const [seriesImportCostUsd, setSeriesImportCostUsd] = useState("");
@@ -365,9 +358,6 @@ export default function ProductForm() {
   // Watch sales price fields for auto-conversion
   const priceCzk = form.watch('priceCzk');
   const priceEur = form.watch('priceEur');
-  const priceUsd = form.watch('priceUsd');
-  const priceVnd = form.watch('priceVnd');
-  const priceCny = form.watch('priceCny');
   
   // Watch select field values to prevent freezing
   const categoryId = form.watch('categoryId');
@@ -483,7 +473,7 @@ export default function ProductForm() {
     };
   }, [seriesImportCostUsd, seriesImportCostCzk, seriesImportCostEur]);
 
-  // Auto-convert sales prices after 1 second
+  // Auto-convert sales prices after 1 second (CZK ↔ EUR only)
   useEffect(() => {
     if (salesPriceConversionTimeoutRef.current) {
       clearTimeout(salesPriceConversionTimeoutRef.current);
@@ -493,9 +483,6 @@ export default function ProductForm() {
       const filledFields = [
         priceCzk ? 'CZK' : null,
         priceEur ? 'EUR' : null,
-        priceUsd ? 'USD' : null,
-        priceVnd ? 'VND' : null,
-        priceCny ? 'CNY' : null,
       ].filter(Boolean);
 
       if (filledFields.length === 1) {
@@ -509,15 +496,6 @@ export default function ProductForm() {
           case 'EUR':
             sourceValue = parseFloat(String(priceEur)) || 0;
             break;
-          case 'USD':
-            sourceValue = parseFloat(String(priceUsd)) || 0;
-            break;
-          case 'VND':
-            sourceValue = parseFloat(String(priceVnd)) || 0;
-            break;
-          case 'CNY':
-            sourceValue = parseFloat(String(priceCny)) || 0;
-            break;
         }
 
         if (sourceValue > 0) {
@@ -529,18 +507,6 @@ export default function ProductForm() {
             const eurValue = convertCurrency(sourceValue, sourceCurrency, 'EUR');
             form.setValue('priceEur', parseFloat(eurValue.toFixed(2)));
           }
-          if (sourceCurrency !== 'USD' && !priceUsd) {
-            const usdValue = convertCurrency(sourceValue, sourceCurrency, 'USD');
-            form.setValue('priceUsd', parseFloat(usdValue.toFixed(2)));
-          }
-          if (sourceCurrency !== 'VND' && !priceVnd) {
-            const vndValue = convertCurrency(sourceValue, sourceCurrency, 'VND');
-            form.setValue('priceVnd', Math.round(vndValue));
-          }
-          if (sourceCurrency !== 'CNY' && !priceCny) {
-            const cnyValue = convertCurrency(sourceValue, sourceCurrency, 'CNY');
-            form.setValue('priceCny', parseFloat(cnyValue.toFixed(2)));
-          }
         }
       }
     }, 1000);
@@ -550,7 +516,7 @@ export default function ProductForm() {
         clearTimeout(salesPriceConversionTimeoutRef.current);
       }
     };
-  }, [priceCzk, priceEur, priceUsd, priceVnd, priceCny, form]);
+  }, [priceCzk, priceEur, form]);
 
   // Auto-convert variant import costs after 1 second
   useEffect(() => {
@@ -605,7 +571,7 @@ export default function ProductForm() {
     };
   }, [newVariant.importCostUsd, newVariant.importCostCzk, newVariant.importCostEur]);
 
-  // Auto-convert variant price fields after 1 second
+  // Auto-convert variant price fields after 1 second (CZK ↔ EUR only)
   const variantPriceConversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
@@ -615,7 +581,6 @@ export default function ProductForm() {
 
     variantPriceConversionTimeoutRef.current = setTimeout(() => {
       const filledFields = [
-        newVariant.priceUsd ? 'USD' : null,
         newVariant.priceCzk ? 'CZK' : null,
         newVariant.priceEur ? 'EUR' : null,
       ].filter(Boolean);
@@ -625,9 +590,6 @@ export default function ProductForm() {
         let sourceValue = 0;
 
         switch (sourceCurrency) {
-          case 'USD':
-            sourceValue = parseFloat(newVariant.priceUsd) || 0;
-            break;
           case 'CZK':
             sourceValue = parseFloat(newVariant.priceCzk) || 0;
             break;
@@ -637,10 +599,6 @@ export default function ProductForm() {
         }
 
         if (sourceValue > 0) {
-          if (sourceCurrency !== 'USD' && !newVariant.priceUsd) {
-            const usdValue = convertCurrency(sourceValue, sourceCurrency, 'USD');
-            setNewVariant((prev) => ({ ...prev, priceUsd: usdValue.toFixed(2) }));
-          }
           if (sourceCurrency !== 'CZK' && !newVariant.priceCzk) {
             const czkValue = convertCurrency(sourceValue, sourceCurrency, 'CZK');
             setNewVariant((prev) => ({ ...prev, priceCzk: czkValue.toFixed(2) }));
@@ -658,9 +616,9 @@ export default function ProductForm() {
         clearTimeout(variantPriceConversionTimeoutRef.current);
       }
     };
-  }, [newVariant.priceUsd, newVariant.priceCzk, newVariant.priceEur]);
+  }, [newVariant.priceCzk, newVariant.priceEur]);
 
-  // Auto-convert series price fields after 1 second
+  // Auto-convert series price fields after 1 second (CZK ↔ EUR only)
   const seriesPriceConversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
@@ -670,7 +628,6 @@ export default function ProductForm() {
 
     seriesPriceConversionTimeoutRef.current = setTimeout(() => {
       const filledFields = [
-        seriesPriceUsd ? 'USD' : null,
         seriesPriceCzk ? 'CZK' : null,
         seriesPriceEur ? 'EUR' : null,
       ].filter(Boolean);
@@ -680,9 +637,6 @@ export default function ProductForm() {
         let sourceValue = 0;
 
         switch (sourceCurrency) {
-          case 'USD':
-            sourceValue = parseFloat(seriesPriceUsd) || 0;
-            break;
           case 'CZK':
             sourceValue = parseFloat(seriesPriceCzk) || 0;
             break;
@@ -692,10 +646,6 @@ export default function ProductForm() {
         }
 
         if (sourceValue > 0) {
-          if (sourceCurrency !== 'USD' && !seriesPriceUsd) {
-            const usdValue = convertCurrency(sourceValue, sourceCurrency, 'USD');
-            setSeriesPriceUsd(usdValue.toFixed(2));
-          }
           if (sourceCurrency !== 'CZK' && !seriesPriceCzk) {
             const czkValue = convertCurrency(sourceValue, sourceCurrency, 'CZK');
             setSeriesPriceCzk(czkValue.toFixed(2));
@@ -713,7 +663,7 @@ export default function ProductForm() {
         clearTimeout(seriesPriceConversionTimeoutRef.current);
       }
     };
-  }, [seriesPriceUsd, seriesPriceCzk, seriesPriceEur]);
+  }, [seriesPriceCzk, seriesPriceEur]);
 
 
   // Auto-set low stock alert to 50% of quantity in add mode
@@ -751,9 +701,6 @@ export default function ProductForm() {
         lowStockAlert: product.lowStockAlert || 5,
         priceCzk: product.priceCzk ? parseFloat(product.priceCzk) : undefined,
         priceEur: product.priceEur ? parseFloat(product.priceEur) : undefined,
-        priceUsd: product.priceUsd ? parseFloat(product.priceUsd) : undefined,
-        priceVnd: product.priceVnd ? parseFloat(product.priceVnd) : undefined,
-        priceCny: product.priceCny ? parseFloat(product.priceCny) : undefined,
         importCostUsd: product.importCostUsd ? parseFloat(product.importCostUsd) : undefined,
         importCostCzk: product.importCostCzk ? parseFloat(product.importCostCzk) : undefined,
         importCostEur: product.importCostEur ? parseFloat(product.importCostEur) : undefined,
@@ -1331,7 +1278,7 @@ export default function ProductForm() {
           name: `${baseName} ${i}`,
           barcode: "",
           quantity: seriesQuantity,
-          priceUsd: seriesPriceUsd,
+          priceUsd: "",
           priceCzk: seriesPriceCzk,
           priceEur: seriesPriceEur,
           importCostUsd: seriesImportCostUsd,
@@ -1343,7 +1290,6 @@ export default function ProductForm() {
       setVariants([...variants, ...newVariantsArray]);
       setSeriesInput("");
       setSeriesQuantity(0);
-      setSeriesPriceUsd("");
       setSeriesPriceCzk("");
       setSeriesPriceEur("");
       setSeriesImportCostUsd("");
@@ -1503,9 +1449,6 @@ export default function ProductForm() {
       maxQuantity: tier.maxQuantity || undefined,
       priceCzk: tier.priceCzk ? parseFloat(tier.priceCzk) : undefined,
       priceEur: tier.priceEur ? parseFloat(tier.priceEur) : undefined,
-      priceUsd: tier.priceUsd ? parseFloat(tier.priceUsd) : undefined,
-      priceVnd: tier.priceVnd ? parseFloat(tier.priceVnd) : undefined,
-      priceCny: tier.priceCny ? parseFloat(tier.priceCny) : undefined,
       priceType: tier.priceType || 'tiered',
     });
     setTieredPricingDialogOpen(true);
@@ -1518,9 +1461,6 @@ export default function ProductForm() {
       maxQuantity: data.maxQuantity ? Number(data.maxQuantity) : undefined,
       priceCzk: data.priceCzk ? parseFloat(data.priceCzk.toString()) : undefined,
       priceEur: data.priceEur ? parseFloat(data.priceEur.toString()) : undefined,
-      priceUsd: data.priceUsd ? parseFloat(data.priceUsd.toString()) : undefined,
-      priceVnd: data.priceVnd ? parseFloat(data.priceVnd.toString()) : undefined,
-      priceCny: data.priceCny ? parseFloat(data.priceCny.toString()) : undefined,
       priceType: data.priceType
     };
     
@@ -1537,9 +1477,6 @@ export default function ProductForm() {
       maxQuantity: data.maxQuantity ? Number(data.maxQuantity) : undefined,
       priceCzk: data.priceCzk ? parseFloat(data.priceCzk.toString()) : undefined,
       priceEur: data.priceEur ? parseFloat(data.priceEur.toString()) : undefined,
-      priceUsd: data.priceUsd ? parseFloat(data.priceUsd.toString()) : undefined,
-      priceVnd: data.priceVnd ? parseFloat(data.priceVnd.toString()) : undefined,
-      priceCny: data.priceCny ? parseFloat(data.priceCny.toString()) : undefined,
       priceType: data.priceType
     };
     
@@ -2030,7 +1967,7 @@ export default function ProductForm() {
                   {/* Sales Prices */}
                   <div>
                     <Label className="text-sm font-medium mb-2 block">Sales Prices</Label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label htmlFor="priceCzk" className="text-xs text-slate-500">CZK</Label>
                         <Input
@@ -2053,45 +1990,6 @@ export default function ProductForm() {
                           {...form.register('priceEur')}
                           placeholder="0.00"
                           data-testid="input-price-eur"
-                          className="mt-1"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="priceUsd" className="text-xs text-slate-500">USD</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          {...form.register('priceUsd')}
-                          placeholder="0.00"
-                          data-testid="input-price-usd"
-                          className="mt-1"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="priceVnd" className="text-xs text-slate-500">VND</Label>
-                        <Input
-                          type="number"
-                          step="1"
-                          min="0"
-                          {...form.register('priceVnd')}
-                          placeholder="0"
-                          data-testid="input-price-vnd"
-                          className="mt-1"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="priceCny" className="text-xs text-slate-500">CNY</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          {...form.register('priceCny')}
-                          placeholder="0.00"
-                          data-testid="input-price-cny"
                           className="mt-1"
                         />
                       </div>
@@ -2228,9 +2126,6 @@ export default function ProductForm() {
                                       const value = parseFloat(e.target.value);
                                       if (value && value > 0) {
                                         tierForm.setValue('priceEur', parseFloat(convertCurrency(value, 'CZK', 'EUR').toFixed(2)));
-                                        tierForm.setValue('priceUsd', parseFloat(convertCurrency(value, 'CZK', 'USD').toFixed(2)));
-                                        tierForm.setValue('priceVnd', Math.round(convertCurrency(value, 'CZK', 'VND')));
-                                        tierForm.setValue('priceCny', parseFloat(convertCurrency(value, 'CZK', 'CNY').toFixed(2)));
                                       }
                                     }}
                                   />
@@ -2247,65 +2142,6 @@ export default function ProductForm() {
                                       const value = parseFloat(e.target.value);
                                       if (value && value > 0) {
                                         tierForm.setValue('priceCzk', parseFloat(convertCurrency(value, 'EUR', 'CZK').toFixed(2)));
-                                        tierForm.setValue('priceUsd', parseFloat(convertCurrency(value, 'EUR', 'USD').toFixed(2)));
-                                        tierForm.setValue('priceVnd', Math.round(convertCurrency(value, 'EUR', 'VND')));
-                                        tierForm.setValue('priceCny', parseFloat(convertCurrency(value, 'EUR', 'CNY').toFixed(2)));
-                                      }
-                                    }}
-                                  />
-                                </div>
-                                <div>
-                                  <Label className="text-xs">USD</Label>
-                                  <Input 
-                                    type="number" 
-                                    step="0.01" 
-                                    {...tierForm.register('priceUsd')} 
-                                    placeholder="0.00" 
-                                    data-testid="input-tier-usd"
-                                    onBlur={(e) => {
-                                      const value = parseFloat(e.target.value);
-                                      if (value && value > 0) {
-                                        tierForm.setValue('priceCzk', parseFloat(convertCurrency(value, 'USD', 'CZK').toFixed(2)));
-                                        tierForm.setValue('priceEur', parseFloat(convertCurrency(value, 'USD', 'EUR').toFixed(2)));
-                                        tierForm.setValue('priceVnd', Math.round(convertCurrency(value, 'USD', 'VND')));
-                                        tierForm.setValue('priceCny', parseFloat(convertCurrency(value, 'USD', 'CNY').toFixed(2)));
-                                      }
-                                    }}
-                                  />
-                                </div>
-                                <div>
-                                  <Label className="text-xs">VND</Label>
-                                  <Input 
-                                    type="number" 
-                                    {...tierForm.register('priceVnd')} 
-                                    placeholder="0" 
-                                    data-testid="input-tier-vnd"
-                                    onBlur={(e) => {
-                                      const value = parseFloat(e.target.value);
-                                      if (value && value > 0) {
-                                        tierForm.setValue('priceCzk', parseFloat(convertCurrency(value, 'VND', 'CZK').toFixed(2)));
-                                        tierForm.setValue('priceEur', parseFloat(convertCurrency(value, 'VND', 'EUR').toFixed(2)));
-                                        tierForm.setValue('priceUsd', parseFloat(convertCurrency(value, 'VND', 'USD').toFixed(2)));
-                                        tierForm.setValue('priceCny', parseFloat(convertCurrency(value, 'VND', 'CNY').toFixed(2)));
-                                      }
-                                    }}
-                                  />
-                                </div>
-                                <div>
-                                  <Label className="text-xs">CNY</Label>
-                                  <Input 
-                                    type="number" 
-                                    step="0.01" 
-                                    {...tierForm.register('priceCny')} 
-                                    placeholder="0.00" 
-                                    data-testid="input-tier-cny"
-                                    onBlur={(e) => {
-                                      const value = parseFloat(e.target.value);
-                                      if (value && value > 0) {
-                                        tierForm.setValue('priceCzk', parseFloat(convertCurrency(value, 'CNY', 'CZK').toFixed(2)));
-                                        tierForm.setValue('priceEur', parseFloat(convertCurrency(value, 'CNY', 'EUR').toFixed(2)));
-                                        tierForm.setValue('priceUsd', parseFloat(convertCurrency(value, 'CNY', 'USD').toFixed(2)));
-                                        tierForm.setValue('priceVnd', Math.round(convertCurrency(value, 'CNY', 'VND')));
                                       }
                                     }}
                                   />
@@ -2343,9 +2179,6 @@ export default function ProductForm() {
                                   <div className="text-xs text-slate-600 dark:text-slate-400 mt-1 flex gap-2 flex-wrap">
                                     {tier.priceCzk && <span>CZK {parseFloat(tier.priceCzk).toFixed(2)}</span>}
                                     {tier.priceEur && <span>EUR {parseFloat(tier.priceEur).toFixed(2)}</span>}
-                                    {tier.priceUsd && <span>USD {parseFloat(tier.priceUsd).toFixed(2)}</span>}
-                                    {tier.priceVnd && <span>VND {parseFloat(tier.priceVnd).toFixed(0)}</span>}
-                                    {tier.priceCny && <span>CNY {parseFloat(tier.priceCny).toFixed(2)}</span>}
                                   </div>
                                 </div>
                                 <div className="flex gap-1">
@@ -2815,20 +2648,7 @@ export default function ProductForm() {
                               </p>
                             </div>
                             
-                            <div className="grid grid-cols-3 gap-3">
-                              <div>
-                                <Label htmlFor="variant-price-usd" className="text-xs">Price USD</Label>
-                                <Input
-                                  id="variant-price-usd"
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={newVariant.priceUsd}
-                                  onChange={(e) => setNewVariant((prev) => ({ ...prev, priceUsd: e.target.value }))}
-                                  placeholder="Optional"
-                                  data-testid="input-variant-price-usd"
-                                />
-                              </div>
+                            <div className="grid grid-cols-2 gap-3">
                               <div>
                                 <Label htmlFor="variant-price-czk" className="text-xs">Price CZK</Label>
                                 <Input
@@ -2978,20 +2798,7 @@ export default function ProductForm() {
                               </p>
                             </div>
                             
-                            <div className="grid grid-cols-3 gap-3">
-                              <div>
-                                <Label htmlFor="series-price-usd" className="text-xs">Price USD</Label>
-                                <Input
-                                  id="series-price-usd"
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={seriesPriceUsd}
-                                  onChange={(e) => setSeriesPriceUsd(e.target.value)}
-                                  placeholder="Optional"
-                                  data-testid="input-series-price-usd"
-                                />
-                              </div>
+                            <div className="grid grid-cols-2 gap-3">
                               <div>
                                 <Label htmlFor="series-price-czk" className="text-xs">Price CZK</Label>
                                 <Input
@@ -3139,7 +2946,6 @@ export default function ProductForm() {
                             <TableHead>Name</TableHead>
                             <TableHead className="text-right">Barcode</TableHead>
                             <TableHead className="w-24 text-right">Quantity</TableHead>
-                            <TableHead className="w-28 text-right">Price USD</TableHead>
                             <TableHead className="w-28 text-right">Price CZK</TableHead>
                             <TableHead className="w-28 text-right">Price EUR</TableHead>
                             <TableHead className="w-28 text-right">Import Cost USD</TableHead>
@@ -3243,19 +3049,6 @@ export default function ProductForm() {
                                   className="h-8 text-right [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                                   style={{ MozAppearance: 'textfield' } as any}
                                   data-testid={`input-variant-quantity-${variant.id}`}
-                                />
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={variant.priceUsd}
-                                  onChange={(e) => updateVariant(variant.id, 'priceUsd', e.target.value)}
-                                  className="h-8 text-right [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                                  style={{ MozAppearance: 'textfield' } as any}
-                                  placeholder="0.00"
-                                  data-testid={`input-variant-price-usd-${variant.id}`}
                                 />
                               </TableCell>
                               <TableCell className="text-right">
