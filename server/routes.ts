@@ -2091,7 +2091,7 @@ Important:
       }
 
       // Verify target warehouse exists
-      const targetWarehouse = await storage.getWarehouseById(targetWarehouseId);
+      const targetWarehouse = await storage.getWarehouse(targetWarehouseId);
       if (!targetWarehouse) {
         return res.status(404).json({ message: "Target warehouse not found" });
       }
@@ -2252,7 +2252,7 @@ Important:
       }
       
       // Verify target warehouse exists
-      const targetWarehouse = await storage.getWarehouseById(targetWarehouseId);
+      const targetWarehouse = await storage.getWarehouse(targetWarehouseId);
       if (!targetWarehouse) {
         return res.status(404).json({ message: "Target warehouse not found" });
       }
