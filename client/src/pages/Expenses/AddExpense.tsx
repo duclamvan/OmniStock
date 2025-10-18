@@ -469,124 +469,146 @@ export default function AddExpense() {
               </div>
             </div>
 
-            {/* Right: Expense Summary Sidebar */}
+            {/* Right: Expense Summary Sidebar - Paper Bill Style */}
             <div className="lg:col-span-1">
               <div className="sticky top-20 z-10">
-                <Card className="shadow-xl border-2">
-                  <CardHeader className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b-2">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <FileText className="h-5 w-5" />
-                      Expense Summary
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    <div className="space-y-6">
-                      {/* Header Info */}
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
-                          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Bill ID</span>
-                          <span className="font-mono font-semibold text-primary">{expenseId}</span>
-                        </div>
+                <Card className="shadow-2xl border-4 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900">
+                  {/* Bill Header - Like a paper invoice */}
+                  <div className="bg-slate-900 dark:bg-slate-800 text-white px-6 py-5 border-b-4 border-slate-700">
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <FileText className="h-6 w-6" />
+                        <h2 className="text-2xl font-bold tracking-wide">EXPENSE BILL</h2>
+                      </div>
+                      <p className="text-xs text-slate-300 uppercase tracking-widest">Davie Supply</p>
+                    </div>
+                  </div>
 
-                        <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
-                          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Date</span>
-                          <span className="font-medium text-slate-900 dark:text-white">
+                  <CardContent className="p-6 bg-slate-50 dark:bg-slate-900">
+                    {/* Document Info Section */}
+                    <div className="bg-white dark:bg-slate-800 rounded-lg p-4 mb-4 border-2 border-slate-200 dark:border-slate-700 shadow-sm">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Bill Number</p>
+                          <p className="font-mono text-sm font-bold text-slate-900 dark:text-white">{expenseId}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Date</p>
+                          <p className="text-sm font-semibold text-slate-900 dark:text-white">
                             {formatCzechDate(form.watch("date") || new Date())}
-                          </span>
+                          </p>
                         </div>
+                      </div>
+                    </div>
 
-                        {form.watch("vendorName") && (
-                          <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
-                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Vendor</span>
-                            <span className="font-medium text-slate-900 dark:text-white text-right">
-                              {form.watch("vendorName")}
-                            </span>
-                          </div>
-                        )}
-
-                        <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
-                          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Category</span>
-                          <span className="font-medium text-slate-900 dark:text-white">
-                            {form.watch("category")}
-                          </span>
-                        </div>
-
+                    {/* Vendor Information */}
+                    {form.watch("vendorName") && (
+                      <div className="bg-white dark:bg-slate-800 rounded-lg p-4 mb-4 border-2 border-slate-200 dark:border-slate-700 shadow-sm">
+                        <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Bill From</p>
+                        <p className="text-base font-bold text-slate-900 dark:text-white">{form.watch("vendorName")}</p>
                         {form.watch("invoiceNumber") && (
-                          <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
-                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Invoice #</span>
-                            <span className="font-mono text-sm font-medium text-slate-900 dark:text-white">
-                              {form.watch("invoiceNumber")}
-                            </span>
-                          </div>
+                          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                            Invoice # <span className="font-mono font-semibold">{form.watch("invoiceNumber")}</span>
+                          </p>
                         )}
                       </div>
+                    )}
 
-                      {/* Amount */}
-                      <div className="pt-4 border-t-2 border-slate-300 dark:border-slate-600">
-                        <div className="flex justify-between items-center" data-testid="summary-total">
-                          <span className="font-bold text-base text-slate-900 dark:text-white">Total Amount:</span>
-                          <div className="text-right">
-                            <div className="text-2xl font-bold text-primary">
-                              {formatCurrency(form.watch('amount'), form.watch('currency'))}
-                            </div>
-                          </div>
+                    {/* Expense Details */}
+                    <div className="bg-white dark:bg-slate-800 rounded-lg p-4 mb-4 border-2 border-slate-200 dark:border-slate-700 shadow-sm">
+                      <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Expense Details</p>
+                      
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center py-2 border-b border-slate-200 dark:border-slate-700">
+                          <span className="text-sm text-slate-600 dark:text-slate-400">Category</span>
+                          <span className="font-semibold text-slate-900 dark:text-white">{form.watch("category")}</span>
                         </div>
-                      </div>
+                        
+                        {form.watch("description") && (
+                          <div className="py-2 border-b border-slate-200 dark:border-slate-700">
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Description</p>
+                            <p className="text-sm text-slate-900 dark:text-white">{form.watch("description")}</p>
+                          </div>
+                        )}
 
-                      {/* Payment & Status Info */}
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                        <div className="flex justify-between items-center py-2 border-b border-slate-200 dark:border-slate-700">
+                          <span className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-1">
                             {getPaymentMethodIcon(form.watch("paymentMethod"))}
-                            Payment Method:
+                            Payment
                           </span>
-                          <span className="font-medium text-slate-900 dark:text-white capitalize">
+                          <span className="font-medium text-slate-900 dark:text-white capitalize text-sm">
                             {form.watch("paymentMethod").replace('_', ' ')}
                           </span>
                         </div>
 
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-slate-600 dark:text-slate-400">Status:</span>
-                          <div>
-                            {getStatusBadge(form.watch("status"))}
+                        <div className="flex justify-between items-center py-2">
+                          <span className="text-sm text-slate-600 dark:text-slate-400">Status</span>
+                          <div>{getStatusBadge(form.watch("status"))}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Total Amount - Highlighted Section */}
+                    <div className="bg-gradient-to-br from-slate-800 to-slate-900 dark:from-slate-700 dark:to-slate-800 rounded-lg p-5 mb-4 border-3 border-slate-700 shadow-lg">
+                      <div className="flex justify-between items-end" data-testid="summary-total">
+                        <div>
+                          <p className="text-xs text-slate-300 uppercase tracking-widest mb-1">Total Amount</p>
+                          <p className="text-sm text-slate-400">Due Now</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-3xl font-bold text-white tabular-nums">
+                            {formatCurrency(form.watch('amount'), form.watch('currency'))}
                           </div>
                         </div>
                       </div>
+                    </div>
 
-                      <Separator />
-
-                      {/* Action Buttons */}
-                      <div className="pt-2 space-y-3">
-                        <Button
-                          type="submit"
-                          className="w-full"
-                          size="lg"
-                          disabled={createExpenseMutation.isPending}
-                          data-testid="button-save"
-                        >
-                          {createExpenseMutation.isPending ? (
-                            <>
-                              <span className="animate-spin mr-2">⏳</span>
-                              Saving...
-                            </>
-                          ) : (
-                            <>
-                              <Save className="mr-2 h-4 w-4" />
-                              Create Expense
-                            </>
-                          )}
-                        </Button>
-                        
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full"
-                          onClick={() => navigate('/expenses')}
-                          data-testid="button-cancel"
-                        >
-                          Cancel
-                        </Button>
+                    {/* Notes Section */}
+                    {form.watch("notes") && (
+                      <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 mb-4 border-2 border-amber-200 dark:border-amber-700">
+                        <p className="text-[10px] font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wide mb-2">Notes</p>
+                        <p className="text-sm text-amber-900 dark:text-amber-200">{form.watch("notes")}</p>
                       </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="space-y-2 pt-2">
+                      <Button
+                        type="submit"
+                        className="w-full bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600"
+                        size="lg"
+                        disabled={createExpenseMutation.isPending}
+                        data-testid="button-save"
+                      >
+                        {createExpenseMutation.isPending ? (
+                          <>
+                            <span className="animate-spin mr-2">⏳</span>
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="mr-2 h-5 w-5" />
+                            Record Expense
+                          </>
+                        )}
+                      </Button>
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full border-2"
+                        onClick={() => navigate('/expenses')}
+                        data-testid="button-cancel"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="mt-6 pt-4 border-t-2 border-dashed border-slate-300 dark:border-slate-700 text-center">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        This is an expense record for internal accounting purposes
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
