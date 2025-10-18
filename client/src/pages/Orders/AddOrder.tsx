@@ -58,7 +58,10 @@ import {
   Upload,
   Download,
   Pencil,
-  Wrench
+  Wrench,
+  Star,
+  Award,
+  Clock
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import {
@@ -1664,33 +1667,36 @@ export default function AddOrder() {
                           {/* Badges */}
                           <div className="flex items-center gap-1.5 flex-wrap">
                             {/* VIP Badge - for customers with high spending or rank */}
-                            {(selectedCustomer.customerRank === 'VIP' || 
+                            {(selectedCustomer.type === 'vip' || selectedCustomer.customerRank === 'VIP' || 
                               (selectedCustomer.totalSpent && parseFloat(selectedCustomer.totalSpent) >= 50000)) && (
-                              <Badge className="text-xs bg-gradient-to-r from-yellow-400 to-yellow-600 text-white border-0 font-semibold">
-                                ⭐ VIP
+                              <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 text-xs">
+                                <Star className="h-3 w-3 mr-1" />
+                                VIP
                               </Badge>
                             )}
                             {/* TOP50 Badge - for top customers */}
                             {(selectedCustomer.customerRank === 'TOP50' || selectedCustomer.customerRank === 'TOP' ||
                               (selectedCustomer.totalOrders && selectedCustomer.totalOrders >= 20)) && (
-                              <Badge className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 font-semibold">
-                                🏆 TOP50
+                              <Badge className="bg-blue-50 text-blue-700 border-blue-300 text-xs">
+                                <Award className="h-3 w-3 mr-1" />
+                                TOP 50
                               </Badge>
                             )}
                             {/* Pay Later Badge */}
                             {selectedCustomer.hasPayLaterBadge && (
-                              <Badge variant="outline" className="text-xs bg-yellow-50 border-yellow-400 text-yellow-700 font-medium">
-                                💳 Pay Later
+                              <Badge className="bg-purple-50 text-purple-700 border-purple-300 text-xs">
+                                <Clock className="h-3 w-3 mr-1" />
+                                Pay Later
                               </Badge>
                             )}
                             {/* Currency Badge */}
                             {selectedCustomer.preferredCurrency && (
-                              <Badge variant="outline" className="text-xs bg-blue-50 border-blue-300 text-blue-700">
+                              <Badge variant="outline" className="text-xs bg-slate-50 border-slate-300 text-slate-700">
                                 {selectedCustomer.preferredCurrency}
                               </Badge>
                             )}
                             {/* Customer Type */}
-                            {selectedCustomer.type && selectedCustomer.type !== 'regular' && (
+                            {selectedCustomer.type && selectedCustomer.type !== 'regular' && selectedCustomer.type !== 'vip' && (
                               <Badge variant="outline" className="text-xs bg-slate-100 border-slate-300 text-slate-700 capitalize">
                                 {selectedCustomer.type}
                               </Badge>
@@ -1704,7 +1710,7 @@ export default function AddOrder() {
                             {/* New Customer Badge */}
                             {selectedCustomer.needsSaving && (
                               <Badge variant="outline" className="text-xs bg-green-50 border-green-300 text-green-700">
-                                ✨ New Customer
+                                New Customer
                               </Badge>
                             )}
                           </div>
