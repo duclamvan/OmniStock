@@ -1662,6 +1662,7 @@ export default function EditOrder() {
                     <RadioGroup
                       value={selectedShippingAddress?.id || ""}
                       onValueChange={(value) => {
+                        if (!value) return; // Don't update if value is empty (deselection handled by onClick)
                         const address = shippingAddresses.find((a: any) => a.id === value);
                         setSelectedShippingAddress(address);
                       }}
