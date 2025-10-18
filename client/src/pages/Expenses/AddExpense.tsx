@@ -263,40 +263,25 @@ export default function AddExpense() {
                         Bill From (Vendor)
                       </h3>
                       <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="vendorName" className="text-sm font-medium mb-2">
-                              Vendor Name *
-                            </Label>
-                            <Input
-                              id="vendorName"
-                              placeholder="e.g., Office Depot, Amazon"
-                              {...form.register("vendorName")}
-                              data-testid="input-vendor-name"
-                              className={cn(
-                                "text-base",
-                                form.formState.errors.vendorName && "border-red-500"
-                              )}
-                            />
-                            {form.formState.errors.vendorName && (
-                              <p className="text-xs text-red-500 mt-1">
-                                {form.formState.errors.vendorName.message}
-                              </p>
+                        <div>
+                          <Label htmlFor="vendorName" className="text-sm font-medium mb-2">
+                            Vendor Name *
+                          </Label>
+                          <Input
+                            id="vendorName"
+                            placeholder="e.g., Office Depot, Amazon"
+                            {...form.register("vendorName")}
+                            data-testid="input-vendor-name"
+                            className={cn(
+                              "text-base",
+                              form.formState.errors.vendorName && "border-red-500"
                             )}
-                          </div>
-
-                          <div>
-                            <Label htmlFor="invoiceNumber" className="text-sm font-medium mb-2">
-                              Invoice Number
-                            </Label>
-                            <Input
-                              id="invoiceNumber"
-                              placeholder="INV-2025-001"
-                              {...form.register("invoiceNumber")}
-                              data-testid="input-invoice-number"
-                              className="text-base"
-                            />
-                          </div>
+                          />
+                          {form.formState.errors.vendorName && (
+                            <p className="text-xs text-red-500 mt-1">
+                              {form.formState.errors.vendorName.message}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>

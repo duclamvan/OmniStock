@@ -755,7 +755,6 @@ export const expenses = pgTable('expenses', {
   status: varchar('status').default('pending'),
   date: timestamp('date').notNull(),
   description: text('description'),
-  invoiceNumber: varchar('invoice_number'),
   notes: text('notes'),
   // Recurring expense fields
   isRecurring: boolean('is_recurring').default(false),
