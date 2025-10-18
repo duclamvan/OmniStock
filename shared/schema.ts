@@ -449,6 +449,7 @@ export const products = pgTable('products', {
   warehouseLocation: varchar('warehouse_location'),
   shipmentNotes: text('shipment_notes'),
   packingMaterialId: varchar('packing_material_id'),
+  packingMaterials: jsonb('packing_materials'),
   // Packing instructions fields
   packingInstructionsText: text('packing_instructions_text'),
   packingInstructionsImage: text('packing_instructions_image'),

@@ -99,6 +99,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import PackingInstructionsUploader from "@/components/PackingInstructionsUploader";
+import PackingMaterialsSelector from "@/components/PackingMaterialsSelector";
 import ProductFiles from "@/components/ProductFiles";
 import ProductLocations from "@/components/ProductLocations";
 import CostHistoryChart from "@/components/products/CostHistoryChart";
@@ -249,6 +250,7 @@ export default function ProductForm() {
   const [newVariantImageUploading, setNewVariantImageUploading] = useState(false);
   const [packingInstructionsTexts, setPackingInstructionsTexts] = useState<string[]>([]);
   const [packingInstructionsImages, setPackingInstructionsImages] = useState<string[]>([]);
+  const [packingMaterials, setPackingMaterials] = useState<Array<{id: string, name: string, quantity?: number}>>([]);
   
   // All available sections
   const ALL_SECTIONS = ["basic", "stock", "pricing", "supplier", "variants", "packing", "files"];
@@ -272,10 +274,6 @@ export default function ProductForm() {
   
   // Supplier autocomplete state
   const [supplierPopoverOpen, setSupplierPopoverOpen] = useState(false);
-  
-  // Packing material autocomplete state
-  const [packingMaterialPopoverOpen, setPackingMaterialPopoverOpen] = useState(false);
-  const [packingMaterialSearch, setPackingMaterialSearch] = useState("");
   
   // Auto-conversion refs
   const conversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -324,7 +322,7 @@ export default function ProductForm() {
     queryKey: ['/api/suppliers'],
   });
 
-  const { data: packingMaterials = [] } = useQuery<any[]>({
+  const { data: availablePackingMaterials = [] } = useQuery<any[]>({
     queryKey: ['/api/packing-materials'],
   });
 
@@ -715,6 +713,7 @@ export default function ProductForm() {
       
       setPackingInstructionsTexts(product.packingInstructionsTexts || []);
       setPackingInstructionsImages(product.packingInstructionsImages || []);
+      setPackingMaterials(product.packingMaterials || []);
       
       // Map existing product images
       if (product.images && Array.isArray(product.images)) {
@@ -1091,6 +1090,7 @@ export default function ProductForm() {
       ...data,
       packingInstructionsTexts,
       packingInstructionsImages,
+      packingMaterials,
       variants: variants.map(v => ({
         ...v,
         importCostUsd: v.importCostUsd ? parseFloat(v.importCostUsd) : undefined,
@@ -3199,124 +3199,17 @@ export default function ProductForm() {
                     </div>
                   </div>
 
-                  {/* Packing Material */}
+                  {/* Packing Materials */}
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <Package className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                      <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Packing Material</h4>
+                      <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Packing Materials</h4>
                     </div>
-                    <Popover open={packingMaterialPopoverOpen} onOpenChange={setPackingMaterialPopoverOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={packingMaterialPopoverOpen}
-                          className="w-full justify-between font-normal"
-                          data-testid="button-packing-material"
-                        >
-                          <span className="truncate">
-                            {packingMaterialId
-                              ? packingMaterials?.find((m: any) => m.id === packingMaterialId)?.name || "Select packing material"
-                              : "Select packing material"}
-                          </span>
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[500px] p-0" align="start">
-                        <Command shouldFilter={false}>
-                          <CommandInput
-                            placeholder="Search packing materials..."
-                            value={packingMaterialSearch}
-                            onValueChange={setPackingMaterialSearch}
-                            data-testid="input-search-packing-material"
-                          />
-                          <CommandList>
-                            <CommandEmpty>No packing materials found.</CommandEmpty>
-                            <CommandGroup>
-                              {packingMaterials
-                                ?.filter((material: any) =>
-                                  packingMaterialSearch === "" ||
-                                  material.name.toLowerCase().includes(packingMaterialSearch.toLowerCase()) ||
-                                  material.code?.toLowerCase().includes(packingMaterialSearch.toLowerCase()) ||
-                                  material.type?.toLowerCase().includes(packingMaterialSearch.toLowerCase()) ||
-                                  material.category?.toLowerCase().includes(packingMaterialSearch.toLowerCase())
-                                )
-                                .map((material: any) => (
-                                  <CommandItem
-                                    key={material.id}
-                                    value={material.id}
-                                    onSelect={() => {
-                                      form.setValue('packingMaterialId', material.id);
-                                      setPackingMaterialPopoverOpen(false);
-                                      setPackingMaterialSearch("");
-                                    }}
-                                    className="flex items-start gap-3 p-3 cursor-pointer"
-                                    data-testid={`option-packing-material-${material.id}`}
-                                  >
-                                    {/* Image */}
-                                    <div className="shrink-0 w-12 h-12 rounded border bg-slate-50 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
-                                      {material.imageUrl ? (
-                                        <img
-                                          src={material.imageUrl}
-                                          alt={material.name}
-                                          className="w-full h-full object-contain bg-slate-50 dark:bg-slate-900"
-                                        />
-                                      ) : (
-                                        <ImagePlaceholder size="xs" variant="product" data-testid="placeholder-packing-material" />
-                                      )}
-                                    </div>
-                                    
-                                    {/* Info */}
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-2 mb-1">
-                                        <span className="font-medium text-sm">{material.name}</span>
-                                        {material.code && (
-                                          <Badge variant="outline" className="text-xs font-mono">
-                                            {material.code}
-                                          </Badge>
-                                        )}
-                                      </div>
-                                      
-                                      <div className="flex flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-400 mb-1">
-                                        {material.category && (
-                                          <span className="inline-flex items-center gap-1">
-                                            <Package className="h-3 w-3" />
-                                            {material.category}
-                                          </span>
-                                        )}
-                                        {material.dimensions && (
-                                          <span className="inline-flex items-center gap-1">
-                                            <Box className="h-3 w-3" />
-                                            {material.dimensions}
-                                          </span>
-                                        )}
-                                        {material.weight && (
-                                          <span className="inline-flex items-center gap-1">
-                                            <Weight className="h-3 w-3" />
-                                            {material.weight}
-                                          </span>
-                                        )}
-                                      </div>
-                                      
-                                      {material.stockQuantity !== undefined && (
-                                        <div className="text-xs">
-                                          <span className={material.stockQuantity <= material.minStockLevel ? "text-red-600" : "text-green-600"}>
-                                            Stock: {material.stockQuantity}
-                                          </span>
-                                        </div>
-                                      )}
-                                    </div>
-                                    
-                                    {packingMaterialId === material.id && (
-                                      <Check className="h-4 w-4 shrink-0" />
-                                    )}
-                                  </CommandItem>
-                                ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
+                    <PackingMaterialsSelector
+                      packingMaterials={packingMaterials}
+                      onPackingMaterialsChange={setPackingMaterials}
+                      availableMaterials={availablePackingMaterials}
+                    />
                   </div>
 
                   {/* Separator */}
