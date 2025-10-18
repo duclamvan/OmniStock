@@ -18,7 +18,8 @@ import {
   AlertCircle,
   CheckCircle2,
   User,
-  Calendar
+  Calendar,
+  Edit
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -295,10 +296,22 @@ export default function AllTickets() {
           filteredTickets.map((ticket) => (
             <Card 
               key={ticket.id} 
-              className="hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer h-full flex flex-col"
+              className="hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer h-full flex flex-col relative group"
               onClick={() => navigate(`/tickets/${ticket.id}`)}
               data-testid={`card-ticket-${ticket.id}`}
             >
+              {/* Edit Icon - Top Right */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/tickets/edit/${ticket.id}`);
+                }}
+                className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md"
+                data-testid={`button-edit-${ticket.id}`}
+              >
+                <Edit className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+              </button>
+
               <CardContent className="p-5 flex-1 flex flex-col">
                 {/* Customer - Clean and simple */}
                 {ticket.customer && (
