@@ -295,55 +295,41 @@ export default function AllTickets() {
           filteredTickets.map((ticket) => (
             <Card 
               key={ticket.id} 
-              className="hover:shadow-lg transition-shadow cursor-pointer"
+              className="hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer h-full flex flex-col"
               onClick={() => navigate(`/tickets/${ticket.id}`)}
               data-testid={`card-ticket-${ticket.id}`}
             >
-              <CardContent className="pt-6 space-y-4">
-                {/* Customer - Highlighted at top */}
+              <CardContent className="p-5 flex-1 flex flex-col">
+                {/* Customer - Clean and simple */}
                 {ticket.customer && (
-                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
-                    <div className="flex items-center gap-2">
-                      <div className="bg-blue-600 text-white rounded-full p-1.5">
-                        <User className="h-3 w-3" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Customer</p>
-                        <p className="font-bold text-blue-600 dark:text-blue-400" data-testid={`text-customer-${ticket.id}`}>
-                          {ticket.customer.name}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Title */}
-                <div className="flex items-start gap-2">
-                  <span className="text-xl">{getCategoryIcon(ticket.category)}</span>
-                  <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100 flex-1" data-testid={`text-title-${ticket.id}`}>
-                    {ticket.title}
-                  </h3>
-                </div>
-
-                {/* Description - Prominent */}
-                {ticket.description && (
-                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-                    <p className="text-sm text-slate-700 dark:text-slate-300 line-clamp-3" data-testid={`text-description-${ticket.id}`}>
-                      {ticket.description}
+                  <div className="mb-3">
+                    <p className="text-sm font-semibold text-blue-600 dark:text-blue-400" data-testid={`text-customer-${ticket.id}`}>
+                      {ticket.customer.name}
                     </p>
                   </div>
                 )}
 
-                {/* Badges and Metadata */}
-                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                  {getStatusBadge(ticket.status)}
-                  {getPriorityBadge(ticket.priority)}
-                </div>
+                {/* Title with icon */}
+                <h3 className="font-semibold text-base text-slate-900 dark:text-slate-100 mb-2 line-clamp-2" data-testid={`text-title-${ticket.id}`}>
+                  {ticket.title}
+                </h3>
 
-                {/* Footer - Timestamp */}
-                <div className="flex items-center gap-1 text-xs text-slate-500">
-                  <Calendar className="h-3 w-3" />
-                  <span>{formatDate(ticket.createdAt)}</span>
+                {/* Description - Clean */}
+                {ticket.description && (
+                  <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-3 flex-1" data-testid={`text-description-${ticket.id}`}>
+                    {ticket.description}
+                  </p>
+                )}
+
+                {/* Footer - Compact metadata */}
+                <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-slate-800 mt-auto">
+                  <div className="flex items-center gap-1.5">
+                    {getStatusBadge(ticket.status)}
+                    {getPriorityBadge(ticket.priority)}
+                  </div>
+                  <span className="text-xs text-slate-500">
+                    {format(new Date(ticket.createdAt), 'MMM d')}
+                  </span>
                 </div>
               </CardContent>
             </Card>
