@@ -55,6 +55,7 @@ import optimizeDb from './routes/optimize-db';
 import { weightCalculationService } from "./services/weightCalculation";
 import { ImageCompressionService } from "./services/imageCompression";
 import { optimizeCartonPacking } from "./services/cartonPackingService";
+import OpenAI from "openai";
 
 // Configure multer for image uploads with memory storage for compression
 const upload = multer({ 
@@ -5102,6 +5103,47 @@ Important:
     } catch (error) {
       console.error("Error creating ticket:", error);
       res.status(500).json({ message: "Failed to create ticket" });
+    }
+  });
+
+  app.post('/api/tickets/generate-subject', async (req: any, res) => {
+    try {
+      const { description } = req.body;
+      
+      if (!description || typeof description !== 'string' || description.trim().length < 10) {
+        return res.status(400).json({ message: "Description must be at least 10 characters long" });
+      }
+
+      const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+      });
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "You are a WMS (Warehouse Management System) support ticket assistant. Generate a very short, concise subject line (max 6-8 words) for a support ticket based on the description. Focus on the main issue or action needed. Return ONLY the subject line without quotes or extra text.",
+          },
+          {
+            role: "user",
+            content: `Generate a concise ticket subject for this issue:\n\n${description}`,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 30,
+      });
+
+      const subject = response.choices[0]?.message?.content?.trim() || "";
+      
+      if (!subject) {
+        return res.status(500).json({ message: "Failed to generate subject" });
+      }
+
+      res.json({ subject });
+    } catch (error) {
+      console.error("Error generating subject:", error);
+      res.status(500).json({ message: "Failed to generate subject" });
     }
   });
 

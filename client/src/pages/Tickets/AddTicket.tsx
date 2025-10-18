@@ -18,7 +18,6 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ArrowLeft, AlertCircle, Clock, User, Sparkles, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 import { format, addDays, addWeeks } from "date-fns";
-import OpenAI from "openai";
 
 const URGENCY_OPTIONS = [
   { value: "low", label: "Low", color: "text-slate-700", bgColor: "bg-slate-200" },
@@ -26,12 +25,6 @@ const URGENCY_OPTIONS = [
   { value: "high", label: "High", color: "text-orange-700", bgColor: "bg-orange-200" },
   { value: "urgent", label: "Urgent", color: "text-red-700", bgColor: "bg-red-200" },
 ];
-
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY || "sk-placeholder",
-  baseURL: import.meta.env.VITE_OPENAI_BASE_URL,
-  dangerouslyAllowBrowser: true,
-});
 
 export default function AddTicket() {
   const [, navigate] = useLocation();
@@ -105,23 +98,11 @@ export default function AddTicket() {
 
     setIsGeneratingSubject(true);
     try {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: "You are a WMS (Warehouse Management System) support ticket assistant. Generate a very short, concise subject line (max 6-8 words) for a support ticket based on the description. Focus on the main issue or action needed. Return ONLY the subject line without quotes or extra text.",
-          },
-          {
-            role: "user",
-            content: `Generate a concise ticket subject for this issue:\n\n${descriptionText}`,
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: 30,
+      const response = await apiRequest("POST", "/api/tickets/generate-subject", {
+        description: descriptionText,
       });
 
-      const generatedSubject = response.choices[0]?.message?.content?.trim() || "";
+      const generatedSubject = response.subject || "";
       if (generatedSubject) {
         setSubject(generatedSubject);
       }
