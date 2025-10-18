@@ -373,6 +373,27 @@ export default function AddOrder() {
     },
   });
 
+  // Auto-fill order location based on device type or stored preference
+  useEffect(() => {
+    const currentLocation = form.getValues('orderLocation');
+    if (!currentLocation) {
+      // Check for stored device location (for POS devices)
+      const storedDeviceLocation = localStorage.getItem('deviceLocation');
+      const storedWarehouse = localStorage.getItem('warehouseName');
+      
+      if (storedDeviceLocation) {
+        // Use stored device location (e.g., "Prague POS Terminal", "Main Store - Device 1")
+        form.setValue('orderLocation', storedDeviceLocation);
+      } else if (storedWarehouse) {
+        // Use warehouse name if available
+        form.setValue('orderLocation', storedWarehouse);
+      } else {
+        // Default to "Online" for web orders
+        form.setValue('orderLocation', 'Online');
+      }
+    }
+  }, []);
+
   // Debounce search inputs for better performance
   useEffect(() => {
     const timer = setTimeout(() => {

@@ -4,6 +4,14 @@ Davie Supply is a full-stack web application for comprehensive warehouse and ord
 # User Preferences
 Preferred communication style: Simple, everyday language.
 
+# Device Location Configuration
+The application supports automatic order location prefilling based on device type:
+- **Online Orders**: Automatically prefilled with "Online" (default for web browsers)
+- **POS Devices**: Can be configured with custom location names by setting localStorage values:
+  - `localStorage.setItem('deviceLocation', 'Prague POS Terminal')` - For specific device locations
+  - `localStorage.setItem('warehouseName', 'Main Warehouse')` - For warehouse-based locations
+- The order location field auto-fills on page load but remains editable for manual overrides
+
 # System Architecture
 
 ## Frontend
