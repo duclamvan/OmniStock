@@ -129,8 +129,9 @@ export default function Files() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+    const productId = formData.get("productId");
     const data = {
-      productId: formData.get("productId") || null,
+      productId: productId === "NONE" || !productId ? null : productId,
       fileName: formData.get("fileName"),
       fileType: formData.get("fileType"),
       fileUrl: formData.get("fileUrl"),
@@ -224,12 +225,12 @@ export default function Files() {
 
                   <div>
                     <Label htmlFor="productId">Product (Optional)</Label>
-                    <Select name="productId" defaultValue={editingFile?.productId || ""}>
+                    <Select name="productId" defaultValue={editingFile?.productId || "NONE"}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a product" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No Product</SelectItem>
+                        <SelectItem value="NONE">No Product</SelectItem>
                         {products.map((product: any) => (
                           <SelectItem key={product.id} value={product.id}>
                             {product.name} ({product.sku})

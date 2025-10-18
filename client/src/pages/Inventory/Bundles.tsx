@@ -435,14 +435,14 @@ export default function Bundles() {
                             <div className="flex-1 space-y-2">
                               <Label className="text-xs">Variant (Optional)</Label>
                               <Select
-                                value={item.variantId}
-                                onValueChange={(value) => handleItemChange(index, 'variantId', value)}
+                                value={item.variantId || "NONE"}
+                                onValueChange={(value) => handleItemChange(index, 'variantId', value === "NONE" ? null : value)}
                               >
                                 <SelectTrigger>
                                   <SelectValue placeholder="Select variant" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="">No variant</SelectItem>
+                                  <SelectItem value="NONE">No variant</SelectItem>
                                   {selectedProductVariants[item.productId].map(variant => (
                                     <SelectItem key={variant.id} value={variant.id}>
                                       {variant.name}

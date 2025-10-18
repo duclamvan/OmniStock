@@ -313,14 +313,14 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Customer</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={(value) => field.onChange(value === "NONE" ? null : value)} value={field.value || "NONE"}>
                           <FormControl>
                             <SelectTrigger data-testid="select-customer">
                               <SelectValue placeholder="Select customer (optional)" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="NONE">None</SelectItem>
                             {customers.map((customer: any) => (
                               <SelectItem key={customer.id} value={customer.id}>
                                 {customer.name}
@@ -339,14 +339,14 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Related Order</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={(value) => field.onChange(value === "NONE" ? null : value)} value={field.value || "NONE"}>
                           <FormControl>
                             <SelectTrigger data-testid="select-order">
                               <SelectValue placeholder="Select order (optional)" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="NONE">None</SelectItem>
                             {orders.slice(0, 50).map((order: any) => (
                               <SelectItem key={order.id} value={order.id}>
                                 {order.orderId} - {order.customer?.name}

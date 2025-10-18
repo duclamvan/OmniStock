@@ -448,14 +448,14 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Variant (Optional)</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <Select onValueChange={(value) => field.onChange(value === "NONE" ? null : value)} value={field.value || "NONE"}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select a variant" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="">No variant</SelectItem>
+                              <SelectItem value="NONE">No variant</SelectItem>
                               {variants.map((variant) => (
                                 <SelectItem key={variant.id} value={variant.id}>
                                   {variant.name}
