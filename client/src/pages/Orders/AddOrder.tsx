@@ -1643,10 +1643,6 @@ export default function AddOrder() {
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <h3 className="text-lg font-semibold text-slate-900">
-                              {selectedCustomer.name}
-                            </h3>
-                            <CheckCircle className="h-5 w-5 text-green-600" />
                             {/* Country Flag */}
                             {selectedCustomer.country && (
                               <span className="text-xl">
@@ -1662,6 +1658,10 @@ export default function AddOrder() {
                                  selectedCustomer.country.toLowerCase().includes('austria') ? '🇦🇹' : '🌍'}
                               </span>
                             )}
+                            <h3 className="text-lg font-semibold text-slate-900">
+                              {selectedCustomer.name}
+                            </h3>
+                            <CheckCircle className="h-5 w-5 text-green-600" />
                           </div>
                           
                           {/* Badges */}
