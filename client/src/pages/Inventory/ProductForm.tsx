@@ -2675,7 +2675,7 @@ export default function ProductForm() {
                           
                           <div className="grid grid-cols-3 gap-3">
                             <div>
-                              <Label htmlFor="variant-cost-usd">Cost USD</Label>
+                              <Label htmlFor="variant-cost-usd">Price USD</Label>
                               <Input
                                 id="variant-cost-usd"
                                 type="number"
@@ -2688,7 +2688,7 @@ export default function ProductForm() {
                               />
                             </div>
                             <div>
-                              <Label htmlFor="variant-cost-czk">Cost CZK</Label>
+                              <Label htmlFor="variant-cost-czk">Price CZK</Label>
                               <Input
                                 id="variant-cost-czk"
                                 type="number"
@@ -2701,7 +2701,7 @@ export default function ProductForm() {
                               />
                             </div>
                             <div>
-                              <Label htmlFor="variant-cost-eur">Cost EUR</Label>
+                              <Label htmlFor="variant-cost-eur">Price EUR</Label>
                               <Input
                                 id="variant-cost-eur"
                                 type="number"
@@ -2774,7 +2774,7 @@ export default function ProductForm() {
                           
                           <div className="grid grid-cols-3 gap-3">
                             <div>
-                              <Label htmlFor="series-cost-usd">Cost USD</Label>
+                              <Label htmlFor="series-cost-usd">Price USD</Label>
                               <Input
                                 id="series-cost-usd"
                                 type="number"
@@ -2787,7 +2787,7 @@ export default function ProductForm() {
                               />
                             </div>
                             <div>
-                              <Label htmlFor="series-cost-czk">Cost CZK</Label>
+                              <Label htmlFor="series-cost-czk">Price CZK</Label>
                               <Input
                                 id="series-cost-czk"
                                 type="number"
@@ -2800,7 +2800,7 @@ export default function ProductForm() {
                               />
                             </div>
                             <div>
-                              <Label htmlFor="series-cost-eur">Cost EUR</Label>
+                              <Label htmlFor="series-cost-eur">Price EUR</Label>
                               <Input
                                 id="series-cost-eur"
                                 type="number"
@@ -2879,9 +2879,9 @@ export default function ProductForm() {
                             <TableHead>Name</TableHead>
                             <TableHead className="text-right">Barcode</TableHead>
                             <TableHead className="w-24 text-right">Quantity</TableHead>
-                            <TableHead className="w-28 text-right">Cost USD</TableHead>
-                            <TableHead className="w-28 text-right">Cost CZK</TableHead>
-                            <TableHead className="w-28 text-right">Cost EUR</TableHead>
+                            <TableHead className="w-28 text-right">Price USD</TableHead>
+                            <TableHead className="w-28 text-right">Price CZK</TableHead>
+                            <TableHead className="w-28 text-right">Price EUR</TableHead>
                             <TableHead className="w-12"></TableHead>
                           </TableRow>
                         </TableHeader>
