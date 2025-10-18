@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,9 +15,10 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, AlertCircle, Clock, User } from "lucide-react";
+import { ArrowLeft, AlertCircle, Clock, User, Sparkles, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 import { format, addDays, addWeeks } from "date-fns";
+import OpenAI from "openai";
 
 const URGENCY_OPTIONS = [
   { value: "low", label: "Low", color: "text-slate-600", bgColor: "bg-slate-100" },
@@ -40,6 +41,12 @@ const getNotifyDateOptions = () => {
   ];
 };
 
+const openai = new OpenAI({
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY || "sk-placeholder",
+  baseURL: import.meta.env.VITE_OPENAI_BASE_URL,
+  dangerouslyAllowBrowser: true,
+});
+
 export default function AddTicket() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -50,6 +57,8 @@ export default function AddTicket() {
   const [description, setDescription] = useState("");
   const [urgency, setUrgency] = useState("medium");
   const [notifyDate, setNotifyDate] = useState("");
+  const [isGeneratingSubject, setIsGeneratingSubject] = useState(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { data: customers = [] } = useQuery<any[]>({
     queryKey: ["/api/customers"],
@@ -82,6 +91,74 @@ export default function AddTicket() {
     setSelectedCustomer(customer);
     setCustomerSearch(customer.name);
     setShowCustomerDropdown(false);
+  };
+
+  const generateSubject = async (descriptionText: string) => {
+    if (!descriptionText.trim() || descriptionText.length < 10) return;
+
+    setIsGeneratingSubject(true);
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "You are a WMS (Warehouse Management System) support ticket assistant. Generate a very short, concise subject line (max 6-8 words) for a support ticket based on the description. Focus on the main issue or action needed. Return ONLY the subject line without quotes or extra text.",
+          },
+          {
+            role: "user",
+            content: `Generate a concise ticket subject for this issue:\n\n${descriptionText}`,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 30,
+      });
+
+      const generatedSubject = response.choices[0]?.message?.content?.trim() || "";
+      if (generatedSubject) {
+        setSubject(generatedSubject);
+      }
+    } catch (error) {
+      console.error("Error generating subject:", error);
+      toast({
+        title: "AI Generation Failed",
+        description: "Could not auto-generate subject. Please enter manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingSubject(false);
+    }
+  };
+
+  // Auto-generate subject when description changes (debounced)
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    if (description.trim().length > 20 && !subject) {
+      debounceTimerRef.current = setTimeout(() => {
+        generateSubject(description);
+      }, 1500);
+    }
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [description]);
+
+  const handleManualGenerate = () => {
+    if (description.trim().length < 10) {
+      toast({
+        title: "Need More Details",
+        description: "Please write at least a few sentences in the description first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    generateSubject(description);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -189,18 +266,46 @@ export default function AddTicket() {
 
             {/* Subject */}
             <div className="space-y-2">
-              <Label htmlFor="subject" className="text-base font-semibold">
-                Subject <span className="text-red-500">*</span>
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="subject" className="text-base font-semibold">
+                  Subject <span className="text-red-500">*</span>
+                </Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleManualGenerate}
+                  disabled={isGeneratingSubject || description.length < 10}
+                  className="h-7 text-xs"
+                >
+                  {isGeneratingSubject ? (
+                    <>
+                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      AI Generate
+                    </>
+                  )}
+                </Button>
+              </div>
               <Input
                 id="subject"
-                placeholder="Brief summary of the issue..."
+                placeholder="AI will auto-generate from description..."
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 required
                 className="text-lg"
                 data-testid="input-subject"
               />
+              {isGeneratingSubject && (
+                <p className="text-xs text-slate-500 flex items-center gap-1">
+                  <Sparkles className="h-3 w-3 animate-pulse" />
+                  AI is generating a concise subject...
+                </p>
+              )}
             </div>
 
             {/* Description */}
