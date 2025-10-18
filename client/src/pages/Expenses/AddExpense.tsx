@@ -22,7 +22,10 @@ import {
   Building2,
   FileText,
   CreditCard,
-  Wallet
+  Wallet,
+  Repeat,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import {
   Select,
@@ -54,6 +57,16 @@ const expenseSchema = z.object({
   paymentMethod: z.enum(['cash', 'bank_transfer', 'credit_card', 'paypal', 'other']),
   status: z.enum(['pending', 'paid', 'overdue']),
   notes: z.string().optional(),
+  // Recurring fields
+  isRecurring: z.boolean().default(false),
+  recurringType: z.enum(['weekly', 'monthly', 'yearly']).optional(),
+  recurringInterval: z.coerce.number().int().min(1).optional(),
+  recurringDayOfWeek: z.coerce.number().int().min(0).max(6).optional(), // 0=Sunday, 6=Saturday
+  recurringDayOfMonth: z.coerce.number().int().min(1).max(31).optional(),
+  recurringMonth: z.coerce.number().int().min(1).max(12).optional(),
+  recurringDay: z.coerce.number().int().min(1).max(31).optional(),
+  recurringStartDate: z.date().optional(),
+  recurringEndDate: z.date().optional(),
 });
 
 type ExpenseFormData = z.infer<typeof expenseSchema>;
@@ -90,6 +103,8 @@ export default function AddExpense() {
 
   const [expenseId] = useState(generateExpenseId());
 
+  const [showRecurring, setShowRecurring] = useState(false);
+
   const form = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
     defaultValues: {
@@ -103,6 +118,10 @@ export default function AddExpense() {
       description: '',
       invoiceNumber: '',
       notes: '',
+      isRecurring: false,
+      recurringType: 'monthly',
+      recurringInterval: 1,
+      recurringDayOfMonth: 1,
     },
   });
 
@@ -463,6 +482,276 @@ export default function AddExpense() {
                           />
                         </div>
                       </div>
+                    </div>
+
+                    {/* Recurring Expense Options */}
+                    <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowRecurring(!showRecurring);
+                          if (!showRecurring) {
+                            form.setValue('isRecurring', true);
+                          } else {
+                            form.setValue('isRecurring', false);
+                          }
+                        }}
+                        className="w-full flex items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-slate-800 p-3 rounded-lg transition-colors"
+                        data-testid="button-toggle-recurring"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Repeat className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                            Recurring Expense
+                          </h3>
+                          {form.watch('isRecurring') && (
+                            <Badge variant="secondary" className="ml-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
+                              Active
+                            </Badge>
+                          )}
+                        </div>
+                        {showRecurring ? (
+                          <ChevronUp className="h-4 w-4 text-slate-500" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 text-slate-500" />
+                        )}
+                      </button>
+
+                      {showRecurring && (
+                        <div className="mt-4 space-y-4 bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border-2 border-blue-200 dark:border-blue-800">
+                          {/* Recurring Type */}
+                          <div>
+                            <Label htmlFor="recurringType" className="text-sm font-medium mb-2">
+                              Repeat Every *
+                            </Label>
+                            <div className="grid grid-cols-2 gap-3">
+                              <Input
+                                id="recurringInterval"
+                                type="number"
+                                min="1"
+                                placeholder="1"
+                                {...form.register("recurringInterval")}
+                                data-testid="input-recurring-interval"
+                                className="text-base"
+                              />
+                              <Select
+                                value={form.watch("recurringType")}
+                                onValueChange={(value: any) => form.setValue("recurringType", value)}
+                              >
+                                <SelectTrigger data-testid="select-recurring-type">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="weekly">Week(s)</SelectItem>
+                                  <SelectItem value="monthly">Month(s)</SelectItem>
+                                  <SelectItem value="yearly">Year(s)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          {/* Day of Week - For Weekly */}
+                          {form.watch("recurringType") === 'weekly' && (
+                            <div>
+                              <Label htmlFor="recurringDayOfWeek" className="text-sm font-medium mb-2">
+                                On Day
+                              </Label>
+                              <Select
+                                value={form.watch("recurringDayOfWeek")?.toString() || '1'}
+                                onValueChange={(value: any) => form.setValue("recurringDayOfWeek", parseInt(value))}
+                              >
+                                <SelectTrigger data-testid="select-day-of-week">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="0">Sunday</SelectItem>
+                                  <SelectItem value="1">Monday</SelectItem>
+                                  <SelectItem value="2">Tuesday</SelectItem>
+                                  <SelectItem value="3">Wednesday</SelectItem>
+                                  <SelectItem value="4">Thursday</SelectItem>
+                                  <SelectItem value="5">Friday</SelectItem>
+                                  <SelectItem value="6">Saturday</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+
+                          {/* Day of Month - For Monthly */}
+                          {form.watch("recurringType") === 'monthly' && (
+                            <div>
+                              <Label htmlFor="recurringDayOfMonth" className="text-sm font-medium mb-2">
+                                On Day of Month
+                              </Label>
+                              <Input
+                                id="recurringDayOfMonth"
+                                type="number"
+                                min="1"
+                                max="31"
+                                placeholder="1"
+                                {...form.register("recurringDayOfMonth")}
+                                data-testid="input-day-of-month"
+                                className="text-base"
+                              />
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                Enter a day between 1-31
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Month and Day - For Yearly */}
+                          {form.watch("recurringType") === 'yearly' && (
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <Label htmlFor="recurringMonth" className="text-sm font-medium mb-2">
+                                  Month
+                                </Label>
+                                <Select
+                                  value={form.watch("recurringMonth")?.toString() || '1'}
+                                  onValueChange={(value: any) => form.setValue("recurringMonth", parseInt(value))}
+                                >
+                                  <SelectTrigger data-testid="select-month">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="1">January</SelectItem>
+                                    <SelectItem value="2">February</SelectItem>
+                                    <SelectItem value="3">March</SelectItem>
+                                    <SelectItem value="4">April</SelectItem>
+                                    <SelectItem value="5">May</SelectItem>
+                                    <SelectItem value="6">June</SelectItem>
+                                    <SelectItem value="7">July</SelectItem>
+                                    <SelectItem value="8">August</SelectItem>
+                                    <SelectItem value="9">September</SelectItem>
+                                    <SelectItem value="10">October</SelectItem>
+                                    <SelectItem value="11">November</SelectItem>
+                                    <SelectItem value="12">December</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label htmlFor="recurringDay" className="text-sm font-medium mb-2">
+                                  Day
+                                </Label>
+                                <Input
+                                  id="recurringDay"
+                                  type="number"
+                                  min="1"
+                                  max="31"
+                                  placeholder="1"
+                                  {...form.register("recurringDay")}
+                                  data-testid="input-recurring-day"
+                                  className="text-base"
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Start Date */}
+                          <div>
+                            <Label className="text-sm font-medium mb-2">
+                              Start Date (Optional)
+                            </Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !form.watch("recurringStartDate") && "text-muted-foreground"
+                                  )}
+                                  data-testid="button-recurring-start-date"
+                                >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {form.watch("recurringStartDate") ? (
+                                    formatCzechDate(form.watch("recurringStartDate")!)
+                                  ) : (
+                                    <span>Pick start date</span>
+                                  )}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                  mode="single"
+                                  selected={form.watch("recurringStartDate")}
+                                  onSelect={(date) => form.setValue("recurringStartDate", date)}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+
+                          {/* End Date */}
+                          <div>
+                            <Label className="text-sm font-medium mb-2">
+                              End Date (Optional)
+                            </Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !form.watch("recurringEndDate") && "text-muted-foreground"
+                                  )}
+                                  data-testid="button-recurring-end-date"
+                                >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {form.watch("recurringEndDate") ? (
+                                    formatCzechDate(form.watch("recurringEndDate")!)
+                                  ) : (
+                                    <span>Pick end date (leave empty for no end)</span>
+                                  )}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                  mode="single"
+                                  selected={form.watch("recurringEndDate")}
+                                  onSelect={(date) => form.setValue("recurringEndDate", date)}
+                                  disabled={(date) => 
+                                    form.watch("recurringStartDate") ? date < form.watch("recurringStartDate")! : false
+                                  }
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                              Leave empty for no end date
+                            </p>
+                          </div>
+
+                          {/* Summary */}
+                          <div className="bg-white dark:bg-slate-900 p-3 rounded-md border border-slate-200 dark:border-slate-700">
+                            <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                              Recurring Summary:
+                            </p>
+                            <p className="text-sm text-slate-900 dark:text-white">
+                              {(() => {
+                                const interval = form.watch("recurringInterval") || 1;
+                                const type = form.watch("recurringType");
+                                
+                                if (type === 'weekly') {
+                                  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                                  const day = days[form.watch("recurringDayOfWeek") || 1];
+                                  return `Every ${interval > 1 ? interval + ' weeks' : 'week'} on ${day}`;
+                                }
+                                
+                                if (type === 'monthly') {
+                                  const dayOfMonth = form.watch("recurringDayOfMonth") || 1;
+                                  return `Every ${interval > 1 ? interval + ' months' : 'month'} on day ${dayOfMonth}`;
+                                }
+                                
+                                if (type === 'yearly') {
+                                  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                                  const month = months[(form.watch("recurringMonth") || 1) - 1];
+                                  const day = form.watch("recurringDay") || 1;
+                                  return `Every ${interval > 1 ? interval + ' years' : 'year'} on ${month} ${day}`;
+                                }
+                                
+                                return 'Configure recurring options above';
+                              })()}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

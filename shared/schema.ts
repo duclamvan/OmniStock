@@ -751,13 +751,23 @@ export const expenses = pgTable('expenses', {
   category: varchar('category'),
   amount: decimal('amount').notNull(),
   currency: varchar('currency').default('CZK'),
-  recurring: varchar('recurring'),
   paymentMethod: varchar('payment_method'),
   status: varchar('status').default('pending'),
   date: timestamp('date').notNull(),
   description: text('description'),
   invoiceNumber: varchar('invoice_number'),
   notes: text('notes'),
+  // Recurring expense fields
+  isRecurring: boolean('is_recurring').default(false),
+  recurringType: varchar('recurring_type'), // 'weekly', 'monthly', 'yearly'
+  recurringInterval: integer('recurring_interval').default(1), // every X weeks/months/years
+  recurringDayOfWeek: integer('recurring_day_of_week'), // 0-6 for weekly
+  recurringDayOfMonth: integer('recurring_day_of_month'), // 1-31 for monthly
+  recurringMonth: integer('recurring_month'), // 1-12 for yearly
+  recurringDay: integer('recurring_day'), // 1-31 for yearly
+  recurringStartDate: timestamp('recurring_start_date'),
+  recurringEndDate: timestamp('recurring_end_date'),
+  parentExpenseId: varchar('parent_expense_id'), // Reference to original expense if this is auto-generated
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow()
 });
