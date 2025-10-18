@@ -252,6 +252,7 @@ export const customers = pgTable('customers', {
   customerRank: varchar('customer_rank'),
   lastContactDate: timestamp('last_contact_date'),
   preferredLanguage: varchar('preferred_language').default('cs'),
+  preferredCurrency: varchar('preferred_currency').default('EUR'), // CZK or EUR for B2B
   
   // Billing address fields
   billingFirstName: varchar('billing_first_name'),

@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -30,6 +31,7 @@ const availableCountries = [
 const customerFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   country: z.string().optional(),
+  preferredCurrency: z.enum(['CZK', 'EUR']).default('EUR'),
   facebookName: z.string().optional(),
   facebookUrl: z.string().optional(),
   profilePictureUrl: z.string().optional(),
@@ -192,6 +194,7 @@ export default function AddCustomer() {
     defaultValues: {
       name: "",
       country: "",
+      preferredCurrency: "EUR",
       facebookName: "",
       facebookUrl: "",
       profilePictureUrl: "",
@@ -275,6 +278,7 @@ export default function AddCustomer() {
       form.reset({
         name: existingCustomer.name || "",
         country: existingCustomer.country || "",
+        preferredCurrency: (existingCustomer as any).preferredCurrency || "EUR",
         facebookName: existingCustomer.facebookName || "",
         facebookUrl: existingCustomer.facebookUrl || "",
         profilePictureUrl: existingCustomer.profilePictureUrl || "",
@@ -1694,6 +1698,26 @@ export default function AddCustomer() {
                   </Popover>
                   {form.formState.errors.country && (
                     <p className="text-sm text-red-500 mt-1">{form.formState.errors.country.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="preferredCurrency" className="text-base font-semibold">Preferred Currency</Label>
+                  <p className="text-sm text-slate-500 mb-2">Choose the default currency for this customer's orders (CZK or EUR)</p>
+                  <Select
+                    value={form.watch('preferredCurrency')}
+                    onValueChange={(value: 'CZK' | 'EUR') => form.setValue('preferredCurrency', value)}
+                  >
+                    <SelectTrigger className="w-full" data-testid="select-preferredCurrency">
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="EUR" data-testid="option-currency-EUR">EUR (Euro)</SelectItem>
+                      <SelectItem value="CZK" data-testid="option-currency-CZK">CZK (Czech Koruna)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {form.formState.errors.preferredCurrency && (
+                    <p className="text-sm text-red-500 mt-1">{form.formState.errors.preferredCurrency.message}</p>
                   )}
                 </div>
               </div>

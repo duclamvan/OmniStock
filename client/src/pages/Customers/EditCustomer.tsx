@@ -78,6 +78,7 @@ const editCustomerSchema = z.object({
   
   // Preferences
   preferredLanguage: z.string().optional().nullable(),
+  preferredCurrency: z.enum(['CZK', 'EUR']).default('EUR'),
 });
 
 type EditCustomerForm = z.infer<typeof editCustomerSchema>;
@@ -129,6 +130,7 @@ export default function EditCustomer() {
       taxId: "",
       vatId: "",
       preferredLanguage: "cs",
+      preferredCurrency: "EUR",
     },
   });
 
@@ -169,6 +171,7 @@ export default function EditCustomer() {
         taxId: customer.taxId || "",
         vatId: customer.vatId || "",
         preferredLanguage: customer.preferredLanguage || "cs",
+        preferredCurrency: customer.preferredCurrency || "EUR",
       });
     }
   }, [customer, form]);
@@ -337,6 +340,36 @@ export default function EditCustomer() {
                           <SelectItem value="cs">Czech (Čeština)</SelectItem>
                           <SelectItem value="en">English</SelectItem>
                           <SelectItem value="vn">Vietnamese (Tiếng Việt)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="preferredCurrency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        <Receipt className="inline-block h-4 w-4 mr-1" />
+                        Preferred Currency
+                      </FormLabel>
+                      <FormDescription>
+                        Default currency for this customer's orders (CZK or EUR)
+                      </FormDescription>
+                      <Select onValueChange={field.onChange} value={field.value || "EUR"}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-preferredCurrency">
+                            <SelectValue placeholder="Select currency" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="EUR">EUR (Euro)</SelectItem>
+                          <SelectItem value="CZK">CZK (Czech Koruna)</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

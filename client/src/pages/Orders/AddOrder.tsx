@@ -635,6 +635,16 @@ export default function AddOrder() {
     form.setValue('shippingCost', calculatedCost); // Also set shipping cost for display
   }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency, form]);
 
+  // Auto-fill currency from customer preference
+  useEffect(() => {
+    if (!selectedCustomer) return;
+    
+    // Auto-fill currency from customer preference
+    if (selectedCustomer.preferredCurrency) {
+      form.setValue('currency', selectedCustomer.preferredCurrency);
+    }
+  }, [selectedCustomer, form]);
+
   const createOrderMutation = useMutation({
     mutationFn: async (data: any) => {
       // Check if we have a customer that needs to be saved (Tel or Msg types)

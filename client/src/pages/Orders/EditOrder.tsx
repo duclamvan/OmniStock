@@ -718,6 +718,10 @@ export default function EditOrder() {
     form.setValue('shippingCost', calculatedCost); // Also set shipping cost for display
   }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency, form]);
 
+  // Auto-fill currency from customer preference (only when creating new orders)
+  // Note: This is intentionally NOT in EditOrder - we preserve the order's saved currency
+  // when editing existing orders, even if the customer changes.
+
   const updateOrderMutation = useMutation({
     mutationFn: async (data: any) => {
       // Check if we have a customer that needs to be saved (Tel or Msg types)
