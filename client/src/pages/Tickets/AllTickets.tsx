@@ -306,7 +306,7 @@ export default function AllTickets() {
                   e.stopPropagation();
                   navigate(`/tickets/edit/${ticket.id}`);
                 }}
-                className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md"
+                className="absolute top-3 right-3 p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
                 data-testid={`button-edit-${ticket.id}`}
               >
                 <Edit className="h-4 w-4 text-slate-500 dark:text-slate-400" />
