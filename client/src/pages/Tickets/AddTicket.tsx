@@ -66,7 +66,7 @@ export default function AddTicket() {
         title: "Success",
         description: "Ticket created successfully",
       });
-      navigate(`/tickets/${data.id}`);
+      navigate("/tickets");
     },
     onError: (error: any) => {
       console.error("Ticket creation error:", error);
