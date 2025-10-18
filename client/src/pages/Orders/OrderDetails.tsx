@@ -60,7 +60,9 @@ import {
   ChevronDown,
   TrendingUp,
   BarChart3,
-  MessageCircle
+  MessageCircle,
+  Ticket,
+  Plus
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import { cn } from "@/lib/utils";
@@ -198,6 +200,12 @@ export default function OrderDetails() {
     enabled: !!id && !!order && id !== 'pick-pack',
     refetchInterval: 5000,
     staleTime: 3000,
+  });
+
+  // Fetch order tickets
+  const { data: tickets = [] } = useQuery<any[]>({
+    queryKey: [`/api/tickets?orderId=${id}`],
+    enabled: !!id && !!order,
   });
 
   // Prevent OrderDetails from rendering on pick-pack page
@@ -1470,6 +1478,78 @@ export default function OrderDetails() {
               </CardContent>
             </Card>
           )}
+
+          {/* Tickets Section */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Ticket className="h-4 w-4" />
+                Support Tickets
+                {tickets.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {tickets.length}
+                  </Badge>
+                )}
+              </CardTitle>
+              <Link href={`/tickets/add?orderId=${id}`}>
+                <Button size="sm" variant="outline" data-testid="button-create-ticket">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </Link>
+            </CardHeader>
+            <CardContent>
+              {tickets.length === 0 ? (
+                <div className="text-center py-6 text-sm text-slate-500">
+                  <p>No tickets for this order</p>
+                  <Link href={`/tickets/add?orderId=${id}`}>
+                    <Button variant="link" size="sm" className="mt-2">
+                      Create Ticket
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {tickets.slice(0, 3).map((ticket: any) => (
+                    <div key={ticket.id} className="border-b last:border-b-0 pb-3 last:pb-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <Link href={`/tickets/${ticket.id}`}>
+                            <p className="text-sm font-medium text-blue-600 hover:underline cursor-pointer" data-testid={`link-ticket-${ticket.id}`}>
+                              {ticket.ticketId}
+                            </p>
+                          </Link>
+                          <p className="text-xs text-slate-600 mt-0.5 line-clamp-1">{ticket.title}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant={
+                              ticket.status === 'open' ? 'secondary' :
+                              ticket.status === 'in_progress' ? 'default' :
+                              'outline'
+                            } className="text-xs">
+                              {ticket.status.replace(/_/g, ' ')}
+                            </Badge>
+                            <Badge variant={
+                              ticket.priority === 'urgent' ? 'destructive' :
+                              ticket.priority === 'high' ? 'default' :
+                              'outline'
+                            } className="text-xs">
+                              {ticket.priority}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {tickets.length > 3 && (
+                    <Link href={`/tickets?orderId=${id}`}>
+                      <Button variant="link" size="sm" className="w-full mt-2">
+                        View all {tickets.length} tickets
+                      </Button>
+                    </Link>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Order Timeline */}
           <Card>

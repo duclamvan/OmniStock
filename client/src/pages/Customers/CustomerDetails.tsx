@@ -35,7 +35,9 @@ import {
   ChevronDown,
   ChevronUp,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Ticket,
+  Plus
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { CustomerPrices } from "./CustomerPrices";
@@ -60,6 +62,12 @@ export default function CustomerDetails() {
   // Fetch customer orders with items
   const { data: orders = [], isLoading: ordersLoading } = useQuery<any[]>({
     queryKey: [`/api/orders?customerId=${id}&includeItems=true`],
+    enabled: !!id,
+  });
+
+  // Fetch customer tickets
+  const { data: tickets = [] } = useQuery<any[]>({
+    queryKey: [`/api/tickets?customerId=${id}`],
     enabled: !!id,
   });
 
@@ -319,6 +327,19 @@ export default function CustomerDetails() {
               >
                 <Tag className="h-4 w-4 lg:mr-2" />
                 <span className="hidden lg:inline">Prices</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="tickets" 
+                className="flex-1 lg:flex-none lg:px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm text-sm font-medium"
+                data-testid="tab-tickets"
+              >
+                <Ticket className="h-4 w-4 lg:mr-2" />
+                <span className="hidden lg:inline">Tickets</span>
+                {tickets.length > 0 && (
+                  <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+                    {tickets.length}
+                  </Badge>
+                )}
               </TabsTrigger>
             </TabsList>
           </div>
@@ -659,6 +680,82 @@ export default function CustomerDetails() {
 
           <TabsContent value="prices" className="space-y-4 mt-0">
             <CustomerPrices customerId={id || ''} />
+          </TabsContent>
+
+          <TabsContent value="tickets" className="space-y-4 mt-0">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Customer Tickets</h3>
+              <Link href={`/tickets/add?customerId=${id}`}>
+                <Button size="sm" data-testid="button-create-ticket">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Ticket
+                </Button>
+              </Link>
+            </div>
+
+            {tickets.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <Ticket className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+                  <p className="text-slate-500 mb-4">No tickets yet</p>
+                  <Link href={`/tickets/add?customerId=${id}`}>
+                    <Button variant="outline" size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create First Ticket
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {tickets.map((ticket: any) => (
+                  <Card key={ticket.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Link href={`/tickets/${ticket.id}`}>
+                              <span className="font-semibold text-blue-600 hover:underline cursor-pointer" data-testid={`link-ticket-${ticket.id}`}>
+                                {ticket.ticketId}
+                              </span>
+                            </Link>
+                            <Badge variant={
+                              ticket.status === 'open' ? 'secondary' :
+                              ticket.status === 'in_progress' ? 'default' :
+                              'outline'
+                            }>
+                              {ticket.status.replace(/_/g, ' ')}
+                            </Badge>
+                            <Badge variant={
+                              ticket.priority === 'urgent' ? 'destructive' :
+                              ticket.priority === 'high' ? 'default' :
+                              'outline'
+                            }>
+                              {ticket.priority}
+                            </Badge>
+                          </div>
+                          <p className="text-sm font-medium text-slate-700 mb-1">{ticket.title}</p>
+                          {ticket.description && (
+                            <p className="text-sm text-slate-500 line-clamp-2">{ticket.description}</p>
+                          )}
+                          <div className="flex items-center gap-4 mt-2 text-xs text-slate-400">
+                            <span>Category: {ticket.category?.replace(/_/g, ' ')}</span>
+                            {ticket.createdAt && (
+                              <span>Created: {new Date(ticket.createdAt).toLocaleDateString()}</span>
+                            )}
+                          </div>
+                        </div>
+                        <Link href={`/tickets/${ticket.id}`}>
+                          <Button variant="ghost" size="sm">
+                            View
+                          </Button>
+                        </Link>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
