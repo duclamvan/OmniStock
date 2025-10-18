@@ -1,0 +1,430 @@
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useRoute, Link, useLocation } from "wouter";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import {
+  ArrowLeft,
+  Edit,
+  Loader2,
+  MessageSquare,
+  User,
+  Calendar,
+  Package,
+  FileText,
+  Send
+} from "lucide-react";
+import { format } from "date-fns";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+export default function TicketDetails() {
+  const [, params] = useRoute("/tickets/:id");
+  const [, navigate] = useLocation();
+  const ticketId = params?.id;
+  const { toast } = useToast();
+  const [commentText, setCommentText] = useState("");
+  const [isInternalComment, setIsInternalComment] = useState(false);
+
+  const { data: ticket, isLoading } = useQuery({
+    queryKey: ['/api/tickets', ticketId],
+    queryFn: async () => {
+      const response = await fetch(`/api/tickets/${ticketId}`);
+      if (!response.ok) throw new Error('Failed to fetch ticket');
+      return response.json();
+    },
+    enabled: !!ticketId,
+  });
+
+  const { data: comments = [] } = useQuery({
+    queryKey: ['/api/tickets', ticketId, 'comments'],
+    queryFn: async () => {
+      const response = await fetch(`/api/tickets/${ticketId}/comments`);
+      if (!response.ok) throw new Error('Failed to fetch comments');
+      return response.json();
+    },
+    enabled: !!ticketId,
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async (status: string) => {
+      return await apiRequest('PATCH', `/api/tickets/${ticketId}`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets', ticketId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+      toast({
+        title: "Success",
+        description: "Ticket status updated",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update ticket status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const addCommentMutation = useMutation({
+    mutationFn: async (data: { content: string; isInternal: boolean }) => {
+      return await apiRequest('POST', `/api/tickets/${ticketId}/comments`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets', ticketId, 'comments'] });
+      setCommentText("");
+      toast({
+        title: "Success",
+        description: "Comment added",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to add comment",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddComment = () => {
+    if (!commentText.trim()) return;
+    addCommentMutation.mutate({
+      content: commentText,
+      isInternal: isInternalComment
+    });
+  };
+
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+      open: "secondary",
+      in_progress: "default",
+      resolved: "outline",
+      closed: "outline"
+    };
+
+    const labels: Record<string, string> = {
+      open: "Open",
+      in_progress: "In Progress",
+      resolved: "Resolved",
+      closed: "Closed"
+    };
+
+    return (
+      <Badge variant={variants[status] || "outline"} data-testid={`badge-status-${status}`}>
+        {labels[status] || status}
+      </Badge>
+    );
+  };
+
+  const getPriorityBadge = (priority: string) => {
+    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+      low: "outline",
+      medium: "secondary",
+      high: "default",
+      urgent: "destructive"
+    };
+
+    const labels: Record<string, string> = {
+      low: "Low",
+      medium: "Medium",
+      high: "High",
+      urgent: "Urgent"
+    };
+
+    return (
+      <Badge variant={variants[priority] || "outline"} data-testid={`badge-priority-${priority}`}>
+        {labels[priority] || priority}
+      </Badge>
+    );
+  };
+
+  const formatDate = (dateStr: string | null | undefined) => {
+    if (!dateStr) return '-';
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return '-';
+      return format(date, 'dd/MM/yyyy HH:mm');
+    } catch {
+      return '-';
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  if (!ticket) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-lg text-slate-600">Ticket not found</p>
+        <Button onClick={() => navigate('/tickets')} className="mt-4">
+          Back to Tickets
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/tickets')}
+            data-testid="button-back"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="text-3xl font-bold tracking-tight" data-testid="text-ticket-id">
+                {ticket.ticketId}
+              </h1>
+              {getStatusBadge(ticket.status)}
+              {getPriorityBadge(ticket.priority)}
+            </div>
+            <p className="text-lg text-slate-700 dark:text-slate-300" data-testid="text-title">
+              {ticket.title}
+            </p>
+          </div>
+        </div>
+        <Button onClick={() => navigate(`/tickets/edit/${ticket.id}`)} data-testid="button-edit">
+          <Edit className="mr-2 h-4 w-4" />
+          Edit
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column: Ticket Details & Comments */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Ticket Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Ticket Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {ticket.description && (
+                <div>
+                  <h3 className="font-semibold mb-2">Description</h3>
+                  <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap" data-testid="text-description">
+                    {ticket.description}
+                  </p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                <div>
+                  <p className="text-sm text-slate-500 mb-1">Category</p>
+                  <p className="font-medium capitalize" data-testid="text-category">
+                    {ticket.category?.replace(/_/g, ' ')}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500 mb-1">Created</p>
+                  <p className="font-medium" data-testid="text-created">
+                    {formatDate(ticket.createdAt)}
+                  </p>
+                </div>
+                {ticket.dueDate && (
+                  <div>
+                    <p className="text-sm text-slate-500 mb-1">Due Date</p>
+                    <p className="font-medium" data-testid="text-due-date">
+                      {formatDate(ticket.dueDate)}
+                    </p>
+                  </div>
+                )}
+                {ticket.resolvedAt && (
+                  <div>
+                    <p className="text-sm text-slate-500 mb-1">Resolved</p>
+                    <p className="font-medium text-green-600" data-testid="text-resolved">
+                      {formatDate(ticket.resolvedAt)}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Related Info */}
+              {(ticket.customer || ticket.order) && (
+                <div className="pt-4 border-t">
+                  <h3 className="font-semibold mb-3">Related Information</h3>
+                  <div className="space-y-2">
+                    {ticket.customer && (
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-slate-500" />
+                        <span className="text-sm">Customer:</span>
+                        <Link href={`/customers/${ticket.customer.id}`}>
+                          <span className="text-blue-600 hover:underline font-medium" data-testid="link-customer">
+                            {ticket.customer.name}
+                          </span>
+                        </Link>
+                      </div>
+                    )}
+                    {ticket.order && (
+                      <div className="flex items-center gap-2">
+                        <Package className="h-4 w-4 text-slate-500" />
+                        <span className="text-sm">Order:</span>
+                        <Link href={`/orders/${ticket.order.id}`}>
+                          <span className="text-blue-600 hover:underline font-medium" data-testid="link-order">
+                            {ticket.order.orderId}
+                          </span>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Comments Thread */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                Comments ({comments.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Comment List */}
+              <div className="space-y-4">
+                {comments.length === 0 ? (
+                  <p className="text-center text-slate-500 py-8">No comments yet</p>
+                ) : (
+                  comments.map((comment: any) => (
+                    <div
+                      key={comment.id}
+                      className={`p-4 rounded-lg border-2 ${
+                        comment.isInternal
+                          ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-700'
+                          : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                      }`}
+                      data-testid={`comment-${comment.id}`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-slate-500" />
+                          <span className="font-medium">
+                            {comment.user?.email || 'System'}
+                          </span>
+                          {comment.isInternal && (
+                            <Badge variant="outline" className="text-xs">
+                              Internal
+                            </Badge>
+                          )}
+                        </div>
+                        <span className="text-xs text-slate-500">
+                          {formatDate(comment.createdAt)}
+                        </span>
+                      </div>
+                      <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
+                        {comment.content}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Add Comment */}
+              <div className="pt-4 border-t space-y-3">
+                <Textarea
+                  placeholder="Add a comment..."
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  className="min-h-[100px]"
+                  data-testid="textarea-comment"
+                />
+                <div className="flex items-center justify-between gap-2">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={isInternalComment}
+                      onChange={(e) => setIsInternalComment(e.target.checked)}
+                      className="rounded"
+                      data-testid="checkbox-internal"
+                    />
+                    Internal note (not visible to customer)
+                  </label>
+                  <Button
+                    onClick={handleAddComment}
+                    disabled={!commentText.trim() || addCommentMutation.isPending}
+                    data-testid="button-add-comment"
+                  >
+                    {addCommentMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Adding...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="mr-2 h-4 w-4" />
+                        Add Comment
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column: Quick Actions */}
+        <div className="lg:col-span-1">
+          <div className="sticky top-20 space-y-4">
+            <Card className="border-2 border-blue-200 dark:border-blue-700">
+              <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 text-white">
+                <CardTitle>Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Update Status</label>
+                  <Select
+                    value={ticket.status}
+                    onValueChange={(value) => updateStatusMutation.mutate(value)}
+                    disabled={updateStatusMutation.isPending}
+                  >
+                    <SelectTrigger data-testid="select-update-status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="open">Open</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="resolved">Resolved</SelectItem>
+                      <SelectItem value="closed">Closed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => navigate(`/tickets/edit/${ticket.id}`)}
+                  data-testid="button-edit-full"
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit Full Details
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
