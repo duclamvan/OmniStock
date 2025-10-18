@@ -531,6 +531,33 @@ export default function EditOrder() {
     }
   }, [existingOrder]);
 
+  // Auto-update currency based on shipping address country
+  useEffect(() => {
+    if (!selectedShippingAddress) return;
+    
+    const country = selectedShippingAddress.country?.toLowerCase() || '';
+    const city = selectedShippingAddress.city?.toLowerCase() || '';
+    
+    let newCurrency: 'CZK' | 'EUR' = 'EUR'; // Default to EUR
+    
+    // Germany → EUR
+    if (country.includes('germany') || country.includes('deutschland') || country.includes('německo')) {
+      newCurrency = 'EUR';
+    }
+    // Czech Republic
+    else if (country.includes('czech') || country.includes('česko') || country.includes('czechia')) {
+      // Cheb (near German border) → EUR, otherwise → CZK
+      if (city.includes('cheb')) {
+        newCurrency = 'EUR';
+      } else {
+        newCurrency = 'CZK';
+      }
+    }
+    // Other countries → EUR (default)
+    
+    form.setValue('currency', newCurrency);
+  }, [selectedShippingAddress, form]);
+
   // Auto-focus product search (not customer search) since customer is already selected when editing
   useEffect(() => {
     if (existingOrder && productSearchRef.current) {
@@ -1639,12 +1666,16 @@ export default function EditOrder() {
                       {shippingAddresses.map((address: any) => (
                         <div
                           key={address.id}
-                          className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                          className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-all ${
                             selectedShippingAddress?.id === address.id
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-slate-200 hover:border-slate-300'
+                              ? 'border-blue-500 bg-blue-50 cursor-default select-none'
+                              : 'border-slate-200 hover:border-slate-300 cursor-pointer'
                           }`}
-                          onClick={() => setSelectedShippingAddress(address)}
+                          onClick={() => {
+                            if (selectedShippingAddress?.id !== address.id) {
+                              setSelectedShippingAddress(address);
+                            }
+                          }}
                           data-testid={`card-address-${address.id}`}
                         >
                           <RadioGroupItem value={address.id} id={address.id} data-testid={`radio-address-${address.id}`} />
