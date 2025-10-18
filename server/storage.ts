@@ -116,7 +116,7 @@ import {
   type InsertDiscount
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, like, sql, gte, lte, inArray, ne, asc, isNull, notInArray } from "drizzle-orm";
+import { eq, desc, and, or, like, ilike, sql, gte, lte, inArray, ne, asc, isNull, notInArray } from "drizzle-orm";
 
 // Define types for missing entities (these should match what the app expects)
 export type Return = any;
@@ -2771,11 +2771,30 @@ export class DatabaseStorage implements IStorage {
   async getReturnItems(returnId: string): Promise<ReturnItem[]> { return []; }
   async createReturnItem(item: any): Promise<ReturnItem> { return { id: Date.now().toString(), ...item }; }
 
-  async getExpenses(): Promise<Expense[]> { return []; }
-  async getExpenseById(id: string): Promise<Expense | undefined> { return undefined; }
-  async createExpense(expense: any): Promise<Expense> { return { id: Date.now().toString(), ...expense }; }
-  async updateExpense(id: string, expense: any): Promise<Expense | undefined> { return { id, ...expense }; }
-  async deleteExpense(id: string): Promise<boolean> { return true; }
+  async getExpenses(): Promise<Expense[]> {
+    const result = await db.select().from(expenses).orderBy(desc(expenses.date));
+    return result;
+  }
+
+  async getExpenseById(id: string): Promise<Expense | undefined> {
+    const result = await db.select().from(expenses).where(eq(expenses.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createExpense(expense: any): Promise<Expense> {
+    const result = await db.insert(expenses).values(expense).returning();
+    return result[0];
+  }
+
+  async updateExpense(id: string, expenseData: any): Promise<Expense | undefined> {
+    const result = await db.update(expenses).set(expenseData).where(eq(expenses.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteExpense(id: string): Promise<boolean> {
+    await db.delete(expenses).where(eq(expenses.id, id));
+    return true;
+  }
 
   async getServices(): Promise<Service[]> {
     const result = await db

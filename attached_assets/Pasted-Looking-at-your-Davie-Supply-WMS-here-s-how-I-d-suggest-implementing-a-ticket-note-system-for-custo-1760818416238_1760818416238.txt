@@ -1,0 +1,87 @@
+Looking at your Davie Supply WMS, here's how I'd suggest implementing a ticket/note system for customer support:
+
+## Simple Approach: Customer Notes
+
+Since you mentioned sometimes you "just want to add a note to a customer", start with a basic notes system:
+
+### Database Structure
+Add two new tables to your PostgreSQL:
+
+```sql
+-- Basic customer notes
+customer_notes (
+  id, 
+  customer_id (FK),
+  note_type (general/support/complaint/reminder),
+  content,
+  created_by (user_id),
+  created_at,
+  is_resolved (boolean),
+  resolved_at
+)
+
+-- If you want follow-ups
+note_follow_ups (
+  id,
+  note_id (FK),
+  content,
+  created_by,
+  created_at
+)
+```
+
+### Where to Add It in Your UI
+
+1. **Customer Details Page**: Add a "Notes" tab next to order history
+   - Quick "Add Note" button that opens a simple modal
+   - List of past notes with timestamps
+   - Color-code by type (yellow for reminders, red for issues, etc.)
+
+2. **Order Page**: Show a small note indicator if customer has active notes
+   - Like a little sticky note icon with a count
+   - Hover to preview recent notes
+
+3. **Quick Access**: Add a floating note button on customer-related pages
+   - Similar to how support chat widgets work
+
+## Full Ticket System (If You Need More)
+
+If you want a proper ticket system later:
+
+### Additional Features
+- **Ticket Status**: Open → In Progress → Resolved
+- **Priority Levels**: Low, Medium, High, Urgent
+- **Categories**: Shipping issue, Product question, Payment problem, etc.
+- **Auto-linking**: Connect tickets to specific orders or products
+- **Reminders**: Set follow-up dates that show in a dashboard
+
+### Smart Integration Ideas
+
+1. **Auto-create tickets** from:
+   - Returns (already have returns management)
+   - Failed payments
+   - Shipping delays
+
+2. **Dashboard Widget** showing:
+   - Open tickets count
+   - Overdue follow-ups
+   - Recent customer issues
+
+3. **Search Integration**: Include notes/tickets in your existing search with Vietnamese diacritics support
+
+## Quick Implementation Tips
+
+Since you're using React + TypeScript:
+
+1. **Reuse your existing patterns**:
+   - Use your unified form components (like ProductForm)
+   - Apply the same card-based layout
+   - Keep the mobile-first approach
+
+2. **Storage**: Use localStorage to save draft notes (in case of accidental refresh)
+
+3. **Keyboard shortcuts**: 
+   - Ctrl+K to quick-add a note from anywhere
+   - Similar to your existing keyboard navigation
+
+Would you like me to create the actual database schema and React components for this? I can make it match your existing code style with Shadcn/ui components and your current architecture.
