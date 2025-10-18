@@ -169,14 +169,7 @@ export default function TicketDetails() {
   }
 
   if (!ticket) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-lg text-slate-600">Ticket not found</p>
-        <Button onClick={() => navigate('/tickets')} className="mt-4">
-          Back to Tickets
-        </Button>
-      </div>
-    );
+    return null;
   }
 
   return (
