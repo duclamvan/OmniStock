@@ -187,15 +187,14 @@ export default function TicketDetails() {
           </Button>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-3xl font-bold tracking-tight" data-testid="text-ticket-id">
-                {ticket.ticketId}
+              <h1 className="text-3xl font-bold tracking-tight" data-testid="text-title">
+                {ticket.title}
               </h1>
+            </div>
+            <div className="flex items-center gap-2">
               {getStatusBadge(ticket.status)}
               {getPriorityBadge(ticket.priority)}
             </div>
-            <p className="text-lg text-slate-700 dark:text-slate-300" data-testid="text-title">
-              {ticket.title}
-            </p>
           </div>
         </div>
         <Button onClick={() => navigate(`/tickets/edit/${ticket.id}`)} data-testid="button-edit">
@@ -254,6 +253,12 @@ export default function TicketDetails() {
 
               {/* Metadata - Small and subtle */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Ticket ID</p>
+                  <p className="text-sm font-medium font-mono text-slate-700 dark:text-slate-300" data-testid="text-ticket-id">
+                    {ticket.ticketId}
+                  </p>
+                </div>
                 <div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Category</p>
                   <p className="text-sm font-medium capitalize text-slate-700 dark:text-slate-300" data-testid="text-category">

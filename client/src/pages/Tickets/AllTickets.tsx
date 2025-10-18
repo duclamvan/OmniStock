@@ -317,15 +317,10 @@ export default function AllTickets() {
                   </div>
                 )}
 
-                {/* Ticket ID and Title */}
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-lg">{getCategoryIcon(ticket.category)}</span>
-                    <span className="font-mono text-xs text-blue-600 dark:text-blue-400" data-testid={`text-ticket-id-${ticket.id}`}>
-                      {ticket.ticketId}
-                    </span>
-                  </div>
-                  <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100" data-testid={`text-title-${ticket.id}`}>
+                {/* Title */}
+                <div className="flex items-start gap-2">
+                  <span className="text-xl">{getCategoryIcon(ticket.category)}</span>
+                  <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100 flex-1" data-testid={`text-title-${ticket.id}`}>
                     {ticket.title}
                   </h3>
                 </div>
