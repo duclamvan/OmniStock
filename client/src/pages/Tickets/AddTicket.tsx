@@ -68,10 +68,11 @@ export default function AddTicket() {
       });
       navigate(`/tickets/${data.id}`);
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Ticket creation error:", error);
       toast({
         title: "Error",
-        description: "Failed to create ticket",
+        description: error?.message || "Failed to create ticket",
         variant: "destructive",
       });
     },
