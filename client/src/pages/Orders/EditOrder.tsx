@@ -1670,13 +1670,15 @@ export default function EditOrder() {
                       {shippingAddresses.map((address: any) => (
                         <div
                           key={address.id}
-                          className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-all ${
+                          className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer ${
                             selectedShippingAddress?.id === address.id
-                              ? 'border-blue-500 bg-blue-50 cursor-default select-none'
-                              : 'border-slate-200 hover:border-slate-300 cursor-pointer'
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-slate-200 hover:border-slate-300'
                           }`}
                           onClick={() => {
-                            if (selectedShippingAddress?.id !== address.id) {
+                            if (selectedShippingAddress?.id === address.id) {
+                              setSelectedShippingAddress(null);
+                            } else {
                               setSelectedShippingAddress(address);
                             }
                           }}

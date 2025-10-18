@@ -1720,7 +1720,13 @@ export default function AddOrder() {
                                 ? 'border-blue-500 bg-blue-50'
                                 : 'border-slate-200 hover:border-slate-300'
                             }`}
-                            onClick={() => setSelectedShippingAddress(address)}
+                            onClick={() => {
+                              if (selectedShippingAddress?.id === address.id) {
+                                setSelectedShippingAddress(null);
+                              } else {
+                                setSelectedShippingAddress(address);
+                              }
+                            }}
                             data-testid={`card-address-${address.id}`}
                           >
                             <RadioGroupItem value={address.id} id={address.id} data-testid={`radio-address-${address.id}`} />
