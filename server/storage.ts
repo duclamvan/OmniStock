@@ -38,6 +38,8 @@ import {
   packingMaterialUsage,
   pmSuppliers,
   discounts,
+  tickets,
+  ticketComments,
   type User,
   type InsertUser,
   type Category,
@@ -113,7 +115,11 @@ import {
   type PmSupplier,
   type InsertPmSupplier,
   type Discount,
-  type InsertDiscount
+  type InsertDiscount,
+  type Ticket,
+  type InsertTicket,
+  type TicketComment,
+  type InsertTicketComment
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, ilike, sql, gte, lte, inArray, ne, asc, isNull, notInArray } from "drizzle-orm";
@@ -2794,6 +2800,124 @@ export class DatabaseStorage implements IStorage {
   async deleteExpense(id: string): Promise<boolean> {
     await db.delete(expenses).where(eq(expenses.id, id));
     return true;
+  }
+
+  // Ticket methods
+  async getTickets(): Promise<Ticket[]> {
+    const result = await db
+      .select({
+        id: tickets.id,
+        ticketId: tickets.ticketId,
+        customerId: tickets.customerId,
+        orderId: tickets.orderId,
+        title: tickets.title,
+        description: tickets.description,
+        category: tickets.category,
+        status: tickets.status,
+        priority: tickets.priority,
+        assignedTo: tickets.assignedTo,
+        createdBy: tickets.createdBy,
+        resolvedAt: tickets.resolvedAt,
+        dueDate: tickets.dueDate,
+        tags: tickets.tags,
+        createdAt: tickets.createdAt,
+        updatedAt: tickets.updatedAt,
+        customer: customers,
+        order: orders
+      })
+      .from(tickets)
+      .leftJoin(customers, eq(tickets.customerId, customers.id))
+      .leftJoin(orders, eq(tickets.orderId, orders.id))
+      .orderBy(desc(tickets.createdAt));
+    
+    return result.map(row => ({
+      ...row,
+      customer: row.customer || undefined,
+      order: row.order || undefined
+    }));
+  }
+
+  async getTicketById(id: string): Promise<Ticket | undefined> {
+    const [result] = await db
+      .select({
+        id: tickets.id,
+        ticketId: tickets.ticketId,
+        customerId: tickets.customerId,
+        orderId: tickets.orderId,
+        title: tickets.title,
+        description: tickets.description,
+        category: tickets.category,
+        status: tickets.status,
+        priority: tickets.priority,
+        assignedTo: tickets.assignedTo,
+        createdBy: tickets.createdBy,
+        resolvedAt: tickets.resolvedAt,
+        dueDate: tickets.dueDate,
+        tags: tickets.tags,
+        createdAt: tickets.createdAt,
+        updatedAt: tickets.updatedAt,
+        customer: customers,
+        order: orders
+      })
+      .from(tickets)
+      .leftJoin(customers, eq(tickets.customerId, customers.id))
+      .leftJoin(orders, eq(tickets.orderId, orders.id))
+      .where(eq(tickets.id, id));
+    
+    if (!result) return undefined;
+    
+    return {
+      ...result,
+      customer: result.customer || undefined,
+      order: result.order || undefined
+    };
+  }
+
+  async createTicket(ticket: InsertTicket): Promise<Ticket> {
+    const result = await db.insert(tickets).values(ticket).returning();
+    return result[0];
+  }
+
+  async updateTicket(id: string, ticketData: Partial<InsertTicket>): Promise<Ticket | undefined> {
+    const updateData = {
+      ...ticketData,
+      updatedAt: new Date()
+    };
+    const result = await db.update(tickets).set(updateData).where(eq(tickets.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteTicket(id: string): Promise<boolean> {
+    await db.delete(tickets).where(eq(tickets.id, id));
+    return true;
+  }
+
+  async getTicketComments(ticketId: string): Promise<TicketComment[]> {
+    const result = await db
+      .select({
+        id: ticketComments.id,
+        ticketId: ticketComments.ticketId,
+        content: ticketComments.content,
+        isInternal: ticketComments.isInternal,
+        createdBy: ticketComments.createdBy,
+        createdAt: ticketComments.createdAt,
+        updatedAt: ticketComments.updatedAt,
+        user: users
+      })
+      .from(ticketComments)
+      .leftJoin(users, eq(ticketComments.createdBy, users.id))
+      .where(eq(ticketComments.ticketId, ticketId))
+      .orderBy(asc(ticketComments.createdAt));
+    
+    return result.map(row => ({
+      ...row,
+      user: row.user || undefined
+    }));
+  }
+
+  async addTicketComment(comment: InsertTicketComment): Promise<TicketComment> {
+    const result = await db.insert(ticketComments).values(comment).returning();
+    return result[0];
   }
 
   async getServices(): Promise<Service[]> {
