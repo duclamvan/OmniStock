@@ -19,7 +19,9 @@ import {
   Receipt,
   CreditCard,
   Clock,
-  Filter
+  Filter,
+  Wrench,
+  CheckCircle2
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -43,6 +45,10 @@ export default function AllExpenses() {
   const { data: expenses = [], isLoading, error } = useQuery<any[]>({
     queryKey: ['/api/expenses'],
     retry: false,
+  });
+
+  const { data: services = [] } = useQuery<any[]>({
+    queryKey: ['/api/services'],
   });
 
   useEffect(() => {
@@ -252,6 +258,81 @@ export default function AllExpenses() {
           Add Expense
         </Button>
       </div>
+
+      {/* Services Section */}
+      <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-2 border-blue-200 dark:border-blue-800">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Wrench className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <CardTitle className="text-xl">Services We Offer</CardTitle>
+          </div>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Professional repair and service work for nail salon equipment
+          </p>
+        </CardHeader>
+        <CardContent>
+          {services.length === 0 ? (
+            <div className="text-center py-8 text-slate-500">
+              <p>No services available yet</p>
+              <Link href="/services/add">
+                <Button variant="link" className="mt-2">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add your first service
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {services.slice(0, 6).map((service: any) => (
+                <Link key={service.id} href={`/services/${service.id}`}>
+                  <div className="bg-white dark:bg-slate-800 rounded-lg p-4 border-2 border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-600 hover:shadow-md transition-all cursor-pointer group">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                          <h3 className="font-semibold text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                            {service.name}
+                          </h3>
+                        </div>
+                        {service.description && (
+                          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-2">
+                            {service.description}
+                          </p>
+                        )}
+                      </div>
+                      <Badge 
+                        variant={service.status === 'completed' ? 'default' : 
+                                service.status === 'in_progress' ? 'secondary' : 'outline'}
+                        className="flex-shrink-0"
+                      >
+                        {service.status === 'completed' ? 'Done' : 
+                         service.status === 'in_progress' ? 'Active' : 
+                         service.status === 'cancelled' ? 'Cancelled' : 'Pending'}
+                      </Badge>
+                    </div>
+                    {service.totalCost && (
+                      <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                        <span className="text-sm font-medium text-slate-900 dark:text-white">
+                          {parseFloat(service.totalCost).toFixed(2)} {service.currency || 'EUR'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+          {services.length > 6 && (
+            <div className="mt-4 text-center">
+              <Link href="/services">
+                <Button variant="outline" size="sm">
+                  View All Services ({services.length})
+                </Button>
+              </Link>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
