@@ -5164,12 +5164,20 @@ Important:
         return res.status(404).json({ message: "Ticket not found" });
       }
 
-      // If status is being changed to 'resolved' or 'closed', set resolvedAt
-      if ((req.body.status === 'resolved' || req.body.status === 'closed') && !existingTicket.resolvedAt) {
-        req.body.resolvedAt = new Date();
+      // Convert dueDate string to Date object if present
+      let updateData = { ...req.body };
+      if (updateData.dueDate && updateData.dueDate !== 'null' && updateData.dueDate !== '') {
+        updateData.dueDate = new Date(updateData.dueDate);
+      } else if (updateData.dueDate === '' || updateData.dueDate === 'null') {
+        updateData.dueDate = null;
       }
 
-      const ticket = await storage.updateTicket(req.params.id, req.body);
+      // If status is being changed to 'resolved' or 'closed', set resolvedAt
+      if ((updateData.status === 'resolved' || updateData.status === 'closed') && !existingTicket.resolvedAt) {
+        updateData.resolvedAt = new Date();
+      }
+
+      const ticket = await storage.updateTicket(req.params.id, updateData);
       
       await storage.createUserActivity({
         userId: req.user?.id || "test-user",
