@@ -1233,6 +1233,49 @@ export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;
 export type ProductLocation = typeof productLocations.$inferSelect;
 export type InsertProductLocation = z.infer<typeof insertProductLocationSchema>;
 
+// Tickets (Customer Support System)
+export const tickets = pgTable('tickets', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  ticketId: varchar('ticket_id').notNull().unique(), // e.g., TKT-20241018-001
+  customerId: varchar('customer_id').references(() => customers.id),
+  orderId: varchar('order_id').references(() => orders.id),
+  title: varchar('title').notNull(),
+  description: text('description'),
+  category: varchar('category').notNull(), // shipping_issue, product_question, payment_problem, complaint, general
+  status: varchar('status').notNull().default('open'), // open, in_progress, resolved, closed
+  priority: varchar('priority').notNull().default('medium'), // low, medium, high, urgent
+  assignedTo: varchar('assigned_to').references(() => users.id),
+  createdBy: varchar('created_by').references(() => users.id),
+  resolvedAt: timestamp('resolved_at'),
+  dueDate: timestamp('due_date'),
+  tags: text('tags').array(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow()
+});
+
+export const insertTicketSchema = createInsertSchema(tickets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+// Ticket Comments (Follow-ups)
+export const ticketComments = pgTable('ticket_comments', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  ticketId: varchar('ticket_id').notNull().references(() => tickets.id, { onDelete: 'cascade' }),
+  content: text('content').notNull(),
+  isInternal: boolean('is_internal').default(false), // Internal notes not visible to customer
+  createdBy: varchar('created_by').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow()
+});
+
+export const insertTicketCommentSchema = createInsertSchema(ticketComments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
 // AI-powered carton packing types
 export type PackingCarton = typeof packingCartons.$inferSelect;
 export type InsertPackingCarton = z.infer<typeof insertPackingCartonSchema>;
@@ -1273,3 +1316,9 @@ export type CostAllocation = typeof costAllocations.$inferSelect;
 export type InsertCostAllocation = z.infer<typeof insertCostAllocationSchema>;
 export type ProductCostHistory = typeof productCostHistory.$inferSelect;
 export type InsertProductCostHistory = z.infer<typeof insertProductCostHistorySchema>;
+
+// Ticket types
+export type Ticket = typeof tickets.$inferSelect;
+export type InsertTicket = z.infer<typeof insertTicketSchema>;
+export type TicketComment = typeof ticketComments.$inferSelect;
+export type InsertTicketComment = z.infer<typeof insertTicketCommentSchema>;
