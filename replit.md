@@ -38,7 +38,7 @@ The application uses PostgreSQL with Neon serverless driver and Drizzle ORM. The
 - **AI-Powered Carton Packing Optimization**: Intelligent carton size selection using AI weight/dimension inference, best-fit decreasing packing algorithm with weight/volume constraints, automatic shipping cost estimation, and visual results.
 - **Files Management System**: Comprehensive document management for product-related files.
 - **Image Compression System**: Automatic lossless image compression to WebP with thumbnail generation.
-- **Multi-Currency Support**: Supports five currencies (CZK, EUR, USD, VND, CNY) with exchange rate conversion.
+- **Multi-Currency Support**: Sales prices restricted to CZK and EUR only; import costs support USD, CZK, and EUR with automatic exchange rate conversion. This B2B-focused design aligns with European market operations (Czech and German markets).
 - **Search Functionality**: Real-time Vietnamese diacritics search with custom character normalization.
 - **Reusable Components**: Generic DataTable with bulk selection, sorting, pagination, and actions.
 - **Reporting**: Comprehensive sales, inventory, customer, and financial reports.
