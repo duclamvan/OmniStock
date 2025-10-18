@@ -1,16 +1,17 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
-import { Plus, Search, Eye, Edit, Trash2, Wrench, CheckCircle2 } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Wrench, CheckCircle2, ChevronDown } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,9 +55,13 @@ interface Service {
 
 export default function Services() {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [deleteServiceId, setDeleteServiceId] = useState<string | null>(null);
+  const [isServicesOfferOpen, setIsServicesOfferOpen] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const { data: services = [], isLoading } = useQuery<Service[]>({
     queryKey: ['/api/services'],
@@ -107,6 +112,21 @@ export default function Services() {
     return filtered;
   }, [services, searchQuery, statusFilter]);
 
+  // Pagination calculations
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedServices = filteredServices.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(filteredServices.length / itemsPerPage);
+
+  // Reset to page 1 when filters change or current page exceeds total pages
+  useEffect(() => {
+    if (totalPages === 0) {
+      setCurrentPage(1);
+    } else if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [filteredServices.length, itemsPerPage, totalPages, currentPage]);
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
@@ -153,17 +173,28 @@ export default function Services() {
       </div>
 
       {/* Services We Offer Section */}
-      <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-2 border-blue-200 dark:border-blue-800">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Wrench className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            <CardTitle className="text-xl">Services We Offer</CardTitle>
-          </div>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            Professional repair and service work for nail salon equipment
-          </p>
-        </CardHeader>
-        <CardContent>
+      <Collapsible open={isServicesOfferOpen} onOpenChange={setIsServicesOfferOpen}>
+        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-2 border-blue-200 dark:border-blue-800">
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-blue-100/50 dark:hover:bg-blue-900/20 transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Wrench className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <CardTitle className="text-xl">Services We Offer</CardTitle>
+                </div>
+                <ChevronDown 
+                  className={`h-5 w-5 text-blue-600 dark:text-blue-400 transition-transform duration-200 ${
+                    isServicesOfferOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </div>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Professional repair and service work for nail salon equipment
+              </p>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent>
           {services.length === 0 ? (
             <div className="text-center py-8 text-slate-500">
               <p>No services available yet</p>
@@ -225,8 +256,10 @@ export default function Services() {
               </Button>
             </div>
           )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
 
       {/* Filters */}
       <Card>
@@ -270,7 +303,7 @@ export default function Services() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Wrench className="h-5 w-5" />
-            Service Records
+            Service Records ({filteredServices.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -306,8 +339,13 @@ export default function Services() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredServices.map((service) => (
-                    <TableRow key={service.id} data-testid={`row-service-${service.id}`}>
+                  {paginatedServices.map((service) => (
+                    <TableRow 
+                      key={service.id} 
+                      data-testid={`row-service-${service.id}`}
+                      onClick={() => navigate(`/services/${service.id}`)}
+                      className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                    >
                       <TableCell data-testid={`text-service-date-${service.id}`}>
                         {formatDate(service.serviceDate)}
                       </TableCell>
@@ -333,17 +371,7 @@ export default function Services() {
                         {getStatusBadge(service.status)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Link href={`/services/${service.id}`}>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              data-testid={`button-view-${service.id}`}
-                              title="View Details"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </Link>
+                        <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                           <Link href={`/services/${service.id}/edit`}>
                             <Button
                               variant="ghost"
@@ -370,6 +398,91 @@ export default function Services() {
                   ))}
                 </TableBody>
               </Table>
+
+              {/* Pagination Controls */}
+              {filteredServices.length > 0 && (
+                <div className="mt-6 space-y-4">
+                  {/* Showing X-Y of Z */}
+                  <div className="text-sm text-slate-600 dark:text-slate-400">
+                    Showing {startIndex + 1}-{Math.min(endIndex, filteredServices.length)} of {filteredServices.length}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    {/* Items per page selector */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-slate-600 dark:text-slate-400">Items per page:</span>
+                      <Select 
+                        value={itemsPerPage.toString()} 
+                        onValueChange={(value) => {
+                          setItemsPerPage(Number(value));
+                          setCurrentPage(1);
+                        }}
+                      >
+                        <SelectTrigger className="w-20" data-testid="select-items-per-page">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="20">20</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Page navigation */}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        data-testid="button-previous-page"
+                      >
+                        Previous
+                      </Button>
+                      
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          let pageNum;
+                          if (totalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNum = totalPages - 4 + i;
+                          } else {
+                            pageNum = currentPage - 2 + i;
+                          }
+                          
+                          return (
+                            <Button
+                              key={pageNum}
+                              variant={currentPage === pageNum ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setCurrentPage(pageNum)}
+                              className="w-10"
+                              data-testid={`button-page-${pageNum}`}
+                            >
+                              {pageNum}
+                            </Button>
+                          );
+                        })}
+                      </div>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                        data-testid="button-next-page"
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
