@@ -715,32 +715,6 @@ export default function ProductForm() {
     };
   }, [seriesPriceUsd, seriesPriceCzk, seriesPriceEur]);
 
-  // Auto-fill variant fields when Add Variant dialog opens
-  useEffect(() => {
-    if (isAddDialogOpen && isEditMode && product) {
-      setNewVariant((prev) => ({
-        ...prev,
-        priceUsd: product.priceUsd ? String(product.priceUsd) : "",
-        priceCzk: product.priceCzk ? String(product.priceCzk) : "",
-        priceEur: product.priceEur ? String(product.priceEur) : "",
-        importCostUsd: product.importCostUsd ? String(product.importCostUsd) : "",
-        importCostCzk: product.importCostCzk ? String(product.importCostCzk) : "",
-        importCostEur: product.importCostEur ? String(product.importCostEur) : "",
-      }));
-    }
-  }, [isAddDialogOpen, isEditMode, product]);
-
-  // Auto-fill series fields when Add Series dialog opens
-  useEffect(() => {
-    if (isSeriesDialogOpen && isEditMode && product) {
-      setSeriesPriceUsd(product.priceUsd ? String(product.priceUsd) : "");
-      setSeriesPriceCzk(product.priceCzk ? String(product.priceCzk) : "");
-      setSeriesPriceEur(product.priceEur ? String(product.priceEur) : "");
-      setSeriesImportCostUsd(product.importCostUsd ? String(product.importCostUsd) : "");
-      setSeriesImportCostCzk(product.importCostCzk ? String(product.importCostCzk) : "");
-      setSeriesImportCostEur(product.importCostEur ? String(product.importCostEur) : "");
-    }
-  }, [isSeriesDialogOpen, isEditMode, product]);
 
   // Auto-set low stock alert to 50% of quantity in add mode
   useEffect(() => {
