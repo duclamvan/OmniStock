@@ -761,15 +761,15 @@ export default function AddExpense() {
             {/* Right: Expense Summary Sidebar - Paper Bill Style */}
             <div className="lg:col-span-1">
               <div className="sticky top-20 z-10">
-                <Card className="shadow-2xl border-4 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900">
+                <Card className="shadow-2xl border-4 border-blue-200 dark:border-blue-700 bg-white dark:bg-slate-900">
                   {/* Bill Header - Like a paper invoice */}
-                  <div className="bg-slate-900 dark:bg-slate-800 text-white px-6 py-5 border-b-4 border-slate-700">
+                  <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 text-white px-6 py-5 border-b-4 border-blue-700">
                     <div className="text-center">
                       <div className="flex items-center justify-center gap-2 mb-1">
                         <FileText className="h-6 w-6" />
                         <h2 className="text-2xl font-bold tracking-wide">EXPENSE BILL</h2>
                       </div>
-                      <p className="text-xs text-slate-300 uppercase tracking-widest">Davie Supply</p>
+                      <p className="text-xs text-blue-100 uppercase tracking-widest">Davie Supply</p>
                     </div>
                   </div>
 
@@ -838,11 +838,11 @@ export default function AddExpense() {
                     </div>
 
                     {/* Total Amount - Highlighted Section */}
-                    <div className="bg-gradient-to-br from-slate-800 to-slate-900 dark:from-slate-700 dark:to-slate-800 rounded-lg p-5 mb-4 border-3 border-slate-700 shadow-lg">
+                    <div className="bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 rounded-lg p-5 mb-4 border-2 border-blue-700 dark:border-blue-600 shadow-lg">
                       <div className="flex justify-between items-end" data-testid="summary-total">
                         <div>
-                          <p className="text-xs text-slate-300 uppercase tracking-widest mb-1">Total Amount</p>
-                          <p className="text-sm text-slate-400">Due Now</p>
+                          <p className="text-xs text-blue-100 uppercase tracking-widest mb-1">Total Amount</p>
+                          <p className="text-sm text-blue-200">Due Now</p>
                         </div>
                         <div className="text-right">
                           <div className="text-3xl font-bold text-white tabular-nums">
@@ -864,7 +864,7 @@ export default function AddExpense() {
                     <div className="space-y-2 pt-2">
                       <Button
                         type="submit"
-                        className="w-full bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600"
+                        className="w-full"
                         size="lg"
                         disabled={createExpenseMutation.isPending}
                         data-testid="button-save"
