@@ -1978,6 +1978,12 @@ export default function ProductForm() {
                           placeholder="0.00"
                           data-testid="input-price-czk"
                           className="mt-1"
+                          onBlur={(e) => {
+                            const value = parseFloat(e.target.value);
+                            if (value && value > 0) {
+                              form.setValue('priceEur', parseFloat(convertCurrency(value, 'CZK', 'EUR').toFixed(2)));
+                            }
+                          }}
                         />
                       </div>
 
@@ -1991,9 +1997,18 @@ export default function ProductForm() {
                           placeholder="0.00"
                           data-testid="input-price-eur"
                           className="mt-1"
+                          onBlur={(e) => {
+                            const value = parseFloat(e.target.value);
+                            if (value && value > 0) {
+                              form.setValue('priceCzk', parseFloat(convertCurrency(value, 'EUR', 'CZK').toFixed(2)));
+                            }
+                          }}
                         />
                       </div>
                     </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Enter price in one currency, other will auto-convert when you finish typing
+                    </p>
                   </div>
 
                   {/* Import Costs */}
