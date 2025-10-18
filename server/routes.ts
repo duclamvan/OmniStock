@@ -5289,14 +5289,14 @@ Important:
 
   app.get('/api/discounts/:id', async (req, res) => {
     try {
-      const sale = await storage.getSaleById(req.params.id);
-      if (!sale) {
-        return res.status(404).json({ message: "Sale not found" });
+      const discount = await storage.getDiscount(req.params.id);
+      if (!discount) {
+        return res.status(404).json({ message: "Discount not found" });
       }
-      res.json(sale);
+      res.json(discount);
     } catch (error) {
-      console.error("Error fetching sale:", error);
-      res.status(500).json({ message: "Failed to fetch sale" });
+      console.error("Error fetching discount:", error);
+      res.status(500).json({ message: "Failed to fetch discount" });
     }
   });
 
@@ -5309,52 +5309,56 @@ Important:
         endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
       };
       
-      const sale = await storage.updateSale(req.params.id, updates);
+      const discount = await storage.updateDiscount(req.params.id, updates);
+      
+      if (!discount) {
+        return res.status(404).json({ message: "Discount not found" });
+      }
       
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated',
-        entityType: 'sale',
-        entityId: sale.id,
-        description: `Updated sale: ${sale.name}`,
+        entityType: 'discount',
+        entityId: discount.id.toString(),
+        description: `Updated discount: ${discount.name}`,
       });
       
-      res.json(sale);
+      res.json(discount);
     } catch (error) {
-      console.error("Error updating sale:", error);
-      res.status(500).json({ message: "Failed to update sale" });
+      console.error("Error updating discount:", error);
+      res.status(500).json({ message: "Failed to update discount" });
     }
   });
 
   app.delete('/api/discounts/:id', async (req: any, res) => {
     try {
-      const sale = await storage.getSaleById(req.params.id);
-      if (!sale) {
-        return res.status(404).json({ message: "Sale not found" });
+      const discount = await storage.getDiscount(req.params.id);
+      if (!discount) {
+        return res.status(404).json({ message: "Discount not found" });
       }
       
-      await storage.deleteSale(req.params.id);
+      await storage.deleteDiscount(req.params.id);
       
       await storage.createUserActivity({
         userId: "test-user",
         action: 'deleted',
-        entityType: 'sale',
+        entityType: 'discount',
         entityId: req.params.id,
-        description: `Deleted sale: ${sale.name}`,
+        description: `Deleted discount: ${discount.name}`,
       });
       
       res.status(204).send();
     } catch (error: any) {
-      console.error("Error deleting sale:", error);
+      console.error("Error deleting discount:", error);
       
       // Check if it's a foreign key constraint error
       if (error.code === '23503' || error.message?.includes('constraint')) {
         return res.status(409).json({ 
-          message: "Cannot delete sale - it's being used by other records" 
+          message: "Cannot delete discount - it's being used by other records" 
         });
       }
       
-      res.status(500).json({ message: "Failed to delete sale" });
+      res.status(500).json({ message: "Failed to delete discount" });
     }
   });
 
@@ -5377,7 +5381,7 @@ Important:
   
   app.get('/api/returns/:id', async (req, res) => {
     try {
-      const returnData = await storage.getReturnById(req.params.id);
+      const returnData = await storage.getReturn(req.params.id);
       if (!returnData) {
         return res.status(404).json({ message: "Return not found" });
       }
