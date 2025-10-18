@@ -2443,18 +2443,10 @@ export default function AddOrder() {
                         }
                       }
                     } else if (e.key === 'Tab') {
-                      if (totalProducts > 0 && showProductDropdown) {
-                        e.preventDefault();
-                        const selectedProduct = filteredProducts[selectedProductIndex];
-                        if (selectedProduct) {
-                          addProductToOrder(selectedProduct);
-                          if (!barcodeScanMode) {
-                            setProductSearch('');
-                            setShowProductDropdown(false);
-                            setSelectedProductIndex(0);
-                          }
-                        }
-                      }
+                      e.preventDefault();
+                      // Tab: Go to shipping cost input
+                      const shippingCostInput = document.querySelector('[data-testid="input-shipping-cost"]') as HTMLInputElement;
+                      shippingCostInput?.focus();
                     }
                   }}
                   data-testid="input-product-search"
