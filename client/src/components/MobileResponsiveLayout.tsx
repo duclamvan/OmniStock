@@ -108,6 +108,18 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
 
   const fullyArrivedCount = preOrders?.filter(po => po.status === 'fully_arrived').length || 0;
 
+  // Fetch all orders to show counts in submenus
+  const { data: orders = [] } = useQuery<any[]>({
+    queryKey: ['/api/orders'],
+  });
+
+  // Calculate order counts for each submenu
+  const allOrdersCount = orders.length;
+  const toFulfillCount = orders.filter((o: any) => o.status === 'pending' || o.status === 'processing').length;
+  const shippedCount = orders.filter((o: any) => o.status === 'shipped' || o.status === 'delivered').length;
+  const payLaterCount = orders.filter((o: any) => o.paymentStatus === 'pay_later' && o.status !== 'delivered').length;
+  const preOrdersCount = preOrders?.length || 0;
+
   useEffect(() => {
     localStorage.setItem('sidebarCollapsed', JSON.stringify(isCollapsed));
   }, [isCollapsed]);
@@ -415,17 +427,46 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                               variant="ghost"
                               size="sm"
                               className={cn(
-                                "w-full justify-start text-gray-600 dark:text-gray-300 px-3 py-2 rounded-md touch-target transition-colors text-sm",
+                                "w-full justify-start text-gray-900 dark:text-gray-300 px-3 py-2 rounded-md touch-target transition-colors text-sm",
                                 "hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white",
                                 isChildActive && "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-medium"
                               )}
                               onClick={() => setIsMobileMenuOpen(false)}
                             >
                               <span className="flex-1 text-left">{child.name}</span>
-                              {child.href === '/orders/pre-orders' && fullyArrivedCount > 0 && (
-                                <Badge variant="default" className="ml-2 bg-green-600 hover:bg-green-700 text-white text-xs h-5 min-w-5 px-1.5">
-                                  {fullyArrivedCount}
+                              {child.href === '/orders' && allOrdersCount > 0 && (
+                                <Badge variant="secondary" className="ml-2 text-xs h-5 min-w-5 px-1.5">
+                                  {allOrdersCount}
                                 </Badge>
+                              )}
+                              {child.href === '/orders/to-fulfill' && toFulfillCount > 0 && (
+                                <Badge variant="default" className="ml-2 bg-orange-600 hover:bg-orange-700 text-white text-xs h-5 min-w-5 px-1.5">
+                                  {toFulfillCount}
+                                </Badge>
+                              )}
+                              {child.href === '/orders/shipped' && shippedCount > 0 && (
+                                <Badge variant="default" className="ml-2 bg-blue-600 hover:bg-blue-700 text-white text-xs h-5 min-w-5 px-1.5">
+                                  {shippedCount}
+                                </Badge>
+                              )}
+                              {child.href === '/orders/pay-later' && payLaterCount > 0 && (
+                                <Badge variant="default" className="ml-2 bg-purple-600 hover:bg-purple-700 text-white text-xs h-5 min-w-5 px-1.5">
+                                  {payLaterCount}
+                                </Badge>
+                              )}
+                              {child.href === '/orders/pre-orders' && (preOrdersCount > 0 || fullyArrivedCount > 0) && (
+                                <div className="flex gap-1 ml-2">
+                                  {preOrdersCount > 0 && (
+                                    <Badge variant="secondary" className="text-xs h-5 min-w-5 px-1.5">
+                                      {preOrdersCount}
+                                    </Badge>
+                                  )}
+                                  {fullyArrivedCount > 0 && (
+                                    <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-xs h-5 min-w-5 px-1.5">
+                                      {fullyArrivedCount}
+                                    </Badge>
+                                  )}
+                                </div>
                               )}
                             </Button>
                           </Link>
