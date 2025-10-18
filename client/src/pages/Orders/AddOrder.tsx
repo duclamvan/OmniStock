@@ -1616,7 +1616,7 @@ export default function AddOrder() {
 
             {/* Selected customer display */}
             {selectedCustomer && (
-              <Card className="mt-4 border-2 border-green-500 bg-gradient-to-br from-green-50 to-emerald-50">
+              <Card className="mt-4 border-2 border-green-500 bg-white">
                 <CardContent className="p-6">
                   <div className="flex gap-4">
                     {/* Avatar Section */}
@@ -1644,33 +1644,67 @@ export default function AddOrder() {
                               {selectedCustomer.name}
                             </h3>
                             <CheckCircle className="h-5 w-5 text-green-600" />
+                            {/* Country Flag */}
+                            {selectedCustomer.country && (
+                              <span className="text-xl">
+                                {selectedCustomer.country.toLowerCase().includes('czech') || selectedCustomer.country.toLowerCase().includes('česko') ? '🇨🇿' :
+                                 selectedCustomer.country.toLowerCase().includes('german') || selectedCustomer.country.toLowerCase().includes('němec') ? '🇩🇪' :
+                                 selectedCustomer.country.toLowerCase().includes('vietnam') ? '🇻🇳' :
+                                 selectedCustomer.country.toLowerCase().includes('china') ? '🇨🇳' :
+                                 selectedCustomer.country.toLowerCase().includes('usa') || selectedCustomer.country.toLowerCase().includes('united states') ? '🇺🇸' :
+                                 selectedCustomer.country.toLowerCase().includes('uk') || selectedCustomer.country.toLowerCase().includes('united kingdom') ? '🇬🇧' :
+                                 selectedCustomer.country.toLowerCase().includes('france') ? '🇫🇷' :
+                                 selectedCustomer.country.toLowerCase().includes('poland') ? '🇵🇱' :
+                                 selectedCustomer.country.toLowerCase().includes('slovakia') ? '🇸🇰' :
+                                 selectedCustomer.country.toLowerCase().includes('austria') ? '🇦🇹' : '🌍'}
+                              </span>
+                            )}
                           </div>
                           
                           {/* Badges */}
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            {selectedCustomer.type && selectedCustomer.type !== 'regular' && (
-                              <Badge variant="outline" className="text-xs bg-slate-100 border-slate-300 text-slate-700 capitalize">
-                                {selectedCustomer.type}
+                            {/* VIP Badge - for customers with high spending or rank */}
+                            {(selectedCustomer.customerRank === 'VIP' || 
+                              (selectedCustomer.totalSpent && parseFloat(selectedCustomer.totalSpent) >= 50000)) && (
+                              <Badge className="text-xs bg-gradient-to-r from-yellow-400 to-yellow-600 text-white border-0 font-semibold">
+                                ⭐ VIP
                               </Badge>
                             )}
+                            {/* TOP50 Badge - for top customers */}
+                            {(selectedCustomer.customerRank === 'TOP50' || selectedCustomer.customerRank === 'TOP' ||
+                              (selectedCustomer.totalOrders && selectedCustomer.totalOrders >= 20)) && (
+                              <Badge className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 font-semibold">
+                                🏆 TOP50
+                              </Badge>
+                            )}
+                            {/* Pay Later Badge */}
+                            {selectedCustomer.hasPayLaterBadge && (
+                              <Badge variant="outline" className="text-xs bg-yellow-50 border-yellow-400 text-yellow-700 font-medium">
+                                💳 Pay Later
+                              </Badge>
+                            )}
+                            {/* Currency Badge */}
                             {selectedCustomer.preferredCurrency && (
                               <Badge variant="outline" className="text-xs bg-blue-50 border-blue-300 text-blue-700">
                                 {selectedCustomer.preferredCurrency}
                               </Badge>
                             )}
+                            {/* Customer Type */}
+                            {selectedCustomer.type && selectedCustomer.type !== 'regular' && (
+                              <Badge variant="outline" className="text-xs bg-slate-100 border-slate-300 text-slate-700 capitalize">
+                                {selectedCustomer.type}
+                              </Badge>
+                            )}
+                            {/* One-time Badge */}
                             {selectedCustomer.isTemporary && (
                               <Badge variant="outline" className="text-xs bg-purple-50 border-purple-300 text-purple-700">
                                 One-time
                               </Badge>
                             )}
+                            {/* New Customer Badge */}
                             {selectedCustomer.needsSaving && (
-                              <Badge variant="outline" className="text-xs bg-orange-50 border-orange-300 text-orange-700">
-                                New Customer
-                              </Badge>
-                            )}
-                            {selectedCustomer.hasPayLaterBadge && (
-                              <Badge variant="outline" className="text-xs bg-yellow-50 border-yellow-300 text-yellow-700">
-                                Pay Later
+                              <Badge variant="outline" className="text-xs bg-green-50 border-green-300 text-green-700">
+                                ✨ New Customer
                               </Badge>
                             )}
                           </div>
@@ -1709,13 +1743,6 @@ export default function AddOrder() {
                           </div>
                         )}
                         
-                        {selectedCustomer.email && (
-                          <div className="flex items-center gap-2 text-sm text-slate-700">
-                            <Mail className="h-4 w-4 text-slate-500" />
-                            <span className="truncate">{selectedCustomer.email}</span>
-                          </div>
-                        )}
-                        
                         {/* Location */}
                         {(selectedCustomer.city || selectedCustomer.country) && (
                           <div className="flex items-center gap-2 text-sm text-slate-700">
@@ -1737,7 +1764,7 @@ export default function AddOrder() {
 
                       {/* Stats Row - Only show for existing customers with data */}
                       {!selectedCustomer.needsSaving && !selectedCustomer.isTemporary && (
-                        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-green-200">
+                        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-200">
                           {selectedCustomer.totalOrders > 0 && (
                             <div className="flex items-center gap-1.5">
                               <Package className="h-4 w-4 text-green-600" />
