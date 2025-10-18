@@ -37,11 +37,11 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 
 const ticketFormSchema = z.object({
-  title: z.string().min(1, "Title is required"),
+  title: z.string().optional(),
   description: z.string().optional(),
-  category: z.string().min(1, "Category is required"),
-  priority: z.string().min(1, "Priority is required"),
-  status: z.string().min(1, "Status is required"),
+  category: z.string().optional(),
+  priority: z.string().optional(),
+  status: z.string().optional(),
   customerId: z.string().optional(),
   orderId: z.string().optional(),
   dueDate: z.date().optional(),
@@ -264,9 +264,108 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left: Main Form */}
             <div className="lg:col-span-2 space-y-6">
+              {/* Customer Selection - Highlighted */}
+              <Card className="border-2 border-blue-300 dark:border-blue-600 bg-blue-50/30 dark:bg-blue-950/20">
+                <CardHeader className="bg-blue-100 dark:bg-blue-900/30">
+                  <CardTitle className="text-blue-900 dark:text-blue-100">Customer</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <FormField
+                    control={form.control}
+                    name="customerId"
+                    render={({ field }) => {
+                      const customerNotFound = field.value && customers.length > 0 && !customers.find((c: any) => c.id === field.value);
+                      
+                      return (
+                        <FormItem>
+                          <div className="relative">
+                            <FormControl>
+                              <Input
+                                placeholder="Start typing customer name..."
+                                value={customerSearch}
+                                onChange={(e) => {
+                                  setCustomerSearch(e.target.value);
+                                  setShowCustomerDropdown(true);
+                                  if (!e.target.value) {
+                                    field.onChange("");
+                                  }
+                                }}
+                                onFocus={() => setShowCustomerDropdown(true)}
+                                onBlur={() => {
+                                  setTimeout(() => setShowCustomerDropdown(false), 200);
+                                }}
+                                data-testid="input-customer-search"
+                                className="text-lg h-12"
+                              />
+                            </FormControl>
+                            {showCustomerDropdown && customerSearch && filteredCustomers.length > 0 && (
+                              <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg max-h-64 overflow-auto">
+                                {filteredCustomers.map((customer: any) => (
+                                  <button
+                                    key={customer.id}
+                                    type="button"
+                                    onClick={() => handleCustomerSelect(customer)}
+                                    className="w-full px-4 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-between"
+                                    data-testid={`button-customer-${customer.id}`}
+                                  >
+                                    <span className="font-medium">{customer.name}</span>
+                                    {customer.email && (
+                                      <span className="text-xs text-slate-500">{customer.email}</span>
+                                    )}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          {customerNotFound && (
+                            <div className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 px-3 py-2 rounded border border-amber-200 dark:border-amber-800 flex items-center gap-2">
+                              <span className="font-medium">⚠️ Warning:</span>
+                              <span>Selected customer not found in system</span>
+                            </div>
+                          )}
+                          {field.value && customerSearch && !customerNotFound && (
+                            <div className="text-sm text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/50 px-3 py-2 rounded border border-blue-300 dark:border-blue-700">
+                              Selected: <span className="font-medium">{customerSearch}</span>
+                            </div>
+                          )}
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Description - Highlighted */}
+              <Card className="border-2 border-green-300 dark:border-green-600 bg-green-50/30 dark:bg-green-950/20">
+                <CardHeader className="bg-green-100 dark:bg-green-900/30">
+                  <CardTitle className="text-green-900 dark:text-green-100">Description</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Describe the issue or request..."
+                            className="min-h-[150px] text-base"
+                            {...field}
+                            data-testid="textarea-description"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Additional Details */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Ticket Details</CardTitle>
+                  <CardTitle>Additional Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -274,11 +373,11 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                     name="title"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Title *</FormLabel>
+                        <FormLabel>Subject</FormLabel>
                         <div className="flex gap-2">
                           <FormControl>
                             <Input 
-                              placeholder="Brief description of the issue" 
+                              placeholder="Brief subject line (optional)" 
                               {...field}
                               onChange={(e) => {
                                 field.onChange(e);
@@ -308,33 +407,14 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Detailed description of the issue..."
-                            className="min-h-[120px]"
-                            {...field}
-                            data-testid="textarea-description"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="category"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Category *</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <FormLabel>Category</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value || "general"}>
                             <FormControl>
                               <SelectTrigger data-testid="select-category">
                                 <SelectValue placeholder="Select category" />
@@ -358,8 +438,8 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                       name="priority"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Priority *</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <FormLabel>Priority</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value || "medium"}>
                             <FormControl>
                               <SelectTrigger data-testid="select-priority">
                                 <SelectValue placeholder="Select priority" />
@@ -384,8 +464,8 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                       name="status"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Status *</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <FormLabel>Status</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value || "open"}>
                             <FormControl>
                               <SelectTrigger data-testid="select-status">
                                 <SelectValue placeholder="Select status" />
@@ -472,77 +552,6 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                       )}
                     />
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Related Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="customerId"
-                    render={({ field }) => {
-                      const customerNotFound = field.value && customers.length > 0 && !customers.find((c: any) => c.id === field.value);
-                      
-                      return (
-                        <FormItem>
-                          <FormLabel>Customer</FormLabel>
-                          <div className="relative">
-                            <FormControl>
-                              <Input
-                                placeholder="Start typing customer name..."
-                                value={customerSearch}
-                                onChange={(e) => {
-                                  setCustomerSearch(e.target.value);
-                                  setShowCustomerDropdown(true);
-                                  if (!e.target.value) {
-                                    field.onChange("");
-                                  }
-                                }}
-                                onFocus={() => setShowCustomerDropdown(true)}
-                                onBlur={() => {
-                                  setTimeout(() => setShowCustomerDropdown(false), 200);
-                                }}
-                                data-testid="input-customer-search"
-                              />
-                            </FormControl>
-                            {showCustomerDropdown && customerSearch && filteredCustomers.length > 0 && (
-                              <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg max-h-64 overflow-auto">
-                                {filteredCustomers.map((customer: any) => (
-                                  <button
-                                    key={customer.id}
-                                    type="button"
-                                    onClick={() => handleCustomerSelect(customer)}
-                                    className="w-full px-4 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-between"
-                                    data-testid={`button-customer-${customer.id}`}
-                                  >
-                                    <span className="font-medium">{customer.name}</span>
-                                    {customer.email && (
-                                      <span className="text-xs text-slate-500">{customer.email}</span>
-                                    )}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          {customerNotFound && (
-                            <div className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 px-3 py-2 rounded border border-amber-200 dark:border-amber-800 flex items-center gap-2">
-                              <span className="font-medium">⚠️ Warning:</span>
-                              <span>Selected customer not found in system</span>
-                            </div>
-                          )}
-                          {field.value && customerSearch && !customerNotFound && (
-                            <div className="text-sm text-slate-600 bg-slate-50 dark:bg-slate-900 px-3 py-2 rounded border border-slate-200 dark:border-slate-700">
-                              Selected: <span className="font-medium">{customerSearch}</span>
-                            </div>
-                          )}
-                          <FormMessage />
-                        </FormItem>
-                      );
-                    }}
-                  />
 
                   <FormField
                     control={form.control}
