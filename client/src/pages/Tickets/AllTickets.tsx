@@ -293,10 +293,16 @@ export default function AllTickets() {
             <p className="text-slate-500">No tickets found</p>
           </div>
         ) : (
-          filteredTickets.map((ticket) => (
+          filteredTickets.map((ticket) => {
+            const isResolved = ticket.status === 'resolved' || ticket.status === 'closed';
+            
+            return (
             <Card 
               key={ticket.id} 
-              className="hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer h-full flex flex-col relative group"
+              className={cn(
+                "hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer h-full flex flex-col relative group",
+                isResolved && "opacity-50 bg-slate-50 dark:bg-slate-900/50"
+              )}
               onClick={() => navigate(`/tickets/${ticket.id}`)}
               data-testid={`card-ticket-${ticket.id}`}
             >
@@ -338,7 +344,7 @@ export default function AllTickets() {
                 <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-slate-800 mt-auto">
                   <div className="flex items-center gap-1.5">
                     {getStatusBadge(ticket.status)}
-                    {getPriorityBadge(ticket.priority)}
+                    {!isResolved && getPriorityBadge(ticket.priority)}
                   </div>
                   <span className="text-xs text-slate-500">
                     {format(new Date(ticket.createdAt), 'MMM d')}
@@ -346,7 +352,8 @@ export default function AllTickets() {
                 </div>
               </CardContent>
             </Card>
-          ))
+            );
+          })
         )}
       </div>
 
