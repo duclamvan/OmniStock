@@ -1616,51 +1616,153 @@ export default function AddOrder() {
 
             {/* Selected customer display */}
             {selectedCustomer && (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2 flex-1">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <div className="flex-1">
-                      <div className="font-medium text-green-800 flex items-center gap-2">
-                        {selectedCustomer.name}
-                        {selectedCustomer.isTemporary && (
-                          <Badge variant="outline" className="text-xs bg-blue-50 border-blue-300 text-blue-700">
-                            One-time
-                          </Badge>
+              <Card className="mt-4 border-2 border-green-500 bg-gradient-to-br from-green-50 to-emerald-50">
+                <CardContent className="p-6">
+                  <div className="flex gap-4">
+                    {/* Avatar Section */}
+                    <div className="flex-shrink-0">
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white shadow-lg">
+                        {selectedCustomer.profilePictureUrl ? (
+                          <img 
+                            src={selectedCustomer.profilePictureUrl} 
+                            alt={selectedCustomer.name}
+                            className="w-16 h-16 rounded-full object-cover"
+                          />
+                        ) : (
+                          <User className="h-8 w-8" />
                         )}
-                        {selectedCustomer.needsSaving && (
-                          <Badge variant="outline" className="text-xs bg-purple-50 border-purple-300 text-purple-700">
-                            Will Save
-                          </Badge>
-                        )}
-                        {selectedCustomer.hasPayLaterBadge && (
-                          <Badge variant="outline" className="text-xs bg-yellow-50 border-yellow-300 text-yellow-700">
-                            Pay Later
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="text-sm text-green-600">
-                        {selectedCustomer.phone || selectedCustomer.email || "No contact info"}
-                        {selectedCustomer.socialMediaApp && ` (${selectedCustomer.socialMediaApp})`}
                       </div>
                     </div>
+
+                    {/* Customer Info */}
+                    <div className="flex-1 min-w-0">
+                      {/* Name and Badges Row */}
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <h3 className="text-lg font-semibold text-slate-900">
+                              {selectedCustomer.name}
+                            </h3>
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                          </div>
+                          
+                          {/* Badges */}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {selectedCustomer.type && selectedCustomer.type !== 'regular' && (
+                              <Badge variant="outline" className="text-xs bg-slate-100 border-slate-300 text-slate-700 capitalize">
+                                {selectedCustomer.type}
+                              </Badge>
+                            )}
+                            {selectedCustomer.preferredCurrency && (
+                              <Badge variant="outline" className="text-xs bg-blue-50 border-blue-300 text-blue-700">
+                                {selectedCustomer.preferredCurrency}
+                              </Badge>
+                            )}
+                            {selectedCustomer.isTemporary && (
+                              <Badge variant="outline" className="text-xs bg-purple-50 border-purple-300 text-purple-700">
+                                One-time
+                              </Badge>
+                            )}
+                            {selectedCustomer.needsSaving && (
+                              <Badge variant="outline" className="text-xs bg-orange-50 border-orange-300 text-orange-700">
+                                New Customer
+                              </Badge>
+                            )}
+                            {selectedCustomer.hasPayLaterBadge && (
+                              <Badge variant="outline" className="text-xs bg-yellow-50 border-yellow-300 text-yellow-700">
+                                Pay Later
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedCustomer(null);
+                            setCustomerSearch("");
+                            setQuickCustomerType(null);
+                            setQuickCustomerName("");
+                            setQuickCustomerPhone("");
+                          }}
+                          className="flex-shrink-0"
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Change
+                        </Button>
+                      </div>
+
+                      {/* Contact & Location Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mt-3">
+                        {/* Contact Info */}
+                        {selectedCustomer.phone && (
+                          <div className="flex items-center gap-2 text-sm text-slate-700">
+                            <Phone className="h-4 w-4 text-slate-500" />
+                            <span>{selectedCustomer.phone}</span>
+                            {selectedCustomer.socialMediaApp && (
+                              <Badge variant="secondary" className="text-xs">
+                                {selectedCustomer.socialMediaApp}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                        
+                        {selectedCustomer.email && (
+                          <div className="flex items-center gap-2 text-sm text-slate-700">
+                            <Mail className="h-4 w-4 text-slate-500" />
+                            <span className="truncate">{selectedCustomer.email}</span>
+                          </div>
+                        )}
+                        
+                        {/* Location */}
+                        {(selectedCustomer.city || selectedCustomer.country) && (
+                          <div className="flex items-center gap-2 text-sm text-slate-700">
+                            <MapPin className="h-4 w-4 text-slate-500" />
+                            <span>
+                              {[selectedCustomer.city, selectedCustomer.country].filter(Boolean).join(', ')}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {/* Company */}
+                        {selectedCustomer.company && (
+                          <div className="flex items-center gap-2 text-sm text-slate-700">
+                            <Building className="h-4 w-4 text-slate-500" />
+                            <span className="truncate">{selectedCustomer.company}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Stats Row - Only show for existing customers with data */}
+                      {!selectedCustomer.needsSaving && !selectedCustomer.isTemporary && (
+                        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-green-200">
+                          {selectedCustomer.totalOrders > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <Package className="h-4 w-4 text-green-600" />
+                              <span className="text-sm font-medium text-slate-900">
+                                {selectedCustomer.totalOrders}
+                              </span>
+                              <span className="text-xs text-slate-500">orders</span>
+                            </div>
+                          )}
+                          
+                          {selectedCustomer.totalSpent && parseFloat(selectedCustomer.totalSpent) > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <TrendingUp className="h-4 w-4 text-green-600" />
+                              <span className="text-sm font-medium text-slate-900">
+                                {formatCurrency(parseFloat(selectedCustomer.totalSpent), selectedCustomer.preferredCurrency || 'EUR')}
+                              </span>
+                              <span className="text-xs text-slate-500">total</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedCustomer(null);
-                      setCustomerSearch("");
-                      setQuickCustomerType(null);
-                      setQuickCustomerName("");
-                      setQuickCustomerPhone("");
-                    }}
-                  >
-                    Change
-                  </Button>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             )}
 
             {/* Shipping Address Section */}
