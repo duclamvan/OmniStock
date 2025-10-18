@@ -26,6 +26,8 @@ import {
   insertUserActivitySchema,
   insertPreOrderSchema,
   insertPreOrderItemSchema,
+  insertTicketSchema,
+  insertTicketCommentSchema,
   productCostHistory,
   products,
   productLocations,
@@ -5043,6 +5045,169 @@ Important:
     } catch (error) {
       console.error("Error deleting expense:", error);
       res.status(500).json({ message: "Failed to delete expense" });
+    }
+  });
+
+  // Ticket endpoints
+  app.get('/api/tickets', async (req, res) => {
+    try {
+      const tickets = await storage.getTickets();
+      res.json(tickets);
+    } catch (error) {
+      console.error("Error fetching tickets:", error);
+      res.status(500).json({ message: "Failed to fetch tickets" });
+    }
+  });
+
+  app.get('/api/tickets/:id', async (req, res) => {
+    try {
+      const ticket = await storage.getTicketById(req.params.id);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      res.json(ticket);
+    } catch (error) {
+      console.error("Error fetching ticket:", error);
+      res.status(500).json({ message: "Failed to fetch ticket" });
+    }
+  });
+
+  app.post('/api/tickets', async (req: any, res) => {
+    try {
+      // Generate ticket ID (e.g., TKT-20241018-001)
+      const date = new Date();
+      const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
+      const sequences = await storage.getDailySequences(date);
+      const ticketSeq = sequences.find(s => s.sequenceType === 'ticket');
+      const sequenceNum = ticketSeq ? ticketSeq.lastNumber + 1 : 1;
+      const ticketId = `TKT-${dateStr}-${String(sequenceNum).padStart(3, '0')}`;
+      
+      // Update sequence
+      if (ticketSeq) {
+        await storage.updateDailySequence(ticketSeq.id, sequenceNum);
+      } else {
+        await storage.createDailySequence({
+          date,
+          sequenceType: 'ticket',
+          lastNumber: sequenceNum
+        });
+      }
+      
+      const bodyWithDefaults = {
+        ...req.body,
+        ticketId,
+        createdBy: req.user?.id || "test-user"
+      };
+      
+      const data = insertTicketSchema.parse(bodyWithDefaults);
+      const ticket = await storage.createTicket(data);
+      
+      await storage.createUserActivity({
+        userId: req.user?.id || "test-user",
+        action: 'create',
+        entityType: 'ticket',
+        entityId: ticket.id,
+        description: `Created ticket: ${ticket.title}`,
+      });
+      
+      res.status(201).json(ticket);
+    } catch (error) {
+      console.error("Error creating ticket:", error);
+      res.status(500).json({ message: "Failed to create ticket" });
+    }
+  });
+
+  app.patch('/api/tickets/:id', async (req: any, res) => {
+    try {
+      const existingTicket = await storage.getTicketById(req.params.id);
+      if (!existingTicket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+
+      // If status is being changed to 'resolved' or 'closed', set resolvedAt
+      if ((req.body.status === 'resolved' || req.body.status === 'closed') && !existingTicket.resolvedAt) {
+        req.body.resolvedAt = new Date();
+      }
+
+      const ticket = await storage.updateTicket(req.params.id, req.body);
+      
+      await storage.createUserActivity({
+        userId: req.user?.id || "test-user",
+        action: 'update',
+        entityType: 'ticket',
+        entityId: req.params.id,
+        description: `Updated ticket: ${ticket.title}`,
+      });
+      
+      res.json(ticket);
+    } catch (error) {
+      console.error("Error updating ticket:", error);
+      res.status(500).json({ message: "Failed to update ticket" });
+    }
+  });
+
+  app.delete('/api/tickets/:id', async (req: any, res) => {
+    try {
+      const ticket = await storage.getTicketById(req.params.id);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      await storage.deleteTicket(req.params.id);
+      
+      await storage.createUserActivity({
+        userId: req.user?.id || "test-user",
+        action: 'delete',
+        entityType: 'ticket',
+        entityId: req.params.id,
+        description: `Deleted ticket: ${ticket.title}`,
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting ticket:", error);
+      res.status(500).json({ message: "Failed to delete ticket" });
+    }
+  });
+
+  app.get('/api/tickets/:id/comments', async (req, res) => {
+    try {
+      const comments = await storage.getTicketComments(req.params.id);
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching ticket comments:", error);
+      res.status(500).json({ message: "Failed to fetch ticket comments" });
+    }
+  });
+
+  app.post('/api/tickets/:id/comments', async (req: any, res) => {
+    try {
+      const ticket = await storage.getTicketById(req.params.id);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+
+      const commentData = {
+        ticketId: req.params.id,
+        content: req.body.content,
+        isInternal: req.body.isInternal || false,
+        createdBy: req.user?.id || "test-user"
+      };
+      
+      const comment = await storage.addTicketComment(commentData);
+      
+      await storage.createUserActivity({
+        userId: req.user?.id || "test-user",
+        action: 'create',
+        entityType: 'ticket_comment',
+        entityId: comment.id,
+        description: `Added comment to ticket: ${ticket.title}`,
+      });
+      
+      res.status(201).json(comment);
+    } catch (error) {
+      console.error("Error adding ticket comment:", error);
+      res.status(500).json({ message: "Failed to add ticket comment" });
     }
   });
 
