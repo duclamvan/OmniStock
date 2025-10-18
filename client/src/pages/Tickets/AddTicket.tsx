@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,25 +21,11 @@ import { format, addDays, addWeeks } from "date-fns";
 import OpenAI from "openai";
 
 const URGENCY_OPTIONS = [
-  { value: "low", label: "Low", color: "text-slate-700 font-semibold", bgColor: "bg-slate-200" },
-  { value: "medium", label: "Medium", color: "text-yellow-700 font-semibold", bgColor: "bg-yellow-200" },
-  { value: "high", label: "High", color: "text-orange-700 font-semibold", bgColor: "bg-orange-200" },
-  { value: "urgent", label: "Urgent", color: "text-red-700 font-semibold", bgColor: "bg-red-200" },
+  { value: "low", label: "Low", color: "text-slate-700", bgColor: "bg-slate-200" },
+  { value: "medium", label: "Medium", color: "text-yellow-700", bgColor: "bg-yellow-200" },
+  { value: "high", label: "High", color: "text-orange-700", bgColor: "bg-orange-200" },
+  { value: "urgent", label: "Urgent", color: "text-red-700", bgColor: "bg-red-200" },
 ];
-
-const getNotifyDateOptions = () => {
-  const today = new Date();
-  return [
-    { value: format(addDays(today, 1), "yyyy-MM-dd"), label: "Tomorrow" },
-    { value: format(addDays(today, 2), "yyyy-MM-dd"), label: "In 2 days" },
-    { value: format(addDays(today, 3), "yyyy-MM-dd"), label: "In 3 days" },
-    { value: format(addDays(today, 5), "yyyy-MM-dd"), label: "In 5 days" },
-    { value: format(addWeeks(today, 1), "yyyy-MM-dd"), label: "In 1 week" },
-    { value: format(addWeeks(today, 2), "yyyy-MM-dd"), label: "In 2 weeks" },
-    { value: format(addWeeks(today, 3), "yyyy-MM-dd"), label: "In 3 weeks" },
-    { value: format(addWeeks(today, 4), "yyyy-MM-dd"), label: "In 1 month" },
-  ];
-};
 
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY || "sk-placeholder",
@@ -63,6 +49,21 @@ export default function AddTicket() {
   const { data: customers = [] } = useQuery<any[]>({
     queryKey: ["/api/customers"],
   });
+  
+  // Memoize notify date options to prevent recalculation on every render
+  const notifyDateOptions = useMemo(() => {
+    const today = new Date();
+    return [
+      { value: format(addDays(today, 1), "yyyy-MM-dd"), label: "Tomorrow" },
+      { value: format(addDays(today, 2), "yyyy-MM-dd"), label: "In 2 days" },
+      { value: format(addDays(today, 3), "yyyy-MM-dd"), label: "In 3 days" },
+      { value: format(addDays(today, 5), "yyyy-MM-dd"), label: "In 5 days" },
+      { value: format(addWeeks(today, 1), "yyyy-MM-dd"), label: "In 1 week" },
+      { value: format(addWeeks(today, 2), "yyyy-MM-dd"), label: "In 2 weeks" },
+      { value: format(addWeeks(today, 3), "yyyy-MM-dd"), label: "In 3 weeks" },
+      { value: format(addWeeks(today, 4), "yyyy-MM-dd"), label: "In 1 month" },
+    ];
+  }, []);
 
   const createTicketMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/tickets", data),
@@ -92,6 +93,12 @@ export default function AddTicket() {
     setCustomerSearch(customer.name);
     setShowCustomerDropdown(false);
   };
+  
+  const selectedUrgency = URGENCY_OPTIONS.find(opt => opt.value === urgency);
+  const selectedNotifyLabel = notifyDateOptions.find(opt => opt.value === notifyDate)?.label || 
+                               (notifyDate === "NONE" ? "No reminder" : 
+                                notifyDate === "custom" ? "Custom date..." : 
+                                notifyDate ? format(new Date(notifyDate), "MMM d, yyyy") : "");
 
   const generateSubject = async (descriptionText: string) => {
     if (!descriptionText.trim() || descriptionText.length < 10) return;
@@ -170,12 +177,9 @@ export default function AddTicket() {
       description: description || "",
       priority: urgency,
       status: "open",
-      notifyDate: notifyDate || null,
+      notifyDate: notifyDate && notifyDate !== "NONE" && notifyDate !== "custom" ? notifyDate : null,
     });
   };
-
-  const notifyDateOptions = getNotifyDateOptions();
-  const selectedUrgency = URGENCY_OPTIONS.find(opt => opt.value === urgency);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -314,27 +318,23 @@ export default function AddTicket() {
                   Urgency
                 </Label>
                 <Select value={urgency} onValueChange={setUrgency}>
-                  <SelectTrigger id="urgency" data-testid="select-urgency">
-                    <SelectValue>
-                      {selectedUrgency && (
-                        <span className={`flex items-center gap-2 ${selectedUrgency.color}`}>
-                          <span className={`w-2 h-2 rounded-full ${selectedUrgency.bgColor}`}></span>
-                          {selectedUrgency.label}
-                        </span>
-                      )}
-                    </SelectValue>
+                  <SelectTrigger id="urgency" data-testid="select-urgency" className="h-10">
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {URGENCY_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        <span className={`flex items-center gap-2 ${option.color}`}>
-                          <span className={`w-2 h-2 rounded-full ${option.bgColor}`}></span>
-                          {option.label}
-                        </span>
+                        {option.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {selectedUrgency && (
+                  <div className={`flex items-center gap-2 text-sm font-medium ${selectedUrgency.color} mt-1`}>
+                    <span className={`w-2 h-2 rounded-full ${selectedUrgency.bgColor}`}></span>
+                    {selectedUrgency.label} priority selected
+                  </div>
+                )}
               </div>
 
               {/* Notify Date */}
@@ -344,7 +344,7 @@ export default function AddTicket() {
                   Notify Date (Optional)
                 </Label>
                 <Select value={notifyDate} onValueChange={setNotifyDate}>
-                  <SelectTrigger id="notifyDate" data-testid="select-notify-date">
+                  <SelectTrigger id="notifyDate" data-testid="select-notify-date" className="h-10">
                     <SelectValue placeholder="Set reminder..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -357,6 +357,11 @@ export default function AddTicket() {
                     <SelectItem value="custom">Custom date...</SelectItem>
                   </SelectContent>
                 </Select>
+                {selectedNotifyLabel && notifyDate && notifyDate !== "NONE" && (
+                  <p className="text-sm text-slate-600 mt-1">
+                    Notify on: <span className="font-medium">{selectedNotifyLabel}</span>
+                  </p>
+                )}
               </div>
             </div>
 
