@@ -6425,8 +6425,8 @@ Important:
       let estimatedShippingCost = 0;
       for (const carton of packingPlan.cartons) {
         const cartonInfo = cartons.find(c => c.id === carton.cartonId);
-        if (cartonInfo && cartonInfo.shippingCost) {
-          estimatedShippingCost += parseFloat(cartonInfo.shippingCost);
+        if (cartonInfo && cartonInfo.costAmount) {
+          estimatedShippingCost += parseFloat(cartonInfo.costAmount.toString());
         }
       }
 
@@ -6443,12 +6443,12 @@ Important:
             cartonNumber: carton.cartonNumber,
             cartonId: carton.cartonId,
             cartonName: cartonInfo?.name || 'Unknown',
-            dimensions: cartonInfo ? `${cartonInfo.lengthCm}x${cartonInfo.widthCm}x${cartonInfo.heightCm}cm` : '',
+            dimensions: cartonInfo ? `${cartonInfo.innerLengthCm}x${cartonInfo.innerWidthCm}x${cartonInfo.innerHeightCm}` : '',
             weight: carton.totalWeightKg,
-            utilization: carton.utilization,
+            utilization: carton.volumeUtilization,
             items: carton.items.map(item => ({
               productId: item.productId,
-              productName: item.productName,
+              productName: enrichedItems.find(ei => ei.productId === item.productId)?.productName || 'Unknown',
               quantity: item.quantity,
               weight: item.weightKg,
               isEstimated: item.aiEstimated

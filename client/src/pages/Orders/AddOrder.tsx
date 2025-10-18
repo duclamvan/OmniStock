@@ -474,7 +474,7 @@ export default function AddOrder() {
 
   // Get unique product IDs from cart items
   const uniqueProductIds = useMemo(() => {
-    return Array.from(new Set(orderItems.map(item => item.productId)));
+    return Array.from(new Set(orderItems.map(item => item.productId).filter((id): id is string => !!id)));
   }, [orderItems]);
 
   // Fetch product files for all products in the cart
@@ -779,9 +779,103 @@ export default function AddOrder() {
         price: item.price
       }));
       
+      // Get shipping country code from customer with comprehensive mapping
+      let shippingCountry = 'CZ'; // Fallback if no customer country provided
+      if (selectedCustomer?.country) {
+        const countryInput = selectedCustomer.country.trim();
+        const country = countryInput.toLowerCase();
+        
+        // Comprehensive country name to ISO code mapping
+        const countryMap: Record<string, string> = {
+          // Czech variants
+          'czechia': 'CZ', 'czech republic': 'CZ', 'česko': 'CZ', 'česká republika': 'CZ', 'cz': 'CZ',
+          // Germany variants
+          'germany': 'DE', 'deutschland': 'DE', 'německo': 'DE', 'de': 'DE',
+          // Austria variants
+          'austria': 'AT', 'österreich': 'AT', 'rakousko': 'AT', 'at': 'AT',
+          // Slovakia variants
+          'slovakia': 'SK', 'slovensko': 'SK', 'slovak republic': 'SK', 'sk': 'SK',
+          // Poland variants
+          'poland': 'PL', 'polska': 'PL', 'polsko': 'PL', 'pl': 'PL',
+          // Hungary variants
+          'hungary': 'HU', 'magyarország': 'HU', 'maďarsko': 'HU', 'hu': 'HU',
+          // Other European countries
+          'france': 'FR', 'francie': 'FR', 'fr': 'FR',
+          'italy': 'IT', 'itálie': 'IT', 'italia': 'IT', 'it': 'IT',
+          'spain': 'ES', 'españa': 'ES', 'španělsko': 'ES', 'es': 'ES',
+          'netherlands': 'NL', 'holland': 'NL', 'nizozemsko': 'NL', 'nl': 'NL',
+          'belgium': 'BE', 'belgië': 'BE', 'belgique': 'BE', 'belgie': 'BE', 'be': 'BE',
+          'switzerland': 'CH', 'schweiz': 'CH', 'suisse': 'CH', 'švýcarsko': 'CH', 'ch': 'CH',
+          'romania': 'RO', 'românia': 'RO', 'rumunsko': 'RO', 'ro': 'RO',
+          'bulgaria': 'BG', 'българия': 'BG', 'bulharsko': 'BG', 'bg': 'BG',
+          'denmark': 'DK', 'danmark': 'DK', 'dánsko': 'DK', 'dk': 'DK',
+          'sweden': 'SE', 'sverige': 'SE', 'švédsko': 'SE', 'se': 'SE',
+          'norway': 'NO', 'norge': 'NO', 'norsko': 'NO', 'no': 'NO',
+          'finland': 'FI', 'suomi': 'FI', 'finsko': 'FI', 'fi': 'FI',
+          'portugal': 'PT', 'portugalsko': 'PT', 'pt': 'PT',
+          'greece': 'GR', 'hellas': 'GR', 'řecko': 'GR', 'gr': 'GR',
+          'ireland': 'IE', 'éire': 'IE', 'irsko': 'IE', 'ie': 'IE',
+          'croatia': 'HR', 'hrvatska': 'HR', 'chorvatsko': 'HR', 'hr': 'HR',
+          'slovenia': 'SI', 'slovenija': 'SI', 'slovinsko': 'SI', 'si': 'SI',
+          'lithuania': 'LT', 'lietuva': 'LT', 'litva': 'LT', 'lt': 'LT',
+          'latvia': 'LV', 'latvija': 'LV', 'lotyšsko': 'LV', 'lv': 'LV',
+          'estonia': 'EE', 'eesti': 'EE', 'estonsko': 'EE', 'ee': 'EE',
+          'luxembourg': 'LU', 'lëtzebuerg': 'LU', 'lucembursko': 'LU', 'lu': 'LU',
+          'malta': 'MT', 'malte': 'MT', 'mt': 'MT',
+          'cyprus': 'CY', 'κύπρος': 'CY', 'kypr': 'CY', 'cy': 'CY',
+          // Other regions
+          'united states': 'US', 'usa': 'US', 'america': 'US', 'spojené státy': 'US', 'us': 'US',
+          'united kingdom': 'GB', 'uk': 'GB', 'great britain': 'GB', 'velká británie': 'GB', 'gb': 'GB',
+          'canada': 'CA', 'kanada': 'CA', 'ca': 'CA',
+          'australia': 'AU', 'austrálie': 'AU', 'au': 'AU',
+          'new zealand': 'NZ', 'nový zéland': 'NZ', 'nz': 'NZ',
+          'mexico': 'MX', 'mexiko': 'MX', 'mx': 'MX',
+          'brazil': 'BR', 'brasil': 'BR', 'brazílie': 'BR', 'br': 'BR',
+          'argentina': 'AR', 'ar': 'AR',
+          'china': 'CN', 'čína': 'CN', 'cn': 'CN',
+          'vietnam': 'VN', 'viet nam': 'VN', 'việt nam': 'VN', 'vn': 'VN',
+          'japan': 'JP', '日本': 'JP', 'japonsko': 'JP', 'jp': 'JP',
+          'south korea': 'KR', 'korea': 'KR', '한국': 'KR', 'jižní korea': 'KR', 'kr': 'KR',
+          'india': 'IN', 'indie': 'IN', 'in': 'IN',
+          'singapore': 'SG', 'singapur': 'SG', 'sg': 'SG',
+          'thailand': 'TH', 'thajsko': 'TH', 'th': 'TH',
+          'malaysia': 'MY', 'malajsie': 'MY', 'my': 'MY',
+          'indonesia': 'ID', 'indonésie': 'ID', 'id': 'ID',
+          'philippines': 'PH', 'filipíny': 'PH', 'ph': 'PH',
+          'south africa': 'ZA', 'jižní afrika': 'ZA', 'za': 'ZA',
+          'israel': 'IL', 'izrael': 'IL', 'il': 'IL',
+          'turkey': 'TR', 'turecko': 'TR', 'tr': 'TR',
+          'uae': 'AE', 'united arab emirates': 'AE', 'ae': 'AE',
+          'oman': 'OM', 'om': 'OM',
+          'qatar': 'QA', 'katar': 'QA', 'qa': 'QA',
+          'kuwait': 'KW', 'kuvajt': 'KW', 'kw': 'KW',
+          'saudi arabia': 'SA', 'saúdská arábie': 'SA', 'sa': 'SA',
+        };
+        
+        // Try exact match (handles ISO codes and all mapped country names)
+        if (countryMap[country]) {
+          shippingCountry = countryMap[country];
+        } else {
+          // No match found - preserve the customer's original country value
+          // If it looks like an ISO code (2 letters), use it uppercased
+          if (countryInput.length === 2) {
+            shippingCountry = countryInput.toUpperCase();
+            console.log(`Packing optimization: Using customer country as ISO code: "${shippingCountry}"`);
+          } else {
+            // For longer unmapped values, send original to backend for validation
+            shippingCountry = countryInput;
+            console.warn(`Packing optimization: Unmapped customer country "${countryInput}", sending to backend as-is for validation`);
+          }
+        }
+        
+        console.log(`Packing optimization: Mapped customer country "${selectedCustomer.country}" to ISO code "${shippingCountry}"`);
+      } else {
+        console.log(`Packing optimization: No customer country set, using default "${shippingCountry}"`);
+      }
+      
       const response = await apiRequest('POST', '/api/packing/optimize', {
         items,
-        shippingCountry: 'CZ'
+        shippingCountry
       });
       return response.json();
     },
@@ -2817,8 +2911,8 @@ export default function AddOrder() {
 
         {/* Document Selection */}
         <OrderDocumentSelector
-          orderItems={orderItems.map(item => ({
-            productId: item.productId,
+          orderItems={orderItems.filter(item => item.productId).map(item => ({
+            productId: item.productId!,
             productName: item.productName,
             sku: item.sku,
             quantity: item.quantity
@@ -2829,16 +2923,16 @@ export default function AddOrder() {
 
         {/* AI Carton Packing Optimization Panel */}
         {orderItems.length > 0 && (
-          <Card className="shadow-sm">
-            <CardHeader className="p-4 sm:p-6">
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                    <Box className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-                    AI Carton Packing
+          <Card className="shadow-sm border-2 border-blue-100 dark:border-blue-900">
+            <CardHeader className="p-4 sm:p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1 flex-1">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-semibold">
+                    <Box className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
+                    AI Carton Packing Optimization
                   </CardTitle>
                   <CardDescription className="text-xs sm:text-sm">
-                    Automatically calculate optimal carton sizes and shipping costs
+                    Automatically calculate optimal carton sizes and shipping costs using AI
                   </CardDescription>
                 </div>
                 <Button
@@ -2846,7 +2940,8 @@ export default function AddOrder() {
                   onClick={runPackingOptimization}
                   disabled={packingOptimizationMutation.isPending}
                   data-testid="button-run-packing-optimization"
-                  className="ml-2"
+                  className="shrink-0 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                  size="lg"
                 >
                   {packingOptimizationMutation.isPending ? (
                     <>
@@ -2856,7 +2951,7 @@ export default function AddOrder() {
                   ) : (
                     <>
                       <Package className="h-4 w-4 mr-2" />
-                      Run AI Optimization
+                      Run Optimization
                     </>
                   )}
                 </Button>
@@ -2864,7 +2959,7 @@ export default function AddOrder() {
             </CardHeader>
 
             {packingPlan && (
-              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
+              <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
                 {/* Summary Cards */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   {/* Total Cartons */}
@@ -2949,38 +3044,50 @@ export default function AddOrder() {
 
                 {/* Detailed Carton Breakdown */}
                 {packingPlan.cartons && packingPlan.cartons.length > 0 && (
-                  <div className="space-y-2">
-                    <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                      <Box className="h-4 w-4" />
-                      Carton Breakdown
-                    </h4>
-                    <Accordion type="single" collapsible className="w-full">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-gray-700">
+                      <Box className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      <h4 className="font-semibold text-base text-gray-900 dark:text-gray-100">
+                        Carton Breakdown
+                      </h4>
+                      <Badge variant="secondary" className="ml-auto">
+                        {packingPlan.cartons.length} {packingPlan.cartons.length === 1 ? 'Carton' : 'Cartons'}
+                      </Badge>
+                    </div>
+                    <Accordion type="single" collapsible className="w-full space-y-2">
                       {packingPlan.cartons.map((carton: any, index: number) => (
                         <AccordionItem 
                           key={index} 
                           value={`carton-${index}`}
                           data-testid={`accordion-carton-${index + 1}`}
+                          className="border rounded-lg px-4 bg-white dark:bg-gray-900"
                         >
-                          <AccordionTrigger className="hover:no-underline">
+                          <AccordionTrigger className="hover:no-underline py-4">
                             <div className="flex items-center justify-between w-full pr-4">
-                              <div className="flex items-center gap-2">
-                                <Box className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                <span className="font-medium">
-                                  Carton #{index + 1}: {carton.cartonName || 'Standard Box'}
-                                  {carton.dimensions && ` (${carton.dimensions})`}
-                                </span>
+                              <div className="flex flex-col items-start gap-1">
+                                <div className="flex items-center gap-2">
+                                  <Box className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                  <span className="font-semibold text-sm sm:text-base">
+                                    Carton #{index + 1}: {carton.cartonName || 'Standard Box'}
+                                  </span>
+                                </div>
+                                {carton.dimensions && (
+                                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-6">
+                                    {carton.dimensions} cm
+                                  </span>
+                                )}
                               </div>
                               <Badge 
                                 variant="outline" 
-                                className={
+                                className={`shrink-0 ${
                                   (carton.utilization || 0) > 80 
                                     ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' 
                                     : (carton.utilization || 0) > 70 
                                     ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700' 
                                     : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-300 dark:border-red-700'
-                                }
+                                }`}
                               >
-                                {carton.utilization ? `${carton.utilization.toFixed(1)}%` : '0%'} utilized
+                                {carton.utilization ? `${carton.utilization.toFixed(1)}%` : '0%'}
                               </Badge>
                             </div>
                           </AccordionTrigger>
@@ -3490,8 +3597,8 @@ export default function AddOrder() {
                       Product Files
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {orderItems.map((item) => {
-                        const files = productFilesData[item.productId] || [];
+                      {orderItems.filter(item => item.productId).map((item) => {
+                        const files = productFilesData[item.productId!] || [];
                         if (files.length === 0) return null;
                         
                         return files.map((file: any) => (
