@@ -53,6 +53,7 @@ interface PurchaseItem {
   imageUrl?: string;
   imageFile?: File | null;
   binLocation?: string;
+  processingTimeDays?: number;
 }
 
 interface Supplier {
@@ -89,7 +90,6 @@ export default function CreatePurchase() {
   const supplierDropdownRef = useRef<HTMLDivElement>(null);
   const productDropdownRef = useRef<HTMLDivElement>(null);
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
-  const locationDropdownRef = useRef<HTMLDivElement>(null);
 
   // Form state
   const [purchaseCurrency, setPurchaseCurrency] = useState("USD");
@@ -101,8 +101,6 @@ export default function CreatePurchase() {
   const [addingCurrency, setAddingCurrency] = useState(false);
   const [supplier, setSupplier] = useState("");
   const [supplierId, setSupplierId] = useState<string | null>(null);
-  const [supplierLink, setSupplierLink] = useState("");
-  const [supplierLocation, setSupplierLocation] = useState("");
   const [supplierDropdownOpen, setSupplierDropdownOpen] = useState(false);
   const [trackingNumber, setTrackingNumber] = useState("");
   const [purchaseDate, setPurchaseDate] = useState("");
@@ -141,14 +139,6 @@ export default function CreatePurchase() {
     return symbols[currency] || currency + " ";
   };
   
-  // New supplier dialog
-  const [newSupplierDialogOpen, setNewSupplierDialogOpen] = useState(false);
-  const [newSupplierName, setNewSupplierName] = useState("");
-  const [newSupplierContact, setNewSupplierContact] = useState("");
-  const [newSupplierEmail, setNewSupplierEmail] = useState("");
-  const [newSupplierPhone, setNewSupplierPhone] = useState("");
-  const [newSupplierWebsite, setNewSupplierWebsite] = useState("");
-  const [newSupplierLocation, setNewSupplierLocation] = useState("");
   
   // Product search state
   const [productDropdownOpen, setProductDropdownOpen] = useState(false);
@@ -159,10 +149,8 @@ export default function CreatePurchase() {
   // Category dropdown state
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   
-  // Location search state
-  const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
-  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
-  const [locationSearchTimeout, setLocationSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  // Product search debounce state
+  const [productSearchTimeout, setProductSearchTimeout] = useState<NodeJS.Timeout | null>(null);
   
   // Items state
   const [items, setItems] = useState<PurchaseItem[]>([]);
@@ -278,9 +266,6 @@ export default function CreatePurchase() {
       if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
         setCategoryDropdownOpen(false);
       }
-      if (locationDropdownRef.current && !locationDropdownRef.current.contains(event.target as Node)) {
-        setLocationDropdownOpen(false);
-      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -352,30 +337,6 @@ export default function CreatePurchase() {
   const displayGrandTotal = displayCurrency === purchaseCurrency ? grandTotal : convertFromUSD(grandTotalUSD, displayCurrency);
   const displayCurrencySymbol = getCurrencySymbol(displayCurrency);
 
-  // Mock create new supplier mutation
-  const createSupplierMutation = {
-    mutate: (data: any) => {
-      const newSupplier = {
-        id: String(Date.now()),
-        name: data.name,
-        website: data.website || "",
-        location: data.location || ""
-      };
-      setSupplier(newSupplier.name);
-      setSupplierId(newSupplier.id);
-      setSupplierLink(newSupplier.website || "");
-      setSupplierLocation(newSupplier.location || "");
-      setNewSupplierDialogOpen(false);
-      setNewSupplierName("");
-      setNewSupplierContact("");
-      setNewSupplierEmail("");
-      setNewSupplierPhone("");
-      setNewSupplierWebsite("");
-      setNewSupplierLocation("");
-      toast({ title: "Success", description: "Supplier added successfully (mock)" });
-    },
-    isPending: false
-  };
 
   // Create purchase mutation
   const createPurchaseMutation = useMutation({
@@ -418,121 +379,6 @@ export default function CreatePurchase() {
     }
   });
 
-  // Mock data for editing - same as in SupplierProcessing
-  const mockPurchases: any[] = [
-    {
-      id: 1,
-      supplier: "Hong Kong Trading Co.",
-      supplierLocation: "China", 
-      trackingNumber: "HK2024031501",
-      estimatedArrival: "2024-04-15T00:00:00Z",
-      notes: "Priority shipment - customer waiting",
-      shippingCost: "250.00",
-      totalCost: "5250.00",
-      paymentCurrency: "USD",
-      totalPaid: "5250.00",
-      purchaseCurrency: "USD",
-      purchaseTotal: "5000.00",
-      exchangeRate: "1.00",
-      status: "at_warehouse",
-      createdAt: "2024-03-15T10:00:00Z",
-      updatedAt: "2024-03-15T10:00:00Z",
-      items: [
-        { id: 1, purchaseId: 1, name: "iPhone 15 Pro Max", sku: "IPH15PM256", quantity: 5, unitPrice: "899.00", weight: "0.221", dimensions: "15x7x1", notes: null },
-        { id: 2, purchaseId: 1, name: "AirPods Pro 2", sku: "APP2023", quantity: 10, unitPrice: "189.00", weight: "0.051", dimensions: "5x5x2", notes: null },
-        { id: 3, purchaseId: 1, name: "MacBook Air M2", sku: "MBA13M2", quantity: 3, unitPrice: "1099.00", weight: "1.24", dimensions: "30x21x1.5", notes: null }
-      ]
-    },
-    {
-      id: 2,
-      supplier: "Shenzhen Electronics Ltd",
-      supplierLocation: "China",
-      trackingNumber: "SZ2024031502",
-      estimatedArrival: "2024-04-20T00:00:00Z",
-      notes: "Contains fragile items",
-      shippingCost: "180.00",
-      totalCost: "3680.00",
-      paymentCurrency: "CNY",
-      totalPaid: "26500.00",
-      purchaseCurrency: "CNY",
-      purchaseTotal: "25200.00",
-      exchangeRate: "7.2",
-      status: "processing",
-      createdAt: "2024-03-16T14:30:00Z",
-      updatedAt: "2024-03-16T14:30:00Z",
-      items: [
-        { id: 4, purchaseId: 2, name: "Samsung Galaxy S24 Ultra", sku: "SGS24U512", quantity: 8, unitPrice: "7800.00", weight: "0.233", dimensions: "16x8x1", notes: null },
-        { id: 5, purchaseId: 2, name: "Galaxy Watch 6", sku: "GW6BT44", quantity: 15, unitPrice: "1800.00", weight: "0.059", dimensions: "4x4x1", notes: null }
-      ]
-    },
-    {
-      id: 3,
-      supplier: "Vietnam Textiles Export",
-      supplierLocation: "Vietnam",
-      trackingNumber: "VN2024031503",
-      estimatedArrival: "2024-04-10T00:00:00Z",
-      notes: "Seasonal collection",
-      shippingCost: "95.00",
-      totalCost: "2095.00",
-      paymentCurrency: "VND",
-      totalPaid: "52000000",
-      purchaseCurrency: "VND",
-      purchaseTotal: "50000000",
-      exchangeRate: "24800",
-      status: "shipped",
-      createdAt: "2024-03-17T09:15:00Z",
-      updatedAt: "2024-03-17T09:15:00Z",
-      items: [
-        { id: 6, purchaseId: 3, name: "Cotton T-Shirts (Pack of 50)", sku: "CTS50BLK", quantity: 4, unitPrice: "12500000", weight: "10.0", dimensions: "60x40x30", notes: null },
-        { id: 7, purchaseId: 3, name: "Denim Jeans (Pack of 30)", sku: "DJ30BLU", quantity: 2, unitPrice: "15000000", weight: "15.0", dimensions: "60x40x40", notes: null }
-      ]
-    },
-    {
-      id: 4,
-      supplier: "European Luxury Goods",
-      supplierLocation: "Europe",
-      trackingNumber: "EU2024031504",
-      estimatedArrival: "2024-04-25T00:00:00Z",
-      notes: "High-value items, insurance required",
-      shippingCost: "450.00",
-      totalCost: "12450.00",
-      paymentCurrency: "EUR",
-      totalPaid: "11500.00",
-      purchaseCurrency: "EUR",
-      purchaseTotal: "11000.00",
-      exchangeRate: "1.08",
-      status: "pending",
-      createdAt: "2024-03-18T16:45:00Z",
-      updatedAt: "2024-03-18T16:45:00Z",
-      items: [
-        { id: 8, purchaseId: 4, name: "Designer Handbag Collection", sku: "DHB2024SS", quantity: 5, unitPrice: "1800.00", weight: "1.2", dimensions: "35x25x15", notes: null },
-        { id: 9, purchaseId: 4, name: "Luxury Watch Set", sku: "LWS2024", quantity: 3, unitPrice: "3500.00", weight: "0.5", dimensions: "20x15x10", notes: null }
-      ]
-    },
-    {
-      id: 5,
-      supplier: "USA Tech Distributors",
-      supplierLocation: "USA",
-      trackingNumber: "US2024031505",
-      estimatedArrival: "2024-04-18T00:00:00Z",
-      notes: "",
-      shippingCost: "320.00",
-      totalCost: "8320.00",
-      paymentCurrency: "USD",
-      totalPaid: "8320.00",
-      purchaseCurrency: "USD",
-      purchaseTotal: "8000.00",
-      exchangeRate: "1.00",
-      status: "delivered",
-      createdAt: "2024-03-10T11:20:00Z",
-      updatedAt: "2024-03-10T11:20:00Z",
-      items: [
-        { id: 10, purchaseId: 5, name: "Dell XPS 15 Laptop", sku: "DXPS15I9", quantity: 4, unitPrice: "1599.00", weight: "2.05", dimensions: "36x25x2", notes: null },
-        { id: 11, purchaseId: 5, name: "iPad Pro 12.9\"", sku: "IPADP13M2", quantity: 6, unitPrice: "1099.00", weight: "0.682", dimensions: "28x21x0.6", notes: null },
-        { id: 12, purchaseId: 5, name: "Sony WH-1000XM5", sku: "SONYWH5", quantity: 12, unitPrice: "299.00", weight: "0.250", dimensions: "23x20x5", notes: null }
-      ]
-    }
-  ];
 
   // Fetch existing purchase data from API when in edit mode
   const { data: existingPurchase, isLoading: loadingPurchase } = useQuery({
@@ -540,25 +386,6 @@ export default function CreatePurchase() {
     enabled: isEditMode
   });
 
-  const handleAddNewSupplier = () => {
-    if (!newSupplierName.trim()) {
-      toast({ 
-        title: "Validation Error", 
-        description: "Please enter supplier name", 
-        variant: "destructive" 
-      });
-      return;
-    }
-
-    createSupplierMutation.mutate({
-      name: newSupplierName,
-      contactPerson: newSupplierContact || null,
-      email: newSupplierEmail || null,
-      phone: newSupplierPhone || null,
-      website: newSupplierWebsite || null,
-      location: newSupplierLocation || null
-    });
-  };
 
   const selectProduct = async (product: Product) => {
     // Fetch product location from inventory
@@ -636,55 +463,11 @@ export default function CreatePurchase() {
       notes: "",
       totalPrice: 0,
       costWithShipping: 0,
-      binLocation: "TBA"
+      binLocation: "TBA",
+      processingTimeDays: undefined
     });
   };
 
-  // Search for locations using Nominatim API
-  const searchLocations = async (query: string) => {
-    if (query.length < 2) {
-      setLocationSuggestions([]);
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`
-      );
-      const data = await response.json();
-      
-      // Format suggestions to show city and country
-      const formatted = data.map((item: any) => ({
-        display_name: item.display_name,
-        city: item.address?.city || item.address?.town || item.address?.village || item.address?.state || '',
-        country: item.address?.country || '',
-        formatted: `${item.address?.city || item.address?.town || item.address?.village || item.address?.state || ''}, ${item.address?.country || ''}`.replace(/^, |, $/, '')
-      })).filter((item: any) => item.formatted && item.formatted !== ', ');
-      
-      setLocationSuggestions(formatted);
-    } catch (error) {
-      console.error('Error fetching location suggestions:', error);
-      setLocationSuggestions([]);
-    }
-  };
-
-  // Handle location input change with debouncing
-  const handleLocationChange = (value: string) => {
-    setSupplierLocation(value);
-    setLocationDropdownOpen(true);
-    
-    // Clear existing timeout
-    if (locationSearchTimeout) {
-      clearTimeout(locationSearchTimeout);
-    }
-    
-    // Set new timeout for debounced search
-    const timeout = setTimeout(() => {
-      searchLocations(value);
-    }, 300);
-    
-    setLocationSearchTimeout(timeout);
-  };
 
   // Load frequent suppliers on mount
   useEffect(() => {
@@ -706,8 +489,6 @@ export default function CreatePurchase() {
       // Set basic fields with explicit type conversions to ensure state updates
       setSupplier(String(purchase?.supplier || ""));
       setSupplierId(purchase?.supplierId || null);
-      setSupplierLink(String(purchase?.supplierLink || ""));
-      setSupplierLocation(String(purchase?.supplierLocation || ""));
       setTrackingNumber(String(purchase?.trackingNumber || ""));
       setNotes(String(purchase?.notes || ""));
       setShippingCost(Number(purchase?.shippingCost) || 0);
@@ -746,7 +527,8 @@ export default function CreatePurchase() {
           dimensions: String(item.dimensions || ""),
           notes: String(item.notes || ""),
           totalPrice: Number(item.quantity) * Number(item.unitPrice),
-          costWithShipping: 0
+          costWithShipping: 0,
+          processingTimeDays: item.processingTimeDays ? Number(item.processingTimeDays) : undefined
         }));
         setItems(loadedItems);
         
@@ -791,7 +573,8 @@ export default function CreatePurchase() {
       productId: selectedProduct?.id,
       imageUrl: selectedProduct?.imageUrl,
       imageFile: productImageFile,
-      binLocation: currentItem.binLocation || "TBA"
+      binLocation: currentItem.binLocation || "TBA",
+      processingTimeDays: currentItem.processingTimeDays
     };
 
     const updatedItems = [...items, newItem];
@@ -812,7 +595,8 @@ export default function CreatePurchase() {
       weight: 0,
       dimensions: "",
       notes: "",
-      binLocation: "TBA"
+      binLocation: "TBA",
+      processingTimeDays: undefined
     });
   };
 
@@ -1027,7 +811,8 @@ export default function CreatePurchase() {
       unitPrice: 0,
       weight: 0,
       dimensions: "",
-      notes: ""
+      notes: "",
+      processingTimeDays: undefined
     });
     setVariants([]);
     setShowVariants(false);
@@ -1043,11 +828,6 @@ export default function CreatePurchase() {
     });
   };
   
-  // These functions are no longer needed with inline editing
-  // Keeping them commented in case we need to revert
-  // const startEditItem = (item: PurchaseItem) => { ... }
-  // const saveEditItem = () => { ... }
-  // const cancelEditItem = () => { ... }
 
   const updateItemsWithShipping = (updatedItems: PurchaseItem[]) => {
     const totalQty = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -1122,8 +902,6 @@ export default function CreatePurchase() {
       // Other fields
       supplier,
       supplierId,
-      supplierLink: supplierLink || null,
-      supplierLocation: supplierLocation || null,
       purchaseDate: purchaseDate ? new Date(purchaseDate).toISOString() : new Date().toISOString(),
       trackingNumber: trackingNumber || null,
       estimatedArrival,
@@ -1167,7 +945,8 @@ export default function CreatePurchase() {
         unitPriceUSD: convertToUSD(item.unitPrice, purchaseCurrency),
         weight: item.weight,
         dimensions: item.dimensions || null,
-        notes: item.notes || null
+        notes: item.notes || null,
+        processingTimeDays: item.processingTimeDays
       }))
     };
 
@@ -1319,7 +1098,6 @@ export default function CreatePurchase() {
                       onChange={(e) => {
                         setSupplier(e.target.value);
                         setSupplierId(null);
-                        setSupplierLink("");
                         setSupplierDropdownOpen(true);
                       }}
                       onFocus={() => setSupplierDropdownOpen(true)}
@@ -1361,8 +1139,6 @@ export default function CreatePurchase() {
                                   onClick={() => {
                                     setSupplier(s.name);
                                     setSupplierId(s.id);
-                                    setSupplierLink(s.website || "");
-                                    setSupplierLocation(s.location || "");
                                     setSupplierDropdownOpen(false);
                                   }}
                                 >
@@ -1382,14 +1158,12 @@ export default function CreatePurchase() {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => {
-                                    setNewSupplierName(supplier);
-                                    setNewSupplierDialogOpen(true);
-                                    setSupplierDropdownOpen(false);
+                                    navigate('/suppliers');
                                   }}
                                   className="w-full"
                                 >
                                   <UserPlus className="mr-2 h-4 w-4" />
-                                  Add new supplier "{supplier}"
+                                  Go to Suppliers page to add "{supplier}"
                                 </Button>
                               </div>
                             )}
@@ -1398,50 +1172,6 @@ export default function CreatePurchase() {
                       </div>
                     )}
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="supplier-link">Supplier Link</Label>
-                  <Input
-                    id="supplier-link"
-                    value={supplierLink}
-                    onChange={(e) => setSupplierLink(e.target.value)}
-                    placeholder="Auto-filled or enter manually"
-                    data-testid="input-supplier-link"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="supplier-location">Supplier Location</Label>
-                <div className="relative" ref={locationDropdownRef}>
-                  <Input
-                    id="supplier-location"
-                    value={supplierLocation}
-                    onChange={(e) => handleLocationChange(e.target.value)}
-                    onFocus={() => {
-                      setLocationDropdownOpen(true);
-                      if (supplierLocation) searchLocations(supplierLocation);
-                    }}
-                    placeholder="e.g., Shenzhen, China"
-                    data-testid="input-supplier-location"
-                  />
-                  {locationDropdownOpen && locationSuggestions.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
-                      {locationSuggestions.map((location, index) => (
-                        <button
-                          key={index}
-                          className="w-full px-3 py-2 text-left hover:bg-accent"
-                          onClick={() => {
-                            setSupplierLocation(location.formatted);
-                            setLocationDropdownOpen(false);
-                            setLocationSuggestions([]);
-                          }}
-                        >
-                          <div className="font-medium">{location.formatted}</div>
-                          <div className="text-xs text-muted-foreground">{location.display_name}</div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1660,12 +1390,13 @@ export default function CreatePurchase() {
                               size="sm"
                               variant="outline"
                               onClick={() => {
-                                setProductDropdownOpen(false);
+                                navigate('/products/add');
                               }}
                               className="w-full"
+                              data-testid="button-add-new-product"
                             >
                               <Plus className="mr-2 h-4 w-4" />
-                              Use "{currentItem.name}" as new product
+                              Go to Products page to add "{currentItem.name}"
                             </Button>
                           </div>
                         )}
@@ -1756,6 +1487,18 @@ export default function CreatePurchase() {
                     onChange={(e) => setCurrentItem({...currentItem, binLocation: e.target.value})}
                     placeholder="e.g., WH1-A01-R02-L03"
                     data-testid="input-bin-location"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="processingTimeDays">Processing Time (days)</Label>
+                  <Input
+                    id="processingTimeDays"
+                    type="number"
+                    min="0"
+                    value={currentItem.processingTimeDays || ""}
+                    onChange={(e) => setCurrentItem({...currentItem, processingTimeDays: parseInt(e.target.value) || undefined})}
+                    placeholder="Optional processing days"
+                    data-testid="input-processing-time-days"
                   />
                 </div>
               </div>
@@ -2158,6 +1901,14 @@ export default function CreatePurchase() {
                               </div>
                             </div>
                             
+                            {/* Processing Time */}
+                            {item.processingTimeDays !== undefined && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Clock className="h-3 w-3" />
+                                <span>Processing: {item.processingTimeDays} days</span>
+                              </div>
+                            )}
+                            
                             {/* Notes and Dimensions */}
                             {(item.notes || item.dimensions) && (
                               <div className="text-xs text-muted-foreground space-y-0.5">
@@ -2205,6 +1956,7 @@ export default function CreatePurchase() {
                         <TableHead className="w-[180px]">Category</TableHead>
                         <TableHead className="w-[80px] text-center">Qty</TableHead>
                         <TableHead className="w-[120px] text-right">Unit Price</TableHead>
+                        <TableHead className="w-[100px] text-center">Proc. Time</TableHead>
                         <TableHead className="w-[120px] text-right">Total</TableHead>
                         <TableHead className="w-[140px] text-right">Cost w/ Shipping</TableHead>
                         <TableHead className="w-[48px]"></TableHead>
@@ -2326,6 +2078,24 @@ export default function CreatePurchase() {
                                 min="0"
                               />
                             </div>
+                          </TableCell>
+                          
+                          {/* Processing Time */}
+                          <TableCell className="text-center">
+                            <Input
+                              type="number"
+                              value={item.processingTimeDays || ""}
+                              onChange={(e) => {
+                                const updatedItems = items.map(i => 
+                                  i.id === item.id ? {...i, processingTimeDays: parseInt(e.target.value) || undefined} : i
+                                );
+                                setItems(updatedItems);
+                              }}
+                              className="h-7 w-16 mx-auto text-sm text-center border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              placeholder="-"
+                              min="0"
+                              data-testid={`input-processing-time-${item.id}`}
+                            />
                           </TableCell>
                           
                           {/* Total */}
@@ -2643,101 +2413,6 @@ export default function CreatePurchase() {
         </DialogContent>
       </Dialog>
 
-      {/* Add New Supplier Dialog */}
-      <Dialog open={newSupplierDialogOpen} onOpenChange={setNewSupplierDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Supplier</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="new-supplier-name">Supplier Name *</Label>
-              <Input
-                id="new-supplier-name"
-                value={newSupplierName}
-                onChange={(e) => setNewSupplierName(e.target.value)}
-                placeholder="Enter supplier name"
-                data-testid="input-new-supplier-name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="new-supplier-contact">Contact Person</Label>
-              <Input
-                id="new-supplier-contact"
-                value={newSupplierContact}
-                onChange={(e) => setNewSupplierContact(e.target.value)}
-                placeholder="Optional contact person"
-                data-testid="input-new-supplier-contact"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="new-supplier-email">Email</Label>
-              <Input
-                id="new-supplier-email"
-                type="email"
-                value={newSupplierEmail}
-                onChange={(e) => setNewSupplierEmail(e.target.value)}
-                placeholder="Optional email"
-                data-testid="input-new-supplier-email"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="new-supplier-phone">Phone</Label>
-              <Input
-                id="new-supplier-phone"
-                value={newSupplierPhone}
-                onChange={(e) => setNewSupplierPhone(e.target.value)}
-                placeholder="Optional phone"
-                data-testid="input-new-supplier-phone"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="new-supplier-website">Website</Label>
-              <Input
-                id="new-supplier-website"
-                value={newSupplierWebsite}
-                onChange={(e) => setNewSupplierWebsite(e.target.value)}
-                placeholder="Optional website URL"
-                data-testid="input-new-supplier-website"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="new-supplier-location">Location</Label>
-              <Input
-                id="new-supplier-location"
-                value={newSupplierLocation}
-                onChange={(e) => setNewSupplierLocation(e.target.value)}
-                placeholder="e.g., Shenzhen, China"
-                data-testid="input-new-supplier-location"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setNewSupplierDialogOpen(false);
-                setNewSupplierName("");
-                setNewSupplierContact("");
-                setNewSupplierEmail("");
-                setNewSupplierPhone("");
-                setNewSupplierWebsite("");
-                setNewSupplierLocation("");
-              }}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleAddNewSupplier}
-              disabled={createSupplierMutation.isPending}
-              data-testid="button-create-supplier"
-            >
-              {createSupplierMutation.isPending ? "Adding..." : "Add Supplier"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
       {/* Add Single Variant Dialog */}
       <Dialog open={variantDialogOpen} onOpenChange={setVariantDialogOpen}>
         <DialogContent>

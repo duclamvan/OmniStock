@@ -64,6 +64,7 @@ export const purchaseItems = pgTable('purchase_items', {
   consolidationId: integer('consolidation_id').references(() => consolidations.id),
   imageUrl: text('image_url'),
   notes: text('notes'),
+  processingTimeDays: integer('processing_time_days'),
   // New landing cost fields
   hsCode: text('hs_code'),
   dutyRatePercent: decimal('duty_rate_percent', { precision: 5, scale: 2 }),
