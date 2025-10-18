@@ -21,10 +21,10 @@ import { format, addDays, addWeeks } from "date-fns";
 import OpenAI from "openai";
 
 const URGENCY_OPTIONS = [
-  { value: "low", label: "Low", color: "text-slate-600", bgColor: "bg-slate-100" },
-  { value: "medium", label: "Medium", color: "text-yellow-600", bgColor: "bg-yellow-100" },
-  { value: "high", label: "High", color: "text-orange-600", bgColor: "bg-orange-100" },
-  { value: "urgent", label: "Urgent", color: "text-red-600", bgColor: "bg-red-100" },
+  { value: "low", label: "Low", color: "text-slate-700 font-semibold", bgColor: "bg-slate-200" },
+  { value: "medium", label: "Medium", color: "text-yellow-700 font-semibold", bgColor: "bg-yellow-200" },
+  { value: "high", label: "High", color: "text-orange-700 font-semibold", bgColor: "bg-orange-200" },
+  { value: "urgent", label: "Urgent", color: "text-red-700 font-semibold", bgColor: "bg-red-200" },
 ];
 
 const getNotifyDateOptions = () => {
@@ -163,29 +163,11 @@ export default function AddTicket() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!subject.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Please enter a subject",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!description.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Please describe the issue",
-        variant: "destructive",
-      });
-      return;
-    }
 
     createTicketMutation.mutate({
       customerId: selectedCustomer?.id || null,
-      subject,
-      description,
+      subject: subject || "Untitled Ticket",
+      description: description || "",
       priority: urgency,
       status: "open",
       notifyDate: notifyDate || null,
@@ -264,11 +246,27 @@ export default function AddTicket() {
               )}
             </div>
 
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="description" className="text-base font-semibold">
+                Description
+              </Label>
+              <Textarea
+                id="description"
+                placeholder="Describe the situation in detail..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={8}
+                className="resize-none text-base"
+                data-testid="textarea-description"
+              />
+            </div>
+
             {/* Subject */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="subject" className="text-base font-semibold">
-                  Subject <span className="text-red-500">*</span>
+                  Subject
                 </Label>
                 <Button
                   type="button"
@@ -296,7 +294,6 @@ export default function AddTicket() {
                 placeholder="AI will auto-generate from description..."
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                required
                 className="text-lg"
                 data-testid="input-subject"
               />
@@ -306,23 +303,6 @@ export default function AddTicket() {
                   AI is generating a concise subject...
                 </p>
               )}
-            </div>
-
-            {/* Description */}
-            <div className="space-y-2">
-              <Label htmlFor="description" className="text-base font-semibold">
-                Description <span className="text-red-500">*</span>
-              </Label>
-              <Textarea
-                id="description"
-                placeholder="Describe the situation in detail..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                required
-                rows={8}
-                className="resize-none text-base"
-                data-testid="textarea-description"
-              />
             </div>
 
             {/* Urgency and Notify Date Row */}
