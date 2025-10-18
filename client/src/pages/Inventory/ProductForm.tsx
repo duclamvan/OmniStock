@@ -2673,45 +2673,56 @@ export default function ProductForm() {
                             />
                           </div>
                           
-                          <div className="grid grid-cols-3 gap-3">
+                          <Separator />
+                          
+                          <div className="space-y-3">
                             <div>
-                              <Label htmlFor="variant-cost-usd">Price USD</Label>
-                              <Input
-                                id="variant-cost-usd"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={newVariant.importCostUsd}
-                                onChange={(e) => setNewVariant((prev) => ({ ...prev, importCostUsd: e.target.value }))}
-                                placeholder="0.00"
-                                data-testid="input-variant-cost-usd"
-                              />
+                              <Label className="text-sm font-medium">Variant Pricing (Optional)</Label>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                Leave blank to use product's default price. Enter value in any currency - others auto-convert.
+                              </p>
                             </div>
-                            <div>
-                              <Label htmlFor="variant-cost-czk">Price CZK</Label>
-                              <Input
-                                id="variant-cost-czk"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={newVariant.importCostCzk}
-                                onChange={(e) => setNewVariant((prev) => ({ ...prev, importCostCzk: e.target.value }))}
-                                placeholder="0.00"
-                                data-testid="input-variant-cost-czk"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="variant-cost-eur">Price EUR</Label>
-                              <Input
-                                id="variant-cost-eur"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={newVariant.importCostEur}
-                                onChange={(e) => setNewVariant((prev) => ({ ...prev, importCostEur: e.target.value }))}
-                                placeholder="0.00"
-                                data-testid="input-variant-cost-eur"
-                              />
+                            
+                            <div className="grid grid-cols-3 gap-3">
+                              <div>
+                                <Label htmlFor="variant-cost-usd" className="text-xs">Price USD</Label>
+                                <Input
+                                  id="variant-cost-usd"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={newVariant.importCostUsd}
+                                  onChange={(e) => setNewVariant((prev) => ({ ...prev, importCostUsd: e.target.value }))}
+                                  placeholder="Optional"
+                                  data-testid="input-variant-cost-usd"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="variant-cost-czk" className="text-xs">Price CZK</Label>
+                                <Input
+                                  id="variant-cost-czk"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={newVariant.importCostCzk}
+                                  onChange={(e) => setNewVariant((prev) => ({ ...prev, importCostCzk: e.target.value }))}
+                                  placeholder="Optional"
+                                  data-testid="input-variant-cost-czk"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="variant-cost-eur" className="text-xs">Price EUR</Label>
+                                <Input
+                                  id="variant-cost-eur"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={newVariant.importCostEur}
+                                  onChange={(e) => setNewVariant((prev) => ({ ...prev, importCostEur: e.target.value }))}
+                                  placeholder="Optional"
+                                  data-testid="input-variant-cost-eur"
+                                />
+                              </div>
                             </div>
                           </div>
                           
@@ -2772,45 +2783,56 @@ export default function ProductForm() {
                             </div>
                           </div>
                           
-                          <div className="grid grid-cols-3 gap-3">
+                          <Separator />
+                          
+                          <div className="space-y-3">
                             <div>
-                              <Label htmlFor="series-cost-usd">Price USD</Label>
-                              <Input
-                                id="series-cost-usd"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={seriesImportCostUsd}
-                                onChange={(e) => setSeriesImportCostUsd(e.target.value)}
-                                placeholder="0.00"
-                                data-testid="input-series-cost-usd"
-                              />
+                              <Label className="text-sm font-medium">Variant Pricing (Optional)</Label>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                Leave blank to use product's default price. Enter value in any currency - others auto-convert.
+                              </p>
                             </div>
-                            <div>
-                              <Label htmlFor="series-cost-czk">Price CZK</Label>
-                              <Input
-                                id="series-cost-czk"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={seriesImportCostCzk}
-                                onChange={(e) => setSeriesImportCostCzk(e.target.value)}
-                                placeholder="0.00"
-                                data-testid="input-series-cost-czk"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="series-cost-eur">Price EUR</Label>
-                              <Input
-                                id="series-cost-eur"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={seriesImportCostEur}
-                                onChange={(e) => setSeriesImportCostEur(e.target.value)}
-                                placeholder="0.00"
-                                data-testid="input-series-cost-eur"
-                              />
+                            
+                            <div className="grid grid-cols-3 gap-3">
+                              <div>
+                                <Label htmlFor="series-cost-usd" className="text-xs">Price USD</Label>
+                                <Input
+                                  id="series-cost-usd"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={seriesImportCostUsd}
+                                  onChange={(e) => setSeriesImportCostUsd(e.target.value)}
+                                  placeholder="Optional"
+                                  data-testid="input-series-cost-usd"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="series-cost-czk" className="text-xs">Price CZK</Label>
+                                <Input
+                                  id="series-cost-czk"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={seriesImportCostCzk}
+                                  onChange={(e) => setSeriesImportCostCzk(e.target.value)}
+                                  placeholder="Optional"
+                                  data-testid="input-series-cost-czk"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="series-cost-eur" className="text-xs">Price EUR</Label>
+                                <Input
+                                  id="series-cost-eur"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={seriesImportCostEur}
+                                  onChange={(e) => setSeriesImportCostEur(e.target.value)}
+                                  placeholder="Optional"
+                                  data-testid="input-series-cost-eur"
+                                />
+                              </div>
                             </div>
                           </div>
                           
