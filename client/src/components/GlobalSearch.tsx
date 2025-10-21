@@ -54,6 +54,11 @@ export function GlobalSearch() {
 
   const { data: results, isLoading } = useQuery<SearchResult>({
     queryKey: ['/api/search', searchQuery],
+    queryFn: async () => {
+      const response = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`);
+      if (!response.ok) throw new Error('Search failed');
+      return response.json();
+    },
     enabled: searchQuery.trim().length > 0,
   });
 
