@@ -76,11 +76,16 @@ export function GlobalSearch() {
     }
   }, [searchQuery, results]);
 
-  const handleItemClick = (type: 'inventory' | 'shipment' | 'customer', id: string) => {
+  const handleItemClick = (type: 'inventory' | 'shipment' | 'customer', id: string, productId?: string) => {
     if (type === 'inventory') {
       setLocation(`/inventory/${id}`);
     } else if (type === 'customer') {
       setLocation(`/customers/${id}`);
+    } else if (type === 'shipment') {
+      // For shipments, navigate to the product page since shipment items are tied to products
+      if (productId) {
+        setLocation(`/inventory/${productId}`);
+      }
     }
     setSearchQuery('');
     setShowResults(false);
@@ -172,9 +177,10 @@ export function GlobalSearch() {
                     Upcoming Shipments ({results.shipmentItems.length})
                   </div>
                   {results.shipmentItems.map((item) => (
-                    <div
+                    <button
                       key={item.id}
-                      className="px-3 py-2 hover:bg-accent rounded-md flex items-center gap-3 transition-colors"
+                      onClick={() => handleItemClick('shipment', item.id, item.productId)}
+                      className="w-full px-3 py-2 hover:bg-accent rounded-md flex items-center gap-3 text-left transition-colors"
                       data-testid={`search-result-shipment-${item.id}`}
                     >
                       {item.imageUrl ? (
@@ -202,7 +208,7 @@ export function GlobalSearch() {
                       <Badge variant={item.status === 'received' ? 'default' : 'secondary'}>
                         {item.status}
                       </Badge>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
