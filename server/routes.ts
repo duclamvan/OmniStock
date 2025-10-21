@@ -411,6 +411,175 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Global Search endpoint with Vietnamese diacritics normalization
+  app.get('/api/search', async (req, res) => {
+    try {
+      const query = req.query.q as string || '';
+      
+      if (!query.trim()) {
+        return res.json({ 
+          inventoryItems: [], 
+          shipmentItems: [], 
+          customers: [] 
+        });
+      }
+
+      // Vietnamese diacritics normalization function
+      const normalizeVietnamese = (str: string): string => {
+        const vietnameseMap: Record<string, string> = {
+          'à': 'a', 'á': 'a', 'ả': 'a', 'ã': 'a', 'ạ': 'a',
+          'ă': 'a', 'ằ': 'a', 'ắ': 'a', 'ẳ': 'a', 'ẵ': 'a', 'ặ': 'a',
+          'â': 'a', 'ầ': 'a', 'ấ': 'a', 'ẩ': 'a', 'ẫ': 'a', 'ậ': 'a',
+          'đ': 'd',
+          'è': 'e', 'é': 'e', 'ẻ': 'e', 'ẽ': 'e', 'ẹ': 'e',
+          'ê': 'e', 'ề': 'e', 'ế': 'e', 'ể': 'e', 'ễ': 'e', 'ệ': 'e',
+          'ì': 'i', 'í': 'i', 'ỉ': 'i', 'ĩ': 'i', 'ị': 'i',
+          'ò': 'o', 'ó': 'o', 'ỏ': 'o', 'õ': 'o', 'ọ': 'o',
+          'ô': 'o', 'ồ': 'o', 'ố': 'o', 'ổ': 'o', 'ỗ': 'o', 'ộ': 'o',
+          'ơ': 'o', 'ờ': 'o', 'ớ': 'o', 'ở': 'o', 'ỡ': 'o', 'ợ': 'o',
+          'ù': 'u', 'ú': 'u', 'ủ': 'u', 'ũ': 'u', 'ụ': 'u',
+          'ư': 'u', 'ừ': 'u', 'ứ': 'u', 'ử': 'u', 'ữ': 'u', 'ự': 'u',
+          'ỳ': 'y', 'ý': 'y', 'ỷ': 'y', 'ỹ': 'y', 'ỵ': 'y',
+          'À': 'A', 'Á': 'A', 'Ả': 'A', 'Ã': 'A', 'Ạ': 'A',
+          'Ă': 'A', 'Ằ': 'A', 'Ắ': 'A', 'Ẳ': 'A', 'Ẵ': 'A', 'Ặ': 'A',
+          'Â': 'A', 'Ầ': 'A', 'Ấ': 'A', 'Ẩ': 'A', 'Ẫ': 'A', 'Ậ': 'A',
+          'Đ': 'D',
+          'È': 'E', 'É': 'E', 'Ẻ': 'E', 'Ẽ': 'E', 'Ẹ': 'E',
+          'Ê': 'E', 'Ề': 'E', 'Ế': 'E', 'Ể': 'E', 'Ễ': 'E', 'Ệ': 'E',
+          'Ì': 'I', 'Í': 'I', 'Ỉ': 'I', 'Ĩ': 'I', 'Ị': 'I',
+          'Ò': 'O', 'Ó': 'O', 'Ỏ': 'O', 'Õ': 'O', 'Ọ': 'O',
+          'Ô': 'O', 'Ồ': 'O', 'Ố': 'O', 'Ổ': 'O', 'Ỗ': 'O', 'Ộ': 'O',
+          'Ơ': 'O', 'Ờ': 'O', 'Ớ': 'O', 'Ở': 'O', 'Ỡ': 'O', 'Ợ': 'O',
+          'Ù': 'U', 'Ú': 'U', 'Ủ': 'U', 'Ũ': 'U', 'Ụ': 'U',
+          'Ư': 'U', 'Ừ': 'U', 'Ứ': 'U', 'Ử': 'U', 'Ữ': 'U', 'Ự': 'U',
+          'Ỳ': 'Y', 'Ý': 'Y', 'Ỷ': 'Y', 'Ỹ': 'Y', 'Ỵ': 'Y'
+        };
+        return str.replace(/[àáảãạăằắẳẵặâầấẩẫậđèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬĐÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴ]/g, (char) => vietnameseMap[char] || char);
+      };
+
+      const normalizedQuery = normalizeVietnamese(query.toLowerCase().trim());
+
+      // Search inventory (current stock)
+      const allProducts = await storage.getProducts();
+      const inventoryItems = allProducts
+        .filter(product => {
+          const normalizedName = normalizeVietnamese((product.name || '').toLowerCase());
+          const normalizedSku = normalizeVietnamese((product.sku || '').toLowerCase());
+          return normalizedName.includes(normalizedQuery) || normalizedSku.includes(normalizedQuery);
+        })
+        .slice(0, 10)
+        .map(product => ({
+          id: product.id,
+          name: product.name,
+          sku: product.sku,
+          quantity: product.quantity || 0,
+          imageUrl: product.imageUrl,
+          type: 'inventory' as const
+        }));
+
+      // Search upcoming shipments (purchase orders)
+      const allPurchases = await db.query.purchases.findMany({
+        with: {
+          items: {
+            with: {
+              product: true
+            }
+          }
+        }
+      });
+
+      const shipmentItems: any[] = [];
+      for (const purchase of allPurchases) {
+        for (const item of purchase.items || []) {
+          if (item.product) {
+            const normalizedName = normalizeVietnamese((item.product.name || '').toLowerCase());
+            const normalizedSku = normalizeVietnamese((item.product.sku || '').toLowerCase());
+            
+            if (normalizedName.includes(normalizedQuery) || normalizedSku.includes(normalizedQuery)) {
+              shipmentItems.push({
+                id: item.id,
+                productId: item.product.id,
+                name: item.product.name,
+                sku: item.product.sku,
+                quantity: item.quantity,
+                purchaseOrderId: purchase.id,
+                purchaseOrderNumber: purchase.purchaseOrderNumber,
+                expectedDeliveryDate: purchase.expectedDeliveryDate,
+                status: purchase.status,
+                imageUrl: item.product.imageUrl,
+                type: 'shipment' as const
+              });
+            }
+          }
+        }
+      }
+
+      // Search customers
+      const allCustomers = await storage.getCustomers();
+      const customers = allCustomers
+        .filter(customer => {
+          const normalizedName = normalizeVietnamese((customer.name || '').toLowerCase());
+          const normalizedEmail = normalizeVietnamese((customer.email || '').toLowerCase());
+          const normalizedCompany = normalizeVietnamese((customer.company || '').toLowerCase());
+          return normalizedName.includes(normalizedQuery) || 
+                 normalizedEmail.includes(normalizedQuery) ||
+                 normalizedCompany.includes(normalizedQuery);
+        })
+        .slice(0, 10);
+
+      // Get order statistics for each customer
+      const customersWithStats = await Promise.all(
+        customers.map(async (customer) => {
+          const customerOrders = await db.query.orders.findMany({
+            where: eq(orders.customerId, customer.id),
+            orderBy: desc(orders.orderDate),
+          });
+
+          const totalOrders = customerOrders.length;
+          const lastOrder = customerOrders[0];
+          const lastOrderDate = lastOrder ? new Date(lastOrder.orderDate) : null;
+          
+          let lastOrderText = 'Never';
+          if (lastOrderDate) {
+            const now = new Date();
+            const diffTime = Math.abs(now.getTime() - lastOrderDate.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) lastOrderText = 'Today';
+            else if (diffDays === 1) lastOrderText = '1 day ago';
+            else if (diffDays < 30) lastOrderText = `${diffDays} days ago`;
+            else if (diffDays < 60) lastOrderText = '1 month ago';
+            else lastOrderText = `${Math.floor(diffDays / 30)} months ago`;
+          }
+
+          return {
+            ...customer,
+            totalOrders,
+            lastOrderDate,
+            lastOrderText,
+            recentOrders: customerOrders.slice(0, 3).map(order => ({
+              id: order.id,
+              orderNumber: order.orderNumber,
+              orderDate: order.orderDate,
+              totalPrice: order.totalPrice,
+              currency: order.currency,
+              status: order.status
+            }))
+          };
+        })
+      );
+
+      res.json({
+        inventoryItems,
+        shipmentItems: shipmentItems.slice(0, 10),
+        customers: customersWithStats
+      });
+    } catch (error) {
+      console.error("Error in global search:", error);
+      res.status(500).json({ message: "Search failed" });
+    }
+  });
+
   // Categories endpoints
   app.get('/api/categories', async (req, res) => {
     try {
