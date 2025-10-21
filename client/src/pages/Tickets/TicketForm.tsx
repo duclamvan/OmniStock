@@ -60,6 +60,8 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
   const [isGeneratingSubject, setIsGeneratingSubject] = useState(false);
   const [customerSearch, setCustomerSearch] = useState("");
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [orderSearch, setOrderSearch] = useState("");
+  const [showOrderDropdown, setShowOrderDropdown] = useState(false);
   const [hasManuallyEditedTitle, setHasManuallyEditedTitle] = useState(false);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -113,6 +115,16 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
       }
     }
   }, [ticket?.customerId, customers]);
+
+  // Initialize order search from existing ticket
+  useEffect(() => {
+    if (ticket?.orderId && orders && orders.length > 0) {
+      const order = orders.find((o: any) => o.id === ticket.orderId);
+      if (order) {
+        setOrderSearch(`${order.orderId} - ${order.customer?.name || 'Unknown'}`);
+      }
+    }
+  }, [ticket?.orderId, orders]);
 
   // AI Subject Generation function
   const generateSubject = async (descriptionText: string) => {
@@ -208,6 +220,32 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
     setCustomerSearch(customer.name);
     form.setValue("customerId", customer.id);
     setShowCustomerDropdown(false);
+  };
+
+  // Filter orders based on customer name search, sorted by most recent
+  const filteredOrders = useMemo(() => {
+    if (!orderSearch.trim()) {
+      return orders
+        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 10);
+    }
+
+    return orders
+      .filter((order: any) => {
+        const customerName = order.customer?.name?.toLowerCase() || '';
+        const orderId = order.orderId?.toLowerCase() || '';
+        const search = orderSearch.toLowerCase();
+        return customerName.includes(search) || orderId.includes(search);
+      })
+      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 10);
+  }, [orders, orderSearch]);
+
+  // Handle order selection
+  const handleOrderSelect = (order: any) => {
+    setOrderSearch(`${order.orderId} - ${order.customer?.name || 'Unknown'}`);
+    form.setValue("orderId", order.id);
+    setShowOrderDropdown(false);
   };
 
   const mutation = useMutation({
@@ -564,21 +602,56 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-sm font-medium">Related Order</FormLabel>
-                        <Select onValueChange={(value) => field.onChange(value === "NONE" ? undefined : value)} value={field.value || "NONE"}>
+                        <div className="relative">
                           <FormControl>
-                            <SelectTrigger data-testid="select-order">
-                              <SelectValue placeholder="Select order (optional)" />
-                            </SelectTrigger>
+                            <Input
+                              placeholder="Search by customer name or order ID..."
+                              value={orderSearch}
+                              onChange={(e) => {
+                                setOrderSearch(e.target.value);
+                                setShowOrderDropdown(true);
+                              }}
+                              onFocus={() => setShowOrderDropdown(true)}
+                              onBlur={() => {
+                                setTimeout(() => setShowOrderDropdown(false), 200);
+                              }}
+                              data-testid="input-order-search"
+                            />
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="NONE">None</SelectItem>
-                            {orders.slice(0, 50).map((order: any) => (
-                              <SelectItem key={order.id} value={order.id}>
-                                {order.orderId} - {order.customer?.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          {showOrderDropdown && filteredOrders.length > 0 && (
+                            <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg max-h-64 overflow-y-auto">
+                              {filteredOrders.map((order: any) => (
+                                <button
+                                  key={order.id}
+                                  type="button"
+                                  className="w-full px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 focus:outline-none transition-colors"
+                                  onClick={() => handleOrderSelect(order)}
+                                  data-testid={`order-option-${order.id}`}
+                                >
+                                  <div className="flex flex-col">
+                                    <span className="font-medium text-sm">{order.orderId}</span>
+                                    <span className="text-xs text-slate-600 dark:text-slate-400">
+                                      {order.customer?.name || 'Unknown Customer'} • {new Date(order.createdAt).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          {orderSearch && (
+                            <button
+                              type="button"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                              onClick={() => {
+                                setOrderSearch("");
+                                form.setValue("orderId", undefined);
+                              }}
+                              data-testid="button-clear-order"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
