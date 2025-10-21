@@ -112,7 +112,13 @@ export function GlobalSearch() {
                        (results?.shipmentItems.length || 0) + 
                        (results?.customers.length || 0);
 
-  const formatCurrency = (amount: number, currency: string) => {
+  const formatCurrency = (amount: number | undefined | null, currency: string) => {
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      return new Intl.NumberFormat('cs-CZ', {
+        style: 'currency',
+        currency: currency || 'CZK',
+      }).format(0);
+    }
     return new Intl.NumberFormat('cs-CZ', {
       style: 'currency',
       currency: currency || 'CZK',

@@ -459,50 +459,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const normalizedQuery = normalizeVietnamese(query.toLowerCase().trim());
 
-      // Helper to check if query matches from the first word
-      const matchesFromFirstWord = (text: string, query: string): boolean => {
-        const words = text.split(/\s+/);
-        return words.some(word => word.startsWith(query));
+      // Fuzzy search scoring function
+      const calculateScore = (text: string, query: string): number => {
+        const normalizedText = normalizeVietnamese(text.toLowerCase());
+        let score = 0;
+
+        // Exact match (highest priority)
+        if (normalizedText === query) score += 100;
+
+        // Starts with query
+        if (normalizedText.startsWith(query)) score += 50;
+
+        // Contains query
+        if (normalizedText.includes(query)) score += 25;
+
+        // Word boundary match (any word starts with query)
+        const words = normalizedText.split(/\s+/);
+        if (words.some(word => word.startsWith(query))) score += 35;
+
+        // Multi-word bonus (all query words found)
+        const queryWords = query.split(/\s+/);
+        if (queryWords.length > 1 && queryWords.every(qw => normalizedText.includes(qw))) {
+          score += 20;
+        }
+
+        return score;
       };
 
-      // Search inventory (current stock)
+      // Search inventory (current stock) with fuzzy scoring
       const allProducts = await storage.getProducts();
-      const inventoryItems = allProducts
-        .filter(product => {
-          const normalizedName = normalizeVietnamese((product.name || '').toLowerCase());
-          const normalizedSku = normalizeVietnamese((product.sku || '').toLowerCase());
-          
-          // Match from first word for name, or anywhere for SKU
-          return matchesFromFirstWord(normalizedName, normalizedQuery) || 
-                 normalizedSku.includes(normalizedQuery);
+      const scoredProducts = allProducts
+        .map(product => {
+          const nameScore = calculateScore(product.name || '', normalizedQuery);
+          const skuScore = calculateScore(product.sku || '', normalizedQuery);
+          const maxScore = Math.max(nameScore, skuScore);
+
+          return {
+            product,
+            score: maxScore
+          };
         })
-        .slice(0, 10)
-        .map(product => ({
-          id: product.id,
-          name: product.name,
-          sku: product.sku,
-          quantity: product.quantity || 0,
-          imageUrl: product.imageUrl,
-          type: 'inventory' as const
-        }));
+        .filter(item => item.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 20);
+
+      const inventoryItems = scoredProducts.map(({ product }) => ({
+        id: product.id,
+        name: product.name,
+        sku: product.sku,
+        quantity: product.quantity || 0,
+        imageUrl: product.imageUrl,
+        type: 'inventory' as const
+      }));
 
       // Search upcoming shipments (purchase orders) - Skip for now as purchases are not in DB
       const shipmentItems: any[] = [];
 
-      // Search customers
+      // Search customers with fuzzy scoring
       const allCustomers = await storage.getCustomers();
-      const customers = allCustomers
-        .filter(customer => {
-          const normalizedName = normalizeVietnamese((customer.name || '').toLowerCase());
-          const normalizedEmail = normalizeVietnamese((customer.email || '').toLowerCase());
-          const normalizedCompany = normalizeVietnamese((customer.company || '').toLowerCase());
-          
-          // Match from first word
-          return matchesFromFirstWord(normalizedName, normalizedQuery) || 
-                 matchesFromFirstWord(normalizedEmail, normalizedQuery) ||
-                 matchesFromFirstWord(normalizedCompany, normalizedQuery);
+      const scoredCustomers = allCustomers
+        .map(customer => {
+          const nameScore = calculateScore(customer.name || '', normalizedQuery);
+          const emailScore = calculateScore(customer.email || '', normalizedQuery);
+          const companyScore = calculateScore(customer.company || '', normalizedQuery);
+          const maxScore = Math.max(nameScore, emailScore, companyScore);
+
+          return {
+            customer,
+            score: maxScore
+          };
         })
-        .slice(0, 10);
+        .filter(item => item.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 20);
+
+      const customers = scoredCustomers.map(({ customer }) => customer);
 
       // Get order statistics for each customer
       const allOrders = await storage.getOrders();
