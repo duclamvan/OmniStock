@@ -138,41 +138,36 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     if (expandedRows.length === 0) return;
 
     const offset = 150; // Offset for header
-    const viewportCenter = window.scrollY + window.innerHeight / 2;
+    const currentScrollTop = window.scrollY + offset;
+    const threshold = 20; // Pixels threshold to consider "at" a position
 
-    // Find the currently visible (closest to center) expanded row
-    let closestIndex = 0;
-    let closestDistance = Math.abs(expandedRows[0].offsetTop - viewportCenter);
+    let targetIndex = -1;
 
-    expandedRows.forEach((row, index) => {
-      const distance = Math.abs(row.offsetTop - viewportCenter);
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestIndex = index;
-      }
-    });
-
-    // Navigate to next or previous
-    let targetIndex;
     if (direction === 'next') {
-      // If we're viewing the current row, go to next. Otherwise stay on current.
-      const currentRowTop = expandedRows[closestIndex].offsetTop;
-      if (Math.abs(window.scrollY + offset - currentRowTop) < 50) {
-        // We're already on this row, go to next
-        targetIndex = (closestIndex + 1) % expandedRows.length;
-      } else {
-        // Scroll to the closest one (current)
-        targetIndex = closestIndex;
+      // Find the first row that is below current scroll position
+      for (let i = 0; i < expandedRows.length; i++) {
+        const rowTop = expandedRows[i].offsetTop;
+        if (rowTop > currentScrollTop + threshold) {
+          targetIndex = i;
+          break;
+        }
+      }
+      // If none found, wrap to first
+      if (targetIndex === -1) {
+        targetIndex = 0;
       }
     } else {
-      // Similar logic for previous
-      const currentRowTop = expandedRows[closestIndex].offsetTop;
-      if (Math.abs(window.scrollY + offset - currentRowTop) < 50) {
-        // We're already on this row, go to previous
-        targetIndex = closestIndex === 0 ? expandedRows.length - 1 : closestIndex - 1;
-      } else {
-        // Scroll to the closest one (current)
-        targetIndex = closestIndex;
+      // Find the last row that is above current scroll position
+      for (let i = expandedRows.length - 1; i >= 0; i--) {
+        const rowTop = expandedRows[i].offsetTop;
+        if (rowTop < currentScrollTop - threshold) {
+          targetIndex = i;
+          break;
+        }
+      }
+      // If none found, wrap to last
+      if (targetIndex === -1) {
+        targetIndex = expandedRows.length - 1;
       }
     }
 
