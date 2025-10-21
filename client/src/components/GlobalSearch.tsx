@@ -278,30 +278,57 @@ export function GlobalSearch() {
                               Last: {customer.lastOrderText}
                             </Badge>
                           </div>
-
-                          {/* Recent Orders */}
-                          {customer.recentOrders && customer.recentOrders.length > 0 && (
-                            <div className="mt-2 space-y-1">
-                              <div className="text-xs font-semibold text-muted-foreground">
-                                Recent Orders:
-                              </div>
-                              {customer.recentOrders.map((order) => (
-                                <div
-                                  key={order.id}
-                                  className="text-xs text-muted-foreground flex items-center justify-between"
-                                >
-                                  <span>#{order.orderNumber}</span>
-                                  <span className="font-medium">
-                                    {formatCurrency(order.totalPrice, order.currency)}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
                         </div>
                       </div>
                     </button>
                   ))}
+                  
+                  {/* Recent Orders for matched customers */}
+                  {results.customers.flatMap(customer => 
+                    customer.recentOrders?.map(order => ({
+                      ...order,
+                      customerName: customer.name
+                    })) || []
+                  ).length > 0 && (
+                    <>
+                      <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2 mt-2">
+                        <ShoppingCart className="h-3 w-3" />
+                        Recent Orders
+                      </div>
+                      {results.customers.flatMap(customer => 
+                        customer.recentOrders?.map(order => (
+                          <button
+                            key={order.id}
+                            onClick={() => {
+                              setLocation(`/orders/${order.id}`);
+                              setSearchQuery('');
+                              setShowResults(false);
+                            }}
+                            className="w-full px-3 py-2 hover:bg-accent rounded-md flex items-center gap-3 text-left transition-colors"
+                            data-testid={`search-result-order-${order.id}`}
+                          >
+                            <div className="h-10 w-10 bg-orange-100 dark:bg-orange-900/20 rounded flex items-center justify-center flex-shrink-0">
+                              <ShoppingCart className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium truncate">#{order.orderNumber}</div>
+                              <div className="text-sm text-muted-foreground truncate">
+                                {customer.name}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-medium">
+                                {formatCurrency(order.totalPrice, order.currency)}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {new Date(order.orderDate).toLocaleDateString('cs-CZ')}
+                              </div>
+                            </div>
+                          </button>
+                        )) || []
+                      )}
+                    </>
+                  )}
                 </div>
               )}
             </div>

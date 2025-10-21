@@ -486,7 +486,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return score;
       };
 
-      // Search inventory (current stock) with fuzzy scoring
+      // Search inventory (current stock) with fuzzy scoring - show all matches
       const allProducts = await storage.getProducts();
       const scoredProducts = allProducts
         .map(product => {
@@ -500,8 +500,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
         })
         .filter(item => item.score > 0)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 20);
+        .sort((a, b) => b.score - a.score);
 
       const inventoryItems = scoredProducts.map(({ product }) => ({
         id: product.id,
@@ -515,7 +514,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Search upcoming shipments (purchase orders) - Skip for now as purchases are not in DB
       const shipmentItems: any[] = [];
 
-      // Search customers with fuzzy scoring
+      // Search customers with fuzzy scoring - show all matches
       const allCustomers = await storage.getCustomers();
       const scoredCustomers = allCustomers
         .map(customer => {
@@ -530,8 +529,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
         })
         .filter(item => item.score > 0)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 20);
+        .sort((a, b) => b.score - a.score);
 
       const customers = scoredCustomers.map(({ customer }) => customer);
 
