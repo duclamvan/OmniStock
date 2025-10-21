@@ -2769,12 +2769,126 @@ export class DatabaseStorage implements IStorage {
       }
     ] as Return[];
   }
-  async getReturn(id: string): Promise<Return | undefined> { return undefined; }
+  async getReturn(id: string): Promise<Return | undefined> { 
+    const returns = await this.getReturns();
+    return returns.find(r => r.id === id);
+  }
+  
   async createReturn(returnData: any): Promise<Return> { return { id: Date.now().toString(), ...returnData }; }
-  async updateReturn(id: string, returnData: any): Promise<Return | undefined> { return { id, ...returnData }; }
+  
+  async updateReturn(id: string, returnData: any): Promise<Return | undefined> { 
+    // For now, return mock updated data since we don't have DB persistence
+    const existingReturn = await this.getReturn(id);
+    if (!existingReturn) return undefined;
+    return { ...existingReturn, ...returnData, updatedAt: new Date() };
+  }
+  
   async deleteReturn(id: string): Promise<boolean> { return true; }
 
-  async getReturnItems(returnId: string): Promise<ReturnItem[]> { return []; }
+  async getReturnItems(returnId: string): Promise<ReturnItem[]> { 
+    // Mock return items based on return ID
+    const mockItems: Record<string, ReturnItem[]> = {
+      'ret-001': [
+        {
+          id: 'ret-item-001',
+          returnId: 'ret-001',
+          productId: '18b05693-7338-4bd6-8530-2f3e28ec835d',
+          productName: 'Gel Polish - Nude Collection',
+          quantity: 2,
+          reason: 'Wrong color variant',
+          condition: 'unopened',
+          refundAmount: '450.00'
+        }
+      ],
+      'ret-002': [
+        {
+          id: 'ret-item-002',
+          returnId: 'ret-002',
+          productId: '18b05693-7338-4bd6-8530-2f3e28ec835d',
+          productName: 'UV Lamp 48W',
+          quantity: 1,
+          reason: 'Damaged during shipping',
+          condition: 'damaged',
+          refundAmount: '1250.00'
+        }
+      ],
+      'ret-003': [
+        {
+          id: 'ret-item-003',
+          returnId: 'ret-003',
+          productId: '18b05693-7338-4bd6-8530-2f3e28ec835d',
+          productName: 'Gel Polish Set - Spring Colors',
+          quantity: 3,
+          reason: 'Changed mind',
+          condition: 'unopened',
+          refundAmount: '680.00'
+        }
+      ],
+      'ret-004': [
+        {
+          id: 'ret-item-004',
+          returnId: 'ret-004',
+          productId: '18b05693-7338-4bd6-8530-2f3e28ec835d',
+          productName: 'Drill Bit Set - Fine',
+          quantity: 1,
+          reason: 'Wrong size ordered',
+          condition: 'unopened',
+          refundAmount: '320.00'
+        }
+      ],
+      'ret-005': [
+        {
+          id: 'ret-item-005',
+          returnId: 'ret-005',
+          productId: '18b05693-7338-4bd6-8530-2f3e28ec835d',
+          productName: 'Acrylic Powder - Clear',
+          quantity: 5,
+          reason: 'Duplicate order',
+          condition: 'unopened',
+          refundAmount: '890.00'
+        }
+      ],
+      'ret-006': [
+        {
+          id: 'ret-item-006',
+          returnId: 'ret-006',
+          productId: '18b05693-7338-4bd6-8530-2f3e28ec835d',
+          productName: 'UV Lamp Professional 54W',
+          quantity: 1,
+          reason: 'Not working properly',
+          condition: 'defective',
+          refundAmount: '1500.00'
+        }
+      ],
+      'ret-007': [
+        {
+          id: 'ret-item-007',
+          returnId: 'ret-007',
+          productId: '18b05693-7338-4bd6-8530-2f3e28ec835d',
+          productName: 'Nail File Set Professional',
+          quantity: 2,
+          reason: 'Customer changed mind',
+          condition: 'unopened',
+          refundAmount: '540.00'
+        }
+      ],
+      'ret-008': [
+        {
+          id: 'ret-item-008',
+          returnId: 'ret-008',
+          productId: '18b05693-7338-4bd6-8530-2f3e28ec835d',
+          productName: 'Base Coat Professional',
+          quantity: 4,
+          reason: 'Expired products',
+          condition: 'expired',
+          refundAmount: '780.00'
+        }
+      ]
+    };
+    
+    return mockItems[returnId] || [];
+  }
+  
   async createReturnItem(item: any): Promise<ReturnItem> { return { id: Date.now().toString(), ...item }; }
 
   async getExpenses(): Promise<Expense[]> {
