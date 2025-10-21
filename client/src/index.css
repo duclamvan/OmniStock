@@ -145,21 +145,21 @@
   --card-foreground: hsl(222, 84%, 4.9%);
   --border: hsl(214, 32%, 91%);
   --input: hsl(214, 32%, 91%);
-  --primary: hsl(0, 0%, 9%);
-  --primary-foreground: hsl(0, 0%, 98%);
+  --primary: hsl(188, 78%, 41%);
+  --primary-foreground: hsl(0, 0%, 100%);
   --secondary: hsl(210, 40%, 98%);
   --secondary-foreground: hsl(222, 84%, 4.9%);
   --accent: hsl(210, 40%, 98%);
   --accent-foreground: hsl(222, 84%, 4.9%);
   --destructive: hsl(0, 84%, 60%);
   --destructive-foreground: hsl(210, 40%, 98%);
-  --ring: hsl(0, 0%, 9%);
+  --ring: hsl(188, 78%, 41%);
   --radius: 0.75rem;
-  --chart-1: hsl(0, 0%, 9%);
-  --chart-2: hsl(215, 20%, 65%);
+  --chart-1: hsl(188, 78%, 41%);
+  --chart-2: hsl(188, 60%, 55%);
   --chart-3: hsl(43, 96%, 56%);
-  --chart-4: hsl(224, 76%, 48%);
-  --chart-5: hsl(214, 95%, 69%);
+  --chart-4: hsl(200, 85%, 45%);
+  --chart-5: hsl(175, 70%, 50%);
 }
 
 .dark {
@@ -173,15 +173,15 @@
   --card-foreground: hsl(210, 40%, 98%);
   --border: hsl(217, 32%, 17%);
   --input: hsl(217, 32%, 17%);
-  --primary: hsl(0, 0%, 98%);
-  --primary-foreground: hsl(0, 0%, 9%);
+  --primary: hsl(188, 78%, 50%);
+  --primary-foreground: hsl(0, 0%, 100%);
   --secondary: hsl(217, 32%, 17%);
   --secondary-foreground: hsl(210, 40%, 98%);
   --accent: hsl(217, 32%, 17%);
   --accent-foreground: hsl(210, 40%, 98%);
   --destructive: hsl(0, 62%, 30%);
   --destructive-foreground: hsl(210, 40%, 98%);
-  --ring: hsl(0, 0%, 98%);
+  --ring: hsl(188, 78%, 50%);
 }
 
 @layer base {
@@ -196,15 +196,15 @@
 
 /* Custom styles for the WMS application */
 .primary {
-  color: hsl(0, 0%, 9%);
+  color: hsl(188, 78%, 41%);
 }
 
 .bg-primary {
-  background-color: hsl(0, 0%, 9%);
+  background-color: hsl(188, 78%, 41%);
 }
 
 .border-primary {
-  border-color: hsl(0, 0%, 9%);
+  border-color: hsl(188, 78%, 41%);
 }
 
 /* Mobile Optimized Animations for Pick & Pack */
@@ -228,7 +228,7 @@
 }
 
 .text-primary {
-  color: hsl(0, 0%, 9%);
+  color: hsl(188, 78%, 41%);
 }
 
 .bg-emerald-50 {
