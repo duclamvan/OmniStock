@@ -134,51 +134,52 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   // Scroll navigation for expanded orders
   const scrollToExpandedOrder = useCallback((direction: 'next' | 'prev') => {
     // Get all expanded order rows by data attribute
-    const expandedRows = document.querySelectorAll('[data-expanded-order]');
+    const expandedRows = Array.from(document.querySelectorAll('[data-expanded-order]')) as HTMLElement[];
     if (expandedRows.length === 0) return;
 
-    const currentScroll = window.scrollY;
     const offset = 150; // Offset for header
+    const viewportCenter = window.scrollY + window.innerHeight / 2;
 
+    // Find the currently visible (closest to center) expanded row
+    let closestIndex = 0;
+    let closestDistance = Math.abs(expandedRows[0].offsetTop - viewportCenter);
+
+    expandedRows.forEach((row, index) => {
+      const distance = Math.abs(row.offsetTop - viewportCenter);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
+
+    // Navigate to next or previous
+    let targetIndex;
     if (direction === 'next') {
-      // Find the first expanded row below current position
-      for (let i = 0; i < expandedRows.length; i++) {
-        const row = expandedRows[i] as HTMLElement;
-        const rowTop = row.getBoundingClientRect().top + currentScroll;
-        if (rowTop > currentScroll + 100) { // 100px threshold
-          window.scrollTo({
-            top: rowTop - offset,
-            behavior: 'smooth'
-          });
-          return;
-        }
+      // If we're viewing the current row, go to next. Otherwise stay on current.
+      const currentRowTop = expandedRows[closestIndex].offsetTop;
+      if (Math.abs(window.scrollY + offset - currentRowTop) < 50) {
+        // We're already on this row, go to next
+        targetIndex = (closestIndex + 1) % expandedRows.length;
+      } else {
+        // Scroll to the closest one (current)
+        targetIndex = closestIndex;
       }
-      // If we're at the bottom, scroll to the first one
-      const firstRow = expandedRows[0] as HTMLElement;
-      window.scrollTo({
-        top: firstRow.getBoundingClientRect().top + currentScroll - offset,
-        behavior: 'smooth'
-      });
     } else {
-      // Find the first expanded row above current position
-      for (let i = expandedRows.length - 1; i >= 0; i--) {
-        const row = expandedRows[i] as HTMLElement;
-        const rowTop = row.getBoundingClientRect().top + currentScroll;
-        if (rowTop < currentScroll - 100) { // 100px threshold
-          window.scrollTo({
-            top: rowTop - offset,
-            behavior: 'smooth'
-          });
-          return;
-        }
+      // Similar logic for previous
+      const currentRowTop = expandedRows[closestIndex].offsetTop;
+      if (Math.abs(window.scrollY + offset - currentRowTop) < 50) {
+        // We're already on this row, go to previous
+        targetIndex = closestIndex === 0 ? expandedRows.length - 1 : closestIndex - 1;
+      } else {
+        // Scroll to the closest one (current)
+        targetIndex = closestIndex;
       }
-      // If we're at the top, scroll to the last one
-      const lastRow = expandedRows[expandedRows.length - 1] as HTMLElement;
-      window.scrollTo({
-        top: lastRow.getBoundingClientRect().top + currentScroll - offset,
-        behavior: 'smooth'
-      });
     }
+
+    window.scrollTo({
+      top: expandedRows[targetIndex].offsetTop - offset,
+      behavior: 'smooth'
+    });
   }, []);
 
   const { data: orders = [], isLoading, error } = useQuery({
