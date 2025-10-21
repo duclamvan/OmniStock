@@ -538,11 +538,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const customersWithStats = customers.map(customer => {
         const customerOrders = allOrders
           .filter(order => order.customerId === customer.id)
-          .sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
+          .sort((a, b) => {
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return dateB - dateA;
+          });
 
         const totalOrders = customerOrders.length;
         const lastOrder = customerOrders[0];
-        const lastOrderDate = lastOrder ? new Date(lastOrder.orderDate) : null;
+        const lastOrderDate = lastOrder?.createdAt ? new Date(lastOrder.createdAt) : null;
         
         let lastOrderText = 'Never';
         if (lastOrderDate) {
@@ -564,11 +568,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastOrderText,
           recentOrders: customerOrders.slice(0, 3).map(order => ({
             id: order.id,
-            orderNumber: order.orderNumber,
-            orderDate: order.orderDate,
-            totalPrice: order.totalPrice,
-            currency: order.currency,
-            status: order.status
+            orderNumber: order.orderId || 'N/A',
+            orderDate: order.createdAt || new Date().toISOString(),
+            totalPrice: order.grandTotal || '0',
+            currency: order.currency || 'CZK',
+            status: order.orderStatus || 'pending'
           }))
         };
       });
