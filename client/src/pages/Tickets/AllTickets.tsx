@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
+import { cn } from "@/lib/utils";
 import { 
   Plus, 
   Ticket as TicketIcon, 
