@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, memo } from "react";
+import { useState, useEffect, useMemo, memo, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +19,7 @@ import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { getCountryFlag } from "@/lib/countries";
 import { cn } from "@/lib/utils";
-import { Plus, Search, Filter, Download, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal, Sparkles, RefreshCw, Heart, AlertTriangle, TrendingUp } from "lucide-react";
+import { Plus, Search, Filter, Download, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal, Sparkles, RefreshCw, Heart, AlertTriangle, TrendingUp, ArrowUp, ArrowDown } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -130,6 +130,56 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     setShowBadges(newValue);
     localStorage.setItem('orderDetailsBadgesVisible', String(newValue));
   };
+
+  // Scroll navigation for expanded orders
+  const scrollToExpandedOrder = useCallback((direction: 'next' | 'prev') => {
+    // Get all expanded order rows by data attribute
+    const expandedRows = document.querySelectorAll('[data-expanded-order]');
+    if (expandedRows.length === 0) return;
+
+    const currentScroll = window.scrollY;
+    const offset = 150; // Offset for header
+
+    if (direction === 'next') {
+      // Find the first expanded row below current position
+      for (let i = 0; i < expandedRows.length; i++) {
+        const row = expandedRows[i] as HTMLElement;
+        const rowTop = row.getBoundingClientRect().top + currentScroll;
+        if (rowTop > currentScroll + 100) { // 100px threshold
+          window.scrollTo({
+            top: rowTop - offset,
+            behavior: 'smooth'
+          });
+          return;
+        }
+      }
+      // If we're at the bottom, scroll to the first one
+      const firstRow = expandedRows[0] as HTMLElement;
+      window.scrollTo({
+        top: firstRow.getBoundingClientRect().top + currentScroll - offset,
+        behavior: 'smooth'
+      });
+    } else {
+      // Find the first expanded row above current position
+      for (let i = expandedRows.length - 1; i >= 0; i--) {
+        const row = expandedRows[i] as HTMLElement;
+        const rowTop = row.getBoundingClientRect().top + currentScroll;
+        if (rowTop < currentScroll - 100) { // 100px threshold
+          window.scrollTo({
+            top: rowTop - offset,
+            behavior: 'smooth'
+          });
+          return;
+        }
+      }
+      // If we're at the top, scroll to the last one
+      const lastRow = expandedRows[expandedRows.length - 1] as HTMLElement;
+      window.scrollTo({
+        top: lastRow.getBoundingClientRect().top + currentScroll - offset,
+        behavior: 'smooth'
+      });
+    }
+  }, []);
 
   const { data: orders = [], isLoading, error } = useQuery({
     queryKey: filter ? ['/api/orders', 'status', filter] : ['/api/orders'],
@@ -925,7 +975,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               defaultExpandAll={expandAll}
               expandable={{
                 render: (order) => (
-                  <div className="space-y-4 max-w-4xl">
+                  <div className="space-y-4 max-w-4xl" data-expanded-order={order.id}>
                     {/* Customer Info Header */}
                     <div className="flex items-center gap-3 pb-3 border-b border-slate-200">
                       <div className="flex-1">
@@ -1451,6 +1501,51 @@ export default function AllOrders({ filter }: AllOrdersProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Scroll Navigation Buttons - Desktop only, shown when orders are expanded */}
+      {expandAll && viewMode === 'normal' && filteredOrders && filteredOrders.length > 0 && (
+        <div className="hidden lg:block fixed right-8 bottom-24 z-50">
+          <div className="flex flex-col gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="default"
+                    size="icon"
+                    onClick={() => scrollToExpandedOrder('prev')}
+                    className="h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-all bg-primary hover:bg-primary/90"
+                    data-testid="button-scroll-up"
+                  >
+                    <ArrowUp className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  <p>Previous Order</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="default"
+                    size="icon"
+                    onClick={() => scrollToExpandedOrder('next')}
+                    className="h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-all bg-primary hover:bg-primary/90"
+                    data-testid="button-scroll-down"
+                  >
+                    <ArrowDown className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  <p>Next Order</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
