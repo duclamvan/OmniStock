@@ -60,6 +60,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { GlobalSearch } from '@/components/GlobalSearch';
 
 interface MobileResponsiveLayoutProps {
   children: React.ReactNode;
@@ -634,16 +635,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                  location.includes('/shipping') ? 'Shipping Management' :
                  location.includes('/reports') ? 'Reports' : 'Dashboard'}
               </h2>
-              <div className="relative max-w-md w-full">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full"
-                />
-              </div>
+              <GlobalSearch />
             </div>
 
             {/* Right Section */}
