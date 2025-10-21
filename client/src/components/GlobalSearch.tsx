@@ -48,18 +48,28 @@ interface SearchResult {
 
 export function GlobalSearch() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [, setLocation] = useLocation();
   const searchRef = useRef<HTMLDivElement>(null);
 
+  // Debounce search query - wait 300ms after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const { data: results, isLoading } = useQuery<SearchResult>({
-    queryKey: ['/api/search', searchQuery],
+    queryKey: ['/api/search', debouncedQuery],
     queryFn: async () => {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`);
+      const response = await fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`);
       if (!response.ok) throw new Error('Search failed');
       return response.json();
     },
-    enabled: searchQuery.trim().length > 0,
+    enabled: debouncedQuery.trim().length > 0,
   });
 
   // Close dropdown when clicking outside
@@ -76,10 +86,12 @@ export function GlobalSearch() {
 
   // Show results when query changes and has results
   useEffect(() => {
-    if (searchQuery.trim().length > 0 && results) {
+    if (debouncedQuery.trim().length > 0 && results) {
       setShowResults(true);
+    } else if (debouncedQuery.trim().length === 0) {
+      setShowResults(false);
     }
-  }, [searchQuery, results]);
+  }, [debouncedQuery, results]);
 
   const handleItemClick = (type: 'inventory' | 'shipment' | 'customer', id: string, productId?: string) => {
     if (type === 'inventory') {
