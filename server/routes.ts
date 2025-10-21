@@ -459,13 +459,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const normalizedQuery = normalizeVietnamese(query.toLowerCase().trim());
 
+      // Helper to check if query matches from the first word
+      const matchesFromFirstWord = (text: string, query: string): boolean => {
+        const words = text.split(/\s+/);
+        return words.some(word => word.startsWith(query));
+      };
+
       // Search inventory (current stock)
       const allProducts = await storage.getProducts();
       const inventoryItems = allProducts
         .filter(product => {
           const normalizedName = normalizeVietnamese((product.name || '').toLowerCase());
           const normalizedSku = normalizeVietnamese((product.sku || '').toLowerCase());
-          return normalizedName.includes(normalizedQuery) || normalizedSku.includes(normalizedQuery);
+          
+          // Match from first word for name, or anywhere for SKU
+          return matchesFromFirstWord(normalizedName, normalizedQuery) || 
+                 normalizedSku.includes(normalizedQuery);
         })
         .slice(0, 10)
         .map(product => ({
@@ -477,42 +486,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: 'inventory' as const
         }));
 
-      // Search upcoming shipments (purchase orders)
-      const allPurchases = await db.query.purchases.findMany({
-        with: {
-          items: {
-            with: {
-              product: true
-            }
-          }
-        }
-      });
-
+      // Search upcoming shipments (purchase orders) - Skip for now as purchases are not in DB
       const shipmentItems: any[] = [];
-      for (const purchase of allPurchases) {
-        for (const item of purchase.items || []) {
-          if (item.product) {
-            const normalizedName = normalizeVietnamese((item.product.name || '').toLowerCase());
-            const normalizedSku = normalizeVietnamese((item.product.sku || '').toLowerCase());
-            
-            if (normalizedName.includes(normalizedQuery) || normalizedSku.includes(normalizedQuery)) {
-              shipmentItems.push({
-                id: item.id,
-                productId: item.product.id,
-                name: item.product.name,
-                sku: item.product.sku,
-                quantity: item.quantity,
-                purchaseOrderId: purchase.id,
-                purchaseOrderNumber: purchase.purchaseOrderNumber,
-                expectedDeliveryDate: purchase.expectedDeliveryDate,
-                status: purchase.status,
-                imageUrl: item.product.imageUrl,
-                type: 'shipment' as const
-              });
-            }
-          }
-        }
-      }
 
       // Search customers
       const allCustomers = await storage.getCustomers();
@@ -521,53 +496,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const normalizedName = normalizeVietnamese((customer.name || '').toLowerCase());
           const normalizedEmail = normalizeVietnamese((customer.email || '').toLowerCase());
           const normalizedCompany = normalizeVietnamese((customer.company || '').toLowerCase());
-          return normalizedName.includes(normalizedQuery) || 
-                 normalizedEmail.includes(normalizedQuery) ||
-                 normalizedCompany.includes(normalizedQuery);
+          
+          // Match from first word
+          return matchesFromFirstWord(normalizedName, normalizedQuery) || 
+                 matchesFromFirstWord(normalizedEmail, normalizedQuery) ||
+                 matchesFromFirstWord(normalizedCompany, normalizedQuery);
         })
         .slice(0, 10);
 
       // Get order statistics for each customer
-      const customersWithStats = await Promise.all(
-        customers.map(async (customer) => {
-          const customerOrders = await db.query.orders.findMany({
-            where: eq(orders.customerId, customer.id),
-            orderBy: desc(orders.orderDate),
-          });
+      const allOrders = await storage.getOrders();
+      const customersWithStats = customers.map(customer => {
+        const customerOrders = allOrders
+          .filter(order => order.customerId === customer.id)
+          .sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
 
-          const totalOrders = customerOrders.length;
-          const lastOrder = customerOrders[0];
-          const lastOrderDate = lastOrder ? new Date(lastOrder.orderDate) : null;
+        const totalOrders = customerOrders.length;
+        const lastOrder = customerOrders[0];
+        const lastOrderDate = lastOrder ? new Date(lastOrder.orderDate) : null;
+        
+        let lastOrderText = 'Never';
+        if (lastOrderDate) {
+          const now = new Date();
+          const diffTime = Math.abs(now.getTime() - lastOrderDate.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
           
-          let lastOrderText = 'Never';
-          if (lastOrderDate) {
-            const now = new Date();
-            const diffTime = Math.abs(now.getTime() - lastOrderDate.getTime());
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
-            if (diffDays === 0) lastOrderText = 'Today';
-            else if (diffDays === 1) lastOrderText = '1 day ago';
-            else if (diffDays < 30) lastOrderText = `${diffDays} days ago`;
-            else if (diffDays < 60) lastOrderText = '1 month ago';
-            else lastOrderText = `${Math.floor(diffDays / 30)} months ago`;
-          }
+          if (diffDays === 0) lastOrderText = 'Today';
+          else if (diffDays === 1) lastOrderText = '1 day ago';
+          else if (diffDays < 30) lastOrderText = `${diffDays} days ago`;
+          else if (diffDays < 60) lastOrderText = '1 month ago';
+          else lastOrderText = `${Math.floor(diffDays / 30)} months ago`;
+        }
 
-          return {
-            ...customer,
-            totalOrders,
-            lastOrderDate,
-            lastOrderText,
-            recentOrders: customerOrders.slice(0, 3).map(order => ({
-              id: order.id,
-              orderNumber: order.orderNumber,
-              orderDate: order.orderDate,
-              totalPrice: order.totalPrice,
-              currency: order.currency,
-              status: order.status
-            }))
-          };
-        })
-      );
+        return {
+          ...customer,
+          totalOrders,
+          lastOrderDate,
+          lastOrderText,
+          recentOrders: customerOrders.slice(0, 3).map(order => ({
+            id: order.id,
+            orderNumber: order.orderNumber,
+            orderDate: order.orderDate,
+            totalPrice: order.totalPrice,
+            currency: order.currency,
+            status: order.status
+          }))
+        };
+      });
 
       res.json({
         inventoryItems,
