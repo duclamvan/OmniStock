@@ -120,13 +120,12 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
 
     setIsGeneratingSubject(true);
     try {
-      const response: any = await apiRequest("POST", "/api/tickets/generate-subject", {
+      const response = await apiRequest("POST", "/api/tickets/generate-subject", {
         description: descriptionText,
       });
 
-      console.log("AI Response:", response);
-      const generatedSubject = response.subject || "";
-      console.log("Generated Subject:", generatedSubject);
+      const data = await response.json();
+      const generatedSubject = data.subject || "";
       
       if (generatedSubject) {
         form.setValue("title", generatedSubject, { shouldValidate: true, shouldDirty: true });
