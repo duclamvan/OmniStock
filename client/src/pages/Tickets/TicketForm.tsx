@@ -124,12 +124,16 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
         description: descriptionText,
       });
 
+      console.log("AI Response:", response);
       const generatedSubject = response.subject || "";
+      console.log("Generated Subject:", generatedSubject);
+      
       if (generatedSubject) {
-        form.setValue("title", generatedSubject);
+        form.setValue("title", generatedSubject, { shouldValidate: true, shouldDirty: true });
+        setHasManuallyEditedTitle(false);
         toast({
           title: "Subject Generated",
-          description: "AI has generated a subject for your ticket",
+          description: generatedSubject,
         });
       }
     } catch (error) {
