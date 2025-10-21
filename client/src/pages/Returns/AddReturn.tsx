@@ -740,75 +740,25 @@ export default function AddReturn() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Barcode Scanner Section */}
-                <div className={cn(
-                  "border-2 rounded-lg p-4 transition-all",
-                  productsQuery.isLoading 
-                    ? "border-gray-300 bg-gray-50/50 dark:bg-gray-900/20 opacity-60" 
-                    : "border-blue-500 bg-blue-50/50 dark:bg-blue-950/20"
-                )}>
-                  <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "flex items-center justify-center w-10 h-10 rounded-full text-white shrink-0",
-                      productsQuery.isLoading ? "bg-gray-400" : "bg-blue-500"
-                    )}>
-                      <Scan className="h-5 w-5" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Label htmlFor="barcode-scan" className={cn(
-                          "text-sm font-semibold",
-                          productsQuery.isLoading 
-                            ? "text-gray-500 dark:text-gray-400" 
-                            : "text-blue-700 dark:text-blue-300"
-                        )}>
-                          Quick Add by Barcode
-                        </Label>
-                        {productsQuery.isLoading && (
-                          <Badge variant="secondary" className="text-xs">
-                            Loading products...
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="relative">
-                        <Input
-                          ref={barcodeInputRef}
-                          id="barcode-scan"
-                          type="text"
-                          value={barcodeInput}
-                          onChange={(e) => setBarcodeInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleBarcodeScan(barcodeInput);
-                            }
-                          }}
-                          placeholder={productsQuery.isLoading ? "Loading products..." : "Scan barcode or enter SKU..."}
-                          className={cn(
-                            "h-11 pr-10",
-                            productsQuery.isLoading 
-                              ? "border-gray-300 bg-gray-100 dark:bg-gray-800 cursor-not-allowed" 
-                              : "border-blue-300 focus:border-blue-500 focus:ring-blue-500"
-                          )}
-                          disabled={productsQuery.isLoading}
-                          data-testid="input-barcode-scan"
-                        />
-                        <div className={cn(
-                          "absolute right-3 top-1/2 -translate-y-1/2",
-                          productsQuery.isLoading ? "text-gray-400" : "text-blue-400"
-                        )}>
-                          <Search className="h-4 w-4" />
-                        </div>
-                      </div>
-                      <p className={cn(
-                        "text-xs mt-1",
-                        productsQuery.isLoading 
-                          ? "text-gray-500 dark:text-gray-400" 
-                          : "text-blue-600 dark:text-blue-400"
-                      )}>
-                        {productsQuery.isLoading ? "Please wait for products to load..." : "Press Enter to add product"}
-                      </p>
-                    </div>
-                  </div>
+                <div className="relative">
+                  <Input
+                    ref={barcodeInputRef}
+                    id="barcode-scan"
+                    type="text"
+                    value={barcodeInput}
+                    onChange={(e) => setBarcodeInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleBarcodeScan(barcodeInput);
+                      }
+                    }}
+                    placeholder="Scan barcode or enter SKU..."
+                    className="pl-10"
+                    disabled={productsQuery.isLoading}
+                    data-testid="input-barcode-scan"
+                  />
+                  <Scan className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 </div>
 
                 {fields.length === 0 ? (
