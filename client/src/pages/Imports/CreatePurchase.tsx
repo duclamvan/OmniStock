@@ -412,7 +412,7 @@ export default function CreatePurchase() {
       dimensions: product.dimensions || currentItem.dimensions || "",
       barcode: product.barcode || "",
       categoryId: product.categoryId || undefined,
-      category: product.category || "",
+      category: (product as any).categoryName || product.category || "",
       binLocation: binLocation
     });
     setSelectedProduct(product);
