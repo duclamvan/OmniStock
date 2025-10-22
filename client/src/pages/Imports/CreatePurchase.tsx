@@ -2291,105 +2291,75 @@ export default function CreatePurchase() {
         {/* Right Column - Summary (Sticky) */}
         <div className="xl:sticky xl:top-6 h-fit space-y-6">
           {/* Status Selection */}
-          <Card className="shadow-md border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Package className="h-5 w-5 text-primary" />
-                Order Status
-              </CardTitle>
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Order Status</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-1 gap-2">
-                <button
-                  onClick={() => setStatus("pending")}
-                  className={cn(
-                    "w-full p-3 rounded-lg border-2 transition-all text-left",
-                    status === "pending" 
-                      ? "bg-amber-50 dark:bg-amber-950/30 border-amber-400 dark:border-amber-600" 
-                      : "bg-background border-border hover:border-amber-300"
-                  )}
-                  data-testid="status-pending"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">Pending</span>
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                      Awaiting
-                    </span>
-                  </div>
-                </button>
-                
-                <button
-                  onClick={() => setStatus("processing")}
-                  className={cn(
-                    "w-full p-3 rounded-lg border-2 transition-all text-left",
-                    status === "processing" 
-                      ? "bg-blue-50 dark:bg-blue-950/30 border-blue-400 dark:border-blue-600" 
-                      : "bg-background border-border hover:border-blue-300"
-                  )}
-                  data-testid="status-processing"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">Processing</span>
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                      Active
-                    </span>
-                  </div>
-                </button>
-                
-                <button
-                  onClick={() => setStatus("at_warehouse")}
-                  className={cn(
-                    "w-full p-3 rounded-lg border-2 transition-all text-left",
-                    status === "at_warehouse" 
-                      ? "bg-purple-50 dark:bg-purple-950/30 border-purple-400 dark:border-purple-600" 
-                      : "bg-background border-border hover:border-purple-300"
-                  )}
-                  data-testid="status-at-warehouse"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">Consolidation</span>
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                      Staging
-                    </span>
-                  </div>
-                </button>
-                
-                <button
-                  onClick={() => setStatus("shipped")}
-                  className={cn(
-                    "w-full p-3 rounded-lg border-2 transition-all text-left",
-                    status === "shipped" 
-                      ? "bg-cyan-50 dark:bg-cyan-950/30 border-cyan-400 dark:border-cyan-600" 
-                      : "bg-background border-border hover:border-cyan-300"
-                  )}
-                  data-testid="status-shipped"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">Shipped</span>
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200">
-                      In Transit
-                    </span>
-                  </div>
-                </button>
-                
-                <button
-                  onClick={() => setStatus("delivered")}
-                  className={cn(
-                    "w-full p-3 rounded-lg border-2 transition-all text-left",
-                    status === "delivered" 
-                      ? "bg-green-50 dark:bg-green-950/30 border-green-400 dark:border-green-600" 
-                      : "bg-background border-border hover:border-green-300"
-                  )}
-                  data-testid="status-delivered"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">Delivered</span>
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                      Complete
-                    </span>
-                  </div>
-                </button>
-              </div>
+            <CardContent className="space-y-1.5">
+              <button
+                onClick={() => setStatus("pending")}
+                className={cn(
+                  "w-full px-3 py-2 rounded-md border text-sm transition-colors text-left",
+                  status === "pending" 
+                    ? "bg-amber-50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-100 font-medium" 
+                    : "border-border hover:bg-muted/50"
+                )}
+                data-testid="status-pending"
+              >
+                Pending
+              </button>
+              
+              <button
+                onClick={() => setStatus("processing")}
+                className={cn(
+                  "w-full px-3 py-2 rounded-md border text-sm transition-colors text-left",
+                  status === "processing" 
+                    ? "bg-blue-50 dark:bg-blue-950/20 border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100 font-medium" 
+                    : "border-border hover:bg-muted/50"
+                )}
+                data-testid="status-processing"
+              >
+                Processing
+              </button>
+              
+              <button
+                onClick={() => setStatus("at_warehouse")}
+                className={cn(
+                  "w-full px-3 py-2 rounded-md border text-sm transition-colors text-left",
+                  status === "at_warehouse" 
+                    ? "bg-purple-50 dark:bg-purple-950/20 border-purple-300 dark:border-purple-700 text-purple-900 dark:text-purple-100 font-medium" 
+                    : "border-border hover:bg-muted/50"
+                )}
+                data-testid="status-at-warehouse"
+              >
+                Consolidation
+              </button>
+              
+              <button
+                onClick={() => setStatus("shipped")}
+                className={cn(
+                  "w-full px-3 py-2 rounded-md border text-sm transition-colors text-left",
+                  status === "shipped" 
+                    ? "bg-cyan-50 dark:bg-cyan-950/20 border-cyan-300 dark:border-cyan-700 text-cyan-900 dark:text-cyan-100 font-medium" 
+                    : "border-border hover:bg-muted/50"
+                )}
+                data-testid="status-shipped"
+              >
+                Shipped
+              </button>
+              
+              <button
+                onClick={() => setStatus("delivered")}
+                className={cn(
+                  "w-full px-3 py-2 rounded-md border text-sm transition-colors text-left",
+                  status === "delivered" 
+                    ? "bg-green-50 dark:bg-green-950/20 border-green-300 dark:border-green-700 text-green-900 dark:text-green-100 font-medium" 
+                    : "border-border hover:bg-muted/50"
+                )}
+                data-testid="status-delivered"
+              >
+                Delivered
+              </button>
             </CardContent>
           </Card>
 
