@@ -543,7 +543,7 @@ export const orders = pgTable('orders', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
   orderId: varchar('order_id').notNull(),
   customerId: varchar('customer_id'),
-  billerId: varchar('biller_id'),
+  billerId: varchar('biller_id').references(() => users.id),
   currency: varchar('currency').default('CZK'),
   orderStatus: varchar('order_status').default('pending'),
   paymentStatus: varchar('payment_status').default('pending'),
