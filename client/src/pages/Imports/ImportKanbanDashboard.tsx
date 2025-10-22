@@ -584,7 +584,7 @@ export default function ImportKanbanDashboard() {
   const columns = [
     {
       id: 'processing',
-      title: 'Supplier Processing',
+      title: 'Purchase Orders',
       icon: <Package className="h-4 w-4" />,
       count: filteredPurchases.length,
       bgColor: 'bg-yellow-50 dark:bg-yellow-900/10',
@@ -712,7 +712,7 @@ export default function ImportKanbanDashboard() {
             {/* Column Content */}
             <div className="h-[400px] md:h-[500px] lg:h-[600px] overflow-y-auto overflow-x-hidden w-full">
               <div className="space-y-2 md:space-y-3 px-1.5 sm:px-2 md:px-2.5 lg:px-3 py-2 pr-2">
-                {/* Supplier Processing Column */}
+                {/* Purchase Orders Column */}
                 {column.id === 'processing' && filteredPurchases.map((purchase) => (
                   <PurchaseCard 
                     key={purchase.id} 

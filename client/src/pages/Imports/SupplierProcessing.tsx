@@ -689,7 +689,7 @@ export default function SupplierProcessing() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Supplier Processing</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Purchase Orders</h1>
           <p className="text-sm md:text-base text-muted-foreground">Manage import purchases from suppliers</p>
         </div>
         <Link href="/imports/supplier-processing/create" className="w-full sm:w-auto">

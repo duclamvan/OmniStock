@@ -585,7 +585,7 @@ export default function AddPreOrder() {
                                 </CommandItem>
                               ))}
                           </CommandGroup>
-                          <CommandGroup heading="Supplier Processing Items">
+                          <CommandGroup heading="Purchase Order Items">
                             {getAllItems()
                               .filter(i => i.type === 'purchase')
                               .map((purchaseItem: any) => (

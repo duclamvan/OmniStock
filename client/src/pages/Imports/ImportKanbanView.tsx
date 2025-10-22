@@ -328,7 +328,7 @@ export default function ImportKanbanView() {
   const [columns, setColumns] = useState<KanbanColumn[]>([
     {
       id: "processing",
-      title: "Supplier Processing",
+      title: "Purchase Orders",
       color: "bg-yellow-50 dark:bg-yellow-900/20",
       icon: <Activity className="h-3.5 w-3.5" />,
       items: []
