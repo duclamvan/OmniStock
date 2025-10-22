@@ -1203,14 +1203,93 @@ export default function ProductForm() {
   };
 
   const generateSKU = () => {
-    const categoryName = categories?.find((c: any) => c.id === categoryId)?.name || 'PRODUCT';
-    const name = productName || 'ITEM';
+    // Helper function to remove Vietnamese diacritics and clean text
+    const cleanText = (text: string): string => {
+      return text
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'D')
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '');
+    };
     
-    const categoryPart = categoryName.slice(0, 3).toUpperCase();
-    const productPart = name.slice(0, 10).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    // Get form values
+    const name = form.watch('name') || '';
+    const englishName = form.watch('englishName') || '';
+    const priceCzk = form.watch('priceCzk') || 0;
+    const priceEur = form.watch('priceEur') || 0;
+    const quantity = form.watch('quantity') || 0;
     
-    const baseSKU = `X-${categoryPart}-${productPart}`;
+    // 1. Category Part (3 chars)
+    const categoryName = categories?.find((c: any) => c.id === categoryId)?.name || 'GEN';
+    const categoryPart = cleanText(categoryName).slice(0, 3) || 'GEN';
+    
+    // 2. Supplier Part (2 chars) - optional
+    const supplierName = suppliers?.find((s: any) => s.id === supplierId)?.name || '';
+    const supplierPart = supplierName ? cleanText(supplierName).slice(0, 2) : '';
+    
+    // 3. Product Name Part (4-6 chars) - prefer English name if available
+    const productText = englishName || name || 'ITEM';
+    const words = productText.split(/\s+/).filter(w => w.length > 0);
+    let productPart = '';
+    
+    if (words.length === 1) {
+      // Single word: take first 6 characters
+      productPart = cleanText(words[0]).slice(0, 6);
+    } else if (words.length === 2) {
+      // Two words: take first 3 chars of each
+      productPart = cleanText(words[0]).slice(0, 3) + cleanText(words[1]).slice(0, 3);
+    } else {
+      // Multiple words: take first 2 chars of first 3 words
+      productPart = words.slice(0, 3).map(w => cleanText(w).slice(0, 2)).join('');
+    }
+    
+    // Ensure product part is not empty
+    if (!productPart) {
+      productPart = 'PROD';
+    }
+    
+    // 4. Price Tier Indicator (optional) - based on CZK price
+    let priceTier = '';
+    if (priceCzk > 0) {
+      if (priceCzk < 100) priceTier = 'B'; // Budget
+      else if (priceCzk < 500) priceTier = 'S'; // Standard
+      else if (priceCzk < 1000) priceTier = 'P'; // Premium
+      else priceTier = 'L'; // Luxury
+    }
+    
+    // 5. Random suffix for uniqueness (3 digits)
+    const randomSuffix = Math.floor(100 + Math.random() * 900).toString();
+    
+    // 6. Quantity indicator (optional) - for stock level
+    let qtyIndicator = '';
+    if (quantity > 100) qtyIndicator = 'H'; // High stock
+    else if (quantity > 20) qtyIndicator = 'M'; // Medium stock
+    else if (quantity > 0) qtyIndicator = 'L'; // Low stock
+    
+    // Construct SKU with available parts
+    let skuParts = [categoryPart];
+    
+    if (supplierPart) {
+      skuParts.push(supplierPart);
+    }
+    
+    skuParts.push(productPart);
+    
+    if (priceTier) {
+      skuParts.push(priceTier);
+    }
+    
+    skuParts.push(randomSuffix);
+    
+    const baseSKU = skuParts.join('-');
     form.setValue('sku', baseSKU);
+    
+    toast({
+      title: "SKU Generated",
+      description: `Generated: ${baseSKU}`,
+    });
   };
 
   // Variant functions
