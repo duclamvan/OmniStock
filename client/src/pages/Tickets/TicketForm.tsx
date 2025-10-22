@@ -237,6 +237,8 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
   });
 
   const onSubmit = (data: TicketFormValues) => {
+    console.log('Form submitted with data:', data);
+    console.log('Form errors:', form.formState.errors);
     mutation.mutate(data);
   };
 
@@ -263,7 +265,19 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form 
+          onSubmit={form.handleSubmit(
+            onSubmit,
+            (errors) => {
+              console.log('Form validation errors:', errors);
+              toast({
+                title: "Form Validation Error",
+                description: "Please check the form for errors",
+                variant: "destructive",
+              });
+            }
+          )} 
+          className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left: Main Form */}
             <div className="lg:col-span-2 space-y-6">
