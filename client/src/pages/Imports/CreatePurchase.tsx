@@ -418,7 +418,7 @@ export default function CreatePurchase() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
       toast({ title: "Success", description: "Purchase created successfully" });
-      navigate('/imports/supplier-processing');
+      navigate('/purchase-orders');
     },
     onError: () => {
       toast({ 
@@ -447,7 +447,7 @@ export default function CreatePurchase() {
       }
       
       toast({ title: "Success", description: "Purchase updated successfully" });
-      navigate('/imports/supplier-processing');
+      navigate('/purchase-orders');
     },
     onError: () => {
       toast({ 
@@ -1036,7 +1036,7 @@ export default function CreatePurchase() {
           <Button 
             variant="ghost" 
             size="icon"
-            onClick={() => navigate('/imports/supplier-processing')}
+            onClick={() => navigate('/purchase-orders')}
             data-testid="button-back"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -1049,7 +1049,7 @@ export default function CreatePurchase() {
         <div className="flex gap-2">
           <Button 
             variant="outline" 
-            onClick={() => navigate('/imports/supplier-processing')}
+            onClick={() => navigate('/purchase-orders')}
             data-testid="button-cancel"
           >
             Cancel

@@ -256,7 +256,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       description: "International Orders",
       children: [
         { name: "Kanban Dashboard", href: "/imports/kanban" },
-        { name: "Purchase Orders", href: "/imports/supplier-processing" },
+        { name: "Purchase Orders", href: "/purchase-orders" },
         { name: "Consolidation", href: "/imports/at-warehouse" },
         { name: "International Transit", href: "/imports/international-transit" },
       ],

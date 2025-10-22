@@ -178,9 +178,9 @@ function Router() {
         <Route path="/files" component={Files} />
         {/* Import Management Routes */}
         <Route path="/imports/kanban" component={ImportKanbanDashboard} />
-        <Route path="/imports/supplier-processing/create" component={CreatePurchase} />
-        <Route path="/imports/supplier-processing/edit/:id" component={CreatePurchase} />
-        <Route path="/imports/supplier-processing" component={SupplierProcessing} />
+        <Route path="/purchase-orders/create" component={CreatePurchase} />
+        <Route path="/purchase-orders/edit/:id" component={CreatePurchase} />
+        <Route path="/purchase-orders" component={SupplierProcessing} />
         <Route path="/imports/at-warehouse" component={AtWarehouse} />
         <Route path="/imports/international-transit" component={InternationalTransit} />
         <Route path="/imports">

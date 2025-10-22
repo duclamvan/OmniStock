@@ -701,7 +701,7 @@ export default function SupplierProcessing() {
           <h1 className="text-2xl md:text-3xl font-bold">Purchase Orders</h1>
           <p className="text-sm md:text-base text-muted-foreground">Manage import purchases from suppliers</p>
         </div>
-        <Link href="/imports/supplier-processing/create" className="w-full sm:w-auto">
+        <Link href="/purchase-orders/create" className="w-full sm:w-auto">
           <Button data-testid="button-create-purchase" className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Create Purchase
@@ -839,7 +839,7 @@ export default function SupplierProcessing() {
                 }
               </p>
               {purchases.length === 0 && (
-                <Link href="/imports/supplier-processing/create">
+                <Link href="/purchase-orders/create">
                   <Button data-testid="button-create-first-purchase">
                     <Plus className="h-4 w-4 mr-2" />
                     Create Purchase
@@ -917,7 +917,7 @@ export default function SupplierProcessing() {
                               <SelectItem value="delivered">Delivered</SelectItem>
                             </SelectContent>
                           </Select>
-                          <Link href={`/imports/supplier-processing/edit/${purchase.id}`}>
+                          <Link href={`/purchase-orders/edit/${purchase.id}`}>
                             <Button
                               variant="outline"
                               size="sm"
