@@ -1910,8 +1910,7 @@ export default function CreatePurchase() {
                               
                               <div className="flex items-center gap-1">
                                 <span className="text-sm text-muted-foreground">Price:</span>
-                                <div className="flex items-center">
-                                  <span className="text-sm mr-1">{currencySymbol}</span>
+                                <div className="flex items-center gap-1">
                                   <Input
                                     type="number"
                                     value={item.unitPrice}
@@ -1925,15 +1924,16 @@ export default function CreatePurchase() {
                                     step="0.01"
                                     min="0"
                                   />
+                                  <span className="text-xs text-muted-foreground">{purchaseCurrency}</span>
                                 </div>
                               </div>
                               
                               <div className="ml-auto text-right">
                                 <div className="text-sm font-medium">
-                                  {currencySymbol}{item.totalPrice.toFixed(2)}
+                                  {item.totalPrice.toFixed(2)} {purchaseCurrency}
                                 </div>
                                 <div className="text-xs text-green-600">
-                                  +ship: {currencySymbol}{item.costWithShipping.toFixed(2)}
+                                  +ship: {item.costWithShipping.toFixed(2)} {purchaseCurrency}
                                 </div>
                               </div>
                             </div>
@@ -1967,16 +1967,16 @@ export default function CreatePurchase() {
                         </div>
                         <div className="flex justify-between text-sm">
                           <span>Subtotal:</span>
-                          <span className="font-medium">{currencySymbol}{subtotal.toFixed(2)}</span>
+                          <span className="font-medium">{subtotal.toFixed(2)} {purchaseCurrency}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span>Shipping:</span>
-                          <span className="font-medium">{currencySymbol}{shippingCost.toFixed(2)}</span>
+                          <span className="font-medium">{shippingCost.toFixed(2)} {purchaseCurrency}</span>
                         </div>
                         <Separator className="my-2" />
                         <div className="flex justify-between">
                           <span className="font-semibold">Total with Shipping:</span>
-                          <span className="font-semibold text-green-600">{currencySymbol}{grandTotal.toFixed(2)}</span>
+                          <span className="font-semibold text-green-600">{grandTotal.toFixed(2)} {purchaseCurrency}</span>
                         </div>
                       </div>
                     </div>
@@ -2099,8 +2099,7 @@ export default function CreatePurchase() {
                           
                           {/* Unit Price */}
                           <TableCell className="text-right">
-                            <div className="flex items-center justify-end">
-                              <span className="text-sm mr-1">{currencySymbol}</span>
+                            <div className="flex items-center justify-end gap-1">
                               <Input
                                 type="number"
                                 value={item.unitPrice}
@@ -2114,6 +2113,7 @@ export default function CreatePurchase() {
                                 step="0.01"
                                 min="0"
                               />
+                              <span className="text-xs text-muted-foreground">{purchaseCurrency}</span>
                             </div>
                           </TableCell>
                           
@@ -2138,7 +2138,7 @@ export default function CreatePurchase() {
                           {/* Total */}
                           <TableCell className="text-right">
                             <span className="font-medium text-sm">
-                              {currencySymbol}{item.totalPrice.toFixed(2)}
+                              {item.totalPrice.toFixed(2)} {purchaseCurrency}
                             </span>
                           </TableCell>
                           
@@ -2148,18 +2148,12 @@ export default function CreatePurchase() {
                               const selectedCurrency = itemCurrencyDisplay[item.id] || purchaseCurrency;
                               const rate = exchangeRates[selectedCurrency] / exchangeRates[purchaseCurrency];
                               const convertedCost = item.costWithShipping * rate;
-                              const symbol = getCurrencySymbol(selectedCurrency);
                               
                               return (
                                 <div className="space-y-1">
                                   <span className="text-green-600 font-medium text-sm">
-                                    {symbol}{convertedCost.toFixed(2)}
+                                    {convertedCost.toFixed(2)} {selectedCurrency}
                                   </span>
-                                  {selectedCurrency !== purchaseCurrency && (
-                                    <div className="text-xs text-muted-foreground">
-                                      {selectedCurrency}
-                                    </div>
-                                  )}
                                 </div>
                               );
                             })()}
@@ -2233,10 +2227,10 @@ export default function CreatePurchase() {
                         <TableCell className="text-center font-bold">{totalQuantity}</TableCell>
                         <TableCell></TableCell>
                         <TableCell className="text-right font-bold">
-                          {currencySymbol}{subtotal.toFixed(2)}
+                          {subtotal.toFixed(2)} {purchaseCurrency}
                         </TableCell>
                         <TableCell className="text-right font-bold text-green-600">
-                          {currencySymbol}{grandTotal.toFixed(2)}
+                          {grandTotal.toFixed(2)} {purchaseCurrency}
                         </TableCell>
                         <TableCell></TableCell>
                       </TableRow>
