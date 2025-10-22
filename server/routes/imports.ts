@@ -2978,6 +2978,51 @@ router.get("/shipments/:id", async (req, res) => {
           }
         }
       }
+    } else {
+      // Non-consolidated shipment - try to get items from purchase order
+      const notes = shipment.shipment.notes || '';
+      const poMatch = notes.match(/PO #(\d+)/);
+      
+      if (poMatch) {
+        const purchaseId = parseInt(poMatch[1]);
+        
+        // Get items from purchaseItems table
+        const purchaseItemsList = await db
+          .select({
+            id: purchaseItems.id,
+            name: purchaseItems.name,
+            sku: purchaseItems.sku,
+            quantity: purchaseItems.quantity,
+            weight: purchaseItems.weight,
+            trackingNumber: purchaseItems.trackingNumber,
+            unitPrice: purchaseItems.unitPrice,
+            imageUrl: purchaseItems.imageUrl,
+            notes: purchaseItems.notes
+          })
+          .from(purchaseItems)
+          .where(eq(purchaseItems.purchaseId, purchaseId));
+        
+        // Add items with image fallback from products table
+        for (const item of purchaseItemsList) {
+          let finalImageUrl = item.imageUrl;
+          
+          if (!finalImageUrl && item.sku) {
+            const [product] = await db
+              .select({ imageUrl: products.imageUrl })
+              .from(products)
+              .where(eq(products.sku, item.sku));
+            
+            if (product) {
+              finalImageUrl = product.imageUrl;
+            }
+          }
+          
+          items.push({
+            ...item,
+            imageUrl: finalImageUrl
+          });
+        }
+      }
     }
 
     const shipmentWithDetails = {
