@@ -10,13 +10,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FixedSizeList as List } from "react-window";
-import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle, ChevronDown, ChevronRight, Box, Sparkles, X, Search, SortAsc, CheckSquare, Square, ChevronsDown, ChevronsUp, Filter, Calendar, Hash, Camera, ArrowRightToLine, MoreVertical, Edit2, Train } from "lucide-react";
+import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle, ChevronDown, ChevronRight, Box, Sparkles, X, Search, SortAsc, CheckSquare, Square, ChevronsDown, ChevronsUp, Filter, Calendar, Hash, Camera, ArrowRightToLine, MoreVertical, Edit2, Train, Check, ChevronsUpDown } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -684,10 +687,18 @@ export default function AtWarehouse() {
     queryKey: ['/api/imports/consolidations'],
   });
   
+  // Fetch warehouses
+  const { data: warehouses = [] } = useQuery<Array<{ id: string; name: string; code: string }>>({
+    queryKey: ['/api/warehouses'],
+  });
+  
   // Fetch consolidation items for expanded consolidations - expanded by default
   const [expandedConsolidations, setExpandedConsolidations] = useState<Set<number>>(new Set());
   const [consolidationItems, setConsolidationItems] = useState<Record<number, any[]>>({});
   const [editingConsolidation, setEditingConsolidation] = useState<any>(null);
+  const [selectedWarehouse, setSelectedWarehouse] = useState<string>("");
+  const [warehouseComboOpen, setWarehouseComboOpen] = useState(false);
+  const [isAdditionalDetailsOpen, setIsAdditionalDetailsOpen] = useState(false);
 
   // Unpack purchase order mutation
   const unpackMutation = useMutation({
@@ -821,7 +832,7 @@ export default function AtWarehouse() {
         carrier: 'To be determined',
         trackingNumber: `PENDING-${consolidationId}`,
         origin: consolidation.warehouse || 'China',
-        destination: consolidation.targetLocation || 'Czech Republic',
+        destination: consolidation.location || 'Czech Republic',
         status: 'pending',
         shippingCost: '0',
         insuranceValue: '0',
@@ -993,6 +1004,13 @@ export default function AtWarehouse() {
       });
     }
   }, [consolidations.length]); // Only depend on length to avoid infinite loops
+  
+  // Auto-select the first warehouse (main warehouse) when warehouses load
+  useEffect(() => {
+    if (warehouses.length > 0 && !selectedWarehouse) {
+      setSelectedWarehouse(warehouses[0].id);
+    }
+  }, [warehouses.length]); // Only depend on length to avoid re-running on every warehouse change
   
   // Toggle consolidation expansion
   const toggleConsolidationExpanded = (consolidationId: number) => {
@@ -1923,56 +1941,101 @@ export default function AtWarehouse() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="warehouse">Warehouse Location *</Label>
-                    <Select name="warehouse" required>
-                      <SelectTrigger data-testid="select-warehouse">
-                        <SelectValue placeholder="Select warehouse" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="china_guangzhou">China - Guangzhou</SelectItem>
-                        <SelectItem value="china_shenzhen">China - Shenzhen</SelectItem>
-                        <SelectItem value="usa_california">USA - California</SelectItem>
-                        <SelectItem value="usa_new_york">USA - New York</SelectItem>
-                        <SelectItem value="vietnam_hcmc">Vietnam - Ho Chi Minh</SelectItem>
-                        <SelectItem value="vietnam_hanoi">Vietnam - Hanoi</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <input type="hidden" name="warehouse" value={selectedWarehouse} required />
+                    <Popover open={warehouseComboOpen} onOpenChange={setWarehouseComboOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={warehouseComboOpen}
+                          className="w-full justify-between"
+                          data-testid="select-warehouse"
+                        >
+                          {selectedWarehouse
+                            ? warehouses.find((warehouse) => warehouse.id === selectedWarehouse)?.name
+                            : "Select warehouse"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput placeholder="Search warehouse..." />
+                          <CommandEmpty>No warehouse found.</CommandEmpty>
+                          <CommandGroup>
+                            <ScrollArea className="h-72">
+                              {warehouses.map((warehouse) => (
+                                <CommandItem
+                                  key={warehouse.id}
+                                  value={warehouse.name}
+                                  onSelect={() => {
+                                    setSelectedWarehouse(warehouse.id);
+                                    setWarehouseComboOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={`mr-2 h-4 w-4 ${
+                                      selectedWarehouse === warehouse.id ? "opacity-100" : "opacity-0"
+                                    }`}
+                                  />
+                                  {warehouse.name}
+                                </CommandItem>
+                              ))}
+                            </ScrollArea>
+                          </CommandGroup>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="targetWeight">Target Weight (kg)</Label>
-                    <Input 
-                      id="targetWeight" 
-                      name="targetWeight" 
-                      type="number" 
-                      step="0.1" 
-                      data-testid="input-target-weight"
-                      placeholder="Max weight limit"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="maxItems">Max Items</Label>
-                    <Input 
-                      id="maxItems" 
-                      name="maxItems" 
-                      type="number" 
-                      min="1" 
-                      data-testid="input-max-items"
-                      placeholder="Max item count"
-                    />
-                  </div>
-                </div>
+                <Collapsible open={isAdditionalDetailsOpen} onOpenChange={setIsAdditionalDetailsOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full justify-between p-0 hover:bg-transparent"
+                    >
+                      <span className="text-sm font-medium">Additional Details</span>
+                      <ChevronDown className={`h-4 w-4 transition-transform ${isAdditionalDetailsOpen ? 'rotate-180' : ''}`} />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-4 mt-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="targetWeight">Target Weight (kg)</Label>
+                        <Input 
+                          id="targetWeight" 
+                          name="targetWeight" 
+                          type="number" 
+                          step="0.1" 
+                          data-testid="input-target-weight"
+                          placeholder="Max weight limit"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="maxItems">Max Items</Label>
+                        <Input 
+                          id="maxItems" 
+                          name="maxItems" 
+                          type="number" 
+                          min="1" 
+                          data-testid="input-max-items"
+                          placeholder="Max item count"
+                        />
+                      </div>
+                    </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Notes</Label>
-                  <Textarea 
-                    id="notes" 
-                    name="notes" 
-                    data-testid="textarea-consolidation-notes"
-                    placeholder="Additional notes about this consolidation..."
-                  />
-                </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="notes">Notes</Label>
+                      <Textarea 
+                        id="notes" 
+                        name="notes" 
+                        data-testid="textarea-consolidation-notes"
+                        placeholder="Additional notes about this consolidation..."
+                      />
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
 
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={() => setIsCreateConsolidationOpen(false)}>
