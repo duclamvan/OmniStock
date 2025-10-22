@@ -83,12 +83,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Crown, Trophy, Sparkles, Heart, RefreshCw, AlertTriangle } from "lucide-react";
+import html2canvas from "html2canvas";
 
 export default function OrderDetails() {
   const { id } = useParams();
   const [location, navigate] = useLocation();
   const { toast } = useToast();
   const previousPath = useRef<string>("/orders");
+  const invoiceCardRef = useRef<HTMLDivElement>(null);
   const [showReturnDialog, setShowReturnDialog] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [returnQuantities, setReturnQuantities] = useState<Record<string, number>>({});
@@ -219,6 +221,34 @@ export default function OrderDetails() {
       title: "Copied!",
       description: `${label} copied to clipboard`,
     });
+  };
+
+  const handleDownloadInvoice = async () => {
+    if (!invoiceCardRef.current) return;
+    
+    try {
+      const canvas = await html2canvas(invoiceCardRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2, // Higher quality
+        logging: false,
+      });
+      
+      const link = document.createElement('a');
+      link.download = `invoice-${order?.orderId || id}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      
+      toast({
+        title: "Invoice Downloaded",
+        description: "Invoice screenshot saved successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Could not capture invoice screenshot",
+        variant: "destructive",
+      });
+    }
   };
 
   const handlePrint = () => {
@@ -609,23 +639,34 @@ export default function OrderDetails() {
         {/* Left Column - Order Items and Pricing */}
         <div className="lg:col-span-2 space-y-6">
           {/* Invoice - Order Items & Pricing */}
-          <Card>
+          <Card ref={invoiceCardRef}>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <Package className="h-4 w-4" />
                   Invoice
                 </CardTitle>
-                {order.orderStatus === 'to_fulfill' && (
+                <div className="flex items-center gap-2">
                   <Button
-                    variant={showPickingMode ? "default" : "outline"}
+                    variant="outline"
                     size="sm"
-                    onClick={() => setShowPickingMode(!showPickingMode)}
+                    onClick={handleDownloadInvoice}
+                    data-testid="button-download-invoice"
                   >
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    {showPickingMode ? "Exit Picking Mode" : "Start Picking"}
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Invoice
                   </Button>
-                )}
+                  {order.orderStatus === 'to_fulfill' && (
+                    <Button
+                      variant={showPickingMode ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setShowPickingMode(!showPickingMode)}
+                    >
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      {showPickingMode ? "Exit Picking Mode" : "Start Picking"}
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardHeader>
             <CardContent className="px-0">
