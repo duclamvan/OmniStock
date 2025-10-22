@@ -631,7 +631,7 @@ export default function ImportKanbanDashboard() {
               New Purchase
             </Button>
           </Link>
-          <Link href="/imports/at-warehouse">
+          <Link href="/consolidation">
             <Button variant="outline">
               <Package className="h-4 w-4 mr-2" />
               Custom Item

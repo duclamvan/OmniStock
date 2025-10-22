@@ -181,7 +181,7 @@ function Router() {
         <Route path="/purchase-orders/create" component={CreatePurchase} />
         <Route path="/purchase-orders/edit/:id" component={CreatePurchase} />
         <Route path="/purchase-orders" component={SupplierProcessing} />
-        <Route path="/imports/at-warehouse" component={AtWarehouse} />
+        <Route path="/consolidation" component={AtWarehouse} />
         <Route path="/imports/international-transit" component={InternationalTransit} />
         <Route path="/imports">
           {() => <ImportKanbanDashboard />}

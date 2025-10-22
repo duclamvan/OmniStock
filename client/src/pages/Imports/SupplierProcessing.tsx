@@ -308,7 +308,7 @@ export default function SupplierProcessing() {
       if (variables.status === 'delivered' && purchase) {
         if (purchase.consolidation === 'Yes') {
           toast({ title: "Success", description: "Items moved to Consolidation - Incoming Orders" });
-          setLocation('/imports/at-warehouse');
+          setLocation('/consolidation');
         } else {
           toast({ title: "Success", description: "Shipment auto-created and moved to Receiving" });
           setLocation('/receiving');
