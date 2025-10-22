@@ -246,6 +246,9 @@ export default function ContinueReceiving() {
   const [missPopoverOpen, setMissPopoverOpen] = useState<Record<string, boolean>>({});
   const [dmgQuantity, setDmgQuantity] = useState<Record<string, string>>({});
   const [missQuantity, setMissQuantity] = useState<Record<string, string>>({});
+  
+  // Store previous state for toggle buttons (to restore when deselecting)
+  const [previousItemState, setPreviousItemState] = useState<Record<string, { receivedQty: number; status: ReceivingItem['status'] }>>({});
 
   // OPTIMIZED QUERIES: Smart caching prevents duplicate requests
   const { data: shipment, isLoading } = useQuery({
@@ -3093,21 +3096,53 @@ export default function ContinueReceiving() {
                                     variant={item.status === 'complete' ? "default" : "outline"}
                                     size="sm"
                                     onClick={() => {
-                                      const updatedItems = receivingItems.map(i => 
-                                        i.id === item.id 
-                                          ? { ...i, receivedQty: i.expectedQty, status: 'complete' as const, checked: true }
-                                          : i
-                                      );
-                                      setReceivingItems(updatedItems);
-                                      // Update the item on server
-                                      const itemToUpdate = updatedItems.find(i => i.id === item.id);
-                                      if (itemToUpdate) {
-                                        // Update quantity to expected
-                                        const delta = itemToUpdate.expectedQty - item.receivedQty;
+                                      // Toggle behavior: if complete, restore previous state; otherwise set to complete
+                                      if (item.status === 'complete') {
+                                        // Deselect: restore previous quantity and status
+                                        const prevState = previousItemState[item.id];
+                                        const restoredQty = prevState?.receivedQty ?? 0;
+                                        const restoredStatus = prevState?.status ?? 'pending';
+                                        
+                                        const updatedItems = receivingItems.map(i => 
+                                          i.id === item.id 
+                                            ? { ...i, receivedQty: restoredQty, status: restoredStatus as ReceivingItem['status'], checked: restoredQty > 0 }
+                                            : i
+                                        );
+                                        setReceivingItems(updatedItems);
+                                        
+                                        // Update server
+                                        const delta = restoredQty - item.receivedQty;
                                         if (delta !== 0) {
                                           updateItemQuantityMutation.mutate({ itemId: item.id, delta });
                                         }
-                                        // Update status to complete
+                                        updateItemFieldMutation.mutate({ itemId: item.id, field: 'status', value: restoredStatus });
+                                        
+                                        // Clear stored previous state
+                                        setPreviousItemState(prev => {
+                                          const updated = { ...prev };
+                                          delete updated[item.id];
+                                          return updated;
+                                        });
+                                      } else {
+                                        // Store current state before changing to complete
+                                        setPreviousItemState(prev => ({
+                                          ...prev,
+                                          [item.id]: { receivedQty: item.receivedQty, status: item.status }
+                                        }));
+                                        
+                                        // Select: set to complete
+                                        const updatedItems = receivingItems.map(i => 
+                                          i.id === item.id 
+                                            ? { ...i, receivedQty: i.expectedQty, status: 'complete' as const, checked: true }
+                                            : i
+                                        );
+                                        setReceivingItems(updatedItems);
+                                        
+                                        // Update server
+                                        const delta = item.expectedQty - item.receivedQty;
+                                        if (delta !== 0) {
+                                          updateItemQuantityMutation.mutate({ itemId: item.id, delta });
+                                        }
                                         updateItemFieldMutation.mutate({ itemId: item.id, field: 'status', value: 'complete' });
                                       }
                                     }}
@@ -3122,12 +3157,29 @@ export default function ContinueReceiving() {
                                   </Button>
                                   <Popover 
                                     open={dmgPopoverOpen[item.id] || false} 
-                                    onOpenChange={(open) => setDmgPopoverOpen({ ...dmgPopoverOpen, [item.id]: open })}
+                                    onOpenChange={(open) => {
+                                      // Only allow opening if not already damaged, or allow closing
+                                      if (open && !isDamaged) {
+                                        setDmgPopoverOpen({ ...dmgPopoverOpen, [item.id]: true });
+                                      } else if (!open) {
+                                        setDmgPopoverOpen({ ...dmgPopoverOpen, [item.id]: false });
+                                      }
+                                    }}
                                   >
                                     <PopoverTrigger asChild>
                                       <Button
                                         variant={isDamaged ? "destructive" : "outline"}
                                         size="sm"
+                                        onClick={(e) => {
+                                          // If already damaged, clear damage instead of opening popover
+                                          if (isDamaged) {
+                                            e.preventDefault();
+                                            handleDmgAction(item.id, 0);
+                                          } else {
+                                            // Otherwise allow popover to open
+                                            setDmgPopoverOpen({ ...dmgPopoverOpen, [item.id]: true });
+                                          }
+                                        }}
                                         className={`min-w-[70px] transition-colors shadow-sm ${
                                           isDamaged
                                             ? 'bg-red-600 hover:bg-red-700 border-red-600 text-white'
@@ -3212,12 +3264,29 @@ export default function ContinueReceiving() {
                                   </Popover>
                                   <Popover 
                                     open={missPopoverOpen[item.id] || false} 
-                                    onOpenChange={(open) => setMissPopoverOpen({ ...missPopoverOpen, [item.id]: open })}
+                                    onOpenChange={(open) => {
+                                      // Only allow opening if not already missing, or allow closing
+                                      if (open && !isMissing) {
+                                        setMissPopoverOpen({ ...missPopoverOpen, [item.id]: true });
+                                      } else if (!open) {
+                                        setMissPopoverOpen({ ...missPopoverOpen, [item.id]: false });
+                                      }
+                                    }}
                                   >
                                     <PopoverTrigger asChild>
                                       <Button
                                         variant={isMissing ? "secondary" : "outline"}
                                         size="sm"
+                                        onClick={(e) => {
+                                          // If already missing, clear missing instead of opening popover
+                                          if (isMissing) {
+                                            e.preventDefault();
+                                            handleMissAction(item.id, 0);
+                                          } else {
+                                            // Otherwise allow popover to open
+                                            setMissPopoverOpen({ ...missPopoverOpen, [item.id]: true });
+                                          }
+                                        }}
                                         className={`min-w-[70px] transition-colors shadow-sm ${
                                           isMissing
                                             ? 'bg-gray-600 hover:bg-gray-700 border-gray-600 text-white'
