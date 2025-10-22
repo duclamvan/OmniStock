@@ -64,6 +64,7 @@ interface Supplier {
   phone?: string;
   website?: string;
   location?: string;
+  country?: string;
 }
 
 interface Product {
@@ -139,6 +140,46 @@ export default function CreatePurchase() {
       DKK: "kr"
     };
     return symbols[currency] || currency + " ";
+  };
+  
+  // Country flag helper
+  const getCountryFlag = (country?: string) => {
+    if (!country) return "🌐";
+    
+    const flags: {[key: string]: string} = {
+      "China": "🇨🇳",
+      "Hong Kong": "🇭🇰",
+      "Vietnam": "🇻🇳",
+      "USA": "🇺🇸",
+      "United States": "🇺🇸",
+      "Germany": "🇩🇪",
+      "Czech Republic": "🇨🇿",
+      "Czechia": "🇨🇿",
+      "Japan": "🇯🇵",
+      "South Korea": "🇰🇷",
+      "Taiwan": "🇹🇼",
+      "Singapore": "🇸🇬",
+      "Thailand": "🇹🇭",
+      "Malaysia": "🇲🇾",
+      "Indonesia": "🇮🇩",
+      "Philippines": "🇵🇭",
+      "India": "🇮🇳",
+      "United Kingdom": "🇬🇧",
+      "UK": "🇬🇧",
+      "France": "🇫🇷",
+      "Italy": "🇮🇹",
+      "Spain": "🇪🇸",
+      "Netherlands": "🇳🇱",
+      "Belgium": "🇧🇪",
+      "Poland": "🇵🇱",
+      "Turkey": "🇹🇷",
+      "Australia": "🇦🇺",
+      "Canada": "🇨🇦",
+      "Mexico": "🇲🇽",
+      "Brazil": "🇧🇷"
+    };
+    
+    return flags[country] || "🌐";
   };
   
   
@@ -298,6 +339,18 @@ export default function CreatePurchase() {
     if (!supplier) return false;
     return s.name.toLowerCase().includes(supplier.toLowerCase());
   });
+
+  // Enhanced frequent suppliers with country info
+  const enhancedFrequentSuppliers = useMemo(() => {
+    return frequentSuppliers.map(freq => {
+      const supplierData = suppliers.find(s => s.name === freq.name);
+      return {
+        ...freq,
+        country: supplierData?.country,
+        id: supplierData?.id
+      };
+    });
+  }, [frequentSuppliers, suppliers]);
 
   // Filter products based on search with Vietnamese diacritics support
   const filteredProducts = products.filter(product => {
@@ -1098,24 +1151,36 @@ export default function CreatePurchase() {
                       data-testid="input-supplier"
                     />
                     {supplierDropdownOpen && (
-                      <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                      <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-80 overflow-auto">
                         {/* Show frequent suppliers when no search term */}
-                        {!supplier && frequentSuppliers.length > 0 && (
+                        {!supplier && enhancedFrequentSuppliers.length > 0 && (
                           <>
-                            <div className="px-3 py-2 text-xs font-semibold text-muted-foreground bg-muted/50">
+                            <div className="px-3 py-2 text-xs font-semibold text-muted-foreground bg-muted/50 sticky top-0">
                               Frequent Suppliers
                             </div>
-                            {frequentSuppliers.slice(0, 5).map((s) => (
+                            {enhancedFrequentSuppliers.slice(0, 5).map((s) => (
                               <button
                                 key={`freq-${s.name}`}
-                                className="w-full px-3 py-2 text-left hover:bg-accent flex items-center justify-between"
+                                className="w-full px-3 py-2.5 text-left hover:bg-accent transition-colors flex items-center gap-3 border-b border-border/50 last:border-0"
                                 onClick={() => {
                                   setSupplier(s.name);
+                                  if (s.id) setSupplierId(s.id);
                                   setSupplierDropdownOpen(false);
                                 }}
                               >
-                                <span>{s.name}</span>
-                                <span className="text-xs text-muted-foreground">Used {s.count}x</span>
+                                <span className="text-xl flex-shrink-0">{getCountryFlag(s.country)}</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-sm truncate">{s.name}</div>
+                                  {s.country && (
+                                    <div className="text-xs text-muted-foreground">{s.country}</div>
+                                  )}
+                                </div>
+                                <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                                  <span className="text-xs font-medium text-primary">{s.count} orders</span>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {new Date(s.lastUsed).toLocaleDateString()}
+                                  </span>
+                                </div>
                               </button>
                             ))}
                           </>
@@ -1128,7 +1193,7 @@ export default function CreatePurchase() {
                               filteredSuppliers.map((s) => (
                                 <button
                                   key={s.id}
-                                  className="w-full px-3 py-2 text-left hover:bg-accent flex items-center"
+                                  className="w-full px-3 py-2.5 text-left hover:bg-accent transition-colors flex items-center gap-3 border-b border-border/50 last:border-0"
                                   onClick={() => {
                                     setSupplier(s.name);
                                     setSupplierId(s.id);
@@ -1137,15 +1202,21 @@ export default function CreatePurchase() {
                                 >
                                   <Check
                                     className={cn(
-                                      "mr-2 h-4 w-4",
-                                      supplierId === s.id ? "opacity-100" : "opacity-0"
+                                      "h-4 w-4 flex-shrink-0",
+                                      supplierId === s.id ? "opacity-100 text-primary" : "opacity-0"
                                     )}
                                   />
-                                  {s.name}
+                                  <span className="text-xl flex-shrink-0">{getCountryFlag(s.country)}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-medium text-sm truncate">{s.name}</div>
+                                    {s.country && (
+                                      <div className="text-xs text-muted-foreground">{s.country}</div>
+                                    )}
+                                  </div>
                                 </button>
                               ))
                             ) : (
-                              <div className="p-2">
+                              <div className="p-3">
                                 <p className="text-sm text-muted-foreground mb-2">No supplier found</p>
                                 <Button
                                   size="sm"
