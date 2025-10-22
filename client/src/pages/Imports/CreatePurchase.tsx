@@ -1529,29 +1529,17 @@ export default function CreatePurchase() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="binLocation">BIN Location</Label>
-                  <Input
-                    id="binLocation"
-                    value={currentItem.binLocation || "TBA"}
-                    onChange={(e) => setCurrentItem({...currentItem, binLocation: e.target.value})}
-                    placeholder="e.g., WH1-A01-R02-L03"
-                    data-testid="input-bin-location"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="processingTimeDays">Processing Time (days)</Label>
-                  <Input
-                    id="processingTimeDays"
-                    type="number"
-                    min="0"
-                    value={currentItem.processingTimeDays || ""}
-                    onChange={(e) => setCurrentItem({...currentItem, processingTimeDays: parseInt(e.target.value) || undefined})}
-                    placeholder="Optional processing days"
-                    data-testid="input-processing-time-days"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="processingTimeDays">Processing Time (days)</Label>
+                <Input
+                  id="processingTimeDays"
+                  type="number"
+                  min="0"
+                  value={currentItem.processingTimeDays || ""}
+                  onChange={(e) => setCurrentItem({...currentItem, processingTimeDays: parseInt(e.target.value) || undefined})}
+                  placeholder="Optional processing days"
+                  data-testid="input-processing-time-days"
+                />
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
@@ -1566,7 +1554,7 @@ export default function CreatePurchase() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="unitPrice">Unit Price *</Label>
+                  <Label htmlFor="unitPrice">Unit Price ({purchaseCurrency}) *</Label>
                   <Input
                     id="unitPrice"
                     type="number"
