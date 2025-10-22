@@ -112,6 +112,7 @@ export default function CreatePurchase() {
   const [shippingCost, setShippingCost] = useState(0);
   const [shippingCurrency, setShippingCurrency] = useState("USD");
   const [consolidation, setConsolidation] = useState("No");
+  const [status, setStatus] = useState("pending");
   
   // Exchange rates state
   const [exchangeRates, setExchangeRates] = useState<{[key: string]: number}>({
@@ -547,6 +548,7 @@ export default function CreatePurchase() {
       setShippingCost(Number(purchase?.shippingCost) || 0);
       setShippingCurrency(String(purchase?.shippingCurrency || "USD"));
       setConsolidation(String(purchase?.consolidation || "No"));
+      setStatus(String(purchase?.status || "pending"));
       
       // Set currencies
       const loadedPurchaseCurrency = String(purchase?.purchaseCurrency || purchase?.paymentCurrency || "USD");
@@ -968,6 +970,7 @@ export default function CreatePurchase() {
       shippingCost,
       shippingCurrency,
       consolidation,
+      status,
       totalCost: grandTotal, // Keep for backward compatibility
       // Store converted prices
       prices: {
@@ -2287,6 +2290,109 @@ export default function CreatePurchase() {
 
         {/* Right Column - Summary (Sticky) */}
         <div className="xl:sticky xl:top-6 h-fit space-y-6">
+          {/* Status Selection */}
+          <Card className="shadow-md border">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Package className="h-5 w-5 text-primary" />
+                Order Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-1 gap-2">
+                <button
+                  onClick={() => setStatus("pending")}
+                  className={cn(
+                    "w-full p-3 rounded-lg border-2 transition-all text-left",
+                    status === "pending" 
+                      ? "bg-amber-50 dark:bg-amber-950/30 border-amber-400 dark:border-amber-600" 
+                      : "bg-background border-border hover:border-amber-300"
+                  )}
+                  data-testid="status-pending"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">Pending</span>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                      Awaiting
+                    </span>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => setStatus("processing")}
+                  className={cn(
+                    "w-full p-3 rounded-lg border-2 transition-all text-left",
+                    status === "processing" 
+                      ? "bg-blue-50 dark:bg-blue-950/30 border-blue-400 dark:border-blue-600" 
+                      : "bg-background border-border hover:border-blue-300"
+                  )}
+                  data-testid="status-processing"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">Processing</span>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                      Active
+                    </span>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => setStatus("at_warehouse")}
+                  className={cn(
+                    "w-full p-3 rounded-lg border-2 transition-all text-left",
+                    status === "at_warehouse" 
+                      ? "bg-purple-50 dark:bg-purple-950/30 border-purple-400 dark:border-purple-600" 
+                      : "bg-background border-border hover:border-purple-300"
+                  )}
+                  data-testid="status-at-warehouse"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">Consolidation</span>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                      Staging
+                    </span>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => setStatus("shipped")}
+                  className={cn(
+                    "w-full p-3 rounded-lg border-2 transition-all text-left",
+                    status === "shipped" 
+                      ? "bg-cyan-50 dark:bg-cyan-950/30 border-cyan-400 dark:border-cyan-600" 
+                      : "bg-background border-border hover:border-cyan-300"
+                  )}
+                  data-testid="status-shipped"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">Shipped</span>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200">
+                      In Transit
+                    </span>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => setStatus("delivered")}
+                  className={cn(
+                    "w-full p-3 rounded-lg border-2 transition-all text-left",
+                    status === "delivered" 
+                      ? "bg-green-50 dark:bg-green-950/30 border-green-400 dark:border-green-600" 
+                      : "bg-background border-border hover:border-green-300"
+                  )}
+                  data-testid="status-delivered"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">Delivered</span>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                      Complete
+                    </span>
+                  </div>
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Order Summary */}
           <Card className="shadow-lg border-2">
             <CardHeader className="bg-muted/30 border-b">
