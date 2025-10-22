@@ -669,12 +669,23 @@ export default function OrderDetails() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1">
-                            <p className={cn(
-                              "font-semibold text-slate-900 text-sm mb-0.5",
-                              pickedItems.has(item.id) && "line-through text-slate-400"
-                            )}>
-                              {item.productName}
-                            </p>
+                            {item.productId ? (
+                              <Link href={`/products/${item.productId}`}>
+                                <p className={cn(
+                                  "font-semibold text-sm mb-0.5 cursor-pointer hover:underline",
+                                  pickedItems.has(item.id) ? "line-through text-slate-400 hover:text-slate-500" : "text-blue-600 hover:text-blue-800"
+                                )}>
+                                  {item.productName}
+                                </p>
+                              </Link>
+                            ) : (
+                              <p className={cn(
+                                "font-semibold text-slate-900 text-sm mb-0.5",
+                                pickedItems.has(item.id) && "line-through text-slate-400"
+                              )}>
+                                {item.productName}
+                              </p>
+                            )}
                             <p className="text-xs text-slate-500 mb-1.5">SKU: {item.sku}</p>
                             
                             <div className="flex items-center gap-2 flex-wrap">
