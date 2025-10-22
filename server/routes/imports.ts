@@ -4550,13 +4550,36 @@ router.post("/receipts/auto-save", async (req, res) => {
               }
             }
           }
+        } else {
+          // Handle non-consolidated shipments - extract PO from notes
+          const [shipmentData] = await db
+            .select({ notes: shipments.notes })
+            .from(shipments)
+            .where(eq(shipments.id, shipmentId));
+          
+          if (shipmentData?.notes) {
+            const poMatch = shipmentData.notes.match(/PO #(\d+)/);
+            if (poMatch) {
+              const purchaseId = parseInt(poMatch[1]);
+              
+              // Get items from purchaseItems table
+              const purchaseItemsList = await db
+                .select()
+                .from(purchaseItems)
+                .where(eq(purchaseItems.purchaseId, purchaseId));
+              
+              for (const item of purchaseItemsList) {
+                itemsToReceive.push({ ...item, itemType: 'purchase' });
+              }
+            }
+          }
         }
 
         // Create receipt items for the new receipt
         const receiptItemsData = itemsToReceive.map(item => ({
           receiptId: receipt.id,
           itemId: item.id,
-          itemType: item.itemType,
+          itemType: item.itemType || 'purchase',
           expectedQuantity: item.quantity || 1,
           receivedQuantity: 0, // Will be updated during verification
           damagedQuantity: 0,
