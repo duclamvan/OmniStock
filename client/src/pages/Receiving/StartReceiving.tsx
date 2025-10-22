@@ -1941,11 +1941,11 @@ export default function StartReceiving() {
       {currentStep === 1 && (
         <div className="space-y-4">
           <Card className={`
-            transition-all duration-500 border-2
+            transition-all duration-500 border-2 bg-white dark:bg-gray-900
             ${scannedParcels === parcelCount && parcelCount > 0 
-              ? 'border-green-400 bg-green-50/50 dark:bg-green-950/20 shadow-green-100 dark:shadow-green-900/20' 
+              ? 'border-green-400 shadow-green-100 dark:shadow-green-900/20' 
               : scannedParcels > 0 
-                ? 'border-amber-400 bg-amber-50/50 dark:bg-amber-950/20 shadow-amber-100 dark:shadow-amber-900/20'
+                ? 'border-amber-400 shadow-amber-100 dark:shadow-amber-900/20'
                 : 'border-gray-200 dark:border-gray-700'
             }
           `}>
@@ -2315,11 +2315,11 @@ export default function StartReceiving() {
       {currentStep === 2 && (
         <div className="space-y-4">
           <Card className={`
-            transition-all duration-500 border-2
+            transition-all duration-500 border-2 bg-white dark:bg-gray-900
             ${completedItems === totalItems && totalItems > 0 
-              ? 'border-green-400 bg-green-50/50 dark:bg-green-950/20 shadow-green-100 dark:shadow-green-900/20' 
+              ? 'border-green-400 shadow-green-100 dark:shadow-green-900/20' 
               : completedItems > 0 
-                ? 'border-amber-400 bg-amber-50/50 dark:bg-amber-950/20 shadow-amber-100 dark:shadow-amber-900/20'
+                ? 'border-amber-400 shadow-amber-100 dark:shadow-amber-900/20'
                 : 'border-gray-200 dark:border-gray-700'
             }
           `}>
