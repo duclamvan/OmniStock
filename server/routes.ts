@@ -5229,7 +5229,14 @@ Important:
   // Ticket endpoints
   app.get('/api/tickets', async (req, res) => {
     try {
-      const tickets = await storage.getTickets();
+      const { orderId } = req.query;
+      let tickets = await storage.getTickets();
+      
+      // Filter by orderId if provided
+      if (orderId && typeof orderId === 'string') {
+        tickets = tickets.filter(ticket => ticket.orderId === orderId);
+      }
+      
       res.json(tickets);
     } catch (error) {
       console.error("Error fetching tickets:", error);
