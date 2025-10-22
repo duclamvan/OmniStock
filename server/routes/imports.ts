@@ -647,7 +647,7 @@ router.patch("/purchases/:id", async (req, res) => {
       const existingShipments = await db
         .select()
         .from(shipments)
-        .where(sql`${shipments.notes} LIKE '%PO #${purchaseId}%'`)
+        .where(like(shipments.notes, `%PO #${purchaseId}%`))
         .limit(1);
       
       if (existingShipments.length === 0) {
