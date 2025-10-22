@@ -60,11 +60,11 @@ interface PurchaseItem {
 }
 
 const statusColors: Record<string, string> = {
-  pending: "warning",
-  processing: "info",
-  at_warehouse: "default",
-  shipped: "secondary",
-  delivered: "default"
+  pending: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+  processing: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+  at_warehouse: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+  shipped: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200",
+  delivered: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
 } as const;
 
 const locations = ["Europe", "USA", "China", "Vietnam"];
@@ -875,7 +875,7 @@ export default function SupplierProcessing() {
                                 {purchase.location === 'Vietnam' && '🇻🇳 '}
                                 {purchase.supplier}
                               </h3>
-                              <Badge variant={statusColors[purchase.status] as any}>
+                              <Badge className={statusColors[purchase.status] || "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"}>
                                 {purchase.status.replace('_', ' ').toUpperCase()}
                               </Badge>
                             </div>

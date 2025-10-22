@@ -148,13 +148,13 @@ export default function ServiceDetails() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100" data-testid="badge-status-pending">Pending</Badge>;
+        return <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900" data-testid="badge-status-pending">Pending</Badge>;
       case 'in_progress':
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100" data-testid="badge-status-in-progress">In Progress</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900" data-testid="badge-status-in-progress">In Progress</Badge>;
       case 'completed':
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100" data-testid="badge-status-completed">Completed</Badge>;
+        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-100 dark:hover:bg-green-900" data-testid="badge-status-completed">Completed</Badge>;
       case 'cancelled':
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100" data-testid="badge-status-cancelled">Cancelled</Badge>;
+        return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 hover:bg-red-100 dark:hover:bg-red-900" data-testid="badge-status-cancelled">Cancelled</Badge>;
       default:
         return <Badge variant="outline" data-testid={`badge-status-${status}`}>{status}</Badge>;
     }

@@ -88,12 +88,12 @@ export default function AllImports() {
       sortable: true,
       cell: (order) => {
         const statusColors: Record<string, string> = {
-          pending: 'bg-gray-100 text-gray-800',
-          ordered: 'bg-blue-100 text-blue-800',
-          shipped: 'bg-purple-100 text-purple-800',
-          delivered: 'bg-green-100 text-green-800',
-          received: 'bg-teal-100 text-teal-800',
-          cancelled: 'bg-red-100 text-red-800'
+          pending: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+          ordered: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+          shipped: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200',
+          delivered: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+          received: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+          cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
         };
         
         const statusIcons: Record<string, any> = {

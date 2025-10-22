@@ -33,10 +33,10 @@ export default function ReturnDetails() {
   }
 
   const statusColors: Record<string, string> = {
-    'awaiting': 'bg-yellow-100 text-yellow-800',
-    'processing': 'bg-blue-100 text-blue-800',
-    'completed': 'bg-green-100 text-green-800',
-    'cancelled': 'bg-red-100 text-red-800',
+    'awaiting': 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+    'processing': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    'completed': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+    'cancelled': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
   };
 
   const typeColors: Record<string, string> = {

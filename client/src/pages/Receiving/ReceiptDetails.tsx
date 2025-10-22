@@ -463,9 +463,9 @@ export default function ReceiptDetails() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending_verification':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+        return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
       case 'pending_approval':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
       case 'approved':
         return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
       case 'archived':

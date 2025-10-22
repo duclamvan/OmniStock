@@ -1101,11 +1101,11 @@ export default function ReceivingList() {
       case 'delivered':
         return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
       case 'in transit':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+        return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200';
       case 'pending_verification':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+        return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
       case 'pending_approval':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
       case 'approved':
         return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
       default:

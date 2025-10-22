@@ -100,15 +100,15 @@ interface Consolidation {
 }
 
 const statusColors: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+  pending: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
   ordered: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  in_transit: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-  at_warehouse: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  unpacked: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
+  in_transit: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200",
+  at_warehouse: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+  unpacked: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
   available: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   assigned: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  consolidated: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
-  shipped: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+  consolidated: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+  shipped: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200"
 };
 
 const shippingMethodColors: Record<string, string> = {
