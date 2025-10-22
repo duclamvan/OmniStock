@@ -1337,23 +1337,184 @@ export default function AddOrder() {
 
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className="space-y-4 sm:space-y-6">
-            {/* Order Location - Mobile Only (at top) */}
-            <Card className="lg:hidden shadow-sm">
-              <CardHeader className="p-4">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <MapPin className="h-4 w-4 text-blue-600" />
-                  Order Location
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 pt-0">
-                <Input
-                  placeholder="e.g., Prague Warehouse, Main Office, Customer Pickup"
-                  value={form.watch('orderLocation') || ''}
-                  onChange={(e) => form.setValue('orderLocation', e.target.value)}
-                  data-testid="input-order-location"
-                />
-              </CardContent>
-            </Card>
+            {/* Mobile-Only Settings (at top) */}
+            <div className="lg:hidden space-y-4">
+              {/* Order Location */}
+              <Card className="shadow-sm">
+                <CardHeader className="p-4">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <MapPin className="h-4 w-4 text-blue-600" />
+                    Order Location
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0">
+                  <Input
+                    placeholder="e.g., Prague Warehouse, Main Office"
+                    value={form.watch('orderLocation') || ''}
+                    onChange={(e) => form.setValue('orderLocation', e.target.value)}
+                    data-testid="input-order-location"
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Order Settings */}
+              <Card className="shadow-sm">
+                <CardHeader className="p-4">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Package className="h-4 w-4 text-blue-600" />
+                    Order Settings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0">
+                  <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="basic" className="border-b-0">
+                      <AccordionTrigger className="py-2 text-sm font-medium hover:no-underline">
+                        Basic Info
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-3 pt-2">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label htmlFor="currency-mobile" className="text-xs">Currency</Label>
+                            <Select value={form.watch('currency')} onValueChange={(value) => form.setValue('currency', value as any)}>
+                              <SelectTrigger className="mt-1 h-9">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="CZK">CZK</SelectItem>
+                                <SelectItem value="EUR">EUR</SelectItem>
+                                <SelectItem value="USD">USD</SelectItem>
+                                <SelectItem value="VND">VND</SelectItem>
+                                <SelectItem value="CNY">CNY</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor="priority-mobile" className="text-xs">Priority</Label>
+                            <Select value={form.watch('priority')} onValueChange={(value) => form.setValue('priority', value as any)}>
+                              <SelectTrigger className="mt-1 h-9">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="low">
+                                  <div className="flex items-center gap-2">
+                                    <div className="h-2 w-2 bg-gray-500 rounded-full" />
+                                    Low
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="medium">
+                                  <div className="flex items-center gap-2">
+                                    <div className="h-2 w-2 bg-yellow-500 rounded-full" />
+                                    Medium
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="high">
+                                  <div className="flex items-center gap-2">
+                                    <div className="h-2 w-2 bg-red-500 rounded-full" />
+                                    High
+                                  </div>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="orderStatus-mobile" className="text-xs">Order Status</Label>
+                          <Select value={form.watch('orderStatus')} onValueChange={(value) => form.setValue('orderStatus', value as any)}>
+                            <SelectTrigger className="mt-1 h-9">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 bg-orange-500 rounded-full" />
+                                  Pending
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="to_fulfill">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 bg-blue-500 rounded-full" />
+                                  To Fulfill
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="shipped">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 bg-green-500 rounded-full" />
+                                  Shipped
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    <AccordionItem value="shipping" className="border-b-0">
+                      <AccordionTrigger className="py-2 text-sm font-medium hover:no-underline">
+                        Shipping & Payment
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-3 pt-2">
+                        <div>
+                          <Label htmlFor="shippingMethod-mobile" className="text-xs">Shipping Method</Label>
+                          <Select value={form.watch('shippingMethod')} onValueChange={(value) => form.setValue('shippingMethod', value as any)}>
+                            <SelectTrigger className="mt-1 h-9">
+                              <SelectValue placeholder="Select shipping" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="GLS">GLS</SelectItem>
+                              <SelectItem value="PPL">PPL</SelectItem>
+                              <SelectItem value="DHL">DHL</SelectItem>
+                              <SelectItem value="DPD">DPD</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="paymentMethod-mobile" className="text-xs">Payment Method</Label>
+                          <Select value={form.watch('paymentMethod')} onValueChange={(value) => form.setValue('paymentMethod', value as any)}>
+                            <SelectTrigger className="mt-1 h-9">
+                              <SelectValue placeholder="Select payment" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                              <SelectItem value="PayPal">PayPal</SelectItem>
+                              <SelectItem value="COD">COD</SelectItem>
+                              <SelectItem value="Cash">Cash</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="paymentStatus-mobile" className="text-xs">Payment Status</Label>
+                          <Select value={form.watch('paymentStatus')} onValueChange={(value) => form.setValue('paymentStatus', value as any)}>
+                            <SelectTrigger className="mt-1 h-9">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 bg-orange-500 rounded-full" />
+                                  Pending
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="paid">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 bg-green-500 rounded-full" />
+                                  Paid
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="pay_later">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 bg-blue-500 rounded-full" />
+                                  Pay Later
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* 2-Column Grid for Desktop */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -3669,139 +3830,157 @@ export default function AddOrder() {
                         Order Settings
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-4 pt-0 space-y-3">
-                      <div>
-                        <Label htmlFor="currency" className="text-xs">Currency</Label>
-                        <Select value={form.watch('currency')} onValueChange={(value) => form.setValue('currency', value as any)}>
-                          <SelectTrigger className="mt-1 h-9" data-testid="select-currency">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="CZK">CZK</SelectItem>
-                            <SelectItem value="EUR">EUR</SelectItem>
-                            <SelectItem value="USD">USD</SelectItem>
-                            <SelectItem value="VND">VND</SelectItem>
-                            <SelectItem value="CNY">CNY</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <CardContent className="p-4 pt-0">
+                      <Accordion type="single" collapsible className="w-full">
+                        <AccordionItem value="basic" className="border-b-0">
+                          <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+                            Basic Info
+                          </AccordionTrigger>
+                          <AccordionContent className="space-y-3 pt-2">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <Label htmlFor="currency" className="text-xs">Currency</Label>
+                                <Select value={form.watch('currency')} onValueChange={(value) => form.setValue('currency', value as any)}>
+                                  <SelectTrigger className="mt-1 h-9" data-testid="select-currency">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="CZK">CZK</SelectItem>
+                                    <SelectItem value="EUR">EUR</SelectItem>
+                                    <SelectItem value="USD">USD</SelectItem>
+                                    <SelectItem value="VND">VND</SelectItem>
+                                    <SelectItem value="CNY">CNY</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
 
-                      <div>
-                        <Label htmlFor="priority" className="text-xs">Priority</Label>
-                        <Select value={form.watch('priority')} onValueChange={(value) => form.setValue('priority', value as any)}>
-                          <SelectTrigger className="mt-1 h-9">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="low">
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 bg-gray-500 rounded-full" />
-                                Low
+                              <div>
+                                <Label htmlFor="priority" className="text-xs">Priority</Label>
+                                <Select value={form.watch('priority')} onValueChange={(value) => form.setValue('priority', value as any)}>
+                                  <SelectTrigger className="mt-1 h-9">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="low">
+                                      <div className="flex items-center gap-2">
+                                        <div className="h-2 w-2 bg-gray-500 rounded-full" />
+                                        Low
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="medium">
+                                      <div className="flex items-center gap-2">
+                                        <div className="h-2 w-2 bg-yellow-500 rounded-full" />
+                                        Medium
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="high">
+                                      <div className="flex items-center gap-2">
+                                        <div className="h-2 w-2 bg-red-500 rounded-full" />
+                                        High
+                                      </div>
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
                               </div>
-                            </SelectItem>
-                            <SelectItem value="medium">
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 bg-yellow-500 rounded-full" />
-                                Medium
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="high">
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 bg-red-500 rounded-full" />
-                                High
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                            </div>
 
-                      <div>
-                        <Label htmlFor="orderStatus" className="text-xs">Order Status</Label>
-                        <Select value={form.watch('orderStatus')} onValueChange={(value) => form.setValue('orderStatus', value as any)}>
-                          <SelectTrigger className="mt-1 h-9">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 bg-orange-500 rounded-full" />
-                                Pending
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="to_fulfill">
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 bg-blue-500 rounded-full" />
-                                To Fulfill
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="shipped">
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 bg-green-500 rounded-full" />
-                                Shipped
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                            <div>
+                              <Label htmlFor="orderStatus" className="text-xs">Order Status</Label>
+                              <Select value={form.watch('orderStatus')} onValueChange={(value) => form.setValue('orderStatus', value as any)}>
+                                <SelectTrigger className="mt-1 h-9">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="pending">
+                                    <div className="flex items-center gap-2">
+                                      <div className="h-2 w-2 bg-orange-500 rounded-full" />
+                                      Pending
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="to_fulfill">
+                                    <div className="flex items-center gap-2">
+                                      <div className="h-2 w-2 bg-blue-500 rounded-full" />
+                                      To Fulfill
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="shipped">
+                                    <div className="flex items-center gap-2">
+                                      <div className="h-2 w-2 bg-green-500 rounded-full" />
+                                      Shipped
+                                    </div>
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
 
-                      <div>
-                        <Label htmlFor="shippingMethod" className="text-xs">Shipping Method</Label>
-                        <Select value={form.watch('shippingMethod')} onValueChange={(value) => form.setValue('shippingMethod', value as any)}>
-                          <SelectTrigger className="mt-1 h-9">
-                            <SelectValue placeholder="Select shipping" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="GLS">GLS</SelectItem>
-                            <SelectItem value="PPL">PPL</SelectItem>
-                            <SelectItem value="DHL">DHL</SelectItem>
-                            <SelectItem value="DPD">DPD</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                        <AccordionItem value="shipping" className="border-b-0">
+                          <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+                            Shipping & Payment
+                          </AccordionTrigger>
+                          <AccordionContent className="space-y-3 pt-2">
+                            <div>
+                              <Label htmlFor="shippingMethod" className="text-xs">Shipping Method</Label>
+                              <Select value={form.watch('shippingMethod')} onValueChange={(value) => form.setValue('shippingMethod', value as any)}>
+                                <SelectTrigger className="mt-1 h-9">
+                                  <SelectValue placeholder="Select shipping" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="GLS">GLS</SelectItem>
+                                  <SelectItem value="PPL">PPL</SelectItem>
+                                  <SelectItem value="DHL">DHL</SelectItem>
+                                  <SelectItem value="DPD">DPD</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
 
-                      <div>
-                        <Label htmlFor="paymentMethod" className="text-xs">Payment Method</Label>
-                        <Select value={form.watch('paymentMethod')} onValueChange={(value) => form.setValue('paymentMethod', value as any)}>
-                          <SelectTrigger className="mt-1 h-9">
-                            <SelectValue placeholder="Select payment" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                            <SelectItem value="PayPal">PayPal</SelectItem>
-                            <SelectItem value="COD">COD</SelectItem>
-                            <SelectItem value="Cash">Cash</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                            <div>
+                              <Label htmlFor="paymentMethod" className="text-xs">Payment Method</Label>
+                              <Select value={form.watch('paymentMethod')} onValueChange={(value) => form.setValue('paymentMethod', value as any)}>
+                                <SelectTrigger className="mt-1 h-9">
+                                  <SelectValue placeholder="Select payment" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                                  <SelectItem value="PayPal">PayPal</SelectItem>
+                                  <SelectItem value="COD">COD</SelectItem>
+                                  <SelectItem value="Cash">Cash</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
 
-                      <div>
-                        <Label htmlFor="paymentStatus" className="text-xs">Payment Status</Label>
-                        <Select value={form.watch('paymentStatus')} onValueChange={(value) => form.setValue('paymentStatus', value as any)}>
-                          <SelectTrigger className="mt-1 h-9" data-testid="select-payment-status">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 bg-orange-500 rounded-full" />
-                                Pending
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="paid">
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 bg-green-500 rounded-full" />
-                                Paid
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="pay_later">
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 bg-blue-500 rounded-full" />
-                                Pay Later
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                            <div>
+                              <Label htmlFor="paymentStatus" className="text-xs">Payment Status</Label>
+                              <Select value={form.watch('paymentStatus')} onValueChange={(value) => form.setValue('paymentStatus', value as any)}>
+                                <SelectTrigger className="mt-1 h-9" data-testid="select-payment-status">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="pending">
+                                    <div className="flex items-center gap-2">
+                                      <div className="h-2 w-2 bg-orange-500 rounded-full" />
+                                      Pending
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="paid">
+                                    <div className="flex items-center gap-2">
+                                      <div className="h-2 w-2 bg-green-500 rounded-full" />
+                                      Paid
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="pay_later">
+                                    <div className="flex items-center gap-2">
+                                      <div className="h-2 w-2 bg-blue-500 rounded-full" />
+                                      Pay Later
+                                    </div>
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
                     </CardContent>
                   </Card>
 
