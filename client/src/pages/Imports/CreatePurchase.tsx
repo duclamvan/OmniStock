@@ -1572,6 +1572,12 @@ export default function CreatePurchase() {
                     step="0.01"
                     value={currentItem.weight}
                     onChange={(e) => setCurrentItem({...currentItem, weight: parseFloat(e.target.value) || 0})}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        document.getElementById('dimensions')?.focus();
+                      }
+                    }}
                     data-testid="input-weight"
                   />
                 </div>
@@ -1581,6 +1587,14 @@ export default function CreatePurchase() {
                     id="dimensions"
                     value={currentItem.dimensions}
                     onChange={(e) => setCurrentItem({...currentItem, dimensions: e.target.value})}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (!showVariants || variants.length === 0) {
+                          addItem();
+                        }
+                      }
+                    }}
                     placeholder="L×W×H"
                     data-testid="input-dimensions"
                   />
