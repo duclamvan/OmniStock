@@ -742,28 +742,34 @@ export class DatabaseStorage implements IStorage {
         const ordersData = await db.select({
           order: orders,
           customer: customers,
+          biller: users,
         })
         .from(orders)
         .leftJoin(customers, eq(orders.customerId, customers.id))
+        .leftJoin(users, eq(orders.billerId, users.id))
         .where(eq(orders.customerId, customerId.toString()))
         .orderBy(desc(orders.createdAt));
         
         return ordersData.map(row => ({
           ...row.order,
           customer: row.customer || undefined,
+          biller: row.biller || undefined,
         })) as any;
       } else {
         const ordersData = await db.select({
           order: orders,
           customer: customers,
+          biller: users,
         })
         .from(orders)
         .leftJoin(customers, eq(orders.customerId, customers.id))
+        .leftJoin(users, eq(orders.billerId, users.id))
         .orderBy(desc(orders.createdAt));
         
         return ordersData.map(row => ({
           ...row.order,
           customer: row.customer || undefined,
+          biller: row.biller || undefined,
         })) as any;
       }
     } catch (error) {
@@ -777,15 +783,18 @@ export class DatabaseStorage implements IStorage {
       const ordersData = await db.select({
         order: orders,
         customer: customers,
+        biller: users,
       })
       .from(orders)
       .leftJoin(customers, eq(orders.customerId, customers.id))
+      .leftJoin(users, eq(orders.billerId, users.id))
       .where(eq(orders.orderStatus, status))
       .orderBy(desc(orders.createdAt));
       
       return ordersData.map(row => ({
         ...row.order,
         customer: row.customer || undefined,
+        biller: row.biller || undefined,
       }));
     } catch (error) {
       console.error('Error fetching orders by status:', error);
@@ -798,15 +807,18 @@ export class DatabaseStorage implements IStorage {
       const ordersData = await db.select({
         order: orders,
         customer: customers,
+        biller: users,
       })
       .from(orders)
       .leftJoin(customers, eq(orders.customerId, customers.id))
+      .leftJoin(users, eq(orders.billerId, users.id))
       .where(eq(orders.paymentStatus, paymentStatus))
       .orderBy(desc(orders.createdAt));
       
       return ordersData.map(row => ({
         ...row.order,
         customer: row.customer || undefined,
+        biller: row.biller || undefined,
       }));
     } catch (error) {
       console.error('Error fetching orders by payment status:', error);
@@ -819,9 +831,11 @@ export class DatabaseStorage implements IStorage {
       const [result] = await db.select({
         order: orders,
         customer: customers,
+        biller: users,
       })
       .from(orders)
       .leftJoin(customers, eq(orders.customerId, customers.id))
+      .leftJoin(users, eq(orders.billerId, users.id))
       .where(eq(orders.id, id));
       
       if (!result) return undefined;
@@ -829,6 +843,7 @@ export class DatabaseStorage implements IStorage {
       return {
         ...result.order,
         customer: result.customer || undefined,
+        biller: result.biller || undefined,
       } as any;
     } catch (error) {
       console.error('Error fetching order:', error);
@@ -990,15 +1005,18 @@ export class DatabaseStorage implements IStorage {
       const ordersData = await db.select({
         order: orders,
         customer: customers,
+        biller: users,
       })
       .from(orders)
       .leftJoin(customers, eq(orders.customerId, customers.id))
+      .leftJoin(users, eq(orders.billerId, users.id))
       .where(eq(orders.customerId, customerId))
       .orderBy(desc(orders.createdAt));
       
       return ordersData.map(row => ({
         ...row.order,
         customer: row.customer || undefined,
+        biller: row.biller || undefined,
       }));
     } catch (error) {
       console.error('Error fetching orders by customer ID:', error);

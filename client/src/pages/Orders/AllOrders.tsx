@@ -92,6 +92,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
     order: true,
     customer: true,
+    biller: true,
     status: true,
     payment: true,
     date: true,
@@ -605,6 +606,16 @@ export default function AllOrders({ filter }: AllOrdersProps) {
           </div>
         );
       },
+    },
+    {
+      key: "biller",
+      header: "Biller",
+      sortable: false,
+      cell: (order) => (
+        <div className="text-sm text-slate-700">
+          {order.biller?.email || 'N/A'}
+        </div>
+      ),
     },
     {
       key: "status",
