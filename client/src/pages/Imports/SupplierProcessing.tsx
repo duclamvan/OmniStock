@@ -295,6 +295,13 @@ export default function SupplierProcessing() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases/at-warehouse'] });
+      
+      // Invalidate shipment queries if a shipment may have been auto-created
+      if (variables.status === 'delivered') {
+        queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      }
       
       // Navigate based on where items were sent
       const purchase = purchases.find(p => p.id === variables.purchaseId);
@@ -303,9 +310,11 @@ export default function SupplierProcessing() {
           toast({ title: "Success", description: "Items moved to Consolidation - Incoming Orders" });
           setLocation('/imports/at-warehouse');
         } else {
-          toast({ title: "Success", description: "Items moved to Receiving - To Receive" });
+          toast({ title: "Success", description: "Shipment auto-created and moved to Receiving" });
           setLocation('/receiving');
         }
+      } else if (variables.status === 'at_warehouse') {
+        toast({ title: "Success", description: "Status updated - moved to Consolidation" });
       } else {
         toast({ title: "Success", description: "Status updated successfully" });
       }

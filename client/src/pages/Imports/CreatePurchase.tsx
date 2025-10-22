@@ -435,9 +435,17 @@ export default function CreatePurchase() {
       const response = await apiRequest('PATCH', `/api/imports/purchases/${purchaseId}`, data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
       queryClient.invalidateQueries({ queryKey: [`/api/imports/purchases/${purchaseId}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases/at-warehouse'] });
+      
+      // Invalidate shipment queries if status was set to delivered
+      if (variables.status === 'delivered') {
+        queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      }
+      
       toast({ title: "Success", description: "Purchase updated successfully" });
       navigate('/imports/supplier-processing');
     },

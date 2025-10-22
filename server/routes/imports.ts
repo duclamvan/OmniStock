@@ -576,6 +576,17 @@ router.patch("/purchases/:id", async (req, res) => {
   try {
     const purchaseId = parseInt(req.params.id);
     
+    // Get current purchase to check consolidation field
+    const [currentPurchase] = await db
+      .select()
+      .from(importPurchases)
+      .where(eq(importPurchases.id, purchaseId))
+      .limit(1);
+    
+    if (!currentPurchase) {
+      return res.status(404).json({ message: "Purchase not found" });
+    }
+    
     // Update purchase data
     const purchaseUpdate: any = {
       updatedAt: new Date()
@@ -630,6 +641,46 @@ router.patch("/purchases/:id", async (req, res) => {
       }
     }
     
+    // AUTO-CREATE SHIPMENT: If status changed to 'delivered' and consolidation is 'No'
+    if (req.body.status === 'delivered' && currentPurchase.consolidation === 'No') {
+      // Check if a shipment already exists for this purchase
+      const existingShipments = await db
+        .select()
+        .from(shipments)
+        .where(sql`${shipments.notes} LIKE '%PO #${purchaseId}%'`)
+        .limit(1);
+      
+      if (existingShipments.length === 0) {
+        // Create a new shipment for this purchase
+        const itemsList = await db
+          .select()
+          .from(purchaseItems)
+          .where(eq(purchaseItems.purchaseId, purchaseId));
+        
+        const totalWeight = itemsList.reduce((sum, item) => sum + (parseFloat(item.weight) || 0), 0);
+        const totalUnits = itemsList.reduce((sum, item) => sum + item.quantity, 0);
+        
+        await db.insert(shipments).values({
+          consolidationId: null,
+          carrier: 'Direct Supplier',
+          trackingNumber: currentPurchase.trackingNumber || `PO-${purchaseId}`,
+          origin: currentPurchase.location || 'Supplier',
+          destination: 'Warehouse',
+          status: 'delivered',
+          receivingStatus: null,
+          shippingCost: currentPurchase.shippingCost || '0',
+          shippingCostCurrency: currentPurchase.purchaseCurrency || 'USD',
+          totalWeight: totalWeight.toString(),
+          totalUnits: totalUnits,
+          estimatedDelivery: currentPurchase.estimatedArrival,
+          deliveredAt: new Date(),
+          notes: `Auto-created from Purchase Order PO #${purchaseId} - ${currentPurchase.supplier}`,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
+    }
+    
     // Fetch updated purchase with items
     const updatedPurchase = await db.select().from(importPurchases).where(eq(importPurchases.id, purchaseId)).limit(1);
     const items = await db.select().from(purchaseItems).where(eq(purchaseItems.purchaseId, purchaseId));
@@ -647,11 +698,62 @@ router.patch("/purchases/:id/status", async (req, res) => {
     const purchaseId = parseInt(req.params.id);
     const { status } = req.body;
     
+    // Get current purchase to check consolidation field
+    const [currentPurchase] = await db
+      .select()
+      .from(importPurchases)
+      .where(eq(importPurchases.id, purchaseId))
+      .limit(1);
+    
+    if (!currentPurchase) {
+      return res.status(404).json({ message: "Purchase not found" });
+    }
+    
     const [updated] = await db
       .update(importPurchases)
       .set({ status, updatedAt: new Date() })
       .where(eq(importPurchases.id, purchaseId))
       .returning();
+    
+    // AUTO-CREATE SHIPMENT: If status changed to 'delivered' and consolidation is 'No'
+    if (status === 'delivered' && currentPurchase.consolidation === 'No') {
+      // Check if a shipment already exists for this purchase
+      const existingShipments = await db
+        .select()
+        .from(shipments)
+        .where(sql`${shipments.notes} LIKE '%PO #${purchaseId}%'`)
+        .limit(1);
+      
+      if (existingShipments.length === 0) {
+        // Create a new shipment for this purchase
+        const items = await db
+          .select()
+          .from(purchaseItems)
+          .where(eq(purchaseItems.purchaseId, purchaseId));
+        
+        const totalWeight = items.reduce((sum, item) => sum + (parseFloat(item.weight) || 0), 0);
+        const totalUnits = items.reduce((sum, item) => sum + item.quantity, 0);
+        
+        await db.insert(shipments).values({
+          consolidationId: null,
+          carrier: 'Direct Supplier',
+          trackingNumber: currentPurchase.trackingNumber || `PO-${purchaseId}`,
+          origin: currentPurchase.location || 'Supplier',
+          destination: 'Warehouse',
+          status: 'delivered',
+          receivingStatus: null,
+          shippingCost: currentPurchase.shippingCost || '0',
+          shippingCostCurrency: currentPurchase.purchaseCurrency || 'USD',
+          totalWeight: totalWeight.toString(),
+          totalUnits: totalUnits,
+          estimatedDelivery: currentPurchase.estimatedArrival,
+          deliveredAt: new Date(),
+          notes: `Auto-created from Purchase Order PO #${purchaseId} - ${currentPurchase.supplier}`,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
+    }
     
     res.json(updated);
   } catch (error) {
