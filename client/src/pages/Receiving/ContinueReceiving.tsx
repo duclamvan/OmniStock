@@ -2853,28 +2853,10 @@ export default function ContinueReceiving() {
                       </div>
                     </div>
                   ))
-                ) : (() => {
-                  const filteredItems = receivingItems.filter(item => 
+                ) : 
+                  receivingItems.filter(item => 
                     showAllItems || item.status === 'pending' || item.receivedQty < item.expectedQty
-                  );
-                  
-                  // Sort items: pending first, then partial, then completed
-                  const sortedItems = [...filteredItems].sort((a, b) => {
-                    const statusOrder = {
-                      'pending': 0,
-                      'partial': 1,
-                      'partial_damaged': 2,
-                      'partial_missing': 3,
-                      'damaged': 4,
-                      'missing': 5,
-                      'complete': 6
-                    };
-                    return (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
-                  });
-                  
-                  return sortedItems;
-                })()
-                  .map((item) => {
+                  ).map((item) => {
                     const progress = (item.receivedQty / item.expectedQty) * 100;
                     const isComplete = item.status === 'complete';
                     const isDamaged = item.status === 'damaged' || item.status === 'partial_damaged';
