@@ -73,7 +73,10 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
   const mobileNavRef = useRef<HTMLDivElement>(null);
   const scrollPosition = useRef(0);
   const itemRefs = useRef<{ [key: string]: HTMLElement | null }>({});
-  const [openItems, setOpenItems] = useState<string[]>([]);
+  const [openItems, setOpenItems] = useState<string[]>(() => {
+    const saved = localStorage.getItem('sidebarOpenItems');
+    return saved ? JSON.parse(saved) : [];
+  });
   
   // Fetch tickets to count due/overdue notifications
   const { data: tickets = [] } = useQuery<any[]>({
@@ -124,11 +127,17 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
   useEffect(() => {
     localStorage.setItem('sidebarCollapsed', JSON.stringify(isCollapsed));
   }, [isCollapsed]);
+
+  // Save openItems to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('sidebarOpenItems', JSON.stringify(openItems));
+  }, [openItems]);
   
 
   // Save scroll position whenever user scrolls the desktop nav
   const handleDesktopScroll = (e: React.UIEvent<HTMLDivElement>) => {
     scrollPosition.current = e.currentTarget.scrollTop;
+    localStorage.setItem('sidebarScrollPosition', scrollPosition.current.toString());
   };
 
   const toggleItem = (itemName: string) => {
@@ -138,6 +147,14 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
         : [...prev, itemName]
     );
   };
+
+  // Restore scroll position from localStorage on initial mount
+  useLayoutEffect(() => {
+    const savedScrollPosition = localStorage.getItem('sidebarScrollPosition');
+    if (savedScrollPosition) {
+      scrollPosition.current = parseFloat(savedScrollPosition);
+    }
+  }, []);
 
   // Restore scroll position after state changes (location, openItems, isCollapsed)
   useLayoutEffect(() => {
