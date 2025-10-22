@@ -1888,6 +1888,7 @@ export default function ContinueReceiving() {
 
   // Photo upload handlers
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const itemPhotoInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -2010,6 +2011,94 @@ export default function ContinueReceiving() {
     }
   };
   
+  // Item-specific photo upload handler
+  const handleItemPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, itemId: string) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || photoProcessingRef.current) return;
+    
+    // Prevent concurrent uploads
+    photoProcessingRef.current = true;
+    const filesArray = Array.from(files);
+    const totalFiles = filesArray.length;
+    
+    // Show upload progress
+    setPhotosLoading(true);
+    setUploadProgress(0);
+    
+    try {
+      // Compress all images with thumbnails in parallel
+      const compressedPhotosWithThumbnails = await compressImagesWithThumbnailsInParallel(
+        filesArray,
+        {
+          maxWidth: 1920,
+          maxHeight: 1920,
+          quality: 0.8,
+          format: 'jpeg'
+        },
+        (processed, total) => {
+          setUploadProgress(Math.round((processed / total) * 100));
+        }
+      );
+      
+      // Generate unique IDs and create photo objects
+      const newPhotos: PhotoData[] = compressedPhotosWithThumbnails.map((photo, index) => ({
+        id: `photo_${Date.now()}_${index}_${Math.random().toString(36).substring(2, 9)}`,
+        compressed: photo.compressed,
+        thumbnail: photo.thumbnail,
+        originalSize: photo.originalSize
+      }));
+      
+      // Update state with new photo objects
+      setUploadedPhotos(prev => {
+        const updated = [...prev, ...newPhotos];
+        
+        // Save photos to server
+        const photosForServer = updated.map(photo => 
+          typeof photo === 'string' ? photo : photo.compressed
+        );
+        
+        updatePhotosMutation.mutate(photosForServer, {
+          onSuccess: () => {
+            setSaveStatus('saved');
+            setTimeout(() => setSaveStatus('idle'), 1000);
+            queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
+          }
+        });
+        
+        setSaveStatus('saving');
+        return updated;
+      });
+      
+      // Calculate size reduction
+      const originalSize = filesArray.reduce((sum, file) => sum + file.size, 0);
+      const compressedSize = compressedPhotosWithThumbnails.reduce((sum, photo) => {
+        return sum + getBase64Size(photo.compressed) + getBase64Size(photo.thumbnail);
+      }, 0);
+      const reduction = Math.round(((originalSize - compressedSize) / originalSize) * 100);
+      
+      toast({
+        title: "Item Photo Uploaded",
+        description: `Successfully uploaded ${totalFiles} photo${totalFiles > 1 ? 's' : ''} for this item${reduction > 0 ? ` (${reduction}% smaller)` : ''}`,
+        className: "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800",
+        duration: 3000
+      });
+      
+    } catch (error) {
+      console.error('Item photo upload error:', error);
+      toast({
+        title: "Upload Failed",
+        description: "Failed to process photos. Please try again.",
+        variant: "destructive",
+        duration: 4000
+      });
+    } finally {
+      setPhotosLoading(false);
+      setUploadProgress(0);
+      photoProcessingRef.current = false;
+      e.target.value = '';
+    }
+  };
+
   const handleRemovePhoto = async (index: number) => {
     // Store the photo being removed for potential restoration
     const photoToRemove = uploadedPhotos[index];
@@ -2928,6 +3017,24 @@ export default function ContinueReceiving() {
                                     style={{ width: `${Math.min(100, progress)}%` }}
                                   />
                                 </div>
+                                
+                                {/* Damaged/Missing Quantity Indicator */}
+                                {((item.damagedQty && item.damagedQty > 0) || (item.missingQty && item.missingQty > 0)) && (
+                                  <div className="flex items-center gap-2 text-xs pt-1" data-testid={`indicator-dmg-miss-${item.id}`}>
+                                    {item.damagedQty && item.damagedQty > 0 && (
+                                      <span className="flex items-center gap-1 text-red-600 dark:text-red-400 font-medium bg-red-50 dark:bg-red-950 px-2 py-0.5 rounded">
+                                        <AlertTriangle className="h-3 w-3" />
+                                        {item.damagedQty} damaged
+                                      </span>
+                                    )}
+                                    {item.missingQty && item.missingQty > 0 && (
+                                      <span className="flex items-center gap-1 text-gray-600 dark:text-gray-400 font-medium bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+                                        <X className="h-3 w-3" />
+                                        {item.missingQty} missing
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                               
                               {/* Controls Section */}
@@ -3193,6 +3300,30 @@ export default function ContinueReceiving() {
                                       </div>
                                     </PopoverContent>
                                   </Popover>
+                                  
+                                  {/* Camera Button for Item-Specific Photos */}
+                                  <div className="relative">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => itemPhotoInputRefs.current[item.id]?.click()}
+                                      className="min-w-[70px] transition-colors shadow-sm border-blue-500 hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 text-blue-700 dark:text-blue-400"
+                                      title="Upload photos for this item"
+                                      data-testid={`button-camera-${item.id}`}
+                                    >
+                                      <Camera className="h-3 w-3 mr-1" />
+                                      Photo
+                                    </Button>
+                                    <input
+                                      ref={(el) => itemPhotoInputRefs.current[item.id] = el}
+                                      type="file"
+                                      accept="image/*"
+                                      multiple
+                                      onChange={(e) => handleItemPhotoUpload(e, item.id)}
+                                      className="hidden"
+                                      data-testid={`input-item-photo-${item.id}`}
+                                    />
+                                  </div>
                                 </div>
                               </div>
 
