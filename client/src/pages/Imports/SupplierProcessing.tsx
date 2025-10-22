@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,7 @@ interface Purchase {
   items: PurchaseItem[];
   itemCount: number;
   location?: string;
+  consolidation?: string;
 }
 
 interface PurchaseItem {
@@ -69,6 +70,7 @@ const statusColors: Record<string, string> = {
 const locations = ["Europe", "USA", "China", "Vietnam"];
 
 export default function SupplierProcessing() {
+  const [, setLocation] = useLocation();
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
   const [expandedPurchases, setExpandedPurchases] = useState<Set<number>>(new Set());
@@ -277,9 +279,21 @@ export default function SupplierProcessing() {
       const response = await apiRequest('PATCH', `/api/imports/purchases/${purchaseId}`, { status });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
       toast({ title: "Success", description: "Status updated successfully" });
+      
+      // Navigate based on consolidation when status changes to "delivered"
+      if (variables.status === 'delivered') {
+        const purchase = purchases.find(p => p.id === variables.purchaseId);
+        if (purchase) {
+          if (purchase.consolidation === 'Yes') {
+            setLocation('/imports/at-warehouse');
+          } else {
+            setLocation('/receiving');
+          }
+        }
+      }
     },
     onError: () => {
       toast({ 
