@@ -456,8 +456,7 @@ export default function CreatePurchase() {
       notes: "",
       totalPrice: 0,
       costWithShipping: 0,
-      binLocation: "TBA",
-      processingTimeDays: undefined
+      binLocation: "TBA"
     });
   };
 
@@ -568,8 +567,7 @@ export default function CreatePurchase() {
       productId: selectedProduct?.id,
       imageUrl: selectedProduct?.imageUrl,
       imageFile: productImageFile,
-      binLocation: currentItem.binLocation || "TBA",
-      processingTimeDays: currentItem.processingTimeDays
+      binLocation: currentItem.binLocation || "TBA"
     };
 
     const updatedItems = [...items, newItem];
@@ -590,8 +588,7 @@ export default function CreatePurchase() {
       weight: 0,
       dimensions: "",
       notes: "",
-      binLocation: "TBA",
-      processingTimeDays: undefined
+      binLocation: "TBA"
     });
   };
 
@@ -806,8 +803,7 @@ export default function CreatePurchase() {
       unitPrice: 0,
       weight: 0,
       dimensions: "",
-      notes: "",
-      processingTimeDays: undefined
+      notes: ""
     });
     setVariants([]);
     setShowVariants(false);
@@ -1513,18 +1509,6 @@ export default function CreatePurchase() {
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="processingTimeDays">Processing Time (days)</Label>
-                <Input
-                  id="processingTimeDays"
-                  type="number"
-                  min="0"
-                  value={currentItem.processingTimeDays || ""}
-                  onChange={(e) => setCurrentItem({...currentItem, processingTimeDays: parseInt(e.target.value) || undefined})}
-                  placeholder="Optional processing days"
-                  data-testid="input-processing-time-days"
-                />
-              </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="quantity">Quantity *</Label>
@@ -1938,14 +1922,6 @@ export default function CreatePurchase() {
                               </div>
                             </div>
                             
-                            {/* Processing Time */}
-                            {item.processingTimeDays !== undefined && (
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <Clock className="h-3 w-3" />
-                                <span>Processing: {item.processingTimeDays} days</span>
-                              </div>
-                            )}
-                            
                             {/* Notes and Dimensions */}
                             {(item.notes || item.dimensions) && (
                               <div className="text-xs text-muted-foreground space-y-0.5">
@@ -1993,7 +1969,6 @@ export default function CreatePurchase() {
                         <TableHead className="w-[180px]">Category</TableHead>
                         <TableHead className="w-[80px] text-center">Qty</TableHead>
                         <TableHead className="w-[120px] text-right">Unit Price</TableHead>
-                        <TableHead className="w-[100px] text-center">Proc. Time</TableHead>
                         <TableHead className="w-[120px] text-right">Total</TableHead>
                         <TableHead className="w-[140px] text-right">Cost w/ Shipping</TableHead>
                         <TableHead className="w-[48px]"></TableHead>
@@ -2115,24 +2090,6 @@ export default function CreatePurchase() {
                               />
                               <span className="text-xs text-muted-foreground">{purchaseCurrency}</span>
                             </div>
-                          </TableCell>
-                          
-                          {/* Processing Time */}
-                          <TableCell className="text-center">
-                            <Input
-                              type="number"
-                              value={item.processingTimeDays || ""}
-                              onChange={(e) => {
-                                const updatedItems = items.map(i => 
-                                  i.id === item.id ? {...i, processingTimeDays: parseInt(e.target.value) || undefined} : i
-                                );
-                                setItems(updatedItems);
-                              }}
-                              className="h-7 w-16 mx-auto text-sm text-center border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                              placeholder="-"
-                              min="0"
-                              data-testid={`input-processing-time-${item.id}`}
-                            />
                           </TableCell>
                           
                           {/* Total */}
