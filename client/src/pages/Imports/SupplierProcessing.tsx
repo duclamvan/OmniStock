@@ -276,23 +276,38 @@ export default function SupplierProcessing() {
   // Update status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ purchaseId, status }: { purchaseId: number; status: string }) => {
-      const response = await apiRequest('PATCH', `/api/imports/purchases/${purchaseId}`, { status });
+      // Check consolidation field when user selects "delivered"
+      let finalStatus = status;
+      const purchase = purchases.find(p => p.id === purchaseId);
+      
+      if (status === 'delivered' && purchase) {
+        // If consolidation is Yes, change status to at_warehouse instead
+        // This moves items to Consolidation page's "Incoming Orders" tab
+        if (purchase.consolidation === 'Yes') {
+          finalStatus = 'at_warehouse';
+        }
+        // If consolidation is No, keep status as delivered
+        // This moves items to Receiving page
+      }
+      
+      const response = await apiRequest('PATCH', `/api/imports/purchases/${purchaseId}`, { status: finalStatus });
       return response.json();
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
-      toast({ title: "Success", description: "Status updated successfully" });
       
-      // Navigate based on consolidation when status changes to "delivered"
-      if (variables.status === 'delivered') {
-        const purchase = purchases.find(p => p.id === variables.purchaseId);
-        if (purchase) {
-          if (purchase.consolidation === 'Yes') {
-            setLocation('/imports/at-warehouse');
-          } else {
-            setLocation('/receiving');
-          }
+      // Navigate based on where items were sent
+      const purchase = purchases.find(p => p.id === variables.purchaseId);
+      if (variables.status === 'delivered' && purchase) {
+        if (purchase.consolidation === 'Yes') {
+          toast({ title: "Success", description: "Items moved to Consolidation - Incoming Orders" });
+          setLocation('/imports/at-warehouse');
+        } else {
+          toast({ title: "Success", description: "Items moved to Receiving - To Receive" });
+          setLocation('/receiving');
         }
+      } else {
+        toast({ title: "Success", description: "Status updated successfully" });
       }
     },
     onError: () => {
