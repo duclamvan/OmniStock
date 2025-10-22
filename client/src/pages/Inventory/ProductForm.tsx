@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/command";
 import { 
   Upload, 
+  Download,
   Package, 
   RotateCcw, 
   Plus, 
@@ -1164,6 +1165,37 @@ export default function ProductForm() {
     });
   };
 
+  const handleDownloadImage = async (index: number) => {
+    const img = productImages[index];
+    const imageUrl = img.preview || img.url;
+    
+    if (!imageUrl) return;
+    
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${product?.sku || 'product'}-${IMAGE_PURPOSE_CONFIG[img.purpose].label.toLowerCase().replace(/\s+/g, '-')}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Image Downloaded",
+        description: `Downloaded ${IMAGE_PURPOSE_CONFIG[img.purpose].label}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Could not download the image",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleChangePurpose = (index: number, purpose: ImagePurpose) => {
     const newImages = [...productImages];
     newImages[index] = { ...newImages[index], purpose };
@@ -1674,6 +1706,17 @@ export default function ProductForm() {
                                 </Button>
                                 
                                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 p-2 z-0">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="secondary"
+                                    onClick={() => handleDownloadImage(index)}
+                                    className="text-xs h-7"
+                                    data-testid={`button-download-image-${index}`}
+                                  >
+                                    <Download className="h-3 w-3 mr-1" />
+                                    Download
+                                  </Button>
                                   {!img.isPrimary && (
                                     <Button
                                       type="button"
