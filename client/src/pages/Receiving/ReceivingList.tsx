@@ -791,15 +791,31 @@ export default function ReceivingList() {
         if (priorityFilter === 'normal' && shipmentIsUrgent) return false;
       }
 
-      // Search filter
+      // Search filter - search in shipment fields AND items
       if (searchQuery) {
         const searchLower = searchQuery.toLowerCase();
-        return (
+        
+        // Search in shipment-level fields
+        const shipmentMatch = (
           shipment.shipmentName?.toLowerCase().includes(searchLower) ||
           shipment.trackingNumber?.toLowerCase().includes(searchLower) ||
           shipment.carrier?.toLowerCase().includes(searchLower) ||
-          shipment.consolidation?.name?.toLowerCase().includes(searchLower)
+          shipment.endCarrier?.toLowerCase().includes(searchLower) ||
+          shipment.consolidation?.name?.toLowerCase().includes(searchLower) ||
+          shipment.notes?.toLowerCase().includes(searchLower) ||
+          shipment.origin?.toLowerCase().includes(searchLower) ||
+          shipment.destination?.toLowerCase().includes(searchLower)
         );
+        
+        // Search in items (for both consolidated and non-consolidated shipments)
+        const itemMatch = shipment.items && Array.isArray(shipment.items) && shipment.items.some((item: any) =>
+          item.name?.toLowerCase().includes(searchLower) ||
+          item.sku?.toLowerCase().includes(searchLower) ||
+          item.category?.toLowerCase().includes(searchLower) ||
+          item.barcode?.toLowerCase().includes(searchLower)
+        );
+        
+        return shipmentMatch || itemMatch;
       }
 
       // Carrier filter
