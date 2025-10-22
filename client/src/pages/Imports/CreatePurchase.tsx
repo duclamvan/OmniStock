@@ -1275,7 +1275,6 @@ export default function CreatePurchase() {
                   <Select 
                     value={consolidation} 
                     onValueChange={setConsolidation}
-                    disabled={purchaseCurrency === "EUR"}
                   >
                     <SelectTrigger id="consolidation" data-testid="select-consolidation">
                       <SelectValue />
@@ -1286,7 +1285,7 @@ export default function CreatePurchase() {
                     </SelectContent>
                   </Select>
                   {purchaseCurrency === "EUR" && (
-                    <p className="text-xs text-muted-foreground">Auto-set to "No" for EUR purchases</p>
+                    <p className="text-xs text-muted-foreground">Auto-selected to "No" for EUR purchases (editable)</p>
                   )}
                 </div>
                 <div></div>
