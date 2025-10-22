@@ -2358,6 +2358,58 @@ router.get("/shipments/by-status/:status", async (req, res) => {
       }
     }
     
+    // Batch-fetch items for non-consolidated purchase orders
+    let itemsByShipment: Record<number, any[]> = {};
+    
+    // Find shipments without consolidation that have purchase orders
+    const purchaseOrderShipments = shipmentsWithStatus
+      .filter(s => !s.shipment.consolidationId && s.shipment.notes && s.shipment.notes.includes('Auto-created from Purchase Order PO #'))
+      .map(s => ({
+        shipmentId: s.shipment.id,
+        notes: s.shipment.notes
+      }));
+    
+    if (purchaseOrderShipments.length > 0) {
+      // Extract purchase IDs and batch-fetch their items
+      const purchaseIds: number[] = [];
+      const shipmentToPurchaseMap: Record<number, number> = {};
+      
+      for (const { shipmentId, notes } of purchaseOrderShipments) {
+        const match = notes!.match(/PO #(\d+)/);
+        if (match) {
+          const purchaseId = parseInt(match[1]);
+          purchaseIds.push(purchaseId);
+          shipmentToPurchaseMap[shipmentId] = purchaseId;
+        }
+      }
+      
+      if (purchaseIds.length > 0) {
+        const allPurchaseItems = await db
+          .select()
+          .from(purchaseItems)
+          .where(inArray(purchaseItems.purchaseId, purchaseIds));
+        
+        // Group items by shipment ID
+        for (const item of allPurchaseItems) {
+          const shipmentId = Object.keys(shipmentToPurchaseMap).find(
+            sid => shipmentToPurchaseMap[parseInt(sid)] === item.purchaseId
+          );
+          
+          if (shipmentId) {
+            const sid = parseInt(shipmentId);
+            if (!itemsByShipment[sid]) {
+              itemsByShipment[sid] = [];
+            }
+            itemsByShipment[sid].push({
+              ...item,
+              itemType: 'purchase',
+              category: (item as any).category || 'General'
+            });
+          }
+        }
+      }
+    }
+    
     // If fetching completed shipments, also include receipt IDs
     let receiptMap: Record<number, number> = {};
     if (status === 'completed') {
@@ -2379,7 +2431,9 @@ router.get("/shipments/by-status/:status", async (req, res) => {
     const formattedShipments = shipmentsWithStatus.map(({ shipment, consolidation }) => ({
       ...shipment,
       consolidation,
-      items: shipment.consolidationId ? (itemsByConsolidation[shipment.consolidationId] || []) : [],
+      items: shipment.consolidationId 
+        ? (itemsByConsolidation[shipment.consolidationId] || [])
+        : (itemsByShipment[shipment.id] || []),
       receiptId: receiptMap[shipment.id] || null,
       // Expose warehouse details directly for easier frontend access
       receivingWarehouse: consolidation?.warehouse || null,
@@ -2445,9 +2499,11 @@ router.get("/shipments/receivable", async (req, res) => {
     // Format response with receipt status and items
     let formattedShipments = await Promise.all(
       receivableShipments.map(async ({ shipment, consolidation }) => {
-        // Get items for each shipment's consolidation
+        // Get items for each shipment's consolidation or purchase order
         let items: any[] = [];
+        
         if (shipment.consolidationId) {
+          // Fetch items from consolidation
           const consolidationItemList = await db
             .select()
             .from(consolidationItems)
@@ -2480,6 +2536,22 @@ router.get("/shipments/receivable", async (req, res) => {
                 });
               }
             }
+          }
+        } else if (shipment.notes && shipment.notes.includes('Auto-created from Purchase Order PO #')) {
+          // Fetch items from purchase order for non-consolidated purchases
+          const match = shipment.notes.match(/PO #(\d+)/);
+          if (match) {
+            const purchaseId = parseInt(match[1]);
+            const purchaseItemsList = await db
+              .select()
+              .from(purchaseItems)
+              .where(eq(purchaseItems.purchaseId, purchaseId));
+            
+            items = purchaseItemsList.map(item => ({
+              ...item,
+              itemType: 'purchase',
+              category: (item as any).category || 'General'
+            }));
           }
         }
 
