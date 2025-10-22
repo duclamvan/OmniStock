@@ -169,7 +169,7 @@ router.get("/unpacked-items", async (req, res) => {
   }
 });
 
-// AI Classification for items
+// AI Classification for items using DeepSeek AI
 router.post("/items/auto-classify", async (req, res) => {
   try {
     const { itemIds } = req.body;
@@ -178,79 +178,129 @@ router.post("/items/auto-classify", async (req, res) => {
       return res.status(400).json({ message: "Item IDs array is required" });
     }
     
-    // Fetch items to classify
+    // Fetch items from database
     const items = await db
       .select()
       .from(customItems)
-      .where(sql`${customItems.id} = ANY(${itemIds})`);
+      .where(inArray(customItems.id, itemIds));
     
-    // AI logic to determine classification based on:
-    // - Product name patterns
-    // - Historical data
-    // - Product categories
-    const classifications: { id: number, classification: string }[] = [];
-    
-    for (const item of items) {
-      let classification = 'general'; // Default to general
-      
-      const name = item.name.toLowerCase();
-      const notes = (item.notes || '').toLowerCase();
-      const source = (item.source || '').toLowerCase();
-      
-      // Sensitive goods patterns
-      const sensitivePatterns = [
-        'battery', 'batteries', 'lithium', 'power bank', 'charger',
-        'perfume', 'cosmetic', 'makeup', 'nail polish', 'aerosol',
-        'liquid', 'cream', 'lotion', 'oil', 'gel', 'spray',
-        'medicine', 'drug', 'pharmaceutical', 'vitamin', 'supplement',
-        'chemical', 'flammable', 'explosive', 'hazardous', 'toxic',
-        'weapon', 'knife', 'blade', 'sharp', 'gun',
-        'alcohol', 'wine', 'beer', 'liquor', 'spirits',
-        'magnet', 'magnetic', 'electronic', 'device',
-        'compressed', 'gas', 'pressurized', 'canister',
-        'paint', 'solvent', 'adhesive', 'glue', 'lighter'
-      ];
-      
-      // Check for sensitive patterns
-      for (const pattern of sensitivePatterns) {
-        if (name.includes(pattern) || notes.includes(pattern)) {
-          classification = 'sensitive';
-          break;
-        }
-      }
-      
-      // Additional checks for specific suppliers known for sensitive goods
-      if (source.includes('battery') || source.includes('electronic') || 
-          source.includes('chemical') || source.includes('cosmetic')) {
-        classification = 'sensitive';
-      }
-      
-      // Check quantity and weight for bulk items that might be commercial
-      if (!classification && item.quantity > 100 && parseFloat(item.weight || '0') > 50) {
-        classification = 'sensitive'; // Large bulk items may need special handling
-      }
-      
-      classifications.push({ id: item.id, classification });
+    if (items.length === 0) {
+      return res.status(404).json({ message: "No items found" });
     }
     
-    // Update all items with their classifications
-    for (const { id, classification } of classifications) {
+    // Use DeepSeek API to classify items
+    const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
+    if (!DEEPSEEK_API_KEY) {
+      return res.status(500).json({ message: "DEEPSEEK_API_KEY not configured" });
+    }
+    
+    // Prepare items for classification
+    const itemDescriptions = items.map(item => ({
+      id: item.id,
+      name: item.name,
+      notes: item.notes || '',
+      source: item.source
+    }));
+    
+    const prompt = `You are a shipping classification expert. Classify the following items as either "sensitive" or "general" for international shipping purposes.
+
+Sensitive items include:
+- Batteries, power banks, lithium batteries
+- Liquids (perfumes, nail polish, cosmetics, oils)
+- Flammable items, aerosols
+- Magnets, magnetic items
+- Electronics with built-in batteries
+- Cosmetics with alcohol or chemicals
+- Sharp objects, knives
+
+General items include:
+- Clothing, textiles
+- Books, paper products
+- Non-battery toys
+- Home decorations
+- Plastic items without batteries
+- Wooden items
+- Non-liquid cosmetics (powder, solid)
+
+Items to classify:
+${itemDescriptions.map((item, idx) => `${idx + 1}. ID: ${item.id}, Name: "${item.name}", Notes: "${item.notes}", Source: "${item.source}"`).join('\n')}
+
+Respond with ONLY a JSON array where each object has "id" (number) and "classification" ("sensitive" or "general"). Example:
+[{"id": 1, "classification": "sensitive"}, {"id": 2, "classification": "general"}]`;
+
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 2000
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`DeepSeek API error: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    const aiResponse = data.choices[0]?.message?.content;
+    
+    if (!aiResponse) {
+      throw new Error('No response from DeepSeek API');
+    }
+    
+    // Parse AI response
+    let classifications: Array<{ id: number; classification: string }>;
+    try {
+      // Extract JSON from response (in case AI adds explanation text)
+      const jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) {
+        throw new Error('No JSON array found in AI response');
+      }
+      classifications = JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', aiResponse);
+      throw new Error('Failed to parse AI classification response');
+    }
+    
+    // Update items in database
+    let updatedCount = 0;
+    for (const classif of classifications) {
+      const itemId = classif.id;
+      const classification = classif.classification === 'sensitive' ? 'sensitive' : 'general';
+      
       await db
         .update(customItems)
         .set({ 
           classification,
           updatedAt: new Date()
         })
-        .where(eq(customItems.id, id));
+        .where(eq(customItems.id, itemId));
+      
+      updatedCount++;
     }
     
-    res.json({ 
-      message: `Successfully classified ${classifications.length} items`,
-      classifications 
+    res.json({
+      message: `Successfully classified ${updatedCount} item(s)`,
+      classified: updatedCount,
+      classifications
     });
+    
   } catch (error) {
     console.error("Error in AI classification:", error);
-    res.status(500).json({ message: "Failed to auto-classify items" });
+    res.status(500).json({ 
+      message: "AI classification failed",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
