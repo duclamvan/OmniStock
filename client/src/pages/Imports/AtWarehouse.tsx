@@ -699,6 +699,8 @@ export default function AtWarehouse() {
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>("");
   const [warehouseComboOpen, setWarehouseComboOpen] = useState(false);
   const [isAdditionalDetailsOpen, setIsAdditionalDetailsOpen] = useState(false);
+  const [consolidationShippingMethod, setConsolidationShippingMethod] = useState<string>("");
+  const [consolidationLocation, setConsolidationLocation] = useState<string>("");
 
   // Unpack purchase order mutation
   const unpackMutation = useMutation({
@@ -1025,6 +1027,39 @@ export default function AtWarehouse() {
       }
     }
     setExpandedConsolidations(newExpanded);
+  };
+
+  // Generate smart consolidation name
+  const generateConsolidationName = () => {
+    if (!consolidationShippingMethod || !consolidationLocation) {
+      return "New Consolidation";
+    }
+
+    // Get shipping method prefix
+    const methodPrefixes: Record<string, string> = {
+      general_air_ddp: "GA-DDP",
+      sensitive_air_ddp: "SA-DDP",
+      general_express: "GEN-EXP",
+      sensitive_express: "SEN-EXP",
+      general_railway: "GEN-RAIL",
+      sensitive_railway: "SEN-RAIL",
+      general_sea: "GEN-SEA",
+      sensitive_sea: "SEN-SEA"
+    };
+
+    // Get location code (first 3 letters uppercase)
+    const locationCode = consolidationLocation.substring(0, 3).toUpperCase();
+    
+    // Get warehouse code (from selected warehouse)
+    const warehouseCode = warehouses.find(w => w.id === selectedWarehouse)?.code || "WH";
+    
+    // Get date code (MMDD)
+    const now = new Date();
+    const dateCode = `${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+    
+    const methodPrefix = methodPrefixes[consolidationShippingMethod] || "CONSOL";
+    
+    return `${methodPrefix}-${locationCode}-${warehouseCode}-${dateCode}`;
   };
 
   // Simple add items mutation with optimized cache updates
@@ -1429,7 +1464,7 @@ export default function AtWarehouse() {
     const formData = new FormData(e.currentTarget);
     
     const data = {
-      name: formData.get('name') as string,
+      name: generateConsolidationName(), // Auto-generated name
       location: formData.get('location') as string,
       shippingMethod: formData.get('shippingMethod') as string,
       warehouse: formData.get('warehouse') as string,
@@ -1859,31 +1894,13 @@ export default function AtWarehouse() {
               </DialogHeader>
               <form onSubmit={handleCreateConsolidation} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Consolidation Name *</Label>
-                  <Input 
-                    id="name" 
-                    name="name" 
+                  <Label htmlFor="shippingMethod">Shipping Method *</Label>
+                  <Select 
+                    name="shippingMethod" 
                     required 
-                    data-testid="input-consolidation-name"
-                    placeholder="e.g., USA Express Batch #1"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="location">Destination Location *</Label>
-                  <Input 
-                    id="location" 
-                    name="location" 
-                    required 
-                    data-testid="input-consolidation-location"
-                    placeholder="e.g., Czech Republic, USA, Vietnam"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="shippingMethod">Shipping Method *</Label>
-                    <Select name="shippingMethod" required>
+                    value={consolidationShippingMethod}
+                    onValueChange={setConsolidationShippingMethod}
+                  >
                       <SelectTrigger data-testid="select-shipping-method">
                         <SelectValue placeholder="Select shipping method" />
                       </SelectTrigger>
@@ -1938,11 +1955,25 @@ export default function AtWarehouse() {
                         </SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="warehouse">Warehouse Location *</Label>
-                    <input type="hidden" name="warehouse" value={selectedWarehouse} required />
-                    <Popover open={warehouseComboOpen} onOpenChange={setWarehouseComboOpen}>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="location">Destination Location *</Label>
+                  <Input 
+                    id="location" 
+                    name="location" 
+                    required 
+                    data-testid="input-consolidation-location"
+                    placeholder="e.g., Czech Republic, USA, Vietnam"
+                    value={consolidationLocation}
+                    onChange={(e) => setConsolidationLocation(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="warehouse">Warehouse *</Label>
+                  <input type="hidden" name="warehouse" value={selectedWarehouse} required />
+                  <Popover open={warehouseComboOpen} onOpenChange={setWarehouseComboOpen}>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
@@ -1985,8 +2016,20 @@ export default function AtWarehouse() {
                         </Command>
                       </PopoverContent>
                     </Popover>
-                  </div>
                 </div>
+
+                {/* Auto-generated name preview */}
+                {consolidationShippingMethod && consolidationLocation && (
+                  <div className="space-y-2">
+                    <Label>Auto-Generated Name</Label>
+                    <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-md border text-sm font-mono text-slate-700 dark:text-slate-300">
+                      {generateConsolidationName()}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      This name will be automatically generated based on your selections
+                    </p>
+                  </div>
+                )}
 
                 <Collapsible open={isAdditionalDetailsOpen} onOpenChange={setIsAdditionalDetailsOpen}>
                   <CollapsibleTrigger asChild>
