@@ -335,7 +335,7 @@ export default function ImportKanbanView() {
     },
     {
       id: "at_warehouse",
-      title: "At Warehouse",
+      title: "Consolidation",
       color: "bg-indigo-50 dark:bg-indigo-900/20",
       icon: <Building2 className="h-3.5 w-3.5" />,
       items: []

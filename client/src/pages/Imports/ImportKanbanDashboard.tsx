@@ -592,7 +592,7 @@ export default function ImportKanbanDashboard() {
     },
     {
       id: 'at_warehouse',
-      title: 'At Warehouse',
+      title: 'Consolidation',
       icon: <Warehouse className="h-4 w-4" />,
       count: filteredCustomItems.length + filteredConsolidations.length,
       bgColor: 'bg-purple-50 dark:bg-purple-900/10',
@@ -721,7 +721,7 @@ export default function ImportKanbanDashboard() {
                   />
                 ))}
 
-                {/* At Warehouse Column */}
+                {/* Consolidation Column */}
                 {column.id === 'at_warehouse' && (
                   <>
                     {filteredCustomItems.map((item) => (

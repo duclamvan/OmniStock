@@ -724,7 +724,7 @@ export default function SupplierProcessing() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">At Warehouse</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">Consolidation</CardTitle>
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -776,7 +776,7 @@ export default function SupplierProcessing() {
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="processing">Processing</SelectItem>
-                  <SelectItem value="at_warehouse">At Warehouse</SelectItem>
+                  <SelectItem value="at_warehouse">Consolidation</SelectItem>
                   <SelectItem value="shipped">Shipped</SelectItem>
                   <SelectItem value="delivered">Delivered</SelectItem>
                 </SelectContent>
@@ -903,7 +903,7 @@ export default function SupplierProcessing() {
                             <SelectContent>
                               <SelectItem value="pending">Pending</SelectItem>
                               <SelectItem value="processing">Processing</SelectItem>
-                              <SelectItem value="at_warehouse">At Warehouse</SelectItem>
+                              <SelectItem value="at_warehouse">Consolidation</SelectItem>
                               <SelectItem value="shipped">Shipped</SelectItem>
                               <SelectItem value="delivered">Delivered</SelectItem>
                             </SelectContent>

@@ -840,7 +840,7 @@ export default function AtWarehouse() {
         insuranceValue: '0',
         shipmentName: consolidation.name,
         shipmentType: consolidation.shippingMethod || 'standard',
-        notes: 'Quick Ship - Created from At Warehouse'
+        notes: 'Quick Ship - Created from Consolidation'
       });
     },
     onSuccess: () => {
@@ -1595,7 +1595,7 @@ export default function AtWarehouse() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">At Warehouse</h1>
+          <h1 className="text-3xl font-bold">Consolidation</h1>
           <p className="text-muted-foreground">Process incoming orders and manage warehouse items</p>
         </div>
         <div className="flex items-center gap-4">
@@ -2178,7 +2178,7 @@ export default function AtWarehouse() {
                 <Package className="h-12 w-12 text-muted-foreground mb-4" />
                 <p className="text-muted-foreground">No incoming orders at warehouse</p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Orders with "At Warehouse" status will appear here
+                  Orders with "Consolidation" status will appear here
                 </p>
               </CardContent>
             </Card>
@@ -3470,7 +3470,7 @@ export default function AtWarehouse() {
                         <SelectItem value="pending">Pending</SelectItem>
                         <SelectItem value="ordered">Ordered</SelectItem>
                         <SelectItem value="in_transit">In Transit</SelectItem>
-                        <SelectItem value="at_warehouse">At Warehouse</SelectItem>
+                        <SelectItem value="at_warehouse">Consolidation</SelectItem>
                         <SelectItem value="unpacked">Unpacked</SelectItem>
                       </>
                     ) : (

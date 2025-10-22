@@ -86,7 +86,7 @@ const navigation = [
     children: [
       { name: "Kanban Dashboard", href: "/imports/kanban" },
       { name: "Purchase Orders", href: "/imports/supplier-processing" },
-      { name: "At Warehouse", href: "/imports/at-warehouse" },
+      { name: "Consolidation", href: "/imports/at-warehouse" },
       { name: "International Transit", href: "/imports/international-transit" },
     ],
   },
