@@ -35,6 +35,8 @@ export const importPurchases = pgTable('import_purchases', {
   estimatedArrival: timestamp('estimated_arrival'),
   notes: text('notes'),
   shippingCost: decimal('shipping_cost', { precision: 10, scale: 2 }).default('0'),
+  shippingCurrency: text('shipping_currency').default('USD'),
+  consolidation: text('consolidation').default('No'), // Yes or No
   totalCost: decimal('total_cost', { precision: 10, scale: 2 }).default('0'),
   // Currency fields - payment currency is primary
   paymentCurrency: text('payment_currency').default('USD'),

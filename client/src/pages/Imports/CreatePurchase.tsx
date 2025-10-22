@@ -108,6 +108,8 @@ export default function CreatePurchase() {
   const [processingUnit, setProcessingUnit] = useState("days");
   const [notes, setNotes] = useState("");
   const [shippingCost, setShippingCost] = useState(0);
+  const [shippingCurrency, setShippingCurrency] = useState("USD");
+  const [consolidation, setConsolidation] = useState("No");
   
   // Exchange rates state
   const [exchangeRates, setExchangeRates] = useState<{[key: string]: number}>({
@@ -231,6 +233,13 @@ export default function CreatePurchase() {
     };
     fetchCategories();
   }, []);
+  
+  // Auto-set consolidation to "No" when purchase currency is EUR
+  useEffect(() => {
+    if (purchaseCurrency === "EUR") {
+      setConsolidation("No");
+    }
+  }, [purchaseCurrency]);
   
   // Fetch exchange rates
   useEffect(() => {
@@ -492,6 +501,8 @@ export default function CreatePurchase() {
       setTrackingNumber(String(purchase?.trackingNumber || ""));
       setNotes(String(purchase?.notes || ""));
       setShippingCost(Number(purchase?.shippingCost) || 0);
+      setShippingCurrency(String(purchase?.shippingCurrency || "USD"));
+      setConsolidation(String(purchase?.consolidation || "No"));
       
       // Set currencies
       setPurchaseCurrency(String(purchase?.purchaseCurrency || purchase?.paymentCurrency || "USD"));
@@ -908,6 +919,8 @@ export default function CreatePurchase() {
       processingTime: processingTime ? `${processingTime} ${processingUnit}` : null,
       notes: notes || null,
       shippingCost,
+      shippingCurrency,
+      consolidation,
       totalCost: grandTotal, // Keep for backward compatibility
       // Store converted prices
       prices: {
@@ -1212,20 +1225,37 @@ export default function CreatePurchase() {
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="shipping">Shipping Cost ({purchaseCurrency})</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">{currencySymbol}</span>
-                    <Input
-                      id="shipping"
-                      type="number"
-                      step="0.01"
-                      value={shippingCost}
-                      onChange={(e) => handleShippingCostChange(parseFloat(e.target.value) || 0)}
-                      className="pl-10"
-                      placeholder="0.00"
-                      data-testid="input-shipping"
-                    />
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="shipping-currency">Shipping Currency</Label>
+                    <Select value={shippingCurrency} onValueChange={setShippingCurrency}>
+                      <SelectTrigger id="shipping-currency" data-testid="select-shipping-currency">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">USD ($)</SelectItem>
+                        <SelectItem value="EUR">EUR (€)</SelectItem>
+                        <SelectItem value="CZK">CZK (Kč)</SelectItem>
+                        <SelectItem value="CNY">CNY (¥)</SelectItem>
+                        <SelectItem value="VND">VND (₫)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="shipping">Shipping Cost</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">{getCurrencySymbol(shippingCurrency)}</span>
+                      <Input
+                        id="shipping"
+                        type="number"
+                        step="0.01"
+                        value={shippingCost}
+                        onChange={(e) => handleShippingCostChange(parseFloat(e.target.value) || 0)}
+                        className="pl-10"
+                        placeholder="0.00"
+                        data-testid="input-shipping"
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -1238,6 +1268,28 @@ export default function CreatePurchase() {
                     data-testid="input-tracking"
                   />
                 </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="consolidation">Consolidation?</Label>
+                  <Select 
+                    value={consolidation} 
+                    onValueChange={setConsolidation}
+                    disabled={purchaseCurrency === "EUR"}
+                  >
+                    <SelectTrigger id="consolidation" data-testid="select-consolidation">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Yes">Yes</SelectItem>
+                      <SelectItem value="No">No</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {purchaseCurrency === "EUR" && (
+                    <p className="text-xs text-muted-foreground">Auto-set to "No" for EUR purchases</p>
+                  )}
+                </div>
+                <div></div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="notes">Notes</Label>
