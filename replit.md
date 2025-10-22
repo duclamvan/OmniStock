@@ -52,7 +52,7 @@ The application uses PostgreSQL with Neon serverless driver and Drizzle ORM. The
 - **Reporting**: Comprehensive sales, inventory, customer, and financial reports.
 - **Landing Cost Engine**: Tracks import costs with volumetric weight calculations, multi-currency, and FX rate management.
 - **Smart Barcode Scanning**: Automatic shipment matching with audio/visual feedback.
-- **UI Enhancements**: Modernized invoice UI, clear order detail displays, and optimized country/shipping flag selectors.
+- **UI Enhancements**: Modernized invoice UI, clear order detail displays, and optimized country/shipping flag selectors. **Sidebar State Persistence**: Advanced localStorage-based state management with defensive guards that remember sidebar scroll position, expanded menu items, and collapse state across sessions. Features comprehensive runtime type validation, automatic cleanup of corrupted data, and graceful error recovery to prevent crashes from malformed localStorage values.
 
 # External Dependencies
 
