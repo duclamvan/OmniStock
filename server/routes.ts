@@ -5279,8 +5279,17 @@ Important:
       // Remove dueDate from req.body to avoid overwriting
       const { dueDate: _, ...restBody } = req.body;
       
-      const bodyWithDefaults = {
+      // Convert empty strings to null for foreign key fields
+      const cleanBody = {
         ...restBody,
+        customerId: restBody.customerId?.trim() || null,
+        orderId: restBody.orderId?.trim() || null,
+        title: restBody.title?.trim() || null,
+        description: restBody.description?.trim() || null,
+      };
+      
+      const bodyWithDefaults = {
+        ...cleanBody,
         ticketId,
         createdBy: req.user?.id || "test-user",
         category: req.body.category || 'general',
@@ -5385,8 +5394,22 @@ Return ONLY the subject line without quotes or extra formatting.`,
         return res.status(404).json({ message: "Ticket not found" });
       }
 
-      // Convert dueDate string to Date object if present
+      // Convert empty strings to null for foreign key fields
       let updateData = { ...req.body };
+      if (updateData.customerId !== undefined) {
+        updateData.customerId = updateData.customerId?.trim() || null;
+      }
+      if (updateData.orderId !== undefined) {
+        updateData.orderId = updateData.orderId?.trim() || null;
+      }
+      if (updateData.title !== undefined) {
+        updateData.title = updateData.title?.trim() || null;
+      }
+      if (updateData.description !== undefined) {
+        updateData.description = updateData.description?.trim() || null;
+      }
+      
+      // Convert dueDate string to Date object if present
       if (updateData.dueDate && updateData.dueDate !== 'null' && updateData.dueDate !== '') {
         updateData.dueDate = new Date(updateData.dueDate);
       } else if (updateData.dueDate === '' || updateData.dueDate === 'null') {
