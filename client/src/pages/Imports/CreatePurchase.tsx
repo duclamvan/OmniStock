@@ -95,6 +95,7 @@ export default function CreatePurchase() {
   // Form state
   const [purchaseCurrency, setPurchaseCurrency] = useState("USD");
   const [paymentCurrency, setPaymentCurrency] = useState("USD");
+  const [paymentCurrencyManuallySet, setPaymentCurrencyManuallySet] = useState(false);
   const [totalPaid, setTotalPaid] = useState(0);
   const [displayCurrency, setDisplayCurrency] = useState("USD");
   const [customCurrencies, setCustomCurrencies] = useState<string[]>([]);
@@ -281,6 +282,13 @@ export default function CreatePurchase() {
       setConsolidation("No");
     }
   }, [purchaseCurrency]);
+  
+  // Auto-sync payment currency with purchase currency unless manually changed
+  useEffect(() => {
+    if (!paymentCurrencyManuallySet) {
+      setPaymentCurrency(purchaseCurrency);
+    }
+  }, [purchaseCurrency, paymentCurrencyManuallySet]);
   
   // Fetch exchange rates
   useEffect(() => {
@@ -541,10 +549,16 @@ export default function CreatePurchase() {
       setConsolidation(String(purchase?.consolidation || "No"));
       
       // Set currencies
-      setPurchaseCurrency(String(purchase?.purchaseCurrency || purchase?.paymentCurrency || "USD"));
-      setPaymentCurrency(String(purchase?.paymentCurrency || "USD"));
+      const loadedPurchaseCurrency = String(purchase?.purchaseCurrency || purchase?.paymentCurrency || "USD");
+      const loadedPaymentCurrency = String(purchase?.paymentCurrency || "USD");
+      setPurchaseCurrency(loadedPurchaseCurrency);
+      setPaymentCurrency(loadedPaymentCurrency);
+      // If payment currency differs from purchase currency, mark as manually set
+      if (loadedPaymentCurrency !== loadedPurchaseCurrency) {
+        setPaymentCurrencyManuallySet(true);
+      }
       setTotalPaid(Number(purchase?.totalPaid) || 0);
-      setDisplayCurrency(String(purchase?.purchaseCurrency || purchase?.paymentCurrency || "USD"));
+      setDisplayCurrency(loadedPurchaseCurrency);
       
       // Set purchase date
       if (purchase?.createdAt) {
@@ -1089,6 +1103,7 @@ export default function CreatePurchase() {
                         setAddingCurrency(true);
                       } else {
                         setPaymentCurrency(value);
+                        setPaymentCurrencyManuallySet(true);
                       }
                     }}>
                       <SelectTrigger className="flex-1" data-testid="select-payment-currency">
