@@ -397,21 +397,6 @@ export default function CreatePurchase() {
 
 
   const selectProduct = async (product: Product) => {
-    // Fetch product location from inventory
-    let binLocation = "TBA";
-    try {
-      const response = await fetch(`/api/products/${product.id}/locations`);
-      if (response.ok) {
-        const locations = await response.json();
-        // Get primary location or first location if exists
-        const primaryLocation = locations.find((loc: any) => loc.isPrimary);
-        const firstLocation = locations[0];
-        binLocation = primaryLocation?.locationCode || firstLocation?.locationCode || product.warehouseLocation || "TBA";
-      }
-    } catch (error) {
-      console.error('Error fetching product location:', error);
-    }
-    
     setCurrentItem({
       ...currentItem,
       name: product.name,
@@ -420,9 +405,8 @@ export default function CreatePurchase() {
       weight: product.weight || currentItem.weight || 0,
       dimensions: product.dimensions || currentItem.dimensions || "",
       barcode: product.barcode || "",
-      categoryId: product.categoryId || undefined,
-      category: (product as any).categoryName || product.category || "",
-      binLocation: binLocation
+      categoryId: product.categoryId,
+      category: (product as any).categoryName || product.category || ""
     });
     setSelectedProduct(product);
     setProductImageFile(null);
