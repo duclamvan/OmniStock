@@ -5229,12 +5229,17 @@ Important:
   // Ticket endpoints
   app.get('/api/tickets', async (req, res) => {
     try {
-      const { orderId } = req.query;
+      const { orderId, customerId } = req.query;
       let tickets = await storage.getTickets();
       
       // Filter by orderId if provided
       if (orderId && typeof orderId === 'string') {
         tickets = tickets.filter(ticket => ticket.orderId === orderId);
+      }
+      
+      // Filter by customerId if provided
+      if (customerId && typeof customerId === 'string') {
+        tickets = tickets.filter(ticket => ticket.customerId === customerId);
       }
       
       res.json(tickets);
