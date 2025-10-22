@@ -1440,34 +1440,6 @@ export default function AddOrder() {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="shippingMethod-mobile" className="text-xs">Shipping</Label>
-                    <Select value={form.watch('shippingMethod')} onValueChange={(value) => form.setValue('shippingMethod', value as any)}>
-                      <SelectTrigger className="mt-1 h-9 text-xs">
-                        <SelectValue placeholder="Select" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="GLS">GLS</SelectItem>
-                        <SelectItem value="PPL">PPL</SelectItem>
-                        <SelectItem value="DHL">DHL</SelectItem>
-                        <SelectItem value="DPD">DPD</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="paymentMethod-mobile" className="text-xs">Payment</Label>
-                    <Select value={form.watch('paymentMethod')} onValueChange={(value) => form.setValue('paymentMethod', value as any)}>
-                      <SelectTrigger className="mt-1 h-9 text-xs">
-                        <SelectValue placeholder="Select" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                        <SelectItem value="PayPal">PayPal</SelectItem>
-                        <SelectItem value="COD">COD</SelectItem>
-                        <SelectItem value="Cash">Cash</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
                     <Label htmlFor="paymentStatus-mobile" className="text-xs">Payment Status</Label>
                     <Select value={form.watch('paymentStatus')} onValueChange={(value) => form.setValue('paymentStatus', value as any)}>
                       <SelectTrigger className="mt-1 h-9 text-xs">
@@ -3054,6 +3026,41 @@ export default function AddOrder() {
             <CardDescription className="text-xs sm:text-sm mt-1">Configure pricing and notes</CardDescription>
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
+            {/* Shipping & Payment Methods */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div>
+                <Label htmlFor="shippingMethod" className="text-sm">Shipping Method</Label>
+                <Select value={form.watch('shippingMethod')} onValueChange={(value) => form.setValue('shippingMethod', value as any)}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select shipping" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="GLS">GLS</SelectItem>
+                    <SelectItem value="PPL">PPL</SelectItem>
+                    <SelectItem value="DHL">DHL</SelectItem>
+                    <SelectItem value="DPD">DPD</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="paymentMethod" className="text-sm">Payment Method</Label>
+                <Select value={form.watch('paymentMethod')} onValueChange={(value) => form.setValue('paymentMethod', value as any)}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select payment" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                    <SelectItem value="PayPal">PayPal</SelectItem>
+                    <SelectItem value="COD">COD</SelectItem>
+                    <SelectItem value="Cash">Cash</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Separator className="my-4" />
+
             {/* Discount Toggle Button */}
             <div>
               <Button
@@ -3886,36 +3893,6 @@ export default function AddOrder() {
                                 Shipped
                               </div>
                             </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="shippingMethod" className="text-xs">Shipping</Label>
-                        <Select value={form.watch('shippingMethod')} onValueChange={(value) => form.setValue('shippingMethod', value as any)}>
-                          <SelectTrigger className="mt-1 h-8 text-xs">
-                            <SelectValue placeholder="Select" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="GLS">GLS</SelectItem>
-                            <SelectItem value="PPL">PPL</SelectItem>
-                            <SelectItem value="DHL">DHL</SelectItem>
-                            <SelectItem value="DPD">DPD</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="paymentMethod" className="text-xs">Payment</Label>
-                        <Select value={form.watch('paymentMethod')} onValueChange={(value) => form.setValue('paymentMethod', value as any)}>
-                          <SelectTrigger className="mt-1 h-8 text-xs">
-                            <SelectValue placeholder="Select" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                            <SelectItem value="PayPal">PayPal</SelectItem>
-                            <SelectItem value="COD">COD</SelectItem>
-                            <SelectItem value="Cash">Cash</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
