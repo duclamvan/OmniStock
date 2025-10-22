@@ -269,7 +269,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       description: "Incoming Shipments"
     },
     {
-      name: "Items To Store",
+      name: "Storage",
       href: "/receiving/items-to-store",
       icon: PackageCheck,
       color: "text-lime-600",
