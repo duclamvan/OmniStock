@@ -66,6 +66,101 @@ interface MobileResponsiveLayoutProps {
   children: React.ReactNode;
 }
 
+// Defensive helpers for localStorage with error handling and type validation
+function getLocalStorageArray<T = string>(key: string, defaultValue: T[] = []): T[] {
+  if (typeof window === 'undefined') return defaultValue;
+  
+  try {
+    const item = localStorage.getItem(key);
+    if (!item) return defaultValue;
+    
+    const parsed = JSON.parse(item);
+    
+    // Validate that parsed value is actually an array
+    if (!Array.isArray(parsed)) {
+      console.warn(`localStorage key "${key}" is not an array, falling back to default`);
+      localStorage.removeItem(key);
+      return defaultValue;
+    }
+    
+    return parsed as T[];
+  } catch (error) {
+    console.warn(`Failed to parse localStorage key "${key}":`, error);
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Ignore errors when clearing
+    }
+    return defaultValue;
+  }
+}
+
+function getLocalStorageBoolean(key: string, defaultValue: boolean): boolean {
+  if (typeof window === 'undefined') return defaultValue;
+  
+  try {
+    const item = localStorage.getItem(key);
+    if (!item) return defaultValue;
+    
+    const parsed = JSON.parse(item);
+    
+    // Validate that parsed value is actually a boolean
+    if (typeof parsed !== 'boolean') {
+      console.warn(`localStorage key "${key}" is not a boolean, falling back to default`);
+      localStorage.removeItem(key);
+      return defaultValue;
+    }
+    
+    return parsed;
+  } catch (error) {
+    console.warn(`Failed to parse localStorage key "${key}":`, error);
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Ignore errors when clearing
+    }
+    return defaultValue;
+  }
+}
+
+function setLocalStorageItem(key: string, value: any): void {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.warn(`Failed to save localStorage key "${key}":`, error);
+  }
+}
+
+function getLocalStorageNumber(key: string, defaultValue: number): number {
+  if (typeof window === 'undefined') return defaultValue;
+  
+  try {
+    const item = localStorage.getItem(key);
+    if (!item) return defaultValue;
+    
+    const parsed = parseFloat(item);
+    
+    // Validate that parsed value is actually a number
+    if (isNaN(parsed)) {
+      console.warn(`localStorage key "${key}" is not a valid number, falling back to default`);
+      localStorage.removeItem(key);
+      return defaultValue;
+    }
+    
+    return parsed;
+  } catch (error) {
+    console.warn(`Failed to parse localStorage number key "${key}":`, error);
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Ignore errors when clearing
+    }
+    return defaultValue;
+  }
+}
+
 export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps) {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -73,10 +168,9 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
   const mobileNavRef = useRef<HTMLDivElement>(null);
   const scrollPosition = useRef(0);
   const itemRefs = useRef<{ [key: string]: HTMLElement | null }>({});
-  const [openItems, setOpenItems] = useState<string[]>(() => {
-    const saved = localStorage.getItem('sidebarOpenItems');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [openItems, setOpenItems] = useState<string[]>(() => 
+    getLocalStorageArray<string>('sidebarOpenItems', [])
+  );
   
   // Fetch tickets to count due/overdue notifications
   const { data: tickets = [] } = useQuery<any[]>({
@@ -94,10 +188,9 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const previousLocation = useRef(location);
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    const saved = localStorage.getItem('sidebarCollapsed');
-    return saved ? JSON.parse(saved) : false;
-  });
+  const [isCollapsed, setIsCollapsed] = useState(() => 
+    getLocalStorageBoolean('sidebarCollapsed', false)
+  );
 
   // Check if we're on the Pick & Pack page
   const isPickPackPage = location === '/orders/pick-pack';
@@ -125,19 +218,26 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
   const preOrdersCount = preOrders?.length || 0;
 
   useEffect(() => {
-    localStorage.setItem('sidebarCollapsed', JSON.stringify(isCollapsed));
+    setLocalStorageItem('sidebarCollapsed', isCollapsed);
   }, [isCollapsed]);
 
   // Save openItems to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('sidebarOpenItems', JSON.stringify(openItems));
+    setLocalStorageItem('sidebarOpenItems', openItems);
   }, [openItems]);
   
 
   // Save scroll position whenever user scrolls the desktop nav
   const handleDesktopScroll = (e: React.UIEvent<HTMLDivElement>) => {
     scrollPosition.current = e.currentTarget.scrollTop;
-    localStorage.setItem('sidebarScrollPosition', scrollPosition.current.toString());
+    // Store as string for number parsing (not JSON)
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('sidebarScrollPosition', scrollPosition.current.toString());
+      } catch (error) {
+        console.warn('Failed to save scroll position:', error);
+      }
+    }
   };
 
   const toggleItem = (itemName: string) => {
@@ -150,10 +250,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
 
   // Restore scroll position from localStorage on initial mount
   useLayoutEffect(() => {
-    const savedScrollPosition = localStorage.getItem('sidebarScrollPosition');
-    if (savedScrollPosition) {
-      scrollPosition.current = parseFloat(savedScrollPosition);
-    }
+    scrollPosition.current = getLocalStorageNumber('sidebarScrollPosition', 0);
   }, []);
 
   // Restore scroll position after state changes (location, openItems, isCollapsed)
