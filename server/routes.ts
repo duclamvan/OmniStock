@@ -4549,7 +4549,7 @@ Important:
         ...orderData,
         orderId,
         orderType,
-        billerId: "test-user",
+        billerId: req.user?.id || null,
       });
       
       const order = await storage.createOrder(data);
