@@ -108,20 +108,53 @@ export function DataTable<T>({
   
   // Track previous defaultExpandAll to only update when it changes
   const prevDefaultExpandAll = useRef(defaultExpandAll);
+  // Track previous data keys to detect new rows
+  const prevDataKeys = useRef<Set<string>>(new Set());
   
   // Effect to handle external expand/collapse all
   useEffect(() => {
-    // Only update if defaultExpandAll actually changed
-    if (expandable && defaultExpandAll !== prevDefaultExpandAll.current) {
+    if (!expandable) return;
+    
+    const allKeys = new Set(data.map(item => getRowKey(item)));
+    
+    // Update if defaultExpandAll changed
+    if (defaultExpandAll !== prevDefaultExpandAll.current) {
       if (defaultExpandAll) {
-        // Expand all rows
-        const allKeys = new Set(data.map(item => getRowKey(item)));
         setExpandedRows(allKeys);
       } else {
-        // Collapse all rows
         setExpandedRows(new Set());
       }
       prevDefaultExpandAll.current = defaultExpandAll;
+      prevDataKeys.current = allKeys;
+    } 
+    // When defaultExpandAll is true, expand new rows while preserving manual collapses
+    else if (defaultExpandAll && data.length > 0) {
+      // Find new keys that weren't in previous data
+      const newKeys = new Set<string>();
+      allKeys.forEach(key => {
+        if (!prevDataKeys.current.has(key)) {
+          newKeys.add(key);
+        }
+      });
+      
+      // If there are new keys OR this is the initial load (prevDataKeys is empty)
+      if (newKeys.size > 0 || prevDataKeys.current.size === 0) {
+        setExpandedRows(prev => {
+          const updated = new Set(prev);
+          // Add all new keys
+          newKeys.forEach(key => updated.add(key));
+          // On initial load (prevDataKeys empty), add all keys
+          if (prevDataKeys.current.size === 0) {
+            allKeys.forEach(key => updated.add(key));
+          }
+          return updated;
+        });
+      }
+      
+      prevDataKeys.current = allKeys;
+    } else if (!defaultExpandAll) {
+      // Update tracking when defaultExpandAll is false
+      prevDataKeys.current = allKeys;
     }
   }, [defaultExpandAll, data, expandable, getRowKey]);
 
