@@ -2681,6 +2681,135 @@ export default function ContinueReceiving() {
                 </div>
               </div>
 
+                  {/* Photos Upload - Step 1 */}
+                  <div className="space-y-3">
+                    <Label className="text-xs sm:text-sm">Photos</Label>
+                    <div className="flex items-center gap-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="gap-2"
+                      >
+                        <ImagePlus className="h-4 w-4" />
+                        Add Photos
+                      </Button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handlePhotoUpload}
+                        className="hidden"
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        Upload photos of the shipment
+                      </span>
+                    </div>
+
+                    {/* Upload Progress Bar */}
+                    {photosLoading && uploadProgress > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-muted-foreground">
+                            Compressing and uploading...
+                          </span>
+                          <span className="text-xs font-medium">{uploadProgress}%</span>
+                        </div>
+                        <Progress value={uploadProgress} className="h-2" />
+                      </div>
+                    )}
+
+                    {/* Photos Preview Grid */}
+                    {(uploadedPhotos.length > 0 || photosLoading || previewUrls.length > 0) && (
+                      <div className="relative">
+                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+                          {/* Preview URLs while processing */}
+                          {previewUrls.map((preview, index) => (
+                            <div key={`preview-${index}`} className="relative flex-shrink-0">
+                              <div className="relative w-20 h-20 rounded-lg overflow-hidden border-2 border-blue-400 dark:border-blue-600 animate-pulse">
+                                <img
+                                  src={preview}
+                                  alt={`Processing ${index + 1}`}
+                                  className="w-full h-full object-cover opacity-70"
+                                />
+                                <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
+                                  <Loader2 className="h-4 w-4 text-white animate-spin" />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                          
+                          {/* Uploaded photos */}
+                          {uploadedPhotos.map((photo, index) => {
+                            const isNewFormat = typeof photo === 'object' && 'thumbnail' in photo;
+                            const thumbnailSrc = isNewFormat ? photo.thumbnail : typeof photo === 'string' ? photo : undefined;
+                            const photoId = getPhotoId(photo);
+                            const isDeleting = deletingPhotoIds.has(photoId);
+                            
+                            return (
+                              <div key={isNewFormat ? photo.id : `photo-${index}`} className="relative flex-shrink-0 group">
+                                <div className={`relative w-20 h-20 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 transition-colors ${isDeleting ? 'opacity-50' : ''}`}>
+                                  <LazyImage
+                                    thumbnailSrc={thumbnailSrc}
+                                    alt={`Photo ${index + 1}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  {isDeleting && (
+                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
+                                      <Loader2 className="h-4 w-4 text-white animate-spin" />
+                                    </div>
+                                  )}
+                                  <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="icon"
+                                    disabled={isDeleting}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (!isDeleting) {
+                                        handleRemovePhoto(index);
+                                      }
+                                    }}
+                                    className={`absolute top-0.5 right-0.5 h-5 w-5 ${isDeleting ? 'opacity-100 cursor-not-allowed' : 'opacity-0 group-hover:opacity-100'} transition-opacity z-30`}
+                                  >
+                                    {isDeleting ? (
+                                      <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="h-2.5 w-2.5" />
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          
+                          {/* Upload more button */}
+                          {!photosLoading && (
+                            <div
+                              className="flex-shrink-0 w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-600 transition-colors cursor-pointer flex flex-col items-center justify-center"
+                              onClick={() => fileInputRef.current?.click()}
+                            >
+                              <Upload className="h-5 w-5 text-gray-400" />
+                              <span className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Add</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Empty state */}
+                    {uploadedPhotos.length === 0 && !photosLoading && previewUrls.length === 0 && (
+                      <div className="flex items-center justify-center py-4 px-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700">
+                        <Camera className="h-5 w-5 text-gray-400 mr-2" />
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          No photos uploaded yet
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Quick Notes - Mobile Optimized */}
                   <div>
                     <Label className="text-xs sm:text-sm">Initial Notes</Label>
