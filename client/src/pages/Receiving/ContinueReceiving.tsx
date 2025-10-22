@@ -3369,41 +3369,37 @@ export default function ContinueReceiving() {
                                       </div>
                                     </PopoverContent>
                                   </Popover>
-                                  
-                                  {/* Camera Button for Item-Specific Photos */}
-                                  <div className="relative">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => itemPhotoInputRefs.current[item.id]?.click()}
-                                      className="min-w-[70px] transition-colors shadow-sm border-blue-500 hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 text-blue-700 dark:text-blue-400"
-                                      title="Upload photos for this item"
-                                      data-testid={`button-camera-${item.id}`}
-                                    >
-                                      <Camera className="h-3 w-3 mr-1" />
-                                      Photo
-                                    </Button>
-                                    <input
-                                      ref={(el) => itemPhotoInputRefs.current[item.id] = el}
-                                      type="file"
-                                      accept="image/*"
-                                      multiple
-                                      onChange={(e) => handleItemPhotoUpload(e, item.id)}
-                                      className="hidden"
-                                      data-testid={`input-item-photo-${item.id}`}
-                                    />
-                                  </div>
                                 </div>
                               </div>
 
-                              {/* Notes Field - Show when needed */}
+                              {/* Notes Field with Camera Button - Show when needed */}
                               {(isDamaged || isMissing || item.notes) && (
-                                <div className="transition-all duration-200">
+                                <div className="transition-all duration-200 flex items-center gap-2">
+                                  {/* Camera Button for Item-Specific Photos */}
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => itemPhotoInputRefs.current[item.id]?.click()}
+                                    className="flex-shrink-0 h-9 w-9 transition-colors shadow-sm border-blue-500 hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 text-blue-700 dark:text-blue-400"
+                                    title="Upload photos for this item"
+                                    data-testid={`button-camera-${item.id}`}
+                                  >
+                                    <Camera className="h-4 w-4" />
+                                  </Button>
+                                  <input
+                                    ref={(el) => itemPhotoInputRefs.current[item.id] = el}
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={(e) => handleItemPhotoUpload(e, item.id)}
+                                    className="hidden"
+                                    data-testid={`input-item-photo-${item.id}`}
+                                  />
                                   <Input
                                     value={item.notes || ''}
                                     onChange={(e) => updateItemNotes(item.id, e.target.value)}
                                     placeholder="Add notes about this item..."
-                                    className="text-sm bg-white dark:bg-gray-800"
+                                    className="text-sm bg-white dark:bg-gray-800 flex-1"
                                   />
                                 </div>
                               )}
