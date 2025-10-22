@@ -90,3 +90,25 @@ export function getCountryNameByCode(code: string): string {
   const country = europeanCountries.find(c => c.code === code);
   return country ? country.name : code;
 }
+
+export function getCountryCodeByName(name: string): string {
+  const countryMap: Record<string, string> = {
+    'Austria': 'AT', 'Belgium': 'BE', 'Bulgaria': 'BG', 'Croatia': 'HR', 'Cyprus': 'CY',
+    'Czech Republic': 'CZ', 'Denmark': 'DK', 'Estonia': 'EE', 'Finland': 'FI', 'France': 'FR',
+    'Germany': 'DE', 'Greece': 'GR', 'Hungary': 'HU', 'Ireland': 'IE', 'Italy': 'IT',
+    'Latvia': 'LV', 'Lithuania': 'LT', 'Luxembourg': 'LU', 'Malta': 'MT', 'Netherlands': 'NL',
+    'Poland': 'PL', 'Portugal': 'PT', 'Romania': 'RO', 'Slovakia': 'SK', 'Slovenia': 'SI',
+    'Spain': 'ES', 'Sweden': 'SE', 'United Kingdom': 'GB', 'Albania': 'AL', 'Andorra': 'AD',
+    'Belarus': 'BY', 'Bosnia and Herzegovina': 'BA', 'Iceland': 'IS', 'Liechtenstein': 'LI',
+    'Monaco': 'MC', 'Montenegro': 'ME', 'North Macedonia': 'MK', 'Norway': 'NO',
+    'Serbia': 'RS', 'Switzerland': 'CH', 'Turkey': 'TR', 'Ukraine': 'UA', 'Vatican City': 'VA',
+    'United States': 'US', 'China': 'CN', 'Vietnam': 'VN', 'Japan': 'JP', 'South Korea': 'KR',
+    'India': 'IN', 'Australia': 'AU', 'Canada': 'CA', 'Brazil': 'BR', 'Mexico': 'MX',
+    'Argentina': 'AR', 'Chile': 'CL', 'Colombia': 'CO', 'Peru': 'PE', 'South Africa': 'ZA',
+    'Egypt': 'EG', 'Nigeria': 'NG', 'Kenya': 'KE', 'Thailand': 'TH', 'Indonesia': 'ID',
+    'Malaysia': 'MY', 'Philippines': 'PH', 'Singapore': 'SG', 'New Zealand': 'NZ',
+    'Russia': 'RU', 'Saudi Arabia': 'SA', 'United Arab Emirates': 'AE'
+  };
+  
+  return countryMap[name] || '';
+}

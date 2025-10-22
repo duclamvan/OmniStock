@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Search, Package, Truck, User, ShoppingCart, Calendar } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { getCountryFlag, getCountryCodeByName } from '@/lib/countries';
+import { formatCurrency } from '@/lib/currencyUtils';
 
 interface SearchResult {
   inventoryItems: Array<{
@@ -33,6 +35,9 @@ interface SearchResult {
     name: string;
     email?: string;
     company?: string;
+    city?: string;
+    country?: string;
+    preferredCurrency?: string;
     totalOrders: number;
     lastOrderText: string;
     recentOrders: Array<{
@@ -243,45 +248,57 @@ export function GlobalSearch() {
                     <User className="h-3 w-3" />
                     Customers ({results.customers.length})
                   </div>
-                  {results.customers.map((customer) => (
-                    <button
-                      key={customer.id}
-                      onClick={() => handleItemClick('customer', customer.id)}
-                      className="w-full px-3 py-3 hover:bg-accent rounded-md text-left transition-colors border-b last:border-b-0"
-                      data-testid={`search-result-customer-${customer.id}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                          <User className="h-5 w-5 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate">{customer.name}</div>
-                          {customer.company && (
-                            <div className="text-sm text-muted-foreground truncate">
-                              {customer.company}
-                            </div>
-                          )}
-                          {customer.email && (
-                            <div className="text-xs text-muted-foreground truncate">
-                              {customer.email}
-                            </div>
-                          )}
+                  {results.customers.map((customer) => {
+                    const countryCode = customer.country ? getCountryCodeByName(customer.country) : '';
+                    const countryFlag = countryCode ? getCountryFlag(countryCode) : '';
+                    
+                    return (
+                      <button
+                        key={customer.id}
+                        onClick={() => handleItemClick('customer', customer.id)}
+                        className="w-full px-3 py-3 hover:bg-accent rounded-md text-left transition-colors border-b last:border-b-0"
+                        data-testid={`search-result-customer-${customer.id}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          {/* Country Flag */}
+                          <div className="text-2xl flex-shrink-0">
+                            {countryFlag || '🌍'}
+                          </div>
                           
-                          {/* Customer Stats Badges */}
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            <Badge variant="outline" className="text-xs">
-                              <ShoppingCart className="h-3 w-3 mr-1" />
-                              {customer.totalOrders} orders
-                            </Badge>
-                            <Badge variant="outline" className="text-xs">
-                              <Calendar className="h-3 w-3 mr-1" />
-                              Last: {customer.lastOrderText}
-                            </Badge>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">{customer.name}</div>
+                            
+                            {/* City, Country */}
+                            {(customer.city || customer.country) && (
+                              <div className="text-sm text-muted-foreground truncate">
+                                {customer.city && customer.country 
+                                  ? `${customer.city}, ${customer.country}`
+                                  : customer.city || customer.country
+                                }
+                              </div>
+                            )}
+                            
+                            {/* Customer Stats Badges */}
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {customer.preferredCurrency && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {customer.preferredCurrency}
+                                </Badge>
+                              )}
+                              <Badge variant="outline" className="text-xs">
+                                <ShoppingCart className="h-3 w-3 mr-1" />
+                                {customer.totalOrders} orders
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                <Calendar className="h-3 w-3 mr-1" />
+                                Last: {customer.lastOrderText}
+                              </Badge>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    );
+                  })}
                   
                   {/* Recent Orders for matched customers */}
                   {results.customers.flatMap(customer => 
