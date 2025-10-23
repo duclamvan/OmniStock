@@ -3305,6 +3305,9 @@ router.get("/receipts/items-to-store", async (req, res) => {
         sku: product?.sku || originalItem?.sku || item.sku,
         barcode: product?.barcode || item.barcode,
         imageUrl: product?.imageUrl || null,
+        landingCostUnitBase: originalItem?.landingCostUnitBase || null,
+        hasCompleteLandingCost: originalItem?.hasCompleteLandingCost || false,
+        purchaseItemId: item.itemType === 'purchase' ? item.itemId : null,
         existingLocations: existingLocations.map(loc => ({
           id: loc.id.toString(),
           locationCode: loc.locationCode,
