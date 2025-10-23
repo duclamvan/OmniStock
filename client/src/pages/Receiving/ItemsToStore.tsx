@@ -47,7 +47,9 @@ import {
   ArrowRight
 } from "lucide-react";
 import { ScanFeedback } from "@/components/ScanFeedback";
+import WarehouseLocationSelector from "@/components/WarehouseLocationSelector";
 import { soundEffects } from "@/utils/soundEffects";
+import { validateLocationCode } from "@/lib/warehouseHelpers";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { nanoid } from "nanoid";
@@ -135,341 +137,6 @@ function generateSuggestedLocation(item: StorageItem): string {
   return `WH1-${zone}${aisle}-R${rack}-L${level}`;
 }
 
-// Segmented Location Input Component
-interface SegmentedLocationInputProps {
-  onComplete: (code: string) => void;
-  onSubmit?: (code: string) => void; // For explicit ENTER submissions
-  autoFocus?: boolean;
-  initialCode?: string | null;
-  onSegmentChange?: (segments: string[]) => void;
-  onlyAutoCompleteOnScan?: boolean; // Only auto-complete for barcode scans, not manual typing
-}
-
-function SegmentedLocationInput({ onComplete, onSubmit, autoFocus, initialCode, onSegmentChange, onlyAutoCompleteOnScan = false }: SegmentedLocationInputProps) {
-  // Parse initial code into segments
-  const parseInitialCode = (code: string | null | undefined): string[] => {
-    if (!code) return ["", "", "", ""];
-    const parts = code.split('-');
-    return [
-      parts[0] || "",
-      parts[1] || "",
-      parts[2] || "",
-      parts[3] || ""
-    ];
-  };
-
-  const [segments, setSegments] = useState<string[]>(parseInitialCode(initialCode));
-  const [isManualInput, setIsManualInput] = useState(false);
-  const segmentLabels = ["Warehouse", "Aisle", "Rack", "Level"];
-  const segmentMaxLengths = [3, 3, 3, 3];
-  const segmentPlaceholders = ["WH1", "A01", "R02", "L03"];
-
-  // Refs for each input
-  const inputRefs = [
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null)
-  ];
-
-  // Track if any input is focused
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Auto-focus first input on mount
-  useEffect(() => {
-    if (autoFocus) {
-      inputRefs[0].current?.focus();
-    }
-  }, [autoFocus]);
-
-  // Parse scanned or pasted location code
-  const parseFullCode = (code: string) => {
-    const cleaned = code.trim().toUpperCase();
-    const parts = cleaned.split('-');
-
-    if (parts.length === 4) {
-      const newSegments = parts.slice(0, 4).map((part, i) => 
-        part.substring(0, segmentMaxLengths[i])
-      );
-      setSegments(newSegments);
-      
-      // Notify parent of segment changes
-      if (onSegmentChange) {
-        onSegmentChange(newSegments);
-      }
-
-      // Check if complete and call onComplete
-      if (newSegments.every((seg, i) => seg.length === segmentMaxLengths[i])) {
-        onComplete(newSegments.join('-'));
-      }
-    }
-  };
-
-  // Format segment value based on warehouse conventions
-  const formatSegmentValue = (index: number, value: string): string => {
-    const upperValue = value.toUpperCase().trim();
-    if (!upperValue) return '';
-    
-    // Format based on segment position
-    if (index === 0) {
-      // Warehouse segment (e.g., WH1 → WH1, M1 → M01, PL1 → PL1)
-      if (/^[A-Z]+\d+$/.test(upperValue)) {
-        const letters = upperValue.match(/[A-Z]+/)?.[0] || '';
-        const numbers = upperValue.match(/\d+/)?.[0] || '';
-        // Only pad single digit numbers for single letter prefixes
-        if (letters.length === 1 && numbers.length === 1) {
-          return letters + numbers.padStart(2, '0');
-        }
-        return upperValue;
-      }
-      return upperValue;
-    } else if (index === 1) {
-      // Aisle segment (e.g., A1 → A01, 5 → 05)
-      if (/^[A-Z]\d+$/.test(upperValue)) {
-        const letter = upperValue[0];
-        const number = upperValue.slice(1).padStart(2, '0');
-        return letter + number;
-      } else if (/^\d+$/.test(upperValue)) {
-        // Just numbers, pad with zeros
-        return upperValue.padStart(2, '0');
-      }
-      return upperValue;
-    } else if (index === 2) {
-      // Rack segment (e.g., R1 → R01, 3 → R03)
-      if (/^R?\d+$/.test(upperValue)) {
-        const hasR = upperValue.startsWith('R');
-        const number = upperValue.replace('R', '');
-        return 'R' + number.padStart(2, '0');
-      }
-      return upperValue;
-    } else if (index === 3) {
-      // Level segment (e.g., L1 → L01, 2 → L02)
-      if (/^L?\d+$/.test(upperValue)) {
-        const hasL = upperValue.startsWith('L');
-        const number = upperValue.replace('L', '');
-        return 'L' + number.padStart(2, '0');
-      }
-      return upperValue;
-    }
-    return upperValue;
-  };
-
-  // Handle input change for each segment
-  const handleSegmentChange = (index: number, value: string) => {
-    // Check if this looks like a full barcode scan (contains dashes)
-    if (value.includes('-') && index === 0) {
-      parseFullCode(value);
-      return;
-    }
-
-    // Clean input - only allow alphanumeric (but don't format while typing)
-    const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-    const maxLen = segmentMaxLengths[index];
-    const newValue = cleaned.substring(0, maxLen);
-
-    const newSegments = [...segments];
-    newSegments[index] = newValue;
-    setSegments(newSegments);
-    
-    // Notify parent of segment changes (raw values, not formatted)
-    if (onSegmentChange) {
-      onSegmentChange(newSegments);
-    }
-
-    // Smart auto-advance based on common patterns
-    const shouldAdvance = (
-      // Full length reached
-      (newValue.length === maxLen) ||
-      // Common short patterns that indicate completion (but more lenient)
-      (index === 1 && /^[A-Z]\d{2}$/.test(newValue)) || // Only advance on A01, not A0
-      (index === 2 && /^R\d{2}$/.test(newValue)) || // Only advance on R01, not R0
-      (index === 3 && /^L\d{2}$/.test(newValue)) // Only advance on L01, not L0
-    );
-    
-    if (shouldAdvance && index < 3) {
-      setTimeout(() => inputRefs[index + 1].current?.focus(), 50);
-    }
-
-    // Don't auto-complete or format while typing - let the user type freely
-    // Formatting will happen on blur or when they explicitly submit
-  };
-
-  // Handle blur to format the value
-  const handleBlur = (index: number) => {
-    const value = segments[index];
-    if (value) {
-      const formatted = formatSegmentValue(index, value);
-      if (formatted !== value) {
-        const newSegments = [...segments];
-        newSegments[index] = formatted;
-        setSegments(newSegments);
-        
-        // Notify parent of formatted change
-        if (onSegmentChange) {
-          onSegmentChange(newSegments);
-        }
-        
-        // Check if complete after formatting (but don't auto-complete for manual typing if flag is set)
-        if (newSegments.every(seg => seg.length > 0)) {
-          const formattedSegments = newSegments.map((seg, idx) => formatSegmentValue(idx, seg));
-          const code = formattedSegments.join('-');
-          if (formattedSegments.every(seg => seg.length > 0) && !onlyAutoCompleteOnScan) {
-            onComplete(code);
-          }
-        }
-      }
-    }
-  };
-
-  // Handle keyboard navigation
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Tab' && !e.shiftKey) {
-      // On Tab, format current field before moving to next
-      const value = segments[index];
-      if (value && value.length > 0) {
-        const formatted = formatSegmentValue(index, value);
-        if (formatted !== value) {
-          e.preventDefault();
-          const newSegments = [...segments];
-          newSegments[index] = formatted;
-          setSegments(newSegments);
-          if (onSegmentChange) {
-            onSegmentChange(newSegments);
-          }
-          // Move to next field after a brief delay
-          if (index < 3) {
-            setTimeout(() => inputRefs[index + 1].current?.focus(), 50);
-          }
-        }
-      }
-    } else if (e.key === 'Tab' && e.shiftKey && index > 0) {
-      // Shift+Tab goes back without formatting
-      // Default behavior is fine
-    } else if (e.key === 'Backspace' && segments[index] === '' && index > 0) {
-      // Move to previous field on backspace when empty
-      e.preventDefault();
-      inputRefs[index - 1].current?.focus();
-    } else if (e.key === 'ArrowLeft' && index > 0) {
-      inputRefs[index - 1].current?.focus();
-    } else if (e.key === 'ArrowRight' && index < 3) {
-      inputRefs[index + 1].current?.focus();
-    } else if (e.key === 'Enter') {
-      // Format all segments before submission
-      const formattedSegments = segments.map((seg, idx) => {
-        if (seg && seg.length > 0) {
-          return formatSegmentValue(idx, seg);
-        }
-        return seg;
-      });
-      
-      // Update the display with formatted values
-      setSegments(formattedSegments);
-      if (onSegmentChange) {
-        onSegmentChange(formattedSegments);
-      }
-      
-      // Check if this is the first field and has a full code
-      if (index === 0 && formattedSegments[0].includes('-')) {
-        e.preventDefault();
-        parseFullCode(formattedSegments[0]);
-        return;
-      }
-      
-      // Submit if all segments are complete
-      const allComplete = formattedSegments.every(seg => seg && seg.length > 0);
-      if (allComplete) {
-        const code = formattedSegments.join('-');
-        // Use onSubmit for explicit ENTER submissions, onComplete for auto-submissions
-        if (onSubmit) {
-          onSubmit(code);
-        } else if (!onlyAutoCompleteOnScan) {
-          onComplete(code);
-        }
-      }
-    } else if (e.key === '-' && segments[index].length > 0 && index < 3) {
-      // Dash moves to next field after formatting
-      e.preventDefault();
-      const value = segments[index];
-      if (value) {
-        const formatted = formatSegmentValue(index, value);
-        const newSegments = [...segments];
-        newSegments[index] = formatted;
-        setSegments(newSegments);
-        if (onSegmentChange) {
-          onSegmentChange(newSegments);
-        }
-      }
-      inputRefs[index + 1].current?.focus();
-    }
-  };
-
-  // Handle paste event
-  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    const pasted = e.clipboardData.getData('text');
-    if (pasted.includes('-')) {
-      e.preventDefault();
-      parseFullCode(pasted);
-    }
-  };
-
-  return (
-    <div className="space-y-3" ref={containerRef}>
-      {/* Visible segmented inputs */}
-      <div className="flex items-center gap-2">
-        <QrCode className="h-5 w-5 text-gray-400 flex-shrink-0" />
-        <div className="flex items-center gap-1 flex-1">
-          {segments.map((segment, index) => (
-            <Fragment key={index}>
-              <div className="flex-1">
-                <input
-                  ref={inputRefs[index]}
-                  type="text"
-                  value={segment}
-                  onChange={(e) => handleSegmentChange(index, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(index, e)}
-                  onBlur={() => handleBlur(index)}
-                  onPaste={handlePaste}
-                  onFocus={(e) => {
-                    e.target.select();
-                  }}
-                  placeholder={segmentPlaceholders[index]}
-                  className="w-full px-3 py-4 text-center text-lg font-mono uppercase border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition-all hover:border-gray-400"
-                  maxLength={segmentMaxLengths[index]}
-                  data-testid={`input-loc-${segmentLabels[index].toLowerCase()}`}
-                  autoComplete="off"
-                  spellCheck={false}
-                />
-              </div>
-              {index < 3 && (
-                <span className="text-gray-400 text-lg font-bold">-</span>
-              )}
-            </Fragment>
-          ))}
-        </div>
-      </div>
-
-      {/* Labels */}
-      <div className="flex items-center gap-1 pl-8">
-        {segmentLabels.map((label, index) => (
-          <Fragment key={label}>
-            <div className="flex-1 text-center">
-              <span className="text-xs text-muted-foreground">{label}</span>
-            </div>
-            {index < 3 && (
-              <span className="w-4"></span>
-            )}
-          </Fragment>
-        ))}
-      </div>
-
-      {/* Helper text */}
-      <div className="text-center text-xs text-muted-foreground">
-        Scan barcode or type location code
-      </div>
-    </div>
-  );
-}
-
 export default function ItemsToStore() {
   const [location, navigate] = useLocation();
   const { toast } = useToast();
@@ -479,7 +146,7 @@ export default function ItemsToStore() {
   const [selectedItemIndex, setSelectedItemIndex] = useState(0);
   const [scanFeedback, setScanFeedback] = useState<{ type: 'success' | 'error' | 'duplicate' | null; message: string }>({ type: null, message: '' });
   const [locationScan, setLocationScan] = useState("");
-  const [currentSegments, setCurrentSegments] = useState<string[]>(["", "", "", ""]); // Track input segments
+  const [locationCode, setLocationCode] = useState(""); // Current location code from WarehouseLocationSelector
   const [quantityScan, setQuantityScan] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<number | null>(null);
@@ -698,13 +365,8 @@ export default function ItemsToStore() {
 
   // Add location to session only (doesn't modify parent state)
   const addLocationToSession = async (codeOverride?: string) => {
-    // Use passed code, current locationScan state, or build from segments
-    let trimmedValue = (codeOverride || locationScan).trim().toUpperCase();
-    
-    // If no direct value, try to build from current segments
-    if (!trimmedValue && currentSegments.every(seg => seg.length > 0)) {
-      trimmedValue = currentSegments.join('-').toUpperCase();
-    }
+    // Use passed code, current locationCode state, or locationScan state
+    let trimmedValue = (codeOverride || locationCode || locationScan).trim().toUpperCase();
 
     if (!trimmedValue) {
       toast({
@@ -716,15 +378,14 @@ export default function ItemsToStore() {
       return false;
     }
 
-    // Validate location code format (e.g., WH1-A01-R02-L03)
-    const locationPattern = /^[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+$/;
-    if (!locationPattern.test(trimmedValue)) {
+    // Validate location code format (supports new shelf, pallet, and legacy formats)
+    if (!validateLocationCode(trimmedValue)) {
       await soundEffects.playErrorBeep();
       setScanFeedback({ type: 'error', message: 'Invalid location format' });
       setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
       toast({
         title: "Invalid Location",
-        description: "Location must be in format: WH1-A01-R02-L03",
+        description: "Location must be in a valid format (e.g., WH1-A01-R02-L03, WH1-A-A06-R04-L04-B2, or WH1-B-B03-P05)",
         variant: "destructive",
         duration: 2000
       });
@@ -770,13 +431,7 @@ export default function ItemsToStore() {
 
     // Clear inputs for next entry
     setLocationScan("");
-    setCurrentSegments(["", "", "", ""]);
-    
-    // Focus first input for quick next entry
-    setTimeout(() => {
-      const firstInput = document.querySelector('[data-segment-input="0"]') as HTMLInputElement;
-      if (firstInput) firstInput.focus();
-    }, 100);
+    setLocationCode("");
 
     return true;
   };
@@ -1493,15 +1148,12 @@ export default function ItemsToStore() {
           setSessionsLocations([]);
           setScanFeedback({ type: null, message: '' });
           setLocationScan("");
-          setCurrentSegments(["", "", "", ""]);
+          setLocationCode("");
         } else if (open && currentItem) {
-          // Initialize segments when opening with suggested location
+          // Initialize location code when opening with suggested location
           const suggestedLocation = getSuggestedLocation(currentItem) || generateSuggestedLocation(currentItem);
           if (suggestedLocation) {
-            const segments = suggestedLocation.split('-');
-            // Ensure we have exactly 4 segments, pad with empty strings if needed
-            const paddedSegments = [...segments, "", "", "", ""].slice(0, 4);
-            setCurrentSegments(paddedSegments);
+            setLocationCode(suggestedLocation);
           }
         }
       }}>
@@ -1709,41 +1361,13 @@ export default function ItemsToStore() {
             {/* Add New Location Section */}
             <div className="space-y-2">
               <p className="text-xs font-medium text-muted-foreground">Enter Location Code</p>
-              <SegmentedLocationInput 
-              initialCode={currentItem ? (getSuggestedLocation(currentItem) || generateSuggestedLocation(currentItem)) : null}
-              onSegmentChange={(segments) => {
-                // Update current segments state for Add Location button
-                setCurrentSegments(segments);
-              }}
-              onComplete={async (code) => {
-                // This should only be called from barcode scanning
-                // For manual typing, user must click "Add Location" button
-                
-                // Play success sound
-                await soundEffects.playSuccessBeep();
-
-                // Just add to session, don't apply yet
-                addLocationToSession(code);
-
-                // Clear input for next scan (by reinitializing the component)
-                setLocationScan("");
-                setCurrentSegments(["", "", "", ""]);
-              }}
-              onSubmit={async (code) => {
-                // This is called when user presses ENTER (explicit submission)
-                
-                // Play success sound
-                await soundEffects.playSuccessBeep();
-
-                // Add to session
-                addLocationToSession(code);
-
-                // Clear input for next entry
-                setLocationScan("");
-                setCurrentSegments(["", "", "", ""]);
-              }}
-              autoFocus
-              onlyAutoCompleteOnScan={true} // Disable auto-complete for manual typing
+              <WarehouseLocationSelector 
+                value={locationCode || (currentItem ? (getSuggestedLocation(currentItem) || generateSuggestedLocation(currentItem)) : "")}
+                onChange={(code) => {
+                  setLocationCode(code);
+                }}
+                showTypeSelector={false}
+                className="w-full"
               />
             </div>
 
@@ -1754,20 +1378,9 @@ export default function ItemsToStore() {
               <Button
                 variant="outline"
                 onClick={() => {
-                  setCurrentSegments(["", "", "", ""]);
+                  setLocationCode("");
                   setLocationScan("");
                   setScanFeedback({ type: null, message: '' });
-                  
-                  const inputs = document.querySelectorAll('[data-segment-input]');
-                  inputs.forEach((input: any) => { 
-                    if (input) input.value = ''; 
-                  });
-                  
-                  setTimeout(() => {
-                    const firstInput = document.querySelector('[data-segment-input="0"]') as HTMLInputElement;
-                    if (firstInput) firstInput.focus();
-                  }, 50);
-                  
                   soundEffects.playSuccessBeep();
                 }}
                 className="px-4"
@@ -1779,9 +1392,9 @@ export default function ItemsToStore() {
               
               <Button
                 onClick={async () => {
-                  if (currentSegments.every(seg => seg && seg.length > 0)) {
-                    const code = currentSegments.join('-');
-                    await addLocationToSession(code);
+                  if (locationCode) {
+                    await addLocationToSession(locationCode);
+                    setLocationCode(""); // Clear after adding
                   } else if (locationScan) {
                     await addLocationToSession(locationScan);
                   } else {
@@ -1792,7 +1405,7 @@ export default function ItemsToStore() {
                 size="sm"
                 disabled={
                   sessionsLocations.length >= 10 || 
-                  (!currentSegments.every(seg => seg && seg.length > 0) && !locationScan)
+                  (!locationCode && !locationScan)
                 }
               >
                 <Plus className="h-3.5 w-3.5 mr-1" />
