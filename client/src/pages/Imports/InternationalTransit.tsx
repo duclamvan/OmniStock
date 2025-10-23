@@ -113,6 +113,7 @@ export default function InternationalTransit() {
   const [sortBy, setSortBy] = useState<'delivery' | 'type' | 'status'>('delivery');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [viewShipmentDetails, setViewShipmentDetails] = useState<Shipment | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -1547,7 +1548,8 @@ export default function InternationalTransit() {
                   <Card 
                     key={shipment.id} 
                     id={`shipment-${shipment.id}`}
-                    className={`border-l-4 hover:shadow-md transition-all duration-300 ${getShipmentTypeColor(shipment.shipmentType || '')}`}
+                    className={`border-l-4 hover:shadow-md transition-all duration-300 cursor-pointer ${getShipmentTypeColor(shipment.shipmentType || '')}`}
+                    onClick={() => setViewShipmentDetails(shipment)}
                   >
                     <CardContent className="p-5">
                       {/* Header Section */}
@@ -1617,7 +1619,10 @@ export default function InternationalTransit() {
                               })
                             }
                           >
-                            <SelectTrigger className={`w-32 h-8 ${shipment.status === 'delivered' ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-950 dark:border-green-800 dark:text-green-200' : shipment.status === 'in transit' ? 'bg-purple-50 border-purple-200 text-purple-800 dark:bg-purple-950 dark:border-purple-800 dark:text-purple-200' : 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-200'}`}>
+                            <SelectTrigger 
+                              onClick={(e) => e.stopPropagation()}
+                              className={`w-32 h-8 ${shipment.status === 'delivered' ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-950 dark:border-green-800 dark:text-green-200' : shipment.status === 'in transit' ? 'bg-purple-50 border-purple-200 text-purple-800 dark:bg-purple-950 dark:border-purple-800 dark:text-purple-200' : 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-200'}`}
+                            >
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -1630,7 +1635,12 @@ export default function InternationalTransit() {
                           {/* Three-dot menu for edit */}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -1717,7 +1727,10 @@ export default function InternationalTransit() {
                         <div className="bg-gray-50 dark:bg-gray-950/30 rounded-md p-2 mb-3 border border-gray-200 dark:border-gray-800">
                           <div 
                             className="flex items-center justify-between cursor-pointer"
-                            onClick={() => setExpandedTracking(prev => ({ ...prev, [shipment.id]: !prev[shipment.id] }))}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedTracking(prev => ({ ...prev, [shipment.id]: !prev[shipment.id] }));
+                            }}
                           >
                             <div className="flex items-center">
                               <Package className="h-3 w-3 text-gray-500 mr-2" />
@@ -1940,7 +1953,10 @@ export default function InternationalTransit() {
                               variant="ghost" 
                               size="sm"
                               className="h-7 text-xs"
-                              onClick={() => predictDelivery(shipment)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                predictDelivery(shipment);
+                              }}
                               disabled={isPredicting}
                               data-testid={`button-predict-${shipment.id}`}
                             >
@@ -1954,12 +1970,13 @@ export default function InternationalTransit() {
                               variant="ghost" 
                               size="sm"
                               className="h-7 text-xs"
-                              onClick={() => 
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 updateTrackingMutation.mutate({
                                   shipmentId: shipment.id,
                                   data: { status: 'delivered' }
-                                })
-                              }
+                                });
+                              }}
                               data-testid={`button-mark-delivered-${shipment.id}`}
                             >
                               <CheckCircle className="h-3 w-3 mr-1" />
@@ -1982,6 +1999,212 @@ export default function InternationalTransit() {
           )}
         </CardContent>
       </Card>
+
+      {/* Shipment Details Dialog */}
+      <Dialog open={!!viewShipmentDetails} onOpenChange={() => setViewShipmentDetails(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold flex items-center gap-3">
+              {viewShipmentDetails && getShipmentTypeIcon(viewShipmentDetails.shipmentType || '', 'h-5 w-5')}
+              {viewShipmentDetails?.shipmentName || viewShipmentDetails?.trackingNumber}
+            </DialogTitle>
+            <DialogDescription>
+              Shipment details, item contents, and cost breakdown
+            </DialogDescription>
+          </DialogHeader>
+
+          {viewShipmentDetails && (
+            <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+              {/* Overview Section */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-50 dark:bg-slate-900/30 rounded-lg">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Status</p>
+                  <Badge className={viewShipmentDetails.status === 'delivered' ? 'bg-green-100 text-green-800' : viewShipmentDetails.status === 'in transit' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}>
+                    {viewShipmentDetails.status}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Total Items</p>
+                  <p className="font-semibold">{viewShipmentDetails.totalUnits || viewShipmentDetails.itemCount} {viewShipmentDetails.unitType || 'items'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Total Weight</p>
+                  <p className="font-semibold">{viewShipmentDetails.totalWeight || '—'} kg</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Shipping Method</p>
+                  <p className="font-semibold text-sm">{formatShipmentType(viewShipmentDetails.shipmentType || '').label}</p>
+                </div>
+              </div>
+
+              {/* Route Information */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-primary" />
+                  Route & Tracking
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 border rounded-lg">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Origin</p>
+                    <p className="font-medium flex items-center gap-2">
+                      <MapPin className="h-3.5 w-3.5 text-blue-600" />
+                      {viewShipmentDetails.origin}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Destination</p>
+                    <p className="font-medium flex items-center gap-2">
+                      <Target className="h-3.5 w-3.5 text-green-600" />
+                      {viewShipmentDetails.destination}
+                    </p>
+                  </div>
+                  {viewShipmentDetails.trackingNumber && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Primary Carrier</p>
+                      <p className="font-medium">{viewShipmentDetails.carrier}</p>
+                      <p className="text-xs font-mono text-blue-600">{viewShipmentDetails.trackingNumber}</p>
+                    </div>
+                  )}
+                  {viewShipmentDetails.endTrackingNumber && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">End Carrier</p>
+                      <p className="font-medium">{viewShipmentDetails.endCarrier || 'Local Courier'}</p>
+                      <p className="text-xs font-mono text-blue-600">{viewShipmentDetails.endTrackingNumber}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Cost Breakdown */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <Package className="h-4 w-4 text-primary" />
+                  Cost Breakdown
+                </h3>
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-slate-50 dark:bg-slate-900/50">
+                        <TableHead>Cost Type</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell className="font-medium">Shipping Cost</TableCell>
+                        <TableCell className="text-right font-semibold">
+                          {viewShipmentDetails.shippingCostCurrency || 'USD'} {parseFloat(viewShipmentDetails.shippingCost || '0').toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                      {viewShipmentDetails.insuranceValue && parseFloat(viewShipmentDetails.insuranceValue) > 0 && (
+                        <TableRow>
+                          <TableCell className="font-medium">Insurance</TableCell>
+                          <TableCell className="text-right">
+                            {viewShipmentDetails.shippingCostCurrency || 'USD'} {parseFloat(viewShipmentDetails.insuranceValue).toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      <TableRow className="bg-slate-50 dark:bg-slate-900/30">
+                        <TableCell className="font-semibold">Total Shipping Cost</TableCell>
+                        <TableCell className="text-right font-bold text-lg">
+                          {viewShipmentDetails.shippingCostCurrency || 'USD'} {(
+                            parseFloat(viewShipmentDetails.shippingCost || '0') + 
+                            parseFloat(viewShipmentDetails.insuranceValue || '0')
+                          ).toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+
+              {/* Package Contents */}
+              {viewShipmentDetails.items && viewShipmentDetails.items.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-sm flex items-center gap-2">
+                    <Package className="h-4 w-4 text-primary" />
+                    Package Contents ({viewShipmentDetails.items.length} {viewShipmentDetails.items.length === 1 ? 'item' : 'items'})
+                  </h3>
+                  <div className="border rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-slate-50 dark:bg-slate-900/50">
+                          <TableHead>Item Name</TableHead>
+                          <TableHead className="text-center">Quantity</TableHead>
+                          <TableHead className="text-right">Unit Price</TableHead>
+                          <TableHead className="text-right">Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {viewShipmentDetails.items.map((item: any, index: number) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-medium">{item.name || `Item ${index + 1}`}</TableCell>
+                            <TableCell className="text-center font-mono">{item.quantity || 1}</TableCell>
+                            <TableCell className="text-right">
+                              {item.unitPrice ? `$${parseFloat(item.unitPrice).toFixed(2)}` : '—'}
+                            </TableCell>
+                            <TableCell className="text-right font-semibold">
+                              {item.unitPrice && item.quantity 
+                                ? `$${(parseFloat(item.unitPrice) * (item.quantity || 1)).toFixed(2)}` 
+                                : '—'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {viewShipmentDetails.items.some((item: any) => item.unitPrice) && (
+                          <TableRow className="bg-slate-50 dark:bg-slate-900/30">
+                            <TableCell colSpan={3} className="font-semibold">Subtotal (Goods Value)</TableCell>
+                            <TableCell className="text-right font-bold text-lg">
+                              ${viewShipmentDetails.items.reduce((sum: number, item: any) => 
+                                sum + (parseFloat(item.unitPrice || 0) * (item.quantity || 1)), 0
+                              ).toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
+              {/* Timeline */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-primary" />
+                  Timeline
+                </h3>
+                <div className="space-y-2 p-4 border rounded-lg">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Created</span>
+                    <span className="font-medium">{format(new Date(viewShipmentDetails.createdAt), 'MMM dd, yyyy HH:mm')}</span>
+                  </div>
+                  {viewShipmentDetails.estimatedDelivery && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Estimated Delivery</span>
+                      <span className="font-medium">{format(new Date(viewShipmentDetails.estimatedDelivery), 'MMM dd, yyyy')}</span>
+                    </div>
+                  )}
+                  {viewShipmentDetails.deliveredAt && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Delivered</span>
+                      <span className="font-medium text-green-600">{format(new Date(viewShipmentDetails.deliveredAt), 'MMM dd, yyyy HH:mm')}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Notes */}
+              {viewShipmentDetails.notes && (
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm">Notes</h3>
+                  <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                    <p className="text-sm">{viewShipmentDetails.notes}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
     </div>
   );
