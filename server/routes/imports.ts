@@ -3207,10 +3207,12 @@ router.get("/receipts/items-to-store", async (req, res) => {
       // So we just need to check if there are any good units received
       const hasGoodUnits = item.receivedQuantity > 0;
       
-      // Exclude only completely damaged or missing items
-      const isNotCompletelyBad = item.status !== 'damaged' && item.status !== 'missing';
+      // Exclude only items marked as completely missing
+      // Allow 'damaged' status if there are good units (receivedQuantity > 0)
+      // because receivedQuantity represents the good units, not the total
+      const isNotMissing = item.status !== 'missing';
       
-      return hasGoodUnits && isNotCompletelyBad;
+      return hasGoodUnits && isNotMissing;
     });
     
     // Get product information and existing locations for all items at once
