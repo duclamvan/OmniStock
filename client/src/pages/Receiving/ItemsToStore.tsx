@@ -621,8 +621,8 @@ export default function ItemsToStore() {
     
     try {
       await apiRequest(
-        `/api/imports/receipts/${receiptId}/store-items`,
         "POST",
+        `/api/imports/receipts/${receiptId}/store-items`,
         { 
           locations: [assignment] 
         }
@@ -667,8 +667,8 @@ export default function ItemsToStore() {
       }
       
       return apiRequest(
-        `/api/imports/receipts/${selectedReceipt}/store-items`,
         "POST",
+        `/api/imports/receipts/${selectedReceipt}/store-items`,
         { 
           locations: assignments 
         }
