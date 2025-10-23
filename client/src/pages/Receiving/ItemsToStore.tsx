@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, Fragment } from "react";
+import { useState, useEffect, useRef, Fragment, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -164,6 +164,11 @@ export default function ItemsToStore() {
   const quantityInputRef = useRef<HTMLInputElement>(null);
   const scanInputRef = useRef<HTMLInputElement>(null);
   const quickScanTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Memoized callbacks to prevent unnecessary re-renders
+  const handleLocationCodeChange = useCallback((code: string) => {
+    setLocationCode(code);
+  }, []);
 
   // Fetch all items pending storage
   const { data: storageData, isLoading } = useQuery<any>({
@@ -1363,9 +1368,7 @@ export default function ItemsToStore() {
               <p className="text-xs font-medium text-muted-foreground">Enter Location Code</p>
               <WarehouseLocationSelector 
                 value={locationCode}
-                onChange={(code) => {
-                  setLocationCode(code);
-                }}
+                onChange={handleLocationCodeChange}
                 showTypeSelector={false}
                 className="w-full"
               />

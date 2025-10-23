@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 import {
   Select,
   SelectContent,
@@ -43,7 +43,7 @@ interface WarehouseLocationSelectorProps {
   disabled?: boolean;
 }
 
-export default function WarehouseLocationSelector({
+const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
   value = "",
   onChange,
   locationType = "warehouse",
@@ -603,4 +603,6 @@ export default function WarehouseLocationSelector({
       </Card>
     </div>
   );
-}
+});
+
+export default WarehouseLocationSelector;
