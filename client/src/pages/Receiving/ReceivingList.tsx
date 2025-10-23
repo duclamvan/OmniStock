@@ -267,30 +267,32 @@ const getUnitTypeIcon = (unitType: string, className = "h-3 w-3") => {
 // Memoized skeleton component for shipment cards
 const ShipmentCardSkeleton = memo(() => (
   <Card className="border">
-    <CardContent className="p-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2 sm:gap-3 flex-1">
+    <CardContent className="p-5">
+      {/* Header skeleton */}
+      <div className="flex items-start gap-3 mb-4">
+        <div className="flex items-center gap-3 pt-1">
           <Skeleton className="h-8 w-8" />
           <Skeleton className="h-5 w-5" />
-          <div className="flex-1 space-y-2">
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-5 w-32" />
-              <Skeleton className="h-5 w-20 rounded-full" />
-            </div>
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-4 w-16" />
-            </div>
-            <Skeleton className="h-3 w-48" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-5 w-20 rounded-full" />
           </div>
         </div>
-        <Skeleton className="h-9 w-32" />
+        <Skeleton className="h-9 w-32 shrink-0" />
       </div>
-      <div className="flex items-center gap-6 text-sm mb-3 sm:pl-11">
-        <Skeleton className="h-4 w-24" />
-        <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-4 w-28" />
+
+      {/* Metadata grid skeleton */}
+      <div className="bg-muted/40 rounded-lg p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+          ))}
+        </div>
       </div>
     </CardContent>
   </Card>
