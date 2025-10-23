@@ -151,31 +151,34 @@ function generateSuggestedLocation(item: StorageItem): string {
   const seed = item.productId || item.sku || item.productName || 'default';
   const hash = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   
-  // Smart zone assignment based on product type hints
-  let zone = 'A'; // Default zone
   const productNameLower = item.productName?.toLowerCase() || '';
   
-  // Assign zones based on product type
+  // Smart aisle assignment based on product type (using A01-A30 range)
+  // Different aisles for different product categories within shelves storage
+  let aisleNumber = (hash % 6) + 1; // Default: A01-A06
+  
   if (productNameLower.includes('mask') || productNameLower.includes('medical')) {
-    zone = 'M'; // Medical zone
+    aisleNumber = 20 + (hash % 3); // Medical: A20-A22
   } else if (productNameLower.includes('electronic') || productNameLower.includes('phone')) {
-    zone = 'E'; // Electronics zone
+    aisleNumber = 15 + (hash % 3); // Electronics: A15-A17
   } else if (productNameLower.includes('clothing') || productNameLower.includes('shirt')) {
-    zone = 'C'; // Clothing zone
+    aisleNumber = 10 + (hash % 3); // Clothing: A10-A12
   } else if (productNameLower.includes('food') || productNameLower.includes('snack')) {
-    zone = 'F'; // Food zone
+    aisleNumber = 25 + (hash % 3); // Food: A25-A27
   } else if (productNameLower.includes('toy') || productNameLower.includes('game')) {
-    zone = 'T'; // Toys zone
+    aisleNumber = 5 + (hash % 3); // Toys: A05-A07
   } else if (productNameLower.includes('book') || productNameLower.includes('paper')) {
-    zone = 'B'; // Books/Paper zone
+    aisleNumber = 28 + (hash % 2); // Books/Paper: A28-A29
   }
   
-  // Generate aisle, rack, and level based on hash
-  const aisle = String((hash % 6) + 1).padStart(2, '0');
-  const rack = String((hash % 8) + 1).padStart(2, '0');
-  const level = String((hash % 4) + 1).padStart(2, '0');
+  // Generate location components
+  const aisle = `A${String(aisleNumber).padStart(2, '0')}`;
+  const rack = `R${String((hash % 8) + 1).padStart(2, '0')}`;
+  const level = `L${String((hash % 4) + 1).padStart(2, '0')}`;
+  const bin = `B${(hash % 5) + 1}`;
   
-  return `WH1-${zone}${aisle}-R${rack}-L${level}`;
+  // Always use shelf format with A prefix for auto-detection
+  return `WH1-${aisle}-${rack}-${level}-${bin}`;
 }
 
 export default function ItemsToStore() {
