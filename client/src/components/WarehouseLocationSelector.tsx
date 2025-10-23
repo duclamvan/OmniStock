@@ -54,7 +54,6 @@ export default function WarehouseLocationSelector({
 }: WarehouseLocationSelectorProps) {
   const [warehouse, setWarehouse] = useState("WH1");
   const [areaType, setAreaType] = useState<AreaType>("shelves");
-  const [area, setArea] = useState("A");
   const [aisle, setAisle] = useState("A01");
   const [rack, setRack] = useState("R01");
   const [level, setLevel] = useState("L01");
@@ -75,7 +74,6 @@ export default function WarehouseLocationSelector({
       if (shelfParts) {
         setAreaType("shelves");
         setWarehouse(shelfParts.warehouse);
-        setArea(shelfParts.area);
         setAisle(shelfParts.aisle);
         setRack(shelfParts.rack);
         setLevel(shelfParts.level);
@@ -91,7 +89,6 @@ export default function WarehouseLocationSelector({
       if (palletParts) {
         setAreaType("pallets");
         setWarehouse(palletParts.warehouse);
-        setArea(palletParts.area);
         setZone(palletParts.zone);
         setPosition(palletParts.position);
         setManualCode(value);
@@ -106,7 +103,6 @@ export default function WarehouseLocationSelector({
       if (oldMatch) {
         setAreaType("shelves");
         setWarehouse(oldMatch[1]);
-        setArea("A");
         setAisle(oldMatch[2]);
         setRack(oldMatch[3]);
         setLevel(oldMatch[4]);
@@ -132,15 +128,15 @@ export default function WarehouseLocationSelector({
       
       let code = "";
       if (areaType === "shelves") {
-        code = generateShelfLocationCode(warehouse, area, aisle, rack, level, bin);
+        code = generateShelfLocationCode(warehouse, aisle, rack, level, bin);
       } else if (areaType === "pallets") {
-        code = generatePalletLocationCode(warehouse, area, zone, position);
+        code = generatePalletLocationCode(warehouse, zone, position);
       }
       onChange(code);
       setManualCode(code);
       setIsValid(true);
     }
-  }, [warehouse, areaType, area, aisle, rack, level, bin, zone, position, manualEntry, onChange, isOldFormat, oldFormatCode]);
+  }, [warehouse, areaType, aisle, rack, level, bin, zone, position, manualEntry, onChange, isOldFormat, oldFormatCode]);
 
   const handleManualCodeChange = (newCode: string) => {
     setManualCode(newCode);
@@ -153,7 +149,6 @@ export default function WarehouseLocationSelector({
       if (shelfParts) {
         setAreaType("shelves");
         setWarehouse(shelfParts.warehouse);
-        setArea(shelfParts.area);
         setAisle(shelfParts.aisle);
         setRack(shelfParts.rack);
         setLevel(shelfParts.level);
@@ -169,7 +164,6 @@ export default function WarehouseLocationSelector({
       if (palletParts) {
         setAreaType("pallets");
         setWarehouse(palletParts.warehouse);
-        setArea(palletParts.area);
         setZone(palletParts.zone);
         setPosition(palletParts.position);
         setIsOldFormat(false);
@@ -184,7 +178,6 @@ export default function WarehouseLocationSelector({
       if (oldMatch) {
         setAreaType("shelves");
         setWarehouse(oldMatch[1]);
-        setArea("A");
         setAisle(oldMatch[2]);
         setRack(oldMatch[3]);
         setLevel(oldMatch[4]);
@@ -198,7 +191,6 @@ export default function WarehouseLocationSelector({
   };
 
   const warehouseOptions = useMemo(() => getWarehouseOptions(), []);
-  const areaOptions = useMemo(() => getAreaOptions(), []);
   const aisleOptions = useMemo(() => getAisleOptions(), []);
   const rackOptions = useMemo(() => getRackOptions(), []);
   const levelOptions = useMemo(() => getLevelOptions(), []);
@@ -359,35 +351,6 @@ export default function WarehouseLocationSelector({
                     </Select>
                   </div>
 
-                  {/* Area Selector */}
-                  <div>
-                    <Label htmlFor="area" className="text-xs">Area</Label>
-                    <Select
-                      value={area}
-                      onValueChange={setArea}
-                      disabled={disabled}
-                    >
-                      <SelectTrigger
-                        id="area"
-                        data-testid="select-area"
-                        className="h-9"
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {areaOptions.map((opt) => (
-                          <SelectItem
-                            key={opt.value}
-                            value={opt.value}
-                            data-testid={`option-area-${opt.value}`}
-                          >
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
                   {/* Aisle Selector */}
                   <div>
                     <Label htmlFor="aisle" className="text-xs">Aisle</Label>
@@ -505,7 +468,7 @@ export default function WarehouseLocationSelector({
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {/* Warehouse Selector */}
                   <div>
                     <Label htmlFor="warehouse" className="text-xs">Warehouse</Label>
@@ -527,35 +490,6 @@ export default function WarehouseLocationSelector({
                             key={opt.value}
                             value={opt.value}
                             data-testid={`option-${opt.value}`}
-                          >
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Area Selector */}
-                  <div>
-                    <Label htmlFor="area" className="text-xs">Area</Label>
-                    <Select
-                      value={area}
-                      onValueChange={setArea}
-                      disabled={disabled}
-                    >
-                      <SelectTrigger
-                        id="area"
-                        data-testid="select-area"
-                        className="h-9"
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {areaOptions.map((opt) => (
-                          <SelectItem
-                            key={opt.value}
-                            value={opt.value}
-                            data-testid={`option-area-${opt.value}`}
                           >
                             {opt.label}
                           </SelectItem>
@@ -633,8 +567,8 @@ export default function WarehouseLocationSelector({
                 <div className="flex items-center gap-2 flex-wrap">
                   <code className="text-base font-mono font-semibold" data-testid="text-location-code">
                     {manualCode || (isOldFormat && oldFormatCode) || (areaType === "pallets" 
-                      ? generatePalletLocationCode(warehouse, area, zone, position)
-                      : generateShelfLocationCode(warehouse, area, aisle, rack, level, bin))}
+                      ? generatePalletLocationCode(warehouse, zone, position)
+                      : generateShelfLocationCode(warehouse, aisle, rack, level, bin))}
                   </code>
                   <Badge
                     variant="outline"

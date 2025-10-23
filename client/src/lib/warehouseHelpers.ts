@@ -12,7 +12,6 @@ export type AreaType = 'shelves' | 'pallets' | 'office';
 
 export interface LocationParts {
   warehouse: string;
-  area: string;
   aisle: string;
   rack: string;
   level: string;
@@ -21,58 +20,87 @@ export interface LocationParts {
 
 export interface PalletLocationParts {
   warehouse: string;
-  area: string;
   zone: string;
   position: string;
 }
 
 /**
  * Parse a shelf location code into its component parts
- * Format: WH1-A-A06-R04-L04-B2
+ * Format: WH1-A06-R04-L04-B2 (new) or WH1-A-A06-R04-L04-B2 (old with area)
  */
 export function parseShelfLocationCode(code: string): LocationParts | null {
   if (!code) return null;
   
-  const pattern = /^(WH\d+)-([A-Z])-([A-Z]\d{2})-R(\d{2})-L(\d{2})-B(\d{1,2})$/;
-  const match = code.match(pattern);
+  // Try new format first (without area)
+  const newPattern = /^(WH\d+)-([A-Z]\d{2})-R(\d{2})-L(\d{2})-B(\d{1,2})$/;
+  const newMatch = code.match(newPattern);
   
-  if (!match) return null;
+  if (newMatch) {
+    return {
+      warehouse: newMatch[1],
+      aisle: newMatch[2],
+      rack: `R${newMatch[3]}`,
+      level: `L${newMatch[4]}`,
+      bin: `B${newMatch[5]}`
+    };
+  }
   
-  return {
-    warehouse: match[1],
-    area: match[2],
-    aisle: match[3],
-    rack: `R${match[4]}`,
-    level: `L${match[5]}`,
-    bin: `B${match[6]}`
-  };
+  // Try old format with area for backward compatibility
+  const oldPattern = /^(WH\d+)-[A-Z]-([A-Z]\d{2})-R(\d{2})-L(\d{2})-B(\d{1,2})$/;
+  const oldMatch = code.match(oldPattern);
+  
+  if (oldMatch) {
+    return {
+      warehouse: oldMatch[1],
+      aisle: oldMatch[2],
+      rack: `R${oldMatch[3]}`,
+      level: `L${oldMatch[4]}`,
+      bin: `B${oldMatch[5]}`
+    };
+  }
+  
+  return null;
 }
 
 /**
  * Parse a pallet location code into its component parts
- * Format: WH1-B-B03-P05
+ * Format: WH1-B03-P05 (new) or WH1-B-B03-P05 (old with area)
  */
 export function parsePalletLocationCode(code: string): PalletLocationParts | null {
   if (!code) return null;
   
-  const pattern = /^(WH\d+)-([A-Z])-([A-Z]\d{2})-P(\d{2})$/;
-  const match = code.match(pattern);
+  // Try new format first (without area)
+  const newPattern = /^(WH\d+)-([A-Z]\d{2})-P(\d{2})$/;
+  const newMatch = code.match(newPattern);
   
-  if (!match) return null;
+  if (newMatch) {
+    return {
+      warehouse: newMatch[1],
+      zone: newMatch[2],
+      position: `P${newMatch[3]}`
+    };
+  }
   
-  return {
-    warehouse: match[1],
-    area: match[2],
-    zone: match[3],
-    position: `P${match[4]}`
-  };
+  // Try old format with area for backward compatibility
+  const oldPattern = /^(WH\d+)-[A-Z]-([A-Z]\d{2})-P(\d{2})$/;
+  const oldMatch = code.match(oldPattern);
+  
+  if (oldMatch) {
+    return {
+      warehouse: oldMatch[1],
+      zone: oldMatch[2],
+      position: `P${oldMatch[3]}`
+    };
+  }
+  
+  return null;
 }
 
 /**
  * Parse a location code (tries both formats, backward compatible with old format)
  * Old format: WH1-A01-R02-L03
- * New shelf format: WH1-A-A06-R04-L04-B2
- * New pallet format: WH1-B-B03-P05
+ * New shelf format: WH1-A06-R04-L04-B2
+ * New pallet format: WH1-B03-P05
  */
 export function parseLocationCode(code: string): LocationParts | PalletLocationParts | null {
   if (!code) return null;
@@ -93,7 +121,6 @@ export function parseLocationCode(code: string): LocationParts | PalletLocationP
   
   return {
     warehouse: oldMatch[1],
-    area: 'A', // Default area for old format
     aisle: oldMatch[2],
     rack: oldMatch[3],
     level: oldMatch[4]
@@ -102,20 +129,22 @@ export function parseLocationCode(code: string): LocationParts | PalletLocationP
 
 /**
  * Validate a shelf location code format
- * Format: WH1-A-A06-R04-L04-B2
+ * Format: WH1-A06-R04-L04-B2 (new) or WH1-A-A06-R04-L04-B2 (old with area)
  */
 export function validateShelfLocationCode(code: string): boolean {
-  const pattern = /^WH\d+-[A-Z]-[A-Z]\d{2}-R\d{2}-L\d{2}-B\d{1,2}$/;
-  return pattern.test(code);
+  const newPattern = /^WH\d+-[A-Z]\d{2}-R\d{2}-L\d{2}-B\d{1,2}$/;
+  const oldPattern = /^WH\d+-[A-Z]-[A-Z]\d{2}-R\d{2}-L\d{2}-B\d{1,2}$/;
+  return newPattern.test(code) || oldPattern.test(code);
 }
 
 /**
  * Validate a pallet location code format
- * Format: WH1-B-B03-P05
+ * Format: WH1-B03-P05 (new) or WH1-B-B03-P05 (old with area)
  */
 export function validatePalletLocationCode(code: string): boolean {
-  const pattern = /^WH\d+-[A-Z]-[A-Z]\d{2}-P\d{2}$/;
-  return pattern.test(code);
+  const newPattern = /^WH\d+-[A-Z]\d{2}-P\d{2}$/;
+  const oldPattern = /^WH\d+-[A-Z]-[A-Z]\d{2}-P\d{2}$/;
+  return newPattern.test(code) || oldPattern.test(code);
 }
 
 /**
@@ -129,42 +158,38 @@ export function validateLocationCode(code: string): boolean {
 
 /**
  * Generate a shelf location code from components
- * Format: WH1-A-A06-R04-L04-B2
+ * Format: WH1-A06-R04-L04-B2
  */
 export function generateShelfLocationCode(
   warehouse: string,
-  area: string,
   aisle: string,
   rack: string,
   level: string,
   bin: string
 ): string {
   const whFormatted = warehouse.startsWith('WH') ? warehouse : `WH${warehouse}`;
-  const areaFormatted = area.toUpperCase();
   const aisleFormatted = aisle;
   const rackFormatted = rack.replace(/^R/, '').padStart(2, '0');
   const levelFormatted = level.replace(/^L/, '').padStart(2, '0');
   const binFormatted = bin.replace(/^B/, '');
   
-  return `${whFormatted}-${areaFormatted}-${aisleFormatted}-R${rackFormatted}-L${levelFormatted}-B${binFormatted}`;
+  return `${whFormatted}-${aisleFormatted}-R${rackFormatted}-L${levelFormatted}-B${binFormatted}`;
 }
 
 /**
  * Generate a pallet location code from components
- * Format: WH1-B-B03-P05
+ * Format: WH1-B03-P05
  */
 export function generatePalletLocationCode(
   warehouse: string,
-  area: string,
   zone: string,
   position: string
 ): string {
   const whFormatted = warehouse.startsWith('WH') ? warehouse : `WH${warehouse}`;
-  const areaFormatted = area.toUpperCase();
   const zoneFormatted = zone;
   const positionFormatted = position.replace(/^P/, '').padStart(2, '0');
   
-  return `${whFormatted}-${areaFormatted}-${zoneFormatted}-P${positionFormatted}`;
+  return `${whFormatted}-${zoneFormatted}-P${positionFormatted}`;
 }
 
 /**
@@ -249,16 +274,16 @@ export function formatLocationCode(code: string): string {
   
   // Check if it's a pallet location
   if ('zone' in parts && 'position' in parts) {
-    return `${parts.warehouse} • ${parts.area} • ${parts.zone} • ${parts.position}`;
+    return `${parts.warehouse} • ${parts.zone} • ${parts.position}`;
   }
   
   // Shelf location
   if ('bin' in parts && parts.bin) {
-    return `${parts.warehouse} • ${parts.area} • ${parts.aisle} • ${parts.rack} • ${parts.level} • ${parts.bin}`;
+    return `${parts.warehouse} • ${parts.aisle} • ${parts.rack} • ${parts.level} • ${parts.bin}`;
   }
   
   // Old format or partial
-  return `${parts.warehouse} • ${parts.area} • ${parts.aisle} • ${parts.rack} • ${parts.level}`;
+  return `${parts.warehouse} • ${parts.aisle} • ${parts.rack} • ${parts.level}`;
 }
 
 /**

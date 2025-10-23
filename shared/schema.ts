@@ -1140,8 +1140,8 @@ export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: t
 export const insertProductLocationSchema = createInsertSchema(productLocations)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
-    locationCode: z.string().regex(/^WH\d+-[A-Z]\d{2}-R\d{2}-L\d{2}$/, {
-      message: 'Location code must be in format: WH1-A01-R02-L03'
+    locationCode: z.string().regex(/^WH\d+(-[A-Z])?-[A-Z]\d{2}-(R\d{2}-L\d{2}(-B\d{1,2})?|P\d{2})$/, {
+      message: 'Location code must be in format: WH1-A06-R04-L04-B2 (shelves), WH1-B03-P05 (pallets), or legacy formats with area'
     }),
     locationType: z.enum(['display', 'warehouse', 'pallet', 'other']),
     quantity: z.number().int().min(0, 'Quantity must be non-negative')
