@@ -3203,11 +3203,14 @@ router.get("/receipts/items-to-store", async (req, res) => {
     
     // Filter in memory to show only items ready for storage
     const filteredReceiptItems = allReceiptItems.filter(item => {
-      // Check if status is ok, complete, or not set
-      const statusOk = !item.status || item.status === 'ok' || item.status === 'complete' || item.condition === 'good';
-      // Check if fully received
-      const fullyReceived = item.receivedQuantity >= item.expectedQuantity;
-      return statusOk && fullyReceived;
+      // receivedQuantity already represents GOOD units (damaged units are tracked separately)
+      // So we just need to check if there are any good units received
+      const hasGoodUnits = item.receivedQuantity > 0;
+      
+      // Exclude only completely damaged or missing items
+      const isNotCompletelyBad = item.status !== 'damaged' && item.status !== 'missing';
+      
+      return hasGoodUnits && isNotCompletelyBad;
     });
     
     // Get product information and existing locations for all items at once
@@ -3298,6 +3301,7 @@ router.get("/receipts/items-to-store", async (req, res) => {
       const product = item.productId ? productsMap[item.productId] : null;
       const existingLocations = item.productId ? (locationsMap[item.productId] || []) : [];
       
+      // receivedQuantity already represents good units (not including damaged)
       itemsByReceipt[item.receiptId].push({
         ...item,
         productName: product?.name || originalItem?.name || `Item #${item.itemId}`,
@@ -3327,7 +3331,7 @@ router.get("/receipts/items-to-store", async (req, res) => {
       }))
       .filter(r => r.items.length > 0); // Only include receipts that have items ready for storage
     
-    // Calculate totals
+    // Calculate totals (receivedQuantity already represents good units)
     const totalItems = filteredReceiptItems.length;
     const totalQuantity = filteredReceiptItems.reduce((sum, item) => 
       sum + (item.receivedQuantity || 0), 0
