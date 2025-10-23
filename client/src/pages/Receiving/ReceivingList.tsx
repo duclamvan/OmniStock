@@ -2553,81 +2553,98 @@ export default function ReceivingList() {
 
                 return (
                   <Card key={shipment.id} className="border hover:shadow-md transition-shadow border-green-300">
-                    <CardContent className="p-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-                        <div className="flex items-center gap-2 sm:gap-3 flex-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="p-1"
-                            onClick={() => {
-                              const newExpanded = new Set(expandedShipments);
-                              if (isExpanded) {
-                                newExpanded.delete(shipment.id);
-                              } else {
-                                newExpanded.add(shipment.id);
-                              }
-                              setExpandedShipments(newExpanded);
-                            }}
-                            data-testid={`button-toggle-completed-${shipment.id}`}
-                          >
-                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                          </Button>
-                          <div className="flex-1">
-                            {/* First Row: Title and Status */}
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h3 className="font-semibold text-sm sm:text-base">
-                                {shipment.shipmentName || `Shipment #${shipment.id}`}
-                              </h3>
-                              <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100">
-                                Completed
-                              </Badge>
-                            </div>
-
-                            {/* Second Row: Shipment Type, Carrier, Units */}
-                            <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground mt-2">
-                              {(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod) && (
-                                <>
-                                  <Badge variant="secondary" className="text-xs flex items-center gap-1">
-                                    {getShipmentTypeIcon(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '')}
-                                    {formatShipmentType(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '')}
-                                  </Badge>
-                                  <span className="text-muted-foreground">•</span>
-                                </>
-                              )}
-                              <span className="font-semibold">
-                                {shipment.endCarrier || shipment.carrier}
+                    <CardContent className="p-3">
+                      {/* Compact Header Row */}
+                      <div className="flex items-start gap-2 mb-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 mt-0.5"
+                          onClick={() => {
+                            const newExpanded = new Set(expandedShipments);
+                            if (isExpanded) {
+                              newExpanded.delete(shipment.id);
+                            } else {
+                              newExpanded.add(shipment.id);
+                            }
+                            setExpandedShipments(newExpanded);
+                          }}
+                          data-testid={`button-toggle-completed-${shipment.id}`}
+                        >
+                          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </Button>
+                        
+                        <div className="flex-1 min-w-0">
+                          {/* Title Row */}
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <h3 className="font-semibold text-sm">{shipment.shipmentName || `Shipment #${shipment.id}`}</h3>
+                            <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100 text-[10px] h-5 px-1.5">
+                              Completed
+                            </Badge>
+                            {shipment.trackingNumber && (
+                              <span className="text-[10px] font-mono text-muted-foreground ml-auto hidden sm:inline truncate">
+                                {shipment.trackingNumber}
                               </span>
-                              <span className="text-muted-foreground">•</span>
-                              <span className="flex items-center gap-1">
-                                {getUnitTypeIcon(shipment.unitType || 'items')}
-                                {shipment.totalUnits} {shipment.unitType || 'items'}
-                              </span>
-                            </div>
+                            )}
+                          </div>
 
-                            {/* Third Row: Tracking */}
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
-                              <span className="font-mono">Tracking: {shipment.trackingNumber}</span>
+                          {/* Info Grid - Compact 6-column layout */}
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-3 gap-y-1 text-[11px]">
+                            {(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod) && (
+                              <div className="flex items-center gap-1">
+                                {getShipmentTypeIcon(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '', 'h-3 w-3')}
+                                <span className="text-muted-foreground truncate">
+                                  {formatShipmentType(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '')}
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1">
+                              <Truck className="h-3 w-3 text-muted-foreground shrink-0" />
+                              <span className="text-muted-foreground truncate">{shipment.endCarrier || shipment.carrier}</span>
                             </div>
+                            <div className="flex items-center gap-1">
+                              {getUnitTypeIcon(shipment.unitType || 'items', 'h-3 w-3')}
+                              <span className="text-muted-foreground truncate">{shipment.totalUnits} {shipment.unitType || 'items'}</span>
+                            </div>
+                            {shipment.deliveredAt && (
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3 text-primary shrink-0" />
+                                <span className="font-medium truncate">{format(new Date(shipment.deliveredAt), 'MMM dd, HH:mm')}</span>
+                              </div>
+                            )}
+                            {shipment.receivingWarehouse && (
+                              <div className="flex items-center gap-1">
+                                <Warehouse className="h-3 w-3 text-muted-foreground shrink-0" />
+                                <span className="text-muted-foreground truncate">{shipment.receivingWarehouse}</span>
+                              </div>
+                            )}
+                            {receiptData?.receivedBy && (
+                              <div className="flex items-center gap-1">
+                                <User className="h-3 w-3 text-muted-foreground shrink-0" />
+                                <span className="text-muted-foreground truncate">{receiptData.receivedBy}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <div className="flex gap-2">
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-1.5 ml-auto">
                           {shipment.receiptId ? (
                             <Link href={`/receiving/details/${shipment.receiptId}`}>
-                              <Button size="sm" variant="outline" className="shadow-sm" data-testid={`button-view-details-${shipment.id}`}>
-                                <Eye className="h-4 w-4 mr-1" />
-                                View Receipt
+                              <Button size="sm" variant="outline" className="h-7 text-xs" data-testid={`button-view-details-${shipment.id}`}>
+                                <Eye className="h-3.5 w-3.5 mr-1" />
+                                Receipt
                               </Button>
                             </Link>
                           ) : (
-                            <Button size="sm" variant="outline" disabled data-testid={`button-no-receipt-${shipment.id}`}>
+                            <Button size="sm" variant="outline" disabled className="h-7 text-xs" data-testid={`button-no-receipt-${shipment.id}`}>
                               No Receipt
                             </Button>
                           )}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                <MoreHorizontal className="h-3.5 w-3.5" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -2642,65 +2659,6 @@ export default function ReceivingList() {
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
-                      </div>
-
-                      {/* Additional Info Bar - Always visible with database info */}
-                      <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm mb-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                        <div className="flex items-center gap-1">
-                          <Warehouse className="h-3 w-3 text-primary" />
-                          <span className="text-foreground">
-                            <span className="text-muted-foreground">Warehouse:</span> 
-                            <span className="ml-1 font-medium">{shipment.receivingWarehouse || 'Not specified'}</span>
-                          </span>
-                        </div>
-                        
-                        {shipment.warehouseLocation && (
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3 text-primary" />
-                            <span className="text-foreground">
-                              <span className="text-muted-foreground">Location:</span> 
-                              <span className="ml-1 font-medium">{shipment.warehouseLocation}</span>
-                            </span>
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center gap-1">
-                          <Package className="h-3 w-3 text-primary" />
-                          <span className="text-foreground">
-                            <span className="text-muted-foreground">Consolidation:</span> 
-                            <span className="ml-1 font-medium">{shipment.consolidationName || 'No consolidation'}</span>
-                          </span>
-                        </div>
-                        
-                        {shipment.deliveredAt && (
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3 text-primary" />
-                            <span className="text-foreground">
-                              <span className="text-muted-foreground">Completed:</span> 
-                              <span className="ml-1 font-medium">{format(new Date(shipment.deliveredAt), 'MMM dd, HH:mm')}</span>
-                            </span>
-                          </div>
-                        )}
-                        
-                        {shipment.totalWeight && (
-                          <div className="flex items-center gap-1">
-                            <Package2 className="h-3 w-3 text-primary" />
-                            <span className="text-foreground">
-                              <span className="text-muted-foreground">Weight:</span> 
-                              <span className="ml-1 font-medium">{shipment.totalWeight} kg</span>
-                            </span>
-                          </div>
-                        )}
-                        
-                        {receiptData && receiptData.receivedBy && (
-                          <div className="flex items-center gap-1">
-                            <User className="h-3 w-3 text-primary" />
-                            <span className="text-foreground">
-                              <span className="text-muted-foreground">Received by:</span> 
-                              <span className="ml-1 font-medium">{receiptData.receivedBy}</span>
-                            </span>
-                          </div>
-                        )}
                       </div>
 
                       {/* Expanded Items List */}
@@ -2872,119 +2830,89 @@ export default function ReceivingList() {
 
                 return (
                   <Card key={shipment.id} className="border hover:shadow-md transition-shadow border-gray-300">
-                    <CardContent className="p-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-                        <div className="flex items-center gap-2 sm:gap-3 flex-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="p-1"
-                            onClick={() => {
-                              const newExpanded = new Set(expandedShipments);
-                              if (isExpanded) {
-                                newExpanded.delete(shipment.id);
-                              } else {
-                                newExpanded.add(shipment.id);
-                              }
-                              setExpandedShipments(newExpanded);
-                            }}
-                            data-testid={`button-toggle-archived-${shipment.id}`}
-                          >
-                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                          </Button>
-                          <div className="flex-1">
-                            {/* First Row: Title and Status */}
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h3 className="font-semibold text-sm sm:text-base">
-                                {shipment.shipmentName || `Shipment #${shipment.id}`}
-                              </h3>
-                              <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100">
-                                Archived
-                              </Badge>
-                            </div>
-
-                            {/* Second Row: Shipment Type, Carrier, Units */}
-                            <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground mt-2">
-                              {(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod) && (
-                                <>
-                                  <Badge variant="secondary" className="text-xs flex items-center gap-1">
-                                    {getShipmentTypeIcon(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '')}
-                                    {formatShipmentType(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '')}
-                                  </Badge>
-                                  <span className="text-muted-foreground">•</span>
-                                </>
-                              )}
-                              <span className="font-semibold">
-                                {shipment.endCarrier || shipment.carrier}
+                    <CardContent className="p-3">
+                      {/* Compact Header Row */}
+                      <div className="flex items-start gap-2 mb-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 mt-0.5"
+                          onClick={() => {
+                            const newExpanded = new Set(expandedShipments);
+                            if (isExpanded) {
+                              newExpanded.delete(shipment.id);
+                            } else {
+                              newExpanded.add(shipment.id);
+                            }
+                            setExpandedShipments(newExpanded);
+                          }}
+                          data-testid={`button-toggle-archived-${shipment.id}`}
+                        >
+                          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </Button>
+                        
+                        <div className="flex-1 min-w-0">
+                          {/* Title Row */}
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <h3 className="font-semibold text-sm">{shipment.shipmentName || `Shipment #${shipment.id}`}</h3>
+                            <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100 text-[10px] h-5 px-1.5">
+                              Archived
+                            </Badge>
+                            {shipment.trackingNumber && (
+                              <span className="text-[10px] font-mono text-muted-foreground ml-auto hidden sm:inline truncate">
+                                {shipment.trackingNumber}
                               </span>
-                              <span className="text-muted-foreground">•</span>
-                              <span className="flex items-center gap-1">
-                                {getUnitTypeIcon(shipment.unitType || 'items')}
-                                {shipment.totalUnits} {shipment.unitType || 'items'}
-                              </span>
-                            </div>
+                            )}
+                          </div>
 
-                            {/* Third Row: Tracking */}
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
-                              <span className="font-mono">Tracking: {shipment.trackingNumber}</span>
+                          {/* Info Grid - Compact 6-column layout */}
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-3 gap-y-1 text-[11px]">
+                            {(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod) && (
+                              <div className="flex items-center gap-1">
+                                {getShipmentTypeIcon(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '', 'h-3 w-3')}
+                                <span className="text-muted-foreground truncate">
+                                  {formatShipmentType(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '')}
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1">
+                              <Truck className="h-3 w-3 text-muted-foreground shrink-0" />
+                              <span className="text-muted-foreground truncate">{shipment.endCarrier || shipment.carrier}</span>
                             </div>
+                            <div className="flex items-center gap-1">
+                              {getUnitTypeIcon(shipment.unitType || 'items', 'h-3 w-3')}
+                              <span className="text-muted-foreground truncate">{shipment.totalUnits} {shipment.unitType || 'items'}</span>
+                            </div>
+                            {shipment.deliveredAt && (
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3 text-primary shrink-0" />
+                                <span className="font-medium truncate">{format(new Date(shipment.deliveredAt), 'MMM dd, HH:mm')}</span>
+                              </div>
+                            )}
+                            {shipment.receivingWarehouse && (
+                              <div className="flex items-center gap-1">
+                                <Warehouse className="h-3 w-3 text-muted-foreground shrink-0" />
+                                <span className="text-muted-foreground truncate">{shipment.receivingWarehouse}</span>
+                              </div>
+                            )}
+                            {shipment.totalWeight && (
+                              <div className="flex items-center gap-1">
+                                <Package2 className="h-3 w-3 text-muted-foreground shrink-0" />
+                                <span className="text-muted-foreground truncate">{parseFloat(shipment.totalWeight).toFixed(2)} kg</span>
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <Link href={`/receiving/details/${shipment.receiptId || shipment.id}`}>
-                          <Button size="sm" variant="outline" className="shadow-sm" data-testid={`button-view-details-${shipment.id}`}>
-                            <Eye className="h-4 w-4 mr-1" />
-                            View Receipt
-                          </Button>
-                        </Link>
-                      </div>
 
-                      {/* Additional Info Bar - Always visible with database info */}
-                      <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm mb-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                        <div className="flex items-center gap-1">
-                          <Warehouse className="h-3 w-3 text-primary" />
-                          <span className="text-foreground">
-                            <span className="text-muted-foreground">Warehouse:</span> 
-                            <span className="ml-1 font-medium">{shipment.receivingWarehouse || 'Not specified'}</span>
-                          </span>
+                        {/* Action Button */}
+                        <div className="ml-auto">
+                          <Link href={`/receiving/details/${shipment.receiptId || shipment.id}`}>
+                            <Button size="sm" variant="outline" className="h-7 text-xs" data-testid={`button-view-details-${shipment.id}`}>
+                              <Eye className="h-3.5 w-3.5 mr-1" />
+                              Receipt
+                            </Button>
+                          </Link>
                         </div>
-                        
-                        {shipment.warehouseLocation && (
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3 text-primary" />
-                            <span className="text-foreground">
-                              <span className="text-muted-foreground">Location:</span> 
-                              <span className="ml-1 font-medium">{shipment.warehouseLocation}</span>
-                            </span>
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center gap-1">
-                          <Package className="h-3 w-3 text-primary" />
-                          <span className="text-foreground">
-                            <span className="text-muted-foreground">Consolidation:</span> 
-                            <span className="ml-1 font-medium">{shipment.consolidationName || 'No consolidation'}</span>
-                          </span>
-                        </div>
-                        
-                        {shipment.deliveredAt && (
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3 text-primary" />
-                            <span className="text-foreground">
-                              <span className="text-muted-foreground">Archived:</span> 
-                              <span className="ml-1 font-medium">{format(new Date(shipment.deliveredAt), 'MMM dd, HH:mm')}</span>
-                            </span>
-                          </div>
-                        )}
-                        
-                        {shipment.totalWeight && (
-                          <div className="flex items-center gap-1">
-                            <Package2 className="h-3 w-3 text-primary" />
-                            <span className="text-foreground">
-                              <span className="text-muted-foreground">Weight:</span> 
-                              <span className="ml-1 font-medium">{parseFloat(shipment.totalWeight).toFixed(2)} kg</span>
-                            </span>
-                          </div>
-                        )}
                       </div>
 
                       {/* Expanded Items List */}
