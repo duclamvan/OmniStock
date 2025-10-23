@@ -505,7 +505,6 @@ const ShipmentCard = memo(({
 ShipmentCard.displayName = 'ShipmentCard';
 
 const RECEIVING_TAB_KEY = 'receiving-active-tab';
-const EXPANDED_SHIPMENTS_KEY = 'receiving-expanded-shipments';
 
 export default function ReceivingList() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -522,19 +521,7 @@ export default function ReceivingList() {
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [barcodeScan, setBarcodeScan] = useState("");
   const [showBulkActions, setShowBulkActions] = useState(false);
-  const [expandedShipments, setExpandedShipments] = useState<Set<number>>(() => {
-    // Load from localStorage on mount
-    try {
-      const saved = localStorage.getItem(EXPANDED_SHIPMENTS_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return new Set(parsed);
-      }
-    } catch {
-      // Silently fail if localStorage is not available
-    }
-    return new Set();
-  });
+  const [expandedShipments, setExpandedShipments] = useState<Set<number>>(new Set());
   const [sortBy, setSortBy] = useState("deliveredAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [carrierFilter, setCarrierFilter] = useState("all");
@@ -554,15 +541,22 @@ export default function ReceivingList() {
     }
   }, [activeTab]);
 
-  // Save expanded shipments to localStorage whenever it changes
+  // Auto-expand all shipments by default - strictly!
   useEffect(() => {
-    try {
-      const array = Array.from(expandedShipments);
-      localStorage.setItem(EXPANDED_SHIPMENTS_KEY, JSON.stringify(array));
-    } catch (error) {
-      // Silently fail if localStorage is not available
+    const allShipmentIds = new Set<number>();
+    
+    // Collect all shipment IDs from all tabs
+    [...toReceiveShipments, ...receivingShipments, ...storageShipments, ...completedShipments, ...archivedShipments].forEach((shipment: any) => {
+      if (shipment?.id) {
+        allShipmentIds.add(shipment.id);
+      }
+    });
+    
+    // Only update if there are shipments and the set is different
+    if (allShipmentIds.size > 0) {
+      setExpandedShipments(allShipmentIds);
     }
-  }, [expandedShipments]);
+  }, [toReceiveShipments, receivingShipments, storageShipments, completedShipments, archivedShipments]);
 
   // Move back confirmation dialog state
   const [showMoveBackDialog, setShowMoveBackDialog] = useState(false);
