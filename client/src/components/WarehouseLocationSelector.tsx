@@ -58,7 +58,7 @@ export default function WarehouseLocationSelector({
   const [rack, setRack] = useState("R01");
   const [level, setLevel] = useState("L01");
   const [bin, setBin] = useState("B1");
-  const [zone, setZone] = useState("A01");
+  const [zone, setZone] = useState("B01");
   const [position, setPosition] = useState("P01");
   const [manualEntry, setManualEntry] = useState(false);
   const [manualCode, setManualCode] = useState("");
@@ -84,10 +84,12 @@ export default function WarehouseLocationSelector({
         return;
       }
       
-      // Try new pallet format
+      // Try new pallet/office format
       const palletParts = parsePalletLocationCode(value);
       if (palletParts) {
-        setAreaType("pallets");
+        // Determine if it's office (C prefix) or pallets (B prefix)
+        const isOffice = palletParts.zone.startsWith('C');
+        setAreaType(isOffice ? "office" : "pallets");
         setWarehouse(palletParts.warehouse);
         setZone(palletParts.zone);
         setPosition(palletParts.position);
@@ -115,6 +117,15 @@ export default function WarehouseLocationSelector({
     }
   }, [value]);
 
+  // Update zone when areaType changes (pallets=B, office=C)
+  useEffect(() => {
+    if (areaType === 'pallets' && !zone.startsWith('B')) {
+      setZone('B01');
+    } else if (areaType === 'office' && !zone.startsWith('C')) {
+      setZone('C01');
+    }
+  }, [areaType, zone]);
+
   // Update location code when components change
   useEffect(() => {
     if (!manualEntry) {
@@ -129,7 +140,7 @@ export default function WarehouseLocationSelector({
       let code = "";
       if (areaType === "shelves") {
         code = generateShelfLocationCode(warehouse, aisle, rack, level, bin);
-      } else if (areaType === "pallets") {
+      } else if (areaType === "pallets" || areaType === "office") {
         code = generatePalletLocationCode(warehouse, zone, position);
       }
       onChange(code);
@@ -159,10 +170,12 @@ export default function WarehouseLocationSelector({
         return;
       }
       
-      // Try new pallet format
+      // Try new pallet/office format
       const palletParts = parsePalletLocationCode(newCode);
       if (palletParts) {
-        setAreaType("pallets");
+        // Determine if it's office (C prefix) or pallets (B prefix)
+        const isOffice = palletParts.zone.startsWith('C');
+        setAreaType(isOffice ? "office" : "pallets");
         setWarehouse(palletParts.warehouse);
         setZone(palletParts.zone);
         setPosition(palletParts.position);
@@ -195,7 +208,11 @@ export default function WarehouseLocationSelector({
   const rackOptions = useMemo(() => getRackOptions(), []);
   const levelOptions = useMemo(() => getLevelOptions(), []);
   const binOptions = useMemo(() => getBinOptions(), []);
-  const zoneOptions = useMemo(() => getZoneOptions(), []);
+  const zoneOptions = useMemo(() => {
+    // Pallets use B zones, Office uses C zones
+    const zoneLetter = areaType === 'office' ? 'C' : 'B';
+    return getZoneOptions(zoneLetter);
+  }, [areaType]);
   const positionOptions = useMemo(() => getPositionOptions(), []);
 
   const LocationTypeIcon = getLocationTypeIcon(locationType);
@@ -295,7 +312,7 @@ export default function WarehouseLocationSelector({
                 type="text"
                 value={manualCode}
                 onChange={(e) => handleManualCodeChange(e.target.value.toUpperCase())}
-                placeholder={areaType === "pallets" ? "WH1-B-B03-P05" : "WH1-A-A06-R04-L04-B2"}
+                placeholder={areaType === "pallets" ? "WH1-B03-P05" : areaType === "office" ? "WH1-C01-P01" : "WH1-A06-R04-L04-B2"}
                 disabled={disabled}
                 data-testid="input-manual-code"
                 className={`h-8 ${!isValid && manualCode ? "border-red-500" : ""}`}
@@ -311,7 +328,7 @@ export default function WarehouseLocationSelector({
                     <>
                       <AlertCircle className="h-4 w-4 text-red-600" />
                       <span className="text-red-600">
-                        Invalid format. Use: {areaType === "pallets" ? "WH1-B-B03-P05" : "WH1-A-A06-R04-L04-B2"}
+                        Invalid format. Use: {areaType === "pallets" ? "WH1-B03-P05" : areaType === "office" ? "WH1-C01-P01" : "WH1-A06-R04-L04-B2"}
                       </span>
                     </>
                   )
@@ -566,7 +583,7 @@ export default function WarehouseLocationSelector({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <code className="text-base font-mono font-semibold" data-testid="text-location-code">
-                    {manualCode || (isOldFormat && oldFormatCode) || (areaType === "pallets" 
+                    {manualCode || (isOldFormat && oldFormatCode) || (areaType === "pallets" || areaType === "office"
                       ? generatePalletLocationCode(warehouse, zone, position)
                       : generateShelfLocationCode(warehouse, aisle, rack, level, bin))}
                   </code>

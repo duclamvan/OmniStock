@@ -322,16 +322,14 @@ export function getWarehouseOptions(count: number = 5): Array<{ value: string; l
 }
 
 /**
- * Generate aisle options (A-Z)
+ * Generate aisle options for shelves (A01-A99 only)
  */
 export function getAisleOptions(): Array<{ value: string; label: string }> {
-  return Array.from({ length: 26 }, (_, i) => {
-    const letter = String.fromCharCode(65 + i);
-    return Array.from({ length: 10 }, (_, j) => ({
-      value: `${letter}${String(j).padStart(2, '0')}`,
-      label: `Aisle ${letter}${String(j).padStart(2, '0')}`
-    }));
-  }).flat().slice(0, 50); // Limit to first 50 aisles
+  // Only generate A-prefixed aisles for shelves
+  return Array.from({ length: 99 }, (_, i) => ({
+    value: `A${String(i + 1).padStart(2, '0')}`,
+    label: `Aisle A${String(i + 1).padStart(2, '0')}`
+  }));
 }
 
 /**
@@ -386,20 +384,18 @@ export function getBinOptions(count: number = 20): Array<{ value: string; label:
 }
 
 /**
- * Get zone options for pallets (A01-D20)
+ * Get zone options based on storage type
+ * - Pallets: B01-B99
+ * - Office: C01-C99
  */
-export function getZoneOptions(): Array<{ value: string; label: string }> {
-  const zones = [];
-  for (let letter = 65; letter <= 68; letter++) { // A-D
-    for (let num = 1; num <= 20; num++) {
-      const zone = `${String.fromCharCode(letter)}${String(num).padStart(2, '0')}`;
-      zones.push({
-        value: zone,
-        label: `Zone ${zone}`
-      });
-    }
-  }
-  return zones;
+export function getZoneOptions(zoneLetter: 'B' | 'C' = 'B'): Array<{ value: string; label: string }> {
+  return Array.from({ length: 99 }, (_, i) => {
+    const zone = `${zoneLetter}${String(i + 1).padStart(2, '0')}`;
+    return {
+      value: zone,
+      label: `Zone ${zone}`
+    };
+  });
 }
 
 /**
