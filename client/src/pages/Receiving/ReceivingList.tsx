@@ -1826,15 +1826,15 @@ export default function ReceivingList() {
                   }
 
                   return (
-                    <Card key={shipment.id} id={`shipment-${shipment.id}`} className="border hover:shadow-md transition-shadow">
-                      <CardContent className="p-5">
-                        {/* Header: Title, Status, Actions */}
-                        <div className="flex items-start gap-3 mb-4">
-                          <div className="flex items-center gap-3 pt-1">
+                    <Card key={shipment.id} id={`shipment-${shipment.id}`} className="border hover:shadow-md transition-shadow border-sky-300">
+                      <CardContent className="p-3">
+                        {/* Compact Header Row */}
+                        <div className="flex items-start gap-2 mb-2">
+                          <div className="flex items-center gap-2">
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="p-1 h-auto"
+                              className="h-6 w-6 p-0 mt-0.5"
                               onClick={() => {
                                 const newExpanded = new Set(expandedShipments);
                                 if (isExpanded) {
@@ -1854,50 +1854,75 @@ export default function ReceivingList() {
                               data-testid={`checkbox-shipment-${shipment.id}`}
                             />
                           </div>
+                          
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                              {/* Shipping Icon */}
-                              {getShipmentTypeIcon(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '', 'h-5 w-5')}
-                              
-                              {/* Country Flag */}
-                              <span className="text-xl leading-none" title={shipment.origin}>
-                                {getCountryFlag(shipment.origin)}
-                              </span>
-                              
-                              <h3 className="font-semibold text-base sm:text-lg">
-                                {shipment.shipmentName || `Shipment #${shipment.id}`}
-                              </h3>
-                              <Badge className={getStatusColor(shipment.status)}>
-                                {shipment.status?.replace('_', ' ').toUpperCase()}
+                            {/* Title Row */}
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <h3 className="font-semibold text-sm">{shipment.shipmentName || `Shipment #${shipment.id}`}</h3>
+                              <Badge className="bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-100 text-[10px] h-5 px-1.5">
+                                To Receive
                               </Badge>
+                              {shipment.trackingNumber && (
+                                <span className="text-[10px] font-mono text-muted-foreground ml-auto hidden sm:inline truncate">
+                                  {shipment.trackingNumber}
+                                </span>
+                              )}
                             </div>
-                            
-                            {/* Subtitle with tracking and carrier */}
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
-                              <span className="font-mono font-medium text-blue-600 dark:text-blue-400">
-                                {shipment.trackingNumber}
-                              </span>
-                              <span>•</span>
-                              <span className="flex items-center gap-1.5">
-                                <Truck className="h-3.5 w-3.5" />
-                                {shipment.endCarrier || shipment.carrier}
-                              </span>
-                              <span>•</span>
-                              <span>{shipment.totalUnits} {shipment.unitType || 'items'}</span>
+
+                            {/* Info Grid - Compact 6-column layout */}
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-3 gap-y-1 text-[11px]">
+                              {(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod) && (
+                                <div className="flex items-center gap-1">
+                                  {getShipmentTypeIcon(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '', 'h-3 w-3')}
+                                  <span className="text-muted-foreground truncate">
+                                    {formatShipmentType(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '')}
+                                  </span>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-1">
+                                <Truck className="h-3 w-3 text-muted-foreground shrink-0" />
+                                <span className="text-muted-foreground truncate">{shipment.endCarrier || shipment.carrier}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                {getUnitTypeIcon(shipment.unitType || 'items', 'h-3 w-3')}
+                                <span className="text-muted-foreground truncate">{shipment.totalUnits} {shipment.unitType || 'items'}</span>
+                              </div>
+                              {shipment.estimatedDelivery && (
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3 text-primary shrink-0" />
+                                  <span className="font-medium truncate">{format(new Date(shipment.estimatedDelivery), 'MMM dd, HH:mm')}</span>
+                                </div>
+                              )}
+                              {shipment.consolidation?.warehouse && (
+                                <div className="flex items-center gap-1">
+                                  <Warehouse className="h-3 w-3 text-muted-foreground shrink-0" />
+                                  <span className="text-muted-foreground truncate">{shipment.consolidation.warehouse}</span>
+                                </div>
+                              )}
+                              {shipment.actualWeight && (
+                                <div className="flex items-center gap-1">
+                                  <Package2 className="h-3 w-3 text-muted-foreground shrink-0" />
+                                  <span className="text-muted-foreground truncate">{shipment.actualWeight} kg</span>
+                                </div>
+                              )}
                             </div>
                           </div>
-                          <Button 
-                            size="sm" 
-                            className="bg-sky-600 hover:bg-sky-700 text-white shadow-sm hover:shadow-md transition-all shrink-0"
-                            data-testid={`button-start-receiving-${shipment.id}`}
-                            onClick={() => {
-                              console.log(`Starting receiving for shipment ${shipment.id}: ${shipment.shipmentName}`);
-                              navigate(`/receiving/start/${shipment.id}`);
-                            }}
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Start Receiving
-                          </Button>
+
+                          {/* Action Button */}
+                          <div className="ml-auto">
+                            <Button 
+                              size="sm" 
+                              className="bg-sky-600 hover:bg-sky-700 text-white h-7 text-xs"
+                              data-testid={`button-start-receiving-${shipment.id}`}
+                              onClick={() => {
+                                console.log(`Starting receiving for shipment ${shipment.id}: ${shipment.shipmentName}`);
+                                navigate(`/receiving/start/${shipment.id}`);
+                              }}
+                            >
+                              <Plus className="h-3.5 w-3.5 mr-1" />
+                              Start
+                            </Button>
+                          </div>
                         </div>
 
                         {/* Metadata Grid */}
@@ -2081,46 +2106,92 @@ export default function ReceivingList() {
                 });
 
                 return (
-                  <Card key={shipment.id} className="border hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="flex items-center gap-3 flex-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="p-1"
-                            onClick={() => {
-                              const newExpanded = new Set(expandedShipments);
-                              if (isExpanded) {
-                                newExpanded.delete(shipment.id);
-                              } else {
-                                newExpanded.add(shipment.id);
-                              }
-                              setExpandedShipments(newExpanded);
-                            }}
-                          >
-                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                          </Button>
-                          <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100">
-                            Currently Receiving
-                          </Badge>
-                          <div className="flex-1">
-                            <h3 className="font-semibold">{shipment.shipmentName || `Shipment #${shipment.id}`}</h3>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {shipment.trackingNumber} • {shipment.endCarrier || shipment.carrier}
-                            </p>
+                  <Card key={shipment.id} className="border hover:shadow-md transition-shadow border-amber-300">
+                    <CardContent className="p-3">
+                      {/* Compact Header Row */}
+                      <div className="flex items-start gap-2 mb-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 mt-0.5"
+                          onClick={() => {
+                            const newExpanded = new Set(expandedShipments);
+                            if (isExpanded) {
+                              newExpanded.delete(shipment.id);
+                            } else {
+                              newExpanded.add(shipment.id);
+                            }
+                            setExpandedShipments(newExpanded);
+                          }}
+                        >
+                          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </Button>
+                        
+                        <div className="flex-1 min-w-0">
+                          {/* Title Row */}
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <h3 className="font-semibold text-sm">{shipment.shipmentName || `Shipment #${shipment.id}`}</h3>
+                            <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 text-[10px] h-5 px-1.5">
+                              Receiving
+                            </Badge>
+                            {shipment.trackingNumber && (
+                              <span className="text-[10px] font-mono text-muted-foreground ml-auto hidden sm:inline truncate">
+                                {shipment.trackingNumber}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Info Grid - Compact 6-column layout */}
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-3 gap-y-1 text-[11px]">
+                            {(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod) && (
+                              <div className="flex items-center gap-1">
+                                {getShipmentTypeIcon(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '', 'h-3 w-3')}
+                                <span className="text-muted-foreground truncate">
+                                  {formatShipmentType(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '')}
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1">
+                              <Truck className="h-3 w-3 text-muted-foreground shrink-0" />
+                              <span className="text-muted-foreground truncate">{shipment.endCarrier || shipment.carrier}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {getUnitTypeIcon(shipment.unitType || 'items', 'h-3 w-3')}
+                              <span className="text-muted-foreground truncate">{shipment.totalUnits} {shipment.unitType || 'items'}</span>
+                            </div>
+                            {shipment.deliveredAt && (
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3 text-primary shrink-0" />
+                                <span className="font-medium truncate">{format(new Date(shipment.deliveredAt), 'MMM dd, HH:mm')}</span>
+                              </div>
+                            )}
+                            {shipment.consolidation?.warehouse && (
+                              <div className="flex items-center gap-1">
+                                <Warehouse className="h-3 w-3 text-muted-foreground shrink-0" />
+                                <span className="text-muted-foreground truncate">{shipment.consolidation.warehouse}</span>
+                              </div>
+                            )}
+                            {receiptData?.receivedBy && (
+                              <div className="flex items-center gap-1">
+                                <User className="h-3 w-3 text-muted-foreground shrink-0" />
+                                <span className="text-muted-foreground truncate">{receiptData.receivedBy}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-1.5 ml-auto">
                           <Link href={`/receiving/continue/${shipment.id}`}>
-                            <Button size="sm" variant="outline">
-                              Continue Receiving
+                            <Button size="sm" variant="outline" className="h-7 text-xs">
+                              <Clock className="h-3.5 w-3.5 mr-1" />
+                              Continue
                             </Button>
                           </Link>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                <MoreHorizontal className="h-3.5 w-3.5" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
