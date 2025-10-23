@@ -11,19 +11,26 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertCircle, CheckCircle2, MapPin } from "lucide-react";
+import { AlertCircle, CheckCircle2, MapPin, Package, Layers } from "lucide-react";
 import {
-  generateLocationCode,
+  generateShelfLocationCode,
+  generatePalletLocationCode,
   validateLocationCode,
-  parseLocationCode,
+  parseShelfLocationCode,
+  parsePalletLocationCode,
   getLocationTypeIcon,
   getLocationTypeTextColor,
   getLocationTypeLabel,
   getWarehouseOptions,
+  getAreaOptions,
   getAisleOptions,
   getRackOptions,
   getLevelOptions,
+  getBinOptions,
+  getZoneOptions,
+  getPositionOptions,
   LocationType,
+  AreaType,
 } from "@/lib/warehouseHelpers";
 
 interface WarehouseLocationSelectorProps {
@@ -46,9 +53,14 @@ export default function WarehouseLocationSelector({
   disabled = false,
 }: WarehouseLocationSelectorProps) {
   const [warehouse, setWarehouse] = useState("WH1");
+  const [areaType, setAreaType] = useState<AreaType>("shelves");
+  const [area, setArea] = useState("A");
   const [aisle, setAisle] = useState("A01");
-  const [rack, setRack] = useState("R01");
-  const [level, setLevel] = useState("L01");
+  const [rack, setRack] = useState("01");
+  const [level, setLevel] = useState("01");
+  const [bin, setBin] = useState("B1");
+  const [zone, setZone] = useState("A01");
+  const [position, setPosition] = useState("P01");
   const [manualEntry, setManualEntry] = useState(false);
   const [manualCode, setManualCode] = useState("");
   const [isValid, setIsValid] = useState(true);
@@ -56,13 +68,28 @@ export default function WarehouseLocationSelector({
   // Parse initial value if provided
   useEffect(() => {
     if (value && validateLocationCode(value)) {
-      const parts = parseLocationCode(value);
-      if (parts) {
-        setWarehouse(parts.warehouse);
-        setAisle(parts.aisle);
-        setRack(parts.rack);
-        setLevel(parts.level);
+      const shelfParts = parseShelfLocationCode(value);
+      if (shelfParts) {
+        setAreaType("shelves");
+        setWarehouse(shelfParts.warehouse);
+        setArea(shelfParts.area);
+        setAisle(shelfParts.aisle);
+        setRack(shelfParts.rack.replace(/^R/, ''));
+        setLevel(shelfParts.level.replace(/^L/, ''));
+        setBin(shelfParts.bin || "B1");
         setManualCode(value);
+        return;
+      }
+      
+      const palletParts = parsePalletLocationCode(value);
+      if (palletParts) {
+        setAreaType("pallets");
+        setWarehouse(palletParts.warehouse);
+        setArea(palletParts.area);
+        setZone(palletParts.zone);
+        setPosition(palletParts.position);
+        setManualCode(value);
+        return;
       }
     }
   }, [value]);
@@ -70,12 +97,17 @@ export default function WarehouseLocationSelector({
   // Update location code when components change
   useEffect(() => {
     if (!manualEntry) {
-      const code = generateLocationCode(warehouse, aisle, rack, level);
+      let code = "";
+      if (areaType === "shelves") {
+        code = generateShelfLocationCode(warehouse, area, aisle, rack, level, bin);
+      } else if (areaType === "pallets") {
+        code = generatePalletLocationCode(warehouse, area, zone, position);
+      }
       onChange(code);
       setManualCode(code);
       setIsValid(true);
     }
-  }, [warehouse, aisle, rack, level, manualEntry, onChange]);
+  }, [warehouse, areaType, area, aisle, rack, level, bin, zone, position, manualEntry, onChange]);
 
   const handleManualCodeChange = (newCode: string) => {
     setManualCode(newCode);
@@ -83,21 +115,39 @@ export default function WarehouseLocationSelector({
     setIsValid(valid);
     
     if (valid) {
-      const parts = parseLocationCode(newCode);
-      if (parts) {
-        setWarehouse(parts.warehouse);
-        setAisle(parts.aisle);
-        setRack(parts.rack);
-        setLevel(parts.level);
+      const shelfParts = parseShelfLocationCode(newCode);
+      if (shelfParts) {
+        setAreaType("shelves");
+        setWarehouse(shelfParts.warehouse);
+        setArea(shelfParts.area);
+        setAisle(shelfParts.aisle);
+        setRack(shelfParts.rack.replace(/^R/, ''));
+        setLevel(shelfParts.level.replace(/^L/, ''));
+        setBin(shelfParts.bin || "B1");
+        onChange(newCode);
+        return;
+      }
+      
+      const palletParts = parsePalletLocationCode(newCode);
+      if (palletParts) {
+        setAreaType("pallets");
+        setWarehouse(palletParts.warehouse);
+        setArea(palletParts.area);
+        setZone(palletParts.zone);
+        setPosition(palletParts.position);
         onChange(newCode);
       }
     }
   };
 
   const warehouseOptions = getWarehouseOptions();
+  const areaOptions = getAreaOptions();
   const aisleOptions = getAisleOptions();
   const rackOptions = getRackOptions();
   const levelOptions = getLevelOptions();
+  const binOptions = getBinOptions();
+  const zoneOptions = getZoneOptions();
+  const positionOptions = getPositionOptions();
 
   const LocationTypeIcon = getLocationTypeIcon(locationType);
 
@@ -145,6 +195,44 @@ export default function WarehouseLocationSelector({
         </div>
       )}
 
+      {/* Area Type Selector (Shelves/Pallets/Office) */}
+      <div>
+        <Label htmlFor="area-type">Storage Type</Label>
+        <Select
+          value={areaType}
+          onValueChange={(value) => setAreaType(value as AreaType)}
+          disabled={disabled}
+        >
+          <SelectTrigger
+            id="area-type"
+            data-testid="select-area-type"
+            className="w-full"
+          >
+            <SelectValue placeholder="Select storage type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="shelves" data-testid="option-shelves">
+              <div className="flex items-center space-x-2">
+                <Package className="h-4 w-4" />
+                <span>Shelves</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="pallets" data-testid="option-pallets">
+              <div className="flex items-center space-x-2">
+                <Layers className="h-4 w-4" />
+                <span>Pallets</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="office" data-testid="option-office">
+              <div className="flex items-center space-x-2">
+                <MapPin className="h-4 w-4" />
+                <span>Office</span>
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Location Code Builder */}
       <Card className="p-4">
         <div className="space-y-4">
@@ -173,7 +261,7 @@ export default function WarehouseLocationSelector({
                 type="text"
                 value={manualCode}
                 onChange={(e) => handleManualCodeChange(e.target.value.toUpperCase())}
-                placeholder="WH1-A01-R02-L03"
+                placeholder={areaType === "pallets" ? "WH1-B-B03-P05" : "WH1-A-A06-R04-L04-B2"}
                 disabled={disabled}
                 data-testid="input-manual-code"
                 className={!isValid && manualCode ? "border-red-500" : ""}
@@ -188,130 +276,312 @@ export default function WarehouseLocationSelector({
                   ) : (
                     <>
                       <AlertCircle className="h-4 w-4 text-red-600" />
-                      <span className="text-red-600">Invalid format. Use: WH1-A01-R02-L03</span>
+                      <span className="text-red-600">
+                        Invalid format. Use: {areaType === "pallets" ? "WH1-B-B03-P05" : "WH1-A-A06-R04-L04-B2"}
+                      </span>
                     </>
                   )
                 )}
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {/* Warehouse Selector */}
-              <div>
-                <Label htmlFor="warehouse" className="text-xs">Warehouse</Label>
-                <Select
-                  value={warehouse}
-                  onValueChange={setWarehouse}
-                  disabled={disabled}
-                >
-                  <SelectTrigger
-                    id="warehouse"
-                    data-testid="select-warehouse"
-                    className="h-9"
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {warehouseOptions.map((opt) => (
-                      <SelectItem
-                        key={opt.value}
-                        value={opt.value}
-                        data-testid={`option-${opt.value}`}
+            <>
+              {areaType === "shelves" ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {/* Warehouse Selector */}
+                  <div>
+                    <Label htmlFor="warehouse" className="text-xs">Warehouse</Label>
+                    <Select
+                      value={warehouse}
+                      onValueChange={setWarehouse}
+                      disabled={disabled}
+                    >
+                      <SelectTrigger
+                        id="warehouse"
+                        data-testid="select-warehouse"
+                        className="h-9"
                       >
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {warehouseOptions.map((opt) => (
+                          <SelectItem
+                            key={opt.value}
+                            value={opt.value}
+                            data-testid={`option-${opt.value}`}
+                          >
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              {/* Aisle Selector */}
-              <div>
-                <Label htmlFor="aisle" className="text-xs">Aisle</Label>
-                <Select
-                  value={aisle}
-                  onValueChange={setAisle}
-                  disabled={disabled}
-                >
-                  <SelectTrigger
-                    id="aisle"
-                    data-testid="select-aisle"
-                    className="h-9"
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {aisleOptions.slice(0, 20).map((opt) => (
-                      <SelectItem
-                        key={opt.value}
-                        value={opt.value}
-                        data-testid={`option-${opt.value}`}
+                  {/* Area Selector */}
+                  <div>
+                    <Label htmlFor="area" className="text-xs">Area</Label>
+                    <Select
+                      value={area}
+                      onValueChange={setArea}
+                      disabled={disabled}
+                    >
+                      <SelectTrigger
+                        id="area"
+                        data-testid="select-area"
+                        className="h-9"
                       >
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {areaOptions.map((opt) => (
+                          <SelectItem
+                            key={opt.value}
+                            value={opt.value}
+                            data-testid={`option-area-${opt.value}`}
+                          >
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              {/* Rack Selector */}
-              <div>
-                <Label htmlFor="rack" className="text-xs">Rack</Label>
-                <Select
-                  value={rack}
-                  onValueChange={setRack}
-                  disabled={disabled}
-                >
-                  <SelectTrigger
-                    id="rack"
-                    data-testid="select-rack"
-                    className="h-9"
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {rackOptions.map((opt) => (
-                      <SelectItem
-                        key={opt.value}
-                        value={opt.value}
-                        data-testid={`option-${opt.value}`}
+                  {/* Aisle Selector */}
+                  <div>
+                    <Label htmlFor="aisle" className="text-xs">Aisle</Label>
+                    <Select
+                      value={aisle}
+                      onValueChange={setAisle}
+                      disabled={disabled}
+                    >
+                      <SelectTrigger
+                        id="aisle"
+                        data-testid="select-aisle"
+                        className="h-9"
                       >
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {aisleOptions.slice(0, 30).map((opt) => (
+                          <SelectItem
+                            key={opt.value}
+                            value={opt.value}
+                            data-testid={`option-${opt.value}`}
+                          >
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              {/* Level Selector */}
-              <div>
-                <Label htmlFor="level" className="text-xs">Level</Label>
-                <Select
-                  value={level}
-                  onValueChange={setLevel}
-                  disabled={disabled}
-                >
-                  <SelectTrigger
-                    id="level"
-                    data-testid="select-level"
-                    className="h-9"
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {levelOptions.map((opt) => (
-                      <SelectItem
-                        key={opt.value}
-                        value={opt.value}
-                        data-testid={`option-${opt.value}`}
+                  {/* Row Selector */}
+                  <div>
+                    <Label htmlFor="rack" className="text-xs">Row</Label>
+                    <Select
+                      value={rack}
+                      onValueChange={setRack}
+                      disabled={disabled}
+                    >
+                      <SelectTrigger
+                        id="rack"
+                        data-testid="select-rack"
+                        className="h-9"
                       >
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {rackOptions.map((opt) => (
+                          <SelectItem
+                            key={opt.value}
+                            value={opt.value.replace(/^R/, '')}
+                            data-testid={`option-${opt.value}`}
+                          >
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Level Selector */}
+                  <div>
+                    <Label htmlFor="level" className="text-xs">Level</Label>
+                    <Select
+                      value={level}
+                      onValueChange={setLevel}
+                      disabled={disabled}
+                    >
+                      <SelectTrigger
+                        id="level"
+                        data-testid="select-level"
+                        className="h-9"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {levelOptions.map((opt) => (
+                          <SelectItem
+                            key={opt.value}
+                            value={opt.value.replace(/^L/, '')}
+                            data-testid={`option-${opt.value}`}
+                          >
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Bin Selector */}
+                  <div>
+                    <Label htmlFor="bin" className="text-xs">Bin</Label>
+                    <Select
+                      value={bin}
+                      onValueChange={setBin}
+                      disabled={disabled}
+                    >
+                      <SelectTrigger
+                        id="bin"
+                        data-testid="select-bin"
+                        className="h-9"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {binOptions.map((opt) => (
+                          <SelectItem
+                            key={opt.value}
+                            value={opt.value}
+                            data-testid={`option-${opt.value}`}
+                          >
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {/* Warehouse Selector */}
+                  <div>
+                    <Label htmlFor="warehouse" className="text-xs">Warehouse</Label>
+                    <Select
+                      value={warehouse}
+                      onValueChange={setWarehouse}
+                      disabled={disabled}
+                    >
+                      <SelectTrigger
+                        id="warehouse"
+                        data-testid="select-warehouse"
+                        className="h-9"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {warehouseOptions.map((opt) => (
+                          <SelectItem
+                            key={opt.value}
+                            value={opt.value}
+                            data-testid={`option-${opt.value}`}
+                          >
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Area Selector */}
+                  <div>
+                    <Label htmlFor="area" className="text-xs">Area</Label>
+                    <Select
+                      value={area}
+                      onValueChange={setArea}
+                      disabled={disabled}
+                    >
+                      <SelectTrigger
+                        id="area"
+                        data-testid="select-area"
+                        className="h-9"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {areaOptions.map((opt) => (
+                          <SelectItem
+                            key={opt.value}
+                            value={opt.value}
+                            data-testid={`option-area-${opt.value}`}
+                          >
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Zone Selector */}
+                  <div>
+                    <Label htmlFor="zone" className="text-xs">Zone</Label>
+                    <Select
+                      value={zone}
+                      onValueChange={setZone}
+                      disabled={disabled}
+                    >
+                      <SelectTrigger
+                        id="zone"
+                        data-testid="select-zone"
+                        className="h-9"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {zoneOptions.slice(0, 40).map((opt) => (
+                          <SelectItem
+                            key={opt.value}
+                            value={opt.value}
+                            data-testid={`option-${opt.value}`}
+                          >
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Position Selector */}
+                  <div>
+                    <Label htmlFor="position" className="text-xs">Position</Label>
+                    <Select
+                      value={position}
+                      onValueChange={setPosition}
+                      disabled={disabled}
+                    >
+                      <SelectTrigger
+                        id="position"
+                        data-testid="select-position"
+                        className="h-9"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {positionOptions.map((opt) => (
+                          <SelectItem
+                            key={opt.value}
+                            value={opt.value}
+                            data-testid={`option-${opt.value}`}
+                          >
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {/* Location Code Preview */}
@@ -321,7 +591,9 @@ export default function WarehouseLocationSelector({
                 <p className="text-xs text-slate-600">Generated Location Code</p>
                 <div className="flex items-center space-x-3">
                   <code className="text-lg font-mono font-semibold" data-testid="text-location-code">
-                    {generateLocationCode(warehouse, aisle, rack, level)}
+                    {manualCode || (areaType === "pallets" 
+                      ? generatePalletLocationCode(warehouse, area, zone, position)
+                      : generateShelfLocationCode(warehouse, area, aisle, rack, level, bin))}
                   </code>
                   <Badge
                     variant="outline"
