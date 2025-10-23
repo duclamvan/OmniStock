@@ -3856,8 +3856,22 @@ export default function ContinueReceiving() {
                             style={{ width: `${verificationRate}%` }}
                           />
                         </div>
-                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                          {Math.round(verificationRate)}% verified
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-medium text-gray-500 dark:text-gray-400">
+                            {Math.round(verificationRate)}% verified
+                          </span>
+                          {verificationRate === 100 && hasIssues && (
+                            <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-medium">
+                              <AlertTriangle className="h-3 w-3" />
+                              {stats.completeNoIssues} perfect, {stats.verifiedItems - stats.completeNoIssues} with issues
+                            </span>
+                          )}
+                          {verificationRate === 100 && !hasIssues && (
+                            <span className="flex items-center gap-1 text-green-600 dark:text-green-400 font-medium">
+                              <CheckCircle2 className="h-3 w-3" />
+                              All perfect
+                            </span>
+                          )}
                         </div>
                       </div>
 
