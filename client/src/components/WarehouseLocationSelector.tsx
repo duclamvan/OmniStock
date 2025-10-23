@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, memo } from "react";
+import { useState, useEffect, useMemo, memo, useCallback } from "react";
 import {
   Select,
   SelectContent,
@@ -203,6 +203,43 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
     }
   };
 
+  // Memoized handlers to prevent unnecessary re-renders and freezing
+  const handleAreaTypeChange = useCallback((value: string) => {
+    setAreaType(value as AreaType);
+  }, []);
+
+  const handleToggleManualEntry = useCallback(() => {
+    setManualEntry(prev => !prev);
+  }, []);
+
+  const handleWarehouseChange = useCallback((value: string) => {
+    setWarehouse(value);
+  }, []);
+
+  const handleAisleChange = useCallback((value: string) => {
+    setAisle(value);
+  }, []);
+
+  const handleRackChange = useCallback((value: string) => {
+    setRack(value);
+  }, []);
+
+  const handleLevelChange = useCallback((value: string) => {
+    setLevel(value);
+  }, []);
+
+  const handleBinChange = useCallback((value: string) => {
+    setBin(value);
+  }, []);
+
+  const handleZoneChange = useCallback((value: string) => {
+    setZone(value);
+  }, []);
+
+  const handlePositionChange = useCallback((value: string) => {
+    setPosition(value);
+  }, []);
+
   const warehouseOptions = useMemo(() => getWarehouseOptions(), []);
   const aisleOptions = useMemo(() => getAisleOptions(), []);
   const rackOptions = useMemo(() => getRackOptions(), []);
@@ -250,7 +287,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
         <Label htmlFor="area-type" className="text-xs">Storage Type</Label>
         <Select
           value={areaType}
-          onValueChange={(value) => setAreaType(value as AreaType)}
+          onValueChange={handleAreaTypeChange}
           disabled={disabled}
         >
           <SelectTrigger
@@ -295,7 +332,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setManualEntry(!manualEntry)}
+              onClick={handleToggleManualEntry}
               disabled={disabled}
               data-testid="button-toggle-manual"
               className="h-7 text-xs"
@@ -344,7 +381,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                     <Label htmlFor="warehouse" className="text-xs">Warehouse</Label>
                     <Select
                       value={warehouse}
-                      onValueChange={setWarehouse}
+                      onValueChange={handleWarehouseChange}
                       disabled={disabled}
                     >
                       <SelectTrigger
@@ -373,7 +410,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                     <Label htmlFor="aisle" className="text-xs">Aisle</Label>
                     <Select
                       value={aisle}
-                      onValueChange={setAisle}
+                      onValueChange={handleAisleChange}
                       disabled={disabled}
                     >
                       <SelectTrigger
@@ -402,7 +439,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                     <Label htmlFor="rack" className="text-xs">Row</Label>
                     <Select
                       value={rack}
-                      onValueChange={setRack}
+                      onValueChange={handleRackChange}
                       disabled={disabled}
                     >
                       <SelectTrigger
@@ -431,7 +468,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                     <Label htmlFor="level" className="text-xs">Level</Label>
                     <Select
                       value={level}
-                      onValueChange={setLevel}
+                      onValueChange={handleLevelChange}
                       disabled={disabled}
                     >
                       <SelectTrigger
@@ -460,7 +497,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                     <Label htmlFor="bin" className="text-xs">Bin</Label>
                     <Select
                       value={bin}
-                      onValueChange={setBin}
+                      onValueChange={handleBinChange}
                       disabled={disabled}
                     >
                       <SelectTrigger
@@ -491,7 +528,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                     <Label htmlFor="warehouse" className="text-xs">Warehouse</Label>
                     <Select
                       value={warehouse}
-                      onValueChange={setWarehouse}
+                      onValueChange={handleWarehouseChange}
                       disabled={disabled}
                     >
                       <SelectTrigger
@@ -520,7 +557,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                     <Label htmlFor="zone" className="text-xs">Zone</Label>
                     <Select
                       value={zone}
-                      onValueChange={setZone}
+                      onValueChange={handleZoneChange}
                       disabled={disabled}
                     >
                       <SelectTrigger
@@ -549,7 +586,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                     <Label htmlFor="position" className="text-xs">Position</Label>
                     <Select
                       value={position}
-                      onValueChange={setPosition}
+                      onValueChange={handlePositionChange}
                       disabled={disabled}
                     >
                       <SelectTrigger
