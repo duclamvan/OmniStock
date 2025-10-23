@@ -1291,7 +1291,7 @@ export default function ItemsToStore() {
                                 variant="outline"
                                 className="h-6 w-6 p-0"
                                 onClick={() => {
-                                  const newQty = Math.max(1, loc.quantity - 10);
+                                  const newQty = Math.max(1, loc.quantity - 1);
                                   setSessionsLocations(prev => 
                                     prev.map((l, i) => i === idx ? { ...l, quantity: newQty } : l)
                                   );
@@ -1321,7 +1321,7 @@ export default function ItemsToStore() {
                                 variant="outline"
                                 className="h-6 w-6 p-0"
                                 onClick={() => {
-                                  const newQty = Math.min(maxQuantity, loc.quantity + 10);
+                                  const newQty = Math.min(maxQuantity, loc.quantity + 1);
                                   setSessionsLocations(prev => 
                                     prev.map((l, i) => i === idx ? { ...l, quantity: newQty } : l)
                                   );
