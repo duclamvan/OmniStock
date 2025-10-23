@@ -44,7 +44,10 @@ import {
   PackageCheck,
   Boxes,
   Eye,
-  ArrowRight
+  ArrowRight,
+  Plane,
+  Train,
+  Zap
 } from "lucide-react";
 import { ScanFeedback } from "@/components/ScanFeedback";
 import WarehouseLocationSelector from "@/components/WarehouseLocationSelector";
@@ -103,6 +106,44 @@ function getSuggestedLocation(item: StorageItem): string | null {
   }
   return null;
 }
+
+// Helper function to get shipment type icon
+const getShipmentTypeIcon = (shipmentType: string, className = "h-3.5 w-3.5") => {
+  const isSensitive = shipmentType?.includes('sensitive');
+
+  if (shipmentType?.includes('express')) {
+    const iconColor = isSensitive ? 'text-orange-500' : 'text-red-500';
+    return <Zap className={`${className} ${iconColor}`} />;
+  } else if (shipmentType?.includes('air')) {
+    const iconColor = isSensitive ? 'text-blue-600' : 'text-blue-500';
+    return <Plane className={`${className} ${iconColor}`} />;
+  } else if (shipmentType?.includes('railway') || shipmentType?.includes('rail')) {
+    const iconColor = isSensitive ? 'text-purple-600' : 'text-purple-500';
+    return <Train className={`${className} ${iconColor}`} />;
+  } else if (shipmentType?.includes('sea')) {
+    const iconColor = isSensitive ? 'text-indigo-600' : 'text-teal-500';
+    return <Ship className={`${className} ${iconColor}`} />;
+  }
+  return <Package className={`${className} text-muted-foreground`} />;
+};
+
+// Helper function to format shipment type
+const formatShipmentType = (shipmentType: string) => {
+  if (!shipmentType) return '';
+
+  const isSensitive = shipmentType.includes('sensitive');
+  const baseType = shipmentType.replace('_sensitive', '_general');
+
+  const typeMap: { [key: string]: string } = {
+    'air_ddp_general': 'Air DDP',
+    'express_general': 'Express',
+    'railway_general': 'Railway',
+    'sea_general': 'Sea Freight'
+  };
+
+  const label = typeMap[baseType] || shipmentType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  return isSensitive ? `${label} (S)` : label;
+};
 
 // Generate suggested location for new items based on product characteristics
 function generateSuggestedLocation(item: StorageItem): string {
@@ -795,42 +836,84 @@ export default function ItemsToStore() {
         </div>
       </div>
 
-      {/* Receipt Selector - Horizontal Scroll */}
+      {/* Receipt Selector - Horizontal Scroll with Comprehensive Shipping Info */}
       {storageData.receipts.length > 1 && (
         <div className="bg-white border-b">
-          <div className="px-4 py-3 overflow-x-auto">
-            <div className="flex gap-2">
-              {storageData.receipts.map((receiptData: ReceiptWithItems) => {
-                const receiptItems = items.filter(item => item.receiptId === receiptData.receipt.id);
-                const assignedCount = receiptItems.filter(item => item.newLocations.length > 0).length;
+          <div className="px-4 py-3">
+            <p className="text-xs font-medium text-muted-foreground mb-2">Select Shipment to Work On</p>
+            <div className="overflow-x-auto -mx-4 px-4">
+              <div className="flex gap-3">
+                {storageData.receipts.map((receiptData: ReceiptWithItems) => {
+                  const receiptItems = items.filter(item => item.receiptId === receiptData.receipt.id);
+                  const assignedCount = receiptItems.filter(item => item.newLocations.length > 0).length;
+                  const completionPercent = (assignedCount / receiptItems.length) * 100;
 
-                return (
-                  <button
-                    key={receiptData.receipt.id}
-                    onClick={() => {
-                      setSelectedReceipt(receiptData.receipt.id);
-                      setSelectedItemIndex(0);
-                    }}
-                    className={`flex-shrink-0 p-3 rounded-lg border transition-all min-w-[140px] ${
-                      selectedReceipt === receiptData.receipt.id
-                        ? 'border-primary bg-primary/5 shadow-sm'
-                        : 'border-gray-200'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <Ship className="h-4 w-4 text-blue-500" />
-                      <span className="text-xs font-medium truncate">
-                        {receiptData.shipment?.trackingNumber?.slice(-8) || `#${receiptData.receipt.id}`}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Package className="h-3 w-3" />
-                      <span>{assignedCount}/{receiptItems.length}</span>
-                    </div>
-                    <Progress value={(assignedCount / receiptItems.length) * 100} className="h-1 mt-2" />
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      key={receiptData.receipt.id}
+                      onClick={() => {
+                        setSelectedReceipt(receiptData.receipt.id);
+                        setSelectedItemIndex(0);
+                      }}
+                      className={`flex-shrink-0 p-3 rounded-xl border-2 transition-all min-w-[240px] text-left ${
+                        selectedReceipt === receiptData.receipt.id
+                          ? 'border-primary bg-primary/10 shadow-md'
+                          : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                      }`}
+                    >
+                      {/* Shipment Type & Carrier */}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          {receiptData.shipment?.shipmentType && getShipmentTypeIcon(receiptData.shipment.shipmentType)}
+                          <span className="text-xs font-semibold">
+                            {receiptData.shipment?.carrier || 'Unknown Carrier'}
+                          </span>
+                        </div>
+                        {completionPercent === 100 && (
+                          <Badge className="bg-green-500 text-white text-[10px] h-5">
+                            <Check className="h-3 w-3 mr-0.5" />
+                            Done
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Tracking Number */}
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <Hash className="h-3 w-3 text-muted-foreground shrink-0" />
+                        <span className="text-xs font-mono font-medium truncate">
+                          {receiptData.shipment?.trackingNumber || `Receipt #${receiptData.receipt.id}`}
+                        </span>
+                      </div>
+
+                      {/* Route (Origin → Destination) */}
+                      {(receiptData.shipment?.origin || receiptData.shipment?.destination) && (
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
+                          <span className="text-[11px] text-muted-foreground truncate">
+                            {receiptData.shipment?.origin?.split(',')[0] || '?'} → {receiptData.shipment?.destination?.split(',')[0] || '?'}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Items Progress */}
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <Package className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground">
+                            {assignedCount}/{receiptItems.length} items
+                          </span>
+                        </div>
+                        <span className="text-xs font-medium text-primary">
+                          {Math.round(completionPercent)}%
+                        </span>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <Progress value={completionPercent} className="h-1.5" />
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
