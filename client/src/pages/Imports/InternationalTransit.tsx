@@ -1548,57 +1548,58 @@ export default function InternationalTransit() {
                   <Card 
                     key={shipment.id} 
                     id={`shipment-${shipment.id}`}
-                    className={`border-l-4 hover:shadow-md transition-all duration-300 cursor-pointer ${getShipmentTypeColor(shipment.shipmentType || '')}`}
+                    className="hover:shadow-md transition-all duration-300 cursor-pointer border"
                     onClick={() => setViewShipmentDetails(shipment)}
                   >
-                    <CardContent className="p-5">
-                      {/* Header Section */}
-                      <div className="flex items-start justify-between gap-4 mb-4">
-                        {/* Left: Icon + Title Info */}
-                        <div className="flex items-start gap-3 flex-1 min-w-0">
-                          <div className="mt-0.5">
-                            {getShipmentTypeIcon(shipment.shipmentType || shipment.carrier || shipment.shippingMethod || '')}
+                    <CardContent className="p-4">
+                      {/* Compact Header Row */}
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        {/* Left: Type Icon + Name + Metadata */}
+                        <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                          <div className="shrink-0 mt-0.5">
+                            {getShipmentTypeIcon(shipment.shipmentType || shipment.carrier || shipment.shippingMethod || '', 'h-6 w-6')}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-base mb-1.5" data-testid={`shipment-tracking-${shipment.id}`}>
-                              {shipment.shipmentName || shipment.trackingNumber || `Shipment #${shipment.id}`}
+                            {/* Title + Type Badge */}
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-bold text-lg truncate" data-testid={`shipment-tracking-${shipment.id}`}>
+                                {shipment.shipmentName || shipment.trackingNumber || `Shipment #${shipment.id}`}
+                              </h3>
+                              {shipment.shipmentType && (() => {
+                                const typeInfo = formatShipmentType(shipment.shipmentType);
+                                return typeInfo.badge && (
+                                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-950 dark:border-amber-700 dark:text-amber-300 shrink-0">
+                                    {typeInfo.badge}
+                                  </Badge>
+                                );
+                              })()}
+                            </div>
+                            
+                            {/* Compact Metadata Row */}
+                            <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
+                              {shipment.shipmentType && (() => {
+                                const typeInfo = formatShipmentType(shipment.shipmentType);
+                                return <span className="font-semibold">{typeInfo.label}</span>;
+                              })()}
                               {shipment.totalUnits && shipment.unitType && (
-                                <span className="font-normal text-muted-foreground text-sm ml-2">
-                                  ({shipment.totalUnits} {shipment.unitType})
-                                </span>
+                                <>
+                                  <span>•</span>
+                                  <span>{shipment.totalUnits} {shipment.unitType}</span>
+                                </>
                               )}
-                            </h3>
-                            
-                            {/* Type and Badge */}
-                            {shipment.shipmentType && (() => {
-                              const typeInfo = formatShipmentType(shipment.shipmentType);
-                              return (
-                                <div className="flex items-center gap-2 mb-1.5">
-                                  <p className="text-sm text-muted-foreground font-medium">
-                                    {typeInfo.label}
-                                  </p>
-                                  {typeInfo.badge && (
-                                    <Badge variant="outline" className="text-xs bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-950 dark:border-amber-700 dark:text-amber-300">
-                                      {typeInfo.badge}
-                                    </Badge>
-                                  )}
-                                </div>
-                              );
-                            })()}
-                            
-                            {/* Weight, Cost, Carrier */}
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                               {shipment.totalWeight && (
-                                <span className="flex items-center gap-1">
-                                  <Package className="h-3 w-3" />
-                                  {shipment.totalWeight}kg
-                                </span>
+                                <>
+                                  <span>•</span>
+                                  <span>{shipment.totalWeight}kg</span>
+                                </>
                               )}
                               {shipment.shippingCost && (
-                                <span className="font-medium">
-                                  {shipment.shippingCostCurrency || 'USD'} {shipment.shippingCost}
-                                </span>
+                                <>
+                                  <span>•</span>
+                                  <span className="font-semibold">{shipment.shippingCostCurrency || 'USD'} {shipment.shippingCost}</span>
+                                </>
                               )}
+                              <span>•</span>
                               <span>{shipment.endCarrier || shipment.carrier || 'Standard Carrier'}</span>
                             </div>
                           </div>

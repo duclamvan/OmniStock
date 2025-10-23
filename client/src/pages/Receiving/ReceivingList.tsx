@@ -541,23 +541,6 @@ export default function ReceivingList() {
     }
   }, [activeTab]);
 
-  // Auto-expand all shipments by default - strictly!
-  useEffect(() => {
-    const allShipmentIds = new Set<number>();
-    
-    // Collect all shipment IDs from all tabs
-    [...toReceiveShipments, ...receivingShipments, ...storageShipments, ...completedShipments, ...archivedShipments].forEach((shipment: any) => {
-      if (shipment?.id) {
-        allShipmentIds.add(shipment.id);
-      }
-    });
-    
-    // Only update if there are shipments and the set is different
-    if (allShipmentIds.size > 0) {
-      setExpandedShipments(allShipmentIds);
-    }
-  }, [toReceiveShipments, receivingShipments, storageShipments, completedShipments, archivedShipments]);
-
   // Move back confirmation dialog state
   const [showMoveBackDialog, setShowMoveBackDialog] = useState(false);
   const [shipmentToMoveBack, setShipmentToMoveBack] = useState<number | null>(null);
@@ -1119,12 +1102,8 @@ export default function ReceivingList() {
     }
   }, [barcodeScan, handleBarcodeInput]);
 
-  // Auto-expand all shipments on first load (unless localStorage has saved state)
+  // Auto-expand all shipments by default - strictly!
   useEffect(() => {
-    // Only auto-expand if there's no saved state in localStorage
-    const hasSavedState = localStorage.getItem(EXPANDED_SHIPMENTS_KEY);
-    if (hasSavedState) return; // User has custom expansion preferences
-    
     // Collect all shipment IDs from all tabs
     const allShipmentIds = new Set<number>();
     
