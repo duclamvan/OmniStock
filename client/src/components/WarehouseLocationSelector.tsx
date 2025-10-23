@@ -209,11 +209,11 @@ export default function WarehouseLocationSelector({
   const LocationTypeIcon = getLocationTypeIcon(locationType);
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`space-y-2 ${className}`}>
       {/* Location Type Selector */}
       {showTypeSelector && onLocationTypeChange && (
-        <div>
-          <Label htmlFor="location-type">Location Type</Label>
+        <div className="space-y-1">
+          <Label htmlFor="location-type" className="text-xs">Location Type</Label>
           <Select
             value={locationType}
             onValueChange={(value) => onLocationTypeChange(value as LocationType)}
@@ -222,39 +222,23 @@ export default function WarehouseLocationSelector({
             <SelectTrigger
               id="location-type"
               data-testid="select-location-type"
-              className="w-full"
+              className="w-full h-8"
             >
               <SelectValue placeholder="Select location type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="display" data-testid="option-display">
-                <div className="flex items-center space-x-2">
-                  <span>Display Area</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="warehouse" data-testid="option-warehouse">
-                <div className="flex items-center space-x-2">
-                  <span>Warehouse</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="pallet" data-testid="option-pallet">
-                <div className="flex items-center space-x-2">
-                  <span>Pallet Storage</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="other" data-testid="option-other">
-                <div className="flex items-center space-x-2">
-                  <span>Other Location</span>
-                </div>
-              </SelectItem>
+              <SelectItem value="display" data-testid="option-display">Display Area</SelectItem>
+              <SelectItem value="warehouse" data-testid="option-warehouse">Warehouse</SelectItem>
+              <SelectItem value="pallet" data-testid="option-pallet">Pallet Storage</SelectItem>
+              <SelectItem value="other" data-testid="option-other">Other Location</SelectItem>
             </SelectContent>
           </Select>
         </div>
       )}
 
       {/* Area Type Selector (Shelves/Pallets/Office) */}
-      <div>
-        <Label htmlFor="area-type">Storage Type</Label>
+      <div className="space-y-1">
+        <Label htmlFor="area-type" className="text-xs">Storage Type</Label>
         <Select
           value={areaType}
           onValueChange={(value) => setAreaType(value as AreaType)}
@@ -263,26 +247,26 @@ export default function WarehouseLocationSelector({
           <SelectTrigger
             id="area-type"
             data-testid="select-area-type"
-            className="w-full"
+            className="w-full h-8"
           >
             <SelectValue placeholder="Select storage type" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="shelves" data-testid="option-shelves">
-              <div className="flex items-center space-x-2">
-                <Package className="h-4 w-4" />
+              <div className="flex items-center gap-1.5">
+                <Package className="h-3.5 w-3.5" />
                 <span>Shelves</span>
               </div>
             </SelectItem>
             <SelectItem value="pallets" data-testid="option-pallets">
-              <div className="flex items-center space-x-2">
-                <Layers className="h-4 w-4" />
+              <div className="flex items-center gap-1.5">
+                <Layers className="h-3.5 w-3.5" />
                 <span>Pallets</span>
               </div>
             </SelectItem>
             <SelectItem value="office" data-testid="option-office">
-              <div className="flex items-center space-x-2">
-                <MapPin className="h-4 w-4" />
+              <div className="flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5" />
                 <span>Office</span>
               </div>
             </SelectItem>
@@ -291,12 +275,12 @@ export default function WarehouseLocationSelector({
       </div>
 
       {/* Location Code Builder */}
-      <Card className="p-4">
-        <div className="space-y-4">
+      <Card className="p-3">
+        <div className="space-y-2.5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <LocationTypeIcon className="h-4 w-4 text-slate-600" />
-              <Label className="text-base font-medium">Location Code Builder</Label>
+            <div className="flex items-center gap-1.5">
+              <LocationTypeIcon className="h-3.5 w-3.5 text-slate-600" />
+              <Label className="text-sm font-medium">Location Code</Label>
             </div>
             <Button
               type="button"
@@ -305,14 +289,15 @@ export default function WarehouseLocationSelector({
               onClick={() => setManualEntry(!manualEntry)}
               disabled={disabled}
               data-testid="button-toggle-manual"
+              className="h-7 text-xs"
             >
-              {manualEntry ? "Use Builder" : "Manual Entry"}
+              {manualEntry ? "Builder" : "Manual"}
             </Button>
           </div>
 
           {manualEntry ? (
-            <div className="space-y-2">
-              <Label htmlFor="manual-code">Enter Location Code</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="manual-code" className="text-xs">Enter Location Code</Label>
               <Input
                 id="manual-code"
                 type="text"
@@ -321,9 +306,9 @@ export default function WarehouseLocationSelector({
                 placeholder={areaType === "pallets" ? "WH1-B-B03-P05" : "WH1-A-A06-R04-L04-B2"}
                 disabled={disabled}
                 data-testid="input-manual-code"
-                className={!isValid && manualCode ? "border-red-500" : ""}
+                className={`h-8 ${!isValid && manualCode ? "border-red-500" : ""}`}
               />
-              <div className="flex items-center space-x-2 text-sm">
+              <div className="flex items-center gap-1.5 text-xs">
                 {manualCode && (
                   isValid ? (
                     <>
@@ -344,7 +329,7 @@ export default function WarehouseLocationSelector({
           ) : (
             <>
               {areaType === "shelves" ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {/* Warehouse Selector */}
                   <div>
                     <Label htmlFor="warehouse" className="text-xs">Warehouse</Label>
@@ -520,7 +505,7 @@ export default function WarehouseLocationSelector({
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {/* Warehouse Selector */}
                   <div>
                     <Label htmlFor="warehouse" className="text-xs">Warehouse</Label>
@@ -642,26 +627,25 @@ export default function WarehouseLocationSelector({
           )}
 
           {/* Location Code Preview */}
-          <div className="border rounded-md p-3 bg-slate-50">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-xs text-slate-600">Generated Location Code</p>
-                <div className="flex items-center space-x-3">
-                  <code className="text-lg font-mono font-semibold" data-testid="text-location-code">
+          <div className="border rounded-md p-2 bg-slate-50">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <code className="text-base font-mono font-semibold" data-testid="text-location-code">
                     {manualCode || (isOldFormat && oldFormatCode) || (areaType === "pallets" 
                       ? generatePalletLocationCode(warehouse, area, zone, position)
                       : generateShelfLocationCode(warehouse, area, aisle, rack, level, bin))}
                   </code>
                   <Badge
                     variant="outline"
-                    className={getLocationTypeTextColor(locationType)}
+                    className={`h-5 text-xs ${getLocationTypeTextColor(locationType)}`}
                     data-testid="badge-location-type"
                   >
                     {getLocationTypeLabel(locationType)}
                   </Badge>
                 </div>
               </div>
-              <MapPin className="h-5 w-5 text-slate-400" />
+              <MapPin className="h-4 w-4 text-slate-400 flex-shrink-0" />
             </div>
           </div>
         </div>
