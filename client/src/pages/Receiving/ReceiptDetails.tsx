@@ -493,78 +493,76 @@ export default function ReceiptDetails() {
   const hasMissingItems = receipt.items?.some((item: ReceiptItem) => item.missingQuantity > 0);
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
+    <div className="container mx-auto p-3 md:p-4">
+      {/* Compact Header */}
+      <div className="mb-3">
         <Link href="/receiving">
-          <Button variant="ghost" size="sm" className="mb-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
+          <Button variant="ghost" size="sm" className="mb-2 h-8">
+            <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
             Back to Receiving
           </Button>
         </Link>
-        <div className="flex items-center justify-between">
+        
+        {/* Title Row */}
+        <div className="flex items-center justify-between mb-3">
           <div>
-            <h1 className="text-3xl font-bold mb-2">
+            <h1 className="text-xl md:text-2xl font-bold">
               {receipt.isArchivedView ? `Archived Shipment #${receipt.id}` : `Receipt #${receipt.id}`}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {receipt.isArchivedView ? 'View archived shipment details' : 'Verify and process received items'}
             </p>
           </div>
-          <Badge className={`${getStatusColor(receipt.status)} text-lg px-3 py-1`}>
+          <Badge className={`${getStatusColor(receipt.status)} px-2.5 py-0.5 text-sm`}>
             {receipt.status?.replace(/_/g, ' ').toUpperCase()}
           </Badge>
         </div>
-      </div>
 
-      {/* Receipt Info */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Receipt Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Compact Info Bar */}
+        <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-950 border rounded-lg p-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-xs">
             <div>
-              <p className="text-sm text-muted-foreground">Received By</p>
-              <p className="font-medium flex items-center gap-2">
-                <User className="h-4 w-4" />
+              <p className="text-muted-foreground mb-0.5">Received By</p>
+              <p className="font-medium flex items-center gap-1">
+                <User className="h-3 w-3" />
                 {receipt.receivedBy}
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Received At</p>
-              <p className="font-medium flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
+              <p className="text-muted-foreground mb-0.5">Received At</p>
+              <p className="font-medium flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
                 {format(new Date(receipt.receivedAt), 'MMM dd, yyyy HH:mm')}
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Parcels</p>
-              <p className="font-medium flex items-center gap-2">
-                <Package className="h-4 w-4" />
+              <p className="text-muted-foreground mb-0.5">Parcels</p>
+              <p className="font-medium flex items-center gap-1">
+                <Package className="h-3 w-3" />
                 {receipt.parcelCount} parcels
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Carrier</p>
-              <p className="font-medium flex items-center gap-2">
-                <Truck className="h-4 w-4" />
+              <p className="text-muted-foreground mb-0.5">Carrier</p>
+              <p className="font-medium flex items-center gap-1">
+                <Truck className="h-3 w-3" />
                 {receipt.carrier}
               </p>
             </div>
             {receipt.verifiedBy && (
               <div>
-                <p className="text-sm text-muted-foreground">Verified By</p>
-                <p className="font-medium flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
+                <p className="text-muted-foreground mb-0.5">Verified By</p>
+                <p className="font-medium flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3 text-green-600" />
                   {receipt.verifiedBy}
                 </p>
               </div>
             )}
             {receipt.approvedBy && (
               <div>
-                <p className="text-sm text-muted-foreground">Approved By</p>
-                <p className="font-medium flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
+                <p className="text-muted-foreground mb-0.5">Approved By</p>
+                <p className="font-medium flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3 text-green-600" />
                   {receipt.approvedBy}
                 </p>
               </div>
@@ -572,12 +570,11 @@ export default function ReceiptDetails() {
           </div>
 
           {receipt.trackingNumbers?.length > 0 && (
-            <div className="mt-4">
-              <p className="text-sm text-muted-foreground mb-2">Tracking Numbers</p>
-              <div className="flex flex-wrap gap-2">
+            <div className="mt-2 pt-2 border-t">
+              <div className="flex flex-wrap gap-1.5">
                 {receipt.trackingNumbers.map((tn: string, index: number) => (
-                  <Badge key={index} variant="secondary">
-                    <Hash className="h-3 w-3 mr-1" />
+                  <Badge key={index} variant="secondary" className="text-xs px-1.5 py-0">
+                    <Hash className="h-2.5 w-2.5 mr-0.5" />
                     {tn}
                   </Badge>
                 ))}
@@ -586,342 +583,326 @@ export default function ReceiptDetails() {
           )}
 
           {receipt.notes && (
-            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900 rounded">
-              <p className="text-sm text-muted-foreground mb-1">Initial Notes</p>
-              <p className="text-sm">{receipt.notes}</p>
+            <div className="mt-2 pt-2 border-t">
+              <p className="text-[10px] text-muted-foreground mb-0.5">Notes</p>
+              <p className="text-xs">{receipt.notes}</p>
             </div>
           )}
 
           {receipt.damageNotes && (
-            <div className="mt-4 p-3 bg-red-50 dark:bg-red-950 rounded">
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
+            <div className="mt-2 pt-2 border-t border-red-200 dark:border-red-900">
+              <div className="flex items-start gap-1.5">
+                <AlertTriangle className="h-3 w-3 text-red-600 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-red-800 dark:text-red-200 mb-1">Damage Report</p>
-                  <p className="text-sm text-red-700 dark:text-red-300">{receipt.damageNotes}</p>
+                  <p className="text-[10px] font-medium text-red-800 dark:text-red-200 mb-0.5">Damage Report</p>
+                  <p className="text-xs text-red-700 dark:text-red-300">{receipt.damageNotes}</p>
                 </div>
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Photos Section */}
+      {/* Photos Section - Compact */}
       {receipt.photos && receipt.photos.length > 0 && (
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Camera className="h-5 w-5" />
-                  Photos ({receipt.photos.length})
-                </CardTitle>
-                <CardDescription>
-                  Photos uploaded during receiving process
-                </CardDescription>
-              </div>
-              <Button 
-                onClick={downloadAllPhotos}
-                variant="outline" 
-                size="sm"
-                className="flex items-center gap-2"
-                data-testid="button-download-all-photos"
-              >
-                <Download className="h-4 w-4" />
-                Download All
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 md:gap-4">
-              {receipt.photos.map((photo: any, index: number) => {
-                // Handle both string format (base64 data URL) and object format
-                const photoSrc = typeof photo === 'string' ? photo : (photo.url || photo.dataUrl || photo.compressed);
-                const photoTimestamp = typeof photo === 'object' ? photo.timestamp : null;
-                
-                return (
-                  <div key={index} className="relative group">
-                    <div 
-                      className="aspect-square overflow-hidden rounded-lg border bg-muted cursor-pointer transition-all hover:shadow-lg hover:ring-2 hover:ring-primary"
-                      onClick={() => openImagePreview(photoSrc)}
-                      data-testid={`photo-${index}`}
-                    >
-                      <img
-                        src={photoSrc}
-                        alt={`Receipt photo ${index + 1}`}
-                        className="w-full h-full object-contain bg-slate-50 dark:bg-slate-900 transition-transform group-hover:scale-110"
-                        loading="lazy"
-                        onError={(e) => {
-                          console.error('Photo failed to load:', photoSrc?.substring(0, 50) + '...');
-                          e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjZjNmNGY2Ii8+CjxwYXRoIGQ9Ik0xMiA5VjEzTTEyIDE3SDE2TTEyIDdIOCIgc3Ryb2tlPSIjNjM2YzgzIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K';
-                        }}
-                      />
-                      {/* Hover overlay with zoom icon */}
-                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
-                        <ZoomIn className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                      </div>
+        <div className="bg-white dark:bg-gray-900 border rounded-lg p-3 mb-3">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold flex items-center gap-1.5">
+              <Camera className="h-4 w-4" />
+              Photos ({receipt.photos.length})
+            </h3>
+            <Button 
+              onClick={downloadAllPhotos}
+              variant="ghost" 
+              size="sm"
+              className="h-7 text-xs"
+              data-testid="button-download-all-photos"
+            >
+              <Download className="h-3 w-3 mr-1" />
+              Download
+            </Button>
+          </div>
+          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+            {receipt.photos.map((photo: any, index: number) => {
+              const photoSrc = typeof photo === 'string' ? photo : (photo.url || photo.dataUrl || photo.compressed);
+              
+              return (
+                <div key={index} className="relative group">
+                  <div 
+                    className="aspect-square overflow-hidden rounded border bg-muted cursor-pointer transition-all hover:shadow-md hover:ring-1 hover:ring-primary"
+                    onClick={() => openImagePreview(photoSrc)}
+                    data-testid={`photo-${index}`}
+                  >
+                    <img
+                      src={photoSrc}
+                      alt={`Receipt photo ${index + 1}`}
+                      className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjZjNmNGY2Ii8+CjxwYXRoIGQ9Ik0xMiA5VjEzTTEyIDE3SDE2TTEyIDdIOCIgc3Ryb2tlPSIjNjM2YzgzIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
+                      <ZoomIn className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
-                    {photoTimestamp && (
-                      <p className="text-xs text-muted-foreground mt-1 text-center">
-                        {format(new Date(photoTimestamp), 'MMM dd, HH:mm')}
-                      </p>
-                    )}
                   </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
 
-      {/* Shipment Info */}
+      {/* Shipment Info - Compact */}
       {receipt.shipment && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Shipment Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Shipment Name</p>
-                <p className="font-medium">{receipt.shipment.shipmentName || `Shipment #${receipt.shipment.id}`}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Tracking</p>
-                <p className="font-medium">{receipt.shipment.trackingNumber}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Route</p>
-                <p className="font-medium flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  {receipt.shipment.origin} → {receipt.shipment.destination}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Contents</p>
-                <p className="font-medium">
-                  {receipt.shipment.totalUnits} {receipt.shipment.unitType || 'items'}
-                </p>
-              </div>
+        <div className="bg-white dark:bg-gray-900 border rounded-lg p-3 mb-3">
+          <h3 className="text-sm font-semibold mb-2">Shipment Details</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <div>
+              <p className="text-muted-foreground mb-0.5">Shipment Name</p>
+              <p className="font-medium">{receipt.shipment.shipmentName || `Shipment #${receipt.shipment.id}`}</p>
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <p className="text-muted-foreground mb-0.5">Tracking</p>
+              <p className="font-medium">{receipt.shipment.trackingNumber}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground mb-0.5">Route</p>
+              <p className="font-medium flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                {receipt.shipment.origin} → {receipt.shipment.destination}
+              </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground mb-0.5">Contents</p>
+              <p className="font-medium">
+                {receipt.shipment.totalUnits} {receipt.shipment.unitType || 'items'}
+              </p>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Main Navigation Tabs for Items and Landing Costs */}
-      <Tabs defaultValue="items" className="mb-6">
-        <TabsList className="grid w-full grid-cols-2 h-14 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+      <Tabs defaultValue="items" className="mb-3">
+        <TabsList className="grid w-full grid-cols-2 h-10 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
           <TabsTrigger 
             value="items" 
             data-testid="tab-items"
-            className="flex items-center gap-3 px-6 py-3 text-sm font-semibold transition-all duration-200 rounded-lg data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-blue-200 dark:data-[state=active]:bg-gray-900 dark:data-[state=active]:text-blue-300 dark:data-[state=active]:border-blue-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold transition-all duration-200 rounded data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-blue-200 dark:data-[state=active]:bg-gray-900 dark:data-[state=active]:text-blue-300 dark:data-[state=active]:border-blue-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
           >
-            <Package className="h-5 w-5" />
+            <Package className="h-4 w-4" />
             Items Verification
           </TabsTrigger>
           <TabsTrigger 
             value="costs" 
             data-testid="tab-landing-costs"
-            className="flex items-center gap-3 px-6 py-3 text-sm font-semibold transition-all duration-200 rounded-lg data-[state=active]:bg-white data-[state=active]:text-orange-700 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-orange-200 dark:data-[state=active]:bg-gray-900 dark:data-[state=active]:text-orange-300 dark:data-[state=active]:border-orange-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold transition-all duration-200 rounded data-[state=active]:bg-white data-[state=active]:text-orange-700 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-orange-200 dark:data-[state=active]:bg-gray-900 dark:data-[state=active]:text-orange-300 dark:data-[state=active]:border-orange-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
           >
-            <DollarSign className="h-5 w-5" />
+            <DollarSign className="h-4 w-4" />
             Landing Costs
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="items">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Items Verification</CardTitle>
-                  <CardDescription>
-                    Verify each item's quantity, condition, and location
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  {receipt?.items && receipt.items.some((item: ReceiptItem) => !item.verifiedAt) && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleBulkVerifyItems}
-                      disabled={updateItemMutation.isPending}
-                      data-testid="button-bulk-verify-items"
-                      className="bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Quickly Verify All Items
-                    </Button>
-                  )}
-                  
-                  {/* Three-dot menu for additional actions */}
-                  {receipt?.items && receipt.items.some((item: ReceiptItem) => item.verifiedAt) && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          data-testid="button-verification-menu"
-                          className="h-8 w-8 p-0"
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={handleBulkUndoVerification}
-                          disabled={updateItemMutation.isPending}
-                          data-testid="menu-item-undo-all-verification"
-                          className="text-muted-foreground"
-                        >
-                          <Undo2 className="h-4 w-4 mr-2" />
-                          Undo All Verification
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                  
-                  {hasDamagedItems && (
-                    <Badge variant="destructive">
-                      <AlertTriangle className="h-3 w-3 mr-1" />
-                      Has Damaged Items
-                    </Badge>
-                  )}
-                  {hasMissingItems && (
-                    <Badge variant="destructive">
-                      <AlertCircle className="h-3 w-3 mr-1" />
-                      Has Missing Items
-                    </Badge>
-                  )}
-                </div>
+        <TabsContent value="items" className="mt-3">
+          <div className="bg-white dark:bg-gray-900 border rounded-lg">
+            {/* Compact Header */}
+            <div className="flex items-center justify-between p-3 border-b">
+              <div>
+                <h3 className="text-sm font-semibold">Items Verification</h3>
+                <p className="text-xs text-muted-foreground">Verify quantity, condition, and location</p>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {receipt.items?.map((item: ReceiptItem) => (
-              <div key={item.id} className="border rounded-xl overflow-hidden bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-950">
-                <div className="p-4 border-b bg-white/50 dark:bg-gray-900/50">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h4 className="font-semibold text-lg">{item.details?.name || `Item #${item.itemId}`}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {item.details?.sku && `SKU: ${item.details.sku}`}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {item.verifiedAt ? (
-                        <Badge variant="outline" className="bg-green-50 border-green-300 dark:bg-green-900/20">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Verified
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline">
-                          <Clock className="h-3 w-3 mr-1" />
-                          Pending
-                        </Badge>
-                      )}
-                      <Badge className={getConditionColor(item.condition)}>
-                        {item.condition}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 space-y-4">
-                  {/* Quantity and Status Info */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Expected</p>
-                    <p className="font-medium">{item.expectedQuantity}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Received</p>
-                    <p className={`font-medium ${item.receivedQuantity < item.expectedQuantity ? 'text-orange-600' : 'text-green-600'}`}>
-                      {item.receivedQuantity}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Damaged</p>
-                    <p className={`font-medium ${item.damagedQuantity > 0 ? 'text-red-600' : ''}`}>
-                      {item.damagedQuantity}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Missing</p>
-                    <p className={`font-medium ${item.missingQuantity > 0 ? 'text-red-600' : ''}`}>
-                      {item.missingQuantity}
-                    </p>
-                  </div>
-                </div>
-
-                {item.warehouseLocation && (
-                  <div className="flex items-center gap-2 text-sm mb-2">
-                    <MapPin className="h-3 w-3" />
-                    <span>{item.warehouseLocation}</span>
-                    {item.additionalLocation && (
-                      <span className="text-muted-foreground">• {item.additionalLocation}</span>
-                    )}
-                  </div>
-                )}
-
-                {item.barcode && (
-                  <div className="flex items-center gap-2 text-sm mb-2">
-                    <QrCode className="h-3 w-3" />
-                    <span>{item.barcode}</span>
-                  </div>
-                )}
-
-                {item.notes && (
-                  <div className="text-sm text-muted-foreground bg-gray-50 dark:bg-gray-900 p-2 rounded mb-2">
-                    {item.notes}
-                  </div>
-                )}
-
-                <div className="flex gap-2 mt-4">
+              <div className="flex items-center gap-1.5">
+                {receipt?.items && receipt.items.some((item: ReceiptItem) => !item.verifiedAt) && (
                   <Button
-                    size="sm"
                     variant="outline"
-                    onClick={() => handleItemVerification(item)}
-                    data-testid={`button-verify-item-${item.id}`}
+                    size="sm"
+                    onClick={handleBulkVerifyItems}
+                    disabled={updateItemMutation.isPending}
+                    data-testid="button-bulk-verify-items"
+                    className="bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300 h-7 text-xs"
                   >
-                    {item.verifiedAt ? 'Edit Verification' : 'Verify Item'}
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Verify All
                   </Button>
-                  {item.verifiedAt && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleUndoVerification(item)}
-                      data-testid={`button-undo-verify-${item.id}`}
-                      className="text-muted-foreground hover:text-foreground text-xs px-2"
-                    >
-                      <Undo2 className="h-3 w-3 mr-1" />
-                      Undo
-                    </Button>
-                  )}
-                </div>
-                </div>
+                )}
+                
+                {receipt?.items && receipt.items.some((item: ReceiptItem) => item.verifiedAt) && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        data-testid="button-verification-menu"
+                        className="h-7 w-7 p-0"
+                      >
+                        <MoreVertical className="h-3.5 w-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={handleBulkUndoVerification}
+                        disabled={updateItemMutation.isPending}
+                        data-testid="menu-item-undo-all-verification"
+                        className="text-xs"
+                      >
+                        <Undo2 className="h-3 w-3 mr-1.5" />
+                        Undo All Verification
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                
+                {hasDamagedItems && (
+                  <Badge variant="destructive" className="text-xs px-1.5 py-0">
+                    <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
+                    Damaged
+                  </Badge>
+                )}
+                {hasMissingItems && (
+                  <Badge variant="destructive" className="text-xs px-1.5 py-0">
+                    <AlertCircle className="h-2.5 w-2.5 mr-0.5" />
+                    Missing
+                  </Badge>
+                )}
               </div>
-            ))}
-          </div>
-          
-          {/* Bottom Bulk Verify Button for Better UX after scrolling */}
-          {receipt?.items && receipt.items.some((item: ReceiptItem) => !item.verifiedAt) && (
-            <div className="flex justify-center pt-6 border-t">
-              <Button
-                variant="outline"
-                onClick={handleBulkVerifyItems}
-                disabled={updateItemMutation.isPending}
-                data-testid="button-bulk-verify-items-bottom"
-                className="bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Quickly Verify All Items
-              </Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </TabsContent>
+
+            {/* Compact Item Cards */}
+            <div className="divide-y">
+              {receipt.items?.map((item: ReceiptItem) => (
+                <div key={item.id} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <div className="flex gap-3">
+                    {/* Product Image */}
+                    <div className="shrink-0">
+                      <div className="w-16 h-16 rounded border bg-muted overflow-hidden">
+                        {item.details?.mainImage || item.details?.images?.[0] ? (
+                          <img
+                            src={item.details.mainImage || item.details.images[0]}
+                            alt={item.details?.name || 'Product'}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(e) => {
+                              e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjZjNmNGY2Ii8+CjxwYXRoIGQ9Ik0yNCAyOEgyOFYzNkgyNFYyOFpNMzYgMjhINDBWMzZIMzZWMjhaIiBmaWxsPSIjOWNhM2FmIi8+CjxwYXRoIGQ9Ik0yOCA0MEgzNlY0NEgyOFY0MFoiIGZpbGw9IiM5Y2EzYWYiLz4KPC9zdmc+';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package2 className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Item Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-sm truncate">{item.details?.name || `Item #${item.itemId}`}</h4>
+                          {item.details?.sku && (
+                            <p className="text-xs text-muted-foreground">SKU: {item.details.sku}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {item.verifiedAt ? (
+                            <Badge variant="outline" className="bg-green-50 border-green-300 dark:bg-green-900/20 text-xs px-1.5 py-0">
+                              <CheckCircle className="h-2.5 w-2.5 mr-0.5" />
+                              Verified
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs px-1.5 py-0">
+                              <Clock className="h-2.5 w-2.5 mr-0.5" />
+                              Pending
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Quantities Grid */}
+                      <div className="grid grid-cols-4 gap-2 mb-2">
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Expected</p>
+                          <p className="text-xs font-medium">{item.expectedQuantity}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Received</p>
+                          <p className={`text-xs font-medium ${item.receivedQuantity < item.expectedQuantity ? 'text-orange-600' : 'text-green-600'}`}>
+                            {item.receivedQuantity}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Damaged</p>
+                          <p className={`text-xs font-medium ${item.damagedQuantity > 0 ? 'text-red-600' : 'text-muted-foreground'}`}>
+                            {item.damagedQuantity}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Missing</p>
+                          <p className={`text-xs font-medium ${item.missingQuantity > 0 ? 'text-red-600' : 'text-muted-foreground'}`}>
+                            {item.missingQuantity}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Additional Info */}
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mb-2">
+                        {item.condition && (
+                          <Badge className={`${getConditionColor(item.condition)} text-xs px-1.5 py-0`}>
+                            {item.condition}
+                          </Badge>
+                        )}
+                        {item.warehouseLocation && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {item.warehouseLocation}
+                            {item.additionalLocation && <span>• {item.additionalLocation}</span>}
+                          </span>
+                        )}
+                        {item.barcode && (
+                          <span className="flex items-center gap-1">
+                            <QrCode className="h-3 w-3" />
+                            {item.barcode}
+                          </span>
+                        )}
+                      </div>
+
+                      {item.notes && (
+                        <div className="text-xs text-muted-foreground bg-gray-50 dark:bg-gray-900 p-1.5 rounded mb-2">
+                          {item.notes}
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      <div className="flex gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleItemVerification(item)}
+                          data-testid={`button-verify-item-${item.id}`}
+                          className="h-7 text-xs"
+                        >
+                          {item.verifiedAt ? 'Edit' : 'Verify'}
+                        </Button>
+                        {item.verifiedAt && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleUndoVerification(item)}
+                            data-testid={`button-undo-verify-${item.id}`}
+                            className="text-muted-foreground hover:text-foreground h-7 text-xs px-2"
+                          >
+                            <Undo2 className="h-3 w-3 mr-0.5" />
+                            Undo
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </TabsContent>
 
     <TabsContent value="costs">
       {receipt.shipment?.id ? (
