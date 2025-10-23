@@ -253,14 +253,118 @@ export default function ItemsToStore() {
         });
       });
 
+      // Try to restore saved location assignments from localStorage
+      try {
+        const savedAssignments = localStorage.getItem('itemsToStore_assignments');
+        if (savedAssignments) {
+          const assignments = JSON.parse(savedAssignments);
+          
+          // Merge saved location assignments back into items
+          allItems.forEach(item => {
+            const savedItem = assignments.find((a: any) => 
+              a.receiptItemId === item.receiptItemId && a.receiptId === item.receiptId
+            );
+            if (savedItem && savedItem.newLocations) {
+              item.newLocations = savedItem.newLocations;
+              item.assignedQuantity = savedItem.newLocations.reduce((sum: number, loc: LocationAssignment) => sum + loc.quantity, 0);
+            }
+          });
+        }
+        
+        // Restore selected receipt
+        const savedReceipt = localStorage.getItem('itemsToStore_selectedReceipt');
+        if (savedReceipt && !selectedReceipt) {
+          const receiptId = parseInt(savedReceipt);
+          if (receiptsWithItems.some(r => r.receipt.id === receiptId)) {
+            setSelectedReceipt(receiptId);
+          }
+        }
+        
+        // Restore selected item index
+        const savedIndex = localStorage.getItem('itemsToStore_selectedItemIndex');
+        if (savedIndex) {
+          setSelectedItemIndex(parseInt(savedIndex));
+        }
+        
+        // Restore active tab
+        const savedTab = localStorage.getItem('itemsToStore_activeTab');
+        if (savedTab && (savedTab === 'pending' || savedTab === 'completed')) {
+          setActiveTab(savedTab);
+        }
+      } catch (error) {
+        console.error('Failed to restore location assignments from localStorage:', error);
+        // Clean up corrupted data
+        localStorage.removeItem('itemsToStore_assignments');
+        localStorage.removeItem('itemsToStore_selectedReceipt');
+        localStorage.removeItem('itemsToStore_selectedItemIndex');
+        localStorage.removeItem('itemsToStore_activeTab');
+      }
+
       setItems(allItems);
 
-      // Auto-select first receipt if available
+      // Auto-select first receipt if available and nothing was restored
       if (receiptsWithItems.length > 0 && !selectedReceipt) {
-        setSelectedReceipt(receiptsWithItems[0].receipt.id);
+        const savedReceipt = localStorage.getItem('itemsToStore_selectedReceipt');
+        if (!savedReceipt) {
+          setSelectedReceipt(receiptsWithItems[0].receipt.id);
+        }
       }
     }
   }, [receiptsWithItems.length, selectedReceipt]);
+
+  // Save location assignments to localStorage whenever items change
+  useEffect(() => {
+    if (items.length > 0) {
+      try {
+        // Only save items that have location assignments to reduce storage size
+        const itemsWithAssignments = items
+          .filter(item => item.newLocations.length > 0)
+          .map(item => ({
+            receiptItemId: item.receiptItemId,
+            receiptId: item.receiptId,
+            newLocations: item.newLocations
+          }));
+        
+        if (itemsWithAssignments.length > 0) {
+          localStorage.setItem('itemsToStore_assignments', JSON.stringify(itemsWithAssignments));
+        } else {
+          // Clear if no assignments
+          localStorage.removeItem('itemsToStore_assignments');
+        }
+      } catch (error) {
+        console.error('Failed to save location assignments to localStorage:', error);
+      }
+    }
+  }, [items]);
+
+  // Save selected receipt to localStorage
+  useEffect(() => {
+    if (selectedReceipt) {
+      try {
+        localStorage.setItem('itemsToStore_selectedReceipt', selectedReceipt.toString());
+      } catch (error) {
+        console.error('Failed to save selected receipt to localStorage:', error);
+      }
+    }
+  }, [selectedReceipt]);
+
+  // Save selected item index to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('itemsToStore_selectedItemIndex', selectedItemIndex.toString());
+    } catch (error) {
+      console.error('Failed to save selected item index to localStorage:', error);
+    }
+  }, [selectedItemIndex]);
+
+  // Save active tab to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('itemsToStore_activeTab', activeTab);
+    } catch (error) {
+      console.error('Failed to save active tab to localStorage:', error);
+    }
+  }, [activeTab]);
 
   // Filter items by selected receipt and tab
   const filteredItems = selectedReceipt 
@@ -678,7 +782,7 @@ export default function ItemsToStore() {
       );
       
       // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/items-to-store'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/storage'] });
       
     } catch (error) {
       console.error("Failed to save location:", error);
@@ -725,10 +829,17 @@ export default function ItemsToStore() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/items-to-store'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/storage'] });
       // Also invalidate the shipment status queries to reflect the status change
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/pending_approval'] }); // Storage tab
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/completed'] }); // Completed tab
+      
+      // Clear localStorage after successful save
+      localStorage.removeItem('itemsToStore_assignments');
+      localStorage.removeItem('itemsToStore_selectedReceipt');
+      localStorage.removeItem('itemsToStore_selectedItemIndex');
+      localStorage.removeItem('itemsToStore_activeTab');
+      
       toast({
         title: "Success",
         description: "Items have been stored and shipment moved to completed",

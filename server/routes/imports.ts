@@ -3192,30 +3192,21 @@ router.get("/receipts/storage", async (req, res) => {
       });
     }
     
-    // Get all items for these receipts - simplified for now to avoid SQL issues
+    // Get all items for these receipts with optimized database-level filtering
     const receiptIds = pendingReceipts.map(r => r.receipt.id);
-    const allReceiptItems = receiptIds.length > 0 ? await db
+    const filteredReceiptItems = receiptIds.length > 0 ? await db
       .select()
       .from(receiptItems)
       .where(and(
         inArray(receiptItems.receiptId, receiptIds),
-        isNull(receiptItems.warehouseLocation)
+        isNull(receiptItems.warehouseLocation),
+        // receivedQuantity already represents GOOD units (damaged units are tracked separately)
+        // Filter for items with good units received (receivedQuantity > 0)
+        sql`${receiptItems.receivedQuantity} > 0`,
+        // Exclude items marked as completely missing
+        sql`${receiptItems.status} != 'missing'`
       ))
       .orderBy(receiptItems.receiptId, receiptItems.id) : [];
-    
-    // Filter in memory to show only items ready for storage
-    const filteredReceiptItems = allReceiptItems.filter(item => {
-      // receivedQuantity already represents GOOD units (damaged units are tracked separately)
-      // So we just need to check if there are any good units received
-      const hasGoodUnits = item.receivedQuantity > 0;
-      
-      // Exclude only items marked as completely missing
-      // Allow 'damaged' status if there are good units (receivedQuantity > 0)
-      // because receivedQuantity represents the good units, not the total
-      const isNotMissing = item.status !== 'missing';
-      
-      return hasGoodUnits && isNotMissing;
-    });
     
     // Get product information and existing locations for all items at once
     const productIds = filteredReceiptItems
