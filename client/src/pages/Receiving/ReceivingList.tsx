@@ -831,6 +831,20 @@ export default function ReceivingList() {
     if (!shipmentsData) return [];
 
     let filtered = shipmentsData.filter((shipment: any) => {
+      // Filter out shipments with 0 items
+      if (activeTab === 'receiving') {
+        // For receiving tab, check receipt data
+        const receiptData = receiptDataMap.get(shipment.id);
+        if (!receiptData?.items || receiptData.items.length === 0) {
+          return false;
+        }
+      } else {
+        // For other tabs, check shipment items
+        if (!shipment.items || shipment.items.length === 0) {
+          return false;
+        }
+      }
+
       // Type filter
       if (shipmentTypeFilter !== 'all' && shipment.shipmentType !== shipmentTypeFilter) {
         return false;
@@ -903,7 +917,8 @@ export default function ReceivingList() {
     shipmentTypeFilter, 
     cartonTypeFilter,
     warehouseFilter,
-    isUrgent
+    isUrgent,
+    receiptDataMap
   ]);
 
   // Sort filtered shipments

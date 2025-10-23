@@ -216,12 +216,17 @@ export default function ItemsToStore() {
     queryKey: ['/api/imports/receipts/items-to-store'],
   });
 
+  // Filter receipts to only include those with items
+  const receiptsWithItems = storageData?.receipts?.filter((receiptData: ReceiptWithItems) => 
+    receiptData.items && receiptData.items.length > 0
+  ) || [];
+
   // Initialize items from receipt data
   useEffect(() => {
-    if (storageData?.receipts) {
+    if (receiptsWithItems.length > 0) {
       const allItems: StorageItem[] = [];
 
-      storageData.receipts.forEach((receiptData: ReceiptWithItems) => {
+      receiptsWithItems.forEach((receiptData: ReceiptWithItems) => {
         receiptData.items.forEach((item: any) => {
           allItems.push({
             receiptItemId: item.id,
@@ -248,11 +253,11 @@ export default function ItemsToStore() {
       setItems(allItems);
 
       // Auto-select first receipt if available
-      if (storageData.receipts.length > 0 && !selectedReceipt) {
-        setSelectedReceipt(storageData.receipts[0].receipt.id);
+      if (receiptsWithItems.length > 0 && !selectedReceipt) {
+        setSelectedReceipt(receiptsWithItems[0].receipt.id);
       }
     }
-  }, [storageData, selectedReceipt]);
+  }, [receiptsWithItems.length, selectedReceipt]);
 
   // Filter items by selected receipt and tab
   const filteredItems = selectedReceipt 
@@ -782,7 +787,7 @@ export default function ItemsToStore() {
     );
   }
 
-  if (!storageData || storageData.receipts.length === 0) {
+  if (!storageData || receiptsWithItems.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <Card>
@@ -837,13 +842,13 @@ export default function ItemsToStore() {
       </div>
 
       {/* Receipt Selector - Horizontal Scroll with Comprehensive Shipping Info */}
-      {storageData.receipts.length > 1 && (
+      {receiptsWithItems.length > 1 && (
         <div className="bg-white border-b">
           <div className="px-4 py-3">
             <p className="text-xs font-medium text-muted-foreground mb-2">Select Shipment to Work On</p>
             <div className="overflow-x-auto -mx-4 px-4">
               <div className="flex gap-3">
-                {storageData.receipts.map((receiptData: ReceiptWithItems) => {
+                {receiptsWithItems.map((receiptData: ReceiptWithItems) => {
                   const receiptItems = items.filter(item => item.receiptId === receiptData.receipt.id);
                   const assignedCount = receiptItems.filter(item => item.newLocations.length > 0).length;
                   const completionPercent = (assignedCount / receiptItems.length) * 100;
