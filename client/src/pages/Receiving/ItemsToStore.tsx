@@ -1183,7 +1183,7 @@ export default function ItemsToStore() {
                     
                     {/* Item Details */}
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{currentItem.productName}</p>
+                      <p className="font-medium text-sm truncate text-left">{currentItem.productName}</p>
                       <div className="flex items-center gap-3 mt-1">
                         {currentItem.sku && (
                           <span className="text-xs text-muted-foreground">
