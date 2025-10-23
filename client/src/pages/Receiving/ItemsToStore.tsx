@@ -1157,7 +1157,7 @@ export default function ItemsToStore() {
           }
         }
       }}>
-        <SheetContent side="bottom" className="h-auto max-h-[85vh] overflow-y-auto">
+        <SheetContent side="bottom" className="h-auto max-h-[85vh] overflow-y-auto pb-6">
           {/* Compact Header */}
           <SheetHeader className="pb-2">
             <SheetTitle className="text-base font-semibold">Add Location</SheetTitle>
