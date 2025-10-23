@@ -2402,7 +2402,7 @@ export default function ReceivingList() {
 
                         {/* Action Button */}
                         <div className="ml-auto">
-                          <Link href="/receiving/items-to-store">
+                          <Link href="/receiving/storage">
                             <Button 
                               size="sm" 
                               className="bg-orange-600 hover:bg-orange-700 text-white h-7 text-xs"

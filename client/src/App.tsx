@@ -188,7 +188,7 @@ function Router() {
         </Route>
         {/* Receiving Routes */}
         <Route path="/receiving" component={ReceivingList} />
-        <Route path="/receiving/items-to-store" component={ItemsToStore} />
+        <Route path="/receiving/storage" component={ItemsToStore} />
         <Route path="/receiving/start/:id" component={StartReceiving} />
         <Route path="/receiving/continue/:id" component={ContinueReceiving} />
         <Route path="/receiving/receipt/:id" component={ContinueReceiving} />

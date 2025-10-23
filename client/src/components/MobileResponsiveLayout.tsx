@@ -384,7 +384,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
     },
     {
       name: "Storage",
-      href: "/receiving/items-to-store",
+      href: "/receiving/storage",
       icon: PackageCheck,
       color: "text-lime-600",
       description: "Storage Queue"

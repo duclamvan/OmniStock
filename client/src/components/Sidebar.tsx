@@ -97,7 +97,7 @@ const navigation = [
   },
   {
     name: "Items To Store",
-    href: "/receiving/items-to-store",
+    href: "/receiving/storage",
     icon: PackageCheck,
   },
   {
