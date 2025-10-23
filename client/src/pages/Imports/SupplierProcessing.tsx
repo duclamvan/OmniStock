@@ -191,8 +191,8 @@ export default function SupplierProcessing() {
       createdAt: "2024-03-17T09:15:00Z",
       updatedAt: "2024-03-17T09:15:00Z",
       items: [
-        { id: 6, purchaseId: 3, name: "Cotton T-Shirts (Pack of 50)", sku: "CTS50BLK", quantity: 4, unitPrice: "12500000", weight: "10.0", dimensions: "60x40x30", notes: null, createdAt: "2024-03-17T09:15:00Z" },
-        { id: 7, purchaseId: 3, name: "Denim Jeans (Pack of 30)", sku: "DJ30BLU", quantity: 2, unitPrice: "15000000", weight: "15.0", dimensions: "60x40x40", notes: null, createdAt: "2024-03-17T09:15:00Z" }
+        { id: 6, purchaseId: 3, name: "Cotton T-Shirts (Pack of 50)", sku: "CTS50BLK", category: "Textiles", barcode: "1234567890128", quantity: 4, unitPrice: "12500000", weight: "10.0", dimensions: "60x40x30", notes: null, createdAt: "2024-03-17T09:15:00Z" },
+        { id: 7, purchaseId: 3, name: "Denim Jeans (Pack of 30)", sku: "DJ30BLU", category: "Textiles", barcode: "1234567890129", quantity: 2, unitPrice: "15000000", weight: "15.0", dimensions: "60x40x40", notes: null, createdAt: "2024-03-17T09:15:00Z" }
       ],
       itemCount: 2
     },
@@ -214,8 +214,8 @@ export default function SupplierProcessing() {
       createdAt: "2024-03-18T16:45:00Z",
       updatedAt: "2024-03-18T16:45:00Z",
       items: [
-        { id: 8, purchaseId: 4, name: "Designer Handbag Collection", sku: "DHB2024SS", quantity: 5, unitPrice: "1800.00", weight: "1.2", dimensions: "35x25x15", notes: null, createdAt: "2024-03-18T16:45:00Z" },
-        { id: 9, purchaseId: 4, name: "Luxury Watch Set", sku: "LWS2024", quantity: 3, unitPrice: "3500.00", weight: "0.5", dimensions: "20x15x10", notes: null, createdAt: "2024-03-18T16:45:00Z" }
+        { id: 8, purchaseId: 4, name: "Designer Handbag Collection", sku: "DHB2024SS", category: "Luxury", barcode: "1234567890130", quantity: 5, unitPrice: "1800.00", weight: "1.2", dimensions: "35x25x15", notes: null, createdAt: "2024-03-18T16:45:00Z" },
+        { id: 9, purchaseId: 4, name: "Luxury Watch Set", sku: "LWS2024", category: "Luxury", barcode: "1234567890131", quantity: 3, unitPrice: "3500.00", weight: "0.5", dimensions: "20x15x10", notes: null, createdAt: "2024-03-18T16:45:00Z" }
       ],
       itemCount: 2
     },
@@ -237,9 +237,9 @@ export default function SupplierProcessing() {
       createdAt: "2024-03-10T11:20:00Z",
       updatedAt: "2024-03-10T11:20:00Z",
       items: [
-        { id: 10, purchaseId: 5, name: "Dell XPS 15 Laptop", sku: "DXPS15I9", quantity: 4, unitPrice: "1599.00", weight: "2.05", dimensions: "36x25x2", notes: null, createdAt: "2024-03-10T11:20:00Z" },
-        { id: 11, purchaseId: 5, name: "iPad Pro 12.9\"", sku: "IPADP13M2", quantity: 6, unitPrice: "1099.00", weight: "0.682", dimensions: "28x21x0.6", notes: null, createdAt: "2024-03-10T11:20:00Z" },
-        { id: 12, purchaseId: 5, name: "Sony WH-1000XM5", sku: "SONYWH5", quantity: 12, unitPrice: "299.00", weight: "0.250", dimensions: "23x20x5", notes: null, createdAt: "2024-03-10T11:20:00Z" }
+        { id: 10, purchaseId: 5, name: "Dell XPS 15 Laptop", sku: "DXPS15I9", category: "Electronics", barcode: "1234567890132", quantity: 4, unitPrice: "1599.00", weight: "2.05", dimensions: "36x25x2", notes: null, createdAt: "2024-03-10T11:20:00Z" },
+        { id: 11, purchaseId: 5, name: "iPad Pro 12.9\"", sku: "IPADP13M2", category: "Electronics", barcode: "1234567890133", quantity: 6, unitPrice: "1099.00", weight: "0.682", dimensions: "28x21x0.6", notes: null, createdAt: "2024-03-10T11:20:00Z" },
+        { id: 12, purchaseId: 5, name: "Sony WH-1000XM5", sku: "SONYWH5", category: "Electronics", barcode: "1234567890134", quantity: 12, unitPrice: "299.00", weight: "0.250", dimensions: "23x20x5", notes: null, createdAt: "2024-03-10T11:20:00Z" }
       ],
       itemCount: 3
     }
@@ -854,59 +854,96 @@ export default function SupplierProcessing() {
                 
                 return (
                   <Card key={purchase.id} className="border hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      {/* Purchase Header */}
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-                        <div className="flex items-center gap-2 sm:gap-3">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="p-1"
-                            onClick={() => {
-                              const newExpanded = new Set(expandedPurchases);
-                              if (isExpanded) {
-                                newExpanded.delete(purchase.id);
-                              } else {
-                                newExpanded.add(purchase.id);
-                              }
-                              setExpandedPurchases(newExpanded);
-                            }}
-                            data-testid={`button-toggle-${purchase.id}`}
-                          >
-                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                          </Button>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold text-sm sm:text-base" data-testid={`text-supplier-${purchase.id}`}>
-                                {purchase.location === 'Europe' && '🇪🇺 '}
-                                {purchase.location === 'USA' && '🇺🇸 '}
-                                {purchase.location === 'China' && '🇨🇳 '}
-                                {purchase.location === 'Vietnam' && '🇻🇳 '}
-                                {purchase.supplier}
-                              </h3>
-                              <Badge className={statusColors[purchase.status] || "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"}>
-                                {purchase.status.replace('_', ' ').toUpperCase()}
-                              </Badge>
+                    <CardContent className="p-3">
+                      {/* Compact Header Row */}
+                      <div className="flex items-start gap-2 mb-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 mt-0.5"
+                          onClick={() => {
+                            const newExpanded = new Set(expandedPurchases);
+                            if (isExpanded) {
+                              newExpanded.delete(purchase.id);
+                            } else {
+                              newExpanded.add(purchase.id);
+                            }
+                            setExpandedPurchases(newExpanded);
+                          }}
+                          data-testid={`button-toggle-${purchase.id}`}
+                        >
+                          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </Button>
+                        
+                        <div className="flex-1 min-w-0">
+                          {/* Title Row */}
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <h3 className="font-semibold text-sm" data-testid={`text-supplier-${purchase.id}`}>
+                              {purchase.location === 'Europe' && '🇪🇺 '}
+                              {purchase.location === 'USA' && '🇺🇸 '}
+                              {purchase.location === 'China' && '🇨🇳 '}
+                              {purchase.location === 'Vietnam' && '🇻🇳 '}
+                              {purchase.supplier}
+                            </h3>
+                            <Badge className={cn("text-[10px] h-5 px-1.5", statusColors[purchase.status] || "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200")}>
+                              {purchase.status.replace('_', ' ').toUpperCase()}
+                            </Badge>
+                            {purchase.trackingNumber && (
+                              <span className="text-[10px] font-mono text-muted-foreground ml-auto hidden sm:inline">
+                                {purchase.trackingNumber}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Info Grid - Compact 6-column layout */}
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-3 gap-y-1 text-[11px]">
+                            <div className="flex items-center gap-1">
+                              <Package2 className="h-3 w-3 text-muted-foreground shrink-0" />
+                              <span className="text-muted-foreground truncate">{purchase.itemCount} items</span>
                             </div>
-                            <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-muted-foreground mt-1">
-                              <span>{purchase.itemCount} items</span>
-                              <span>•</span>
-                              <span>Created {format(new Date(purchase.createdAt), 'MMM dd, yyyy')}</span>
-                              {purchase.trackingNumber && (
-                                <>
-                                  <span>•</span>
-                                  <span>Tracking: {purchase.trackingNumber}</span>
-                                </>
-                              )}
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
+                              <span className="text-muted-foreground truncate">
+                                ETA: {purchase.estimatedArrival 
+                                  ? format(new Date(purchase.estimatedArrival), 'MMM dd')
+                                  : 'TBD'
+                                }
+                              </span>
                             </div>
+                            <div className="flex items-center gap-1">
+                              <Truck className="h-3 w-3 text-muted-foreground shrink-0" />
+                              <span className="text-muted-foreground truncate">
+                                Ship: {purchase.purchaseCurrency || 'USD'} {purchase.shippingCost}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <CreditCard className="h-3 w-3 text-primary shrink-0" />
+                              <span className="font-semibold truncate">
+                                {purchase.purchaseCurrency || 'USD'} {purchase.totalCost}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 col-span-2 sm:col-span-1">
+                              <span className="text-muted-foreground truncate">
+                                {format(new Date(purchase.createdAt), 'MMM dd, yyyy')}
+                              </span>
+                            </div>
+                            {purchase.paymentCurrency && purchase.paymentCurrency !== purchase.purchaseCurrency && (
+                              <div className="flex items-center gap-1">
+                                <span className="text-muted-foreground truncate">
+                                  Paid: {purchase.paymentCurrency} {purchase.totalPaid || '0'}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 flex-wrap justify-end">
+
+                        {/* Action Buttons - Vertical on mobile, horizontal on desktop */}
+                        <div className="flex items-center gap-1.5 ml-auto">
                           <Select
                             value={purchase.status}
                             onValueChange={(status) => updateStatusMutation.mutate({ purchaseId: purchase.id, status })}
                           >
-                            <SelectTrigger className="w-[120px] sm:w-[140px] h-8 text-xs sm:text-sm">
+                            <SelectTrigger className="w-[110px] h-7 text-[11px]">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -921,32 +958,33 @@ export default function SupplierProcessing() {
                             <Button
                               variant="outline"
                               size="sm"
+                              className="h-7 w-7 p-0"
                               data-testid={`button-edit-${purchase.id}`}
                             >
-                              <Edit className="h-4 w-4" />
+                              <Edit className="h-3.5 w-3.5" />
                             </Button>
                           </Link>
                           <Button
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-7 w-7"
                             onClick={() => {
                               setSelectedPurchase(purchase);
                               setIsAddItemModalOpen(true);
                             }}
                             data-testid={`button-add-item-${purchase.id}`}
                           >
-                            <Plus className="h-4 w-4" />
+                            <Plus className="h-3.5 w-3.5" />
                           </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8"
+                                className="h-7 w-7"
                                 data-testid={`button-menu-${purchase.id}`}
                               >
-                                <MoreHorizontal className="h-4 w-4" />
+                                <MoreHorizontal className="h-3.5 w-3.5" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -963,57 +1001,24 @@ export default function SupplierProcessing() {
                         </div>
                       </div>
 
-                      {/* Purchase Info Bar */}
-                      <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm mb-3 sm:pl-7">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-muted-foreground">
-                            ETA: {purchase.estimatedArrival 
-                              ? format(new Date(purchase.estimatedArrival), 'MMM dd')
-                              : 'TBD'
-                            }
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Truck className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-muted-foreground">
-                            Shipping: {purchase.purchaseCurrency || 'USD'} {purchase.shippingCost}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <CreditCard className="h-3 w-3 text-muted-foreground" />
-                          <span className="font-semibold">
-                            Grand Total: {purchase.purchaseCurrency || 'USD'} {purchase.totalCost}
-                          </span>
-                        </div>
-                        {purchase.paymentCurrency && purchase.paymentCurrency !== purchase.purchaseCurrency && (
-                          <div className="flex items-center gap-1">
-                            <CreditCard className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-muted-foreground">
-                              Paid: {purchase.paymentCurrency} {purchase.totalPaid || '0'}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Items Table - Always visible when expanded */}
+                      {/* Items Table - Compact expanded view */}
                       {isExpanded && (
-                        <div className="sm:pl-7">
+                        <div className="pl-8 mt-2">
                           {purchase.items.length === 0 ? (
-                            <div className="text-center py-6 bg-muted/30 rounded-lg">
-                              <p className="text-muted-foreground text-sm">No items added yet</p>
+                            <div className="text-center py-4 bg-muted/30 rounded border border-dashed">
+                              <p className="text-muted-foreground text-xs">No items added yet</p>
                             </div>
                           ) : (
                             <div className={cn(
-                              "rounded-lg border bg-card overflow-x-auto",
-                              purchase.items.length > 12 && "max-h-[400px] overflow-y-auto"
+                              "rounded border bg-card/50 overflow-x-auto",
+                              purchase.items.length > 12 && "max-h-[380px] overflow-y-auto"
                             )}>
                               <DataTable
                                 data={purchase.items}
                                 columns={getItemColumns(purchase.items.length)}
                                 getRowKey={(item) => item.id.toString()}
                                 showPagination={false}
-                                className="text-sm"
+                                className="text-xs"
                                 defaultExpandAll={false}
                                 compact={true}
                               />
@@ -1022,12 +1027,12 @@ export default function SupplierProcessing() {
                         </div>
                       )}
 
-                      {/* Notes */}
+                      {/* Notes - Compact */}
                       {purchase.notes && isExpanded && (
-                        <div className="mt-3 sm:pl-7">
-                          <div className="p-3 bg-muted/50 rounded-lg">
-                            <p className="text-xs text-muted-foreground mb-1">Notes:</p>
-                            <p className="text-sm">{purchase.notes}</p>
+                        <div className="mt-2 pl-8">
+                          <div className="p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded text-xs">
+                            <span className="font-medium text-amber-900 dark:text-amber-300">Note: </span>
+                            <span className="text-amber-800 dark:text-amber-400">{purchase.notes}</span>
                           </div>
                         </div>
                       )}
