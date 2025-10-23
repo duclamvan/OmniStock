@@ -3318,12 +3318,14 @@ router.get("/receipts/items-to-store", async (req, res) => {
       });
     });
     
-    // Combine receipts with their items
-    const receiptsWithItems = pendingReceipts.map(r => ({
-      receipt: r.receipt,
-      shipment: r.shipment,
-      items: itemsByReceipt[r.receipt.id] || []
-    }));
+    // Combine receipts with their items, filtering out receipts with no items ready for storage
+    const receiptsWithItems = pendingReceipts
+      .map(r => ({
+        receipt: r.receipt,
+        shipment: r.shipment,
+        items: itemsByReceipt[r.receipt.id] || []
+      }))
+      .filter(r => r.items.length > 0); // Only include receipts that have items ready for storage
     
     // Calculate totals
     const totalItems = filteredReceiptItems.length;
