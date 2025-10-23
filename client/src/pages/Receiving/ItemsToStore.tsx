@@ -1218,11 +1218,11 @@ export default function ItemsToStore() {
           <div className="mt-3 space-y-3">
             {/* Compact Session Locations with Quantity */}
             {sessionsLocations.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-2 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground">Added Locations</span>
+                  <span className="text-xs font-medium text-blue-900 dark:text-blue-100">Added Locations</span>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="h-5 text-xs">
+                    <Badge variant="outline" className="h-5 text-xs bg-white dark:bg-slate-800">
                       Total: {sessionsLocations.reduce((sum, loc) => sum + loc.quantity, 0)} / {currentItem?.receivedQuantity || 0}
                     </Badge>
                     <Badge variant="secondary" className="h-5 text-xs">
