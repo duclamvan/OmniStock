@@ -216,7 +216,7 @@ export default function ItemsToStore() {
 
   // Fetch all items pending storage
   const { data: storageData, isLoading } = useQuery<any>({
-    queryKey: ['/api/imports/receipts/items-to-store'],
+    queryKey: ['/api/imports/receipts/storage'],
   });
 
   // Filter receipts to only include those with items

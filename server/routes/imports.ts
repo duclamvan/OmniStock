@@ -3168,7 +3168,7 @@ router.post("/receipts", async (req, res) => {
 });
 
 // Get all items pending storage from all receipts - MUST BE BEFORE /:id ROUTE
-router.get("/receipts/items-to-store", async (req, res) => {
+router.get("/receipts/storage", async (req, res) => {
   try {
     // Get all receipts with pending_approval or receiving status (received but not stored)
     const pendingReceipts = await db

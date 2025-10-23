@@ -727,8 +727,8 @@ export default function ContinueReceiving() {
       });
     },
     onSuccess: () => {
-      // Invalidate items-to-store query for real-time updates
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/items-to-store'] });
+      // Invalidate storage query for real-time updates
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/storage'] });
     }
   });
   
@@ -755,8 +755,8 @@ export default function ContinueReceiving() {
       // Error handling is done in the calling function
     },
     onSuccess: () => {
-      // Invalidate items-to-store query for real-time updates
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/items-to-store'] });
+      // Invalidate storage query for real-time updates
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/storage'] });
     }
   });
   
@@ -1543,8 +1543,8 @@ export default function ContinueReceiving() {
     onSuccess: (response) => {
       // Don't invalidate cache during active editing to prevent jumping values
       // Data will be fresh when component remounts
-      // Invalidate items-to-store query for real-time updates
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/items-to-store'] });
+      // Invalidate storage query for real-time updates
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/storage'] });
     },
     onError: (error: any) => {
       console.error("Auto-save failed:", error);
@@ -1581,8 +1581,8 @@ export default function ContinueReceiving() {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/receiving'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/pending_approval'] });
-      // Invalidate items-to-store query for real-time updates
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/items-to-store'] });
+      // Invalidate storage query for real-time updates
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/storage'] });
       navigate('/receiving');
     },
     onError: (error: any) => {
