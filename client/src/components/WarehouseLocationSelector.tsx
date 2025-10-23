@@ -56,31 +56,37 @@ export default function WarehouseLocationSelector({
   const [areaType, setAreaType] = useState<AreaType>("shelves");
   const [area, setArea] = useState("A");
   const [aisle, setAisle] = useState("A01");
-  const [rack, setRack] = useState("01");
-  const [level, setLevel] = useState("01");
+  const [rack, setRack] = useState("R01");
+  const [level, setLevel] = useState("L01");
   const [bin, setBin] = useState("B1");
   const [zone, setZone] = useState("A01");
   const [position, setPosition] = useState("P01");
   const [manualEntry, setManualEntry] = useState(false);
   const [manualCode, setManualCode] = useState("");
   const [isValid, setIsValid] = useState(true);
+  const [isOldFormat, setIsOldFormat] = useState(false);
+  const [oldFormatCode, setOldFormatCode] = useState("");
 
   // Parse initial value if provided
   useEffect(() => {
     if (value && validateLocationCode(value)) {
+      // Try new shelf format first
       const shelfParts = parseShelfLocationCode(value);
       if (shelfParts) {
         setAreaType("shelves");
         setWarehouse(shelfParts.warehouse);
         setArea(shelfParts.area);
         setAisle(shelfParts.aisle);
-        setRack(shelfParts.rack.replace(/^R/, ''));
-        setLevel(shelfParts.level.replace(/^L/, ''));
+        setRack(shelfParts.rack);
+        setLevel(shelfParts.level);
         setBin(shelfParts.bin || "B1");
         setManualCode(value);
+        setIsOldFormat(false);
+        setOldFormatCode("");
         return;
       }
       
+      // Try new pallet format
       const palletParts = parsePalletLocationCode(value);
       if (palletParts) {
         setAreaType("pallets");
@@ -89,6 +95,25 @@ export default function WarehouseLocationSelector({
         setZone(palletParts.zone);
         setPosition(palletParts.position);
         setManualCode(value);
+        setIsOldFormat(false);
+        setOldFormatCode("");
+        return;
+      }
+      
+      // Try old format for backward compatibility (WH1-A01-R02-L03)
+      const oldPattern = /^(WH\d+)-([A-Z]\d{2})-(R\d{2})-(L\d{2})$/;
+      const oldMatch = value.match(oldPattern);
+      if (oldMatch) {
+        setAreaType("shelves");
+        setWarehouse(oldMatch[1]);
+        setArea("A");
+        setAisle(oldMatch[2]);
+        setRack(oldMatch[3]);
+        setLevel(oldMatch[4]);
+        setBin("B1");
+        setManualCode(value);
+        setIsOldFormat(true);
+        setOldFormatCode(value);
         return;
       }
     }
@@ -97,6 +122,14 @@ export default function WarehouseLocationSelector({
   // Update location code when components change
   useEffect(() => {
     if (!manualEntry) {
+      // If this was an old format code, preserve it
+      if (isOldFormat && oldFormatCode) {
+        onChange(oldFormatCode);
+        setManualCode(oldFormatCode);
+        setIsValid(true);
+        return;
+      }
+      
       let code = "";
       if (areaType === "shelves") {
         code = generateShelfLocationCode(warehouse, area, aisle, rack, level, bin);
@@ -107,7 +140,7 @@ export default function WarehouseLocationSelector({
       setManualCode(code);
       setIsValid(true);
     }
-  }, [warehouse, areaType, area, aisle, rack, level, bin, zone, position, manualEntry, onChange]);
+  }, [warehouse, areaType, area, aisle, rack, level, bin, zone, position, manualEntry, onChange, isOldFormat, oldFormatCode]);
 
   const handleManualCodeChange = (newCode: string) => {
     setManualCode(newCode);
@@ -115,19 +148,23 @@ export default function WarehouseLocationSelector({
     setIsValid(valid);
     
     if (valid) {
+      // Try new shelf format
       const shelfParts = parseShelfLocationCode(newCode);
       if (shelfParts) {
         setAreaType("shelves");
         setWarehouse(shelfParts.warehouse);
         setArea(shelfParts.area);
         setAisle(shelfParts.aisle);
-        setRack(shelfParts.rack.replace(/^R/, ''));
-        setLevel(shelfParts.level.replace(/^L/, ''));
+        setRack(shelfParts.rack);
+        setLevel(shelfParts.level);
         setBin(shelfParts.bin || "B1");
+        setIsOldFormat(false);
+        setOldFormatCode("");
         onChange(newCode);
         return;
       }
       
+      // Try new pallet format
       const palletParts = parsePalletLocationCode(newCode);
       if (palletParts) {
         setAreaType("pallets");
@@ -135,7 +172,27 @@ export default function WarehouseLocationSelector({
         setArea(palletParts.area);
         setZone(palletParts.zone);
         setPosition(palletParts.position);
+        setIsOldFormat(false);
+        setOldFormatCode("");
         onChange(newCode);
+        return;
+      }
+      
+      // Try old format (WH1-A01-R02-L03)
+      const oldPattern = /^(WH\d+)-([A-Z]\d{2})-(R\d{2})-(L\d{2})$/;
+      const oldMatch = newCode.match(oldPattern);
+      if (oldMatch) {
+        setAreaType("shelves");
+        setWarehouse(oldMatch[1]);
+        setArea("A");
+        setAisle(oldMatch[2]);
+        setRack(oldMatch[3]);
+        setLevel(oldMatch[4]);
+        setBin("B1");
+        setIsOldFormat(true);
+        setOldFormatCode(newCode);
+        onChange(newCode);
+        return;
       }
     }
   };
@@ -394,7 +451,7 @@ export default function WarehouseLocationSelector({
                         {rackOptions.map((opt) => (
                           <SelectItem
                             key={opt.value}
-                            value={opt.value.replace(/^R/, '')}
+                            value={opt.value}
                             data-testid={`option-${opt.value}`}
                           >
                             {opt.label}
@@ -423,7 +480,7 @@ export default function WarehouseLocationSelector({
                         {levelOptions.map((opt) => (
                           <SelectItem
                             key={opt.value}
-                            value={opt.value.replace(/^L/, '')}
+                            value={opt.value}
                             data-testid={`option-${opt.value}`}
                           >
                             {opt.label}
@@ -591,7 +648,7 @@ export default function WarehouseLocationSelector({
                 <p className="text-xs text-slate-600">Generated Location Code</p>
                 <div className="flex items-center space-x-3">
                   <code className="text-lg font-mono font-semibold" data-testid="text-location-code">
-                    {manualCode || (areaType === "pallets" 
+                    {manualCode || (isOldFormat && oldFormatCode) || (areaType === "pallets" 
                       ? generatePalletLocationCode(warehouse, area, zone, position)
                       : generateShelfLocationCode(warehouse, area, aisle, rack, level, bin))}
                   </code>
