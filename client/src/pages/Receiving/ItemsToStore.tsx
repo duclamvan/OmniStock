@@ -1362,7 +1362,7 @@ export default function ItemsToStore() {
             <div className="space-y-2">
               <p className="text-xs font-medium text-muted-foreground">Enter Location Code</p>
               <WarehouseLocationSelector 
-                value={locationCode || (currentItem ? (getSuggestedLocation(currentItem) || generateSuggestedLocation(currentItem)) : "")}
+                value={locationCode}
                 onChange={(code) => {
                   setLocationCode(code);
                 }}
