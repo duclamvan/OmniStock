@@ -8,44 +8,168 @@ import {
 } from "lucide-react";
 
 export type LocationType = 'display' | 'warehouse' | 'pallet' | 'other';
+export type AreaType = 'shelves' | 'pallets' | 'office';
 
 export interface LocationParts {
   warehouse: string;
+  area: string;
   aisle: string;
   rack: string;
   level: string;
+  bin?: string;
+}
+
+export interface PalletLocationParts {
+  warehouse: string;
+  area: string;
+  zone: string;
+  position: string;
 }
 
 /**
- * Parse a location code into its component parts
- * Format: WH1-A01-R02-L03
+ * Parse a shelf location code into its component parts
+ * Format: WH1-A-A06-R04-L04-B2
  */
-export function parseLocationCode(code: string): LocationParts | null {
+export function parseShelfLocationCode(code: string): LocationParts | null {
   if (!code) return null;
   
-  const pattern = /^(WH\d+)-([A-Z]\d{2})-([R]\d{2})-([L]\d{2})$/;
+  const pattern = /^(WH\d+)-([A-Z])-([A-Z]\d{2})-R(\d{2})-L(\d{2})-B(\d{1,2})$/;
   const match = code.match(pattern);
   
   if (!match) return null;
   
   return {
     warehouse: match[1],
-    aisle: match[2],
-    rack: match[3],
-    level: match[4]
+    area: match[2],
+    aisle: match[3],
+    rack: `R${match[4]}`,
+    level: `L${match[5]}`,
+    bin: `B${match[6]}`
   };
 }
 
 /**
- * Validate a location code format
+ * Parse a pallet location code into its component parts
+ * Format: WH1-B-B03-P05
  */
-export function validateLocationCode(code: string): boolean {
-  const pattern = /^WH\d+-[A-Z]\d{2}-R\d{2}-L\d{2}$/;
+export function parsePalletLocationCode(code: string): PalletLocationParts | null {
+  if (!code) return null;
+  
+  const pattern = /^(WH\d+)-([A-Z])-([A-Z]\d{2})-P(\d{2})$/;
+  const match = code.match(pattern);
+  
+  if (!match) return null;
+  
+  return {
+    warehouse: match[1],
+    area: match[2],
+    zone: match[3],
+    position: `P${match[4]}`
+  };
+}
+
+/**
+ * Parse a location code (tries both formats, backward compatible with old format)
+ * Old format: WH1-A01-R02-L03
+ * New shelf format: WH1-A-A06-R04-L04-B2
+ * New pallet format: WH1-B-B03-P05
+ */
+export function parseLocationCode(code: string): LocationParts | PalletLocationParts | null {
+  if (!code) return null;
+  
+  // Try new shelf format first
+  const shelfMatch = parseShelfLocationCode(code);
+  if (shelfMatch) return shelfMatch;
+  
+  // Try new pallet format
+  const palletMatch = parsePalletLocationCode(code);
+  if (palletMatch) return palletMatch;
+  
+  // Try old format for backward compatibility
+  const oldPattern = /^(WH\d+)-([A-Z]\d{2})-([R]\d{2})-([L]\d{2})$/;
+  const oldMatch = code.match(oldPattern);
+  
+  if (!oldMatch) return null;
+  
+  return {
+    warehouse: oldMatch[1],
+    area: 'A', // Default area for old format
+    aisle: oldMatch[2],
+    rack: oldMatch[3],
+    level: oldMatch[4]
+  };
+}
+
+/**
+ * Validate a shelf location code format
+ * Format: WH1-A-A06-R04-L04-B2
+ */
+export function validateShelfLocationCode(code: string): boolean {
+  const pattern = /^WH\d+-[A-Z]-[A-Z]\d{2}-R\d{2}-L\d{2}-B\d{1,2}$/;
   return pattern.test(code);
 }
 
 /**
- * Generate a location code from components
+ * Validate a pallet location code format
+ * Format: WH1-B-B03-P05
+ */
+export function validatePalletLocationCode(code: string): boolean {
+  const pattern = /^WH\d+-[A-Z]-[A-Z]\d{2}-P\d{2}$/;
+  return pattern.test(code);
+}
+
+/**
+ * Validate a location code format (any format)
+ */
+export function validateLocationCode(code: string): boolean {
+  return validateShelfLocationCode(code) || 
+         validatePalletLocationCode(code) ||
+         /^WH\d+-[A-Z]\d{2}-R\d{2}-L\d{2}$/.test(code); // Old format
+}
+
+/**
+ * Generate a shelf location code from components
+ * Format: WH1-A-A06-R04-L04-B2
+ */
+export function generateShelfLocationCode(
+  warehouse: string,
+  area: string,
+  aisle: string,
+  rack: string,
+  level: string,
+  bin: string
+): string {
+  const whFormatted = warehouse.startsWith('WH') ? warehouse : `WH${warehouse}`;
+  const areaFormatted = area.toUpperCase();
+  const aisleFormatted = aisle;
+  const rackFormatted = rack.replace(/^R/, '').padStart(2, '0');
+  const levelFormatted = level.replace(/^L/, '').padStart(2, '0');
+  const binFormatted = bin.replace(/^B/, '');
+  
+  return `${whFormatted}-${areaFormatted}-${aisleFormatted}-R${rackFormatted}-L${levelFormatted}-B${binFormatted}`;
+}
+
+/**
+ * Generate a pallet location code from components
+ * Format: WH1-B-B03-P05
+ */
+export function generatePalletLocationCode(
+  warehouse: string,
+  area: string,
+  zone: string,
+  position: string
+): string {
+  const whFormatted = warehouse.startsWith('WH') ? warehouse : `WH${warehouse}`;
+  const areaFormatted = area.toUpperCase();
+  const zoneFormatted = zone;
+  const positionFormatted = position.replace(/^P/, '').padStart(2, '0');
+  
+  return `${whFormatted}-${areaFormatted}-${zoneFormatted}-P${positionFormatted}`;
+}
+
+/**
+ * Generate a location code from components (backward compatible)
+ * Old format: WH1-A01-R02-L03
  */
 export function generateLocationCode(
   warehouse: string,
@@ -123,7 +247,18 @@ export function formatLocationCode(code: string): string {
   const parts = parseLocationCode(code);
   if (!parts) return code;
   
-  return `${parts.warehouse} • ${parts.aisle} • ${parts.rack} • ${parts.level}`;
+  // Check if it's a pallet location
+  if ('zone' in parts && 'position' in parts) {
+    return `${parts.warehouse} • ${parts.area} • ${parts.zone} • ${parts.position}`;
+  }
+  
+  // Shelf location
+  if ('bin' in parts && parts.bin) {
+    return `${parts.warehouse} • ${parts.area} • ${parts.aisle} • ${parts.rack} • ${parts.level} • ${parts.bin}`;
+  }
+  
+  // Old format or partial
+  return `${parts.warehouse} • ${parts.area} • ${parts.aisle} • ${parts.rack} • ${parts.level}`;
 }
 
 /**
@@ -203,11 +338,67 @@ export function getLevelOptions(count: number = 10): Array<{ value: string; labe
 }
 
 /**
+ * Get area options (A, B, C, D, etc.)
+ */
+export function getAreaOptions(count: number = 10): Array<{ value: string; label: string }> {
+  return Array.from({ length: count }, (_, i) => {
+    const letter = String.fromCharCode(65 + i); // A, B, C, D, ...
+    return {
+      value: letter,
+      label: `Area ${letter}`
+    };
+  });
+}
+
+/**
+ * Get bin options (1-20)
+ */
+export function getBinOptions(count: number = 20): Array<{ value: string; label: string }> {
+  return Array.from({ length: count }, (_, i) => ({
+    value: `B${i + 1}`,
+    label: `Bin ${i + 1}`
+  }));
+}
+
+/**
+ * Get zone options for pallets (A01-D20)
+ */
+export function getZoneOptions(): Array<{ value: string; label: string }> {
+  const zones = [];
+  for (let letter = 65; letter <= 68; letter++) { // A-D
+    for (let num = 1; num <= 20; num++) {
+      const zone = `${String.fromCharCode(letter)}${String(num).padStart(2, '0')}`;
+      zones.push({
+        value: zone,
+        label: `Zone ${zone}`
+      });
+    }
+  }
+  return zones;
+}
+
+/**
+ * Get position options for pallets (P01-P20)
+ */
+export function getPositionOptions(count: number = 20): Array<{ value: string; label: string }> {
+  return Array.from({ length: count }, (_, i) => ({
+    value: `P${String(i + 1).padStart(2, '0')}`,
+    label: `Position ${String(i + 1).padStart(2, '0')}`
+  }));
+}
+
+/**
  * Check if a location is for pallet storage
  */
 export function isPalletLocation(code: string): boolean {
   const parts = parseLocationCode(code);
-  return parts?.level === 'L00' || parts?.level === 'L99';
+  if (!parts) return false;
+  
+  // Check if it's a pallet location by checking for zone and position
+  if ('zone' in parts && 'position' in parts) return true;
+  
+  // Old logic for backward compatibility
+  return ('level' in parts && (parts.level === 'L00' || parts.level === 'L99'));
 }
 
 /**
