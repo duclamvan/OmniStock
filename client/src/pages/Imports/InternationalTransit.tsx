@@ -1549,30 +1549,29 @@ export default function InternationalTransit() {
                     id={`shipment-${shipment.id}`}
                     className={`border-l-4 hover:shadow-md transition-all duration-300 ${getShipmentTypeColor(shipment.shipmentType || '')}`}
                   >
-                    <CardContent className="p-4">
-                      {/* Compact Header with Combined Status */}
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center space-x-3">
-                          {getShipmentTypeIcon(shipment.shipmentType || shipment.carrier || shipment.shippingMethod || '')}
-                          <div>
-                            <div>
-                              <h3 className="font-semibold" data-testid={`shipment-tracking-${shipment.id}`}>
-                                {shipment.shipmentName || shipment.trackingNumber || `Shipment #${shipment.id}`}
-                                {shipment.totalUnits && shipment.unitType && (
-                                  <span className="font-normal text-muted-foreground ml-1">
-                                    ({shipment.totalUnits} {shipment.unitType})
-                                  </span>
-                                )}
-                                <Badge className={`text-xs ml-2 align-middle ${getETAColor(shipment)}`}>
-                                  <CalendarDays className="h-3 w-3 mr-1 inline" />
-                                  {getTimeRemaining(shipment)}
-                                </Badge>
-                              </h3>
-                            </div>
+                    <CardContent className="p-5">
+                      {/* Header Section */}
+                      <div className="flex items-start justify-between gap-4 mb-4">
+                        {/* Left: Icon + Title Info */}
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <div className="mt-0.5">
+                            {getShipmentTypeIcon(shipment.shipmentType || shipment.carrier || shipment.shippingMethod || '')}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-base mb-1.5" data-testid={`shipment-tracking-${shipment.id}`}>
+                              {shipment.shipmentName || shipment.trackingNumber || `Shipment #${shipment.id}`}
+                              {shipment.totalUnits && shipment.unitType && (
+                                <span className="font-normal text-muted-foreground text-sm ml-2">
+                                  ({shipment.totalUnits} {shipment.unitType})
+                                </span>
+                              )}
+                            </h3>
+                            
+                            {/* Type and Badge */}
                             {shipment.shipmentType && (() => {
                               const typeInfo = formatShipmentType(shipment.shipmentType);
                               return (
-                                <div className="flex items-center gap-2 mt-1">
+                                <div className="flex items-center gap-2 mb-1.5">
                                   <p className="text-sm text-muted-foreground font-medium">
                                     {typeInfo.label}
                                   </p>
@@ -1584,14 +1583,31 @@ export default function InternationalTransit() {
                                 </div>
                               );
                             })()}
-                            <p className="text-xs text-muted-foreground">
-                              {shipment.totalWeight ? `${shipment.totalWeight}kg • ` : ''}
-                              {shipment.shippingCost && `${shipment.shippingCostCurrency || 'USD'} ${shipment.shippingCost} • `}
-                              {shipment.endCarrier || shipment.carrier || 'Standard Carrier'}
-                            </p>
+                            
+                            {/* Weight, Cost, Carrier */}
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                              {shipment.totalWeight && (
+                                <span className="flex items-center gap-1">
+                                  <Package className="h-3 w-3" />
+                                  {shipment.totalWeight}kg
+                                </span>
+                              )}
+                              {shipment.shippingCost && (
+                                <span className="font-medium">
+                                  {shipment.shippingCostCurrency || 'USD'} {shipment.shippingCost}
+                                </span>
+                              )}
+                              <span>{shipment.endCarrier || shipment.carrier || 'Standard Carrier'}</span>
+                            </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        
+                        {/* Right: ETA Badge + Status + Actions */}
+                        <div className="flex items-start gap-2 flex-shrink-0">
+                          <Badge className={`text-xs whitespace-nowrap h-7 ${getETAColor(shipment)}`}>
+                            <CalendarDays className="h-3 w-3 mr-1" />
+                            {getTimeRemaining(shipment)}
+                          </Badge>
                           <Select
                             value={shipment.status}
                             onValueChange={(status) => 
@@ -1683,16 +1699,16 @@ export default function InternationalTransit() {
                         </div>
                       </div>
 
-                      {/* Compact Route */}
-                      <div className="flex items-center space-x-3 mb-3 text-sm">
-                        <div className="flex items-center space-x-1">
-                          <MapPin className="h-3 w-3 text-muted-foreground" />
-                          <span>{shipment.origin}</span>
+                      {/* Route Section */}
+                      <div className="flex items-center gap-3 mb-4 text-sm bg-slate-50 dark:bg-slate-900/30 rounded-lg px-4 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-3.5 w-3.5 text-blue-600" />
+                          <span className="font-medium">{shipment.origin}</span>
                         </div>
-                        <div className="flex-1 border-t border-dashed"></div>
-                        <div className="flex items-center space-x-1">
-                          <Target className="h-3 w-3 text-muted-foreground" />
-                          <span>{shipment.destination}</span>
+                        <div className="flex-1 border-t border-dashed border-slate-300 dark:border-slate-700"></div>
+                        <div className="flex items-center gap-2">
+                          <Target className="h-3.5 w-3.5 text-green-600" />
+                          <span className="font-medium">{shipment.destination}</span>
                         </div>
                       </div>
 
