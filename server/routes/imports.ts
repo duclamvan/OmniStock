@@ -20,7 +20,9 @@ import {
   shipmentCartons,
   costAllocations,
   productCostHistory,
-  suppliers
+  suppliers,
+  orders,
+  orderItems
 } from "@shared/schema";
 import { eq, desc, sql, and, like, or, isNull, inArray, ne, gte } from "drizzle-orm";
 import { addDays, differenceInDays } from "date-fns";
@@ -6660,6 +6662,198 @@ router.patch("/shipments/:id/archive", async (req, res) => {
   } catch (error) {
     console.error("Error archiving shipment:", error);
     res.status(500).json({ message: "Failed to archive shipment" });
+  }
+});
+
+// AI-powered storage location suggestion
+router.post("/suggest-storage-location", async (req, res) => {
+  try {
+    const { productId, productName, category } = req.body;
+    
+    if (!productName) {
+      return res.status(400).json({ message: "Product name is required" });
+    }
+    
+    const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
+    if (!DEEPSEEK_API_KEY) {
+      return res.status(500).json({ message: "DEEPSEEK_API_KEY not configured" });
+    }
+    
+    // Gather warehouse intelligence data
+    let existingLocations: any[] = [];
+    let salesFrequency = 0;
+    let avgInventoryAge = 0;
+    let totalStock = 0;
+    
+    if (productId) {
+      // Get current warehouse locations for this product
+      existingLocations = await db
+        .select()
+        .from(productLocations)
+        .where(eq(productLocations.productId, productId));
+      
+      totalStock = existingLocations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+      
+      // Calculate sales frequency (last 90 days)
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      
+      const salesData = await db
+        .select({
+          totalOrders: sql<number>`count(distinct ${orderItems.orderId})::int`,
+          totalQuantity: sql<number>`sum(${orderItems.quantity})::int`,
+          firstOrder: sql<Date>`min(${orders.createdAt})`,
+          lastOrder: sql<Date>`max(${orders.createdAt})`
+        })
+        .from(orderItems)
+        .leftJoin(orders, eq(orderItems.orderId, orders.id))
+        .where(and(
+          eq(orderItems.productId, productId),
+          gte(orders.createdAt, ninetyDaysAgo)
+        ));
+      
+      if (salesData.length > 0 && salesData[0].totalOrders) {
+        salesFrequency = salesData[0].totalOrders;
+        
+        // Estimate inventory age (simple heuristic)
+        if (salesData[0].totalQuantity && salesData[0].totalQuantity > 0) {
+          const daysSinceFirst = salesData[0].firstOrder 
+            ? differenceInDays(new Date(), salesData[0].firstOrder) 
+            : 90;
+          avgInventoryAge = Math.max(1, daysSinceFirst / Math.max(1, salesData[0].totalQuantity / totalStock));
+        }
+      }
+    }
+    
+    // Build analysis for AI
+    const locationSummary = existingLocations.length > 0
+      ? existingLocations.map(loc => `${loc.locationCode} (${loc.quantity} units)`).join(', ')
+      : 'No existing locations';
+    
+    const salesProfile = salesFrequency > 20 
+      ? 'HIGH (fast-moving, frequent sales)' 
+      : salesFrequency > 5 
+      ? 'MEDIUM (moderate sales)' 
+      : salesFrequency > 0
+      ? 'LOW (slow-moving)' 
+      : 'NONE (new product or no recent sales)';
+    
+    const ageProfile = avgInventoryAge > 60 
+      ? 'SLOW (items sit >60 days)' 
+      : avgInventoryAge > 30 
+      ? 'MODERATE (30-60 days turnover)' 
+      : avgInventoryAge > 0
+      ? 'FAST (quick turnover <30 days)'
+      : 'NEW PRODUCT';
+    
+    const prompt = `You are a warehouse optimization expert. Suggest the optimal storage location for this product based on warehouse analytics.
+
+**PRODUCT DETAILS:**
+- Name: ${productName}
+- Category: ${category || 'General'}
+- Current Stock: ${totalStock} units
+- Existing Locations: ${locationSummary}
+
+**SALES & INVENTORY ANALYTICS:**
+- Sales Frequency (90 days): ${salesFrequency} orders - ${salesProfile}
+- Inventory Turnover: ${ageProfile}
+- Average Age in Warehouse: ${avgInventoryAge > 0 ? Math.round(avgInventoryAge) + ' days' : 'N/A'}
+
+**WAREHOUSE ZONE STRUCTURE:**
+- **Shelves (A zones)**: A01-A99 for general storage
+  - A01-A06: General/High-volume
+  - A05-A07: Toys
+  - A10-A12: Clothing/Textiles
+  - A15-A17: Electronics
+  - A20-A22: Medical/Health
+  - A25-A27: Food/Consumables
+  - A28-A29: Books/Media
+- **Pallets (B zones)**: B01-B99 for bulk/heavy items
+- **Office (C zones)**: C01-C99 for small valuable items
+
+**OPTIMIZATION RULES:**
+1. Fast-moving items (high sales) → Easy-access lower levels (L01-L02) near entrance (A01-A06)
+2. Medium-moving → Mid-range zones based on category
+3. Slow-moving → Higher levels (L03-L05) or back zones
+4. New products → Category-appropriate zone, accessible location to monitor performance
+5. Heavy/Bulk items → Pallet zones (B-prefix)
+6. Small valuable items → Office zones (C-prefix)
+
+**FORMAT:** WH1-{ZONE}-R{ROW}-L{LEVEL}-B{BIN}
+Example: WH1-A06-R04-L02-B3
+
+Respond with ONLY a JSON object with this structure:
+{
+  "suggestedLocation": "WH1-A06-R04-L02-B3",
+  "reasoning": "Brief 1-sentence explanation of why this location is optimal",
+  "zone": "Shelves|Pallets|Office",
+  "accessibility": "High|Medium|Low"
+}`;
+
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 500
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`DeepSeek API error: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    const aiResponse = data.choices[0]?.message?.content;
+    
+    if (!aiResponse) {
+      throw new Error('No response from DeepSeek AI');
+    }
+    
+    // Parse AI response
+    let suggestion: {
+      suggestedLocation: string;
+      reasoning: string;
+      zone: string;
+      accessibility: string;
+    };
+    
+    try {
+      // Extract JSON from response
+      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No JSON found in AI response');
+      }
+      suggestion = JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', aiResponse);
+      throw new Error('Failed to parse AI suggestion');
+    }
+    
+    res.json({
+      ...suggestion,
+      analytics: {
+        salesFrequency,
+        salesProfile,
+        avgInventoryAge: Math.round(avgInventoryAge),
+        ageProfile,
+        totalStock,
+        existingLocationCount: existingLocations.length
+      }
+    });
+  } catch (error) {
+    console.error("Error suggesting storage location:", error);
+    res.status(500).json({ message: "Failed to suggest storage location" });
   }
 });
 
