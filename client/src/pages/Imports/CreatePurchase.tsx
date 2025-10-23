@@ -251,6 +251,9 @@ export default function CreatePurchase() {
   const [newCategoryDialogOpen, setNewCategoryDialogOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [savingCategory, setSavingCategory] = useState(false);
+  
+  // AI storage location suggestion state
+  const [suggestingLocation, setSuggestingLocation] = useState(false);
 
   // Set default purchase date to now
   useEffect(() => {
@@ -530,6 +533,50 @@ export default function CreatePurchase() {
     });
   };
 
+  // AI-powered storage location suggestion
+  const suggestStorageLocation = async () => {
+    if (!currentItem.name) {
+      toast({
+        title: "Product name required",
+        description: "Please enter a product name before getting location suggestion",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setSuggestingLocation(true);
+    try {
+      const response = await apiRequest('/api/imports/suggest-storage-location', {
+        method: 'POST',
+        body: JSON.stringify({
+          productId: selectedProduct?.id,
+          productName: currentItem.name,
+          category: currentItem.category || 'General'
+        })
+      });
+      
+      const data = await response.json();
+      
+      setCurrentItem({
+        ...currentItem,
+        binLocation: data.suggestedLocation
+      });
+      
+      toast({
+        title: "Location suggested",
+        description: `${data.reasoning} (${data.accessibility} accessibility)`,
+      });
+    } catch (error) {
+      console.error("Error suggesting location:", error);
+      toast({
+        title: "Suggestion failed",
+        description: "Could not generate storage location suggestion",
+        variant: "destructive"
+      });
+    } finally {
+      setSuggestingLocation(false);
+    }
+  };
 
   // Load frequent suppliers on mount
   useEffect(() => {
@@ -1674,6 +1721,44 @@ export default function CreatePurchase() {
                   placeholder="Optional notes for this item"
                   data-testid="input-item-notes"
                 />
+              </div>
+              
+              {/* AI Storage Location Suggestion */}
+              <div className="space-y-2">
+                <Label htmlFor="binLocation">Storage Location</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="binLocation"
+                    value={currentItem.binLocation || ""}
+                    onChange={(e) => setCurrentItem({...currentItem, binLocation: e.target.value})}
+                    placeholder="e.g., WH1-A06-R04-L02-B3"
+                    data-testid="input-bin-location"
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    onClick={suggestStorageLocation}
+                    disabled={!currentItem.name || suggestingLocation}
+                    variant="outline"
+                    className="gap-2"
+                    data-testid="button-suggest-location"
+                  >
+                    {suggestingLocation ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        AI Suggesting...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="h-4 w-4" />
+                        AI Suggest
+                      </>
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  AI analyzes sales frequency, inventory age, and category to suggest optimal location
+                </p>
               </div>
               
               {/* Variants Toggle */}
