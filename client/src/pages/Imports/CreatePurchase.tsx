@@ -2384,76 +2384,49 @@ export default function CreatePurchase() {
 
         {/* Right Column - Summary (Sticky) */}
         <div className="xl:sticky xl:top-6 h-fit space-y-6">
-          {/* Status Selection */}
+          {/* Status Selection - Compact Dropdown */}
           <Card className="shadow-sm">
-            <CardHeader className="pb-2">
+            <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground">Order Status</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-1.5">
-              <button
-                onClick={() => setStatus("pending")}
-                className={cn(
-                  "w-full px-3 py-2 rounded-md border text-sm transition-colors text-left",
-                  status === "pending" 
-                    ? "bg-amber-50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-100 font-medium" 
-                    : "border-border hover:bg-muted/50"
-                )}
-                data-testid="status-pending"
-              >
-                Pending
-              </button>
-              
-              <button
-                onClick={() => setStatus("processing")}
-                className={cn(
-                  "w-full px-3 py-2 rounded-md border text-sm transition-colors text-left",
-                  status === "processing" 
-                    ? "bg-blue-50 dark:bg-blue-950/20 border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100 font-medium" 
-                    : "border-border hover:bg-muted/50"
-                )}
-                data-testid="status-processing"
-              >
-                Processing
-              </button>
-              
-              <button
-                onClick={() => setStatus("at_warehouse")}
-                className={cn(
-                  "w-full px-3 py-2 rounded-md border text-sm transition-colors text-left",
-                  status === "at_warehouse" 
-                    ? "bg-purple-50 dark:bg-purple-950/20 border-purple-300 dark:border-purple-700 text-purple-900 dark:text-purple-100 font-medium" 
-                    : "border-border hover:bg-muted/50"
-                )}
-                data-testid="status-at-warehouse"
-              >
-                Consolidation
-              </button>
-              
-              <button
-                onClick={() => setStatus("shipped")}
-                className={cn(
-                  "w-full px-3 py-2 rounded-md border text-sm transition-colors text-left",
-                  status === "shipped" 
-                    ? "bg-cyan-50 dark:bg-cyan-950/20 border-cyan-300 dark:border-cyan-700 text-cyan-900 dark:text-cyan-100 font-medium" 
-                    : "border-border hover:bg-muted/50"
-                )}
-                data-testid="status-shipped"
-              >
-                Shipped
-              </button>
-              
-              <button
-                onClick={() => setStatus("delivered")}
-                className={cn(
-                  "w-full px-3 py-2 rounded-md border text-sm transition-colors text-left",
-                  status === "delivered" 
-                    ? "bg-green-50 dark:bg-green-950/20 border-green-300 dark:border-green-700 text-green-900 dark:text-green-100 font-medium" 
-                    : "border-border hover:bg-muted/50"
-                )}
-                data-testid="status-delivered"
-              >
-                Delivered
-              </button>
+            <CardContent>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger className="w-full" data-testid="select-status">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending" data-testid="status-pending">
+                    <span className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-amber-500"></span>
+                      Pending
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="processing" data-testid="status-processing">
+                    <span className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-blue-500"></span>
+                      Processing
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="at_warehouse" data-testid="status-at-warehouse">
+                    <span className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-purple-500"></span>
+                      Consolidation
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="shipped" data-testid="status-shipped">
+                    <span className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-cyan-500"></span>
+                      Shipped
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="delivered" data-testid="status-delivered">
+                    <span className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                      Delivered
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </CardContent>
           </Card>
 
