@@ -505,6 +505,7 @@ const ShipmentCard = memo(({
 ShipmentCard.displayName = 'ShipmentCard';
 
 const RECEIVING_TAB_KEY = 'receiving-active-tab';
+const EXPANDED_SHIPMENTS_KEY = 'receiving-expanded-shipments';
 
 export default function ReceivingList() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -521,7 +522,19 @@ export default function ReceivingList() {
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [barcodeScan, setBarcodeScan] = useState("");
   const [showBulkActions, setShowBulkActions] = useState(false);
-  const [expandedShipments, setExpandedShipments] = useState<Set<number>>(new Set());
+  const [expandedShipments, setExpandedShipments] = useState<Set<number>>(() => {
+    // Load from localStorage on mount
+    try {
+      const saved = localStorage.getItem(EXPANDED_SHIPMENTS_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return new Set(parsed);
+      }
+    } catch {
+      // Silently fail if localStorage is not available
+    }
+    return new Set();
+  });
   const [sortBy, setSortBy] = useState("deliveredAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [carrierFilter, setCarrierFilter] = useState("all");
@@ -540,6 +553,16 @@ export default function ReceivingList() {
       // Silently fail if localStorage is not available
     }
   }, [activeTab]);
+
+  // Save expanded shipments to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      const array = Array.from(expandedShipments);
+      localStorage.setItem(EXPANDED_SHIPMENTS_KEY, JSON.stringify(array));
+    } catch (error) {
+      // Silently fail if localStorage is not available
+    }
+  }, [expandedShipments]);
 
   // Move back confirmation dialog state
   const [showMoveBackDialog, setShowMoveBackDialog] = useState(false);
@@ -1102,45 +1125,25 @@ export default function ReceivingList() {
     }
   }, [barcodeScan, handleBarcodeInput]);
 
-  // Auto-expand all shipments in receiving tab
+  // Auto-expand all shipments on first load (unless localStorage has saved state)
   useEffect(() => {
-    if (receivingShipments && receivingShipments.length > 0 && expandAllReceiving) {
-      const allReceivingIds = new Set<number>(receivingShipments.map((s: any) => s.id));
-      setExpandedShipments(allReceivingIds);
+    // Only auto-expand if there's no saved state in localStorage
+    const hasSavedState = localStorage.getItem(EXPANDED_SHIPMENTS_KEY);
+    if (hasSavedState) return; // User has custom expansion preferences
+    
+    // Collect all shipment IDs from all tabs
+    const allShipmentIds = new Set<number>();
+    
+    toReceiveShipments?.forEach((s: any) => s?.id && allShipmentIds.add(s.id));
+    receivingShipments?.forEach((s: any) => s?.id && allShipmentIds.add(s.id));
+    storageShipments?.forEach((s: any) => s?.id && allShipmentIds.add(s.id));
+    completedShipments?.forEach((s: any) => s?.id && allShipmentIds.add(s.id));
+    archivedShipments?.forEach((s: any) => s?.id && allShipmentIds.add(s.id));
+    
+    if (allShipmentIds.size > 0) {
+      setExpandedShipments(allShipmentIds);
     }
-  }, [receivingShipments, expandAllReceiving]);
-
-  // Auto-expand all shipments in to-receive tab by default
-  useEffect(() => {
-    if (activeTab === "to-receive" && sortedShipments && sortedShipments.length > 0) {
-      const allToReceiveIds = new Set<number>(sortedShipments.map((s: any) => s.id));
-      setExpandedShipments(prev => new Set<number>([...Array.from(prev), ...Array.from(allToReceiveIds)]));
-    }
-  }, [activeTab, sortedShipments]);
-
-  // Auto-expand all items in "completed" tab
-  useEffect(() => {
-    if (activeTab === "completed" && completedShipments && completedShipments.length > 0) {
-      const allCompletedIds = new Set<number>(completedShipments.map((s: any) => s.id));
-      setExpandedShipments(prev => new Set<number>([...Array.from(prev), ...Array.from(allCompletedIds)]));
-    }
-  }, [activeTab, completedShipments]);
-
-  // Auto-expand all items in "archived" tab
-  useEffect(() => {
-    if (activeTab === "archived" && archivedShipments && archivedShipments.length > 0) {
-      const allArchivedIds = new Set<number>(archivedShipments.map((s: any) => s.id));
-      setExpandedShipments(prev => new Set<number>([...Array.from(prev), ...Array.from(allArchivedIds)]));
-    }
-  }, [activeTab, archivedShipments]);
-
-  // Auto-expand all items in "storage" tab
-  useEffect(() => {
-    if (activeTab === "storage" && storageShipments && storageShipments.length > 0) {
-      const allStorageIds = new Set<number>(storageShipments.map((s: any) => s.id));
-      setExpandedShipments(prev => new Set<number>([...Array.from(prev), ...Array.from(allStorageIds)]));
-    }
-  }, [activeTab, storageShipments]);
+  }, [toReceiveShipments, receivingShipments, storageShipments, completedShipments, archivedShipments]);
 
   // Toggle shipment selection
   const toggleShipmentSelection = (id: number) => {
