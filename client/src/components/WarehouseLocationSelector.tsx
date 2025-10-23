@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Select,
   SelectContent,
@@ -197,14 +197,14 @@ export default function WarehouseLocationSelector({
     }
   };
 
-  const warehouseOptions = getWarehouseOptions();
-  const areaOptions = getAreaOptions();
-  const aisleOptions = getAisleOptions();
-  const rackOptions = getRackOptions();
-  const levelOptions = getLevelOptions();
-  const binOptions = getBinOptions();
-  const zoneOptions = getZoneOptions();
-  const positionOptions = getPositionOptions();
+  const warehouseOptions = useMemo(() => getWarehouseOptions(), []);
+  const areaOptions = useMemo(() => getAreaOptions(), []);
+  const aisleOptions = useMemo(() => getAisleOptions(), []);
+  const rackOptions = useMemo(() => getRackOptions(), []);
+  const levelOptions = useMemo(() => getLevelOptions(), []);
+  const binOptions = useMemo(() => getBinOptions(), []);
+  const zoneOptions = useMemo(() => getZoneOptions(), []);
+  const positionOptions = useMemo(() => getPositionOptions(), []);
 
   const LocationTypeIcon = getLocationTypeIcon(locationType);
 
