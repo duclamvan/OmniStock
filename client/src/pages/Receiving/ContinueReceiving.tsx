@@ -1799,7 +1799,18 @@ export default function ContinueReceiving() {
   // Calculate item statistics for confirmation dialog
   const getItemStats = () => {
     const totalItems = receivingItems.length;
-    const completeItems = receivingItems.filter(item => item.status === 'complete').length;
+    
+    // Count items that are fully verified (all units accounted for)
+    const verifiedItems = receivingItems.filter(item => {
+      const totalAccountedFor = item.receivedQty + (item.damagedQty || 0) + (item.missingQty || 0);
+      return totalAccountedFor === item.expectedQty;
+    }).length;
+    
+    // Count items with no issues (status = complete, no damage/missing)
+    const completeNoIssues = receivingItems.filter(item => 
+      item.status === 'complete' && !item.damagedQty && !item.missingQty
+    ).length;
+    
     const damagedItems = receivingItems.filter(item => 
       item.status === 'damaged' || item.status === 'partial_damaged'
     ).length;
@@ -1810,7 +1821,8 @@ export default function ContinueReceiving() {
     
     return {
       totalItems,
-      completeItems,
+      verifiedItems,  // All units accounted for (including damaged/missing)
+      completeNoIssues,  // Perfect items with no damage/missing
       damagedItems,
       missingItems,
       partialItems
@@ -3801,8 +3813,10 @@ export default function ContinueReceiving() {
               
               {(() => {
                 const stats = getItemStats();
-                const completionRate = stats.totalItems > 0 ? (stats.completeItems / stats.totalItems) * 100 : 0;
+                const verificationRate = stats.totalItems > 0 ? (stats.verifiedItems / stats.totalItems) * 100 : 0;
                 const parcelProgress = parcelCount > 0 ? (scannedParcels / parcelCount) * 100 : 0;
+                const hasIssues = stats.damagedItems > 0 || stats.missingItems > 0;
+                const allPerfect = stats.completeNoIssues === stats.totalItems;
                 
                 return (
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-5 rounded-xl border border-blue-100 dark:border-gray-700 space-y-4">
@@ -3815,31 +3829,35 @@ export default function ContinueReceiving() {
                       {/* Items Progress */}
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Items Complete</span>
+                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Items Verified</span>
                           <span className={`text-sm font-bold px-3 py-1 rounded-full shadow-sm ${
-                            completionRate === 100 
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border border-green-200' 
-                              : completionRate > 0 
+                            verificationRate === 100 
+                              ? hasIssues 
                                 ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border border-amber-200'
+                                : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border border-green-200'
+                              : verificationRate > 0 
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border border-blue-200'
                                 : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border border-gray-200'
                           }`}>
-                            {stats.completeItems}/{stats.totalItems}
+                            {stats.verifiedItems}/{stats.totalItems}
                           </span>
                         </div>
                         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
                           <div 
                             className={`h-3 rounded-full transition-all duration-500 ease-out ${
-                              completionRate === 100 
-                                ? 'bg-green-500 shadow-sm' 
-                                : completionRate > 0 
+                              verificationRate === 100 
+                                ? hasIssues
                                   ? 'bg-amber-500 shadow-sm'
+                                  : 'bg-green-500 shadow-sm'
+                                : verificationRate > 0 
+                                  ? 'bg-blue-500 shadow-sm'
                                   : 'bg-gray-400'
                             }`}
-                            style={{ width: `${completionRate}%` }}
+                            style={{ width: `${verificationRate}%` }}
                           />
                         </div>
                         <div className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                          {Math.round(completionRate)}% complete
+                          {Math.round(verificationRate)}% verified
                         </div>
                       </div>
 
@@ -3904,11 +3922,23 @@ export default function ContinueReceiving() {
                     )}
                     
                     {/* Completion Status */}
-                    {completionRate === 100 && parcelProgress === 100 && (
-                      <div className="flex items-center gap-2 px-4 py-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg">
-                        <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-                        <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                          All items and parcels received successfully!
+                    {verificationRate === 100 && parcelProgress === 100 && (
+                      <div className={`flex items-center gap-2 px-4 py-3 border rounded-lg ${
+                        allPerfect
+                          ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800'
+                          : 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800'
+                      }`}>
+                        <CheckCircle2 className={`h-4 w-4 ${
+                          allPerfect ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'
+                        }`} />
+                        <span className={`text-sm font-medium ${
+                          allPerfect 
+                            ? 'text-green-800 dark:text-green-200' 
+                            : 'text-amber-800 dark:text-amber-200'
+                        }`}>
+                          {allPerfect
+                            ? 'All items and parcels received successfully!'
+                            : 'All items and parcels verified with issues noted'}
                         </span>
                       </div>
                     )}
