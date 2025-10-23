@@ -472,9 +472,19 @@ const ShipmentCard = memo(({
 });
 ShipmentCard.displayName = 'ShipmentCard';
 
+const RECEIVING_TAB_KEY = 'receiving-active-tab';
+
 export default function ReceivingList() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("to-receive");
+  const [activeTab, setActiveTab] = useState(() => {
+    // Load from localStorage on mount
+    try {
+      const saved = localStorage.getItem(RECEIVING_TAB_KEY);
+      return saved || "to-receive";
+    } catch {
+      return "to-receive";
+    }
+  });
   const [selectedShipments, setSelectedShipments] = useState<Set<number>>(new Set());
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [barcodeScan, setBarcodeScan] = useState("");
@@ -489,6 +499,15 @@ export default function ReceivingList() {
   const [expandAllReceiving, setExpandAllReceiving] = useState(true);
   const [receiptDataMap, setReceiptDataMap] = useState<Map<number, any>>(new Map());
   const [showFilters, setShowFilters] = useState(false);
+
+  // Save active tab to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(RECEIVING_TAB_KEY, activeTab);
+    } catch (error) {
+      // Silently fail if localStorage is not available
+    }
+  }, [activeTab]);
 
   // Move back confirmation dialog state
   const [showMoveBackDialog, setShowMoveBackDialog] = useState(false);
