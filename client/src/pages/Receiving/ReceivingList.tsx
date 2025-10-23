@@ -264,6 +264,38 @@ const getUnitTypeIcon = (unitType: string, className = "h-3 w-3") => {
   return <Package className={`${className} text-muted-foreground`} />;
 };
 
+// Helper function to get country flag emoji
+const getCountryFlag = (location: string) => {
+  if (!location) return '🌍';
+  
+  const country = location.toLowerCase();
+  
+  // Common countries
+  if (country.includes('china') || country.includes('beijing') || country.includes('shanghai') || country.includes('guangzhou') || country.includes('shenzhen')) return '🇨🇳';
+  if (country.includes('czech') || country.includes('prague')) return '🇨🇿';
+  if (country.includes('germany') || country.includes('berlin')) return '🇩🇪';
+  if (country.includes('poland') || country.includes('warsaw')) return '🇵🇱';
+  if (country.includes('hong kong')) return '🇭🇰';
+  if (country.includes('usa') || country.includes('united states') || country.includes('america')) return '🇺🇸';
+  if (country.includes('uk') || country.includes('united kingdom') || country.includes('britain')) return '🇬🇧';
+  if (country.includes('france') || country.includes('paris')) return '🇫🇷';
+  if (country.includes('italy') || country.includes('rome')) return '🇮🇹';
+  if (country.includes('spain') || country.includes('madrid')) return '🇪🇸';
+  if (country.includes('netherlands') || country.includes('amsterdam')) return '🇳🇱';
+  if (country.includes('belgium') || country.includes('brussels')) return '🇧🇪';
+  if (country.includes('austria') || country.includes('vienna')) return '🇦🇹';
+  if (country.includes('switzerland')) return '🇨🇭';
+  if (country.includes('japan') || country.includes('tokyo')) return '🇯🇵';
+  if (country.includes('korea') || country.includes('seoul')) return '🇰🇷';
+  if (country.includes('singapore')) return '🇸🇬';
+  if (country.includes('vietnam') || country.includes('hanoi')) return '🇻🇳';
+  if (country.includes('thailand') || country.includes('bangkok')) return '🇹🇭';
+  if (country.includes('malaysia')) return '🇲🇾';
+  if (country.includes('australia')) return '🇦🇺';
+  
+  return '🌍';
+};
+
 // Memoized skeleton component for shipment cards
 const ShipmentCardSkeleton = memo(() => (
   <Card className="border">
@@ -1832,13 +1864,35 @@ export default function ReceivingList() {
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                              {/* Shipping Icon */}
+                              {getShipmentTypeIcon(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '', 'h-5 w-5')}
+                              
+                              {/* Country Flag */}
+                              <span className="text-xl leading-none" title={shipment.origin}>
+                                {getCountryFlag(shipment.origin)}
+                              </span>
+                              
                               <h3 className="font-semibold text-base sm:text-lg">
                                 {shipment.shipmentName || `Shipment #${shipment.id}`}
                               </h3>
                               <Badge className={getStatusColor(shipment.status)}>
                                 {shipment.status?.replace('_', ' ').toUpperCase()}
                               </Badge>
+                            </div>
+                            
+                            {/* Subtitle with tracking and carrier */}
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+                              <span className="font-mono font-medium text-blue-600 dark:text-blue-400">
+                                {shipment.trackingNumber}
+                              </span>
+                              <span>•</span>
+                              <span className="flex items-center gap-1.5">
+                                <Truck className="h-3.5 w-3.5" />
+                                {shipment.endCarrier || shipment.carrier}
+                              </span>
+                              <span>•</span>
+                              <span>{shipment.totalUnits} {shipment.unitType || 'items'}</span>
                             </div>
                           </div>
                           <Button 
