@@ -869,20 +869,25 @@ export default function ItemsToStore() {
                           : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
                       }`}
                     >
-                      {/* Shipment Type & Carrier */}
+                      {/* Shipment Name - Prominent Title */}
                       <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          {receiptData.shipment?.shipmentType && getShipmentTypeIcon(receiptData.shipment.shipmentType)}
-                          <span className="text-xs font-semibold">
-                            {receiptData.shipment?.carrier || 'Unknown Carrier'}
-                          </span>
-                        </div>
+                        <h3 className="font-semibold text-sm truncate">
+                          {receiptData.shipment?.shipmentName || `Shipment #${receiptData.shipment?.id || receiptData.receipt.id}`}
+                        </h3>
                         {completionPercent === 100 && (
-                          <Badge className="bg-green-500 text-white text-[10px] h-5">
+                          <Badge className="bg-green-500 text-white text-[10px] h-5 ml-2">
                             <Check className="h-3 w-3 mr-0.5" />
                             Done
                           </Badge>
                         )}
+                      </div>
+
+                      {/* Shipment Type & Carrier */}
+                      <div className="flex items-center gap-2 mb-2">
+                        {receiptData.shipment?.shipmentType && getShipmentTypeIcon(receiptData.shipment.shipmentType, 'h-3 w-3')}
+                        <span className="text-xs text-muted-foreground">
+                          {receiptData.shipment?.carrier || 'Unknown Carrier'}
+                        </span>
                       </div>
 
                       {/* Tracking Number */}
