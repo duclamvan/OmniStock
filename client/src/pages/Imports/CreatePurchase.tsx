@@ -546,14 +546,15 @@ export default function CreatePurchase() {
     
     setSuggestingLocation(true);
     try {
-      const response = await apiRequest('/api/imports/suggest-storage-location', {
-        method: 'POST',
-        body: JSON.stringify({
+      const response = await apiRequest(
+        'POST',
+        '/api/imports/suggest-storage-location',
+        {
           productId: selectedProduct?.id,
           productName: currentItem.name,
           category: currentItem.category || 'General'
-        })
-      });
+        }
+      );
       
       const data = await response.json();
       
