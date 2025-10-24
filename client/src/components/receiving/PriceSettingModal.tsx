@@ -196,23 +196,34 @@ export default function PriceSettingModal({
     }
 
     setSaving(true);
+    let progressToastId: string | undefined;
     
-    // Show progress toast
-    const progressToast = toast({
-      title: "Processing...",
+    // Show progress toast with animation
+    const { id } = toast({
+      title: "⚙️ Processing Receipt Approval...",
       description: (
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-sm">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-            <span>Setting prices and approving receipt...</span>
+            <span>Updating {items.length} products in inventory...</span>
           </div>
-          <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
-            <div className="bg-primary h-full rounded-full animate-pulse" style={{ width: '60%' }}></div>
+          <div className="w-full bg-secondary rounded-full h-2.5 overflow-hidden">
+            <div 
+              className="bg-gradient-to-r from-cyan-500 to-teal-500 h-full rounded-full transition-all duration-1000 ease-in-out" 
+              style={{ 
+                width: '0%',
+                animation: 'progress 3s ease-in-out infinite'
+              }}
+            />
+          </div>
+          <div className="text-xs text-muted-foreground mt-1">
+            Setting prices • Updating costs • Creating inventory records
           </div>
         </div>
       ),
-      duration: Infinity, // Keep it open until we update it
+      duration: Infinity, // Keep it open until we dismiss it
     });
+    progressToastId = id;
     
     try {
       // Prepare items for the combined operation
@@ -226,8 +237,8 @@ export default function PriceSettingModal({
       
       // Call the combined endpoint that handles both price setting and approval atomically
       const response = await apiRequest(
-        `/api/imports/receipts/approve-with-prices/${receiptId}`,
         'POST',
+        `/api/imports/receipts/approve-with-prices/${receiptId}`,
         {
           items: priceItems,
           approvedBy: approvedBy,
@@ -242,8 +253,8 @@ export default function PriceSettingModal({
       }
       
       // Dismiss the progress toast
-      if (progressToast && progressToast.dismiss) {
-        progressToast.dismiss();
+      if (progressToastId) {
+        toast.dismiss(progressToastId);
       }
       
       // Show success toast with detailed summary
@@ -290,8 +301,8 @@ export default function PriceSettingModal({
       }
     } catch (error) {
       // Dismiss the progress toast
-      if (progressToast && progressToast.dismiss) {
-        progressToast.dismiss();
+      if (progressToastId) {
+        toast.dismiss(progressToastId);
       }
       
       console.error('Error approving receipt:', error);
