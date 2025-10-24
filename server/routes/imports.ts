@@ -1600,7 +1600,7 @@ router.post("/shipments/search-by-tracking", async (req, res) => {
   }
 });
 
-// Helper function to generate AI shipment name based only on contents
+// Helper function to generate AI shipment name using DeepSeek
 const generateAIShipmentName = async (consolidationId: number | null, items?: any[]) => {
   try {
     let itemsList = items || [];
@@ -1628,118 +1628,83 @@ const generateAIShipmentName = async (consolidationId: number | null, items?: an
     if (itemsList.length === 1) {
       const itemName = itemsList[0].name || 'Item';
       // Shorten very long names
-      if (itemName.length > 40) {
-        return itemName.substring(0, 40) + '...';
+      if (itemName.length > 50) {
+        return itemName.substring(0, 50).trim() + '...';
       }
       return itemName;
     }
     
-    // For two items, use both names
-    if (itemsList.length === 2) {
-      const item1 = itemsList[0].name || 'Item';
-      const item2 = itemsList[1].name || 'Item';
-      
-      // Shorten each name if needed
-      const short1 = item1.length > 20 ? item1.substring(0, 20) + '...' : item1;
-      const short2 = item2.length > 20 ? item2.substring(0, 20) + '...' : item2;
-      
-      return `${short1} & ${short2}`;
+    // For 2+ items, use DeepSeek AI to generate professional name
+    const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
+    if (!DEEPSEEK_API_KEY) {
+      console.warn('DEEPSEEK_API_KEY not configured, falling back to basic naming');
+      // Fallback to simple naming
+      if (itemsList.length === 2) {
+        return `${itemsList[0].name} & ${itemsList[1].name}`;
+      }
+      return 'Mixed Goods Shipment';
     }
     
-    // For 3+ items, use category-based naming
-    const itemNames = itemsList.map(item => (item.name || '').toLowerCase());
+    // Prepare item list for AI
+    const itemDescriptions = itemsList
+      .slice(0, 20) // Limit to first 20 items for API efficiency
+      .map(item => `${item.name} (Qty: ${item.quantity || 1})`)
+      .join('\n');
     
-    // Enhanced category detection logic with nail/spa/beauty products
-    const categories = {
-      nails: ['nail', 'manicure', 'pedicure', 'polish', 'gel', 'acrylic', 'cuticle', 'nail art', 'nail file', 'buffer', 'top coat', 'base coat', 'remover', 'nail glue', 'nail tip'],
-      spa: ['spa', 'massage', 'aromatherapy', 'essential oil', 'candle', 'bath salt', 'bath bomb', 'diffuser', 'relax', 'therapy', 'hot stone', 'sauna', 'facial'],
-      hygiene: ['hygiene', 'sanitizer', 'disinfectant', 'antibacterial', 'antiseptic', 'hand wash', 'body wash', 'deodorant', 'toothpaste', 'toothbrush', 'mouthwash', 'floss', 'tissue', 'wipe', 'toilet'],
-      beauty: ['cosmetic', 'makeup', 'perfume', 'skincare', 'lotion', 'cream', 'shampoo', 'conditioner', 'soap', 'brush', 'lipstick', 'mascara', 'foundation', 'serum', 'cleanser', 'moisturizer', 'beauty', 'face mask', 'eye cream', 'toner'],
-      electronics: ['laptop', 'computer', 'phone', 'tablet', 'keyboard', 'mouse', 'monitor', 'cable', 'charger', 'headphone', 'speaker', 'camera', 'smartwatch', 'console', 'gaming', 'usb', 'ssd', 'ram', 'processor', 'gpu', 'electronic'],
-      clothing: ['shirt', 'pants', 'dress', 'jacket', 'coat', 'shoes', 'hat', 'sock', 'underwear', 'jeans', 'sweater', 'hoodie', 'suit', 'tie', 'belt', 'scarf', 'glove', 'blazer', 't-shirt', 'shorts', 'cloth'],
-      toys: ['toy', 'game', 'puzzle', 'doll', 'lego', 'action figure', 'board game', 'plush', 'stuffed', 'educational', 'building blocks', 'remote control', 'play'],
-      books: ['book', 'novel', 'magazine', 'comic', 'textbook', 'notebook', 'journal', 'diary', 'encyclopedia', 'manga', 'guide', 'manual', 'read'],
-      sports: ['ball', 'racket', 'gym', 'fitness', 'weight', 'yoga', 'bike', 'helmet', 'glove', 'sport', 'equipment', 'gear', 'mat', 'dumbbell', 'exercise'],
-      home: ['furniture', 'chair', 'table', 'lamp', 'rug', 'curtain', 'pillow', 'blanket', 'towel', 'kitchen', 'utensil', 'plate', 'cup', 'mug', 'decoration', 'bedding', 'home'],
-      tools: ['tool', 'hammer', 'screwdriver', 'drill', 'saw', 'wrench', 'plier', 'measuring', 'level', 'tape', 'screw', 'bolt', 'hardware'],
-      food: ['food', 'snack', 'candy', 'chocolate', 'coffee', 'tea', 'spice', 'sauce', 'oil', 'vinegar', 'beverage', 'drink', 'cereal', 'pasta', 'eat'],
-      office: ['pen', 'pencil', 'paper', 'stapler', 'folder', 'binder', 'clipboard', 'envelope', 'stamp', 'desk', 'organizer', 'marker', 'eraser', 'office'],
-      jewelry: ['ring', 'necklace', 'bracelet', 'earring', 'watch', 'chain', 'pendant', 'brooch', 'jewelry', 'gold', 'silver', 'diamond', 'gem', 'jewel'],
-      automotive: ['car', 'auto', 'vehicle', 'tire', 'brake', 'engine', 'oil', 'filter', 'battery', 'spark', 'part', 'accessory', 'motor'],
-      health: ['medicine', 'vitamin', 'supplement', 'medical', 'health', 'pill', 'tablet', 'capsule', 'bandage', 'first aid', 'thermometer', 'pharma'],
-      pet: ['pet', 'dog', 'cat', 'bird', 'fish', 'animal', 'collar', 'leash', 'cage', 'aquarium', 'treat', 'feed']
-    };
+    const itemCount = itemsList.length;
     
-    // Count matches for each category
-    const categoryScores: Record<string, number> = {};
-    
-    for (const [category, keywords] of Object.entries(categories)) {
-      let score = 0;
-      for (const itemName of itemNames) {
-        for (const keyword of keywords) {
-          if (itemName.includes(keyword)) {
-            score++;
-            break; // Count each item only once per category
+    // Call DeepSeek API for professional naming
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a professional logistics naming assistant for a B2B warehouse management system. Generate concise, professional shipment names (max 60 characters) based on the cargo contents. Use industry-standard terminology. Focus on the primary product category or business purpose.'
+          },
+          {
+            role: 'user',
+            content: `Generate a professional shipment name for this international cargo (${itemCount} items total):\n\n${itemDescriptions}\n\nProvide ONLY the shipment name, no explanation. Examples of good names:\n- "Professional Nail Salon Supplies"\n- "Beauty & Cosmetics Wholesale"\n- "Electronic Components Batch"\n- "Mixed Retail Merchandise"\n- "Spa & Wellness Products"`
           }
-        }
-      }
-      if (score > 0) {
-        categoryScores[category] = score;
-      }
+        ],
+        temperature: 0.3,
+        max_tokens: 30
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`DeepSeek API error: ${response.status}`);
     }
     
-    // Determine the dominant category
-    const sortedCategories = Object.entries(categoryScores)
-      .sort((a, b) => b[1] - a[1]);
+    const data = await response.json();
+    const generatedName = data.choices?.[0]?.message?.content?.trim();
     
-    if (sortedCategories.length === 0) {
-      // No category detected, use generic name
-      return 'Mixed Goods Shipment';
-    } 
-    
-    // Check for special categories first (nails, spa, hygiene, beauty)
-    const specialCategories = ['nails', 'spa', 'hygiene', 'beauty'];
-    const dominantSpecial = sortedCategories.find(([cat]) => specialCategories.includes(cat));
-    
-    if (dominantSpecial && dominantSpecial[1] >= Math.ceil(itemsList.length * 0.5)) {
-      // If a special category dominates (50%+ of items), use it
-      const categoryName = dominantSpecial[0].charAt(0).toUpperCase() + dominantSpecial[0].slice(1);
+    if (generatedName && generatedName.length > 0) {
+      // Clean up the name (remove quotes, extra spaces, etc.)
+      let cleanName = generatedName
+        .replace(/^["']|["']$/g, '') // Remove surrounding quotes
+        .replace(/\s+/g, ' ') // Normalize spaces
+        .trim();
       
-      if (categoryName === 'Nails') {
-        return itemsList.length <= 5 ? 'Nail Care Set' : 'Nail Supplies Collection';
-      } else if (categoryName === 'Spa') {
-        return itemsList.length <= 5 ? 'Spa Essentials' : 'Spa Collection';
-      } else if (categoryName === 'Hygiene') {
-        return itemsList.length <= 5 ? 'Hygiene Bundle' : 'Hygiene Supplies';
-      } else if (categoryName === 'Beauty') {
-        return itemsList.length <= 5 ? 'Beauty Set' : 'Beauty Collection';
+      // Ensure it's not too long
+      if (cleanName.length > 60) {
+        cleanName = cleanName.substring(0, 60).trim() + '...';
       }
+      
+      return cleanName;
     }
     
-    // Check if single category dominates
-    if (sortedCategories.length === 1 || 
-        (sortedCategories[0] && sortedCategories[1] && sortedCategories[0][1] > sortedCategories[1][1] * 2)) {
-      // Single dominant category
-      const category = sortedCategories[0][0];
-      const categoryName = category.charAt(0).toUpperCase() + category.slice(1);
-      
-      if (itemsList.length <= 4) {
-        return `${categoryName} Bundle`;
-      } else {
-        return `${categoryName} Collection`;
-      }
-    } else if (sortedCategories.length === 2 && 
-               sortedCategories[0][1] + sortedCategories[1][1] >= itemsList.length * 0.7) {
-      // Two main categories cover 70%+ of items
-      const cat1 = sortedCategories[0][0].charAt(0).toUpperCase() + sortedCategories[0][0].slice(1);
-      const cat2 = sortedCategories[1][0].charAt(0).toUpperCase() + sortedCategories[1][0].slice(1);
-      return `${cat1} & ${cat2} Mix`;
-    } else {
-      // Multiple categories or no clear dominance
-      return 'Mixed Goods Shipment';
-    }
+    // Fallback if AI response is empty
+    return 'Mixed Goods Shipment';
+    
   } catch (error) {
     console.error('Error generating AI shipment name:', error);
+    // Fallback naming
     return `Shipment #${consolidationId || Date.now()}`;
   }
 };

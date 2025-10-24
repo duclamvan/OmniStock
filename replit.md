@@ -61,7 +61,7 @@ The application uses PostgreSQL with Neon serverless driver and Drizzle ORM. The
 - **Drizzle Kit**: Database migration and schema management.
 
 ## AI Services
-- **DeepSeek AI**: Used for AI Address Parsing and ticket subject generation (deepseek-chat model) via OpenAI-compatible API.
+- **DeepSeek AI**: Used for AI Address Parsing, ticket subject generation, and professional shipment name generation (deepseek-chat model) via OpenAI-compatible API. Shipment names are automatically generated based on cargo contents using industry-standard logistics terminology for B2B operations.
 - **OpenAI API**: Used for AI-powered product weight and dimension inference in carton packing optimization.
 
 ## Other APIs
