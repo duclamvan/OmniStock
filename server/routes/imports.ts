@@ -3403,9 +3403,57 @@ router.get("/receipts/:id", async (req, res) => {
       .from(landedCosts)
       .where(eq(landedCosts.receiptId, receiptId));
 
+    // Fetch landing cost allocation per item if shipment has costs
+    let itemsWithLandingCosts = itemsWithDetails;
+    if (shipment) {
+      try {
+        // Get shipment costs
+        const costs = await db
+          .select()
+          .from(shipmentCosts)
+          .where(eq(shipmentCosts.shipmentId, shipment.id));
+        
+        if (costs.length > 0) {
+          // Calculate total costs by type
+          const costsByType = costs.reduce((acc, cost) => {
+            if (!acc[cost.type]) {
+              acc[cost.type] = 0;
+            }
+            acc[cost.type] += Number(cost.amountBase || 0);
+            return acc;
+          }, {} as Record<string, number>);
+
+          // Get allocation breakdown
+          const allocations = await getItemAllocationBreakdown(shipment.id, costsByType);
+          
+          // Map allocations to receipt items
+          itemsWithLandingCosts = itemsWithDetails.map(item => {
+            const allocation = allocations.find((a: any) => 
+              (item.itemType === 'purchase' && a.purchaseItemId === item.itemId) ||
+              (item.itemType === 'custom' && a.customItemId === item.itemId)
+            );
+            
+            if (allocation && item.details) {
+              return {
+                ...item,
+                details: {
+                  ...item.details,
+                  latestLandingCost: allocation.landingCostPerUnit.toFixed(4)
+                }
+              };
+            }
+            return item;
+          });
+        }
+      } catch (error) {
+        console.error('Error calculating landing costs for receipt items:', error);
+        // Continue with original items if allocation fails
+      }
+    }
+
     res.json({
       ...receipt,
-      items: itemsWithDetails,
+      items: itemsWithLandingCosts,
       shipment,
       consolidation,
       landedCost,

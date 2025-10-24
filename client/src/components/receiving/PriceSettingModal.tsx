@@ -228,7 +228,12 @@ export default function PriceSettingModal({
                     <TableRow key={item.itemId}>
                       <TableCell>
                         <div>
-                          <p className="font-medium">{item.details?.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{item.details?.name}</p>
+                            <Badge variant="secondary" className="text-xs">
+                              Qty: {item.receivedQuantity}
+                            </Badge>
+                          </div>
                           <div className="flex items-center gap-2 mt-1">
                             {item.details?.sku && (
                               <span className="text-sm text-muted-foreground">
