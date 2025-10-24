@@ -853,16 +853,25 @@ export default function InternationalTransit() {
                               // For edit mode, regenerate based on existing shipment
                               regenerateNameMutation.mutate(selectedShipment.id);
                             } else if (selectedPendingShipment) {
-                              // For add tracking mode, use backend to generate unified category name
+                              // For add tracking mode, use backend to generate structured name
                               const input = document.getElementById('shipmentName') as HTMLInputElement;
+                              const shipmentTypeSelect = document.querySelector('[name="shipmentType"]') as HTMLSelectElement;
+                              
                               if (input) {
                                 input.value = 'Generating...';
+                                
+                                // Get origin and shipmentType from form or defaults
+                                const origin = selectedPendingShipment.warehouse || 'China, Guangzhou';
+                                const shipmentType = shipmentTypeSelect?.value || 'air_ddp_general';
+                                
                                 // Create a temporary shipment request to get AI-generated name
                                 fetch('/api/imports/shipments/generate-name', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({ 
-                                    consolidationId: selectedPendingShipment.id 
+                                    consolidationId: selectedPendingShipment.id,
+                                    origin,
+                                    shipmentType
                                   })
                                 })
                                   .then(res => res.json())
@@ -873,13 +882,13 @@ export default function InternationalTransit() {
                                   })
                                   .catch(() => {
                                     // Fallback to generic name if API fails
-                                    if (input) input.value = 'Mixed Goods Shipment';
+                                    if (input) input.value = 'XX-GEN-MixedGoods-2025';
                                   });
                               }
                             } else {
-                              // For create mode, prompt to add items first
+                              // For create mode without items, use fallback
                               const input = document.getElementById('shipmentName') as HTMLInputElement;
-                              if (input) input.value = 'Mixed Goods Shipment';
+                              if (input) input.value = 'XX-GEN-MixedGoods-2025';
                             }
                           }}
                           disabled={regenerateNameMutation.isPending}

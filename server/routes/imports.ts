@@ -1600,8 +1600,141 @@ router.post("/shipments/search-by-tracking", async (req, res) => {
   }
 });
 
-// Helper function to generate AI shipment name using DeepSeek
-const generateAIShipmentName = async (consolidationId: number | null, items?: any[]) => {
+// Helper function to extract country code from origin string
+const extractCountryCode = (origin: string): string => {
+  const countryMap: Record<string, string> = {
+    'china': 'CN',
+    'usa': 'US',
+    'united states': 'US',
+    'uk': 'GB',
+    'united kingdom': 'GB',
+    'germany': 'DE',
+    'czech republic': 'CZ',
+    'france': 'FR',
+    'italy': 'IT',
+    'spain': 'ES',
+    'poland': 'PL',
+    'vietnam': 'VN',
+    'japan': 'JP',
+    'korea': 'KR',
+    'taiwan': 'TW',
+    'hong kong': 'HK'
+  };
+  
+  const lowerOrigin = origin.toLowerCase();
+  for (const [country, code] of Object.entries(countryMap)) {
+    if (lowerOrigin.includes(country)) {
+      return code;
+    }
+  }
+  
+  // Try to extract first word as country abbreviation
+  const firstWord = origin.split(',')[0].trim().toUpperCase();
+  if (firstWord.length === 2) {
+    return firstWord;
+  }
+  
+  return 'XX';
+};
+
+// Helper function to extract shipment type code
+const extractShipmentTypeCode = (shipmentType: string): string => {
+  const lowerType = shipmentType.toLowerCase();
+  
+  if (lowerType.includes('express')) return 'EXPRESS';
+  if (lowerType.includes('air')) return 'AIR';
+  if (lowerType.includes('sea')) return 'SEA';
+  if (lowerType.includes('railway') || lowerType.includes('rail')) return 'RAIL';
+  
+  return 'GEN';
+};
+
+// Helper function to generate category word using AI
+const generateCategoryWord = async (itemsList: any[]): Promise<string> => {
+  if (itemsList.length === 0) {
+    return 'MixedGoods';
+  }
+  
+  // For single item, use simplified name
+  if (itemsList.length === 1) {
+    const itemName = itemsList[0].name || 'Item';
+    // Convert to PascalCase single word
+    return itemName
+      .split(/[\s\-_]+/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join('')
+      .replace(/[^a-zA-Z]/g, '')
+      .substring(0, 20);
+  }
+  
+  // For 2+ items, use DeepSeek AI to generate category word
+  const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
+  if (!DEEPSEEK_API_KEY) {
+    console.warn('DEEPSEEK_API_KEY not configured, falling back to basic categorization');
+    return 'MixedGoods';
+  }
+  
+  try {
+    // Prepare item list for AI
+    const itemDescriptions = itemsList
+      .slice(0, 20)
+      .map(item => `${item.name} (Qty: ${item.quantity || 1})`)
+      .join('\n');
+    
+    // Call DeepSeek API
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a logistics categorization assistant. Generate a single concise category word (PascalCase, max 20 characters) that best describes the cargo. Use industry terms like: NailSupplies, Electronics, BeautyProducts, OfficeGoods, Textiles, Automotive, etc.'
+          },
+          {
+            role: 'user',
+            content: `Categorize these ${itemsList.length} items into ONE word (PascalCase):\n\n${itemDescriptions}\n\nProvide ONLY the category word, no explanation.`
+          }
+        ],
+        temperature: 0.2,
+        max_tokens: 10
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`DeepSeek API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    const categoryWord = data.choices?.[0]?.message?.content?.trim();
+    
+    if (categoryWord && categoryWord.length > 0) {
+      // Clean and format the category word
+      return categoryWord
+        .replace(/^["']|["']$/g, '')
+        .replace(/[^a-zA-Z]/g, '')
+        .substring(0, 20);
+    }
+    
+    return 'MixedGoods';
+  } catch (error) {
+    console.error('Error generating category word:', error);
+    return 'MixedGoods';
+  }
+};
+
+// Main function to generate structured shipment name
+// Format: CN-AIR-NailSupplies-2025
+const generateAIShipmentName = async (
+  consolidationId: number | null, 
+  items?: any[],
+  origin?: string,
+  shipmentType?: string
+) => {
   try {
     let itemsList = items || [];
     
@@ -1619,93 +1752,20 @@ const generateAIShipmentName = async (consolidationId: number | null, items?: an
       itemsList = fetchedItems;
     }
     
-    // Build name based purely on items
-    if (itemsList.length === 0) {
-      return `Shipment #${consolidationId || Date.now()}`;
-    }
+    // Extract components for structured name
+    const countryCode = extractCountryCode(origin || 'Unknown');
+    const typeCode = extractShipmentTypeCode(shipmentType || 'general');
+    const categoryWord = await generateCategoryWord(itemsList);
+    const year = new Date().getFullYear();
     
-    // For single item, use the actual item name (shortened if needed)
-    if (itemsList.length === 1) {
-      const itemName = itemsList[0].name || 'Item';
-      // Shorten very long names
-      if (itemName.length > 50) {
-        return itemName.substring(0, 50).trim() + '...';
-      }
-      return itemName;
-    }
-    
-    // For 2+ items, use DeepSeek AI to generate professional name
-    const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
-    if (!DEEPSEEK_API_KEY) {
-      console.warn('DEEPSEEK_API_KEY not configured, falling back to basic naming');
-      // Fallback to simple naming
-      if (itemsList.length === 2) {
-        return `${itemsList[0].name} & ${itemsList[1].name}`;
-      }
-      return 'Mixed Goods Shipment';
-    }
-    
-    // Prepare item list for AI
-    const itemDescriptions = itemsList
-      .slice(0, 20) // Limit to first 20 items for API efficiency
-      .map(item => `${item.name} (Qty: ${item.quantity || 1})`)
-      .join('\n');
-    
-    const itemCount = itemsList.length;
-    
-    // Call DeepSeek API for professional naming
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a professional logistics naming assistant for a B2B warehouse management system. Generate concise, professional shipment names (max 60 characters) based on the cargo contents. Use industry-standard terminology. Focus on the primary product category or business purpose.'
-          },
-          {
-            role: 'user',
-            content: `Generate a professional shipment name for this international cargo (${itemCount} items total):\n\n${itemDescriptions}\n\nProvide ONLY the shipment name, no explanation. Examples of good names:\n- "Professional Nail Salon Supplies"\n- "Beauty & Cosmetics Wholesale"\n- "Electronic Components Batch"\n- "Mixed Retail Merchandise"\n- "Spa & Wellness Products"`
-          }
-        ],
-        temperature: 0.3,
-        max_tokens: 30
-      })
-    });
-    
-    if (!response.ok) {
-      throw new Error(`DeepSeek API error: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    const generatedName = data.choices?.[0]?.message?.content?.trim();
-    
-    if (generatedName && generatedName.length > 0) {
-      // Clean up the name (remove quotes, extra spaces, etc.)
-      let cleanName = generatedName
-        .replace(/^["']|["']$/g, '') // Remove surrounding quotes
-        .replace(/\s+/g, ' ') // Normalize spaces
-        .trim();
-      
-      // Ensure it's not too long
-      if (cleanName.length > 60) {
-        cleanName = cleanName.substring(0, 60).trim() + '...';
-      }
-      
-      return cleanName;
-    }
-    
-    // Fallback if AI response is empty
-    return 'Mixed Goods Shipment';
+    // Build structured name: CN-AIR-NailSupplies-2025
+    return `${countryCode}-${typeCode}-${categoryWord}-${year}`;
     
   } catch (error) {
     console.error('Error generating AI shipment name:', error);
     // Fallback naming
-    return `Shipment #${consolidationId || Date.now()}`;
+    const year = new Date().getFullYear();
+    return `XX-GEN-Shipment-${year}`;
   }
 };
 
@@ -1718,12 +1778,14 @@ router.post("/shipments", async (req, res) => {
       ? `QS-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
       : req.body.trackingNumber;
     
-    // Generate AI name if not provided (based on items only)
+    // Generate AI name if not provided (based on structured format)
     let shipmentName = req.body.shipmentName;
     if (!shipmentName || shipmentName.trim() === '') {
       shipmentName = await generateAIShipmentName(
         req.body.consolidationId,
-        req.body.items
+        req.body.items,
+        req.body.origin,
+        req.body.shipmentType || req.body.shippingMethod
       );
     }
     
@@ -1836,7 +1898,9 @@ router.put("/shipments/:id", async (req, res) => {
     if (!shipmentName || shipmentName.trim() === '') {
       shipmentName = await generateAIShipmentName(
         req.body.consolidationId,
-        req.body.items
+        req.body.items,
+        req.body.origin,
+        req.body.shipmentType || req.body.shippingMethod
       );
     }
     
@@ -1912,14 +1976,30 @@ router.put("/shipments/:id", async (req, res) => {
 // Generate name for new shipment (used during creation)
 router.post("/shipments/generate-name", async (req, res) => {
   try {
-    const { consolidationId } = req.body;
+    const { consolidationId, origin, shipmentType } = req.body;
     
     if (!consolidationId) {
       return res.status(400).json({ message: "Consolidation ID required" });
     }
     
-    // Generate name based on consolidation items
-    const name = await generateAIShipmentName(consolidationId);
+    // Fetch consolidation to get warehouse if origin not provided
+    let finalOrigin = origin;
+    if (!finalOrigin && consolidationId) {
+      const [consolidation] = await db
+        .select()
+        .from(consolidations)
+        .where(eq(consolidations.id, consolidationId));
+      
+      finalOrigin = consolidation?.warehouse || 'Unknown';
+    }
+    
+    // Generate name based on consolidation items with structured format
+    const name = await generateAIShipmentName(
+      consolidationId,
+      undefined,
+      finalOrigin,
+      shipmentType || 'general'
+    );
     
     res.json({ name });
   } catch (error) {
@@ -1933,7 +2013,7 @@ router.post("/shipments/:id/regenerate-name", async (req, res) => {
   try {
     const shipmentId = parseInt(req.params.id);
     
-    // Get the shipment's consolidation ID
+    // Get the shipment's data including origin and shipmentType
     const [shipment] = await db
       .select()
       .from(shipments)
@@ -1943,8 +2023,13 @@ router.post("/shipments/:id/regenerate-name", async (req, res) => {
       return res.status(404).json({ message: "Shipment not found" });
     }
     
-    // Generate new name based on items
-    const newName = await generateAIShipmentName(shipment.consolidationId);
+    // Generate new name based on items with structured format
+    const newName = await generateAIShipmentName(
+      shipment.consolidationId,
+      undefined,
+      shipment.origin,
+      shipment.shipmentType || 'general'
+    );
     
     // Update shipment with new name
     const [updated] = await db
