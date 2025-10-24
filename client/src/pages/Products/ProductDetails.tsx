@@ -80,6 +80,10 @@ export default function ProductDetails() {
     queryKey: ['/api/products', id, 'cost-history'],
     enabled: !!id,
   });
+  const { data: bundles = [] } = useQuery<any[]>({
+    queryKey: ['/api/bundles'],
+    staleTime: 5 * 60 * 1000,
+  });
 
   if (isLoading) {
     return (
@@ -593,9 +597,54 @@ export default function ProductDetails() {
                   <Sparkles className="h-5 w-5" />
                   Product Variants ({variants.length})
                 </CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">Multiple variants available - can be selected individually in orders</p>
               </CardHeader>
               <CardContent>
                 <ProductVariants productId={id!} />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Bundles Containing This Product */}
+          {bundles.filter((b: any) => b.items?.some((item: any) => item.productId === id)).length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Layers className="h-5 w-5" />
+                  Included in Bundles ({bundles.filter((b: any) => b.items?.some((item: any) => item.productId === id)).length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {bundles.filter((b: any) => b.items?.some((item: any) => item.productId === id)).map((bundle: any) => {
+                    const bundleItem = bundle.items?.find((item: any) => item.productId === id);
+                    return (
+                      <div key={bundle.id} className="flex items-center gap-3 p-3 border rounded-lg bg-muted/30">
+                        {bundle.imageUrl && (
+                          <img src={bundle.imageUrl} alt={bundle.name} className="w-12 h-12 object-contain rounded border" />
+                        )}
+                        <div className="flex-1">
+                          <Link href={`/inventory/bundles/${bundle.id}`}>
+                            <p className="font-medium text-blue-600 hover:text-blue-800 hover:underline">{bundle.name}</p>
+                          </Link>
+                          {bundleItem && (
+                            <p className="text-sm text-muted-foreground">
+                              Quantity in bundle: {bundleItem.quantity}× {bundleItem.variantName ? `(${bundleItem.variantName})` : ''}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          {bundle.priceEur && (
+                            <p className="font-semibold text-sm">{formatCurrency(parseFloat(bundle.priceEur), 'EUR')}</p>
+                          )}
+                          {bundle.priceCzk && (
+                            <p className="text-xs text-muted-foreground">{formatCurrency(parseFloat(bundle.priceCzk), 'CZK')}</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </CardContent>
             </Card>
           )}
