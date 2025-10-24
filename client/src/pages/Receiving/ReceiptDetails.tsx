@@ -40,7 +40,9 @@ import {
   ClipboardCheck,
   Info,
   Undo2,
-  MoreVertical
+  MoreVertical,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
@@ -78,6 +80,7 @@ export default function ReceiptDetails() {
   const [showPriceSettingModal, setShowPriceSettingModal] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
   const [previewImage, setPreviewImage] = useState<string>("");
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState<number>(0);
   
   // Verification form state
   const [verifiedBy, setVerifiedBy] = useState("");
@@ -444,9 +447,42 @@ export default function ReceiptDetails() {
   };
 
   // Helper function to open image preview
-  const openImagePreview = (photoSrc: string) => {
+  const openImagePreview = (photoSrc: string, index: number = 0) => {
     setPreviewImage(photoSrc);
+    setCurrentPhotoIndex(index);
     setShowImagePreview(true);
+  };
+
+  // Navigation functions for photo gallery
+  const goToPreviousPhoto = () => {
+    if (!receipt?.photos || receipt.photos.length === 0) return;
+    const newIndex = currentPhotoIndex > 0 ? currentPhotoIndex - 1 : receipt.photos.length - 1;
+    setCurrentPhotoIndex(newIndex);
+    const photoSrc = typeof receipt.photos[newIndex] === 'string' 
+      ? receipt.photos[newIndex] 
+      : (receipt.photos[newIndex].url || receipt.photos[newIndex].dataUrl || receipt.photos[newIndex].compressed);
+    setPreviewImage(photoSrc);
+  };
+
+  const goToNextPhoto = () => {
+    if (!receipt?.photos || receipt.photos.length === 0) return;
+    const newIndex = currentPhotoIndex < receipt.photos.length - 1 ? currentPhotoIndex + 1 : 0;
+    setCurrentPhotoIndex(newIndex);
+    const photoSrc = typeof receipt.photos[newIndex] === 'string' 
+      ? receipt.photos[newIndex] 
+      : (receipt.photos[newIndex].url || receipt.photos[newIndex].dataUrl || receipt.photos[newIndex].compressed);
+    setPreviewImage(photoSrc);
+  };
+
+  // Keyboard navigation
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') {
+      goToPreviousPhoto();
+    } else if (e.key === 'ArrowRight') {
+      goToNextPhoto();
+    } else if (e.key === 'Escape') {
+      setShowImagePreview(false);
+    }
   };
 
   if (isLoading || !receipt) {
@@ -630,7 +666,7 @@ export default function ReceiptDetails() {
                 <div key={index} className="relative group">
                   <div 
                     className="aspect-square overflow-hidden rounded border bg-muted cursor-pointer transition-all hover:shadow-md hover:ring-1 hover:ring-primary"
-                    onClick={() => openImagePreview(photoSrc)}
+                    onClick={() => openImagePreview(photoSrc, index)}
                     data-testid={`photo-${index}`}
                   >
                     <img
@@ -1335,17 +1371,51 @@ export default function ReceiptDetails() {
 
       {/* Image Preview Dialog */}
       <Dialog open={showImagePreview} onOpenChange={setShowImagePreview}>
-        <DialogContent className="max-w-4xl max-h-[90vh] p-2">
+        <DialogContent className="max-w-4xl max-h-[90vh] p-2" onKeyDown={handleKeyDown}>
           <DialogHeader className="px-4 py-2">
-            <DialogTitle>Photo Preview</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Photo Preview</DialogTitle>
+              {receipt?.photos && receipt.photos.length > 1 && (
+                <Badge variant="secondary" className="text-xs">
+                  {currentPhotoIndex + 1} of {receipt.photos.length}
+                </Badge>
+              )}
+            </div>
           </DialogHeader>
           <div className="relative flex items-center justify-center bg-black rounded-lg overflow-hidden">
+            {/* Previous Button */}
+            {receipt?.photos && receipt.photos.length > 1 && (
+              <Button
+                onClick={goToPreviousPhoto}
+                variant="ghost"
+                size="icon"
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white z-10"
+                data-testid="button-previous-photo"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </Button>
+            )}
+            
             <img
               src={previewImage}
               alt="Preview"
               className="max-w-full max-h-[70vh] object-contain"
               data-testid="preview-image"
             />
+            
+            {/* Next Button */}
+            {receipt?.photos && receipt.photos.length > 1 && (
+              <Button
+                onClick={goToNextPhoto}
+                variant="ghost"
+                size="icon"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white z-10"
+                data-testid="button-next-photo"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </Button>
+            )}
+            
             <Button
               onClick={() => setShowImagePreview(false)}
               variant="ghost"
@@ -1357,25 +1427,33 @@ export default function ReceiptDetails() {
             </Button>
           </div>
           <DialogFooter className="px-4 py-2">
-            <Button
-              onClick={() => {
-                const link = document.createElement('a');
-                link.href = previewImage;
-                link.download = `receipt-${receipt.id}-photo.jpg`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-              }}
-              variant="outline"
-              className="flex items-center gap-2"
-              data-testid="button-download-single-photo"
-            >
-              <Download className="h-4 w-4" />
-              Download
-            </Button>
-            <Button onClick={() => setShowImagePreview(false)}>
-              Close
-            </Button>
+            <div className="flex items-center justify-between w-full">
+              <div className="text-xs text-muted-foreground">
+                Use arrow keys to navigate
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = previewImage;
+                    link.download = `receipt-${receipt.id}-photo-${currentPhotoIndex + 1}.jpg`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                  data-testid="button-download-single-photo"
+                >
+                  <Download className="h-4 w-4" />
+                  Download
+                </Button>
+                <Button size="sm" onClick={() => setShowImagePreview(false)}>
+                  Close
+                </Button>
+              </div>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

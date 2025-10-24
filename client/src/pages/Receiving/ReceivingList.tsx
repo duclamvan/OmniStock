@@ -534,6 +534,8 @@ export default function ReceivingList() {
   const [receiptDataMap, setReceiptDataMap] = useState<Map<number, any>>(new Map());
   const [showFilters, setShowFilters] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState<number>(0);
+  const [currentPhotosArray, setCurrentPhotosArray] = useState<any[]>([]);
 
   // Save active tab to localStorage whenever it changes
   useEffect(() => {
@@ -560,6 +562,41 @@ export default function ReceivingList() {
 
   const { toast } = useToast();
   const [, navigate] = useLocation();
+
+  // Photo navigation functions
+  const openPhotoPreview = (photoSrc: string, index: number, photosArray: any[]) => {
+    setPreviewImage(photoSrc);
+    setCurrentPhotoIndex(index);
+    setCurrentPhotosArray(photosArray);
+  };
+
+  const goToPreviousPhoto = () => {
+    if (currentPhotosArray.length === 0) return;
+    const newIndex = currentPhotoIndex > 0 ? currentPhotoIndex - 1 : currentPhotosArray.length - 1;
+    setCurrentPhotoIndex(newIndex);
+    const photo = currentPhotosArray[newIndex];
+    const photoSrc = typeof photo === 'string' ? photo : (photo.url || photo.dataUrl || photo.compressed);
+    setPreviewImage(photoSrc);
+  };
+
+  const goToNextPhoto = () => {
+    if (currentPhotosArray.length === 0) return;
+    const newIndex = currentPhotoIndex < currentPhotosArray.length - 1 ? currentPhotoIndex + 1 : 0;
+    setCurrentPhotoIndex(newIndex);
+    const photo = currentPhotosArray[newIndex];
+    const photoSrc = typeof photo === 'string' ? photo : (photo.url || photo.dataUrl || photo.compressed);
+    setPreviewImage(photoSrc);
+  };
+
+  const handlePhotoKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') {
+      goToPreviousPhoto();
+    } else if (e.key === 'ArrowRight') {
+      goToNextPhoto();
+    } else if (e.key === 'Escape') {
+      setPreviewImage(null);
+    }
+  };
 
   // Mutation to move shipment back to receivable status
   const moveBackToReceiveMutation = useMutation({
@@ -2699,7 +2736,7 @@ export default function ReceivingList() {
                                   <div key={index} className="relative group">
                                     <div 
                                       className="aspect-square overflow-hidden rounded border bg-muted cursor-pointer transition-all hover:shadow-md hover:ring-1 hover:ring-primary"
-                                      onClick={() => setPreviewImage(photoSrc)}
+                                      onClick={() => openPhotoPreview(photoSrc, index, receiptData.photos)}
                                       data-testid={`photo-completed-${shipment.id}-${index}`}
                                     >
                                       <img
@@ -3226,8 +3263,31 @@ export default function ReceivingList() {
 
       {/* Image Preview Dialog */}
       <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
-        <DialogContent className="max-w-4xl w-full p-0">
-          <div className="relative w-full h-[80vh] bg-black rounded-lg overflow-hidden">
+        <DialogContent className="max-w-4xl w-full p-2" onKeyDown={handlePhotoKeyDown}>
+          <DialogHeader className="px-4 py-2">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-white">Photo Preview</DialogTitle>
+              {currentPhotosArray.length > 1 && (
+                <Badge variant="secondary" className="text-xs">
+                  {currentPhotoIndex + 1} of {currentPhotosArray.length}
+                </Badge>
+              )}
+            </div>
+          </DialogHeader>
+          <div className="relative w-full h-[75vh] bg-black rounded-lg overflow-hidden">
+            {/* Previous Button */}
+            {currentPhotosArray.length > 1 && (
+              <Button
+                onClick={goToPreviousPhoto}
+                variant="ghost"
+                size="icon"
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white z-10"
+                data-testid="button-previous-photo"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </Button>
+            )}
+            
             {previewImage && (
               <img
                 src={previewImage}
@@ -3238,6 +3298,20 @@ export default function ReceivingList() {
                 }}
               />
             )}
+            
+            {/* Next Button */}
+            {currentPhotosArray.length > 1 && (
+              <Button
+                onClick={goToNextPhoto}
+                variant="ghost"
+                size="icon"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white z-10"
+                data-testid="button-next-photo"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </Button>
+            )}
+            
             <Button
               variant="ghost"
               size="icon"
@@ -3247,6 +3321,9 @@ export default function ReceivingList() {
             >
               <X className="h-4 w-4" />
             </Button>
+          </div>
+          <div className="px-4 py-2 flex items-center justify-center text-xs text-muted-foreground">
+            Use arrow keys to navigate
           </div>
         </DialogContent>
       </Dialog>
