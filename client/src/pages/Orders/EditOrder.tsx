@@ -110,6 +110,35 @@ interface OrderItem {
   bundleId?: string | null;
 }
 
+// Helper function to get country flag emoji
+const getCountryFlag = (country: string | null | undefined): string => {
+  if (!country) return '';
+  
+  const countryFlagMap: Record<string, string> = {
+    'czechia': '🇨🇿',
+    'czech republic': '🇨🇿',
+    'germany': '🇩🇪',
+    'austria': '🇦🇹',
+    'vietnam': '🇻🇳',
+    'poland': '🇵🇱',
+    'slovakia': '🇸🇰',
+    'hungary': '🇭🇺',
+    'united states': '🇺🇸',
+    'usa': '🇺🇸',
+    'united kingdom': '🇬🇧',
+    'uk': '🇬🇧',
+    'france': '🇫🇷',
+    'italy': '🇮🇹',
+    'spain': '🇪🇸',
+    'netherlands': '🇳🇱',
+    'belgium': '🇧🇪',
+    'switzerland': '🇨🇭',
+    'china': '🇨🇳',
+  };
+  
+  return countryFlagMap[country.toLowerCase()] || '🌍';
+};
+
 export default function EditOrder() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
@@ -1707,7 +1736,12 @@ export default function EditOrder() {
                     <div className="flex-1 min-w-0">
                       {/* Name and badges */}
                       <div className="font-medium text-green-800 flex items-center gap-2 flex-wrap">
-                        <span className="truncate">{selectedCustomer.name}</span>
+                        <span className="flex items-center gap-1.5 truncate">
+                          {selectedCustomer.country && (
+                            <span className="text-lg">{getCountryFlag(selectedCustomer.country)}</span>
+                          )}
+                          <span className="truncate">{selectedCustomer.name}</span>
+                        </span>
                         {selectedCustomer.isTemporary && (
                           <Badge variant="outline" className="text-xs bg-blue-50 border-blue-300 text-blue-700">
                             One-time
