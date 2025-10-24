@@ -47,7 +47,10 @@ import {
   ArrowRight,
   Plane,
   Train,
-  Zap
+  Zap,
+  TrendingUp,
+  Calculator,
+  DollarSign
 } from "lucide-react";
 import { ScanFeedback } from "@/components/ScanFeedback";
 import WarehouseLocationSelector from "@/components/WarehouseLocationSelector";
@@ -56,6 +59,8 @@ import { validateLocationCode } from "@/lib/warehouseHelpers";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { nanoid } from "nanoid";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatCurrency } from "@/lib/currencyUtils";
 
 interface LocationAssignment {
   id: string;
@@ -145,6 +150,83 @@ const formatShipmentType = (shipmentType: string) => {
   return isSensitive ? `${label} (S)` : label;
 };
 
+// Pricing Table Row Component (separate to avoid useState in map)
+function PricingTableRow({ item, index, qty, unitCost, shippingCost, landingCost, defaultRetailPrice, defaultMargin, currency }: {
+  item: any;
+  index: number;
+  qty: number;
+  unitCost: number;
+  shippingCost: number;
+  landingCost: number;
+  defaultRetailPrice: number;
+  defaultMargin: number;
+  currency: string;
+}) {
+  // Safe retail price with fallback to 0 if invalid
+  const safeRetailPrice = !isNaN(defaultRetailPrice) && isFinite(defaultRetailPrice) ? defaultRetailPrice : 0;
+  const [retailPrice, setRetailPrice] = useState(safeRetailPrice);
+  const margin = retailPrice > 0 ? ((retailPrice - landingCost) / retailPrice * 100) : 0;
+
+  return (
+    <TableRow className="text-sm">
+      <TableCell className="font-medium">
+        <div className="flex items-center gap-2">
+          {item.imageUrl ? (
+            <img 
+              src={item.imageUrl} 
+              alt={item.productName}
+              className="w-10 h-10 rounded object-contain border bg-slate-50"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
+              <Package className="h-5 w-5 text-gray-400" />
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="truncate text-xs font-medium">{item.productName || `Item ${index + 1}`}</p>
+            {item.sku && (
+              <p className="text-[10px] text-muted-foreground font-mono">{item.sku}</p>
+            )}
+          </div>
+        </div>
+      </TableCell>
+      <TableCell className="text-center font-mono text-xs">{qty}</TableCell>
+      <TableCell className="text-right font-mono text-xs">
+        {formatCurrency(unitCost, currency)}
+      </TableCell>
+      <TableCell className="text-right font-mono text-xs text-blue-600">
+        {formatCurrency(shippingCost, currency)}
+      </TableCell>
+      <TableCell className="text-right font-semibold font-mono text-xs">
+        {formatCurrency(landingCost, currency)}
+      </TableCell>
+      <TableCell className="text-right">
+        <Input
+          type="number"
+          step="0.01"
+          defaultValue={safeRetailPrice.toFixed(2)}
+          onChange={(e) => setRetailPrice(parseFloat(e.target.value) || 0)}
+          className="h-7 text-right font-mono text-xs w-24 ml-auto"
+          data-testid={`input-retail-price-${index}`}
+        />
+      </TableCell>
+      <TableCell className="text-right">
+        <Badge 
+          className={`text-xs ${
+            margin >= 40 
+              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+              : margin >= 25 
+              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' 
+              : 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
+          }`}
+        >
+          {margin.toFixed(1)}%
+        </Badge>
+      </TableCell>
+    </TableRow>
+  );
+}
+
 // Generate suggested location for new items based on product characteristics
 function generateSuggestedLocation(item: StorageItem): string {
   // Use product characteristics to generate a smart suggestion
@@ -202,6 +284,8 @@ export default function ItemsToStore() {
   const [lastScanResult, setLastScanResult] = useState<{ success: boolean; message: string } | null>(null);
   const [sessionsLocations, setSessionsLocations] = useState<{code: string; isPrimary: boolean; quantity: number}[]>([]);
   const [scanBuffer, setScanBuffer] = useState("");
+  const [showPricingSheet, setShowPricingSheet] = useState(false);
+  const [pricingReceiptId, setPricingReceiptId] = useState<number | null>(null);
 
   // Refs
   const locationInputRef = useRef<HTMLInputElement>(null);
@@ -860,6 +944,28 @@ export default function ItemsToStore() {
     saveStorageMutation.mutate();
   };
 
+  // Calculate landing costs mutation
+  const calculateLandingCostsMutation = useMutation({
+    mutationFn: async (shipmentId: number) => {
+      return apiRequest('POST', `/api/imports/shipments/${shipmentId}/calculate-landing-costs`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Landing Costs Calculated",
+        description: "Costs have been allocated to items"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/storage'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to calculate landing costs",
+        variant: "destructive"
+      });
+    }
+  });
+
   // Auto-save when all items for current receipt are completed
   useEffect(() => {
     if (selectedReceipt && items.length > 0) {
@@ -1290,6 +1396,16 @@ export default function ItemsToStore() {
                         >
                           <QrCode className="h-5 w-5" />
                           <span className="font-medium">Scan Location</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setPricingReceiptId(item.receiptId || null);
+                            setShowPricingSheet(true);
+                          }}
+                          className="p-3 bg-white border rounded-lg"
+                          data-testid="button-view-pricing"
+                        >
+                          <TrendingUp className="h-5 w-5" />
                         </button>
                         <button
                           onClick={() => setShowDetails(true)}
@@ -1900,6 +2016,174 @@ export default function ItemsToStore() {
           </div>
         </motion.div>
       )}
+
+      {/* Comprehensive Landing Cost Pricing Sheet */}
+      <Sheet open={showPricingSheet} onOpenChange={setShowPricingSheet}>
+        <SheetContent side="bottom" className="h-[90vh] overflow-y-auto">
+          {pricingReceiptId && (() => {
+            const receiptData = receiptsWithItems.find((r: ReceiptWithItems) => r.receipt.id === pricingReceiptId);
+            if (!receiptData) return null;
+
+            const shipmentId = receiptData.shipment?.id;
+            const totalItems = receiptData.items?.reduce((sum: number, item: any) => sum + (item.receivedQuantity || 0), 0) || 0;
+            const totalShipping = parseFloat(receiptData.shipment?.shippingCost || '0') + parseFloat(receiptData.shipment?.insuranceValue || '0');
+            const shippingPerUnit = totalItems > 0 ? totalShipping / totalItems : 0;
+            const currency = receiptData.shipment?.shippingCostCurrency || 'EUR';
+
+            return (
+              <>
+                <SheetHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {receiptData.shipment?.shipmentType && getShipmentTypeIcon(receiptData.shipment.shipmentType, 'h-5 w-5 text-primary')}
+                      <div>
+                        <SheetTitle className="text-lg font-semibold">
+                          {receiptData.shipment?.shipmentName || `Shipment #${shipmentId}`}
+                        </SheetTitle>
+                        <SheetDescription className="text-xs mt-0.5">
+                          {receiptData.shipment?.origin} → {receiptData.shipment?.destination}
+                        </SheetDescription>
+                      </div>
+                    </div>
+                    {shipmentId && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => calculateLandingCostsMutation.mutate(shipmentId)}
+                        disabled={calculateLandingCostsMutation.isPending}
+                        data-testid="button-calculate-landing-cost"
+                      >
+                        {calculateLandingCostsMutation.isPending ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Calculating...
+                          </>
+                        ) : (
+                          <>
+                            <Calculator className="h-4 w-4 mr-2" />
+                            Calculate Landing Cost
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </SheetHeader>
+
+                {/* Shipping Information Section */}
+                <div className="grid grid-cols-4 gap-3 p-3 bg-slate-50 dark:bg-slate-900/30 rounded-lg text-xs mb-4">
+                  <div>
+                    <p className="text-muted-foreground">Carrier</p>
+                    <p className="font-semibold text-sm">{receiptData.shipment?.carrier || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Tracking</p>
+                    <p className="font-semibold text-sm font-mono">{receiptData.shipment?.trackingNumber || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Total Items</p>
+                    <p className="font-semibold text-sm">{totalItems} units</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Weight</p>
+                    <p className="font-semibold text-sm">{receiptData.shipment?.totalWeight || '—'} kg</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Total Shipping</p>
+                    <p className="font-semibold text-sm">{formatCurrency(totalShipping, currency)}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Per Unit</p>
+                    <p className="font-semibold text-sm text-blue-600">{formatCurrency(shippingPerUnit, currency)}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-muted-foreground">Route</p>
+                    <p className="font-semibold text-sm truncate">{receiptData.shipment?.origin} → {receiptData.shipment?.destination}</p>
+                  </div>
+                </div>
+
+                {/* Comprehensive Pricing Table */}
+                {receiptData.items && receiptData.items.length > 0 && (
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-sm flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-primary" />
+                      Item Pricing & Landing Cost
+                    </h3>
+                    <div className="border rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-slate-50 dark:bg-slate-900/50">
+                            <TableHead className="w-[35%]">Item</TableHead>
+                            <TableHead className="text-center w-[8%]">Qty</TableHead>
+                            <TableHead className="text-right w-[12%]">Unit Cost</TableHead>
+                            <TableHead className="text-right w-[12%]">Shipping</TableHead>
+                            <TableHead className="text-right w-[12%]">Landing</TableHead>
+                            <TableHead className="text-right w-[12%]">Retail Price</TableHead>
+                            <TableHead className="text-right w-[9%]">Margin</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {receiptData.items.map((item: any, index: number) => {
+                            const qty = item.receivedQuantity || 0;
+                            const unitCost = item.landingCostUnitBase ? parseFloat(item.landingCostUnitBase) : parseFloat(item.unitPrice || 0);
+                            const shippingCost = shippingPerUnit;
+                            const landingCost = unitCost + shippingCost;
+                            const defaultRetailPrice = landingCost * 1.5;
+                            const defaultMargin = defaultRetailPrice > 0 ? ((defaultRetailPrice - landingCost) / defaultRetailPrice * 100) : 0;
+
+                            return (
+                              <PricingTableRow
+                                key={index}
+                                item={item}
+                                index={index}
+                                qty={qty}
+                                unitCost={unitCost}
+                                shippingCost={shippingCost}
+                                landingCost={landingCost}
+                                defaultRetailPrice={defaultRetailPrice}
+                                defaultMargin={defaultMargin}
+                                currency={currency}
+                              />
+                            );
+                          })}
+                          {/* Footer Row with Totals */}
+                          <TableRow className="bg-slate-50 dark:bg-slate-900/30 font-semibold">
+                            <TableCell colSpan={2}>Totals</TableCell>
+                            <TableCell className="text-right font-mono text-sm">
+                              {formatCurrency(
+                                receiptData.items.reduce((sum: number, item: any) => {
+                                  const unitCost = item.landingCostUnitBase ? parseFloat(item.landingCostUnitBase) : parseFloat(item.unitPrice || 0);
+                                  return sum + (unitCost * (item.receivedQuantity || 0));
+                                }, 0),
+                                currency
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-sm text-blue-600">
+                              {formatCurrency(totalShipping, currency)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-sm">
+                              {formatCurrency(
+                                receiptData.items.reduce((sum: number, item: any) => {
+                                  const unitCost = item.landingCostUnitBase ? parseFloat(item.landingCostUnitBase) : parseFloat(item.unitPrice || 0);
+                                  return sum + (unitCost * (item.receivedQuantity || 0));
+                                }, 0) + totalShipping,
+                                currency
+                              )}
+                            </TableCell>
+                            <TableCell colSpan={2}></TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </div>
+                    <p className="text-xs text-muted-foreground px-1">
+                      💡 Shipping cost allocated proportionally across {totalItems} units. Retail prices default to 50% markup (editable).
+                    </p>
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
