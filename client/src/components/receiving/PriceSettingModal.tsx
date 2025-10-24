@@ -335,10 +335,22 @@ export default function PriceSettingModal({
                 data-testid="input-exchange-rate"
               />
               <span className="text-xs text-muted-foreground">
-                (CZK price will auto-fill when EUR is entered)
+                (CZK auto-fills when EUR is entered)
               </span>
             </div>
           </div>
+
+          {/* Auto-fill Info Banner */}
+          {getItemsToUpdateCount() > 0 && (
+            <div className="mb-3 p-2 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
+              <div className="flex items-center gap-2 text-xs text-green-800 dark:text-green-200">
+                <CheckCircle className="h-3.5 w-3.5" />
+                <span className="font-medium">
+                  {getItemsToUpdateCount()} {getItemsToUpdateCount() === 1 ? 'item' : 'items'} auto-filled with existing inventory prices (green highlighted)
+                </span>
+              </div>
+            </div>
+          )}
 
           {loading ? (
             <div className="flex items-center justify-center py-8">
@@ -409,7 +421,7 @@ export default function PriceSettingModal({
                             onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceCzk', e.target.value)}
                             onKeyDown={(e) => handleKeyDown(e, item.itemId, 'czk')}
                             placeholder="0.00"
-                            className="h-8 text-xs pr-8"
+                            className={`h-8 text-xs pr-8 ${prices.exists && prices.priceCzk ? 'bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-800' : ''}`}
                             data-testid={`input-price-czk-${item.itemId}`}
                           />
                           <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
@@ -426,7 +438,7 @@ export default function PriceSettingModal({
                             onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceEur', e.target.value)}
                             onKeyDown={(e) => handleKeyDown(e, item.itemId, 'eur')}
                             placeholder="0.00"
-                            className="h-8 text-xs pr-8"
+                            className={`h-8 text-xs pr-8 ${prices.exists && prices.priceEur ? 'bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-800' : ''}`}
                             data-testid={`input-price-eur-${item.itemId}`}
                           />
                           <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
