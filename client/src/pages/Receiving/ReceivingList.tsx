@@ -77,7 +77,9 @@ import {
   Trash2,
   Eye,
   User,
-  Archive
+  Archive,
+  Camera,
+  ZoomIn
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { format, differenceInHours, differenceInDays, isToday, isYesterday, isThisWeek, isThisMonth } from "date-fns";
@@ -531,6 +533,7 @@ export default function ReceivingList() {
   const [expandAllReceiving, setExpandAllReceiving] = useState(true);
   const [receiptDataMap, setReceiptDataMap] = useState<Map<number, any>>(new Map());
   const [showFilters, setShowFilters] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   // Save active tab to localStorage whenever it changes
   useEffect(() => {
@@ -2678,6 +2681,48 @@ export default function ReceivingList() {
                         </div>
                       </div>
 
+                      {/* Photos Section */}
+                      {isExpanded && receiptData?.photos && receiptData.photos.length > 0 && (
+                        <div className="mt-4 sm:pl-11">
+                          <div className="bg-white dark:bg-gray-900 border rounded-lg p-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                                <Camera className="h-4 w-4" />
+                                Photos ({receiptData.photos.length})
+                              </h3>
+                            </div>
+                            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                              {receiptData.photos.map((photo: any, index: number) => {
+                                const photoSrc = typeof photo === 'string' ? photo : (photo.url || photo.dataUrl || photo.compressed);
+                                
+                                return (
+                                  <div key={index} className="relative group">
+                                    <div 
+                                      className="aspect-square overflow-hidden rounded border bg-muted cursor-pointer transition-all hover:shadow-md hover:ring-1 hover:ring-primary"
+                                      onClick={() => setPreviewImage(photoSrc)}
+                                      data-testid={`photo-completed-${shipment.id}-${index}`}
+                                    >
+                                      <img
+                                        src={photoSrc}
+                                        alt={`Receipt photo ${index + 1}`}
+                                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                        loading="lazy"
+                                        onError={(e) => {
+                                          e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjZjNmNGY2Ii8+CjxwYXRoIGQ9Ik0xMiA5VjEzTTEyIDE3SDE2TTEyIDdIOCIgc3Ryb2tlPSIjNjM2YzgzIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K';
+                                        }}
+                                      />
+                                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
+                                        <ZoomIn className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Expanded Items List */}
                       {isExpanded && (
                         <div className="mt-4 sm:pl-11">
@@ -3175,6 +3220,33 @@ export default function ReceivingList() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Preview Dialog */}
+      <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+        <DialogContent className="max-w-4xl w-full p-0">
+          <div className="relative w-full h-[80vh] bg-black rounded-lg overflow-hidden">
+            {previewImage && (
+              <img
+                src={previewImage}
+                alt="Preview"
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjZjNmNGY2Ii8+CjxwYXRoIGQ9Ik0xMiA5VjEzTTEyIDE3SDE2TTEyIDdIOCIgc3Ryb2tlPSIjNjM2YzgzIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K';
+                }}
+              />
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white"
+              onClick={() => setPreviewImage(null)}
+              data-testid="button-close-preview"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
