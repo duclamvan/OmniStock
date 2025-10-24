@@ -1031,7 +1031,7 @@ export default function ReceiptDetails() {
               <div className="mt-0.5">
                 {receipt.status === 'approved' ? (
                   <CheckCircle className="h-4 w-4 text-green-600" />
-                ) : receipt.status === 'pending_approval' ? (
+                ) : (receipt.status === 'pending_approval' || receipt.status === 'verified') ? (
                   <AlertCircle className="h-4 w-4 text-orange-500" />
                 ) : (
                   <Clock className="h-4 w-4 text-gray-400" />
@@ -1040,19 +1040,19 @@ export default function ReceiptDetails() {
               <div className="flex-1">
                 <p className="font-medium text-sm">
                   {receipt.status === 'approved' ? 'Receipt Approved' : 
-                   receipt.status === 'pending_approval' ? 'Pending Approval' : 
+                   (receipt.status === 'pending_approval' || receipt.status === 'verified') ? 'Ready for Approval' : 
                    'Awaiting Approval'}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {receipt.status === 'approved'
                     ? `Approved by ${receipt.approvedBy || 'Unknown'} - Items in inventory`
-                    : receipt.status === 'pending_approval'
-                    ? 'Ready for founder approval'
+                    : (receipt.status === 'pending_approval' || receipt.status === 'verified')
+                    ? 'Click "Approve & Add to Inventory" button below'
                     : 'Complete verification first'
                   }
                 </p>
               </div>
-              {receipt.status === 'pending_approval' && (
+              {(receipt.status === 'pending_approval' || receipt.status === 'verified') && (
                 <Badge variant="outline" className="text-orange-600 border-orange-600 text-xs h-5 px-1.5">
                   Action Needed
                 </Badge>
@@ -1066,14 +1066,14 @@ export default function ReceiptDetails() {
               <span className="text-muted-foreground">Overall Progress</span>
               <span className="font-medium">
                 {receipt.status === 'approved' ? '100%' : 
-                 receipt.status === 'pending_approval' ? '75%' : 
+                 (receipt.status === 'pending_approval' || receipt.status === 'verified') ? '75%' : 
                  allItemsVerified ? '50%' : '25%'}
               </span>
             </div>
             <Progress 
               value={
                 receipt.status === 'approved' ? 100 : 
-                receipt.status === 'pending_approval' ? 75 : 
+                (receipt.status === 'pending_approval' || receipt.status === 'verified') ? 75 : 
                 allItemsVerified ? 50 : 25
               } 
               className="h-1.5"
@@ -1100,7 +1100,7 @@ export default function ReceiptDetails() {
                 )}
               </>
             )}
-            {receipt.status === 'pending_approval' && !receipt.isArchivedView && (
+            {(receipt.status === 'pending_approval' || receipt.status === 'verified') && !receipt.isArchivedView && (
               <>
                 <Button
                   onClick={handleOpenPriceModal}
