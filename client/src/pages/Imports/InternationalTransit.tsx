@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar, AlertCircle, CheckCircle, Search, CalendarDays, MoreVertical, ArrowLeft, Train, Shield, Copy, ExternalLink, ChevronDown, ChevronUp, Edit, Filter, ArrowUpDown, Info, RefreshCw } from "lucide-react";
+import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar, AlertCircle, CheckCircle, Search, CalendarDays, MoreVertical, ArrowLeft, Train, Shield, Copy, ExternalLink, ChevronDown, ChevronUp, Edit, Filter, ArrowUpDown, Info, RefreshCw, FileText } from "lucide-react";
 import { format, differenceInDays, addDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { convertCurrency, type Currency } from "@/lib/currencyUtils";
@@ -1936,16 +1936,26 @@ export default function InternationalTransit() {
 
                       {/* Shipment Items - Always Show */}
                       {shipment.items && shipment.items.length > 0 && (
-                        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-md p-3 mb-3">
-                          <p className="text-xs font-medium text-muted-foreground mb-2">Package Contents ({shipment.totalUnits || shipment.itemCount} {shipment.unitType || 'items'})</p>
+                        <div className="border rounded-lg p-3 bg-muted/30 mb-3">
+                          <div className="text-sm font-medium mb-2">Package Contents ({shipment.totalUnits || shipment.itemCount} {shipment.unitType || 'items'}):</div>
                           <div className="space-y-1">
                             {shipment.items.map((item: any, index: number) => (
-                              <div key={index} className="flex items-center gap-2 text-xs">
-                                <span className="truncate">{item.name || `Item ${index + 1}`}</span>
-                                <span className="text-muted-foreground">x{item.quantity || 1}</span>
+                              <div key={index} className="text-sm flex justify-between">
+                                <span className="text-muted-foreground">
+                                  {item.name || `Item ${index + 1}`} {item.trackingNumber && `(${item.trackingNumber})`}
+                                </span>
+                                <span className="font-medium">Qty: {item.quantity || 1}</span>
                               </div>
                             ))}
                           </div>
+                        </div>
+                      )}
+                      
+                      {/* Notes Section */}
+                      {shipment.notes && (
+                        <div className="border rounded-lg p-3 bg-muted/30 mb-3">
+                          <div className="text-sm font-medium mb-2">Notes:</div>
+                          <p className="text-sm text-muted-foreground">{shipment.notes}</p>
                         </div>
                       )}
 
@@ -2032,12 +2042,6 @@ export default function InternationalTransit() {
                           )}
                         </div>
                       </div>
-
-                      {shipment.notes && (
-                        <div className="mt-3 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-md">
-                          <p className="text-xs text-muted-foreground">Note: {shipment.notes}</p>
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
                 );
@@ -2245,8 +2249,14 @@ export default function InternationalTransit() {
 
                 {/* Notes */}
                 {viewShipmentDetails.notes && (
-                  <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-                    <p className="text-xs font-medium text-amber-900 dark:text-amber-100">{viewShipmentDetails.notes}</p>
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-sm flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-primary" />
+                      Notes
+                    </h3>
+                    <div className="border rounded-lg p-3 bg-muted/30">
+                      <p className="text-sm text-muted-foreground">{viewShipmentDetails.notes}</p>
+                    </div>
                   </div>
                 )}
               </div>
