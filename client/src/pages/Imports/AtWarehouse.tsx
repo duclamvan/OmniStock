@@ -705,7 +705,7 @@ export default function AtWarehouse() {
   // Unpack purchase order mutation
   const unpackMutation = useMutation({
     mutationFn: async (purchaseId: number) => {
-      return apiRequest('/api/imports/purchases/unpack', 'POST', { purchaseId });
+      return apiRequest('POST', '/api/imports/purchases/unpack', { purchaseId });
     },
     onSuccess: () => {
       toast({
