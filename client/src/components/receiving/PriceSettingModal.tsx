@@ -307,12 +307,12 @@ export default function PriceSettingModal({
       // Save approver name to localStorage for next time
       localStorage.setItem('lastApproverName', approvedBy);
       
-      // Close modal and trigger parent refetch
+      // Close modal
       onClose();
       
-      // Call onApprove callback to trigger refetch in parent component
+      // Call onApprove callback to trigger refetch in parent component (pass null to indicate already approved)
       if (typeof onApprove === 'function') {
-        onApprove(approvedBy);
+        onApprove(null as any); // Pass null to signal that approval is already done, just refetch
       }
     } catch (error) {
       // Dismiss the progress toast using the returned dismiss function

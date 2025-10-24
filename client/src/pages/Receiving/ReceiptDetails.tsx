@@ -269,7 +269,14 @@ export default function ReceiptDetails() {
     });
   };
 
-  const handleApproval = (approverName?: string) => {
+  const handleApproval = (approverName?: string | null) => {
+    // If approverName is null, it means the approval was already done by the PriceSettingModal
+    // In that case, just refetch the data without calling the approval API again
+    if (approverName === null) {
+      refetch();
+      return;
+    }
+    
     approveReceiptMutation.mutate({
       approvedBy: approverName || approvedBy
     });
