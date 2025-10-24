@@ -389,7 +389,9 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                   {isManualOverride ? (
                     <Badge variant="outline" className="text-xs text-blue-600">Manual</Badge>
                   ) : (
-                    <Badge variant="outline" className="text-xs text-green-600">Auto</Badge>
+                    <Badge variant="outline" className="text-xs text-green-600">
+                      Auto {currentMethod && `→ ${currentMethod.name}`}
+                    </Badge>
                   )}
                 </div>
                 {currentMethod && (
