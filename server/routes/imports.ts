@@ -6262,11 +6262,17 @@ async function getItemAllocationBreakdown(shipmentId: number, costsByType: Recor
       const totalAllocated = freightAllocated + dutyAllocated + brokerageAllocated + insuranceAllocated + packagingAllocated + otherAllocated;
       const landingCostPerUnit = item.quantity > 0 ? totalAllocated / item.quantity : 0;
 
+      const unitPrice = parseFloat(item.unitPrice || '0');
+      const totalValue = unitPrice * item.quantity;
+
       items.push({
+        purchaseItemId: item.id,  // Frontend expects purchaseItemId
         customItemId: item.id,
         sku: item.sku,
         name: item.name,
         quantity: item.quantity,
+        unitPrice,  // Add unit price for purchase price column
+        totalValue,
         actualWeightKg: actualWeight,
         volumetricWeightKg: volumetricWeight,
         chargeableWeightKg: chargeableWeight,
@@ -6441,15 +6447,16 @@ async function getItemAllocationBreakdownWithMethod(
       const landingCostPerUnit = item.quantity > 0 ? totalAllocated / item.quantity : 0;
 
       results.push({
+        purchaseItemId: item.id,  // Frontend expects purchaseItemId
         customItemId: item.id,
         sku: item.sku,
         name: item.name,
         quantity: item.quantity,
+        unitPrice: itemAllocation.unitPrice,  // Changed from unitValue to unitPrice for consistency
+        totalValue: itemAllocation.totalValue,
         actualWeightKg: itemAllocation.actualWeight,
         volumetricWeightKg: itemAllocation.volumetricWeight,
         chargeableWeightKg: itemAllocation.chargeableWeight,
-        unitValue: itemAllocation.unitPrice,
-        totalValue: itemAllocation.totalValue,
         freightAllocated,
         dutyAllocated,
         brokerageAllocated,

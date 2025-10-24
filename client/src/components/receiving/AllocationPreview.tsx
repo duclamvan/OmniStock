@@ -47,13 +47,16 @@ import {
 } from "@/components/ui/collapsible";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { formatCurrency as formatCurrencyUtil } from "@/lib/currencyUtils";
 
 interface ItemAllocation {
   purchaseItemId: number;
+  customItemId?: number;  // Fallback ID field
   sku: string;
   name: string;
   quantity: number;
-  unitPrice: number;
+  unitPrice: number;  // Purchase price per unit
+  totalValue?: number;  // Optional total value field
   actualWeightKg: number;
   volumetricWeightKg: number;
   chargeableWeightKg: number;
@@ -235,13 +238,14 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
     setExpandedRows(newExpanded);
   };
 
-  const formatCurrency = (amount: number, currency: string = 'EUR') => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 4
-    }).format(amount);
+  // Robust currency formatter with defensive checks
+  const formatCurrency = (amount: number | undefined | null, currency: string = 'EUR') => {
+    // Handle undefined, null, or NaN values
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      console.warn('formatCurrency received invalid value:', amount);
+      return formatCurrencyUtil(0, currency);
+    }
+    return formatCurrencyUtil(amount, currency);
   };
 
   const formatWeight = (weight: number) => {
@@ -540,6 +544,49 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
         </CardContent>
       </Card>
 
+      {/* Debug Info Section */}
+      <Collapsible>
+        <Card className="border-dashed">
+          <CardHeader className="p-3 pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
+                <HelpCircle className="h-3 w-3" />
+                Debug Info (Raw Data Values)
+              </CardTitle>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </CollapsibleTrigger>
+            </div>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent className="p-3 pt-0">
+              <div className="text-xs space-y-2 font-mono bg-muted p-2 rounded overflow-x-auto">
+                <div><strong>Base Currency:</strong> {preview.baseCurrency}</div>
+                <div><strong>Total Items:</strong> {preview.totalItems}</div>
+                <div><strong>Sample Item Data (First Item):</strong></div>
+                {preview.items[0] && (
+                  <pre className="text-[10px] overflow-x-auto bg-background p-2 rounded">
+                    {JSON.stringify({
+                      purchaseItemId: preview.items[0].purchaseItemId,
+                      sku: preview.items[0].sku,
+                      name: preview.items[0].name,
+                      quantity: preview.items[0].quantity,
+                      unitPrice: preview.items[0].unitPrice,
+                      chargeableWeightKg: preview.items[0].chargeableWeightKg,
+                      freightAllocated: preview.items[0].freightAllocated,
+                      landingCostPerUnit: preview.items[0].landingCostPerUnit,
+                      totalValue: preview.items[0].totalValue
+                    }, null, 2)}
+                  </pre>
+                )}
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
       {/* Compact Allocation Table */}
       <Collapsible defaultOpen={true}>
         <Card>
@@ -602,12 +649,12 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                           <span className="text-[10px] text-muted-foreground">{item.sku}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-right p-2">{item.quantity}</TableCell>
+                      <TableCell className="text-right p-2">{item.quantity || 0}</TableCell>
                       <TableCell className="text-right p-2 text-blue-600 dark:text-blue-400 font-medium">
                         {formatCurrency(item.unitPrice, preview.baseCurrency)}
                       </TableCell>
                       <TableCell className="text-right p-2 text-muted-foreground">
-                        {item.chargeableWeightKg.toFixed(2)}
+                        {(item.chargeableWeightKg || 0).toFixed(2)}
                       </TableCell>
                       <TableCell className="text-right p-2">
                         {formatCurrency(item.freightAllocated, preview.baseCurrency)}
@@ -617,15 +664,15 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                       </TableCell>
                       <TableCell className="text-right p-2">
                         {formatCurrency(
-                          item.brokerageAllocated + 
-                          item.insuranceAllocated + 
-                          item.packagingAllocated + 
-                          item.otherAllocated,
+                          (item.brokerageAllocated || 0) + 
+                          (item.insuranceAllocated || 0) + 
+                          (item.packagingAllocated || 0) + 
+                          (item.otherAllocated || 0),
                           preview.baseCurrency
                         )}
                       </TableCell>
                       <TableCell className="text-right font-semibold p-2 text-cyan-700 dark:text-cyan-400">
-                        {formatCurrency(item.unitPrice + item.landingCostPerUnit, preview.baseCurrency)}
+                        {formatCurrency((item.unitPrice || 0) + (item.landingCostPerUnit || 0), preview.baseCurrency)}
                       </TableCell>
                       <TableCell className="p-2">
                         <Button
@@ -732,34 +779,38 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
               <TableFooter>
                 <TableRow className="font-bold text-xs bg-muted/50">
                   <TableCell className="p-2">TOTAL</TableCell>
-                  <TableCell className="text-right p-2">{preview.totalUnits}</TableCell>
+                  <TableCell className="text-right p-2">{preview.totalUnits || 0}</TableCell>
                   <TableCell className="text-right p-2 text-blue-600 dark:text-blue-400">
                     {formatCurrency(
-                      preview.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0) / preview.totalUnits,
+                      preview.totalUnits > 0 
+                        ? preview.items.reduce((sum, item) => sum + ((item.unitPrice || 0) * (item.quantity || 0)), 0) / preview.totalUnits
+                        : 0,
                       preview.baseCurrency
                     )}
                   </TableCell>
                   <TableCell className="text-right p-2">
-                    {preview.totalChargeableWeight.toFixed(2)}
+                    {(preview.totalChargeableWeight || 0).toFixed(2)}
                   </TableCell>
                   <TableCell className="text-right p-2">
-                    {formatCurrency(preview.totalCosts.freight, preview.baseCurrency)}
+                    {formatCurrency(preview.totalCosts?.freight, preview.baseCurrency)}
                   </TableCell>
                   <TableCell className="text-right p-2">
-                    {formatCurrency(preview.totalCosts.duty, preview.baseCurrency)}
+                    {formatCurrency(preview.totalCosts?.duty, preview.baseCurrency)}
                   </TableCell>
                   <TableCell className="text-right p-2">
                     {formatCurrency(
-                      preview.totalCosts.brokerage +
-                      preview.totalCosts.insurance +
-                      preview.totalCosts.packaging +
-                      preview.totalCosts.other,
+                      (preview.totalCosts?.brokerage || 0) +
+                      (preview.totalCosts?.insurance || 0) +
+                      (preview.totalCosts?.packaging || 0) +
+                      (preview.totalCosts?.other || 0),
                       preview.baseCurrency
                     )}
                   </TableCell>
                   <TableCell className="text-right p-2 text-cyan-700 dark:text-cyan-400">
                     {formatCurrency(
-                      preview.items.reduce((sum, item) => sum + ((item.unitPrice + item.landingCostPerUnit) * item.quantity), 0) / preview.totalUnits,
+                      preview.totalUnits > 0
+                        ? preview.items.reduce((sum, item) => sum + (((item.unitPrice || 0) + (item.landingCostPerUnit || 0)) * (item.quantity || 0)), 0) / preview.totalUnits
+                        : 0,
                       preview.baseCurrency
                     )}
                   </TableCell>
