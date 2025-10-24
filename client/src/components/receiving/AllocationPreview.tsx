@@ -395,17 +395,20 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold">Allocation Method:</span>
-                  {currentMethod && (
-                    <Badge variant="secondary" className="text-xs">
-                      <currentMethod.icon className="h-3 w-3 mr-1" />
-                      {currentMethod.name}
-                    </Badge>
-                  )}
                   {isManualOverride ? (
-                    <Badge variant="outline" className="text-xs text-blue-600">Manual Override</Badge>
+                    <>
+                      {currentMethod && (
+                        <Badge variant="secondary" className="text-xs">
+                          <currentMethod.icon className="h-3 w-3 mr-1" />
+                          {currentMethod.name}
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className="text-xs text-blue-600">Manual Override</Badge>
+                    </>
                   ) : currentMethod ? (
                     <Badge variant="outline" className="text-xs text-green-600">
-                      Auto → {currentMethod.name}
+                      <currentMethod.icon className="h-3 w-3 mr-1" />
+                      Auto ({currentMethod.name})
                     </Badge>
                   ) : (
                     <Badge variant="outline" className="text-xs text-green-600">
@@ -413,8 +416,10 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                     </Badge>
                   )}
                 </div>
-                {currentMethod && (
-                  <p className="text-xs text-muted-foreground mt-0.5">{currentMethod.description}</p>
+                {!isManualOverride && currentMethod && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    <strong>Why this method?</strong> Weight-based allocation is optimal for freight costs as heavier items consume more shipping resources.
+                  </p>
                 )}
               </div>
             </div>
