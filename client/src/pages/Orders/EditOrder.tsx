@@ -1599,12 +1599,13 @@ export default function EditOrder() {
             {/* Selected customer display */}
             {selectedCustomer && (
               <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2 flex-1">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <div className="flex-1">
-                      <div className="font-medium text-green-800 flex items-center gap-2">
-                        {selectedCustomer.name}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start space-x-3 flex-1 min-w-0">
+                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      {/* Name and badges */}
+                      <div className="font-medium text-green-800 flex items-center gap-2 flex-wrap">
+                        <span className="truncate">{selectedCustomer.name}</span>
                         {selectedCustomer.isTemporary && (
                           <Badge variant="outline" className="text-xs bg-blue-50 border-blue-300 text-blue-700">
                             One-time
@@ -1620,10 +1621,49 @@ export default function EditOrder() {
                             Pay Later
                           </Badge>
                         )}
+                        {selectedCustomer.type && selectedCustomer.type !== 'regular' && (
+                          <Badge variant="outline" className="text-xs bg-slate-100 border-slate-300 text-slate-700 capitalize">
+                            {selectedCustomer.type}
+                          </Badge>
+                        )}
                       </div>
-                      <div className="text-sm text-green-600">
-                        {selectedCustomer.phone || selectedCustomer.email || "No contact info"}
-                        {selectedCustomer.socialMediaApp && ` (${selectedCustomer.socialMediaApp})`}
+                      
+                      {/* Company */}
+                      {selectedCustomer.company && (
+                        <div className="text-sm text-green-700 mt-1 flex items-center gap-1">
+                          <Building className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{selectedCustomer.company}</span>
+                        </div>
+                      )}
+                      
+                      {/* Contact info - compact grid */}
+                      <div className="mt-2 space-y-1">
+                        {selectedCustomer.phone && (
+                          <div className="text-sm text-green-600 flex items-center gap-1">
+                            <Phone className="h-3 w-3 shrink-0" />
+                            <span>{selectedCustomer.phone}</span>
+                            {selectedCustomer.socialMediaApp && (
+                              <span className="text-xs text-green-500">({selectedCustomer.socialMediaApp})</span>
+                            )}
+                          </div>
+                        )}
+                        {selectedCustomer.email && (
+                          <div className="text-sm text-green-600 flex items-center gap-1">
+                            <Mail className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{selectedCustomer.email}</span>
+                          </div>
+                        )}
+                        {(selectedCustomer.city || selectedCustomer.country) && (
+                          <div className="text-sm text-green-600 flex items-center gap-1">
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            <span className="truncate">
+                              {[selectedCustomer.city, selectedCustomer.country].filter(Boolean).join(', ')}
+                            </span>
+                          </div>
+                        )}
+                        {!selectedCustomer.phone && !selectedCustomer.email && (
+                          <div className="text-sm text-green-500 italic">No contact info</div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1631,6 +1671,7 @@ export default function EditOrder() {
                     type="button"
                     variant="ghost"
                     size="sm"
+                    className="shrink-0"
                     onClick={() => {
                       setSelectedCustomer(null);
                       setCustomerSearch("");
