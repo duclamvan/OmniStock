@@ -15,7 +15,9 @@ import {
   Loader2,
   Eye,
   MoveRight,
-  Check
+  Check,
+  Sparkles,
+  TrendingUp
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -57,6 +59,8 @@ interface Product {
   priceCzk: string;
   priceEur: string;
   categoryId: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export default function CategoryDetails() {
@@ -187,17 +191,53 @@ export default function CategoryDetails() {
     }
   };
 
+  // Helper function to determine product status badge
+  const getProductStatusBadge = (product: Product) => {
+    if (!product.createdAt) return null;
+    
+    const now = new Date();
+    const createdAt = new Date(product.createdAt);
+    const updatedAt = product.updatedAt ? new Date(product.updatedAt) : createdAt;
+    const daysSinceCreated = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+    const daysSinceUpdated = (now.getTime() - updatedAt.getTime()) / (1000 * 60 * 60 * 24);
+    
+    // New product (created within last 7 days)
+    if (daysSinceCreated <= 7) {
+      return (
+        <Badge variant="default" className="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] px-1.5 py-0 h-4">
+          <Sparkles className="h-2.5 w-2.5 mr-0.5" />
+          New
+        </Badge>
+      );
+    }
+    
+    // Recently restocked (updated within last 7 days, but created more than 7 days ago)
+    if (daysSinceUpdated <= 7 && daysSinceCreated > 7) {
+      return (
+        <Badge variant="outline" className="bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-950 dark:border-blue-700 dark:text-blue-300 text-[10px] px-1.5 py-0 h-4">
+          <TrendingUp className="h-2.5 w-2.5 mr-0.5" />
+          Restocked
+        </Badge>
+      );
+    }
+    
+    return null;
+  };
+
   const productColumns: DataTableColumn<Product>[] = [
     {
       key: "name",
       header: "Product Name",
       sortable: true,
       cell: (item) => (
-        <Link href={`/inventory/products/${item.id}`}>
-          <span className="font-medium hover:underline cursor-pointer">
-            {item.name}
-          </span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href={`/inventory/products/${item.id}`}>
+            <span className="font-medium hover:underline cursor-pointer">
+              {item.name}
+            </span>
+          </Link>
+          {getProductStatusBadge(item)}
+        </div>
       ),
     },
     {
