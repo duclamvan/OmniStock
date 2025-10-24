@@ -2152,6 +2152,13 @@ export default function ProductForm() {
                           placeholder="0.00"
                           data-testid="input-cost-usd"
                           className="mt-1"
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            if (value && value > 0) {
+                              form.setValue('importCostCzk', parseFloat(convertCurrency(value, 'USD', 'CZK').toFixed(2)));
+                              form.setValue('importCostEur', parseFloat(convertCurrency(value, 'USD', 'EUR').toFixed(2)));
+                            }
+                          }}
                         />
                       </div>
 
@@ -2165,6 +2172,13 @@ export default function ProductForm() {
                           placeholder="0.00"
                           data-testid="input-cost-czk"
                           className="mt-1"
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            if (value && value > 0) {
+                              form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'CZK', 'USD').toFixed(2)));
+                              form.setValue('importCostEur', parseFloat(convertCurrency(value, 'CZK', 'EUR').toFixed(2)));
+                            }
+                          }}
                         />
                       </div>
 
@@ -2178,11 +2192,18 @@ export default function ProductForm() {
                           placeholder="0.00"
                           data-testid="input-cost-eur"
                           className="mt-1"
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            if (value && value > 0) {
+                              form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'EUR', 'USD').toFixed(2)));
+                              form.setValue('importCostCzk', parseFloat(convertCurrency(value, 'EUR', 'CZK').toFixed(2)));
+                            }
+                          }}
                         />
                       </div>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      Enter cost in one currency, others auto-convert
+                      Enter cost in one currency, others auto-convert in real-time
                     </p>
                   </div>
                   
