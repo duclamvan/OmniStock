@@ -1709,7 +1709,8 @@ export default function InternationalTransit() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => {
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
                                 setSelectedShipment(shipment);
                                 setIsEditShipmentOpen(true);
                               }}>
