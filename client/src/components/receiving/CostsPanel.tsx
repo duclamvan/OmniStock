@@ -20,8 +20,7 @@ import {
   AlertCircle,
   CheckCircle,
   AlertTriangle,
-  Download,
-  RefreshCcw
+  Download
 } from "lucide-react";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/currencyUtils";
@@ -180,35 +179,24 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
     mutationFn: async (costId: number) => {
       return apiRequest('DELETE', `/api/imports/shipments/${shipmentId}/costs/${costId}`);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "Cost Deleted",
-        description: "Cost line has been removed"
+        description: "Recalculating landing costs..."
       });
-      queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/costs`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/landing-cost-summary`] });
       setCostToDelete(null);
-      onUpdate?.();
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete cost",
-        variant: "destructive"
-      });
-    }
-  });
-
-  // Calculate landing costs mutation
-  const calculateCostsMutation = useMutation({
-    mutationFn: async () => {
-      return apiRequest('POST', `/api/imports/shipments/${shipmentId}/calculate-landing-costs`);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Landing Costs Calculated",
-        description: "Costs have been allocated to items"
-      });
+      
+      // Auto-trigger landing cost calculation
+      try {
+        await apiRequest('POST', `/api/imports/shipments/${shipmentId}/calculate-landing-costs`);
+        toast({
+          title: "Updated",
+          description: "Cost deleted and landing costs recalculated"
+        });
+      } catch (error) {
+        console.error('Auto-calculation failed:', error);
+      }
+      
       queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/costs`] });
       queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/landing-cost-summary`] });
       queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/landing-cost-preview`] });
@@ -217,7 +205,7 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to calculate landing costs",
+        description: error.message || "Failed to delete cost",
         variant: "destructive"
       });
     }
@@ -316,30 +304,15 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
           </div>
           <div className="flex gap-2">
             <Button
-              variant="outline"
-              size="sm"
+              variant="default"
+              size="default"
               onClick={() => setShowAddModal(true)}
               data-testid="button-add-cost"
+              className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Cost
             </Button>
-            {hasAnyCosts && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => calculateCostsMutation.mutate()}
-                disabled={calculateCostsMutation.isPending}
-                data-testid="button-calculate-costs"
-              >
-                {calculateCostsMutation.isPending ? (
-                  <RefreshCcw className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Calculator className="h-4 w-4 mr-2" />
-                )}
-                Recalculate
-              </Button>
-            )}
           </div>
         </div>
 
@@ -670,9 +643,25 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
             setShowAddModal(false);
             setSelectedCost(null);
           }}
-          onSave={() => {
+          onSave={async () => {
+            // Auto-trigger landing cost calculation
+            try {
+              await apiRequest('POST', `/api/imports/shipments/${shipmentId}/calculate-landing-costs`);
+              toast({
+                title: "Cost Saved",
+                description: "Landing costs recalculated automatically"
+              });
+            } catch (error) {
+              console.error('Auto-calculation failed:', error);
+              toast({
+                title: "Cost Saved",
+                description: "Cost saved but calculation failed"
+              });
+            }
+            
             queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/costs`] });
             queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/landing-cost-summary`] });
+            queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/landing-cost-preview`] });
             onUpdate?.();
           }}
         />
