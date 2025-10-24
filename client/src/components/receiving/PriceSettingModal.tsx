@@ -53,7 +53,7 @@ export default function PriceSettingModal({
   const [showColumns, setShowColumns] = useState({
     sku: true,
     qty: true,
-    landingCostCzk: false,
+    landingCostCzk: true,
     landingCostEur: true
   });
 
@@ -354,68 +354,53 @@ export default function PriceSettingModal({
               <DollarSign className="h-5 w-5" />
               Set Selling Prices Before Approval
             </DialogTitle>
-            <div className="flex items-center gap-3">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 gap-2">
-                    <Settings className="h-3.5 w-3.5" />
-                    <span className="text-xs">Columns</span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64" align="end">
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-semibold">Show/Hide Columns</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id="col-sku"
-                          checked={showColumns.sku}
-                          onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, sku: !!checked }))}
-                        />
-                        <Label htmlFor="col-sku" className="text-xs cursor-pointer">SKU</Label>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id="col-qty"
-                          checked={showColumns.qty}
-                          onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, qty: !!checked }))}
-                        />
-                        <Label htmlFor="col-qty" className="text-xs cursor-pointer">Quantity</Label>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id="col-landing-czk"
-                          checked={showColumns.landingCostCzk}
-                          onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, landingCostCzk: !!checked }))}
-                        />
-                        <Label htmlFor="col-landing-czk" className="text-xs cursor-pointer">Landing Cost CZK</Label>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id="col-landing-eur"
-                          checked={showColumns.landingCostEur}
-                          onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, landingCostEur: !!checked }))}
-                        />
-                        <Label htmlFor="col-landing-eur" className="text-xs cursor-pointer">Landing Cost EUR</Label>
-                      </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 gap-2">
+                  <Settings className="h-3.5 w-3.5" />
+                  <span className="text-xs">Columns</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64" align="end">
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold">Show/Hide Columns</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="col-sku"
+                        checked={showColumns.sku}
+                        onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, sku: !!checked }))}
+                      />
+                      <Label htmlFor="col-sku" className="text-xs cursor-pointer">SKU</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="col-qty"
+                        checked={showColumns.qty}
+                        onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, qty: !!checked }))}
+                      />
+                      <Label htmlFor="col-qty" className="text-xs cursor-pointer">Quantity</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="col-landing-czk"
+                        checked={showColumns.landingCostCzk}
+                        onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, landingCostCzk: !!checked }))}
+                      />
+                      <Label htmlFor="col-landing-czk" className="text-xs cursor-pointer">Landing Cost CZK</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="col-landing-eur"
+                        checked={showColumns.landingCostEur}
+                        onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, landingCostEur: !!checked }))}
+                      />
+                      <Label htmlFor="col-landing-eur" className="text-xs cursor-pointer">Landing Cost EUR</Label>
                     </div>
                   </div>
-                </PopoverContent>
-              </Popover>
-              
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Landing Cost:</span>
-                <Select value={displayCurrency} onValueChange={(val) => setDisplayCurrency(val as 'EUR' | 'CZK')}>
-                  <SelectTrigger className="w-24 h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="EUR">EUR (€)</SelectItem>
-                    <SelectItem value="CZK">CZK (Kč)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </DialogHeader>
         
@@ -462,12 +447,12 @@ export default function PriceSettingModal({
             <Table>
               <TableHeader>
                 <TableRow className="text-xs">
-                  <TableHead className="w-[25%] py-2">Item</TableHead>
+                  <TableHead className="py-2">Item</TableHead>
                   {showColumns.qty && <TableHead className="text-center w-[60px] py-2">Qty</TableHead>}
                   {showColumns.landingCostCzk && <TableHead className="text-right w-[100px] py-2">Cost CZK</TableHead>}
                   {showColumns.landingCostEur && <TableHead className="text-right w-[100px] py-2">Cost EUR</TableHead>}
-                  <TableHead className="w-[140px] py-2">Price CZK</TableHead>
-                  <TableHead className="w-[140px] py-2">Price EUR</TableHead>
+                  <TableHead className="w-[130px] py-2">Price CZK</TableHead>
+                  <TableHead className="w-[130px] py-2">Price EUR</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
