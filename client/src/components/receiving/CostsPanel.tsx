@@ -382,117 +382,200 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
             <TabsTrigger value="details">Details</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-4">
-            {/* Cost Type Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {['FREIGHT', 'BROKERAGE', 'INSURANCE', 'PACKAGING', 'OTHER'].map(type => {
-                const typeCosts = costsByType[type] || [];
-                const totalOriginal = typeCosts.reduce((sum, cost) => {
-                  return sum + parseFloat(cost.amountOriginal);
-                }, 0);
-                const totalBase = typeCosts.reduce((sum, cost) => {
-                  return sum + parseFloat(cost.amountBase);
-                }, 0);
-
+          <TabsContent value="overview" className="space-y-3">
+            {/* Compact Cost Category Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* Freight */}
+              {(() => {
+                const freightCosts = costsByType['FREIGHT'] || [];
+                const total = freightCosts.reduce((sum, cost) => sum + parseFloat(cost.amountBase), 0);
+                
                 return (
-                  <Card key={type} className="relative">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className={`p-2 rounded-lg ${getCostColor(type)}`}>
-                            {getCostIcon(type)}
-                          </div>
-                          <CardTitle className="text-base">
-                            {type.charAt(0) + type.slice(1).toLowerCase()}
-                          </CardTitle>
-                        </div>
-                        {typeCosts.length > 0 && (
-                          <Badge variant="secondary">{typeCosts.length}</Badge>
+                  <Card className="border-l-4 border-l-blue-500">
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Truck className="h-4 w-4 text-blue-600" />
+                        <h3 className="font-semibold text-sm">Freight</h3>
+                        {freightCosts.length > 0 && (
+                          <Badge variant="secondary" className="text-xs h-4 px-1.5">{freightCosts.length}</Badge>
                         )}
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      {typeCosts.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No costs added</p>
+                      <div className="text-xl font-bold text-blue-600 mb-2">
+                        {total > 0 ? formatCurrency(total, 'EUR') : '—'}
+                      </div>
+                      {freightCosts.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">No costs</p>
                       ) : (
-                        <div className="space-y-3">
-                          {typeCosts.map(cost => (
-                            <div key={cost.id} className="border rounded-lg p-3 space-y-2">
-                              <div className="flex items-start justify-between">
-                                <div className="space-y-1 flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-medium">
-                                      {formatCurrency(cost.amountOriginal, cost.currency)}
-                                    </span>
-                                    {cost.mode && (
-                                      <Badge variant="outline" className="text-xs">
-                                        {cost.mode}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  {cost.fxRateUsed && cost.currency !== 'EUR' && (
-                                    <TooltipProvider>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <div className="text-xs text-muted-foreground cursor-help">
-                                            FX: 1 {cost.currency} = {cost.fxRateUsed} EUR
-                                          </div>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                          <p>Exchange rate at calculation time</p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
-                                  )}
-                                  <div className="text-sm font-medium text-green-600">
-                                    = {formatCurrency(cost.amountBase, 'EUR')}
-                                  </div>
-                                  {cost.notes && (
-                                    <p className="text-xs text-muted-foreground mt-1">{cost.notes}</p>
+                        <div className="space-y-1.5">
+                          {freightCosts.map(cost => (
+                            <div key={cost.id} className="flex items-start justify-between gap-2 text-xs">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1">
+                                  <span className="font-medium truncate">
+                                    {formatCurrency(cost.amountOriginal, cost.currency)}
+                                  </span>
+                                  {cost.mode && (
+                                    <Badge variant="outline" className="text-[10px] h-4 px-1">{cost.mode}</Badge>
                                   )}
                                 </div>
-                                <div className="flex gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => {
-                                      setSelectedCost(cost);
-                                      setShowAddModal(true);
-                                    }}
-                                    data-testid={`button-edit-cost-${cost.id}`}
-                                  >
-                                    <Edit2 className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => setCostToDelete(cost)}
-                                    data-testid={`button-delete-cost-${cost.id}`}
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                </div>
+                                {cost.notes && <p className="text-[10px] text-muted-foreground truncate">{cost.notes}</p>}
+                              </div>
+                              <div className="flex gap-0.5 shrink-0">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => { setSelectedCost(cost); setShowAddModal(true); }}
+                                  data-testid={`button-edit-cost-${cost.id}`}
+                                >
+                                  <Edit2 className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => setCostToDelete(cost)}
+                                  data-testid={`button-delete-cost-${cost.id}`}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
                               </div>
                             </div>
                           ))}
-                          {typeCosts.length > 1 && (
-                            <div className="pt-2 border-t">
-                              <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Total</span>
-                                <span className="font-medium">
-                                  {formatCurrency(totalBase, 'EUR')}
-                                </span>
-                              </div>
-                            </div>
-                          )}
                         </div>
                       )}
                     </CardContent>
                   </Card>
                 );
-              })}
+              })()}
+
+              {/* Customs */}
+              {(() => {
+                const brokerageCosts = costsByType['BROKERAGE'] || [];
+                const insuranceCosts = costsByType['INSURANCE'] || [];
+                const allCosts = [...brokerageCosts, ...insuranceCosts];
+                const total = allCosts.reduce((sum, cost) => sum + parseFloat(cost.amountBase), 0);
+                
+                return (
+                  <Card className="border-l-4 border-l-amber-500">
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Shield className="h-4 w-4 text-amber-600" />
+                        <h3 className="font-semibold text-sm">Customs</h3>
+                        {allCosts.length > 0 && (
+                          <Badge variant="secondary" className="text-xs h-4 px-1.5">{allCosts.length}</Badge>
+                        )}
+                      </div>
+                      <div className="text-xl font-bold text-amber-600 mb-2">
+                        {total > 0 ? formatCurrency(total, 'EUR') : '—'}
+                      </div>
+                      {allCosts.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">No costs</p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {allCosts.map(cost => (
+                            <div key={cost.id} className="flex items-start justify-between gap-2 text-xs">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1">
+                                  <span className="font-medium truncate">
+                                    {formatCurrency(cost.amountOriginal, cost.currency)}
+                                  </span>
+                                  <Badge variant="outline" className="text-[10px] h-4 px-1">{cost.type}</Badge>
+                                </div>
+                                {cost.notes && <p className="text-[10px] text-muted-foreground truncate">{cost.notes}</p>}
+                              </div>
+                              <div className="flex gap-0.5 shrink-0">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => { setSelectedCost(cost); setShowAddModal(true); }}
+                                  data-testid={`button-edit-cost-${cost.id}`}
+                                >
+                                  <Edit2 className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => setCostToDelete(cost)}
+                                  data-testid={`button-delete-cost-${cost.id}`}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
+              {/* Other */}
+              {(() => {
+                const packagingCosts = costsByType['PACKAGING'] || [];
+                const otherCosts = costsByType['OTHER'] || [];
+                const allCosts = [...packagingCosts, ...otherCosts];
+                const total = allCosts.reduce((sum, cost) => sum + parseFloat(cost.amountBase), 0);
+                
+                return (
+                  <Card className="border-l-4 border-l-green-500">
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Package className="h-4 w-4 text-green-600" />
+                        <h3 className="font-semibold text-sm">Other</h3>
+                        {allCosts.length > 0 && (
+                          <Badge variant="secondary" className="text-xs h-4 px-1.5">{allCosts.length}</Badge>
+                        )}
+                      </div>
+                      <div className="text-xl font-bold text-green-600 mb-2">
+                        {total > 0 ? formatCurrency(total, 'EUR') : '—'}
+                      </div>
+                      {allCosts.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">No costs</p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {allCosts.map(cost => (
+                            <div key={cost.id} className="flex items-start justify-between gap-2 text-xs">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1">
+                                  <span className="font-medium truncate">
+                                    {formatCurrency(cost.amountOriginal, cost.currency)}
+                                  </span>
+                                  <Badge variant="outline" className="text-[10px] h-4 px-1">{cost.type}</Badge>
+                                </div>
+                                {cost.notes && <p className="text-[10px] text-muted-foreground truncate">{cost.notes}</p>}
+                              </div>
+                              <div className="flex gap-0.5 shrink-0">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => { setSelectedCost(cost); setShowAddModal(true); }}
+                                  data-testid={`button-edit-cost-${cost.id}`}
+                                >
+                                  <Edit2 className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => setCostToDelete(cost)}
+                                  data-testid={`button-delete-cost-${cost.id}`}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })()}
             </div>
           </TabsContent>
 
@@ -504,54 +587,54 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
             {shipmentId && <CartonDimensions shipmentId={shipmentId} />}
           </TabsContent>
 
-          <TabsContent value="details" className="space-y-4">
+          <TabsContent value="details" className="space-y-3">
             <Card>
-              <CardHeader>
-                <CardTitle>Cost Breakdown</CardTitle>
-                <CardDescription>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Cost Breakdown</CardTitle>
+                <CardDescription className="text-xs">
                   Detailed view of all cost lines
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {costs.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">
+                  <p className="text-muted-foreground text-center py-6 text-sm">
                     No costs have been added yet
                   </p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     {costs.map((cost: ShipmentCost) => (
-                      <div key={cost.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-lg ${getCostColor(cost.type)}`}>
+                      <div key={cost.id} className="flex items-center justify-between p-2.5 border rounded-lg hover:bg-muted/30 transition-colors">
+                        <div className="flex items-center gap-2.5">
+                          <div className={`p-1.5 rounded-lg ${getCostColor(cost.type)}`}>
                             {getCostIcon(cost.type)}
                           </div>
                           <div>
-                            <div className="font-medium">
+                            <div className="font-medium text-sm">
                               {cost.type} {cost.mode && `(${cost.mode})`}
                             </div>
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-xs text-muted-foreground">
                               {formatCurrency(cost.amountOriginal, cost.currency)}
                               {cost.currency !== 'EUR' && (
-                                <span className="ml-2">
+                                <span className="ml-1.5">
                                   → {formatCurrency(cost.amountBase, 'EUR')}
                                 </span>
                               )}
                             </div>
                             {cost.notes && (
-                              <div className="text-xs text-muted-foreground mt-1">
+                              <div className="text-[10px] text-muted-foreground mt-0.5">
                                 {cost.notes}
                               </div>
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] text-muted-foreground">
                             {format(new Date(cost.createdAt), 'MMM dd')}
                           </span>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-7 w-7"
                             onClick={() => {
                               setSelectedCost(cost);
                               setShowAddModal(true);
@@ -562,7 +645,7 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-7 w-7"
                             onClick={() => setCostToDelete(cost)}
                           >
                             <Trash2 className="h-3 w-3" />

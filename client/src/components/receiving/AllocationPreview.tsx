@@ -1,4 +1,4 @@
-import { useState, useMemo, Fragment } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -601,21 +601,21 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
         </CardContent>
       </Card>
 
-      {/* Allocation Table */}
+      {/* Compact Allocation Table */}
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[100px]">SKU</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead className="text-right">Units</TableHead>
-                  <TableHead className="text-right">
+                <TableRow className="text-xs">
+                  <TableHead className="w-[50px]">Image</TableHead>
+                  <TableHead className="min-w-[180px]">Product</TableHead>
+                  <TableHead className="text-right w-[70px]">Units</TableHead>
+                  <TableHead className="text-right w-[80px]">
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <span className="cursor-help">Actual kg</span>
+                          <span className="cursor-help text-xs">Actual kg</span>
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>Actual gross weight in kilograms</p>
@@ -623,11 +623,11 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                       </Tooltip>
                     </TooltipProvider>
                   </TableHead>
-                  <TableHead className="text-right">
+                  <TableHead className="text-right w-[70px]">
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <span className="cursor-help">Vol kg</span>
+                          <span className="cursor-help text-xs">Vol kg</span>
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>Volumetric weight calculated from dimensions</p>
@@ -635,11 +635,11 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                       </Tooltip>
                     </TooltipProvider>
                   </TableHead>
-                  <TableHead className="text-right">
+                  <TableHead className="text-right w-[90px]">
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <span className="cursor-help">Chargeable kg</span>
+                          <span className="cursor-help text-xs">Chargeable kg</span>
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>Max of actual and volumetric weight</p>
@@ -647,70 +647,88 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                       </Tooltip>
                     </TooltipProvider>
                   </TableHead>
-                  <TableHead className="text-right">Freight</TableHead>
-                  <TableHead className="text-right">Duty</TableHead>
-                  <TableHead className="text-right">Other Fees</TableHead>
-                  <TableHead className="text-right">Landing Cost/Unit</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
+                  <TableHead className="text-right w-[90px]">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-help text-xs">Cost/Unit</span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Landing cost per individual unit</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </TableHead>
+                  <TableHead className="text-right w-[90px]">Freight</TableHead>
+                  <TableHead className="text-right w-[90px]">Duty</TableHead>
+                  <TableHead className="text-right w-[90px]">Other</TableHead>
+                  <TableHead className="text-right w-[100px]">Landing/Unit</TableHead>
+                  <TableHead className="w-[40px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {preview.items.map((item) => (
-                  <Fragment key={item.purchaseItemId}>
+                {preview.items.map((item) => [
                     <TableRow
-                      className={`${item.warnings.length > 0 ? 'bg-yellow-50 dark:bg-yellow-950/20' : ''} ${currentMethod ? 'border-l-2 border-l-blue-200 dark:border-l-blue-800' : ''}`}
+                      key={`row-${item.purchaseItemId}`}
+                      className={`text-xs ${item.warnings.length > 0 ? 'bg-yellow-50 dark:bg-yellow-950/20' : ''} ${currentMethod ? 'border-l-2 border-l-blue-200 dark:border-l-blue-800' : ''}`}
                     >
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          {item.sku}
-                          {currentMethod && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <currentMethod.icon className="h-3 w-3 text-muted-foreground" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Allocated using {currentMethod.name.toLowerCase()}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
+                      <TableCell className="p-2">
+                        <div className="w-10 h-10 bg-muted rounded flex items-center justify-center overflow-hidden">
+                          <Package className="h-5 w-5 text-muted-foreground" />
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {item.name}
-                          {item.warnings.length > 0 && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <AlertTriangle className="h-4 w-4 text-yellow-600 cursor-help" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <div className="space-y-1">
-                                    {item.warnings.map((warning, idx) => (
-                                      <p key={idx}>{warning}</p>
-                                    ))}
-                                  </div>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
+                      <TableCell className="p-2">
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-medium text-sm">{item.name}</span>
+                            {item.warnings.length > 0 && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <AlertTriangle className="h-3.5 w-3.5 text-yellow-600 cursor-help" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <div className="space-y-1">
+                                      {item.warnings.map((warning, idx) => (
+                                        <p key={idx}>{warning}</p>
+                                      ))}
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                            {currentMethod && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <currentMethod.icon className="h-3 w-3 text-muted-foreground" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Allocated using {currentMethod.name.toLowerCase()}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </div>
+                          <span className="text-[11px] text-muted-foreground">{item.sku}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">{item.quantity}</TableCell>
-                      <TableCell className="text-right">{item.actualWeightKg.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">{item.volumetricWeightKg.toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-medium">
+                      <TableCell className="text-right p-2">{item.quantity}</TableCell>
+                      <TableCell className="text-right p-2">{item.actualWeightKg.toFixed(2)}</TableCell>
+                      <TableCell className="text-right p-2">{item.volumetricWeightKg.toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-medium p-2">
                         {item.chargeableWeightKg.toFixed(2)}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right font-medium p-2 text-cyan-700 dark:text-cyan-400">
+                        {formatCurrency(item.landingCostPerUnit, preview.baseCurrency)}
+                      </TableCell>
+                      <TableCell className="text-right p-2">
                         {formatCurrency(item.freightAllocated, preview.baseCurrency)}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right p-2">
                         {formatCurrency(item.dutyAllocated, preview.baseCurrency)}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right p-2">
                         {formatCurrency(
                           item.brokerageAllocated + 
                           item.insuranceAllocated + 
@@ -719,7 +737,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                           preview.baseCurrency
                         )}
                       </TableCell>
-                      <TableCell className="text-right font-bold">
+                      <TableCell className="text-right font-bold p-2">
                         {formatCurrency(item.landingCostPerUnit, preview.baseCurrency)}
                       </TableCell>
                       <TableCell>
@@ -732,9 +750,9 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                           <Info className="h-4 w-4" />
                         </Button>
                       </TableCell>
-                    </TableRow>
-                    {expandedRows.has(item.purchaseItemId) && (
-                      <TableRow>
+                    </TableRow>,
+                    expandedRows.has(item.purchaseItemId) && (
+                      <TableRow key={`expanded-${item.purchaseItemId}`}>
                         <TableCell colSpan={11} className="bg-gray-50 dark:bg-gray-900">
                           <div className="p-4">
                             <div className="flex items-center justify-between mb-2">
@@ -820,9 +838,8 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                           </div>
                         </TableCell>
                       </TableRow>
-                    )}
-                  </Fragment>
-                ))}
+                    )
+                ])}
               </TableBody>
               <TableFooter>
                 <TableRow className="font-bold">

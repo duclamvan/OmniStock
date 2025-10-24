@@ -925,58 +925,58 @@ export default function ReceiptDetails() {
     </TabsContent>
   </Tabs>
 
-      {/* Task Checklist */}
+      {/* Compact Task Checklist */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ClipboardCheck className="h-5 w-5" />
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ClipboardCheck className="h-4 w-4" />
             Receipt Tasks
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Task List */}
-          <div className="space-y-3">
+        <CardContent className="space-y-3">
+          {/* Compact Task List */}
+          <div className="space-y-2">
             {/* Item Verification Task */}
-            <div className="flex items-start gap-3 p-3 rounded-lg border">
-              <div className="mt-1">
+            <div className="flex items-start gap-2.5 p-2.5 rounded-lg border">
+              <div className="mt-0.5">
                 {allItemsVerified ? (
-                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <CheckCircle className="h-4 w-4 text-green-600" />
                 ) : (
-                  <AlertCircle className="h-5 w-5 text-orange-500" />
+                  <AlertCircle className="h-4 w-4 text-orange-500" />
                 )}
               </div>
               <div className="flex-1">
-                <p className="font-medium">
+                <p className="font-medium text-sm">
                   {allItemsVerified ? 'All Items Verified' : 'Verify All Items'}
                 </p>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   {allItemsVerified 
-                    ? `${receipt.items?.length || 0} items have been verified with quantities and conditions`
+                    ? `${receipt.items?.length || 0} items verified`
                     : `${receipt.items?.filter((item: any) => item.verifiedAt).length || 0}/${receipt.items?.length || 0} items verified`
                   }
                 </p>
               </div>
               {!allItemsVerified && (
-                <Badge variant="outline" className="text-orange-600 border-orange-600">
+                <Badge variant="outline" className="text-orange-600 border-orange-600 text-xs h-5 px-1.5">
                   Required
                 </Badge>
               )}
             </div>
 
             {/* Complete Verification Task */}
-            <div className="flex items-start gap-3 p-3 rounded-lg border">
-              <div className="mt-1">
+            <div className="flex items-start gap-2.5 p-2.5 rounded-lg border">
+              <div className="mt-0.5">
                 {receipt.status !== 'pending_verification' ? (
-                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <CheckCircle className="h-4 w-4 text-green-600" />
                 ) : (
-                  <Clock className="h-5 w-5 text-gray-400" />
+                  <Clock className="h-4 w-4 text-gray-400" />
                 )}
               </div>
               <div className="flex-1">
-                <p className="font-medium">
+                <p className="font-medium text-sm">
                   {receipt.status !== 'pending_verification' ? 'Verification Completed' : 'Complete Verification'}
                 </p>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   {receipt.status !== 'pending_verification'
                     ? `Verified by ${receipt.verifiedBy || 'Unknown'}`
                     : 'Submit verification to send for approval'
@@ -984,51 +984,51 @@ export default function ReceiptDetails() {
                 </p>
               </div>
               {receipt.status === 'pending_verification' && (
-                <Badge variant="outline" className="text-blue-600 border-blue-600">
+                <Badge variant="outline" className="text-blue-600 border-blue-600 text-xs h-5 px-1.5">
                   Next Step
                 </Badge>
               )}
             </div>
 
             {/* Approval Task */}
-            <div className="flex items-start gap-3 p-3 rounded-lg border">
-              <div className="mt-1">
+            <div className="flex items-start gap-2.5 p-2.5 rounded-lg border">
+              <div className="mt-0.5">
                 {receipt.status === 'approved' ? (
-                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <CheckCircle className="h-4 w-4 text-green-600" />
                 ) : receipt.status === 'pending_approval' ? (
-                  <AlertCircle className="h-5 w-5 text-orange-500" />
+                  <AlertCircle className="h-4 w-4 text-orange-500" />
                 ) : (
-                  <Clock className="h-5 w-5 text-gray-400" />
+                  <Clock className="h-4 w-4 text-gray-400" />
                 )}
               </div>
               <div className="flex-1">
-                <p className="font-medium">
+                <p className="font-medium text-sm">
                   {receipt.status === 'approved' ? 'Receipt Approved' : 
                    receipt.status === 'pending_approval' ? 'Pending Approval' : 
                    'Awaiting Approval'}
                 </p>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   {receipt.status === 'approved'
-                    ? `Approved by ${receipt.approvedBy || 'Unknown'} - Items added to inventory`
+                    ? `Approved by ${receipt.approvedBy || 'Unknown'} - Items in inventory`
                     : receipt.status === 'pending_approval'
-                    ? 'Receipt is ready for founder approval'
+                    ? 'Ready for founder approval'
                     : 'Complete verification first'
                   }
                 </p>
               </div>
               {receipt.status === 'pending_approval' && (
-                <Badge variant="outline" className="text-orange-600 border-orange-600">
+                <Badge variant="outline" className="text-orange-600 border-orange-600 text-xs h-5 px-1.5">
                   Action Needed
                 </Badge>
               )}
             </div>
           </div>
 
-          {/* Progress Bar */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Overall Progress</span>
-              <span>
+          {/* Compact Progress Bar */}
+          <div className="space-y-1.5">
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Overall Progress</span>
+              <span className="font-medium">
                 {receipt.status === 'approved' ? '100%' : 
                  receipt.status === 'pending_approval' ? '75%' : 
                  allItemsVerified ? '50%' : '25%'}
@@ -1040,25 +1040,25 @@ export default function ReceiptDetails() {
                 receipt.status === 'pending_approval' ? 75 : 
                 allItemsVerified ? 50 : 25
               } 
-              className="h-2"
+              className="h-1.5"
             />
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-wrap gap-4 pt-4 border-t">
+          {/* Compact Action Buttons */}
+          <div className="flex flex-wrap gap-3 pt-3 border-t">
             {receipt.status === 'pending_verification' && !receipt.isArchivedView && (
               <>
                 <Button
                   onClick={() => setShowVerifyDialog(true)}
                   disabled={!allItemsVerified}
                   data-testid="button-complete-verification"
-                  className={allItemsVerified ? 'bg-green-600 hover:bg-green-700' : ''}
+                  className={allItemsVerified ? 'bg-green-600 hover:bg-green-700 h-8 text-sm' : 'h-8 text-sm'}
                 >
-                  <CheckCircle className="h-4 w-4 mr-2" />
+                  <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
                   {allItemsVerified ? 'Complete Verification' : 'Complete Verification (Verify Items First)'}
                 </Button>
                 {!allItemsVerified && (
-                  <p className="text-sm text-muted-foreground self-center">
+                  <p className="text-xs text-muted-foreground self-center">
                     Please verify all items before completing verification
                   </p>
                 )}
@@ -1069,22 +1069,22 @@ export default function ReceiptDetails() {
                 <Button
                   onClick={handleOpenPriceModal}
                   data-testid="button-approve-receipt"
-                  className="bg-orange-600 hover:bg-orange-700"
+                  className="bg-orange-600 hover:bg-orange-700 h-8 text-sm"
                 >
-                  <Check className="h-4 w-4 mr-2" />
+                  <Check className="h-3.5 w-3.5 mr-1.5" />
                   Approve & Add to Inventory
                 </Button>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Info className="h-4 w-4" />
-                  <span>Set prices and add all verified items to inventory</span>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Info className="h-3.5 w-3.5" />
+                  <span>Set prices and add verified items to inventory</span>
                 </div>
               </>
             )}
             {receipt.status === 'approved' && !receipt.isArchivedView && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-green-600">
-                  <CheckCircle className="h-5 w-5" />
-                  <span className="font-medium">All tasks completed - Items are now in inventory</span>
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-1.5 text-green-600">
+                  <CheckCircle className="h-4 w-4" />
+                  <span className="font-medium text-sm">All tasks completed - Items in inventory</span>
                 </div>
                 <Button
                   variant="ghost"
@@ -1092,7 +1092,7 @@ export default function ReceiptDetails() {
                   onClick={handleUndoApproval}
                   disabled={undoApprovalMutation.isPending}
                   data-testid="button-undo-approve"
-                  className="text-muted-foreground hover:text-destructive text-xs px-2 ml-4"
+                  className="text-muted-foreground hover:text-destructive text-xs px-2 h-7"
                 >
                   <Undo2 className="h-3 w-3 mr-1" />
                   Undo Approval
