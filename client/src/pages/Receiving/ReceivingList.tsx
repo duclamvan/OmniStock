@@ -559,6 +559,7 @@ export default function ReceivingList() {
   const [matchedShipments, setMatchedShipments] = useState<any[]>([]);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const scanInputRef = useRef<HTMLInputElement>(null);
+  const expandedShipmentsInitialized = useRef(false);
 
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -1144,6 +1145,11 @@ export default function ReceivingList() {
 
   // Auto-expand all shipments by default - strictly!
   useEffect(() => {
+    // Skip if already initialized and we have expanded shipments
+    if (expandedShipmentsInitialized.current && expandedShipments.size > 0) {
+      return;
+    }
+    
     // Collect all shipment IDs from all tabs
     const allShipmentIds = new Set<number>();
     
@@ -1155,6 +1161,7 @@ export default function ReceivingList() {
     
     if (allShipmentIds.size > 0) {
       setExpandedShipments(allShipmentIds);
+      expandedShipmentsInitialized.current = true;
     }
   }, [toReceiveShipments, receivingShipments, storageShipments, completedShipments, archivedShipments]);
 
