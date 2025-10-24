@@ -1865,8 +1865,8 @@ export default function AddOrder() {
 
               {/* Real-time dropdown for customers */}
               {showCustomerDropdown && filteredCustomers && filteredCustomers.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-60 overflow-y-auto z-50">
-                  <div className="p-2 bg-slate-50 border-b text-xs text-slate-600">
+                <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-96 overflow-y-auto z-50">
+                  <div className="p-2 bg-slate-50 border-b text-xs text-slate-600 sticky top-0 z-10">
                     {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} found
                   </div>
                   {filteredCustomers.map((customer: any) => (
@@ -1887,26 +1887,70 @@ export default function AddOrder() {
                         }, 100);
                       }}
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium text-slate-900 flex items-center gap-2">
-                            {customer.name}
+                      <div className="flex items-start justify-between gap-3">
+                        {/* Left side - Main info */}
+                        <div className="flex-1 min-w-0">
+                          {/* Name, flag, and badges */}
+                          <div className="font-medium text-slate-900 flex items-center gap-2 flex-wrap mb-1">
+                            <span className="flex items-center gap-1.5">
+                              {customer.country && (
+                                <span className="text-base">{getCountryFlag(customer.country)}</span>
+                              )}
+                              <span className="truncate">{customer.name}</span>
+                            </span>
                             {customer.hasPayLaterBadge && (
                               <Badge variant="outline" className="text-xs bg-yellow-50 border-yellow-300 text-yellow-700">
                                 Pay Later
                               </Badge>
                             )}
+                            {customer.type && customer.type !== 'regular' && (
+                              <Badge variant="outline" className="text-xs bg-slate-100 border-slate-300 text-slate-600 capitalize">
+                                {customer.type}
+                              </Badge>
+                            )}
                           </div>
-                          <div className="text-sm text-slate-500">{customer.email}</div>
-                          {customer.facebookName && (
-                            <div className="text-xs text-blue-600">FB: {customer.facebookName}</div>
+                          
+                          {/* Company */}
+                          {customer.company && (
+                            <div className="text-xs text-slate-600 flex items-center gap-1 mb-1">
+                              <Building className="h-3 w-3 shrink-0" />
+                              <span className="truncate">{customer.company}</span>
+                            </div>
+                          )}
+                          
+                          {/* Location */}
+                          {(customer.city || customer.country) && (
+                            <div className="text-xs text-slate-500 flex items-center gap-1 mb-1">
+                              <MapPin className="h-3 w-3 shrink-0" />
+                              <span className="truncate">
+                                {[customer.city, customer.country].filter(Boolean).join(', ')}
+                              </span>
+                            </div>
+                          )}
+                          
+                          {/* Facebook name */}
+                          {customer.facebookName && customer.facebookName !== customer.name && (
+                            <div className="text-xs text-blue-600 flex items-center gap-1">
+                              <span className="shrink-0">FB:</span>
+                              <span className="truncate">{customer.facebookName}</span>
+                            </div>
                           )}
                         </div>
-                        <div className="text-right">
-                          <div className="text-xs text-slate-500">{customer.phone}</div>
-                          <div className="text-xs px-2 py-1 rounded bg-slate-100 text-slate-600 mt-1">
-                            {customer.type}
-                          </div>
+                        
+                        {/* Right side - Contact info */}
+                        <div className="text-right shrink-0">
+                          {customer.phone && (
+                            <div className="text-xs text-slate-600 mb-1">
+                              <Phone className="h-3 w-3 inline mr-1" />
+                              {customer.phone}
+                            </div>
+                          )}
+                          {customer.email && (
+                            <div className="text-xs text-slate-500 truncate max-w-[200px]">
+                              <Mail className="h-3 w-3 inline mr-1" />
+                              {customer.email}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
