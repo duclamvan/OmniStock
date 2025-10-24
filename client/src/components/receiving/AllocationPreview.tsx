@@ -53,6 +53,7 @@ interface ItemAllocation {
   sku: string;
   name: string;
   quantity: number;
+  unitPrice: number;
   actualWeightKg: number;
   volumetricWeightKg: number;
   chargeableWeightKg: number;
@@ -562,11 +563,12 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                     <TableRow className="text-xs bg-muted/30">
                       <TableHead className="min-w-[180px] p-2">Product</TableHead>
                       <TableHead className="text-right w-[60px] p-2">Units</TableHead>
+                      <TableHead className="text-right w-[80px] p-2">Purch. Price</TableHead>
                       <TableHead className="text-right w-[70px] p-2">Chg kg</TableHead>
                       <TableHead className="text-right w-[90px] p-2">Freight</TableHead>
                       <TableHead className="text-right w-[80px] p-2">Duty</TableHead>
                       <TableHead className="text-right w-[80px] p-2">Other</TableHead>
-                      <TableHead className="text-right w-[100px] p-2">Cost/Unit</TableHead>
+                      <TableHead className="text-right w-[100px] p-2">Total Cost</TableHead>
                       <TableHead className="w-[40px] p-2"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -601,6 +603,9 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                         </div>
                       </TableCell>
                       <TableCell className="text-right p-2">{item.quantity}</TableCell>
+                      <TableCell className="text-right p-2 text-blue-600 dark:text-blue-400 font-medium">
+                        {formatCurrency(item.unitPrice, preview.baseCurrency)}
+                      </TableCell>
                       <TableCell className="text-right p-2 text-muted-foreground">
                         {item.chargeableWeightKg.toFixed(2)}
                       </TableCell>
@@ -620,7 +625,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                         )}
                       </TableCell>
                       <TableCell className="text-right font-semibold p-2 text-cyan-700 dark:text-cyan-400">
-                        {formatCurrency(item.landingCostPerUnit, preview.baseCurrency)}
+                        {formatCurrency(item.unitPrice + item.landingCostPerUnit, preview.baseCurrency)}
                       </TableCell>
                       <TableCell className="p-2">
                         <Button
@@ -636,7 +641,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                     </TableRow>,
                     expandedRows.has(item.purchaseItemId) && (
                       <TableRow key={`expanded-${item.purchaseItemId}`}>
-                        <TableCell colSpan={8} className="bg-muted/30">
+                        <TableCell colSpan={9} className="bg-muted/30">
                           <div className="p-3">
                             <div className="flex items-center justify-between mb-2">
                               <h4 className="font-medium">Cost Breakdown</h4>
@@ -728,6 +733,12 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                 <TableRow className="font-bold text-xs bg-muted/50">
                   <TableCell className="p-2">TOTAL</TableCell>
                   <TableCell className="text-right p-2">{preview.totalUnits}</TableCell>
+                  <TableCell className="text-right p-2 text-blue-600 dark:text-blue-400">
+                    {formatCurrency(
+                      preview.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0) / preview.totalUnits,
+                      preview.baseCurrency
+                    )}
+                  </TableCell>
                   <TableCell className="text-right p-2">
                     {preview.totalChargeableWeight.toFixed(2)}
                   </TableCell>
@@ -746,8 +757,11 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                       preview.baseCurrency
                     )}
                   </TableCell>
-                  <TableCell className="text-right p-2">
-                    {formatCurrency(preview.totalCosts.total, preview.baseCurrency)}
+                  <TableCell className="text-right p-2 text-cyan-700 dark:text-cyan-400">
+                    {formatCurrency(
+                      preview.items.reduce((sum, item) => sum + ((item.unitPrice + item.landingCostPerUnit) * item.quantity), 0) / preview.totalUnits,
+                      preview.baseCurrency
+                    )}
                   </TableCell>
                   <TableCell className="p-2"></TableCell>
                 </TableRow>
