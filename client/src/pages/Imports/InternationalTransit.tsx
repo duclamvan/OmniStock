@@ -115,7 +115,7 @@ export default function InternationalTransit() {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [viewShipmentDetails, setViewShipmentDetails] = useState<Shipment | null>(null);
-  const [allocationMethod, setAllocationMethod] = useState<'UNITS' | 'WEIGHT' | 'VALUE' | 'HYBRID'>('UNITS');
+  const [allocationMethod, setAllocationMethod] = useState<'AUTO' | 'UNITS' | 'WEIGHT' | 'VALUE' | 'HYBRID'>('AUTO');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -2079,10 +2079,36 @@ export default function InternationalTransit() {
             const totalItems = viewShipmentDetails.items?.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0) || 0;
             const currency = viewShipmentDetails.shippingCostCurrency || 'USD';
             
-            // Calculate totals for allocation
+            // Helper: Calculate volumetric weight (L × W × H / 6000 for air freight)
+            const getVolumetricWeight = (item: any): number => {
+              if (!item.dimensions) return 0;
+              try {
+                const dims = typeof item.dimensions === 'string' ? JSON.parse(item.dimensions) : item.dimensions;
+                if (dims.length && dims.width && dims.height) {
+                  return (dims.length * dims.width * dims.height) / 6000;
+                }
+              } catch (e) {
+                return 0;
+              }
+              return 0;
+            };
+            
+            // Helper: Calculate chargeable weight (max of actual weight or volumetric weight)
+            const getChargeableWeight = (item: any): number => {
+              const actualWeight = parseFloat(item.weight || 0);
+              const volumetricWeight = getVolumetricWeight(item);
+              return Math.max(actualWeight, volumetricWeight);
+            };
+            
+            // Calculate totals for different allocation methods
             const totalWeight = viewShipmentDetails.items?.reduce((sum: number, item: any) => {
               const itemWeight = parseFloat(item.weight || 0);
               return sum + (itemWeight * (item.quantity || 1));
+            }, 0) || 0;
+            
+            const totalChargeableWeight = viewShipmentDetails.items?.reduce((sum: number, item: any) => {
+              const chargeableWeight = getChargeableWeight(item);
+              return sum + (chargeableWeight * (item.quantity || 1));
             }, 0) || 0;
             
             const totalValue = viewShipmentDetails.items?.reduce((sum: number, item: any) => {
@@ -2090,25 +2116,46 @@ export default function InternationalTransit() {
               return sum + (itemValue * (item.quantity || 1));
             }, 0) || 0;
             
+            // Determine AUTO method based on shipment type (same logic as LandingCostService)
+            const unitType = (viewShipmentDetails.unitType || 'items').toLowerCase();
+            let autoMethod = 'HYBRID'; // default
+            
+            if (unitType.includes('container')) {
+              autoMethod = 'VALUE';
+            } else if (unitType.includes('pallet')) {
+              autoMethod = 'UNITS';
+            } else if (unitType.includes('box') || unitType.includes('parcel') || unitType.includes('package')) {
+              autoMethod = 'CHARGEABLE_WEIGHT';
+            } else if (unitType === 'mixed' || unitType === 'items') {
+              autoMethod = 'HYBRID';
+            }
+            
+            const effectiveMethod = allocationMethod === 'AUTO' ? autoMethod : allocationMethod;
+            
             // Function to calculate shipping cost per item based on allocation method
             const calculateShippingCost = (item: any) => {
               const qty = item.quantity || 1;
               const itemWeight = parseFloat(item.weight || 0) * qty;
+              const itemChargeableWeight = getChargeableWeight(item) * qty;
               const itemValue = parseFloat(item.unitPrice || 0) * qty;
               
-              switch (allocationMethod) {
+              switch (effectiveMethod) {
                 case 'UNITS':
                   return totalItems > 0 ? totalShipping / totalItems : 0;
                   
                 case 'WEIGHT':
                   return totalWeight > 0 ? (itemWeight / totalWeight) * totalShipping : 0;
                   
+                case 'CHARGEABLE_WEIGHT':
+                  return totalChargeableWeight > 0 ? (itemChargeableWeight / totalChargeableWeight) * totalShipping : 0;
+                  
                 case 'VALUE':
                   return totalValue > 0 ? (itemValue / totalValue) * totalShipping : 0;
                   
                 case 'HYBRID':
-                  const weightPortion = totalWeight > 0 ? (itemWeight / totalWeight) * totalShipping * 0.5 : 0;
-                  const valuePortion = totalValue > 0 ? (itemValue / totalValue) * totalShipping * 0.5 : 0;
+                  // 60% weight, 40% value (same as LandingCostService default)
+                  const weightPortion = totalChargeableWeight > 0 ? (itemChargeableWeight / totalChargeableWeight) * totalShipping * 0.6 : 0;
+                  const valuePortion = totalValue > 0 ? (itemValue / totalValue) * totalShipping * 0.4 : 0;
                   return weightPortion + valuePortion;
                   
                 default:
@@ -2154,10 +2201,16 @@ export default function InternationalTransit() {
                           Allocation Method:
                         </Label>
                         <Select value={allocationMethod} onValueChange={(value: any) => setAllocationMethod(value)}>
-                          <SelectTrigger id="allocation-method" className="h-8 w-[140px] text-xs">
+                          <SelectTrigger id="allocation-method" className="h-8 w-[160px] text-xs">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="AUTO">
+                              <div className="flex items-center gap-2">
+                                <Zap className="h-3 w-3 text-cyan-600" />
+                                <span className="font-semibold">Auto (Smart)</span>
+                              </div>
+                            </SelectItem>
                             <SelectItem value="UNITS">
                               <div className="flex items-center gap-2">
                                 <Package className="h-3 w-3" />
@@ -2179,7 +2232,7 @@ export default function InternationalTransit() {
                             <SelectItem value="HYBRID">
                               <div className="flex items-center gap-2">
                                 <Zap className="h-3 w-3" />
-                                Hybrid (50/50)
+                                Hybrid (60/40)
                               </div>
                             </SelectItem>
                           </SelectContent>
@@ -2271,21 +2324,37 @@ export default function InternationalTransit() {
                     </div>
                     <div className="text-xs text-muted-foreground px-1 space-y-1">
                       <p>
-                        💡 Shipping cost allocated using <strong className="text-foreground">{allocationMethod}</strong> method across {totalItems} units. Landing costs converted to EUR and CZK for your European markets.
+                        💡 Shipping cost allocated using <strong className="text-foreground">
+                          {allocationMethod === 'AUTO' ? `${effectiveMethod} (Auto-selected)` : effectiveMethod}
+                        </strong> method across {totalItems} units. Landing costs converted to EUR and CZK for your European markets.
                       </p>
-                      {allocationMethod === 'WEIGHT' && (
-                        <p className="text-blue-600 dark:text-blue-400">
-                          ⚖️ Heavier items receive proportionally more shipping cost based on their weight.
+                      {allocationMethod === 'AUTO' && (
+                        <p className="text-cyan-600 dark:text-cyan-400">
+                          🤖 <strong>Auto mode</strong> selected <strong>{effectiveMethod}</strong> based on shipment type "{viewShipmentDetails.unitType || 'items'}".
+                          {effectiveMethod === 'CHARGEABLE_WEIGHT' && ' Using chargeable weight (max of actual or volumetric weight).'}
+                          {effectiveMethod === 'VALUE' && ' Container shipments use value-based allocation.'}
+                          {effectiveMethod === 'UNITS' && ' Pallet shipments use unit-based allocation.'}
+                          {effectiveMethod === 'HYBRID' && ' Mixed shipments use hybrid allocation (60% weight + 40% value).'}
                         </p>
                       )}
-                      {allocationMethod === 'VALUE' && (
+                      {(effectiveMethod === 'WEIGHT' || effectiveMethod === 'CHARGEABLE_WEIGHT') && allocationMethod !== 'AUTO' && (
+                        <p className="text-blue-600 dark:text-blue-400">
+                          ⚖️ Heavier items receive proportionally more shipping cost based on their {effectiveMethod === 'CHARGEABLE_WEIGHT' ? 'chargeable' : 'actual'} weight.
+                        </p>
+                      )}
+                      {effectiveMethod === 'VALUE' && allocationMethod !== 'AUTO' && (
                         <p className="text-green-600 dark:text-green-400">
                           💰 Higher value items receive proportionally more shipping cost based on their cost.
                         </p>
                       )}
-                      {allocationMethod === 'HYBRID' && (
+                      {effectiveMethod === 'HYBRID' && allocationMethod !== 'AUTO' && (
                         <p className="text-purple-600 dark:text-purple-400">
-                          ⚡ Balanced allocation: 50% by weight + 50% by value for fair distribution.
+                          ⚡ Balanced allocation: 60% by chargeable weight + 40% by value for fair distribution.
+                        </p>
+                      )}
+                      {effectiveMethod === 'UNITS' && allocationMethod !== 'AUTO' && (
+                        <p className="text-gray-600 dark:text-gray-400">
+                          📦 Equal distribution per unit regardless of weight or value.
                         </p>
                       )}
                     </div>
