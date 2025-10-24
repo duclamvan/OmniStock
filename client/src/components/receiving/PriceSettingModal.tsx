@@ -6,7 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Package, DollarSign, CheckCircle, AlertCircle, Repeat } from "lucide-react";
+import { Package, DollarSign, CheckCircle, AlertCircle, Repeat, Settings } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { apiRequest } from "@/lib/queryClient";
 import { convertCurrency, formatCurrency } from "@/lib/currencyUtils";
 
@@ -47,6 +50,14 @@ export default function PriceSettingModal({
   const [loading, setLoading] = useState(false);
   const [displayCurrency, setDisplayCurrency] = useState<'EUR' | 'CZK'>('EUR');
   const [exchangeRate, setExchangeRate] = useState<number>(25);
+  const [showColumns, setShowColumns] = useState({
+    sku: true,
+    qty: true,
+    landingCostEur: true,
+    landingCostCzk: false,
+    priceCzk: true,
+    priceEur: true
+  });
 
   // Initialize and fetch existing prices when modal opens
   useEffect(() => {
@@ -133,39 +144,29 @@ export default function PriceSettingModal({
     }));
   };
 
-  // Handle tab navigation to move horizontally
+  // Handle tab navigation to move vertically down in same column
   const handleKeyDown = (e: React.KeyboardEvent, itemId: number, currentField: 'czk' | 'eur') => {
     if (e.key === 'Tab' && !e.shiftKey) {
       e.preventDefault();
       
-      if (currentField === 'czk') {
-        // Move from CZK to EUR in same row
-        const eurInput = document.querySelector(`[data-testid="input-price-eur-${itemId}"]`) as HTMLInputElement;
-        eurInput?.focus();
-      } else {
-        // Move from EUR to CZK in next row
-        const currentIndex = items.findIndex(item => item.itemId === itemId);
-        if (currentIndex < items.length - 1) {
-          const nextItem = items[currentIndex + 1];
-          const nextCzkInput = document.querySelector(`[data-testid="input-price-czk-${nextItem.itemId}"]`) as HTMLInputElement;
-          nextCzkInput?.focus();
-        }
+      const currentIndex = items.findIndex(item => item.itemId === itemId);
+      if (currentIndex < items.length - 1) {
+        const nextItem = items[currentIndex + 1];
+        const nextInput = document.querySelector(
+          `[data-testid="input-price-${currentField === 'czk' ? 'czk' : 'eur'}-${nextItem.itemId}"]`
+        ) as HTMLInputElement;
+        nextInput?.focus();
       }
     } else if (e.key === 'Tab' && e.shiftKey) {
       e.preventDefault();
       
-      if (currentField === 'eur') {
-        // Move back from EUR to CZK in same row
-        const czkInput = document.querySelector(`[data-testid="input-price-czk-${itemId}"]`) as HTMLInputElement;
-        czkInput?.focus();
-      } else {
-        // Move back from CZK to EUR in previous row
-        const currentIndex = items.findIndex(item => item.itemId === itemId);
-        if (currentIndex > 0) {
-          const prevItem = items[currentIndex - 1];
-          const prevEurInput = document.querySelector(`[data-testid="input-price-eur-${prevItem.itemId}"]`) as HTMLInputElement;
-          prevEurInput?.focus();
-        }
+      const currentIndex = items.findIndex(item => item.itemId === itemId);
+      if (currentIndex > 0) {
+        const prevItem = items[currentIndex - 1];
+        const prevInput = document.querySelector(
+          `[data-testid="input-price-${currentField === 'czk' ? 'czk' : 'eur'}-${prevItem.itemId}"]`
+        ) as HTMLInputElement;
+        prevInput?.focus();
       }
     }
   };
@@ -254,17 +255,83 @@ export default function PriceSettingModal({
               <DollarSign className="h-5 w-5" />
               Set Selling Prices Before Approval
             </DialogTitle>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Landing Cost:</span>
-              <Select value={displayCurrency} onValueChange={(val) => setDisplayCurrency(val as 'EUR' | 'CZK')}>
-                <SelectTrigger className="w-24 h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="EUR">EUR (€)</SelectItem>
-                  <SelectItem value="CZK">CZK (Kč)</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-center gap-3">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 gap-2">
+                    <Settings className="h-3.5 w-3.5" />
+                    <span className="text-xs">Columns</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64" align="end">
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold">Show/Hide Columns</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="col-sku"
+                          checked={showColumns.sku}
+                          onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, sku: !!checked }))}
+                        />
+                        <Label htmlFor="col-sku" className="text-xs cursor-pointer">SKU</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="col-qty"
+                          checked={showColumns.qty}
+                          onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, qty: !!checked }))}
+                        />
+                        <Label htmlFor="col-qty" className="text-xs cursor-pointer">Quantity</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="col-landing-eur"
+                          checked={showColumns.landingCostEur}
+                          onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, landingCostEur: !!checked }))}
+                        />
+                        <Label htmlFor="col-landing-eur" className="text-xs cursor-pointer">Landing Cost EUR</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="col-landing-czk"
+                          checked={showColumns.landingCostCzk}
+                          onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, landingCostCzk: !!checked }))}
+                        />
+                        <Label htmlFor="col-landing-czk" className="text-xs cursor-pointer">Landing Cost CZK</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="col-price-czk"
+                          checked={showColumns.priceCzk}
+                          onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, priceCzk: !!checked }))}
+                        />
+                        <Label htmlFor="col-price-czk" className="text-xs cursor-pointer">Price CZK</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="col-price-eur"
+                          checked={showColumns.priceEur}
+                          onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, priceEur: !!checked }))}
+                        />
+                        <Label htmlFor="col-price-eur" className="text-xs cursor-pointer">Price EUR</Label>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Landing Cost:</span>
+                <Select value={displayCurrency} onValueChange={(val) => setDisplayCurrency(val as 'EUR' | 'CZK')}>
+                  <SelectTrigger className="w-24 h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="EUR">EUR (€)</SelectItem>
+                    <SelectItem value="CZK">CZK (Kč)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         </DialogHeader>
@@ -300,20 +367,19 @@ export default function PriceSettingModal({
             <Table>
               <TableHeader>
                 <TableRow className="text-xs">
-                  <TableHead className="w-[30%] py-2">Item</TableHead>
-                  <TableHead className="text-center w-[60px] py-2">Qty</TableHead>
-                  <TableHead className="text-right w-[100px] py-2">Landing Cost</TableHead>
-                  <TableHead className="w-[140px] py-2">Price CZK</TableHead>
-                  <TableHead className="w-[140px] py-2">Price EUR</TableHead>
+                  <TableHead className="w-[25%] py-2">Item</TableHead>
+                  {showColumns.qty && <TableHead className="text-center w-[60px] py-2">Qty</TableHead>}
+                  {showColumns.landingCostEur && <TableHead className="text-right w-[100px] py-2">Cost EUR</TableHead>}
+                  {showColumns.landingCostCzk && <TableHead className="text-right w-[100px] py-2">Cost CZK</TableHead>}
+                  {showColumns.priceCzk && <TableHead className="w-[140px] py-2">Price CZK</TableHead>}
+                  {showColumns.priceEur && <TableHead className="w-[140px] py-2">Price EUR</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {items.map((item) => {
                   const prices = itemPrices[item.itemId] || { priceCzk: '', priceEur: '', exists: false };
                   const landingCostEur = parseFloat(item.details?.latestLandingCost || '0');
-                  const landingCostDisplay = displayCurrency === 'CZK' 
-                    ? convertCurrency(landingCostEur, 'EUR', 'CZK')
-                    : landingCostEur;
+                  const landingCostCzk = convertCurrency(landingCostEur, 'EUR', 'CZK');
                   
                   return (
                     <TableRow key={item.itemId} className="text-xs">
@@ -328,55 +394,68 @@ export default function PriceSettingModal({
                               </Badge>
                             )}
                           </div>
-                          {item.details?.sku && (
+                          {showColumns.sku && item.details?.sku && (
                             <span className="text-[10px] text-muted-foreground">
                               {item.details.sku}
                             </span>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-center py-2">
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                          {item.receivedQuantity}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-medium py-2 text-cyan-700 dark:text-cyan-400">
-                        {formatCurrency(landingCostDisplay, displayCurrency)}
-                      </TableCell>
-                      <TableCell className="py-2">
-                        <div className="relative">
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={prices.priceCzk}
-                            onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceCzk', e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, item.itemId, 'czk')}
-                            placeholder="0.00"
-                            className="h-8 text-xs pr-8"
-                            data-testid={`input-price-czk-${item.itemId}`}
-                          />
-                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                            Kč
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-2">
-                        <div className="relative">
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={prices.priceEur}
-                            onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceEur', e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, item.itemId, 'eur')}
-                            placeholder="0.00"
-                            className="h-8 text-xs pr-8"
-                            data-testid={`input-price-eur-${item.itemId}`}
-                          />
-                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                            €
-                          </span>
-                        </div>
-                      </TableCell>
+                      {showColumns.qty && (
+                        <TableCell className="text-center py-2">
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                            {item.receivedQuantity}
+                          </Badge>
+                        </TableCell>
+                      )}
+                      {showColumns.landingCostEur && (
+                        <TableCell className="text-right font-medium py-2 text-cyan-700 dark:text-cyan-400">
+                          {formatCurrency(landingCostEur, 'EUR')}
+                        </TableCell>
+                      )}
+                      {showColumns.landingCostCzk && (
+                        <TableCell className="text-right font-medium py-2 text-cyan-700 dark:text-cyan-400">
+                          {formatCurrency(landingCostCzk, 'CZK')}
+                        </TableCell>
+                      )}
+                      {showColumns.priceCzk && (
+                        <TableCell className="py-2">
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={prices.priceCzk}
+                              onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceCzk', e.target.value)}
+                              onKeyDown={(e) => handleKeyDown(e, item.itemId, 'czk')}
+                              placeholder="0.00"
+                              className="h-8 text-xs pr-8"
+                              data-testid={`input-price-czk-${item.itemId}`}
+                            />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                              Kč
+                            </span>
+                          </div>
+                        </TableCell>
+                      )}
+                      {showColumns.priceEur && (
+                        <TableCell className="py-2">
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={prices.priceEur}
+                              onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceEur', e.target.value)}
+                              onKeyDown={(e) => handleKeyDown(e, item.itemId, 'eur')}
+                              placeholder="0.00"
+                              className="h-8 text-xs pr-8"
+                              data-testid={`input-price-eur-${item.itemId}`}
+                            />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                              €
+                            </span>
+                          </div>
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })}
