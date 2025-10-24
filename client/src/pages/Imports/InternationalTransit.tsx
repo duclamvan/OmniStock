@@ -115,6 +115,7 @@ export default function InternationalTransit() {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [viewShipmentDetails, setViewShipmentDetails] = useState<Shipment | null>(null);
+  const [allocationMethod, setAllocationMethod] = useState<'UNITS' | 'WEIGHT' | 'VALUE' | 'HYBRID'>('UNITS');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -2076,8 +2077,47 @@ export default function InternationalTransit() {
           {viewShipmentDetails && (() => {
             const totalShipping = parseFloat(viewShipmentDetails.shippingCost || '0') + parseFloat(viewShipmentDetails.insuranceValue || '0');
             const totalItems = viewShipmentDetails.items?.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0) || 0;
-            const shippingPerUnit = totalItems > 0 ? totalShipping / totalItems : 0;
             const currency = viewShipmentDetails.shippingCostCurrency || 'USD';
+            
+            // Calculate totals for allocation
+            const totalWeight = viewShipmentDetails.items?.reduce((sum: number, item: any) => {
+              const itemWeight = parseFloat(item.weight || 0);
+              return sum + (itemWeight * (item.quantity || 1));
+            }, 0) || 0;
+            
+            const totalValue = viewShipmentDetails.items?.reduce((sum: number, item: any) => {
+              const itemValue = parseFloat(item.unitPrice || 0);
+              return sum + (itemValue * (item.quantity || 1));
+            }, 0) || 0;
+            
+            // Function to calculate shipping cost per item based on allocation method
+            const calculateShippingCost = (item: any) => {
+              const qty = item.quantity || 1;
+              const itemWeight = parseFloat(item.weight || 0) * qty;
+              const itemValue = parseFloat(item.unitPrice || 0) * qty;
+              
+              switch (allocationMethod) {
+                case 'UNITS':
+                  return totalItems > 0 ? totalShipping / totalItems : 0;
+                  
+                case 'WEIGHT':
+                  return totalWeight > 0 ? (itemWeight / totalWeight) * totalShipping : 0;
+                  
+                case 'VALUE':
+                  return totalValue > 0 ? (itemValue / totalValue) * totalShipping : 0;
+                  
+                case 'HYBRID':
+                  const weightPortion = totalWeight > 0 ? (itemWeight / totalWeight) * totalShipping * 0.5 : 0;
+                  const valuePortion = totalValue > 0 ? (itemValue / totalValue) * totalShipping * 0.5 : 0;
+                  return weightPortion + valuePortion;
+                  
+                default:
+                  return totalItems > 0 ? totalShipping / totalItems : 0;
+              }
+            };
+            
+            // For the overview, show average per unit
+            const shippingPerUnit = totalItems > 0 ? totalShipping / totalItems : 0;
             
             return (
               <div className="flex-1 overflow-y-auto space-y-4 pr-2">
@@ -2104,10 +2144,48 @@ export default function InternationalTransit() {
                 {/* Items Table with Pricing */}
                 {viewShipmentDetails.items && viewShipmentDetails.items.length > 0 && (
                   <div className="space-y-2">
-                    <h3 className="font-semibold text-sm flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4 text-primary" />
-                      Item Pricing & Landing Cost
-                    </h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-sm flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-primary" />
+                        Item Pricing & Landing Cost
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor="allocation-method" className="text-xs text-muted-foreground">
+                          Allocation Method:
+                        </Label>
+                        <Select value={allocationMethod} onValueChange={(value: any) => setAllocationMethod(value)}>
+                          <SelectTrigger id="allocation-method" className="h-8 w-[140px] text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="UNITS">
+                              <div className="flex items-center gap-2">
+                                <Package className="h-3 w-3" />
+                                By Units
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="WEIGHT">
+                              <div className="flex items-center gap-2">
+                                <Target className="h-3 w-3" />
+                                By Weight
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="VALUE">
+                              <div className="flex items-center gap-2">
+                                <TrendingUp className="h-3 w-3" />
+                                By Value
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="HYBRID">
+                              <div className="flex items-center gap-2">
+                                <Zap className="h-3 w-3" />
+                                Hybrid (50/50)
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                     <div className="border rounded-lg overflow-hidden">
                       <Table>
                         <TableHeader>
@@ -2125,8 +2203,9 @@ export default function InternationalTransit() {
                           {viewShipmentDetails.items.map((item: any, index: number) => {
                             const qty = item.quantity || 1;
                             const unitCost = parseFloat(item.unitPrice || 0);
-                            const shippingCost = shippingPerUnit;
-                            const landingCost = unitCost + shippingCost;
+                            const itemShippingCost = calculateShippingCost(item);
+                            const shippingCostPerUnit = qty > 0 ? itemShippingCost / qty : 0;
+                            const landingCost = unitCost + shippingCostPerUnit;
                             const landingCostEUR = convertCurrency(landingCost, currency as Currency, 'EUR');
                             const landingCostCZK = convertCurrency(landingCost, currency as Currency, 'CZK');
                             
@@ -2138,7 +2217,7 @@ export default function InternationalTransit() {
                                   {currency} {unitCost.toFixed(2)}
                                 </TableCell>
                                 <TableCell className="text-right font-mono text-xs text-blue-600">
-                                  {currency} {shippingCost.toFixed(2)}
+                                  {currency} {shippingCostPerUnit.toFixed(2)}
                                 </TableCell>
                                 <TableCell className="text-right font-semibold font-mono text-xs">
                                   {currency} {landingCost.toFixed(2)}
@@ -2190,9 +2269,26 @@ export default function InternationalTransit() {
                         </TableBody>
                       </Table>
                     </div>
-                    <p className="text-xs text-muted-foreground px-1">
-                      💡 Shipping cost allocated proportionally across {totalItems} units. Landing costs converted to EUR and CZK for your European markets.
-                    </p>
+                    <div className="text-xs text-muted-foreground px-1 space-y-1">
+                      <p>
+                        💡 Shipping cost allocated using <strong className="text-foreground">{allocationMethod}</strong> method across {totalItems} units. Landing costs converted to EUR and CZK for your European markets.
+                      </p>
+                      {allocationMethod === 'WEIGHT' && (
+                        <p className="text-blue-600 dark:text-blue-400">
+                          ⚖️ Heavier items receive proportionally more shipping cost based on their weight.
+                        </p>
+                      )}
+                      {allocationMethod === 'VALUE' && (
+                        <p className="text-green-600 dark:text-green-400">
+                          💰 Higher value items receive proportionally more shipping cost based on their cost.
+                        </p>
+                      )}
+                      {allocationMethod === 'HYBRID' && (
+                        <p className="text-purple-600 dark:text-purple-400">
+                          ⚡ Balanced allocation: 50% by weight + 50% by value for fair distribution.
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
 
