@@ -281,6 +281,7 @@ export default function ProductForm() {
   const seriesConversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const salesPriceConversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const variantConversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const importCostUpdatingRef = useRef<string | null>(null);
 
   // Get categoryId from URL query parameters (for add mode)
   const searchParams = new URLSearchParams(window.location.search);
@@ -2152,11 +2153,14 @@ export default function ProductForm() {
                           placeholder="0.00"
                           data-testid="input-cost-usd"
                           className="mt-1"
-                          onChange={(e) => {
-                            const value = parseFloat(e.target.value);
+                          onInput={(e) => {
+                            if (importCostUpdatingRef.current === 'usd') return;
+                            const value = parseFloat((e.target as HTMLInputElement).value);
                             if (value && value > 0) {
+                              importCostUpdatingRef.current = 'usd';
                               form.setValue('importCostCzk', parseFloat(convertCurrency(value, 'USD', 'CZK').toFixed(2)));
                               form.setValue('importCostEur', parseFloat(convertCurrency(value, 'USD', 'EUR').toFixed(2)));
+                              setTimeout(() => { importCostUpdatingRef.current = null; }, 0);
                             }
                           }}
                         />
@@ -2172,11 +2176,14 @@ export default function ProductForm() {
                           placeholder="0.00"
                           data-testid="input-cost-czk"
                           className="mt-1"
-                          onChange={(e) => {
-                            const value = parseFloat(e.target.value);
+                          onInput={(e) => {
+                            if (importCostUpdatingRef.current === 'czk') return;
+                            const value = parseFloat((e.target as HTMLInputElement).value);
                             if (value && value > 0) {
+                              importCostUpdatingRef.current = 'czk';
                               form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'CZK', 'USD').toFixed(2)));
                               form.setValue('importCostEur', parseFloat(convertCurrency(value, 'CZK', 'EUR').toFixed(2)));
+                              setTimeout(() => { importCostUpdatingRef.current = null; }, 0);
                             }
                           }}
                         />
@@ -2192,11 +2199,14 @@ export default function ProductForm() {
                           placeholder="0.00"
                           data-testid="input-cost-eur"
                           className="mt-1"
-                          onChange={(e) => {
-                            const value = parseFloat(e.target.value);
+                          onInput={(e) => {
+                            if (importCostUpdatingRef.current === 'eur') return;
+                            const value = parseFloat((e.target as HTMLInputElement).value);
                             if (value && value > 0) {
+                              importCostUpdatingRef.current = 'eur';
                               form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'EUR', 'USD').toFixed(2)));
                               form.setValue('importCostCzk', parseFloat(convertCurrency(value, 'EUR', 'CZK').toFixed(2)));
+                              setTimeout(() => { importCostUpdatingRef.current = null; }, 0);
                             }
                           }}
                         />
