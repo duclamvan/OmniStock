@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -348,14 +348,21 @@ export default function InternationalTransit() {
     }
   };
 
-  // Auto-predict for new shipments
+  // Create a stable key for shipments to prevent infinite loops while detecting real changes
+  const shipmentsKey = useMemo(() => {
+    return shipments.map(s => `${s.id}-${s.status}-${s.estimatedDelivery || 'none'}`).join(',');
+  }, [shipments]);
+
+  // Auto-predict for new shipments - runs when shipments change but prevents infinite loops
   useEffect(() => {
+    if (isPredicting) return; // Don't predict if already in progress
+    
     shipments.forEach(shipment => {
       if (shipment.status !== 'delivered' && !predictions[shipment.id] && !shipment.estimatedDelivery) {
         predictDelivery(shipment);
       }
     });
-  }, [shipments]);
+  }, [shipmentsKey]); // Use memoized key instead of shipments array
 
   // Handle edit shipment form submission
   const handleEditShipment = async (e: React.FormEvent<HTMLFormElement>) => {
