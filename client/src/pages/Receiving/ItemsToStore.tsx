@@ -286,6 +286,7 @@ export default function ItemsToStore() {
   const [showPricingSheet, setShowPricingSheet] = useState(false);
   const [pricingReceiptId, setPricingReceiptId] = useState<number | null>(null);
   const [displayCurrency, setDisplayCurrency] = useState<'EUR' | 'CZK'>('EUR');
+  const [allocationMethod, setAllocationMethod] = useState<'AUTO' | 'WEIGHT' | 'VALUE' | 'UNITS' | 'HYBRID'>('AUTO');
 
   // Refs
   const locationInputRef = useRef<HTMLInputElement>(null);
@@ -943,28 +944,6 @@ export default function ItemsToStore() {
   const handleSave = () => {
     saveStorageMutation.mutate();
   };
-
-  // Calculate landing costs mutation
-  const calculateLandingCostsMutation = useMutation({
-    mutationFn: async (shipmentId: number) => {
-      return apiRequest('POST', `/api/imports/shipments/${shipmentId}/calculate-landing-costs`);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Landing Costs Calculated",
-        description: "Costs have been allocated to items"
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/storage'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to calculate landing costs",
-        variant: "destructive"
-      });
-    }
-  });
 
   // Auto-save when all items for current receipt are completed
   useEffect(() => {
@@ -2045,27 +2024,6 @@ export default function ItemsToStore() {
                         </SheetDescription>
                       </div>
                     </div>
-                    {shipmentId && (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => calculateLandingCostsMutation.mutate(shipmentId)}
-                        disabled={calculateLandingCostsMutation.isPending}
-                        data-testid="button-calculate-landing-cost"
-                      >
-                        {calculateLandingCostsMutation.isPending ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Calculating...
-                          </>
-                        ) : (
-                          <>
-                            <Calculator className="h-4 w-4 mr-2" />
-                            Calculate Landing Cost
-                          </>
-                        )}
-                      </Button>
-                    )}
                   </div>
                 </SheetHeader>
 
@@ -2099,6 +2057,57 @@ export default function ItemsToStore() {
                     <p className="text-muted-foreground">Route</p>
                     <p className="font-semibold text-sm truncate">{receiptData.shipment?.origin} → {receiptData.shipment?.destination}</p>
                   </div>
+                </div>
+
+                {/* Allocation Method Selector */}
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-950/30 dark:to-blue-950/30 rounded-lg border border-cyan-200 dark:border-cyan-800">
+                  <div className="flex items-center gap-2">
+                    <Calculator className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                    <div>
+                      <p className="text-xs font-medium text-cyan-900 dark:text-cyan-100">Cost Allocation Method</p>
+                      <p className="text-[10px] text-cyan-700 dark:text-cyan-300">How shipping costs are distributed</p>
+                    </div>
+                  </div>
+                  <Select 
+                    value={allocationMethod} 
+                    onValueChange={(value: 'AUTO' | 'WEIGHT' | 'VALUE' | 'UNITS' | 'HYBRID') => setAllocationMethod(value)}
+                  >
+                    <SelectTrigger className="h-8 w-[140px] text-xs bg-white dark:bg-slate-900">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="AUTO">
+                        <div className="flex items-center gap-2">
+                          <Zap className="h-3 w-3 text-cyan-500" />
+                          <span>Auto-Select</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="WEIGHT">
+                        <div className="flex items-center gap-2">
+                          <Package className="h-3 w-3" />
+                          <span>By Weight</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="VALUE">
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-3 w-3" />
+                          <span>By Value</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="UNITS">
+                        <div className="flex items-center gap-2">
+                          <Hash className="h-3 w-3" />
+                          <span>By Units</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="HYBRID">
+                        <div className="flex items-center gap-2">
+                          <Layers className="h-3 w-3" />
+                          <span>Hybrid</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Comprehensive Pricing Table */}
