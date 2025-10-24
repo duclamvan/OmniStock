@@ -50,7 +50,7 @@ The application uses PostgreSQL with Neon serverless driver and Drizzle ORM. The
 - **Search Functionality**: Real-time Vietnamese diacritics search with custom character normalization.
 - **Reusable Components**: Generic DataTable with bulk selection, sorting, pagination, and actions.
 - **Reporting**: Comprehensive sales, inventory, customer, and financial reports.
-- **Landing Cost Engine**: Tracks import costs with volumetric weight calculations, multi-currency, and FX rate management.
+- **Landing Cost Engine**: Tracks import costs with volumetric weight calculations, multi-currency, and FX rate management. Features automatic cost allocation with multiple methods (AUTO, WEIGHT, VALUE, UNITS, HYBRID) and real-time preview. Landing costs calculate automatically after any cost changes (add/edit/delete) with comprehensive error handling and user feedback via destructive toasts. Includes prominent gradient-styled "Add Cost" button and streamlined UX without manual recalculation steps.
 - **Smart Barcode Scanning**: Automatic shipment matching with audio/visual feedback.
 - **UI Enhancements**: Modernized invoice UI, clear order detail displays, and optimized country/shipping flag selectors. **Sidebar State Persistence**: Advanced localStorage-based state management with defensive guards that remember sidebar scroll position, expanded menu items, and collapse state across sessions. Features comprehensive runtime type validation, automatic cleanup of corrupted data, and graceful error recovery to prevent crashes from malformed localStorage values.
 
