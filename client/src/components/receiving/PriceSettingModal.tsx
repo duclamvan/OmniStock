@@ -53,10 +53,8 @@ export default function PriceSettingModal({
   const [showColumns, setShowColumns] = useState({
     sku: true,
     qty: true,
-    landingCostEur: true,
     landingCostCzk: false,
-    priceCzk: true,
-    priceEur: true
+    landingCostEur: true
   });
 
   // Initialize and fetch existing prices when modal opens
@@ -285,14 +283,6 @@ export default function PriceSettingModal({
                       </div>
                       <div className="flex items-center gap-2">
                         <Checkbox
-                          id="col-landing-eur"
-                          checked={showColumns.landingCostEur}
-                          onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, landingCostEur: !!checked }))}
-                        />
-                        <Label htmlFor="col-landing-eur" className="text-xs cursor-pointer">Landing Cost EUR</Label>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Checkbox
                           id="col-landing-czk"
                           checked={showColumns.landingCostCzk}
                           onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, landingCostCzk: !!checked }))}
@@ -301,19 +291,11 @@ export default function PriceSettingModal({
                       </div>
                       <div className="flex items-center gap-2">
                         <Checkbox
-                          id="col-price-czk"
-                          checked={showColumns.priceCzk}
-                          onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, priceCzk: !!checked }))}
+                          id="col-landing-eur"
+                          checked={showColumns.landingCostEur}
+                          onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, landingCostEur: !!checked }))}
                         />
-                        <Label htmlFor="col-price-czk" className="text-xs cursor-pointer">Price CZK</Label>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id="col-price-eur"
-                          checked={showColumns.priceEur}
-                          onCheckedChange={(checked) => setShowColumns(prev => ({ ...prev, priceEur: !!checked }))}
-                        />
-                        <Label htmlFor="col-price-eur" className="text-xs cursor-pointer">Price EUR</Label>
+                        <Label htmlFor="col-landing-eur" className="text-xs cursor-pointer">Landing Cost EUR</Label>
                       </div>
                     </div>
                   </div>
@@ -369,10 +351,10 @@ export default function PriceSettingModal({
                 <TableRow className="text-xs">
                   <TableHead className="w-[25%] py-2">Item</TableHead>
                   {showColumns.qty && <TableHead className="text-center w-[60px] py-2">Qty</TableHead>}
-                  {showColumns.landingCostEur && <TableHead className="text-right w-[100px] py-2">Cost EUR</TableHead>}
                   {showColumns.landingCostCzk && <TableHead className="text-right w-[100px] py-2">Cost CZK</TableHead>}
-                  {showColumns.priceCzk && <TableHead className="w-[140px] py-2">Price CZK</TableHead>}
-                  {showColumns.priceEur && <TableHead className="w-[140px] py-2">Price EUR</TableHead>}
+                  {showColumns.landingCostEur && <TableHead className="text-right w-[100px] py-2">Cost EUR</TableHead>}
+                  <TableHead className="w-[140px] py-2">Price CZK</TableHead>
+                  <TableHead className="w-[140px] py-2">Price EUR</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -408,54 +390,50 @@ export default function PriceSettingModal({
                           </Badge>
                         </TableCell>
                       )}
-                      {showColumns.landingCostEur && (
-                        <TableCell className="text-right font-medium py-2 text-cyan-700 dark:text-cyan-400">
-                          {formatCurrency(landingCostEur, 'EUR')}
-                        </TableCell>
-                      )}
                       {showColumns.landingCostCzk && (
                         <TableCell className="text-right font-medium py-2 text-cyan-700 dark:text-cyan-400">
                           {formatCurrency(landingCostCzk, 'CZK')}
                         </TableCell>
                       )}
-                      {showColumns.priceCzk && (
-                        <TableCell className="py-2">
-                          <div className="relative">
-                            <Input
-                              type="number"
-                              step="0.01"
-                              value={prices.priceCzk}
-                              onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceCzk', e.target.value)}
-                              onKeyDown={(e) => handleKeyDown(e, item.itemId, 'czk')}
-                              placeholder="0.00"
-                              className="h-8 text-xs pr-8"
-                              data-testid={`input-price-czk-${item.itemId}`}
-                            />
-                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                              Kč
-                            </span>
-                          </div>
+                      {showColumns.landingCostEur && (
+                        <TableCell className="text-right font-medium py-2 text-cyan-700 dark:text-cyan-400">
+                          {formatCurrency(landingCostEur, 'EUR')}
                         </TableCell>
                       )}
-                      {showColumns.priceEur && (
-                        <TableCell className="py-2">
-                          <div className="relative">
-                            <Input
-                              type="number"
-                              step="0.01"
-                              value={prices.priceEur}
-                              onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceEur', e.target.value)}
-                              onKeyDown={(e) => handleKeyDown(e, item.itemId, 'eur')}
-                              placeholder="0.00"
-                              className="h-8 text-xs pr-8"
-                              data-testid={`input-price-eur-${item.itemId}`}
-                            />
-                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                              €
-                            </span>
-                          </div>
-                        </TableCell>
-                      )}
+                      <TableCell className="py-2">
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={prices.priceCzk}
+                            onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceCzk', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, item.itemId, 'czk')}
+                            placeholder="0.00"
+                            className="h-8 text-xs pr-8"
+                            data-testid={`input-price-czk-${item.itemId}`}
+                          />
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                            Kč
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-2">
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={prices.priceEur}
+                            onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceEur', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, item.itemId, 'eur')}
+                            placeholder="0.00"
+                            className="h-8 text-xs pr-8"
+                            data-testid={`input-price-eur-${item.itemId}`}
+                          />
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                            €
+                          </span>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
