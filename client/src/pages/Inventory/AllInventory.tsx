@@ -13,7 +13,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft, Sparkles, TrendingUp } from "lucide-react";
 import * as XLSX from 'xlsx';
 import {
   DropdownMenu,
@@ -449,6 +449,39 @@ export default function AllInventory() {
     }
   };
 
+  // Helper function to determine product status badge
+  const getProductStatusBadge = (product: any) => {
+    if (!product.createdAt) return null;
+    
+    const now = new Date();
+    const createdAt = new Date(product.createdAt);
+    const updatedAt = product.updatedAt ? new Date(product.updatedAt) : createdAt;
+    const daysSinceCreated = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+    const daysSinceUpdated = (now.getTime() - updatedAt.getTime()) / (1000 * 60 * 60 * 24);
+    
+    // New product (created within last 7 days)
+    if (daysSinceCreated <= 7) {
+      return (
+        <Badge variant="default" className="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] px-1.5 py-0 h-4 ml-2">
+          <Sparkles className="h-2.5 w-2.5 mr-0.5" />
+          New
+        </Badge>
+      );
+    }
+    
+    // Recently restocked (updated within last 7 days, but created more than 7 days ago)
+    if (daysSinceUpdated <= 7 && daysSinceCreated > 7) {
+      return (
+        <Badge variant="outline" className="bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-950 dark:border-blue-700 dark:text-blue-300 text-[10px] px-1.5 py-0 h-4 ml-2">
+          <TrendingUp className="h-2.5 w-2.5 mr-0.5" />
+          Restocked
+        </Badge>
+      );
+    }
+    
+    return null;
+  };
+
   // Define table columns
   const columns: DataTableColumn<any>[] = [
     {
@@ -486,6 +519,7 @@ export default function AllInventory() {
             <span className={`font-medium cursor-pointer block ${product.isActive ? 'text-blue-600 hover:text-blue-800' : 'text-gray-400 line-through'}`}>
               {product.name}
               {!product.isActive && <span className="text-amber-600 font-medium ml-2">(Inactive)</span>}
+              {product.isActive && getProductStatusBadge(product)}
             </span>
           </Link>
           <p className="text-xs text-gray-500 mt-0.5">SKU: {product.sku}</p>
