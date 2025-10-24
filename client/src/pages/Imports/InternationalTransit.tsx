@@ -650,6 +650,28 @@ export default function InternationalTransit() {
     return "text-blue-600 dark:text-blue-400";
   };
 
+  const getDaysInTransit = (shipment: Shipment) => {
+    const start = new Date(shipment.createdAt);
+    const end = shipment.deliveredAt ? new Date(shipment.deliveredAt) : new Date();
+    return differenceInDays(end, start);
+  };
+
+  const getDelayInfo = (shipment: Shipment) => {
+    if (shipment.status === 'delivered') return null;
+    
+    const estimatedDelivery = shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery;
+    if (!estimatedDelivery) return null;
+    
+    const deliveryDate = new Date(estimatedDelivery);
+    const currentDate = new Date();
+    const daysDelayed = differenceInDays(currentDate, deliveryDate);
+    
+    if (daysDelayed > 0) {
+      return daysDelayed;
+    }
+    return null;
+  };
+
   // Filter shipments based on search query
   const filteredShipments = shipments.filter(shipment => {
     if (!searchQuery) return true;
@@ -1723,93 +1745,145 @@ export default function InternationalTransit() {
                         </div>
                       </div>
 
-                      {/* Tracking Information - Expandable - Less Noticeable */}
+                      {/* Shipping Progress & Status - Always Visible */}
+                      <div className="mb-3 space-y-2">
+                        {/* Shipping Duration and Delay Info */}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 text-xs">
+                            <Clock className="h-3 w-3 text-cyan-600" />
+                            <span className="text-muted-foreground">
+                              {shipment.status === 'delivered' ? 'Delivered in' : 'In transit'}
+                            </span>
+                            <Badge variant="outline" className="text-xs h-5 bg-cyan-50 border-cyan-200 text-cyan-700 dark:bg-cyan-950 dark:border-cyan-700">
+                              {getDaysInTransit(shipment)} {getDaysInTransit(shipment) === 1 ? 'day' : 'days'}
+                            </Badge>
+                          </div>
+                          
+                          {(() => {
+                            const daysDelayed = getDelayInfo(shipment);
+                            if (daysDelayed) {
+                              return (
+                                <div className="flex items-center gap-1.5">
+                                  <AlertCircle className="h-3 w-3 text-red-600" />
+                                  <Badge variant="outline" className="text-xs h-5 bg-red-50 border-red-200 text-red-700 dark:bg-red-950 dark:border-red-700">
+                                    Delayed {daysDelayed} {daysDelayed === 1 ? 'day' : 'days'}
+                                  </Badge>
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
+
+                        {/* Progress Bar with Dates */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-xs text-muted-foreground font-medium">
+                              {format(new Date(shipment.createdAt), 'MMM dd')}
+                            </span>
+                            <span className={`text-sm font-semibold ${getProgressTextColor(shipment)}`}>
+                              {getTimeRemaining(shipment)}
+                            </span>
+                            <span className="text-xs text-muted-foreground font-medium">
+                              {shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery 
+                                ? format(new Date(shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery), 'MMM dd')
+                                : 'TBD'}
+                            </span>
+                          </div>
+                          <Progress 
+                            value={progress} 
+                            className={`h-2.5 ${(() => {
+                              const estimatedDelivery = shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery;
+                              if (!estimatedDelivery) return '[&>div]:bg-gray-500';
+                              
+                              const deliveryDate = new Date(estimatedDelivery);
+                              const currentDate = new Date();
+                              const daysRemaining = differenceInDays(deliveryDate, currentDate);
+                              
+                              if (shipment.status === 'delivered') return '[&>div]:bg-green-500';
+                              if (daysRemaining < 0) return '[&>div]:bg-red-500';
+                              if (daysRemaining === 0) return '[&>div]:bg-orange-500';
+                              if (daysRemaining <= 3) return '[&>div]:bg-yellow-500';
+                              return '[&>div]:bg-cyan-500';
+                            })()}`}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Tracking Numbers - Compact Expandable */}
                       {(shipment.trackingNumber || shipment.endTrackingNumber) && (
-                        <div className="bg-gray-50 dark:bg-gray-950/30 rounded-md p-2 mb-3 border border-gray-200 dark:border-gray-800">
+                        <div className="mb-3">
                           <div 
-                            className="flex items-center justify-between cursor-pointer"
+                            className="flex items-center justify-between cursor-pointer bg-slate-50 dark:bg-slate-900/30 rounded-md px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-900/50 transition-colors"
                             onClick={(e) => {
                               e.stopPropagation();
                               setExpandedTracking(prev => ({ ...prev, [shipment.id]: !prev[shipment.id] }));
                             }}
                           >
-                            <div className="flex items-center">
-                              <Package className="h-3 w-3 text-gray-500 mr-2" />
-                              <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Tracking Info</span>
+                            <div className="flex items-center gap-2">
+                              <Package className="h-3.5 w-3.5 text-cyan-600" />
+                              <span className="text-xs font-medium">Tracking Numbers</span>
+                              {shipment.endTrackingNumber && (
+                                <Badge variant="outline" className="text-[10px] h-4 px-1">2 carriers</Badge>
+                              )}
                             </div>
                             {expandedTracking[shipment.id] ? (
-                              <ChevronUp className="h-3 w-3 text-gray-500" />
+                              <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
                             ) : (
-                              <ChevronDown className="h-3 w-3 text-gray-500" />
+                              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
                             )}
                           </div>
                           
                           {expandedTracking[shipment.id] && (
-                            <div className="mt-3 space-y-2">
-                              {/* Primary Carrier (China to Europe) */}
+                            <div className="mt-2 space-y-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md p-3">
+                              {/* Primary Carrier */}
                               {shipment.trackingNumber && (
-                                <div className="mb-2">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="text-xs text-muted-foreground">Primary Carrier</p>
-                                  <p className="text-sm font-medium">{shipment.carrier || 'Standard Carrier'}</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div className="text-right">
-                                    <p className="text-xs text-muted-foreground">Tracking Number</p>
-                                    <p className="text-sm font-mono font-medium text-blue-600">{shipment.trackingNumber}</p>
-                                  </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 w-6 p-0"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      copyToClipboard(shipment.trackingNumber);
-                                    }}
-                                  >
-                                    <Copy className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 w-6 p-0"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      window.open(getCarrierTrackingUrl(shipment.carrier, shipment.trackingNumber), '_blank');
-                                    }}
-                                  >
-                                    <ExternalLink className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              </div>
-                              {/* Primary Carrier Progress */}
-                              <div className="mt-2">
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-xs text-muted-foreground">{shipment.origin}</span>
-                                  <span className="text-xs text-muted-foreground">Transit Hub</span>
-                                </div>
-                                <Progress 
-                                  value={shipment.endTrackingNumber ? 100 : progress * 0.7} 
-                                  className={`h-2 ${shipment.endTrackingNumber ? '[&>div]:bg-green-500' : '[&>div]:bg-purple-500'}`}
-                                />
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* End Carrier (European Courier) */}
-                              {shipment.endTrackingNumber && (
-                                <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-800">
+                                <div className="space-y-1.5">
                                   <div className="flex items-center justify-between">
-                                    <div>
-                                      <p className="text-xs text-muted-foreground">End Carrier</p>
-                                      <p className="text-sm font-medium">{shipment.endCarrier || 'Local Courier'}</p>
+                                    <div className="flex-1">
+                                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Primary Carrier</p>
+                                      <p className="text-xs font-medium mt-0.5">{shipment.carrier || 'Standard Carrier'}</p>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                      <div className="text-right">
-                                        <p className="text-xs text-muted-foreground">Tracking Number</p>
-                                        <p className="text-sm font-mono font-medium text-blue-600">{shipment.endTrackingNumber}</p>
-                                      </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 w-6 p-0"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          copyToClipboard(shipment.trackingNumber);
+                                        }}
+                                      >
+                                        <Copy className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 w-6 p-0"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          window.open(getCarrierTrackingUrl(shipment.carrier, shipment.trackingNumber), '_blank');
+                                        }}
+                                      >
+                                        <ExternalLink className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  <div className="bg-slate-50 dark:bg-slate-900 rounded px-2 py-1.5">
+                                    <p className="text-xs font-mono text-cyan-600 dark:text-cyan-400">{shipment.trackingNumber}</p>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* End Carrier */}
+                              {shipment.endTrackingNumber && (
+                                <div className="space-y-1.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex-1">
+                                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">End Carrier</p>
+                                      <p className="text-xs font-medium mt-0.5">{shipment.endCarrier || 'Local Courier'}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -1838,16 +1912,8 @@ export default function InternationalTransit() {
                                       </Button>
                                     </div>
                                   </div>
-                                  {/* End Carrier Progress */}
-                                  <div className="mt-2">
-                                    <div className="flex items-center justify-between mb-1">
-                                      <span className="text-xs text-muted-foreground">Transit Hub</span>
-                                      <span className="text-xs text-muted-foreground">{shipment.destination}</span>
-                                    </div>
-                                    <Progress 
-                                      value={shipment.status === 'delivered' ? 100 : progress * 0.3} 
-                                      className={`h-2 ${shipment.status === 'delivered' ? '[&>div]:bg-green-500' : '[&>div]:bg-purple-500'}`}
-                                    />
+                                  <div className="bg-slate-50 dark:bg-slate-900 rounded px-2 py-1.5">
+                                    <p className="text-xs font-mono text-cyan-600 dark:text-cyan-400">{shipment.endTrackingNumber}</p>
                                   </div>
                                 </div>
                               )}
@@ -1855,38 +1921,6 @@ export default function InternationalTransit() {
                           )}
                         </div>
                       )}
-
-                      {/* Overall Progress Bar with Dates */}
-                      <div className="mb-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(shipment.createdAt), 'MMM dd')}
-                          </span>
-                          <span className={`text-sm font-semibold ${getProgressTextColor(shipment)}`}>{getTimeRemaining(shipment)}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery 
-                              ? format(new Date(shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery), 'MMM dd')
-                              : 'Calculating...'}
-                          </span>
-                        </div>
-                        <Progress 
-                          value={progress} 
-                          className={`h-2 ${(() => {
-                            const estimatedDelivery = shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery;
-                            if (!estimatedDelivery) return '[&>div]:bg-gray-500';
-                            
-                            const deliveryDate = new Date(estimatedDelivery);
-                            const currentDate = new Date();
-                            const daysRemaining = differenceInDays(deliveryDate, currentDate);
-                            
-                            if (shipment.status === 'delivered') return '[&>div]:bg-green-500';
-                            if (daysRemaining < 0) return '[&>div]:bg-red-500';
-                            if (daysRemaining === 0) return '[&>div]:bg-orange-500';
-                            if (daysRemaining <= 3) return '[&>div]:bg-yellow-500';
-                            return '[&>div]:bg-blue-500';
-                          })()}`}
-                        />
-                      </div>
 
                       {/* Shipment Items - Always Show */}
                       {shipment.items && shipment.items.length > 0 && (
