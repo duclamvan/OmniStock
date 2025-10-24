@@ -117,6 +117,35 @@ interface OrderItem {
   landingCost?: number | null;
 }
 
+// Helper function to get country flag emoji
+const getCountryFlag = (country: string | null | undefined): string => {
+  if (!country) return '';
+  
+  const countryFlagMap: Record<string, string> = {
+    'czechia': '🇨🇿',
+    'czech republic': '🇨🇿',
+    'germany': '🇩🇪',
+    'austria': '🇦🇹',
+    'vietnam': '🇻🇳',
+    'poland': '🇵🇱',
+    'slovakia': '🇸🇰',
+    'hungary': '🇭🇺',
+    'united states': '🇺🇸',
+    'usa': '🇺🇸',
+    'united kingdom': '🇬🇧',
+    'uk': '🇬🇧',
+    'france': '🇫🇷',
+    'italy': '🇮🇹',
+    'spain': '🇪🇸',
+    'netherlands': '🇳🇱',
+    'belgium': '🇧🇪',
+    'switzerland': '🇨🇭',
+    'china': '🇨🇳',
+  };
+  
+  return countryFlagMap[country.toLowerCase()] || '🌍';
+};
+
 export default function AddOrder() {
   const [, setLocation] = useLocation();
   const [showTaxInvoice, setShowTaxInvoice] = useState(false);
