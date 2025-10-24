@@ -252,10 +252,14 @@ export default function PriceSettingModal({
         throw new Error(result.message || 'Failed to approve receipt');
       }
       
-      // Dismiss the progress toast
-      if (progressToastId) {
-        toast.dismiss(progressToastId);
-      }
+      // Dismiss the progress toast using the returned dismiss function
+      const dismissProgress = () => {
+        if (progressToastId) {
+          const toastObj = toast({ id: progressToastId, open: false } as any);
+          if (toastObj && toastObj.dismiss) toastObj.dismiss();
+        }
+      };
+      dismissProgress();
       
       // Show success toast with detailed summary
       const { summary } = result;
@@ -300,10 +304,14 @@ export default function PriceSettingModal({
         onApprove(approvedBy);
       }
     } catch (error) {
-      // Dismiss the progress toast
-      if (progressToastId) {
-        toast.dismiss(progressToastId);
-      }
+      // Dismiss the progress toast using the returned dismiss function
+      const dismissProgress = () => {
+        if (progressToastId) {
+          const toastObj = toast({ id: progressToastId, open: false } as any);
+          if (toastObj && toastObj.dismiss) toastObj.dismiss();
+        }
+      };
+      dismissProgress();
       
       console.error('Error approving receipt:', error);
       toast({
