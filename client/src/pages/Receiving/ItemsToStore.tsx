@@ -60,7 +60,8 @@ import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { nanoid } from "nanoid";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatCurrency } from "@/lib/currencyUtils";
+import { formatCurrency, convertCurrency, type Currency } from "@/lib/currencyUtils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface LocationAssignment {
   id: string;
@@ -151,7 +152,7 @@ const formatShipmentType = (shipmentType: string) => {
 };
 
 // Pricing Table Row Component (separate to avoid useState in map)
-function PricingTableRow({ item, index, qty, unitCost, shippingCost, landingCost, defaultRetailPrice, defaultMargin, currency }: {
+function PricingTableRow({ item, index, qty, unitCost, shippingCost, landingCost, defaultRetailPrice, defaultMargin, currency, displayCurrency }: {
   item: any;
   index: number;
   qty: number;
@@ -161,11 +162,16 @@ function PricingTableRow({ item, index, qty, unitCost, shippingCost, landingCost
   defaultRetailPrice: number;
   defaultMargin: number;
   currency: string;
+  displayCurrency: 'EUR' | 'CZK';
 }) {
   // Safe retail price with fallback to 0 if invalid
   const safeRetailPrice = !isNaN(defaultRetailPrice) && isFinite(defaultRetailPrice) ? defaultRetailPrice : 0;
   const [retailPrice, setRetailPrice] = useState(safeRetailPrice);
   const margin = retailPrice > 0 ? ((retailPrice - landingCost) / retailPrice * 100) : 0;
+  
+  // Convert landing cost and retail price to display currency
+  const landingCostConverted = convertCurrency(landingCost, currency as Currency, displayCurrency);
+  const retailPriceConverted = convertCurrency(retailPrice, currency as Currency, displayCurrency);
 
   return (
     <TableRow className="text-sm">
@@ -200,6 +206,9 @@ function PricingTableRow({ item, index, qty, unitCost, shippingCost, landingCost
       <TableCell className="text-right font-semibold font-mono text-xs">
         {formatCurrency(landingCost, currency)}
       </TableCell>
+      <TableCell className="text-right font-mono text-xs text-cyan-700 dark:text-cyan-400">
+        {displayCurrency === 'EUR' ? `€${landingCostConverted.toFixed(2)}` : `${landingCostConverted.toFixed(0)} Kč`}
+      </TableCell>
       <TableCell className="text-right">
         <Input
           type="number"
@@ -210,18 +219,8 @@ function PricingTableRow({ item, index, qty, unitCost, shippingCost, landingCost
           data-testid={`input-retail-price-${index}`}
         />
       </TableCell>
-      <TableCell className="text-right">
-        <Badge 
-          className={`text-xs ${
-            margin >= 40 
-              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-              : margin >= 25 
-              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' 
-              : 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
-          }`}
-        >
-          {margin.toFixed(1)}%
-        </Badge>
+      <TableCell className="text-right font-mono text-xs text-cyan-700 dark:text-cyan-400">
+        {displayCurrency === 'EUR' ? `€${retailPriceConverted.toFixed(2)}` : `${retailPriceConverted.toFixed(0)} Kč`}
       </TableCell>
     </TableRow>
   );
@@ -286,6 +285,7 @@ export default function ItemsToStore() {
   const [scanBuffer, setScanBuffer] = useState("");
   const [showPricingSheet, setShowPricingSheet] = useState(false);
   const [pricingReceiptId, setPricingReceiptId] = useState<number | null>(null);
+  const [displayCurrency, setDisplayCurrency] = useState<'EUR' | 'CZK'>('EUR');
 
   // Refs
   const locationInputRef = useRef<HTMLInputElement>(null);
@@ -2104,21 +2104,36 @@ export default function ItemsToStore() {
                 {/* Comprehensive Pricing Table */}
                 {receiptData.items && receiptData.items.length > 0 && (
                   <div className="space-y-2">
-                    <h3 className="font-semibold text-sm flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4 text-primary" />
-                      Item Pricing & Landing Cost
-                    </h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-sm flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-primary" />
+                        Item Pricing & Landing Cost
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Display Currency:</span>
+                        <Select value={displayCurrency} onValueChange={(value: 'EUR' | 'CZK') => setDisplayCurrency(value)}>
+                          <SelectTrigger className="h-7 w-[90px] text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="EUR">EUR (€)</SelectItem>
+                            <SelectItem value="CZK">CZK (Kč)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                     <div className="border rounded-lg overflow-hidden">
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-slate-50 dark:bg-slate-900/50">
-                            <TableHead className="w-[35%]">Item</TableHead>
-                            <TableHead className="text-center w-[8%]">Qty</TableHead>
-                            <TableHead className="text-right w-[12%]">Unit Cost</TableHead>
-                            <TableHead className="text-right w-[12%]">Shipping</TableHead>
-                            <TableHead className="text-right w-[12%]">Landing</TableHead>
-                            <TableHead className="text-right w-[12%]">Retail Price</TableHead>
-                            <TableHead className="text-right w-[9%]">Margin</TableHead>
+                            <TableHead className="w-[28%]">Item</TableHead>
+                            <TableHead className="text-center w-[7%]">Qty</TableHead>
+                            <TableHead className="text-right w-[11%]">Unit Cost</TableHead>
+                            <TableHead className="text-right w-[10%]">Shipping</TableHead>
+                            <TableHead className="text-right w-[11%]">Landing</TableHead>
+                            <TableHead className="text-right w-[11%]">Landing ({displayCurrency})</TableHead>
+                            <TableHead className="text-right w-[11%]">Retail Price</TableHead>
+                            <TableHead className="text-right w-[11%]">Retail ({displayCurrency})</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -2142,6 +2157,7 @@ export default function ItemsToStore() {
                                 defaultRetailPrice={defaultRetailPrice}
                                 defaultMargin={defaultMargin}
                                 currency={currency}
+                                displayCurrency={displayCurrency}
                               />
                             );
                           })}
@@ -2168,6 +2184,20 @@ export default function ItemsToStore() {
                                 }, 0) + totalShipping,
                                 currency
                               )}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-sm text-cyan-700 dark:text-cyan-400">
+                              {(() => {
+                                // Convert each item's landing cost to display currency, then sum
+                                const totalLandingConverted = receiptData.items.reduce((sum: number, item: any) => {
+                                  const qty = item.receivedQuantity || 0;
+                                  const unitCost = item.landingCostUnitBase ? parseFloat(item.landingCostUnitBase) : parseFloat(item.unitPrice || 0);
+                                  const shippingCost = shippingPerUnit;
+                                  const landingCost = unitCost + shippingCost;
+                                  const converted = convertCurrency(landingCost, currency as Currency, displayCurrency);
+                                  return sum + (converted * qty);
+                                }, 0);
+                                return displayCurrency === 'EUR' ? `€${totalLandingConverted.toFixed(2)}` : `${totalLandingConverted.toFixed(0)} Kč`;
+                              })()}
                             </TableCell>
                             <TableCell colSpan={2}></TableCell>
                           </TableRow>
