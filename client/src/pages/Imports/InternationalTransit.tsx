@@ -371,11 +371,18 @@ export default function InternationalTransit() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
+    // Parse end tracking numbers from textarea (one per line)
+    const endTrackingNumbersText = formData.get('endTrackingNumbers') as string || '';
+    const endTrackingNumbers = endTrackingNumbersText
+      .split('\n')
+      .map(num => num.trim())
+      .filter(num => num.length > 0);
+    
     const data = {
       carrier: formData.get('carrier') as string || 'Standard Carrier',
       trackingNumber: formData.get('trackingNumber') as string,
       endCarrier: formData.get('endCarrier') as string || null,
-      endTrackingNumber: formData.get('endTrackingNumber') as string || null,
+      endTrackingNumbers: endTrackingNumbers.length > 0 ? endTrackingNumbers : null,
       shipmentName: formData.get('shipmentName') as string || '',
       shipmentType: formData.get('shipmentType') as string,
       origin: formData.get('origin') as string,
@@ -478,12 +485,19 @@ export default function InternationalTransit() {
       return `${methodType} - ${itemNames}${moreItems} (${itemCount} items)`;
     };
     
+    // Parse end tracking numbers from textarea (one per line)
+    const endTrackingNumbersText = formData.get('endTrackingNumbers') as string || '';
+    const endTrackingNumbers = endTrackingNumbersText
+      .split('\n')
+      .map(num => num.trim())
+      .filter(num => num.length > 0);
+    
     const data = {
       consolidationId: selectedPendingShipment?.id || (formData.get('consolidationId') ? parseInt(formData.get('consolidationId') as string) : null),
       carrier: formData.get('carrier') as string || 'Standard Carrier',
       trackingNumber: formData.get('trackingNumber') as string,
       endCarrier: formData.get('endCarrier') as string || null,
-      endTrackingNumber: formData.get('endTrackingNumber') as string || null,
+      endTrackingNumbers: endTrackingNumbers.length > 0 ? endTrackingNumbers : null,
       shipmentName: formData.get('shipmentName') as string || '',  // Let backend generate if empty
       shipmentType: formData.get('shipmentType') as string || selectedPendingShipment?.shippingMethod,
       origin: formData.get('origin') as string,
@@ -972,18 +986,7 @@ export default function InternationalTransit() {
                     <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                     <h3 className="text-sm font-semibold text-foreground">End Carrier (European Courier)</h3>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="endTrackingNumber">End Tracking Number *</Label>
-                      <Input 
-                        id="endTrackingNumber" 
-                        name="endTrackingNumber" 
-                        required
-                        defaultValue={selectedShipment?.endTrackingNumber || ''}
-                        data-testid="input-end-tracking-number"
-                        placeholder="Local courier tracking"
-                      />
-                    </div>
+                  <div className="grid grid-cols-1 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="endCarrier">End Carrier *</Label>
                       <Input 
@@ -994,6 +997,26 @@ export default function InternationalTransit() {
                         data-testid="input-end-carrier"
                         placeholder="e.g., DPD, DHL, GLS"
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="endTrackingNumbers">End Tracking Numbers * <span className="text-xs text-muted-foreground font-normal">(one per line)</span></Label>
+                      <Textarea 
+                        id="endTrackingNumbers" 
+                        name="endTrackingNumbers" 
+                        required
+                        rows={4}
+                        defaultValue={
+                          selectedShipment?.endTrackingNumbers?.length 
+                            ? selectedShipment.endTrackingNumbers.join('\n')
+                            : (selectedShipment?.endTrackingNumber || '') // Legacy fallback
+                        }
+                        data-testid="textarea-end-tracking-numbers"
+                        placeholder="Paste tracking numbers here&#10;One per line&#10;Example: 12345678901&#10;Example: 98765432109"
+                        className="font-mono text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        These tracking numbers will be used to verify parcels during receiving
+                      </p>
                     </div>
                   </div>
                 </div>

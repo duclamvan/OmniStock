@@ -1387,6 +1387,18 @@ router.get("/shipments/search", async (req, res) => {
   }
 });
 
+// Helper function to backfill endTrackingNumbers from legacy endTrackingNumber
+const backfillTrackingNumbers = (shipment: any) => {
+  // If endTrackingNumbers array is empty/null but legacy field has data, backfill it
+  if ((!shipment.endTrackingNumbers || shipment.endTrackingNumbers.length === 0) && shipment.endTrackingNumber) {
+    return {
+      ...shipment,
+      endTrackingNumbers: [shipment.endTrackingNumber]
+    };
+  }
+  return shipment;
+};
+
 // NOTE: Specific routes like /shipments/receivable MUST come before parameterized /shipments/:id route
 
 // Get all shipments with details
@@ -1419,8 +1431,11 @@ router.get("/shipments", async (req, res) => {
           itemCount = consolidationItemList.length;
         }
         
+        // Backfill tracking numbers from legacy field
+        const backfilledShipment = backfillTrackingNumbers(shipment);
+        
         return {
-          ...shipment,
+          ...backfilledShipment,
           items,
           itemCount
         };
@@ -1479,8 +1494,16 @@ router.post("/shipments/search-by-tracking", async (req, res) => {
           matchedTrackingNumbers.add(shipment.trackingNumber);
         }
         
-        // Check if end tracking number matches (if exists)
-        if (shipment.endTrackingNumber && trackingSet.has(shipment.endTrackingNumber.toLowerCase())) {
+        // Check if end tracking numbers match (if exists) - handle both array and legacy single value
+        if (shipment.endTrackingNumbers && Array.isArray(shipment.endTrackingNumbers)) {
+          for (const endTracking of shipment.endTrackingNumbers) {
+            if (endTracking && trackingSet.has(endTracking.toLowerCase())) {
+              matchCount++;
+              matchedTrackingNumbers.add(endTracking);
+            }
+          }
+        } else if (shipment.endTrackingNumber && trackingSet.has(shipment.endTrackingNumber.toLowerCase())) {
+          // Legacy single tracking number support
           matchCount++;
           matchedTrackingNumbers.add(shipment.endTrackingNumber);
         }
@@ -1548,7 +1571,8 @@ router.post("/shipments/search-by-tracking", async (req, res) => {
             carrier: shipment.carrier,
             trackingNumbers: shipment.trackingNumbers || [],
             mainTrackingNumber: shipment.trackingNumber,
-            endTrackingNumber: shipment.endTrackingNumber,
+            endTrackingNumber: shipment.endTrackingNumber, // Legacy field for backward compatibility
+            endTrackingNumbers: shipment.endTrackingNumbers || [],
             matchCount,
             matchedTrackingNumbers: Array.from(matchedTrackingNumbers),
             consolidationId: shipment.consolidationId,
@@ -1738,12 +1762,20 @@ router.post("/shipments", async (req, res) => {
       );
     }
     
+    // Handle both new array format and legacy single value for tracking numbers
+    let endTrackingNumbers = req.body.endTrackingNumbers;
+    if (!endTrackingNumbers && req.body.endTrackingNumber) {
+      // Migrate legacy single value to array
+      endTrackingNumbers = [req.body.endTrackingNumber];
+    }
+    
     const shipmentData = {
       consolidationId: req.body.consolidationId,
       carrier: req.body.carrier || 'Standard Carrier',
       trackingNumber: trackingNumber,
       endCarrier: req.body.endCarrier || null,
-      endTrackingNumber: req.body.endTrackingNumber || null,
+      endTrackingNumber: req.body.endTrackingNumber || null, // Keep legacy field for compatibility
+      endTrackingNumbers: endTrackingNumbers || null,
       shipmentName: shipmentName,
       shipmentType: req.body.shipmentType || req.body.shippingMethod || null,
       origin: req.body.origin,
@@ -1843,11 +1875,19 @@ router.put("/shipments/:id", async (req, res) => {
       );
     }
     
+    // Handle both new array format and legacy single value for tracking numbers
+    let endTrackingNumbers = req.body.endTrackingNumbers;
+    if (!endTrackingNumbers && req.body.endTrackingNumber) {
+      // Migrate legacy single value to array
+      endTrackingNumbers = [req.body.endTrackingNumber];
+    }
+    
     const updateData = {
       carrier: req.body.carrier || 'Standard Carrier',
       trackingNumber: req.body.trackingNumber,
       endCarrier: req.body.endCarrier || null,
-      endTrackingNumber: req.body.endTrackingNumber || null,
+      endTrackingNumber: req.body.endTrackingNumber || null, // Keep legacy field for compatibility
+      endTrackingNumbers: endTrackingNumbers || null,
       shipmentName: shipmentName,
       shipmentType: req.body.shipmentType || req.body.shippingMethod,
       origin: req.body.origin,
@@ -3027,8 +3067,11 @@ router.get("/shipments/:id", async (req, res) => {
       }
     }
 
+    // Backfill tracking numbers from legacy field before returning
+    const backfilledShipment = backfillTrackingNumbers(shipment.shipment);
+    
     const shipmentWithDetails = {
-      ...shipment.shipment,
+      ...backfilledShipment,
       consolidation: shipment.consolidation,
       items,
       itemCount: items.length
@@ -4954,8 +4997,26 @@ router.post("/receipts/auto-save", async (req, res) => {
       receipt = updatedReceipt;
     } else {
       // Create new receipt for auto-save with scannedParcels stored in trackingNumbers JSON
+      // Also pre-fill tracking numbers from shipment's endTrackingNumbers (with legacy fallback)
+      const [shipmentData] = await db
+        .select({ 
+          endTrackingNumbers: shipments.endTrackingNumbers,
+          endTrackingNumber: shipments.endTrackingNumber // Legacy field
+        })
+        .from(shipments)
+        .where(eq(shipments.id, shipmentId));
+      
+      // Prefer new array field, but fall back to legacy single value if array is empty
+      let prefilledNumbers: string[] = [];
+      if (shipmentData?.endTrackingNumbers && shipmentData.endTrackingNumbers.length > 0) {
+        prefilledNumbers = shipmentData.endTrackingNumbers;
+      } else if (shipmentData?.endTrackingNumber) {
+        prefilledNumbers = [shipmentData.endTrackingNumber]; // Migrate legacy value to array
+      }
+      
       const trackingData = {
-        scannedParcels: scannedParcels || 0
+        scannedParcels: scannedParcels || 0,
+        numbers: prefilledNumbers // Pre-fill from shipment's tracking numbers
       };
       
       const [newReceipt] = await db.insert(receipts).values({

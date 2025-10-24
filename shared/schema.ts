@@ -101,7 +101,8 @@ export const shipments = pgTable('shipments', {
   carrier: text('carrier').notNull(),
   trackingNumber: text('tracking_number').notNull(),
   endCarrier: text('end_carrier'),
-  endTrackingNumber: text('end_tracking_number'),
+  endTrackingNumber: text('end_tracking_number'), // Legacy single tracking number (kept for backward compatibility)
+  endTrackingNumbers: text('end_tracking_numbers').array(), // New array to support multiple tracking numbers
   shipmentName: text('shipment_name'),
   shipmentType: text('shipment_type'),
   origin: text('origin').notNull(),
