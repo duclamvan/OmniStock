@@ -23,7 +23,7 @@ import {
   Download
 } from "lucide-react";
 import { format } from "date-fns";
-import { formatCurrency } from "@/lib/currencyUtils";
+import { formatCurrency as formatCurrencyUtil, convertCurrency } from "@/lib/currencyUtils";
 import AddCostModal from "./AddCostModal";
 import AllocationPreview from "./AllocationPreview";
 import CartonDimensions from "./CartonDimensions";
@@ -80,6 +80,7 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
   const [costToDelete, setCostToDelete] = useState<ShipmentCost | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [hasAutoCreatedFreight, setHasAutoCreatedFreight] = useState(false);
+  const [displayCurrency, setDisplayCurrency] = useState<'EUR' | 'CZK'>('EUR');
 
   // Fetch shipment data
   const { data: shipmentData } = useQuery({
@@ -262,12 +263,14 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
 
   const formatCurrency = (amount: string | number, currency: string) => {
     const value = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency || 'EUR',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 4
-    }).format(value);
+    
+    // If display currency is different from the source currency, convert it
+    if (displayCurrency !== currency) {
+      const converted = convertCurrency(value, currency as any, displayCurrency);
+      return formatCurrencyUtil(converted, displayCurrency);
+    }
+    
+    return formatCurrencyUtil(value, currency);
   };
 
   const hasAnyCosts = costs.length > 0;
@@ -309,6 +312,26 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
             )}
           </div>
           <div className="flex gap-2">
+            <div className="flex items-center gap-1 border rounded-lg p-1 bg-muted/30">
+              <Button
+                variant={displayCurrency === 'EUR' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setDisplayCurrency('EUR')}
+                className={displayCurrency === 'EUR' ? 'h-7' : 'h-7 hover:bg-muted'}
+                data-testid="button-currency-eur"
+              >
+                EUR €
+              </Button>
+              <Button
+                variant={displayCurrency === 'CZK' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setDisplayCurrency('CZK')}
+                className={displayCurrency === 'CZK' ? 'h-7' : 'h-7 hover:bg-muted'}
+                data-testid="button-currency-czk"
+              >
+                CZK Kč
+              </Button>
+            </div>
             <Button
               variant="default"
               size="default"
@@ -338,8 +361,8 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                   <p className="text-xl font-semibold">{summary.itemCount || 0}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Base Currency</p>
-                  <p className="text-xl font-semibold">{summary.baseCurrency || 'EUR'}</p>
+                  <p className="text-sm text-muted-foreground">Display Currency</p>
+                  <p className="text-xl font-semibold">{displayCurrency}</p>
                 </div>
                 {summary.lastCalculated && (
                   <div>
