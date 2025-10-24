@@ -105,6 +105,9 @@ interface OrderItem {
   tax: number;
   total: number;
   landingCost?: number | null;
+  variantId?: string | null;
+  variantName?: string | null;
+  bundleId?: string | null;
 }
 
 export default function EditOrder() {
@@ -380,6 +383,43 @@ export default function EditOrder() {
   const { data: allProducts } = useQuery({
     queryKey: ['/api/products'],
     staleTime: 5 * 60 * 1000, // 5 minutes - products don't change frequently
+  });
+
+  // Fetch all bundles
+  const { data: allBundles } = useQuery({
+    queryKey: ['/api/bundles'],
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Fetch variants for all products (map productId -> variants)
+  const { data: productsWithVariants } = useQuery({
+    queryKey: ['/api/products-with-variants'],
+    queryFn: async () => {
+      if (!Array.isArray(allProducts)) return {};
+      
+      const variantsMap: Record<string, any[]> = {};
+      
+      // Fetch variants for each product in parallel
+      await Promise.all(
+        allProducts.slice(0, 50).map(async (product: any) => { // Limit to first 50 products for performance
+          try {
+            const response = await fetch(`/api/products/${product.id}/variants`);
+            if (response.ok) {
+              const variants = await response.json();
+              if (variants && variants.length > 0) {
+                variantsMap[product.id] = variants;
+              }
+            }
+          } catch (error) {
+            console.error(`Error fetching variants for product ${product.id}:`, error);
+          }
+        })
+      );
+      
+      return variantsMap;
+    },
+    enabled: !!allProducts && Array.isArray(allProducts),
+    staleTime: 5 * 60 * 1000,
   });
 
   // Fetch all customers for real-time filtering
@@ -950,8 +990,8 @@ export default function EditOrder() {
 
       const newItem: OrderItem = {
         id: Math.random().toString(36).substr(2, 9),
-        productId: product.id,
-        productName: product.name,
+        productId: product.itemType === 'variant' ? product.productId : product.id,
+        productName: product.itemType === 'variant' ? product.productName : product.name,
         sku: product.sku,
         quantity: 1,
         price: productPrice,
@@ -959,6 +999,9 @@ export default function EditOrder() {
         tax: 0,
         total: productPrice,
         landingCost: product.landingCost || product.latestLandingCost || null,
+        variantId: product.itemType === 'variant' ? product.variantId : null,
+        variantName: product.itemType === 'variant' ? product.variantName : null,
+        bundleId: product.itemType === 'bundle' ? product.bundleId : null,
       };
       setOrderItems(items => [...items, newItem]);
       // Auto-focus quantity input for the newly added item
@@ -1070,6 +1113,9 @@ export default function EditOrder() {
         discount: item.discount.toFixed(2),
         tax: item.tax.toFixed(2),
         total: item.total.toFixed(2),
+        variantId: item.variantId || null,
+        variantName: item.variantName || null,
+        bundleId: item.bundleId || null,
       })),
       includedDocuments: {
         invoicePrint: includeInvoice,
@@ -1101,36 +1147,88 @@ export default function EditOrder() {
   }, [allOrders]);
 
   // Filter products with Vietnamese search, grouped by category, ordered by frequency (memoized for performance)
+  // Includes bundles and variants
   const filteredProducts = useMemo(() => {
     if (!Array.isArray(allProducts)) return [];
 
-    // If there's a search query, filter products
-    let products = allProducts;
-    if (debouncedProductSearch && debouncedProductSearch.length >= 2) {
-      const matcher = createVietnameseSearchMatcher(debouncedProductSearch);
-      products = allProducts.filter((product: any) => {
-        return matcher(product.name) || 
-               matcher(product.sku) || 
-               matcher(product.description || '') ||
-               matcher(product.categoryName || '');
+    // Build combined list of products, bundles, and variants
+    let allItems: any[] = [];
+    
+    // Add regular products
+    allItems.push(...allProducts.map((p: any) => ({ ...p, itemType: 'product' })));
+    
+    // Add bundles
+    if (Array.isArray(allBundles)) {
+      allBundles.forEach((bundle: any) => {
+        if (bundle.isActive) {
+          allItems.push({
+            id: bundle.id,
+            name: bundle.name,
+            sku: bundle.sku || bundle.bundleId,
+            description: bundle.description,
+            priceCzk: bundle.priceCzk,
+            priceEur: bundle.priceEur,
+            categoryName: 'Bundles',
+            itemType: 'bundle',
+            bundleId: bundle.id,
+          });
+        }
+      });
+    }
+    
+    // Add variants
+    if (productsWithVariants) {
+      Object.entries(productsWithVariants).forEach(([productId, variants]: [string, any]) => {
+        const parentProduct = allProducts.find((p: any) => p.id === productId);
+        if (parentProduct && Array.isArray(variants)) {
+          variants.forEach((variant: any) => {
+            allItems.push({
+              id: variant.id,
+              name: `${parentProduct.name} - ${variant.name}`,
+              sku: variant.barcode || parentProduct.sku,
+              description: parentProduct.description,
+              priceCzk: parentProduct.priceCzk,
+              priceEur: parentProduct.priceEur,
+              categoryName: parentProduct.categoryName || 'Uncategorized',
+              stockQuantity: variant.quantity,
+              itemType: 'variant',
+              variantId: variant.id,
+              variantName: variant.name,
+              productId: parentProduct.id,
+              productName: parentProduct.name,
+            });
+          });
+        }
       });
     }
 
-    // Group products by category
+    // If there's a search query, filter items
+    let items = allItems;
+    if (debouncedProductSearch && debouncedProductSearch.length >= 2) {
+      const matcher = createVietnameseSearchMatcher(debouncedProductSearch);
+      items = allItems.filter((item: any) => {
+        return matcher(item.name) || 
+               matcher(item.sku) || 
+               matcher(item.description || '') ||
+               matcher(item.categoryName || '');
+      });
+    }
+
+    // Group items by category
     const groupedByCategory: Record<string, any[]> = {};
-    products.forEach((product: any) => {
-      const categoryName = product.categoryName || 'Uncategorized';
+    items.forEach((item: any) => {
+      const categoryName = item.categoryName || 'Uncategorized';
       if (!groupedByCategory[categoryName]) {
         groupedByCategory[categoryName] = [];
       }
-      groupedByCategory[categoryName].push(product);
+      groupedByCategory[categoryName].push(item);
     });
 
-    // Sort products within each category by frequency (descending), then alphabetically by name
+    // Sort items within each category by frequency (descending), then alphabetically by name
     Object.keys(groupedByCategory).forEach(categoryName => {
       groupedByCategory[categoryName].sort((a, b) => {
-        const freqA = productFrequency[a.id] || 0;
-        const freqB = productFrequency[b.id] || 0;
+        const freqA = productFrequency[a.productId || a.id] || 0;
+        const freqB = productFrequency[b.productId || b.id] || 0;
         
         if (freqB !== freqA) {
           return freqB - freqA; // Higher frequency first
@@ -1144,10 +1242,14 @@ export default function EditOrder() {
     // Convert to array of { category, products } and limit total products
     const categorizedProducts: Array<{ category: string; products: any[] }> = [];
     let totalProductsCount = 0;
-    const maxTotalProducts = 20; // Limit total products shown
+    const maxTotalProducts = 30; // Increased limit to accommodate bundles and variants
 
-    // Sort categories alphabetically
-    const sortedCategories = Object.keys(groupedByCategory).sort();
+    // Sort categories alphabetically, but bundles last
+    const sortedCategories = Object.keys(groupedByCategory).sort((a, b) => {
+      if (a === 'Bundles') return 1;
+      if (b === 'Bundles') return -1;
+      return a.localeCompare(b);
+    });
 
     for (const categoryName of sortedCategories) {
       const categoryProducts = groupedByCategory[categoryName];
@@ -1167,7 +1269,7 @@ export default function EditOrder() {
     }
 
     return categorizedProducts;
-  }, [allProducts, debouncedProductSearch, productFrequency]);
+  }, [allProducts, allBundles, productsWithVariants, debouncedProductSearch, productFrequency]);
 
   // Filter customers with Vietnamese search (memoized for performance)
   const filteredCustomers = useMemo(() => {
@@ -2183,7 +2285,7 @@ export default function EditOrder() {
                       </div>
                       {/* Products in Category */}
                       {categoryGroup.products.map((product: any) => {
-                        const frequency = productFrequency[product.id] || 0;
+                        const frequency = productFrequency[product.productId || product.id] || 0;
                         return (
                           <button
                             type="button"
@@ -2196,8 +2298,18 @@ export default function EditOrder() {
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   <div className="font-medium text-slate-900">{product.name}</div>
+                                  {product.itemType === 'bundle' && (
+                                    <Badge className="text-xs px-1.5 py-0 bg-purple-100 text-purple-700 border-purple-300">
+                                      Bundle
+                                    </Badge>
+                                  )}
+                                  {product.itemType === 'variant' && (
+                                    <Badge className="text-xs px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-300">
+                                      Variant
+                                    </Badge>
+                                  )}
                                   {frequency > 0 && (
                                     <Badge variant="secondary" className="text-xs px-1.5 py-0">
                                       {frequency}x
@@ -2326,9 +2438,21 @@ export default function EditOrder() {
                           >
                             <TableCell className="py-2">
                               <div className="flex flex-col gap-0.5">
-                                <span className="font-medium text-slate-900 dark:text-slate-100 text-sm">
-                                  {item.productName}
-                                </span>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-medium text-slate-900 dark:text-slate-100 text-sm">
+                                    {item.productName}
+                                  </span>
+                                  {item.variantName && (
+                                    <Badge className="text-xs px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-300">
+                                      {item.variantName}
+                                    </Badge>
+                                  )}
+                                  {item.bundleId && (
+                                    <Badge className="text-xs px-1.5 py-0 bg-purple-100 text-purple-700 border-purple-300">
+                                      Bundle
+                                    </Badge>
+                                  )}
+                                </div>
                                 <span className="text-xs text-slate-500 dark:text-slate-400">
                                   SKU: {item.sku}
                                 </span>
