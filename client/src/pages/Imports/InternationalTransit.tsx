@@ -2345,39 +2345,38 @@ export default function InternationalTransit() {
                         </TableBody>
                       </Table>
                     </div>
-                    <div className="text-xs text-muted-foreground px-1 space-y-1">
+                    <div className="text-xs text-muted-foreground px-1 space-y-1.5">
                       <p>
-                        💡 Shipping cost allocated using <strong className="text-foreground">
-                          {allocationMethod === 'AUTO' ? `${effectiveMethod} (Auto-selected)` : effectiveMethod}
-                        </strong> method across {totalItems} units. Landing costs converted to EUR and CZK for your European markets.
+                        💡 Shipping cost allocated across <strong className="text-foreground">{totalItems} units</strong> using{' '}
+                        <strong className="text-foreground">
+                          {effectiveMethod}
+                        </strong>{allocationMethod === 'AUTO' && ' (auto-selected)'}. Landing costs converted to EUR and CZK.
                       </p>
-                      {allocationMethod === 'AUTO' && (
-                        <p className="text-cyan-600 dark:text-cyan-400">
-                          🤖 <strong>Auto mode</strong> selected <strong>{effectiveMethod}</strong> based on shipment type "{viewShipmentDetails.unitType || 'items'}".
-                          {effectiveMethod === 'CHARGEABLE_WEIGHT' && ' Using chargeable weight (max of actual or volumetric weight).'}
-                          {effectiveMethod === 'VALUE' && ' Container shipments use value-based allocation.'}
-                          {effectiveMethod === 'UNITS' && ' Pallet shipments use unit-based allocation.'}
-                          {effectiveMethod === 'HYBRID' && ' Mixed shipments use hybrid allocation (60% weight + 40% value).'}
+                      
+                      {/* Method-specific explanation with auto-selection context */}
+                      {effectiveMethod === 'CHARGEABLE_WEIGHT' && (
+                        <p className={allocationMethod === 'AUTO' ? "text-cyan-600 dark:text-cyan-400" : "text-blue-600 dark:text-blue-400"}>
+                          {allocationMethod === 'AUTO' && '🤖 '}⚖️ Using chargeable weight (max of actual or volumetric weight) for proportional cost allocation.
                         </p>
                       )}
-                      {(effectiveMethod === 'WEIGHT' || effectiveMethod === 'CHARGEABLE_WEIGHT') && allocationMethod !== 'AUTO' && (
+                      {effectiveMethod === 'WEIGHT' && (
                         <p className="text-blue-600 dark:text-blue-400">
-                          ⚖️ Heavier items receive proportionally more shipping cost based on their {effectiveMethod === 'CHARGEABLE_WEIGHT' ? 'chargeable' : 'actual'} weight.
+                          ⚖️ Heavier items receive proportionally more shipping cost based on actual weight.
                         </p>
                       )}
-                      {effectiveMethod === 'VALUE' && allocationMethod !== 'AUTO' && (
-                        <p className="text-green-600 dark:text-green-400">
-                          💰 Higher value items receive proportionally more shipping cost based on their cost.
+                      {effectiveMethod === 'VALUE' && (
+                        <p className={allocationMethod === 'AUTO' ? "text-cyan-600 dark:text-cyan-400" : "text-green-600 dark:text-green-400"}>
+                          {allocationMethod === 'AUTO' && '🤖 '}💰 Higher value items receive proportionally more shipping cost based on their cost.
                         </p>
                       )}
-                      {effectiveMethod === 'HYBRID' && allocationMethod !== 'AUTO' && (
-                        <p className="text-purple-600 dark:text-purple-400">
-                          ⚡ Balanced allocation: 60% by chargeable weight + 40% by value for fair distribution.
+                      {effectiveMethod === 'HYBRID' && (
+                        <p className={allocationMethod === 'AUTO' ? "text-cyan-600 dark:text-cyan-400" : "text-purple-600 dark:text-purple-400"}>
+                          {allocationMethod === 'AUTO' && '🤖 '}⚡ Balanced allocation: 60% by chargeable weight + 40% by value for fair distribution.
                         </p>
                       )}
-                      {effectiveMethod === 'UNITS' && allocationMethod !== 'AUTO' && (
-                        <p className="text-gray-600 dark:text-gray-400">
-                          📦 Equal distribution per unit regardless of weight or value.
+                      {effectiveMethod === 'UNITS' && (
+                        <p className={allocationMethod === 'AUTO' ? "text-cyan-600 dark:text-cyan-400" : "text-gray-600 dark:text-gray-400"}>
+                          {allocationMethod === 'AUTO' && '🤖 '}📦 Equal distribution per unit regardless of weight or value.
                         </p>
                       )}
                     </div>
