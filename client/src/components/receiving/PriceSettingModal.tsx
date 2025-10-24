@@ -73,9 +73,32 @@ export default function PriceSettingModal({
       setLoading(true);
       const prices: Record<string, { priceCzk: string; priceEur: string; exists: boolean }> = {};
       
+      // Try to load previously saved prices from localStorage first
+      const savedPricesKey = `receipt_${receiptId}_prices`;
+      const savedPricesStr = localStorage.getItem(savedPricesKey);
+      let savedPrices: Record<string, { priceCzk: string; priceEur: string }> = {};
+      if (savedPricesStr) {
+        try {
+          savedPrices = JSON.parse(savedPricesStr);
+        } catch (e) {
+          console.error('Error parsing saved prices:', e);
+        }
+      }
+      
       for (const item of items) {
         const productId = item.details?.id;
         const sku = item.details?.sku;
+        const itemKey = item.itemId.toString();
+        
+        // Check if we have saved prices for this item
+        if (savedPrices[itemKey]) {
+          prices[item.itemId] = {
+            priceCzk: savedPrices[itemKey].priceCzk || '',
+            priceEur: savedPrices[itemKey].priceEur || '',
+            exists: false // Mark as not from inventory since these are user-entered
+          };
+          continue;
+        }
         
         if (productId || sku) {
           try {
@@ -127,7 +150,7 @@ export default function PriceSettingModal({
     };
     
     fetchExistingPrices();
-  }, [open, items]);
+  }, [open, items, receiptId]);
 
   const handlePriceChange = (itemId: string, currency: 'priceCzk' | 'priceEur', value: string) => {
     const numValue = parseFloat(value);
@@ -141,13 +164,26 @@ export default function PriceSettingModal({
       updates.priceCzk = (numValue * exchangeRate).toFixed(2);
     }
     
-    setItemPrices(prev => ({
-      ...prev,
+    const updatedPrices = {
+      ...itemPrices,
       [itemId]: {
-        ...prev[itemId],
+        ...itemPrices[itemId],
         ...updates
       }
-    }));
+    };
+    
+    setItemPrices(updatedPrices);
+    
+    // Save prices to localStorage for this receipt
+    const savedPricesKey = `receipt_${receiptId}_prices`;
+    const pricesToSave: Record<string, { priceCzk: string; priceEur: string }> = {};
+    Object.keys(updatedPrices).forEach(key => {
+      pricesToSave[key] = {
+        priceCzk: updatedPrices[key].priceCzk,
+        priceEur: updatedPrices[key].priceEur
+      };
+    });
+    localStorage.setItem(savedPricesKey, JSON.stringify(pricesToSave));
   };
 
   // Handle tab navigation to move vertically down in same column
@@ -306,6 +342,10 @@ export default function PriceSettingModal({
       
       // Save approver name to localStorage for next time
       localStorage.setItem('lastApproverName', approvedBy);
+      
+      // Clear saved prices from localStorage after successful approval
+      const savedPricesKey = `receipt_${receiptId}_prices`;
+      localStorage.removeItem(savedPricesKey);
       
       // Close modal
       onClose();
