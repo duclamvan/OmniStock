@@ -57,6 +57,14 @@ export default function PriceSettingModal({
     landingCostEur: true
   });
 
+  // Load saved approver name from localStorage on mount
+  useEffect(() => {
+    const savedApprover = localStorage.getItem('lastApproverName');
+    if (savedApprover) {
+      setApprovedBy(savedApprover);
+    }
+  }, []);
+
   // Initialize and fetch existing prices when modal opens
   useEffect(() => {
     if (!open || !items.length) return;
@@ -295,6 +303,9 @@ export default function PriceSettingModal({
         ),
         duration: 8000,
       });
+      
+      // Save approver name to localStorage for next time
+      localStorage.setItem('lastApproverName', approvedBy);
       
       // Close modal and trigger parent refetch
       onClose();
@@ -567,6 +578,7 @@ export default function PriceSettingModal({
               <Input
                 value={approvedBy}
                 onChange={(e) => setApprovedBy(e.target.value)}
+                onClick={(e) => e.currentTarget.select()}
                 placeholder="Enter your name"
                 className="h-8 text-xs"
                 data-testid="input-approver-name"
