@@ -1010,7 +1010,7 @@ export default function SupplierProcessing() {
                             </div>
                           ) : (
                             <div className={cn(
-                              "rounded border bg-card/50 overflow-x-auto",
+                              "rounded bg-card/50 overflow-x-auto",
                               purchase.items.length > 12 && "max-h-[380px] overflow-y-auto"
                             )}>
                               <DataTable
