@@ -2221,64 +2221,126 @@ export default function AddOrder() {
                         ) : (
                           <div
                             key={address.id}
-                            className={`relative flex items-start space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                            className={`relative rounded-lg border-2 transition-all ${
                               selectedShippingAddress?.id === address.id
-                                ? 'border-blue-500 bg-blue-50'
+                                ? 'border-teal-500 bg-teal-50/50 shadow-sm'
                                 : 'border-slate-200 hover:border-slate-300'
                             }`}
-                            onClick={() => {
-                              if (selectedShippingAddress?.id === address.id) {
-                                setSelectedShippingAddress(null);
-                              } else {
-                                setSelectedShippingAddress(address);
-                              }
-                            }}
                             data-testid={`card-address-${address.id}`}
                           >
-                            <RadioGroupItem value={address.id} id={address.id} data-testid={`radio-address-${address.id}`} />
-                            <div className="flex-1">
-                              <Label htmlFor={address.id} className="cursor-pointer">
-                                <div className="font-medium text-slate-900">
-                                  {address.firstName} {address.lastName}
-                                </div>
-                                {address.company && (
-                                  <div className="text-sm text-slate-600 mt-1">
-                                    <Building className="h-3 w-3 inline mr-1" />
-                                    {address.company}
-                                  </div>
-                                )}
-                                <div className="text-sm text-slate-600 mt-1">
-                                  {address.street}, {address.city}, {address.zipCode}, {address.country}
-                                </div>
-                                {address.email && (
-                                  <div className="text-sm text-slate-500 mt-1">
-                                    <Mail className="h-3 w-3 inline mr-1" />
-                                    {address.email}
-                                  </div>
-                                )}
-                                {address.tel && (
-                                  <div className="text-sm text-slate-500 mt-1">
-                                    <Phone className="h-3 w-3 inline mr-1" />
-                                    {address.tel}
-                                  </div>
-                                )}
-                              </Label>
-                            </div>
-                            {!address.isNew && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="absolute top-2 right-2 h-8 w-8 p-0"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingAddressId(address.id);
+                            {/* Header with Radio and Actions */}
+                            <div className="flex items-start gap-3 p-4 pb-3">
+                              <RadioGroupItem 
+                                value={address.id} 
+                                id={address.id} 
+                                data-testid={`radio-address-${address.id}`}
+                                className="mt-1"
+                                onClick={() => {
+                                  if (selectedShippingAddress?.id === address.id) {
+                                    setSelectedShippingAddress(null);
+                                  } else {
+                                    setSelectedShippingAddress(address);
+                                  }
                                 }}
-                                data-testid={`button-edit-address-${address.id}`}
+                              />
+                              <div 
+                                className="flex-1 cursor-pointer"
+                                onClick={() => {
+                                  if (selectedShippingAddress?.id === address.id) {
+                                    setSelectedShippingAddress(null);
+                                  } else {
+                                    setSelectedShippingAddress(address);
+                                  }
+                                }}
                               >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            )}
+                                <Label htmlFor={address.id} className="cursor-pointer">
+                                  <div className="text-base font-semibold text-slate-900">
+                                    {address.firstName} {address.lastName}
+                                  </div>
+                                  {address.company && (
+                                    <div className="flex items-center gap-1.5 mt-1.5 text-slate-700">
+                                      <Building className="h-3.5 w-3.5 text-slate-500" />
+                                      <span className="text-sm font-medium">{address.company}</span>
+                                    </div>
+                                  )}
+                                </Label>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 hover:bg-teal-100"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const fullAddress = `${address.firstName} ${address.lastName}${address.company ? `\n${address.company}` : ''}\n${address.street}\n${address.city}, ${address.zipCode}\n${address.country}${address.tel ? `\nTel: ${address.tel}` : ''}${address.email ? `\nEmail: ${address.email}` : ''}`;
+                                    navigator.clipboard.writeText(fullAddress);
+                                    toast({
+                                      title: "Copied!",
+                                      description: "Address copied to clipboard",
+                                    });
+                                  }}
+                                  data-testid={`button-copy-address-${address.id}`}
+                                  title="Copy address"
+                                >
+                                  <Copy className="h-4 w-4 text-slate-600" />
+                                </Button>
+                                {!address.isNew && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 hover:bg-slate-100"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingAddressId(address.id);
+                                    }}
+                                    data-testid={`button-edit-address-${address.id}`}
+                                    title="Edit address"
+                                  >
+                                    <Pencil className="h-4 w-4 text-slate-600" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Address Details */}
+                            <div 
+                              className="px-4 pb-4 pt-0 space-y-2 cursor-pointer border-t border-slate-100"
+                              onClick={() => {
+                                if (selectedShippingAddress?.id === address.id) {
+                                  setSelectedShippingAddress(null);
+                                } else {
+                                  setSelectedShippingAddress(address);
+                                }
+                              }}
+                            >
+                              <div className="flex items-start gap-2 mt-3">
+                                <MapPin className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                                <div className="text-sm text-slate-700 leading-relaxed">
+                                  <div>{address.street}</div>
+                                  <div>{address.city}, {address.zipCode}</div>
+                                  <div className="font-medium text-slate-800 mt-0.5">{address.country}</div>
+                                </div>
+                              </div>
+
+                              {(address.tel || address.email) && (
+                                <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
+                                  {address.tel && (
+                                    <div className="flex items-center gap-2">
+                                      <Phone className="h-3.5 w-3.5 text-slate-400" />
+                                      <span className="text-sm text-slate-600">{address.tel}</span>
+                                    </div>
+                                  )}
+                                  {address.email && (
+                                    <div className="flex items-center gap-2">
+                                      <Mail className="h-3.5 w-3.5 text-slate-400" />
+                                      <span className="text-sm text-slate-600">{address.email}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )
                       ))}
