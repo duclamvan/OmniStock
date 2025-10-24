@@ -1662,7 +1662,6 @@ export default function EditOrder() {
                     <RadioGroup
                       value={selectedShippingAddress?.id || ""}
                       onValueChange={(value) => {
-                        if (!value) return; // Don't update if value is empty (deselection handled by onClick)
                         const address = shippingAddresses.find((a: any) => a.id === value);
                         setSelectedShippingAddress(address);
                       }}
@@ -1671,18 +1670,11 @@ export default function EditOrder() {
                       {shippingAddresses.map((address: any) => (
                         <div
                           key={address.id}
-                          className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                          className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-all ${
                             selectedShippingAddress?.id === address.id
                               ? 'border-blue-500 bg-blue-50'
                               : 'border-slate-200 hover:border-slate-300'
                           }`}
-                          onClick={() => {
-                            if (selectedShippingAddress?.id === address.id) {
-                              setSelectedShippingAddress(null);
-                            } else {
-                              setSelectedShippingAddress(address);
-                            }
-                          }}
                           data-testid={`card-address-${address.id}`}
                         >
                           <RadioGroupItem value={address.id} id={address.id} data-testid={`radio-address-${address.id}`} />
