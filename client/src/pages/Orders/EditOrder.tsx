@@ -2304,17 +2304,17 @@ export default function EditOrder() {
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-slate-50 dark:bg-slate-900/50">
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Product</TableHead>
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center">Qty</TableHead>
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">Price</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 w-auto">Product</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center w-24">Qty</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right w-32">Price</TableHead>
                           {showDiscountColumn && (
-                            <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">Discount</TableHead>
+                            <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right w-32">Discount</TableHead>
                           )}
                           {showVatColumn && (
-                            <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">VAT</TableHead>
+                            <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right w-32">VAT</TableHead>
                           )}
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">Total</TableHead>
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center w-20">Actions</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right w-32">Total</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center w-16">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -2324,9 +2324,9 @@ export default function EditOrder() {
                             className={index % 2 === 0 ? 'bg-white dark:bg-slate-950' : 'bg-slate-50/50 dark:bg-slate-900/30'}
                             data-testid={`order-item-${item.id}`}
                           >
-                            <TableCell className="py-3">
-                              <div className="flex flex-col gap-1">
-                                <span className="font-medium text-slate-900 dark:text-slate-100">
+                            <TableCell className="py-2">
+                              <div className="flex flex-col gap-0.5">
+                                <span className="font-medium text-slate-900 dark:text-slate-100 text-sm">
                                   {item.productName}
                                 </span>
                                 <span className="text-xs text-slate-500 dark:text-slate-400">
@@ -2334,52 +2334,76 @@ export default function EditOrder() {
                                 </span>
                               </div>
                             </TableCell>
-                            <TableCell className="text-center align-middle">
-                              <div className="flex justify-center">
-                                <Input
-                                  type="number"
-                                  min="1"
-                                  value={item.quantity}
-                                  onChange={(e) => updateOrderItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
-                                  className="w-20 h-10 text-center"
-                                  data-testid={`input-quantity-${item.id}`}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      e.preventDefault();
-                                      // Enter: Save and go back to product search for next item
-                                      productSearchRef.current?.focus();
-                                    } else if (e.key === 'Tab') {
-                                      e.preventDefault();
-                                      // Tab: Go to shipping cost
-                                      const shippingCostInput = document.querySelector('[data-testid="input-shipping-cost"]') as HTMLInputElement;
-                                      shippingCostInput?.focus();
-                                    }
-                                  }}
-                                />
-                              </div>
+                            <TableCell className="py-2">
+                              <Input
+                                type="number"
+                                min="1"
+                                value={item.quantity}
+                                onChange={(e) => updateOrderItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
+                                className="w-16 h-8 text-center text-sm"
+                                data-testid={`input-quantity-${item.id}`}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    productSearchRef.current?.focus();
+                                  } else if (e.key === 'Tab') {
+                                    e.preventDefault();
+                                    const shippingCostInput = document.querySelector('[data-testid="input-shipping-cost"]') as HTMLInputElement;
+                                    shippingCostInput?.focus();
+                                  }
+                                }}
+                              />
                             </TableCell>
-                            <TableCell className="text-right align-middle">
-                              <div className="flex justify-end">
+                            <TableCell className="py-2">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={item.price}
+                                onChange={(e) => updateOrderItem(item.id, 'price', parseFloat(e.target.value) || 0)}
+                                className="w-full h-8 text-right text-sm"
+                                data-testid={`input-price-${item.id}`}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === 'Tab') {
+                                    e.preventDefault();
+                                    const nextInput = showDiscountColumn
+                                      ? document.querySelector(`[data-testid="input-discount-${item.id}"]`)
+                                      : showVatColumn
+                                      ? document.querySelector(`[data-testid="input-vat-${item.id}"]`)
+                                      : null;
+                                    
+                                    if (nextInput) {
+                                      (nextInput as HTMLInputElement).focus();
+                                    } else {
+                                      const currentIndex = orderItems.findIndex(i => i.id === item.id);
+                                      if (currentIndex < orderItems.length - 1) {
+                                        const nextItem = orderItems[currentIndex + 1];
+                                        const nextRowInput = document.querySelector(`[data-testid="input-quantity-${nextItem.id}"]`) as HTMLInputElement;
+                                        nextRowInput?.focus();
+                                      }
+                                    }
+                                  }
+                                }}
+                              />
+                            </TableCell>
+                            {showDiscountColumn && (
+                              <TableCell className="py-2">
                                 <Input
                                   type="number"
                                   step="0.01"
-                                  value={item.price}
-                                  onChange={(e) => updateOrderItem(item.id, 'price', parseFloat(e.target.value) || 0)}
-                                  className="w-28 h-10 text-right"
-                                  data-testid={`input-price-${item.id}`}
+                                  value={item.discount}
+                                  onChange={(e) => updateOrderItem(item.id, 'discount', parseFloat(e.target.value) || 0)}
+                                  className="w-full h-8 text-right text-sm"
+                                  data-testid={`input-discount-${item.id}`}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === 'Tab') {
                                       e.preventDefault();
-                                      const nextInput = showDiscountColumn
-                                        ? document.querySelector(`[data-testid="input-discount-${item.id}"]`)
-                                        : showVatColumn
+                                      const nextInput = showVatColumn
                                         ? document.querySelector(`[data-testid="input-vat-${item.id}"]`)
                                         : null;
                                       
                                       if (nextInput) {
                                         (nextInput as HTMLInputElement).focus();
                                       } else {
-                                        // Move to next row's quantity input
                                         const currentIndex = orderItems.findIndex(i => i.id === item.id);
                                         if (currentIndex < orderItems.length - 1) {
                                           const nextItem = orderItems[currentIndex + 1];
@@ -2390,78 +2414,41 @@ export default function EditOrder() {
                                     }
                                   }}
                                 />
-                              </div>
-                            </TableCell>
-                            {showDiscountColumn && (
-                              <TableCell className="text-right align-middle">
-                                <div className="flex justify-end">
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    value={item.discount}
-                                    onChange={(e) => updateOrderItem(item.id, 'discount', parseFloat(e.target.value) || 0)}
-                                    className="w-28 h-10 text-right"
-                                    data-testid={`input-discount-${item.id}`}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter' || e.key === 'Tab') {
-                                        e.preventDefault();
-                                        const nextInput = showVatColumn
-                                          ? document.querySelector(`[data-testid="input-vat-${item.id}"]`)
-                                          : null;
-                                        
-                                        if (nextInput) {
-                                          (nextInput as HTMLInputElement).focus();
-                                        } else {
-                                          // Move to next row's quantity input
-                                          const currentIndex = orderItems.findIndex(i => i.id === item.id);
-                                          if (currentIndex < orderItems.length - 1) {
-                                            const nextItem = orderItems[currentIndex + 1];
-                                            const nextRowInput = document.querySelector(`[data-testid="input-quantity-${nextItem.id}"]`) as HTMLInputElement;
-                                            nextRowInput?.focus();
-                                          }
-                                        }
-                                      }
-                                    }}
-                                  />
-                                </div>
                               </TableCell>
                             )}
                             {showVatColumn && (
-                              <TableCell className="text-right align-middle">
-                                <div className="flex justify-end">
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    value={item.tax}
-                                    onChange={(e) => updateOrderItem(item.id, 'tax', parseFloat(e.target.value) || 0)}
-                                    className="w-28 h-10 text-right"
-                                    data-testid={`input-vat-${item.id}`}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter' || e.key === 'Tab') {
-                                        e.preventDefault();
-                                        // Move to next row's quantity input
-                                        const currentIndex = orderItems.findIndex(i => i.id === item.id);
-                                        if (currentIndex < orderItems.length - 1) {
-                                          const nextItem = orderItems[currentIndex + 1];
-                                          const nextRowInput = document.querySelector(`[data-testid="input-quantity-${nextItem.id}"]`) as HTMLInputElement;
-                                          nextRowInput?.focus();
-                                        }
+                              <TableCell className="py-2">
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={item.tax}
+                                  onChange={(e) => updateOrderItem(item.id, 'tax', parseFloat(e.target.value) || 0)}
+                                  className="w-full h-8 text-right text-sm"
+                                  data-testid={`input-vat-${item.id}`}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === 'Tab') {
+                                      e.preventDefault();
+                                      const currentIndex = orderItems.findIndex(i => i.id === item.id);
+                                      if (currentIndex < orderItems.length - 1) {
+                                        const nextItem = orderItems[currentIndex + 1];
+                                        const nextRowInput = document.querySelector(`[data-testid="input-quantity-${nextItem.id}"]`) as HTMLInputElement;
+                                        nextRowInput?.focus();
                                       }
-                                    }}
-                                  />
-                                </div>
+                                    }
+                                  }}
+                                />
                               </TableCell>
                             )}
-                            <TableCell className="text-right font-semibold text-slate-900 dark:text-slate-100 align-middle">
+                            <TableCell className="py-2 text-right font-semibold text-slate-900 dark:text-slate-100 text-sm whitespace-nowrap">
                               {formatCurrency(item.total, form.watch('currency'))}
                             </TableCell>
-                            <TableCell className="text-center">
+                            <TableCell className="py-2 text-center">
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => removeOrderItem(item.id)}
-                                className="h-9 w-9 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
+                                className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
                                 data-testid={`button-remove-${item.id}`}
                               >
                                 <Trash2 className="h-4 w-4" />
