@@ -243,7 +243,7 @@ const AddCostModal = ({ shipmentId, cost, onClose, onSave }: AddCostModalProps) 
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="FREIGHT">Freight</SelectItem>
-                      <SelectItem value="BROKERAGE">Brokerage</SelectItem>
+                      <SelectItem value="BROKERAGE">Customs Fee</SelectItem>
                       <SelectItem value="INSURANCE">Insurance</SelectItem>
                       <SelectItem value="PACKAGING">Packaging</SelectItem>
                       <SelectItem value="OTHER">Other</SelectItem>

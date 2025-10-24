@@ -108,7 +108,7 @@ const ALLOCATION_METHODS: AllocationMethod[] = [
     description: 'Equal distribution per item type',
     icon: Package,
     explanation: 'Distributes costs equally across all item types, regardless of quantity, weight, or value. Each unique item gets the same cost allocation.',
-    bestFor: ['Administrative costs', 'Brokerage fees', 'Processing fees'],
+    bestFor: ['Administrative costs', 'Customs fees', 'Processing fees'],
     costTypes: ['BROKERAGE', 'PACKAGING']
   },
   {
@@ -256,7 +256,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
       'Chargeable Weight (kg)',
       'Freight Allocated',
       'Duty',
-      'Brokerage',
+      'Customs Fee',
       'Insurance',
       'Packaging',
       'Other Fees',
@@ -778,7 +778,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                                 </span>
                               </div>
                               <div>
-                                <span className="text-muted-foreground">Brokerage:</span>
+                                <span className="text-muted-foreground">Customs Fee:</span>
                                 <span className="ml-2 font-medium">
                                   {formatCurrency(item.brokerageAllocated, preview.baseCurrency)}
                                 </span>
