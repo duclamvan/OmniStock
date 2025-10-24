@@ -6064,6 +6064,7 @@ router.get("/shipments/:id/landing-cost-preview", async (req, res) => {
       costsByType,
       totalCost: Object.values(costsByType).reduce((sum, val) => sum + val, 0),
       baseCurrency: 'EUR',
+      autoSelectedMethod: 'CHARGEABLE_WEIGHT', // Default auto-selection uses weight-based allocation
       // Structure expected by AllocationPreview component
       items,
       totalItems: metrics.itemCount,
@@ -6080,7 +6081,7 @@ router.get("/shipments/:id/landing-cost-preview", async (req, res) => {
         other: costsByType['OTHER'] || 0,
         total: Object.values(costsByType).reduce((sum, val) => sum + val, 0)
       },
-      message: "This is a preview. Use /calculate-landing-costs to save allocations."
+      message: "This is a preview using auto-selected weight-based allocation. Use /calculate-landing-costs to save allocations."
     });
   } catch (error) {
     console.error("Error generating landing cost preview:", error);

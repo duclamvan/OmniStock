@@ -175,18 +175,27 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
   const [isManualOverride, setIsManualOverride] = useState(false);
   const [showMethodDetails, setShowMethodDetails] = useState(false);
 
-  // Fetch allocation preview
+  // Fetch allocation preview - use method-specific endpoint when manual override
   const { data: preview, isLoading, error, refetch } = useQuery<AllocationSummary>({
     queryKey: [`/api/imports/shipments/${shipmentId}/landing-cost-preview`, selectedMethod],
-    enabled: !!shipmentId,
-    keepPreviousData: true
+    queryFn: async () => {
+      const endpoint = selectedMethod 
+        ? `/api/imports/shipments/${shipmentId}/landing-cost-preview/${selectedMethod}`
+        : `/api/imports/shipments/${shipmentId}/landing-cost-preview`;
+      const response = await fetch(endpoint);
+      if (!response.ok) throw new Error('Failed to fetch allocation preview');
+      return response.json();
+    },
+    enabled: !!shipmentId
   });
 
   // Mutation for updating allocation method
   const updateAllocationMethod = useMutation({
     mutationFn: async (method: string) => {
-      const response = await apiRequest('GET', `/api/imports/shipments/${shipmentId}/landing-cost-preview?method=${method}`);
-      return response;
+      const endpoint = `/api/imports/shipments/${shipmentId}/landing-cost-preview/${method}`;
+      const response = await fetch(endpoint);
+      if (!response.ok) throw new Error('Failed to fetch method-specific preview');
+      return response.json();
     },
     onSuccess: (data) => {
       queryClient.setQueryData([`/api/imports/shipments/${shipmentId}/landing-cost-preview`, selectedMethod], data);
@@ -195,7 +204,8 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
         description: `Switched to ${ALLOCATION_METHODS.find(m => m.id === selectedMethod)?.name} allocation method`
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Method update error:', error);
       toast({
         title: "Error",
         description: "Failed to update allocation method",
@@ -392,10 +402,14 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                     </Badge>
                   )}
                   {isManualOverride ? (
-                    <Badge variant="outline" className="text-xs text-blue-600">Manual</Badge>
+                    <Badge variant="outline" className="text-xs text-blue-600">Manual Override</Badge>
+                  ) : currentMethod ? (
+                    <Badge variant="outline" className="text-xs text-green-600">
+                      Auto → {currentMethod.name}
+                    </Badge>
                   ) : (
                     <Badge variant="outline" className="text-xs text-green-600">
-                      Auto {currentMethod && `→ ${currentMethod.name}`}
+                      Auto
                     </Badge>
                   )}
                 </div>
