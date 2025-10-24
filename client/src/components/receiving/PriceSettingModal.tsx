@@ -197,8 +197,25 @@ export default function PriceSettingModal({
 
     setSaving(true);
     
+    // Show progress toast
+    const progressToast = toast({
+      title: "Processing...",
+      description: (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+            <span>Setting prices and approving receipt...</span>
+          </div>
+          <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
+            <div className="bg-primary h-full rounded-full animate-pulse" style={{ width: '60%' }}></div>
+          </div>
+        </div>
+      ),
+      duration: Infinity, // Keep it open until we update it
+    });
+    
     try {
-      // Prepare items for price saving
+      // Prepare items for the combined operation
       const priceItems = items.map(item => ({
         sku: item.details?.sku,
         productId: item.details?.id,
@@ -207,28 +224,82 @@ export default function PriceSettingModal({
         landingCost: parseFloat(item.details?.latestLandingCost || '0')
       }));
       
-      // Save prices first
-      const priceResponse = await apiRequest(
-        `/api/imports/receipts/${receiptId}/set-prices`,
+      // Call the combined endpoint that handles both price setting and approval atomically
+      const response = await apiRequest(
+        `/api/imports/receipts/approve-with-prices/${receiptId}`,
         'POST',
-        { items: priceItems }
+        {
+          items: priceItems,
+          approvedBy: approvedBy,
+          notes: '' // Optional notes field
+        }
       );
       
-      const responseData = await priceResponse.json();
+      const result = await response.json();
       
-      if (!priceResponse.ok || !responseData.success) {
-        throw new Error(responseData.message || 'Failed to save prices');
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to approve receipt');
       }
       
-      // Then proceed with approval
-      onApprove(approvedBy);
-      onClose();
-    } catch (error) {
-      console.error('Error saving prices:', error);
+      // Dismiss the progress toast
+      if (progressToast && progressToast.dismiss) {
+        progressToast.dismiss();
+      }
+      
+      // Show success toast with detailed summary
+      const { summary } = result;
+      const pricesUpdated = summary?.prices?.updated || 0;
+      const pricesCreated = summary?.prices?.created || 0;
+      const inventoryUpdated = summary?.inventory?.updated || 0;
+      const inventoryCreated = summary?.inventory?.created || 0;
+      const total = inventoryUpdated + inventoryCreated;
+      
       toast({
-        title: "Error",
-        description: "Failed to save prices. Please try again.",
-        variant: "destructive"
+        title: "✅ Receipt Approved Successfully",
+        description: (
+          <div className="space-y-2 text-sm">
+            <div className="font-semibold">Approved by: {approvedBy}</div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="col-span-2 font-medium border-b pb-1">Prices Updated:</div>
+              <div>• Existing products:</div>
+              <div>{pricesUpdated}</div>
+              <div>• New products:</div>
+              <div>{pricesCreated}</div>
+              
+              <div className="col-span-2 font-medium border-b pb-1 mt-2">Inventory Changes:</div>
+              <div>• Products updated:</div>
+              <div>{inventoryUpdated}</div>
+              <div>• New products created:</div>
+              <div>{inventoryCreated}</div>
+              
+              <div className="col-span-2 font-semibold mt-2 pt-2 border-t">
+                Total: {total} products processed
+              </div>
+            </div>
+          </div>
+        ),
+        duration: 8000,
+      });
+      
+      // Close modal and trigger parent refetch
+      onClose();
+      
+      // Call onApprove callback to trigger refetch in parent component
+      if (typeof onApprove === 'function') {
+        onApprove(approvedBy);
+      }
+    } catch (error) {
+      // Dismiss the progress toast
+      if (progressToast && progressToast.dismiss) {
+        progressToast.dismiss();
+      }
+      
+      console.error('Error approving receipt:', error);
+      toast({
+        title: "❌ Approval Failed",
+        description: error instanceof Error ? error.message : "Failed to approve receipt. Please try again.",
+        variant: "destructive",
+        duration: 6000,
       });
     } finally {
       setSaving(false);
