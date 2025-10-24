@@ -46,6 +46,7 @@ export default function PriceSettingModal({
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [displayCurrency, setDisplayCurrency] = useState<'EUR' | 'CZK'>('EUR');
+  const [exchangeRate, setExchangeRate] = useState<number>(25);
 
   // Initialize and fetch existing prices when modal opens
   useEffect(() => {
@@ -112,13 +113,61 @@ export default function PriceSettingModal({
   }, [open, items]);
 
   const handlePriceChange = (itemId: string, currency: 'priceCzk' | 'priceEur', value: string) => {
+    const numValue = parseFloat(value);
+    const updates: any = {
+      [currency]: value,
+      exists: itemPrices[itemId]?.exists || false
+    };
+    
+    // Auto-calculate CZK when EUR is entered
+    if (currency === 'priceEur' && !isNaN(numValue) && numValue > 0) {
+      updates.priceCzk = (numValue * exchangeRate).toFixed(2);
+    }
+    
     setItemPrices(prev => ({
       ...prev,
       [itemId]: {
         ...prev[itemId],
-        [currency]: value
+        ...updates
       }
     }));
+  };
+
+  // Handle tab navigation to move horizontally
+  const handleKeyDown = (e: React.KeyboardEvent, itemId: number, currentField: 'czk' | 'eur') => {
+    if (e.key === 'Tab' && !e.shiftKey) {
+      e.preventDefault();
+      
+      if (currentField === 'czk') {
+        // Move from CZK to EUR in same row
+        const eurInput = document.querySelector(`[data-testid="input-price-eur-${itemId}"]`) as HTMLInputElement;
+        eurInput?.focus();
+      } else {
+        // Move from EUR to CZK in next row
+        const currentIndex = items.findIndex(item => item.itemId === itemId);
+        if (currentIndex < items.length - 1) {
+          const nextItem = items[currentIndex + 1];
+          const nextCzkInput = document.querySelector(`[data-testid="input-price-czk-${nextItem.itemId}"]`) as HTMLInputElement;
+          nextCzkInput?.focus();
+        }
+      }
+    } else if (e.key === 'Tab' && e.shiftKey) {
+      e.preventDefault();
+      
+      if (currentField === 'eur') {
+        // Move back from EUR to CZK in same row
+        const czkInput = document.querySelector(`[data-testid="input-price-czk-${itemId}"]`) as HTMLInputElement;
+        czkInput?.focus();
+      } else {
+        // Move back from CZK to EUR in previous row
+        const currentIndex = items.findIndex(item => item.itemId === itemId);
+        if (currentIndex > 0) {
+          const prevItem = items[currentIndex - 1];
+          const prevEurInput = document.querySelector(`[data-testid="input-price-eur-${prevItem.itemId}"]`) as HTMLInputElement;
+          prevEurInput?.focus();
+        }
+      }
+    }
   };
 
   const allPricesSet = () => {
@@ -221,6 +270,27 @@ export default function PriceSettingModal({
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto px-1">
+          {/* Exchange Rate Input */}
+          <div className="mb-3 p-2 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div className="flex items-center gap-3">
+              <Repeat className="h-4 w-4 text-blue-600" />
+              <label className="text-xs font-semibold text-blue-900 dark:text-blue-100">
+                EUR to CZK Exchange Rate:
+              </label>
+              <Input
+                type="number"
+                step="0.01"
+                value={exchangeRate}
+                onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 25)}
+                className="w-24 h-7 text-xs font-medium"
+                data-testid="input-exchange-rate"
+              />
+              <span className="text-xs text-muted-foreground">
+                (CZK price will auto-fill when EUR is entered)
+              </span>
+            </div>
+          </div>
+
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -280,6 +350,7 @@ export default function PriceSettingModal({
                             step="0.01"
                             value={prices.priceCzk}
                             onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceCzk', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, item.itemId, 'czk')}
                             placeholder="0.00"
                             className="h-8 text-xs pr-8"
                             data-testid={`input-price-czk-${item.itemId}`}
@@ -296,6 +367,7 @@ export default function PriceSettingModal({
                             step="0.01"
                             value={prices.priceEur}
                             onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceEur', e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, item.itemId, 'eur')}
                             placeholder="0.00"
                             className="h-8 text-xs pr-8"
                             data-testid={`input-price-eur-${item.itemId}`}
