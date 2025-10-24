@@ -15,6 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar, AlertCircle, CheckCircle, Search, CalendarDays, MoreVertical, ArrowLeft, Train, Shield, Copy, ExternalLink, ChevronDown, ChevronUp, Edit, Filter, ArrowUpDown, Info, RefreshCw } from "lucide-react";
 import { format, differenceInDays, addDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { convertCurrency, type Currency } from "@/lib/currencyUtils";
 
 interface Shipment {
   id: number;
@@ -2105,11 +2106,11 @@ export default function InternationalTransit() {
                           <TableRow className="bg-slate-50 dark:bg-slate-900/50">
                             <TableHead className="w-[30%]">Item</TableHead>
                             <TableHead className="text-center w-[8%]">Qty</TableHead>
-                            <TableHead className="text-right w-[12%]">Unit Cost</TableHead>
+                            <TableHead className="text-right w-[14%]">Unit Cost</TableHead>
                             <TableHead className="text-right w-[12%]">Shipping</TableHead>
                             <TableHead className="text-right w-[12%]">Landing</TableHead>
-                            <TableHead className="text-right w-[14%]">Retail Price</TableHead>
-                            <TableHead className="text-right w-[12%]">Margin</TableHead>
+                            <TableHead className="text-right w-[12%]">Landing (EUR)</TableHead>
+                            <TableHead className="text-right w-[12%]">Landing (CZK)</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -2118,8 +2119,8 @@ export default function InternationalTransit() {
                             const unitCost = parseFloat(item.unitPrice || 0);
                             const shippingCost = shippingPerUnit;
                             const landingCost = unitCost + shippingCost;
-                            const retailPrice = landingCost * 1.5;
-                            const margin = retailPrice > 0 ? ((retailPrice - landingCost) / retailPrice * 100) : 0;
+                            const landingCostEUR = convertCurrency(landingCost, currency as Currency, 'EUR');
+                            const landingCostCZK = convertCurrency(landingCost, currency as Currency, 'CZK');
                             
                             return (
                               <TableRow key={index} className="text-sm">
@@ -2134,19 +2135,11 @@ export default function InternationalTransit() {
                                 <TableCell className="text-right font-semibold font-mono text-xs">
                                   {currency} {landingCost.toFixed(2)}
                                 </TableCell>
-                                <TableCell className="text-right">
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    defaultValue={retailPrice.toFixed(2)}
-                                    className="h-7 text-right font-mono text-xs w-24 ml-auto"
-                                    data-testid={`input-retail-price-${index}`}
-                                  />
+                                <TableCell className="text-right font-mono text-xs text-cyan-700 dark:text-cyan-400">
+                                  €{landingCostEUR.toFixed(2)}
                                 </TableCell>
-                                <TableCell className="text-right">
-                                  <span className={`font-semibold text-xs ${margin >= 40 ? 'text-green-600' : margin >= 25 ? 'text-blue-600' : 'text-amber-600'}`}>
-                                    {margin.toFixed(1)}%
-                                  </span>
+                                <TableCell className="text-right font-mono text-xs text-cyan-700 dark:text-cyan-400">
+                                  {landingCostCZK.toFixed(0)} Kč
                                 </TableCell>
                               </TableRow>
                             );
@@ -2162,17 +2155,35 @@ export default function InternationalTransit() {
                               {currency} {totalShipping.toFixed(2)}
                             </TableCell>
                             <TableCell className="text-right font-mono text-sm">
-                              {currency} {(viewShipmentDetails.items.reduce((sum: number, item: any) => 
-                                sum + (parseFloat(item.unitPrice || 0) * (item.quantity || 1)), 0
-                              ) + totalShipping).toFixed(2)}
+                              {currency} {(() => {
+                                const totalLanding = viewShipmentDetails.items.reduce((sum: number, item: any) => 
+                                  sum + (parseFloat(item.unitPrice || 0) * (item.quantity || 1)), 0
+                                ) + totalShipping;
+                                return totalLanding.toFixed(2);
+                              })()}
                             </TableCell>
-                            <TableCell colSpan={2}></TableCell>
+                            <TableCell className="text-right font-mono text-sm text-cyan-700 dark:text-cyan-400">
+                              €{(() => {
+                                const totalLanding = viewShipmentDetails.items.reduce((sum: number, item: any) => 
+                                  sum + (parseFloat(item.unitPrice || 0) * (item.quantity || 1)), 0
+                                ) + totalShipping;
+                                return convertCurrency(totalLanding, currency as Currency, 'EUR').toFixed(2);
+                              })()}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-sm text-cyan-700 dark:text-cyan-400">
+                              {(() => {
+                                const totalLanding = viewShipmentDetails.items.reduce((sum: number, item: any) => 
+                                  sum + (parseFloat(item.unitPrice || 0) * (item.quantity || 1)), 0
+                                ) + totalShipping;
+                                return convertCurrency(totalLanding, currency as Currency, 'CZK').toFixed(0);
+                              })()} Kč
+                            </TableCell>
                           </TableRow>
                         </TableBody>
                       </Table>
                     </div>
                     <p className="text-xs text-muted-foreground px-1">
-                      💡 Shipping cost allocated proportionally across {totalItems} units. Retail prices default to 50% markup (editable).
+                      💡 Shipping cost allocated proportionally across {totalItems} units. Landing costs converted to EUR and CZK for your European markets.
                     </p>
                   </div>
                 )}
