@@ -309,6 +309,24 @@ export default function ItemsToStore() {
     receiptData.items && receiptData.items.length > 0
   ) || [];
 
+  // Get shipment ID from pricing receipt
+  const selectedReceiptData = receiptsWithItems.find((r: ReceiptWithItems) => r.receipt.id === pricingReceiptId);
+  const shipmentIdForPreview = selectedReceiptData?.shipment?.id;
+
+  // Fetch landing cost preview based on selected allocation method
+  const { data: landingCostPreview, isLoading: isLoadingPreview } = useQuery<any>({
+    queryKey: ['/api/imports/shipments', shipmentIdForPreview, 'landing-cost-preview', allocationMethod],
+    enabled: !!shipmentIdForPreview && showPricingSheet,
+    queryFn: async () => {
+      // For AUTO method, use the default preview endpoint
+      if (allocationMethod === 'AUTO') {
+        return apiRequest('GET', `/api/imports/shipments/${shipmentIdForPreview}/landing-cost-preview`);
+      }
+      // For specific methods, use the method-specific endpoint
+      return apiRequest('GET', `/api/imports/shipments/${shipmentIdForPreview}/landing-cost-preview/${allocationMethod}`);
+    }
+  });
+
   // Initialize items from receipt data
   useEffect(() => {
     if (receiptsWithItems.length > 0) {
@@ -2060,54 +2078,95 @@ export default function ItemsToStore() {
                 </div>
 
                 {/* Allocation Method Selector */}
-                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-950/30 dark:to-blue-950/30 rounded-lg border border-cyan-200 dark:border-cyan-800">
-                  <div className="flex items-center gap-2">
-                    <Calculator className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-                    <div>
-                      <p className="text-xs font-medium text-cyan-900 dark:text-cyan-100">Cost Allocation Method</p>
-                      <p className="text-[10px] text-cyan-700 dark:text-cyan-300">How shipping costs are distributed</p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-950/30 dark:to-blue-950/30 rounded-lg border border-cyan-200 dark:border-cyan-800">
+                    <div className="flex items-center gap-2">
+                      <Calculator className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                      <div>
+                        <p className="text-xs font-medium text-cyan-900 dark:text-cyan-100">Cost Allocation Method</p>
+                        <p className="text-[10px] text-cyan-700 dark:text-cyan-300">How shipping costs are distributed</p>
+                      </div>
+                    </div>
+                    <Select 
+                      value={allocationMethod} 
+                      onValueChange={(value: 'AUTO' | 'WEIGHT' | 'VALUE' | 'UNITS' | 'HYBRID') => setAllocationMethod(value)}
+                    >
+                      <SelectTrigger className="h-8 w-[140px] text-xs bg-white dark:bg-slate-900" data-testid="select-allocation-method">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="AUTO">
+                          <div className="flex items-center gap-2">
+                            <Zap className="h-3 w-3 text-cyan-500" />
+                            <span>Auto-Select</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="WEIGHT">
+                          <div className="flex items-center gap-2">
+                            <Package className="h-3 w-3" />
+                            <span>By Weight</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="VALUE">
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="h-3 w-3" />
+                            <span>By Value</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="UNITS">
+                          <div className="flex items-center gap-2">
+                            <Hash className="h-3 w-3" />
+                            <span>By Units</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="HYBRID">
+                          <div className="flex items-center gap-2">
+                            <Layers className="h-3 w-3" />
+                            <span>Hybrid</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Method Description */}
+                  <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900/30 rounded-lg border border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[11px] text-slate-700 dark:text-slate-300 flex-1">
+                        {allocationMethod === 'AUTO' && (
+                          <span>
+                            <strong className="text-cyan-700 dark:text-cyan-400">Auto-Select:</strong> System automatically chooses the best method based on shipment type (boxes/pallets/containers)
+                          </span>
+                        )}
+                        {allocationMethod === 'WEIGHT' && (
+                          <span>
+                            <strong className="text-cyan-700 dark:text-cyan-400">Weight-Based:</strong> Costs allocated proportionally by item weight — heavier items bear more shipping cost
+                          </span>
+                        )}
+                        {allocationMethod === 'VALUE' && (
+                          <span>
+                            <strong className="text-cyan-700 dark:text-cyan-400">Value-Based:</strong> Costs allocated proportionally by item value — more expensive items bear more shipping cost
+                          </span>
+                        )}
+                        {allocationMethod === 'UNITS' && (
+                          <span>
+                            <strong className="text-cyan-700 dark:text-cyan-400">Unit-Based:</strong> Costs distributed equally across all units — each item gets the same shipping cost
+                          </span>
+                        )}
+                        {allocationMethod === 'HYBRID' && (
+                          <span>
+                            <strong className="text-cyan-700 dark:text-cyan-400">Hybrid:</strong> Combines weight, value, and unit factors for balanced cost distribution
+                          </span>
+                        )}
+                      </p>
+                      {isLoadingPreview && (
+                        <Badge variant="secondary" className="text-[10px] flex items-center gap-1">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Loading preview
+                        </Badge>
+                      )}
                     </div>
                   </div>
-                  <Select 
-                    value={allocationMethod} 
-                    onValueChange={(value: 'AUTO' | 'WEIGHT' | 'VALUE' | 'UNITS' | 'HYBRID') => setAllocationMethod(value)}
-                  >
-                    <SelectTrigger className="h-8 w-[140px] text-xs bg-white dark:bg-slate-900">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="AUTO">
-                        <div className="flex items-center gap-2">
-                          <Zap className="h-3 w-3 text-cyan-500" />
-                          <span>Auto-Select</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="WEIGHT">
-                        <div className="flex items-center gap-2">
-                          <Package className="h-3 w-3" />
-                          <span>By Weight</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="VALUE">
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="h-3 w-3" />
-                          <span>By Value</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="UNITS">
-                        <div className="flex items-center gap-2">
-                          <Hash className="h-3 w-3" />
-                          <span>By Units</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="HYBRID">
-                        <div className="flex items-center gap-2">
-                          <Layers className="h-3 w-3" />
-                          <span>Hybrid</span>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
 
                 {/* Comprehensive Pricing Table */}
