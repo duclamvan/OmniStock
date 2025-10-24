@@ -1058,18 +1058,19 @@ export default function InternationalTransit() {
                         type="number"
                         min="1"
                         required
-                        defaultValue={selectedShipment?.totalUnits || '1'}
+                        defaultValue={selectedShipment?.totalUnits || selectedPendingShipment?.itemCount || '1'}
                         data-testid="input-total-units"
                         placeholder="1"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="unitType">Unit Type</Label>
-                      <Select name="unitType" defaultValue={selectedShipment?.unitType || 'cartons'}>
+                      <Select name="unitType" defaultValue={selectedShipment?.unitType || selectedPendingShipment?.unitType || 'cartons'}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="cartons">Cartons</SelectItem>
                           <SelectItem value="boxes">Boxes</SelectItem>
                           <SelectItem value="pallets">Pallets</SelectItem>
                           <SelectItem value="bags">Bags</SelectItem>
@@ -1143,13 +1144,13 @@ export default function InternationalTransit() {
                         type="number" 
                         step="0.01" 
                         data-testid="input-shipping-cost"
-                        defaultValue={selectedShipment?.shippingCost || ''}
+                        defaultValue={selectedShipment?.shippingCost || selectedPendingShipment?.shippingCost || ''}
                         placeholder="0.00"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="shippingCostCurrency">Currency</Label>
-                      <Select name="shippingCostCurrency" defaultValue={selectedShipment?.shippingCostCurrency || 'USD'}>
+                      <Select name="shippingCostCurrency" defaultValue={selectedShipment?.shippingCostCurrency || selectedPendingShipment?.shippingCostCurrency || 'USD'}>
                         <SelectTrigger data-testid="select-currency">
                           <SelectValue placeholder="Select currency" />
                         </SelectTrigger>
