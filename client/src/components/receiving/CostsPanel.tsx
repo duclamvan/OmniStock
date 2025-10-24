@@ -154,11 +154,12 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
             } else {
               throw new Error('Calculation failed');
             }
-          } catch (calcError) {
+          } catch (calcError: any) {
             console.error('Failed to auto-calculate landing costs:', calcError);
             toast({
-              title: "Freight Cost Added",
-              description: `Shipping cost of ${formatCurrency(freightCost.amountOriginal, freightCost.currency)} added. Click Recalculate to allocate costs to items.`
+              title: "Warning",
+              description: `Freight cost added but calculation failed: ${calcError.message || 'Unknown error'}. Please try refreshing the page.`,
+              variant: "destructive"
             });
           }
           
@@ -193,8 +194,13 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
           title: "Updated",
           description: "Cost deleted and landing costs recalculated"
         });
-      } catch (error) {
+      } catch (error: any) {
         console.error('Auto-calculation failed:', error);
+        toast({
+          title: "Warning",
+          description: `Cost deleted but calculation failed: ${error.message || 'Unknown error'}. Please try refreshing the page.`,
+          variant: "destructive"
+        });
       }
       
       queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/costs`] });
@@ -651,11 +657,12 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                 title: "Cost Saved",
                 description: "Landing costs recalculated automatically"
               });
-            } catch (error) {
+            } catch (error: any) {
               console.error('Auto-calculation failed:', error);
               toast({
-                title: "Cost Saved",
-                description: "Cost saved but calculation failed"
+                title: "Warning",
+                description: `Cost saved but calculation failed: ${error.message || 'Unknown error'}. Please try refreshing the page.`,
+                variant: "destructive"
               });
             }
             
