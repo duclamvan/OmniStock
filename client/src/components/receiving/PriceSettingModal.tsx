@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Package, DollarSign, CheckCircle, AlertCircle } from "lucide-react";
+import { Package, DollarSign, CheckCircle, AlertCircle, Repeat } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { convertCurrency, formatCurrency } from "@/lib/currencyUtils";
 
 interface ReceiptItem {
   id: number;
@@ -43,6 +45,7 @@ export default function PriceSettingModal({
   const [approvedBy, setApprovedBy] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [displayCurrency, setDisplayCurrency] = useState<'EUR' | 'CZK'>('EUR');
 
   // Initialize and fetch existing prices when modal opens
   useEffect(() => {
@@ -195,64 +198,82 @@ export default function PriceSettingModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="text-xl flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
-            Set Selling Prices Before Approval
-          </DialogTitle>
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-lg flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Set Selling Prices Before Approval
+            </DialogTitle>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Landing Cost:</span>
+              <Select value={displayCurrency} onValueChange={(val) => setDisplayCurrency(val as 'EUR' | 'CZK')}>
+                <SelectTrigger className="w-24 h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="EUR">EUR (€)</SelectItem>
+                  <SelectItem value="CZK">CZK (Kč)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto px-1">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <span className="ml-2">Loading existing prices...</span>
+              <span className="ml-2 text-sm">Loading existing prices...</span>
             </div>
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[35%]">Item</TableHead>
-                  <TableHead className="text-right">Landing Cost</TableHead>
-                  <TableHead>Selling Price CZK</TableHead>
-                  <TableHead>Selling Price EUR</TableHead>
+                <TableRow className="text-xs">
+                  <TableHead className="w-[30%] py-2">Item</TableHead>
+                  <TableHead className="text-center w-[60px] py-2">Qty</TableHead>
+                  <TableHead className="text-right w-[100px] py-2">Landing Cost</TableHead>
+                  <TableHead className="w-[140px] py-2">Price CZK</TableHead>
+                  <TableHead className="w-[140px] py-2">Price EUR</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {items.map((item) => {
                   const prices = itemPrices[item.itemId] || { priceCzk: '', priceEur: '', exists: false };
-                  const landingCost = parseFloat(item.details?.latestLandingCost || '0');
+                  const landingCostEur = parseFloat(item.details?.latestLandingCost || '0');
+                  const landingCostDisplay = displayCurrency === 'CZK' 
+                    ? convertCurrency(landingCostEur, 'EUR', 'CZK')
+                    : landingCostEur;
                   
                   return (
-                    <TableRow key={item.itemId}>
-                      <TableCell>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium">{item.details?.name}</p>
-                            <Badge variant="secondary" className="text-xs">
-                              Qty: {item.receivedQuantity}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            {item.details?.sku && (
-                              <span className="text-sm text-muted-foreground">
-                                SKU: {item.details.sku}
-                              </span>
-                            )}
+                    <TableRow key={item.itemId} className="text-xs">
+                      <TableCell className="py-2">
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-medium text-xs">{item.details?.name}</span>
                             {prices.exists && (
-                              <Badge variant="outline" className="text-xs">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Existing
+                              <Badge variant="outline" className="text-[10px] px-1 py-0">
+                                <CheckCircle className="h-2.5 w-2.5 mr-0.5" />
+                                Exists
                               </Badge>
                             )}
                           </div>
+                          {item.details?.sku && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {item.details.sku}
+                            </span>
+                          )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right font-medium">
-                        ${landingCost.toFixed(2)}
+                      <TableCell className="text-center py-2">
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                          {item.receivedQuantity}
+                        </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-right font-medium py-2 text-cyan-700 dark:text-cyan-400">
+                        {formatCurrency(landingCostDisplay, displayCurrency)}
+                      </TableCell>
+                      <TableCell className="py-2">
                         <div className="relative">
                           <Input
                             type="number"
@@ -260,15 +281,15 @@ export default function PriceSettingModal({
                             value={prices.priceCzk}
                             onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceCzk', e.target.value)}
                             placeholder="0.00"
-                            className="pr-10"
+                            className="h-8 text-xs pr-8"
                             data-testid={`input-price-czk-${item.itemId}`}
                           />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                             Kč
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-2">
                         <div className="relative">
                           <Input
                             type="number"
@@ -276,10 +297,10 @@ export default function PriceSettingModal({
                             value={prices.priceEur}
                             onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceEur', e.target.value)}
                             placeholder="0.00"
-                            className="pr-10"
+                            className="h-8 text-xs pr-8"
                             data-testid={`input-price-eur-${item.itemId}`}
                           />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                             €
                           </span>
                         </div>
@@ -291,74 +312,62 @@ export default function PriceSettingModal({
             </Table>
           )}
           
-          {/* Summary */}
-          <div className="mt-6 p-4 bg-muted rounded-lg">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold flex items-center gap-2">
-                <Package className="h-4 w-4" />
-                Summary
-              </h3>
-            </div>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">Items to add:</span>
-                <span className="ml-2 font-medium">{getItemsToAddCount()} new items</span>
+          {/* Compact Summary & Approver */}
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                <h3 className="text-xs font-semibold">Summary</h3>
               </div>
-              <div>
-                <span className="text-muted-foreground">Items to update:</span>
-                <span className="ml-2 font-medium">{getItemsToUpdateCount()} existing items</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Total items:</span>
-                <span className="ml-2 font-medium">{items.length} items</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Total quantity:</span>
-                <span className="ml-2 font-medium">
-                  {items.reduce((sum, item) => sum + item.receivedQuantity, 0)} units
-                </span>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                <div className="text-muted-foreground">New items:</div>
+                <div className="font-medium">{getItemsToAddCount()}</div>
+                <div className="text-muted-foreground">Existing:</div>
+                <div className="font-medium">{getItemsToUpdateCount()}</div>
+                <div className="text-muted-foreground">Total units:</div>
+                <div className="font-medium">{items.reduce((sum, item) => sum + item.receivedQuantity, 0)}</div>
               </div>
             </div>
-          </div>
-          
-          {/* Approver Name Input */}
-          <div className="mt-6">
-            <label className="text-sm font-medium mb-2 block">
-              Your Name (for approval record)
-            </label>
-            <Input
-              value={approvedBy}
-              onChange={(e) => setApprovedBy(e.target.value)}
-              placeholder="Enter your name"
-              data-testid="input-approver-name"
-            />
+            
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <label className="text-xs font-semibold mb-2 block">
+                Approver Name
+              </label>
+              <Input
+                value={approvedBy}
+                onChange={(e) => setApprovedBy(e.target.value)}
+                placeholder="Enter your name"
+                className="h-8 text-xs"
+                data-testid="input-approver-name"
+              />
+            </div>
           </div>
         </div>
         
-        <DialogFooter className="border-t pt-4 mt-4">
+        <DialogFooter className="border-t pt-3 mt-3">
           {!allPricesSet() && (
-            <div className="flex items-center gap-2 mr-auto text-sm text-orange-600">
-              <AlertCircle className="h-4 w-4" />
+            <div className="flex items-center gap-1.5 mr-auto text-xs text-orange-600">
+              <AlertCircle className="h-3.5 w-3.5" />
               Please set all prices before approving
             </div>
           )}
-          <Button variant="outline" onClick={onClose} disabled={saving}>
+          <Button variant="outline" onClick={onClose} disabled={saving} className="h-9 text-xs">
             Cancel
           </Button>
           <Button
             onClick={handleSaveAndApprove}
             disabled={!allPricesSet() || !approvedBy || saving}
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-green-600 hover:bg-green-700 h-9 text-xs"
             data-testid="button-approve-save-prices"
           >
             {saving ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white mr-2"></div>
                 Saving...
               </>
             ) : (
               <>
-                <CheckCircle className="h-4 w-4 mr-2" />
+                <CheckCircle className="h-3.5 w-3.5 mr-2" />
                 Approve & Save Prices
               </>
             )}
