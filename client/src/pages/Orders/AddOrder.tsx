@@ -1531,61 +1531,66 @@ export default function AddOrder() {
                       </Select>
                     </div>
                   </div>
-                  <div>
-                    <Label htmlFor="orderStatus-mobile" className="text-xs">Status</Label>
-                    <Select value={form.watch('orderStatus')} onValueChange={(value) => form.setValue('orderStatus', value as any)}>
-                      <SelectTrigger className="mt-1 h-9 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-orange-500 rounded-full" />
-                            Pending
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="to_fulfill">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-blue-500 rounded-full" />
-                            To Fulfill
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="shipped">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-green-500 rounded-full" />
-                            Shipped
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="paymentStatus-mobile" className="text-xs">Payment Status</Label>
-                    <Select value={form.watch('paymentStatus')} onValueChange={(value) => form.setValue('paymentStatus', value as any)}>
-                      <SelectTrigger className="mt-1 h-9 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-orange-500 rounded-full" />
-                            Pending
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="paid">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-green-500 rounded-full" />
-                            Paid
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="pay_later">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-blue-500 rounded-full" />
-                            Pay Later
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+
+                  {/* Order Status and Payment Status side by side */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label htmlFor="orderStatus-mobile" className="text-xs">Order Status</Label>
+                      <Select value={form.watch('orderStatus')} onValueChange={(value) => form.setValue('orderStatus', value as any)}>
+                        <SelectTrigger className="mt-1 h-9 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 bg-orange-500 rounded-full" />
+                              Pending
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="to_fulfill">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 bg-blue-500 rounded-full" />
+                              To Fulfill
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="shipped">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 bg-green-500 rounded-full" />
+                              Shipped
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="paymentStatus-mobile" className="text-xs">Payment Status</Label>
+                      <Select value={form.watch('paymentStatus')} onValueChange={(value) => form.setValue('paymentStatus', value as any)}>
+                        <SelectTrigger className="mt-1 h-9 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 bg-orange-500 rounded-full" />
+                              Pending
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="paid">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 bg-green-500 rounded-full" />
+                              Paid
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="pay_later">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 bg-blue-500 rounded-full" />
+                              Pay Later
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -4032,51 +4037,53 @@ export default function AddOrder() {
                         </div>
                       </div>
 
-                      <div>
-                        <Label htmlFor="orderStatus" className="text-xs">Status</Label>
-                        <Select value={form.watch('orderStatus')} onValueChange={(value) => form.setValue('orderStatus', value as any)}>
-                          <SelectTrigger className="mt-1 h-8 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 bg-orange-500 rounded-full" />
-                                Pending
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="to_fulfill">
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 bg-blue-500 rounded-full" />
-                                To Fulfill
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="shipped">
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 bg-green-500 rounded-full" />
-                                Shipped
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      {/* Order Status and Payment Status side by side */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="orderStatus" className="text-xs">Order Status</Label>
+                          <Select value={form.watch('orderStatus')} onValueChange={(value) => form.setValue('orderStatus', value as any)}>
+                            <SelectTrigger className="mt-1 h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 bg-orange-500 rounded-full" />
+                                  Pending
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="to_fulfill">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 bg-blue-500 rounded-full" />
+                                  To Fulfill
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="shipped">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 bg-green-500 rounded-full" />
+                                  Shipped
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                      <div>
-                        <Label htmlFor="paymentStatus" className="text-xs">Payment Status</Label>
-                        <Select value={form.watch('paymentStatus')} onValueChange={(value) => form.setValue('paymentStatus', value as any)}>
-                          <SelectTrigger className="mt-1 h-8 text-xs" data-testid="select-payment-status">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 bg-orange-500 rounded-full" />
-                                Pending
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="paid">
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 bg-green-500 rounded-full" />
+                        <div>
+                          <Label htmlFor="paymentStatus" className="text-xs">Payment Status</Label>
+                          <Select value={form.watch('paymentStatus')} onValueChange={(value) => form.setValue('paymentStatus', value as any)}>
+                            <SelectTrigger className="mt-1 h-8 text-xs" data-testid="select-payment-status">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 bg-orange-500 rounded-full" />
+                                  Pending
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="paid">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 bg-green-500 rounded-full" />
                                 Paid
                               </div>
                             </SelectItem>
@@ -4087,7 +4094,8 @@ export default function AddOrder() {
                               </div>
                             </SelectItem>
                           </SelectContent>
-                        </Select>
+                          </Select>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
