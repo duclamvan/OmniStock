@@ -137,7 +137,10 @@ export function ShippingAddressModal({
   // Auto-generate label from address fields
   useEffect(() => {
     if (!isLabelManuallyEdited) {
-      const subscription = form.watch((value) => {
+      const subscription = form.watch((value, { name }) => {
+        // Don't react to label changes to avoid infinite loops
+        if (name === 'label') return;
+        
         const parts = [];
         
         if (value.company) {
@@ -155,7 +158,7 @@ export function ShippingAddressModal({
         }
         
         const autoLabel = parts.filter(Boolean).join(', ');
-        if (autoLabel && !isLabelManuallyEdited) {
+        if (autoLabel && autoLabel !== value.label) {
           form.setValue('label', autoLabel, { shouldValidate: false });
         }
       });
@@ -398,26 +401,26 @@ export function ShippingAddressModal({
             </div>
           </div>
 
-          {/* City, Postal, Country */}
+          {/* European Layout: Postal Code, City, Country */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="city">City</Label>
-              <Input
-                id="city"
-                {...form.register('city')}
-                placeholder="City"
-                className={cn(getConfidenceClass('city', fieldConfidence))}
-                data-testid="input-city"
-              />
-            </div>
             <div>
               <Label htmlFor="zipCode">Postal Code</Label>
               <Input
                 id="zipCode"
                 {...form.register('zipCode')}
-                placeholder="12345"
+                placeholder="110 00"
                 className={cn(getConfidenceClass('zipCode', fieldConfidence))}
                 data-testid="input-postal-code"
+              />
+            </div>
+            <div>
+              <Label htmlFor="city">City</Label>
+              <Input
+                id="city"
+                {...form.register('city')}
+                placeholder="Prague"
+                className={cn(getConfidenceClass('city', fieldConfidence))}
+                data-testid="input-city"
               />
             </div>
             <div>

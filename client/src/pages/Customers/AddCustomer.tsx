@@ -1949,23 +1949,23 @@ export default function AddCustomer() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="shippingCity">City</Label>
-                      <Input
-                        id="shippingCity"
-                        {...shippingForm.register('city')}
-                        placeholder="City"
-                        className={cn(getConfidenceClass('city', shippingFieldConfidence))}
-                        data-testid="input-shippingCity"
-                      />
-                    </div>
-                    <div>
                       <Label htmlFor="shippingZipCode">Postal Code</Label>
                       <Input
                         id="shippingZipCode"
                         {...shippingForm.register('zipCode')}
-                        placeholder="12345"
+                        placeholder="110 00"
                         className={cn(getConfidenceClass('zipCode', shippingFieldConfidence))}
                         data-testid="input-shippingZipCode"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="shippingCity">City</Label>
+                      <Input
+                        id="shippingCity"
+                        {...shippingForm.register('city')}
+                        placeholder="Prague"
+                        className={cn(getConfidenceClass('city', shippingFieldConfidence))}
+                        data-testid="input-shippingCity"
                       />
                     </div>
                     <div>
@@ -2329,23 +2329,23 @@ export default function AddCustomer() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="billingCity">City</Label>
-                      <Input
-                        id="billingCity"
-                        {...billingAddressForm.register('city')}
-                        placeholder="City"
-                        className={cn(getConfidenceClass('city', billingAddressFieldConfidence))}
-                        data-testid="input-billingCity"
-                      />
-                    </div>
-                    <div>
                       <Label htmlFor="billingZipCode">Postal Code</Label>
                       <Input
                         id="billingZipCode"
                         {...billingAddressForm.register('zipCode')}
-                        placeholder="12345"
+                        placeholder="110 00"
                         className={cn(getConfidenceClass('zipCode', billingAddressFieldConfidence))}
                         data-testid="input-billingZipCode"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="billingCity">City</Label>
+                      <Input
+                        id="billingCity"
+                        {...billingAddressForm.register('city')}
+                        placeholder="Prague"
+                        className={cn(getConfidenceClass('city', billingAddressFieldConfidence))}
+                        data-testid="input-billingCity"
                       />
                     </div>
                     <div>
