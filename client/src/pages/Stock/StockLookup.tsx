@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Package, MapPin, DollarSign, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers } from "lucide-react";
+import { Search, Package, MapPin, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers } from "lucide-react";
 import { Link } from "wouter";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCurrency } from "@/lib/currencyUtils";
@@ -282,13 +282,20 @@ export default function StockLookup() {
 
                       {/* Quick Info Row */}
                       <div className="mt-3 flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-1 text-green-600 dark:text-green-400 font-semibold">
-                          <DollarSign className="h-4 w-4" />
-                          <span data-testid={`text-price-${product.id}`}>
-                            {priceCzk > 0 ? formatCurrency(priceCzk, 'CZK') : 
-                             priceEur > 0 ? formatCurrency(priceEur, 'EUR') : 
-                             'N/A'}
-                          </span>
+                        <div className="flex flex-col gap-1">
+                          {priceCzk > 0 && (
+                            <span className="text-green-600 dark:text-green-400 font-semibold" data-testid={`text-price-czk-${product.id}`}>
+                              {formatCurrency(priceCzk, 'CZK')}
+                            </span>
+                          )}
+                          {priceEur > 0 && (
+                            <span className="text-blue-600 dark:text-blue-400 font-semibold" data-testid={`text-price-eur-${product.id}`}>
+                              {formatCurrency(priceEur, 'EUR')}
+                            </span>
+                          )}
+                          {!priceCzk && !priceEur && (
+                            <span className="text-gray-500 dark:text-gray-400">N/A</span>
+                          )}
                         </div>
                         
                         {displayProduct.locations && displayProduct.locations.length > 0 && (
