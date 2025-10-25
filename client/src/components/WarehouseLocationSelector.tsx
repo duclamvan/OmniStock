@@ -60,7 +60,10 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
   const [bin, setBin] = useState("B1");
   const [zone, setZone] = useState("B01");
   const [position, setPosition] = useState("P01");
-  const [manualEntry, setManualEntry] = useState(false);
+  const [manualEntry, setManualEntry] = useState(() => {
+    const stored = localStorage.getItem('warehouse-location-manual-entry');
+    return stored === 'true';
+  });
   const [manualCode, setManualCode] = useState("");
   const [isValid, setIsValid] = useState(true);
   const [isOldFormat, setIsOldFormat] = useState(false);
@@ -209,7 +212,11 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
   }, []);
 
   const handleToggleManualEntry = useCallback(() => {
-    setManualEntry(prev => !prev);
+    setManualEntry(prev => {
+      const newValue = !prev;
+      localStorage.setItem('warehouse-location-manual-entry', String(newValue));
+      return newValue;
+    });
   }, []);
 
   const handleWarehouseChange = useCallback((value: string) => {
