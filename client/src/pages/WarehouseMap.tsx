@@ -22,11 +22,18 @@ interface ProductLocation {
   notes: string;
 }
 
+interface AisleConfig {
+  maxRacks: number;
+  maxLevels: number;
+  maxBins: number;
+}
+
 interface WarehouseConfig {
   totalAisles: number;
   maxRacks: number;
   maxLevels: number;
   maxBins: number;
+  aisleConfigs?: Record<string, AisleConfig>;
 }
 
 interface LocationStats {
@@ -45,9 +52,12 @@ export default function WarehouseMap() {
   const [maxRacks, setMaxRacks] = useState(10);
   const [maxLevels, setMaxLevels] = useState(5);
   const [maxBins, setMaxBins] = useState(5);
+  const [aisleConfigs, setAisleConfigs] = useState<Record<string, AisleConfig>>({});
   const [selectedLocation, setSelectedLocation] = useState<LocationStats | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [savingAisles, setSavingAisles] = useState<Set<string>>(new Set());
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const aisleSaveTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
 
   // Fetch warehouses
   const { data: warehouses, isLoading: warehousesLoading } = useQuery<any[]>({
@@ -71,31 +81,37 @@ export default function WarehouseMap() {
     },
   });
 
-  // Update configuration mutation
-  const updateConfigMutation = useMutation({
-    mutationFn: async (config: WarehouseConfig) => {
-      const response = await fetch(`/api/warehouses/${selectedWarehouseId}/map-config`, {
+  // Update per-aisle configuration mutation
+  const updateAisleConfigMutation = useMutation({
+    mutationFn: async ({ aisleId, config }: { aisleId: string; config: AisleConfig }) => {
+      const response = await fetch(`/api/warehouses/${selectedWarehouseId}/aisle-config/${aisleId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config),
       });
       if (!response.ok) {
-        throw new Error('Failed to save configuration');
+        throw new Error('Failed to save aisle configuration');
       }
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/warehouses', selectedWarehouseId, 'map-config'] });
-      toast({
-        title: "Configuration saved",
-        description: "Warehouse map configuration has been updated.",
+    onSuccess: (data, variables) => {
+      setSavingAisles(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(variables.aisleId);
+        return newSet;
       });
+      queryClient.invalidateQueries({ queryKey: ['/api/warehouses', selectedWarehouseId, 'map-config'] });
     },
-    onError: (error) => {
-      console.error('Error saving configuration:', error);
+    onError: (error, variables) => {
+      console.error('Error saving aisle configuration:', error);
+      setSavingAisles(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(variables.aisleId);
+        return newSet;
+      });
       toast({
         title: "Error",
-        description: "Failed to save warehouse configuration.",
+        description: `Failed to save aisle ${variables.aisleId} configuration.`,
         variant: "destructive",
       });
     },
@@ -123,52 +139,41 @@ export default function WarehouseMap() {
       setMaxRacks(warehouseConfig.maxRacks);
       setMaxLevels(warehouseConfig.maxLevels);
       setMaxBins(warehouseConfig.maxBins);
+      setAisleConfigs(warehouseConfig.aisleConfigs || {});
     }
   }, [warehouseConfig]);
 
-  // Debounced save function (Fix Issue 3)
-  const debouncedSave = useCallback((config: WarehouseConfig) => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
+  // Debounced save function for per-aisle configuration
+  const debouncedAisleSave = useCallback((aisleId: string, config: AisleConfig) => {
+    // Clear existing timeout for this aisle
+    if (aisleSaveTimeouts.current[aisleId]) {
+      clearTimeout(aisleSaveTimeouts.current[aisleId]);
     }
 
+    // Mark aisle as saving
+    setSavingAisles(prev => new Set(prev).add(aisleId));
+
+    // Set new timeout
     const timeout = setTimeout(() => {
-      updateConfigMutation.mutate(config);
+      updateAisleConfigMutation.mutate({ aisleId, config });
+      delete aisleSaveTimeouts.current[aisleId];
     }, 500);
 
-    saveTimeoutRef.current = timeout;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    aisleSaveTimeouts.current[aisleId] = timeout;
+  }, [updateAisleConfigMutation]);
 
-  // Handle configuration changes with debouncing
-  const handleConfigChange = useCallback((field: keyof WarehouseConfig, value: number) => {
-    const newConfig = {
-      totalAisles,
-      maxRacks,
-      maxLevels,
-      maxBins,
-      [field]: value,
-    };
-
-    // Update local state immediately
-    switch (field) {
-      case 'totalAisles':
-        setTotalAisles(value);
-        break;
-      case 'maxRacks':
-        setMaxRacks(value);
-        break;
-      case 'maxLevels':
-        setMaxLevels(value);
-        break;
-      case 'maxBins':
-        setMaxBins(value);
-        break;
-    }
-
-    // Save to backend with debouncing
-    debouncedSave(newConfig);
-  }, [totalAisles, maxRacks, maxLevels, maxBins, debouncedSave]);
+  // Handle aisle configuration changes
+  const handleAisleConfigChange = useCallback((aisleId: string, field: keyof AisleConfig, value: number) => {
+    setAisleConfigs(prev => {
+      const current = prev[aisleId] || { maxRacks, maxLevels, maxBins };
+      const updated = { ...current, [field]: value };
+      
+      // Save with debouncing
+      debouncedAisleSave(aisleId, updated);
+      
+      return { ...prev, [aisleId]: updated };
+    });
+  }, [maxRacks, maxLevels, maxBins, debouncedAisleSave]);
 
   // Parse location code to extract aisle and rack (Fix Issue 2)
   const parseLocationCode = (locationCode: string) => {
@@ -287,12 +292,15 @@ export default function WarehouseMap() {
     allAislesToDisplay.forEach(aisleCode => {
       const row: LocationStats[] = [];
       
-      for (let r = 1; r <= maxRacks; r++) {
+      // Use per-aisle config if available, otherwise use global config
+      const aisleConfig = aisleConfigs[aisleCode] || { maxRacks, maxLevels, maxBins };
+      
+      for (let r = 1; r <= aisleConfig.maxRacks; r++) {
         const rackCode = `R${String(r).padStart(2, '0')}`;
         const key = `${aisleCode}-${rackCode}`;
         const data = locationMap.get(key);
 
-        const maxCapacity = maxLevels * maxBins * 100; // Assume 100 units per bin max
+        const maxCapacity = aisleConfig.maxLevels * aisleConfig.maxBins * 100; // Assume 100 units per bin max
         const totalQuantity = data?.totalQuantity || 0;
         const occupancyPercent = maxCapacity > 0 ? (totalQuantity / maxCapacity) * 100 : 0;
 
@@ -310,7 +318,7 @@ export default function WarehouseMap() {
     });
 
     return grid;
-  }, [productLocations, totalAisles, maxRacks, maxLevels, maxBins]);
+  }, [productLocations, totalAisles, maxRacks, maxLevels, maxBins, aisleConfigs]);
 
   // Get color based on occupancy
   const getOccupancyColor = (percent: number) => {
@@ -397,95 +405,100 @@ export default function WarehouseMap() {
         </CardContent>
       </Card>
 
-      {/* Configuration Panel */}
+      {/* Configuration Panel - Per Aisle */}
       {selectedWarehouseId && (
         <Card className="border-amber-200 dark:border-amber-800">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Layers className="h-4 w-4 text-amber-600" />
-              Layout Configuration
+              Aisle Configuration
             </CardTitle>
           </CardHeader>
           <CardContent>
             {configLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[1, 2, 3, 4].map((i) => (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
                   <Skeleton key={i} className="h-16 w-full" />
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <Label htmlFor="aisles" className="text-xs">Total Aisles</Label>
-                  <Select 
-                    value={totalAisles.toString()} 
-                    onValueChange={(v) => handleConfigChange('totalAisles', parseInt(v))}
-                    data-testid="select-total-aisles"
-                  >
-                    <SelectTrigger id="aisles" className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[3, 4, 5, 6, 8, 10, 12, 15].map(n => (
-                        <SelectItem key={n} value={n.toString()}>{n} aisles</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-4">
+                {/* Generate list of aisles to configure */}
+                {Array.from({ length: totalAisles }, (_, i) => {
+                  const aisleId = `A${String(i + 1).padStart(2, '0')}`;
+                  const config = aisleConfigs[aisleId] || { maxRacks, maxLevels, maxBins };
+                  const isSaving = savingAisles.has(aisleId);
 
-                <div>
-                  <Label htmlFor="racks" className="text-xs">Racks per Aisle</Label>
-                  <Select 
-                    value={maxRacks.toString()} 
-                    onValueChange={(v) => handleConfigChange('maxRacks', parseInt(v))}
-                    data-testid="select-max-racks"
-                  >
-                    <SelectTrigger id="racks" className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[5, 8, 10, 12, 15, 20].map(n => (
-                        <SelectItem key={n} value={n.toString()}>{n} racks</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                  return (
+                    <div key={aisleId} className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-slate-50 dark:bg-slate-900/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+                          Aisle {aisleId}
+                        </h4>
+                        {isSaving && (
+                          <Badge variant="outline" className="text-xs">
+                            Saving...
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <Label htmlFor={`${aisleId}-racks`} className="text-xs">Racks</Label>
+                          <Select 
+                            value={config.maxRacks.toString()} 
+                            onValueChange={(v) => handleAisleConfigChange(aisleId, 'maxRacks', parseInt(v))}
+                            data-testid={`select-${aisleId}-racks`}
+                          >
+                            <SelectTrigger id={`${aisleId}-racks`} className="h-9">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {[5, 8, 10, 12, 15, 20].map(n => (
+                                <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                <div>
-                  <Label htmlFor="levels" className="text-xs">Levels per Rack</Label>
-                  <Select 
-                    value={maxLevels.toString()} 
-                    onValueChange={(v) => handleConfigChange('maxLevels', parseInt(v))}
-                    data-testid="select-max-levels"
-                  >
-                    <SelectTrigger id="levels" className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[3, 4, 5, 6, 8, 10].map(n => (
-                        <SelectItem key={n} value={n.toString()}>{n} levels</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                        <div>
+                          <Label htmlFor={`${aisleId}-levels`} className="text-xs">Levels</Label>
+                          <Select 
+                            value={config.maxLevels.toString()} 
+                            onValueChange={(v) => handleAisleConfigChange(aisleId, 'maxLevels', parseInt(v))}
+                            data-testid={`select-${aisleId}-levels`}
+                          >
+                            <SelectTrigger id={`${aisleId}-levels`} className="h-9">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {[3, 4, 5, 6, 8, 10].map(n => (
+                                <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                <div>
-                  <Label htmlFor="bins" className="text-xs">Bins per Level</Label>
-                  <Select 
-                    value={maxBins.toString()} 
-                    onValueChange={(v) => handleConfigChange('maxBins', parseInt(v))}
-                    data-testid="select-max-bins"
-                  >
-                    <SelectTrigger id="bins" className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[2, 3, 4, 5, 6, 8].map(n => (
-                        <SelectItem key={n} value={n.toString()}>{n} bins</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                        <div>
+                          <Label htmlFor={`${aisleId}-bins`} className="text-xs">Bins</Label>
+                          <Select 
+                            value={config.maxBins.toString()} 
+                            onValueChange={(v) => handleAisleConfigChange(aisleId, 'maxBins', parseInt(v))}
+                            data-testid={`select-${aisleId}-bins`}
+                          >
+                            <SelectTrigger id={`${aisleId}-bins`} className="h-9">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {[2, 3, 4, 5, 6, 8].map(n => (
+                                <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </CardContent>
