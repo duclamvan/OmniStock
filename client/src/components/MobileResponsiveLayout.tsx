@@ -306,6 +306,13 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
           description: "Items to Store"
         },
         {
+          name: "Stock",
+          href: "/stock",
+          icon: Package,
+          color: "text-indigo-600",
+          description: "Inventory Lookup"
+        },
+        {
           name: "POS",
           href: "/pos",
           icon: Store,
@@ -905,7 +912,8 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                       location.includes('/customers/') || location.includes('/suppliers/') || 
                       location.includes('/discounts/') || location.includes('/services/') || 
                       location.includes('/tickets/') || location.includes('/expenses/') ||
-                      location.includes('/imports/') || location.includes('/receiving/')) && (
+                      location.includes('/imports/') || location.includes('/receiving/') ||
+                      location.includes('/stock')) && (
                       <>
                         <BreadcrumbChevron className="h-3 w-3" />
                         <Link href={
@@ -921,6 +929,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                           location.includes('/expenses') ? '/expenses' :
                           location.includes('/imports') ? '/imports' :
                           location.includes('/receiving') ? '/receiving' :
+                          location.includes('/stock') ? '/stock' :
                           '/'
                         }>
                           <button className="hover:text-foreground transition-colors">
@@ -936,6 +945,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                              location.includes('/expenses') ? 'Expenses' :
                              location.includes('/imports') ? 'Imports' :
                              location.includes('/receiving') ? 'Receiving' :
+                             location.includes('/stock') ? 'Stock' :
                              'Dashboard'}
                           </button>
                         </Link>
@@ -992,6 +1002,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                        location.includes('/receiving/storage') ? 'Items to Store' :
                        location.includes('/receiving/') ? 'Receiving Details' :
                        location.includes('/receiving') ? 'Receiving' :
+                       location.includes('/stock') ? 'Stock Lookup' :
                        'Dashboard'}
                     </span>
                   </>
@@ -1018,6 +1029,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                  location.includes('/reports') ? 'Reports & Analytics' :
                  location.includes('/imports') ? 'Import Management' :
                  location.includes('/receiving') ? 'Receiving & Storage' :
+                 location.includes('/stock') ? 'Stock Lookup' :
                  'Dashboard'}
               </h2>
               <div className="flex-1 max-w-sm ml-2">
