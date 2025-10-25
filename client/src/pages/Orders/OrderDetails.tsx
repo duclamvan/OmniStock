@@ -224,48 +224,262 @@ export default function OrderDetails() {
   };
 
   const handleDownloadInvoice = async () => {
-    if (!invoiceCardRef.current) return;
+    if (!order) return;
     
     try {
-      // Hide interactive elements before capture
-      const elementsToHide = invoiceCardRef.current.querySelectorAll('[data-hide-in-screenshot]');
-      elementsToHide.forEach((el: any) => {
-        el.style.visibility = 'hidden';
-      });
-      
-      // Capture the screenshot
-      const canvas = await html2canvas(invoiceCardRef.current, {
+      // Create a clean HTML invoice
+      const invoiceHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { 
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+              background: white;
+              padding: 40px;
+              width: 1000px;
+            }
+            .invoice-card {
+              background: white;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              overflow: hidden;
+            }
+            .invoice-header {
+              padding: 24px 32px;
+              border-bottom: 2px solid #e2e8f0;
+              background: #f8fafc;
+            }
+            .invoice-title {
+              font-size: 24px;
+              font-weight: 700;
+              color: #0f172a;
+              display: flex;
+              align-items: center;
+              gap: 12px;
+            }
+            .invoice-icon {
+              width: 24px;
+              height: 24px;
+              color: #64748b;
+            }
+            .invoice-body {
+              padding: 0;
+            }
+            .item-row {
+              padding: 24px 32px;
+              border-bottom: 1px solid #e2e8f0;
+              display: flex;
+              gap: 16px;
+              align-items: start;
+            }
+            .item-image {
+              width: 56px;
+              height: 56px;
+              border: 1px solid #e2e8f0;
+              border-radius: 6px;
+              background: #f8fafc;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              flex-shrink: 0;
+            }
+            .item-details {
+              flex: 1;
+            }
+            .item-name {
+              font-size: 16px;
+              font-weight: 600;
+              color: #0f172a;
+              margin-bottom: 4px;
+            }
+            .item-sku {
+              font-size: 13px;
+              color: #64748b;
+              margin-bottom: 8px;
+            }
+            .item-qty {
+              font-size: 14px;
+              color: #475569;
+            }
+            .item-qty-value {
+              font-weight: 700;
+              color: #0f172a;
+            }
+            .item-price {
+              text-align: right;
+              font-size: 18px;
+              font-weight: 700;
+              color: #0f172a;
+              flex-shrink: 0;
+            }
+            .pricing-section {
+              padding: 32px;
+              border-top: 2px solid #e2e8f0;
+            }
+            .price-row {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 16px;
+            }
+            .price-label {
+              font-size: 15px;
+              font-weight: 500;
+              color: #475569;
+            }
+            .price-value {
+              font-size: 15px;
+              font-weight: 600;
+              color: #0f172a;
+            }
+            .price-separator {
+              height: 2px;
+              background: #cbd5e1;
+              margin: 20px 0;
+            }
+            .total-row {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding-top: 8px;
+            }
+            .total-label {
+              font-size: 20px;
+              font-weight: 700;
+              color: #0f172a;
+            }
+            .total-value {
+              font-size: 24px;
+              font-weight: 700;
+              color: #0f172a;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="invoice-card">
+            <div class="invoice-header">
+              <div class="invoice-title">
+                <svg class="invoice-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                </svg>
+                Invoice
+              </div>
+            </div>
+            <div class="invoice-body">
+              ${order.items?.map((item: any) => `
+                <div class="item-row">
+                  <div class="item-image">
+                    ${item.image ? `<img src="${item.image}" style="width: 100%; height: 100%; object-fit: contain;" />` : `
+                      <svg style="width: 32px; height: 32px; color: #cbd5e1;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                      </svg>
+                    `}
+                  </div>
+                  <div class="item-details">
+                    <div class="item-name">${item.productName}</div>
+                    <div class="item-sku">SKU: ${item.sku}</div>
+                    <div class="item-qty">
+                      Qty: <span class="item-qty-value">${item.quantity}</span>
+                      <span style="color: #64748b; margin: 0 8px;">×</span>
+                      ${formatCurrency(item.unitPrice || item.price || 0, order.currency || 'EUR')}
+                    </div>
+                  </div>
+                  <div class="item-price">
+                    ${formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+            <div class="pricing-section">
+              <div class="price-row">
+                <span class="price-label">Subtotal</span>
+                <span class="price-value">${formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</span>
+              </div>
+              ${order.discountValue > 0 ? `
+                <div class="price-row">
+                  <span class="price-label" style="color: #15803d;">
+                    Discount ${order.discountType === 'rate' ? `(${order.discountValue}%)` : ''}
+                  </span>
+                  <span class="price-value" style="color: #15803d;">
+                    -${formatCurrency(
+                      order.discountType === 'rate' 
+                        ? (order.subtotal * order.discountValue / 100) 
+                        : order.discountValue || 0, 
+                      order.currency || 'EUR'
+                    )}
+                  </span>
+                </div>
+              ` : ''}
+              ${order.taxAmount > 0 ? `
+                <div class="price-row">
+                  <span class="price-label">Tax (${order.taxRate}%)</span>
+                  <span class="price-value">${formatCurrency(order.taxAmount || 0, order.currency || 'EUR')}</span>
+                </div>
+              ` : ''}
+              ${order.shippingCost > 0 ? `
+                <div class="price-row">
+                  <span class="price-label">Shipping (${order.shippingMethod})</span>
+                  <span class="price-value">${formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</span>
+                </div>
+              ` : ''}
+              <div class="price-separator"></div>
+              <div class="total-row">
+                <span class="total-label">Grand Total</span>
+                <span class="total-value">${formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</span>
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Create an invisible iframe to render the HTML
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'absolute';
+      iframe.style.left = '-9999px';
+      iframe.style.width = '1000px';
+      iframe.style.height = '2000px';
+      document.body.appendChild(iframe);
+
+      // Write the HTML to the iframe
+      iframe.contentDocument?.open();
+      iframe.contentDocument?.write(invoiceHTML);
+      iframe.contentDocument?.close();
+
+      // Wait for images to load
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Capture the invoice
+      const canvas = await html2canvas(iframe.contentDocument!.body, {
         backgroundColor: '#ffffff',
-        scale: 3, // Higher quality for professional output
+        scale: 3,
         logging: false,
         useCORS: true,
         allowTaint: true,
+        width: 1000,
       });
-      
-      // Restore hidden elements
-      elementsToHide.forEach((el: any) => {
-        el.style.visibility = 'visible';
-      });
-      
+
+      // Remove the iframe
+      document.body.removeChild(iframe);
+
+      // Download the image
       const link = document.createElement('a');
       link.download = `invoice-${order?.orderId || id}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
-      
+
       toast({
         title: "Invoice Downloaded",
-        description: "Invoice screenshot saved successfully",
+        description: "Professional invoice saved successfully",
       });
     } catch (error) {
-      // Restore hidden elements in case of error
-      const elementsToHide = invoiceCardRef.current?.querySelectorAll('[data-hide-in-screenshot]');
-      elementsToHide?.forEach((el: any) => {
-        el.style.visibility = 'visible';
-      });
-      
+      console.error('Invoice generation error:', error);
       toast({
         title: "Download Failed",
-        description: "Could not capture invoice screenshot",
+        description: "Could not generate invoice",
         variant: "destructive",
       });
     }
