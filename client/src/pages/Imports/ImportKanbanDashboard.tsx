@@ -591,6 +591,7 @@ export default function ImportKanbanDashboard() {
       count: filteredPurchases.length,
       gradient: 'from-yellow-500 to-orange-500',
       bgLight: 'bg-yellow-50 dark:bg-yellow-950/20',
+      link: '/purchase-orders',
     },
     {
       id: 'at_warehouse',
@@ -599,6 +600,7 @@ export default function ImportKanbanDashboard() {
       count: filteredCustomItems.length + filteredConsolidations.length,
       gradient: 'from-purple-500 to-pink-500',
       bgLight: 'bg-purple-50 dark:bg-purple-950/20',
+      link: '/consolidation',
     },
     {
       id: 'international',
@@ -607,6 +609,7 @@ export default function ImportKanbanDashboard() {
       count: activeShipments.length,
       gradient: 'from-blue-500 to-cyan-500',
       bgLight: 'bg-blue-50 dark:bg-blue-950/20',
+      link: '/imports/international-transit',
     },
     {
       id: 'delivered',
@@ -615,6 +618,7 @@ export default function ImportKanbanDashboard() {
       count: deliveredShipments.length,
       gradient: 'from-emerald-500 to-green-500',
       bgLight: 'bg-emerald-50 dark:bg-emerald-950/20',
+      link: '/imports/international-transit',
     }
   ];
 
@@ -700,21 +704,23 @@ export default function ImportKanbanDashboard() {
             data-testid={`column-${column.id}`}
           >
             {/* Column Header */}
-            <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className={`p-2 rounded-lg bg-gradient-to-r ${column.gradient} text-white`}>
-                    {column.icon}
+            <Link href={column.link}>
+              <div className="p-4 border-b border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-2 rounded-lg bg-gradient-to-r ${column.gradient} text-white`}>
+                      {column.icon}
+                    </div>
+                    <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100">
+                      {column.title}
+                    </h3>
                   </div>
-                  <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100">
-                    {column.title}
-                  </h3>
+                  <Badge variant="secondary" className="font-semibold">
+                    {column.count}
+                  </Badge>
                 </div>
-                <Badge variant="secondary" className="font-semibold">
-                  {column.count}
-                </Badge>
               </div>
-            </div>
+            </Link>
 
             {/* Column Content */}
             <div className="h-[600px] overflow-y-auto overflow-x-hidden">
