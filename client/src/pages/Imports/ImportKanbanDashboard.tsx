@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent } from "@/components/ui/card";
@@ -296,10 +296,19 @@ function ShipmentCard({
   isDelivered?: boolean;
   onDragStart?: (e: React.DragEvent, item: any, type: string) => void;
 }) {
+  const [, navigate] = useLocation();
   const [expanded, setExpanded] = useState(false);
   const items = consolidation?.items || [];
   const displayItems = expanded ? items : items.slice(0, 3);
   const hasMore = items.length > 3;
+  
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't navigate if clicking on interactive elements
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    navigate(`/receiving/details/${shipment.id}`);
+  };
   
   const getDaysUntil = (date: string | null) => {
     if (!date) return null;
@@ -337,7 +346,8 @@ function ShipmentCard({
     <Card
       draggable={!isDelivered}
       onDragStart={onDragStart && !isDelivered ? (e) => onDragStart(e, shipment, 'shipment') : undefined}
-      className={`${!isDelivered ? 'cursor-move hover:border-blue-300 dark:hover:border-blue-700' : ''} hover:shadow-lg transition-all duration-300 border-slate-200 dark:border-slate-700`}
+      onClick={handleCardClick}
+      className={`${!isDelivered ? 'cursor-move' : 'cursor-pointer'} hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-lg transition-all duration-300 border-slate-200 dark:border-slate-700`}
       data-testid={`shipment-${shipment.id}`}
     >
       <CardContent className="p-3 space-y-2">
