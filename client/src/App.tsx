@@ -81,6 +81,7 @@ import ReviewApprove from "@/pages/Receiving/ReviewApprove";
 import ItemsToStore from "@/pages/Receiving/ItemsToStore";
 import Login from "@/pages/Auth/Login";
 import Register from "@/pages/Auth/Register";
+import Reports from "@/pages/Reports/Reports";
 import CustomReport from "@/pages/Reports/CustomReport";
 import Settings from "@/pages/Settings/Settings";
 // Legacy imports - commented out
@@ -197,9 +198,7 @@ function Router() {
         <Route path="/receiving/details/:id" component={ReceiptDetails} />
         <Route path="/receiving/approve/:id" component={ReviewApprove} />
         <Route path="/reports/custom" component={CustomReport} />
-        <Route path="/reports">
-          {() => <div>Reports page coming soon</div>}
-        </Route>
+        <Route path="/reports" component={Reports} />
         <Route path="/settings" component={Settings} />
       </Layout>
       <Route component={NotFound} />
