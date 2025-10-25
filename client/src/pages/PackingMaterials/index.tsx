@@ -295,7 +295,7 @@ export default function PackingMaterials() {
       className: "text-right",
       cell: (material) => (
         <span className="font-medium text-slate-900 dark:text-slate-100">
-          {material.unitCost ? formatCurrency(material.unitCost, 'EUR') : '-'}
+          {material.cost ? formatCurrency(parseFloat(material.cost), 'EUR') : '-'}
         </span>
       ),
     },
@@ -386,7 +386,7 @@ export default function PackingMaterials() {
     total: materials.length,
     lowStock: materials.filter(m => (m.stockQuantity || 0) <= (m.minStockLevel || 10)).length,
     categories: Array.from(new Set(materials.map(m => m.category).filter(Boolean))).length,
-    totalValue: materials.reduce((sum, m) => sum + ((m.unitCost || 0) * (m.stockQuantity || 0)), 0),
+    totalValue: materials.reduce((sum, m) => sum + ((parseFloat(m.cost || '0')) * (m.stockQuantity || 0)), 0),
   };
 
   // Export handlers
@@ -402,7 +402,7 @@ export default function PackingMaterials() {
           : material.category || '-',
         'Dimensions': material.dimensions || '-',
         'Weight': material.weight ? `${material.weight} kg` : '-',
-        'Unit Price': material.unitCost ? formatCurrency(material.unitCost, 'EUR') : '-',
+        'Unit Price': material.cost ? formatCurrency(parseFloat(material.cost), 'EUR') : '-',
         'Stock': material.stockQuantity ? material.stockQuantity.toLocaleString() : '-',
         'Supplier': material.supplier ? getDisplayUrl(material.supplier)?.display || material.supplier : '-',
         'Status': (material.stockQuantity || 0) <= (material.minStockLevel || 10) ? 'Low Stock' : 'In Stock',
@@ -436,7 +436,7 @@ export default function PackingMaterials() {
           : material.category || '-',
         dimensions: material.dimensions || '-',
         weight: material.weight ? `${material.weight} kg` : '-',
-        unitPrice: material.unitCost ? formatCurrency(material.unitCost, 'EUR') : '-',
+        unitPrice: material.cost ? formatCurrency(parseFloat(material.cost), 'EUR') : '-',
         stock: material.stockQuantity ? material.stockQuantity.toLocaleString() : '-',
         supplier: material.supplier ? getDisplayUrl(material.supplier)?.display || material.supplier : '-',
         status: (material.stockQuantity || 0) <= (material.minStockLevel || 10) ? 'Low Stock' : 'In Stock',

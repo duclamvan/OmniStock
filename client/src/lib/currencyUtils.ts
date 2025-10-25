@@ -18,7 +18,7 @@ const EXCHANGE_RATES: Record<Currency, Record<Currency, number>> = {
   },
   USD: {
     EUR: 0.91,
-    CZK: 22.7,
+    CZK: 23,
     USD: 1,
     VND: 23600,
     CNY: 7.1,

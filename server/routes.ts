@@ -12,6 +12,7 @@ import {
   insertCustomerSchema,
   insertCustomerBillingAddressSchema,
   insertSupplierSchema,
+  insertWarehouseSchema,
   insertWarehouseFinancialContractSchema,
   insertProductSchema,
   insertProductVariantSchema,
@@ -5278,9 +5279,9 @@ Important:
 
   app.post('/api/expenses', async (req: any, res) => {
     try {
-      // Extract the amount from the currency-specific field
+      // Extract the amount from the currency-specific field or use the generic amount field
       const amountFields = ['amountCzk', 'amountEur', 'amountUsd', 'amountVnd', 'amountCny'];
-      let amount = 0;
+      let amount = req.body.amount || 0;
       for (const field of amountFields) {
         if (req.body[field]) {
           amount = req.body[field];
@@ -5877,21 +5878,21 @@ Return ONLY the subject line without quotes or extra formatting.`,
         endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
       };
       
-      const data = insertSaleSchema.parse(body);
-      const sale = await storage.createSale(data);
+      const data = insertDiscountSchema.parse(body);
+      const discount = await storage.createDiscount(data);
       
       await storage.createUserActivity({
         userId: "test-user",
         action: 'create',
-        entityType: 'sale',
-        entityId: sale.id,
-        description: `Created sale: ${sale.name}`,
+        entityType: 'discount',
+        entityId: discount.id,
+        description: `Created discount: ${discount.name}`,
       });
       
-      res.json(sale);
+      res.json(discount);
     } catch (error) {
-      console.error("Error creating sale:", error);
-      res.status(500).json({ message: "Failed to create sale" });
+      console.error("Error creating discount:", error);
+      res.status(500).json({ message: "Failed to create discount" });
     }
   });
 

@@ -2244,16 +2244,27 @@ export class DatabaseStorage implements IStorage {
 
   async createWarehouse(warehouse: any): Promise<Warehouse> {
     try {
-      const id = warehouse.id || `WH-${Date.now()}`;
-      const result = await db.execute(sql`
-        INSERT INTO warehouses (id, name, location, address, city, country, zip_code, phone, email, manager, capacity, type, status, floor_area, code, notes)
-        VALUES (${id}, ${warehouse.name}, ${warehouse.location}, ${warehouse.address}, ${warehouse.city}, ${warehouse.country}, 
-                ${warehouse.zip_code}, ${warehouse.phone}, ${warehouse.email}, ${warehouse.manager}, 
-                ${warehouse.capacity}, ${warehouse.type}, ${warehouse.status || 'active'}, 
-                ${warehouse.floor_area}, ${warehouse.code}, ${warehouse.notes})
-        RETURNING *
-      `);
-      return result.rows[0] as Warehouse;
+      const [result] = await db.insert(warehouses).values({
+        id: warehouse.id || `WH-${Date.now()}`,
+        name: warehouse.name,
+        location: warehouse.location,
+        address: warehouse.address,
+        city: warehouse.city,
+        country: warehouse.country,
+        zipCode: warehouse.zipCode || warehouse.zip_code,
+        phone: warehouse.phone,
+        email: warehouse.email,
+        manager: warehouse.manager,
+        capacity: warehouse.capacity,
+        type: warehouse.type,
+        status: warehouse.status || 'active',
+        floorArea: warehouse.floorArea || warehouse.floor_area,
+        notes: warehouse.notes,
+        contact: warehouse.contact,
+        rentedFromDate: warehouse.rentedFromDate || warehouse.rented_from_date,
+        expenseId: warehouse.expenseId || warehouse.expense_id,
+      }).returning();
+      return result;
     } catch (error) {
       console.error('Error creating warehouse:', error);
       throw error;

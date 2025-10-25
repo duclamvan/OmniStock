@@ -118,7 +118,7 @@ export default function CreatePurchase() {
   const [exchangeRates, setExchangeRates] = useState<{[key: string]: number}>({
     USD: 1,
     EUR: 0.92,
-    CZK: 23.5,
+    CZK: 23,
     VND: 24500,
     CNY: 7.2
   });
@@ -304,7 +304,7 @@ export default function CreatePurchase() {
         setExchangeRates({
           USD: 1,
           EUR: data.usd.eur || 0.92,
-          CZK: data.usd.czk || 23.5,
+          CZK: data.usd.czk || 23,
           VND: data.usd.vnd || 24500,
           CNY: data.usd.cny || 7.2
         });
