@@ -8,7 +8,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Package, MapPin, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers, MoveRight, ArrowUpDown } from "lucide-react";
 import { Link } from "wouter";
 import { fuzzySearch } from "@/lib/fuzzySearch";
-import { formatCurrency } from "@/lib/currencyUtils";
 import MoveInventoryDialog from "@/components/warehouse/MoveInventoryDialog";
 import StockAdjustmentDialog from "@/components/warehouse/StockAdjustmentDialog";
 
@@ -38,11 +37,6 @@ interface EnrichedProduct {
   quantity: number;
   variants: Variant[];
   totalStock: number;
-  priceCzk?: string;
-  priceEur?: string;
-  importCostCzk?: string;
-  importCostEur?: string;
-  latestLandingCost?: string;
   locations?: ProductLocation[];
   imageUrl?: string;
   images?: any;
@@ -105,11 +99,6 @@ export default function StockLookup() {
         quantity: productQuantity,
         variants: [], // Will be fetched on-demand when product is expanded
         totalStock: productQuantity, // Will include variants when fetched
-        priceCzk: p.priceCzk,
-        priceEur: p.priceEur,
-        importCostCzk: p.importCostCzk,
-        importCostEur: p.importCostEur,
-        latestLandingCost: p.latestLandingCost,
         locations: p.locations,
         imageUrl: primaryImage,
         images: p.images
@@ -231,12 +220,6 @@ export default function StockLookup() {
             const status = getStockStatus(displayProduct.totalStock);
             const StatusIcon = status.icon;
             
-            // Calculate pricing
-            const priceCzk = parseFloat(displayProduct.priceCzk || '0');
-            const priceEur = parseFloat(displayProduct.priceEur || '0');
-            const costCzk = parseFloat(displayProduct.latestLandingCost || displayProduct.importCostCzk || '0');
-            const costEur = parseFloat(displayProduct.importCostEur || '0');
-            
             return (
               <Card
                 key={product.id}
@@ -293,28 +276,12 @@ export default function StockLookup() {
                         </div>
                       </div>
 
-                      {/* Bottom Row: Pricing - Horizontal layout */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm">
-                          {priceCzk > 0 && (
-                            <span className="font-bold text-gray-900 dark:text-white" data-testid={`text-price-czk-${product.id}`}>
-                              {formatCurrency(priceCzk, 'CZK').replace(/\s/g, '')}
-                            </span>
-                          )}
-                          {priceEur > 0 && (
-                            <span className="font-semibold text-blue-600 dark:text-blue-400" data-testid={`text-price-eur-${product.id}`}>
-                              {formatCurrency(priceEur, 'EUR').replace(/\s/g, '')}
-                            </span>
-                          )}
-                          {!priceCzk && !priceEur && (
-                            <span className="text-gray-500 dark:text-gray-400 text-xs">No price</span>
-                          )}
-                        </div>
-                        
+                      {/* Bottom Row: Location count */}
+                      <div className="flex items-center justify-end">
                         {displayProduct.locations && displayProduct.locations.length > 0 && (
                           <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                             <MapPin className="h-3.5 w-3.5" />
-                            <span className="text-[11px] font-medium">{displayProduct.locations.length}</span>
+                            <span className="text-[11px] font-medium">{displayProduct.locations.length} location{displayProduct.locations.length > 1 ? 's' : ''}</span>
                           </div>
                         )}
                       </div>
@@ -384,35 +351,6 @@ export default function StockLookup() {
                                 </Badge>
                               </div>
                             ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Pricing Info */}
-                      {(priceCzk > 0 || priceEur > 0) && (
-                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Sale Price</p>
-                              <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                                {priceCzk > 0 ? formatCurrency(priceCzk, 'CZK') : formatCurrency(priceEur, 'EUR')}
-                              </p>
-                            </div>
-                            {(costCzk > 0 || costEur > 0) && (
-                              <div className="text-right">
-                                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Cost Price</p>
-                                <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
-                                  {costCzk > 0 ? formatCurrency(costCzk, 'CZK') : formatCurrency(costEur, 'EUR')}
-                                </p>
-                                {((priceCzk > 0 && costCzk > 0) || (priceEur > 0 && costEur > 0)) && (
-                                  <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                                    Margin: {priceCzk > 0 && costCzk > 0 
-                                      ? ((priceCzk - costCzk) / priceCzk * 100).toFixed(1)
-                                      : ((priceEur - costEur) / priceEur * 100).toFixed(1)}%
-                                  </p>
-                                )}
-                              </div>
-                            )}
                           </div>
                         </div>
                       )}
