@@ -263,18 +263,7 @@ export default function WarehouseDetails() {
 
   // Not found state
   if (!warehouse) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px]">
-        <WarehouseIcon className="h-16 w-16 text-slate-300 mb-4" />
-        <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">Warehouse Not Found</h2>
-        <Link href="/warehouses">
-          <Button variant="outline">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Warehouses
-          </Button>
-        </Link>
-      </div>
-    );
+    return null;
   }
 
   return (
