@@ -17,7 +17,8 @@ import {
   Globe,
   PackageCheck,
   Wrench,
-  Ticket
+  Ticket,
+  ClipboardList
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,14 @@ const navigation = [
       { name: "All Warehouses", href: "/warehouses" },
       { name: "Warehouse Map", href: "/warehouses/map" },
       { name: "Add Warehouse", href: "/warehouses/add" },
+    ],
+  },
+  {
+    name: "Stock",
+    icon: ClipboardList,
+    children: [
+      { name: "Stock Lookup", href: "/stock" },
+      { name: "Adjustment Approvals", href: "/stock/approvals" },
     ],
   },
   {

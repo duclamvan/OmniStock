@@ -75,21 +75,29 @@ export default function StockAdjustmentDialog({
     }
   }, [open, location]);
 
-  const updateLocationMutation = useMutation({
-    mutationFn: async (data: { updates: any }) => {
-      if (!location) throw new Error("No location selected");
+  const createRequestMutation = useMutation({
+    mutationFn: async (data: { 
+      productId: string;
+      locationId: string;
+      requestedBy: string;
+      adjustmentType: 'add' | 'remove' | 'set';
+      currentQuantity: number;
+      requestedQuantity: number;
+      reason: string;
+    }) => {
       return await apiRequest(
-        'PATCH',
-        `/api/products/${productId}/locations/${location.id}`,
-        data.updates
+        'POST',
+        '/api/stock-adjustment-requests',
+        data
       );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/locations`] });
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stock-adjustment-requests'] });
       toast({
-        title: "Success",
-        description: "Stock adjusted successfully",
+        title: "Request Submitted",
+        description: "Stock adjustment request sent for admin approval",
       });
       onOpenChange(false);
       setNewQuantity(0);
@@ -100,7 +108,7 @@ export default function StockAdjustmentDialog({
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to adjust stock",
+        description: error.message || "Failed to create adjustment request",
         variant: "destructive",
       });
     },
@@ -116,21 +124,35 @@ export default function StockAdjustmentDialog({
       return;
     }
 
+    if (!notes || notes.trim() === "") {
+      toast({
+        title: "Error",
+        description: "Please provide a reason for this adjustment",
+        variant: "destructive",
+      });
+      return;
+    }
+
     let finalQuantity = 0;
+    let backendAdjustmentType: 'add' | 'remove' | 'set' = 'set';
 
     switch (adjustmentType) {
       case "set":
         finalQuantity = newQuantity;
+        backendAdjustmentType = 'set';
         break;
       case "increment":
-        finalQuantity = location.quantity + adjustmentAmount;
+        finalQuantity = adjustmentAmount;
+        backendAdjustmentType = 'add';
         break;
       case "decrement":
-        finalQuantity = location.quantity - adjustmentAmount;
+        finalQuantity = adjustmentAmount;
+        backendAdjustmentType = 'remove';
         break;
     }
 
-    if (finalQuantity < 0) {
+    const calculatedFinalQuantity = calculateFinalQuantity();
+    if (calculatedFinalQuantity < 0) {
       toast({
         title: "Error",
         description: "Quantity cannot be negative",
@@ -139,11 +161,14 @@ export default function StockAdjustmentDialog({
       return;
     }
 
-    updateLocationMutation.mutate({
-      updates: {
-        quantity: finalQuantity,
-        notes: notes || location.notes,
-      },
+    createRequestMutation.mutate({
+      productId,
+      locationId: location.id,
+      requestedBy: "test-user",
+      adjustmentType: backendAdjustmentType,
+      currentQuantity: location.quantity,
+      requestedQuantity: finalQuantity,
+      reason: notes,
     });
   };
 
@@ -190,7 +215,7 @@ export default function StockAdjustmentDialog({
             <Select
               value={adjustmentType}
               onValueChange={(value: any) => setAdjustmentType(value)}
-              disabled={updateLocationMutation.isPending}
+              disabled={createRequestMutation.isPending}
             >
               <SelectTrigger id="adjustment-type" data-testid="select-adjustment-type">
                 <SelectValue />
@@ -229,7 +254,7 @@ export default function StockAdjustmentDialog({
                 min={0}
                 value={newQuantity}
                 onChange={(e) => setNewQuantity(parseInt(e.target.value) || 0)}
-                disabled={updateLocationMutation.isPending}
+                disabled={createRequestMutation.isPending}
                 data-testid="input-new-quantity"
               />
             </div>
@@ -246,7 +271,7 @@ export default function StockAdjustmentDialog({
                 min={0}
                 value={adjustmentAmount}
                 onChange={(e) => setAdjustmentAmount(parseInt(e.target.value) || 0)}
-                disabled={updateLocationMutation.isPending}
+                disabled={createRequestMutation.isPending}
                 data-testid="input-adjustment-amount"
               />
             </div>
@@ -254,17 +279,20 @@ export default function StockAdjustmentDialog({
 
           <div className="space-y-2">
             <Label htmlFor="adjustment-notes" className="text-xs">
-              Notes (Optional)
+              Reason for Adjustment *
             </Label>
             <Textarea
               id="adjustment-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Reason for adjustment..."
-              disabled={updateLocationMutation.isPending}
+              placeholder="Required: Explain why this adjustment is needed..."
+              disabled={createRequestMutation.isPending}
               data-testid="input-adjustment-notes"
               className="h-20"
             />
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              This request will be sent to admin for approval
+            </p>
           </div>
 
           <div className={`rounded-lg p-3 space-y-1 ${isValid ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-red-50 dark:bg-red-900/20'}`}>
@@ -297,17 +325,17 @@ export default function StockAdjustmentDialog({
       <Button
         variant="outline"
         onClick={() => onOpenChange(false)}
-        disabled={updateLocationMutation.isPending}
+        disabled={createRequestMutation.isPending}
         data-testid="button-cancel-adjust"
       >
         Cancel
       </Button>
       <Button
         onClick={handleAdjustStock}
-        disabled={!isValid || updateLocationMutation.isPending}
+        disabled={!isValid || createRequestMutation.isPending || !notes.trim()}
         data-testid="button-confirm-adjust"
       >
-        {updateLocationMutation.isPending ? "Updating..." : "Adjust Stock"}
+        {createRequestMutation.isPending ? "Submitting..." : "Submit Request"}
       </Button>
     </>
   );
@@ -317,9 +345,9 @@ export default function StockAdjustmentDialog({
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Adjust Stock</DrawerTitle>
+            <DrawerTitle>Request Stock Adjustment</DrawerTitle>
             <DrawerDescription>
-              Update inventory quantity for this location
+              Submit a request to adjust inventory quantity (requires admin approval)
             </DrawerDescription>
           </DrawerHeader>
           <div className="px-4">{content}</div>
@@ -333,9 +361,9 @@ export default function StockAdjustmentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Adjust Stock</DialogTitle>
+          <DialogTitle>Request Stock Adjustment</DialogTitle>
           <DialogDescription>
-            Update inventory quantity for this location
+            Submit a request to adjust inventory quantity (requires admin approval)
           </DialogDescription>
         </DialogHeader>
         {content}
