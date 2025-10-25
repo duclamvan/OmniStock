@@ -726,13 +726,15 @@ export default function CustomerDetails() {
                             }>
                               {ticket.status.replace(/_/g, ' ')}
                             </Badge>
-                            <Badge variant={
-                              ticket.priority === 'urgent' ? 'destructive' :
-                              ticket.priority === 'high' ? 'default' :
-                              'outline'
-                            }>
-                              {ticket.priority}
-                            </Badge>
+                            {ticket.status !== 'resolved' && (
+                              <Badge variant={
+                                ticket.priority === 'urgent' ? 'destructive' :
+                                ticket.priority === 'high' ? 'default' :
+                                'outline'
+                              }>
+                                {ticket.priority}
+                              </Badge>
+                            )}
                           </div>
                           <p className="text-sm font-medium text-slate-700 mb-1">{ticket.title}</p>
                           {ticket.description && (

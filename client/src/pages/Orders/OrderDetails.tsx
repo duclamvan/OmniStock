@@ -1831,13 +1831,15 @@ export default function OrderDetails() {
                             } className="text-xs">
                               {ticket.status.replace(/_/g, ' ')}
                             </Badge>
-                            <Badge variant={
-                              ticket.priority === 'urgent' ? 'destructive' :
-                              ticket.priority === 'high' ? 'default' :
-                              'outline'
-                            } className="text-xs">
-                              {ticket.priority}
-                            </Badge>
+                            {ticket.status !== 'resolved' && (
+                              <Badge variant={
+                                ticket.priority === 'urgent' ? 'destructive' :
+                                ticket.priority === 'high' ? 'default' :
+                                'outline'
+                              } className="text-xs">
+                                {ticket.priority}
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       </div>
