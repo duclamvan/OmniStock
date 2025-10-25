@@ -173,6 +173,9 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
   const [openItems, setOpenItems] = useState<string[]>(() => 
     getLocalStorageArray<string>('sidebarOpenItems', [])
   );
+  const [openSections, setOpenSections] = useState<string[]>(() => 
+    getLocalStorageArray<string>('sidebarOpenSections', ['Warehouse Operations', 'Admin & Management'])
+  );
   
   // Fetch tickets to count due/overdue notifications
   const { data: tickets = [] } = useQuery<any[]>({
@@ -227,6 +230,11 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
   useEffect(() => {
     setLocalStorageItem('sidebarOpenItems', openItems);
   }, [openItems]);
+
+  // Save openSections to localStorage whenever they change
+  useEffect(() => {
+    setLocalStorageItem('sidebarOpenSections', openSections);
+  }, [openSections]);
   
 
   // Save scroll position whenever user scrolls the desktop nav
@@ -247,6 +255,14 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       prev.includes(itemName) 
         ? prev.filter(name => name !== itemName)
         : [...prev, itemName]
+    );
+  };
+
+  const toggleSection = (sectionName: string) => {
+    setOpenSections(prev => 
+      prev.includes(sectionName) 
+        ? prev.filter(name => name !== sectionName)
+        : [...prev, sectionName]
     );
   };
 
@@ -459,21 +475,38 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
 
   const NavLinks = ({ collapsed = false }: { collapsed?: boolean }) => (
     <>
-      {navigation.map((section, sectionIdx) => (
+      {navigation.map((section, sectionIdx) => {
+        const isSectionOpen = openSections.includes(section.name);
+        
+        return (
         <div key={section.name}>
-          {/* Section Header */}
+          {/* Section Header - Collapsible */}
           {!collapsed && (
-            <div className={cn(
-              "px-4 py-2 mb-2",
-              sectionIdx > 0 && "mt-6 pt-6 border-t border-gray-200 dark:border-gray-700"
-            )}>
-              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                {section.name}
-              </h3>
-            </div>
-          )}
+            <Collapsible
+              open={isSectionOpen}
+              onOpenChange={() => toggleSection(section.name)}
+            >
+              <div className={cn(
+                sectionIdx > 0 && "mt-6 pt-6 border-t border-gray-200 dark:border-gray-700"
+              )}>
+                <CollapsibleTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-between px-4 py-2 mb-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-md"
+                  >
+                    <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {section.name}
+                    </h3>
+                    <ChevronDown className={cn(
+                      "h-3 w-3 transition-transform duration-200 text-gray-400",
+                      isSectionOpen && "rotate-180"
+                    )} />
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
           
           {/* Section Items */}
+          <CollapsibleContent>
           {section.items?.map((item) => {
         if (item.children) {
           const isOpen = openItems.includes(item.name);
@@ -695,8 +728,91 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
           </div>
         );
       })}
+          </CollapsibleContent>
+            </Collapsible>
+          )}
+          
+          {/* Section Items when collapsed - no section headers */}
+          {collapsed && section.items?.map((item) => {
+        if (item.children) {
+          const isActive = item.children.some(child => location === child.href);
+          
+          return (
+            <DropdownMenu key={item.name}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "w-full justify-center p-3 rounded-lg transition-all duration-200 group relative",
+                    "hover:bg-gray-100 dark:hover:bg-gray-800",
+                    isActive && "bg-white shadow-sm border border-gray-200"
+                  )}
+                >
+                  <item.icon className={cn("h-5 w-5 transition-colors", item.color)} />
+                  <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-50 shadow-lg">
+                    <div className="flex flex-col">
+                      <span className="font-medium">{item.name}</span>
+                      <span className="text-xs text-gray-300">{item.description}</span>
+                    </div>
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="right" align="start" className="w-56 p-2">
+                <div className="px-2 py-1.5 mb-1">
+                  <div className="flex items-center gap-2">
+                    <item.icon className={cn("h-4 w-4", item.color)} />
+                    <span className="font-medium text-sm">{item.name}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+                </div>
+                <DropdownMenuSeparator />
+                {item.children.map((child) => (
+                  <Link key={child.href} href={child.href}>
+                    <DropdownMenuItem className={cn(
+                      "rounded-md px-3 py-2 cursor-pointer transition-colors flex items-center justify-between",
+                      location === child.href && "bg-gray-100 dark:bg-gray-800"
+                    )}>
+                      <span className="text-sm">{child.name}</span>
+                      {child.href === '/orders/pre-orders' && fullyArrivedCount > 0 && (
+                        <Badge variant="default" className="ml-2 bg-green-600 hover:bg-green-700 text-white text-xs h-5 min-w-5 px-1.5">
+                          {fullyArrivedCount}
+                        </Badge>
+                      )}
+                    </DropdownMenuItem>
+                  </Link>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        }
+        
+        const isActive = location === item.href;
+        
+        return (
+          <Link key={item.name} href={item.href}>
+            <Button
+              variant="ghost"
+              className={cn(
+                "w-full justify-center p-3 rounded-lg relative group transition-all duration-200",
+                "hover:bg-gray-100 dark:hover:bg-gray-800",
+                isActive && "bg-white shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700"
+              )}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <item.icon className={cn("h-5 w-5 transition-colors", item.color)} />
+              <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-50 shadow-lg">
+                <div className="flex flex-col">
+                  <span className="font-medium">{item.name}</span>
+                  <span className="text-xs text-gray-300">{item.description}</span>
+                </div>
+              </div>
+            </Button>
+          </Link>
+        );
+      })}
         </div>
-      ))}
+      );
+      })}
     </>
   );
 
