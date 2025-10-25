@@ -378,7 +378,7 @@ export default function ItemsToStore() {
         const savedReceipt = localStorage.getItem('itemsToStore_selectedReceipt');
         if (savedReceipt && !selectedReceipt) {
           const receiptId = parseInt(savedReceipt);
-          if (receiptsWithItems.some(r => r.receipt.id === receiptId)) {
+          if (receiptsWithItems.some((r: ReceiptWithItems) => r.receipt.id === receiptId)) {
             setSelectedReceipt(receiptId);
           }
         }

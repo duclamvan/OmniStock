@@ -226,6 +226,10 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
 
   const handleLevelChange = useCallback((value: string) => {
     setLevel(value);
+    // For ground level (pallet) or top storage, set bin to B1 as default (won't be shown)
+    if (value === 'L00' || value === 'L99') {
+      setBin('B1');
+    }
   }, []);
 
   const handleBinChange = useCallback((value: string) => {
@@ -375,7 +379,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
           ) : (
             <>
               {areaType === "shelves" ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <div className={`grid gap-2 ${level === 'L00' || level === 'L99' ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-2 md:grid-cols-3'}`}>
                   {/* Warehouse Selector */}
                   <div>
                     <Label htmlFor="warehouse" className="text-xs">Warehouse</Label>
@@ -492,34 +496,36 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                     </Select>
                   </div>
 
-                  {/* Bin Selector */}
-                  <div>
-                    <Label htmlFor="bin" className="text-xs">Bin</Label>
-                    <Select
-                      value={bin}
-                      onValueChange={handleBinChange}
-                      disabled={disabled}
-                    >
-                      <SelectTrigger
-                        id="bin"
-                        data-testid="select-bin"
-                        className="h-9"
+                  {/* Bin Selector - Only show for regular shelving levels (not ground pallet L00 or top storage L99) */}
+                  {level !== 'L00' && level !== 'L99' && (
+                    <div>
+                      <Label htmlFor="bin" className="text-xs">Bin</Label>
+                      <Select
+                        value={bin}
+                        onValueChange={handleBinChange}
+                        disabled={disabled}
                       >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {binOptions.map((opt) => (
-                          <SelectItem
-                            key={opt.value}
-                            value={opt.value}
-                            data-testid={`option-${opt.value}`}
-                          >
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                        <SelectTrigger
+                          id="bin"
+                          data-testid="select-bin"
+                          className="h-9"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {binOptions.map((opt) => (
+                            <SelectItem
+                              key={opt.value}
+                              value={opt.value}
+                              data-testid={`option-${opt.value}`}
+                            >
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
