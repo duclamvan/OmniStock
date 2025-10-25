@@ -1854,6 +1854,7 @@ export default function AddOrder() {
                     // Clear selected customer when user starts typing to search for a new one
                     if (selectedCustomer) {
                       setSelectedCustomer(null);
+                      form.setValue('customerId', undefined);
                     }
                   }}
                   className="pl-10"
@@ -1865,6 +1866,7 @@ export default function AddOrder() {
                     // Backspace or Delete: Clear selected customer to allow new search
                     if ((e.key === 'Backspace' || e.key === 'Delete') && selectedCustomer) {
                       setSelectedCustomer(null);
+                      form.setValue('customerId', undefined);
                       setShowCustomerDropdown(true);
                     }
                     // Enter: Select first customer from dropdown
@@ -1875,6 +1877,8 @@ export default function AddOrder() {
                         setSelectedCustomer(firstCustomer);
                         setCustomerSearch(firstCustomer.name);
                         setShowCustomerDropdown(false);
+                        // Set customerId in form
+                        form.setValue('customerId', firstCustomer.id);
                         if (firstCustomer.hasPayLaterBadge) {
                           form.setValue('paymentStatus', 'pay_later');
                         }
@@ -1896,6 +1900,7 @@ export default function AddOrder() {
                     onClick={() => {
                       setSelectedCustomer(null);
                       setCustomerSearch("");
+                      form.setValue('customerId', undefined);
                     }}
                   >
                     <X className="h-4 w-4" />
@@ -1917,6 +1922,8 @@ export default function AddOrder() {
                         setSelectedCustomer(customer);
                         setCustomerSearch(customer.name);
                         setShowCustomerDropdown(false);
+                        // Set customerId in form
+                        form.setValue('customerId', customer.id);
                         // Auto-set payment status to Pay Later if customer has Pay Later badge
                         if (customer.hasPayLaterBadge) {
                           form.setValue('paymentStatus', 'pay_later');
@@ -2131,6 +2138,7 @@ export default function AddOrder() {
                             setQuickCustomerType(null);
                             setQuickCustomerName("");
                             setQuickCustomerPhone("");
+                            form.setValue('customerId', undefined);
                           }}
                           className="flex-shrink-0"
                         >
