@@ -278,12 +278,18 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       children: [
         { name: "All Orders", href: "/orders" },
         { name: "Add Order", href: "/orders/add" },
-        { name: "Pick & Pack", href: "/orders/pick-pack" },
         { name: "To Fulfill", href: "/orders/to-fulfill" },
         { name: "Shipped", href: "/orders/shipped" },
         { name: "Pay Later", href: "/orders/pay-later" },
         { name: "Pre-Orders", href: "/orders/pre-orders" },
       ],
+    },
+    {
+      name: "Pick & Pack",
+      href: "/orders/pick-pack",
+      icon: PackageCheck,
+      color: "text-amber-600",
+      description: "Order Fulfillment"
     },
     {
       name: "Inventory",
@@ -796,6 +802,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
               <div className="flex items-center gap-4">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   {location === '/' ? 'Dashboard' : 
+                   location.includes('/orders/pick-pack') ? 'Pick & Pack' :
                    location.includes('/orders') ? 'Orders Management' :
                    location.includes('/packing-materials') ? 'Packing Materials' :
                    location.includes('/inventory') ? 'Inventory Management' :
