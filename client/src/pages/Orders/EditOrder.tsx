@@ -110,6 +110,7 @@ interface OrderItem {
   variantId?: string | null;
   variantName?: string | null;
   bundleId?: string | null;
+  image?: string | null;
 }
 
 // Helper function to get country flag emoji
@@ -1024,6 +1025,7 @@ export default function EditOrder() {
         variantId: product.itemType === 'variant' ? product.variantId : null,
         variantName: product.itemType === 'variant' ? product.variantName : null,
         bundleId: product.itemType === 'bundle' ? product.bundleId : null,
+        image: product.image || null,
       };
       setOrderItems(items => [...items, newItem]);
       // Auto-focus quantity input for the newly added item
@@ -2404,8 +2406,23 @@ export default function EditOrder() {
                             }}
                             data-testid={`product-item-${product.id}`}
                           >
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
+                            <div className="flex items-center gap-3">
+                              {/* Product Image */}
+                              <div className="flex-shrink-0">
+                                {product.image ? (
+                                  <img 
+                                    src={product.image} 
+                                    alt={product.name}
+                                    className="w-12 h-12 object-contain rounded border border-slate-200 bg-slate-50"
+                                  />
+                                ) : (
+                                  <div className="w-12 h-12 bg-slate-100 rounded border border-slate-200 flex items-center justify-center">
+                                    <Package className="h-6 w-6 text-slate-300" />
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <div className="font-medium text-slate-900">{product.name}</div>
                                   {product.itemType === 'bundle' && (
@@ -2425,29 +2442,30 @@ export default function EditOrder() {
                                   )}
                                 </div>
                                 <div className="text-sm text-slate-500">SKU: {product.sku}</div>
-                              </div>
-                              <div className="text-right ml-4">
-                                <div className="font-medium text-slate-900">
-                                  {(() => {
-                                    const selectedCurrency = form.watch('currency') || 'EUR';
-                                    let price = 0;
-                                    if (selectedCurrency === 'CZK' && product.priceCzk) {
-                                      price = parseFloat(product.priceCzk);
-                                    } else if (selectedCurrency === 'EUR' && product.priceEur) {
-                                      price = parseFloat(product.priceEur);
-                                    } else {
-                                      // Fallback to any available price
-                                      price = parseFloat(product.priceEur || product.priceCzk || '0');
-                                    }
-                                    return formatCurrency(price, selectedCurrency);
-                                  })()}
+                                
+                                <div className="text-right mt-1">
+                                  <div className="font-medium text-slate-900">
+                                    {(() => {
+                                      const selectedCurrency = form.watch('currency') || 'EUR';
+                                      let price = 0;
+                                      if (selectedCurrency === 'CZK' && product.priceCzk) {
+                                        price = parseFloat(product.priceCzk);
+                                      } else if (selectedCurrency === 'EUR' && product.priceEur) {
+                                        price = parseFloat(product.priceEur);
+                                      } else {
+                                        // Fallback to any available price
+                                        price = parseFloat(product.priceEur || product.priceCzk || '0');
+                                      }
+                                      return formatCurrency(price, selectedCurrency);
+                                    })()}
+                                  </div>
+                                  <div className="text-sm text-slate-500">
+                                    Stock: {product.stockQuantity || 0}
+                                  </div>
+                                  {product.warehouseName && (
+                                    <div className="text-xs text-slate-400">{product.warehouseName}</div>
+                                  )}
                                 </div>
-                                <div className="text-sm text-slate-500">
-                                  Stock: {product.stockQuantity || 0}
-                                </div>
-                                {product.warehouseName && (
-                                  <div className="text-xs text-slate-400">{product.warehouseName}</div>
-                                )}
                               </div>
                             </div>
                           </button>
@@ -2545,11 +2563,27 @@ export default function EditOrder() {
                             data-testid={`order-item-${item.id}`}
                           >
                             <TableCell className="py-3">
-                              <div className="flex flex-col gap-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium text-slate-900 dark:text-slate-100">
-                                    {item.productName}
-                                  </span>
+                              <div className="flex items-start gap-3">
+                                {/* Product Image */}
+                                <div className="flex-shrink-0">
+                                  {item.image ? (
+                                    <img 
+                                      src={item.image} 
+                                      alt={item.productName}
+                                      className="w-12 h-12 object-contain rounded border border-slate-200 bg-slate-50"
+                                    />
+                                  ) : (
+                                    <div className="w-12 h-12 bg-slate-100 rounded border border-slate-200 flex items-center justify-center">
+                                      <Package className="h-6 w-6 text-slate-300" />
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                <div className="flex flex-col gap-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium text-slate-900 dark:text-slate-100">
+                                      {item.productName}
+                                    </span>
                                   {item.variantName && (
                                     <Badge className="text-xs px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-300">
                                       {item.variantName}
@@ -2564,6 +2598,7 @@ export default function EditOrder() {
                                 <span className="text-xs text-slate-500 dark:text-slate-400">
                                   SKU: {item.sku}
                                 </span>
+                                </div>
                               </div>
                             </TableCell>
                             <TableCell className="text-center align-middle">

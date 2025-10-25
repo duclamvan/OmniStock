@@ -116,6 +116,7 @@ interface OrderItem {
   tax: number;
   total: number;
   landingCost?: number | null;
+  image?: string | null;
 }
 
 // Helper function to get country flag emoji
@@ -1077,6 +1078,7 @@ export default function AddOrder() {
           tax: 0,
           total: productPrice,
           landingCost: product.landingCost || product.latestLandingCost || null,
+          image: product.image || null,
         };
         setOrderItems(items => [...items, newItem]);
         // Auto-focus quantity input for the newly added item
@@ -1132,6 +1134,7 @@ export default function AddOrder() {
         tax: 0,
         total: productPrice * quantity,
         landingCost: parseFloat(variant.importCostEur || variant.importCostCzk || '0') || null,
+        image: variant.photo || selectedProductForVariant.image || null,
       };
       
       setOrderItems(items => [...items, newItem]);
@@ -2965,24 +2968,20 @@ export default function AddOrder() {
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-3 flex-1">
-                            {/* Product Thumbnail */}
+                            {/* Product Image */}
                             {!isService && !isBundle && (
-                              <div className="w-12 h-12 flex-shrink-0 rounded overflow-hidden bg-slate-100 border border-slate-200">
-                                {product.imageUrl ? (
-                                  <img
-                                    src={product.imageUrl.replace('.webp', '_thumb.webp')}
+                              <div className="flex-shrink-0">
+                                {product.image ? (
+                                  <img 
+                                    src={product.image} 
                                     alt={product.name}
-                                    loading="lazy"
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      e.currentTarget.style.display = 'none';
-                                      e.currentTarget.nextElementSibling!.classList.remove('hidden');
-                                    }}
+                                    className="w-12 h-12 object-contain rounded border border-slate-200 bg-slate-50"
                                   />
-                                ) : null}
-                                <div className={`${product.imageUrl ? 'hidden' : ''} w-full h-full flex items-center justify-center`}>
-                                  <Package className="h-6 w-6 text-slate-400" />
-                                </div>
+                                ) : (
+                                  <div className="w-12 h-12 bg-slate-100 rounded border border-slate-200 flex items-center justify-center">
+                                    <Package className="h-6 w-6 text-slate-300" />
+                                  </div>
+                                )}
                               </div>
                             )}
                             {/* Service/Bundle Icon */}
@@ -3152,12 +3151,38 @@ export default function AddOrder() {
                             data-testid={`order-item-${item.id}`}
                           >
                             <TableCell className="py-3">
-                              <div className="flex flex-col gap-1">
-                                <div className="flex items-center gap-2">
-                                  {item.serviceId && <Wrench className="h-4 w-4 text-orange-500" />}
-                                  <span className="font-medium text-slate-900 dark:text-slate-100">
-                                    {item.productName}
-                                  </span>
+                              <div className="flex items-start gap-3">
+                                {/* Product Image */}
+                                <div className="flex-shrink-0">
+                                  {item.image ? (
+                                    <img 
+                                      src={item.image} 
+                                      alt={item.productName}
+                                      className="w-12 h-12 object-contain rounded border border-slate-200 bg-slate-50"
+                                    />
+                                  ) : (
+                                    <div className="w-12 h-12 bg-slate-100 rounded border border-slate-200 flex items-center justify-center">
+                                      <Package className="h-6 w-6 text-slate-300" />
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                <div className="flex flex-col gap-1">
+                                  <div className="flex items-center gap-2">
+                                    {item.serviceId && <Wrench className="h-4 w-4 text-orange-500" />}
+                                    <span className="font-medium text-slate-900 dark:text-slate-100">
+                                      {item.productName}
+                                    </span>
+                                  {item.variantName && (
+                                    <Badge className="text-xs px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-300">
+                                      {item.variantName}
+                                    </Badge>
+                                  )}
+                                  {item.bundleId && (
+                                    <Badge className="text-xs px-1.5 py-0 bg-purple-100 text-purple-700 border-purple-300">
+                                      Bundle
+                                    </Badge>
+                                  )}
                                   {item.serviceId && (
                                     <Badge variant="outline" className="text-xs px-1.5 py-0 border-orange-500 text-orange-600">
                                       Service
@@ -3167,6 +3192,7 @@ export default function AddOrder() {
                                 <span className="text-xs text-slate-500 dark:text-slate-400">
                                   {item.serviceId ? 'Service Item' : `SKU: ${item.sku}`}
                                 </span>
+                                </div>
                               </div>
                             </TableCell>
                             <TableCell className="text-center align-middle">
