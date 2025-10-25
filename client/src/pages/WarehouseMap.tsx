@@ -363,7 +363,7 @@ export default function WarehouseMap() {
                         <TooltipTrigger asChild>
                           <button
                             onClick={() => handleCellClick(location)}
-                            className={`flex-1 min-w-[60px] h-14 rounded border-2 transition-all hover:scale-105 hover:shadow-md ${getOccupancyColor(location.occupancyPercent)}`}
+                            className={`flex-1 min-w-[60px] h-14 rounded border-2 transition-colors ${getOccupancyColor(location.occupancyPercent)}`}
                           >
                             <div className="flex flex-col items-center justify-center h-full">
                               {location.totalQuantity > 0 && (
