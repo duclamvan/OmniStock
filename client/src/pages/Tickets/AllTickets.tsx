@@ -27,7 +27,9 @@ import {
   MoreVertical,
   MessageSquare,
   FileDown,
-  FileText
+  FileText,
+  LayoutGrid,
+  LayoutList
 } from "lucide-react";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import { format } from "date-fns";
@@ -72,6 +74,17 @@ export default function AllTickets() {
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedTickets, setSelectedTickets] = useState<any[]>([]);
+
+  // View mode state with localStorage persistence
+  const [viewMode, setViewMode] = useState<'card' | 'table'>(() => {
+    const saved = localStorage.getItem('ticketsViewMode');
+    return (saved === 'card' || saved === 'table') ? saved : 'table';
+  });
+
+  // Save view mode to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('ticketsViewMode', viewMode);
+  }, [viewMode]);
 
   // Column visibility state with localStorage persistence
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
@@ -657,7 +670,7 @@ export default function AllTickets() {
         </CardContent>
       </Card>
 
-      {/* Tickets Table */}
+      {/* Tickets View */}
       <Card className="border-slate-200 dark:border-slate-800">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
@@ -666,61 +679,177 @@ export default function AllTickets() {
               Showing {filteredTickets.length} ticket{filteredTickets.length !== 1 ? 's' : ''}
             </CardDescription>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="h-8 w-8">
-                <MoreVertical className="h-4 w-4" />
+          <div className="flex items-center gap-2">
+            {/* View Mode Toggle */}
+            <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-lg p-1 bg-slate-50 dark:bg-slate-900">
+              <Button
+                variant={viewMode === 'card' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('card')}
+                className={cn(
+                  "h-7 px-3",
+                  viewMode === 'card' 
+                    ? "shadow-sm" 
+                    : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                )}
+                data-testid="button-view-card"
+              >
+                <LayoutGrid className="h-4 w-4 mr-1.5" />
+                Cards
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[200px]">
-              <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuCheckboxItem
-                checked={visibleColumns.ticketNumber !== false}
-                onCheckedChange={() => toggleColumnVisibility('ticketNumber')}
+              <Button
+                variant={viewMode === 'table' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('table')}
+                className={cn(
+                  "h-7 px-3",
+                  viewMode === 'table' 
+                    ? "shadow-sm" 
+                    : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                )}
+                data-testid="button-view-table"
               >
-                Ticket #
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                checked={visibleColumns.customer !== false}
-                onCheckedChange={() => toggleColumnVisibility('customer')}
-              >
-                Customer
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                checked={visibleColumns.subject !== false}
-                onCheckedChange={() => toggleColumnVisibility('subject')}
-              >
-                Subject
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                checked={visibleColumns.priority !== false}
-                onCheckedChange={() => toggleColumnVisibility('priority')}
-              >
-                Priority
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                checked={visibleColumns.status !== false}
-                onCheckedChange={() => toggleColumnVisibility('status')}
-              >
-                Status
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                checked={visibleColumns.createdAt !== false}
-                onCheckedChange={() => toggleColumnVisibility('createdAt')}
-              >
-                Created
-              </DropdownMenuCheckboxItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <LayoutList className="h-4 w-4 mr-1.5" />
+                Table
+              </Button>
+            </div>
+            {viewMode === 'table' && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-8 w-8">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-[200px]">
+                  <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuCheckboxItem
+                    checked={visibleColumns.ticketNumber !== false}
+                    onCheckedChange={() => toggleColumnVisibility('ticketNumber')}
+                  >
+                    Ticket #
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={visibleColumns.customer !== false}
+                    onCheckedChange={() => toggleColumnVisibility('customer')}
+                  >
+                    Customer
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={visibleColumns.subject !== false}
+                    onCheckedChange={() => toggleColumnVisibility('subject')}
+                  >
+                    Subject
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={visibleColumns.priority !== false}
+                    onCheckedChange={() => toggleColumnVisibility('priority')}
+                  >
+                    Priority
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={visibleColumns.status !== false}
+                    onCheckedChange={() => toggleColumnVisibility('status')}
+                  >
+                    Status
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={visibleColumns.createdAt !== false}
+                    onCheckedChange={() => toggleColumnVisibility('createdAt')}
+                  >
+                    Created
+                  </DropdownMenuCheckboxItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
-          <DataTable
-            data={filteredTickets}
-            columns={visibleColumnsFiltered}
-            bulkActions={bulkActions}
-            getRowKey={(ticket) => ticket.id}
-          />
+          {viewMode === 'table' ? (
+            <DataTable
+              data={filteredTickets}
+              columns={visibleColumnsFiltered}
+              bulkActions={bulkActions}
+              getRowKey={(ticket) => ticket.id}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredTickets.length === 0 ? (
+                <div className="col-span-full text-center py-12">
+                  <TicketIcon className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-700 mb-4" />
+                  <p className="text-slate-500 dark:text-slate-400">No tickets found</p>
+                </div>
+              ) : (
+                filteredTickets.map((ticket: any) => (
+                  <Card 
+                    key={ticket.id} 
+                    className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-all hover:border-cyan-300 dark:hover:border-cyan-700 cursor-pointer group"
+                    onClick={() => navigate(`/tickets/${ticket.id}`)}
+                    data-testid={`card-ticket-${ticket.id}`}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="p-2 rounded-lg bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950 group-hover:from-cyan-100 group-hover:to-blue-100 dark:group-hover:from-cyan-900 dark:group-hover:to-blue-900 transition-colors">
+                            <TicketIcon className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-slate-900 dark:text-slate-100 truncate group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
+                              {ticket.ticketId || `#${ticket.id.substring(0, 8)}`}
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              {format(new Date(ticket.createdAt), 'MMM d, yyyy')}
+                            </p>
+                          </div>
+                        </div>
+                        <Link 
+                          href={`/tickets/edit/${ticket.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-8 w-8 hover:bg-cyan-50 dark:hover:bg-cyan-950"
+                            data-testid={`button-edit-card-${ticket.id}`}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div>
+                        <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-1 line-clamp-2">
+                          {ticket.title}
+                        </h4>
+                        {ticket.description && (
+                          <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2">
+                            {ticket.description}
+                          </p>
+                        )}
+                      </div>
+                      {ticket.customer && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <div className="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800">
+                            <User className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
+                          </div>
+                          <span className="text-slate-700 dark:text-slate-300 truncate">
+                            {ticket.customer.name}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-2">
+                          {getPriorityBadge(ticket.priority)}
+                          {getStatusBadge(ticket.status)}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
