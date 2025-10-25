@@ -733,9 +733,9 @@ export default function OrderDetails() {
                               {/* Quantity - More Visible */}
                               <div className="flex items-center gap-1.5">
                                 <span className="text-xs text-slate-500">Qty:</span>
-                                <Badge variant="secondary" className="text-sm font-bold px-2 py-0.5">
+                                <span className="text-sm font-bold text-slate-900">
                                   {item.quantity}
-                                </Badge>
+                                </span>
                               </div>
                               
                               {/* Unit Price */}

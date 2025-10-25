@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
@@ -26,13 +25,12 @@ export default function MarginPill({
   // Handle null/undefined landing costs gracefully
   if (!landingCost || landingCost <= 0 || !sellingPrice || sellingPrice <= 0) {
     return (
-      <Badge 
-        variant="outline" 
-        className={cn("bg-gray-50 text-gray-600 border-gray-200", className)}
+      <span 
+        className={cn("text-xs text-gray-500", className)}
         data-testid="margin-pill-unavailable"
       >
         N/A
-      </Badge>
+      </span>
     );
   }
 
@@ -98,27 +96,24 @@ export default function MarginPill({
   );
 
   const marginDisplay = (
-    <Badge 
-      variant="outline"
+    <span 
       className={cn(
-        "font-medium transition-colors cursor-help",
-        getMarginColor(),
+        "text-xs font-medium cursor-help inline-flex items-center gap-1",
+        marginPercentage > 30 ? "text-green-700" : marginPercentage >= 15 ? "text-yellow-700" : "text-red-700",
         className
       )}
       data-testid="margin-pill"
       data-margin={marginPercentage.toFixed(1)}
     >
-      <span className="flex items-center gap-1">
-        {showIcon && getMarginIcon()}
-        <span>{marginPercentage.toFixed(1)}%</span>
-        {showProfit && (
-          <>
-            <span className="opacity-60">•</span>
-            <span>{formatCurrency(profit, currency)}</span>
-          </>
-        )}
-      </span>
-    </Badge>
+      {showIcon && getMarginIcon()}
+      <span>{marginPercentage.toFixed(1)}%</span>
+      {showProfit && (
+        <>
+          <span className="opacity-60">•</span>
+          <span>{formatCurrency(profit, currency)}</span>
+        </>
+      )}
+    </span>
   );
 
   return (
