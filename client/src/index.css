@@ -192,6 +192,16 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
+  
+  /* Smooth transitions for interactive elements */
+  button, a, input, select, textarea {
+    transition: all 0.3s ease-in-out;
+  }
+  
+  /* Card hover animations */
+  [class*="Card"] {
+    transition: all 0.3s ease-in-out;
+  }
 }
 
 /* Custom styles for the WMS application */

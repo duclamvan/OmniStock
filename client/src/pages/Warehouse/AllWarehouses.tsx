@@ -388,7 +388,7 @@ export default function AllWarehouses() {
           </p>
         </div>
         <Link href="/warehouses/add">
-          <Button className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/30 dark:shadow-cyan-900/30">
+          <Button data-testid="button-add-warehouse">
             <Plus className="h-4 w-4 mr-2" />
             Add Warehouse
           </Button>

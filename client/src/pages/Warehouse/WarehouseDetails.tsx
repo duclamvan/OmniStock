@@ -308,7 +308,7 @@ export default function WarehouseDetails() {
             </Button>
           </Link>
           <Link href={`/warehouses/${warehouse.id}/edit`}>
-            <Button className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700" size="sm" data-testid="button-edit">
+            <Button size="sm" data-testid="button-edit">
               <Edit className="h-4 w-4 mr-2" />
               Edit
             </Button>
