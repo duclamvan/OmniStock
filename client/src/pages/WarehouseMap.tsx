@@ -1,285 +1,484 @@
-import { useState, useEffect } from "react";
-import { useParams, useLocation, Link } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Search, Map, Boxes, Printer, Plus, ScanLine, Package, Thermometer, AlertTriangle, ArrowLeft } from "lucide-react";
-import type { WarehouseLocation, InventoryBalance } from "@shared/schema";
-import { LocationTree } from "@/features/warehouse/LocationTree";
-import { RackGrid } from "@/features/warehouse/RackGrid";
-import { BinDetails } from "@/features/warehouse/BinDetails";
-import { GenerateLayoutDialog } from "@/features/warehouse/GenerateLayoutDialog";
-import { PrintLabelsDialog } from "@/features/warehouse/PrintLabelsDialog";
-import { PutawayMini } from "@/features/putaway/PutawayMini";
-import { LayoutDesigner } from "@/features/warehouse/LayoutDesigner";
-import { AdvancedLayoutDesigner } from "@/features/warehouse/AdvancedLayoutDesigner";
-import { Warehouse3DView } from "@/features/warehouse/Warehouse3DView";
-import { MockupWarehouseLayout } from "@/features/warehouse/MockupWarehouseLayout";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Warehouse, Package, Layers, MapPin, Info } from "lucide-react";
+
+interface LocationOccupancy {
+  locationCode: string;
+  totalQuantity: number;
+  productCount: number;
+  products: Array<{
+    name: string;
+    sku: string;
+    quantity: number;
+  }>;
+}
+
+interface LocationStats {
+  aisle: string;
+  rack: string;
+  level: string;
+  totalQuantity: number;
+  productCount: number;
+  occupancyPercent: number;
+}
 
 export default function WarehouseMap() {
-  const { id } = useParams();
-  const [, navigate] = useLocation();
-  const [selectedWarehouse, setSelectedWarehouse] = useState<string>(id || "WH1");
-  const [selectedLocation, setSelectedLocation] = useState<WarehouseLocation | null>(null);
+  // Configuration state
+  const [warehouse] = useState("WH1");
+  const [totalAisles, setTotalAisles] = useState(6);
+  const [maxRacks, setMaxRacks] = useState(10);
+  const [maxLevels, setMaxLevels] = useState(5);
+  const [maxBins, setMaxBins] = useState(5);
+  const [selectedLocation, setSelectedLocation] = useState<LocationStats | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("mockup");
-  const isSubpage = !!id;
 
-  // Fetch warehouses
-  const { data: warehouses } = useQuery({
-    queryKey: ["/api/warehouses"],
+  // Fetch product locations from all warehouses
+  const { data: productLocations } = useQuery<any[]>({
+    queryKey: ['/api/products'],
   });
 
-  // Fetch specific warehouse if on subpage
-  const { data: currentWarehouse } = useQuery({
-    queryKey: [`/api/warehouses/${id}`],
-    enabled: !!id,
-  });
+  // Calculate occupancy for each location
+  const locationOccupancy = useMemo(() => {
+    if (!productLocations) return new Map<string, LocationOccupancy>();
 
-  // Use warehouse from params or first available
-  useEffect(() => {
-    if (id) {
-      setSelectedWarehouse(id);
-    } else if (warehouses && Array.isArray(warehouses) && warehouses.length > 0 && !selectedWarehouse) {
-      setSelectedWarehouse((warehouses as any[])[0]?.code || (warehouses as any[])[0]?.id);
+    const occupancyMap = new Map<string, LocationOccupancy>();
+
+    productLocations.forEach((product) => {
+      if (product.locations && Array.isArray(product.locations)) {
+        product.locations.forEach((loc: any) => {
+          const code = loc.locationCode;
+          if (!code || !code.startsWith(warehouse)) return;
+
+          const existing = occupancyMap.get(code) || {
+            locationCode: code,
+            totalQuantity: 0,
+            productCount: 0,
+            products: [],
+          };
+
+          existing.totalQuantity += loc.quantity || 0;
+          existing.productCount += 1;
+          existing.products.push({
+            name: product.name,
+            sku: product.sku || '',
+            quantity: loc.quantity || 0,
+          });
+
+          occupancyMap.set(code, existing);
+        });
+      }
+    });
+
+    return occupancyMap;
+  }, [productLocations, warehouse]);
+
+  // Generate grid data
+  const gridData = useMemo(() => {
+    const grid: LocationStats[][] = [];
+
+    for (let a = 1; a <= totalAisles; a++) {
+      const row: LocationStats[] = [];
+      const aisleCode = `A${String(a).padStart(2, '0')}`;
+
+      for (let r = 1; r <= maxRacks; r++) {
+        const rackCode = `R${String(r).padStart(2, '0')}`;
+        
+        // Calculate total items in this aisle-rack combination (across all levels and bins)
+        let totalQuantity = 0;
+        let productCount = 0;
+
+        for (let l = 1; l <= maxLevels; l++) {
+          const levelCode = `L${String(l).padStart(2, '0')}`;
+          for (let b = 1; b <= maxBins; b++) {
+            const binCode = `B${b}`;
+            const locationCode = `${warehouse}-${aisleCode}-${rackCode}-${levelCode}-${binCode}`;
+            const occupancy = locationOccupancy.get(locationCode);
+            
+            if (occupancy) {
+              totalQuantity += occupancy.totalQuantity;
+              productCount += occupancy.productCount;
+            }
+          }
+        }
+
+        const maxCapacity = maxLevels * maxBins * 100; // Assume 100 units per bin max
+        const occupancyPercent = maxCapacity > 0 ? (totalQuantity / maxCapacity) * 100 : 0;
+
+        row.push({
+          aisle: aisleCode,
+          rack: rackCode,
+          level: '',
+          totalQuantity,
+          productCount,
+          occupancyPercent: Math.min(occupancyPercent, 100),
+        });
+      }
+
+      grid.push(row);
     }
-  }, [id, warehouses]);
 
-  // Fetch locations for selected warehouse
-  const { data: locations, isLoading } = useQuery({
-    queryKey: [`/api/warehouses/${selectedWarehouse}/locations`, searchQuery],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (searchQuery) params.append("q", searchQuery);
-      const response = await fetch(`/api/warehouses/${selectedWarehouse}/locations?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch locations");
-      return response.json();
-    },
-    enabled: !!selectedWarehouse,
-  });
+    return grid;
+  }, [totalAisles, maxRacks, maxLevels, maxBins, locationOccupancy, warehouse]);
 
-  // Handle location selection
-  const handleLocationSelect = (location: WarehouseLocation) => {
-    setSelectedLocation(location);
-    if (location.type === "BIN") {
-      setDetailsOpen(true);
-    }
+  // Get color based on occupancy
+  const getOccupancyColor = (percent: number) => {
+    if (percent === 0) return 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700';
+    if (percent < 25) return 'bg-green-100 dark:bg-green-950 border-green-300 dark:border-green-800 text-green-900 dark:text-green-100';
+    if (percent < 50) return 'bg-blue-100 dark:bg-blue-950 border-blue-300 dark:border-blue-800 text-blue-900 dark:text-blue-100';
+    if (percent < 75) return 'bg-amber-100 dark:bg-amber-950 border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-100';
+    return 'bg-red-100 dark:bg-red-950 border-red-300 dark:border-red-800 text-red-900 dark:text-red-100';
   };
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === "/" && !e.ctrlKey && !e.metaKey) {
-        e.preventDefault();
-        document.getElementById("location-search")?.focus();
-      }
-    };
+  const handleCellClick = (location: LocationStats) => {
+    setSelectedLocation(location);
+    setDetailsOpen(true);
+  };
 
-    document.addEventListener("keydown", handleKeyPress);
-    return () => document.removeEventListener("keydown", handleKeyPress);
-  }, []);
+  // Calculate overall statistics
+  const stats = useMemo(() => {
+    const totalLocations = totalAisles * maxRacks;
+    const occupiedLocations = gridData.flat().filter(loc => loc.totalQuantity > 0).length;
+    const totalItems = gridData.flat().reduce((sum, loc) => sum + loc.totalQuantity, 0);
+    const avgOccupancy = totalLocations > 0 
+      ? gridData.flat().reduce((sum, loc) => sum + loc.occupancyPercent, 0) / totalLocations 
+      : 0;
+
+    return {
+      totalLocations,
+      occupiedLocations,
+      freeLocations: totalLocations - occupiedLocations,
+      totalItems,
+      avgOccupancy,
+    };
+  }, [gridData, totalAisles, maxRacks]);
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-4 space-y-4">
       {/* Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
-        <div className="flex items-center gap-4">
-          {isSubpage && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`/warehouses/${id}`)}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-          )}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="h-12 w-12 rounded-lg bg-amber-100 dark:bg-amber-950 flex items-center justify-center">
+            <Warehouse className="h-6 w-6 text-amber-700 dark:text-amber-400" />
+          </div>
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Map className="h-8 w-8" />
-              {isSubpage && currentWarehouse ? `${(currentWarehouse as any)?.name} - Mapping` : 'Warehouse Mapping'}
-            </h1>
-            <p className="text-gray-500 mt-1">Interactive warehouse location management</p>
+            <h1 className="text-2xl font-bold text-amber-900 dark:text-amber-100">Warehouse Space Map</h1>
+            <p className="text-sm text-muted-foreground">Visual overview of storage capacity and occupancy</p>
           </div>
         </div>
-
-        <div className="flex flex-wrap gap-2">
-          <GenerateLayoutDialog warehouseCode={selectedWarehouse} />
-          <PrintLabelsDialog warehouseCode={selectedWarehouse} locations={locations || []} />
-          <Button variant="outline" size="sm">
-            <Package className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
-        </div>
       </div>
 
-      {/* Warehouse Selector */}
-      <div className="mb-4">
-        <div className="flex gap-2">
-          {(warehouses as any[])?.map((warehouse: any) => (
-            <Button
-              key={warehouse.id}
-              variant={selectedWarehouse === (warehouse.code || warehouse.id) ? "default" : "outline"}
-              onClick={() => setSelectedWarehouse(warehouse.code || warehouse.id)}
-              size="sm"
-            >
-              {warehouse.name}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-        <Input
-          id="location-search"
-          placeholder="Search locations (Press / to focus)..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
-        />
-      </div>
-
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="mockup">Sample Layout</TabsTrigger>
-          <TabsTrigger value="map">Map View</TabsTrigger>
-          <TabsTrigger value="3d">3D View</TabsTrigger>
-          <TabsTrigger value="designer">Layout Designer</TabsTrigger>
-          <TabsTrigger value="advanced-designer">Advanced Designer</TabsTrigger>
-          <TabsTrigger value="putaway">Putaway</TabsTrigger>
-          <TabsTrigger value="inventory">Inventory</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="mockup">
-          <MockupWarehouseLayout />
-        </TabsContent>
-
-        <TabsContent value="map">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-            {/* Left: Location Tree */}
-            <div className="lg:col-span-1">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Zones & Aisles</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <LocationTree
-                    locations={locations || []}
-                    onSelect={handleLocationSelect}
-                    selectedId={selectedLocation?.id}
-                  />
-                </CardContent>
-              </Card>
+      {/* Configuration Panel */}
+      <Card className="border-amber-200 dark:border-amber-800">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Layers className="h-4 w-4 text-amber-600" />
+            Layout Configuration
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <Label htmlFor="aisles" className="text-xs">Total Aisles</Label>
+              <Select value={totalAisles.toString()} onValueChange={(v) => setTotalAisles(parseInt(v))}>
+                <SelectTrigger id="aisles" className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[3, 4, 5, 6, 8, 10, 12, 15].map(n => (
+                    <SelectItem key={n} value={n.toString()}>{n} aisles</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Center: Rack Grid */}
-            <div className="lg:col-span-3">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Rack Layout</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {isLoading ? (
-                    <div className="flex items-center justify-center h-96">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                    </div>
-                  ) : (
-                    <RackGrid
-                      locations={locations || []}
-                      onLocationSelect={handleLocationSelect}
-                      selectedLocation={selectedLocation}
-                    />
-                  )}
-                </CardContent>
-              </Card>
+            <div>
+              <Label htmlFor="racks" className="text-xs">Racks per Aisle</Label>
+              <Select value={maxRacks.toString()} onValueChange={(v) => setMaxRacks(parseInt(v))}>
+                <SelectTrigger id="racks" className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[5, 8, 10, 12, 15, 20].map(n => (
+                    <SelectItem key={n} value={n.toString()}>{n} racks</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="levels" className="text-xs">Levels per Rack</Label>
+              <Select value={maxLevels.toString()} onValueChange={(v) => setMaxLevels(parseInt(v))}>
+                <SelectTrigger id="levels" className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[3, 4, 5, 6, 8, 10].map(n => (
+                    <SelectItem key={n} value={n.toString()}>{n} levels</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="bins" className="text-xs">Bins per Level</Label>
+              <Select value={maxBins.toString()} onValueChange={(v) => setMaxBins(parseInt(v))}>
+                <SelectTrigger id="bins" className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[2, 3, 4, 5, 6, 8].map(n => (
+                    <SelectItem key={n} value={n.toString()}>{n} bins</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
-        </TabsContent>
+        </CardContent>
+      </Card>
 
-        <TabsContent value="3d">
-          <Warehouse3DView 
-            locations={locations || []} 
-            selectedLocation={selectedLocation}
-            onLocationSelect={handleLocationSelect}
-          />
-        </TabsContent>
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card className="border-amber-200 dark:border-amber-800">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Total Locations</p>
+                <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{stats.totalLocations}</p>
+              </div>
+              <MapPin className="h-8 w-8 text-amber-300 dark:text-amber-700" />
+            </div>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="putaway">
-          <PutawayMini />
-        </TabsContent>
+        <Card className="border-green-200 dark:border-green-800">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Free Locations</p>
+                <p className="text-2xl font-bold text-green-700 dark:text-green-400">{stats.freeLocations}</p>
+              </div>
+              <Package className="h-8 w-8 text-green-300 dark:text-green-700" />
+            </div>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="designer">
-          <Card className="p-0">
-            <LayoutDesigner warehouseCode={selectedWarehouse} />
-          </Card>
-        </TabsContent>
+        <Card className="border-blue-200 dark:border-blue-800">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Occupied</p>
+                <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{stats.occupiedLocations}</p>
+              </div>
+              <Layers className="h-8 w-8 text-blue-300 dark:text-blue-700" />
+            </div>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="advanced-designer">
-          <div className="h-[800px]">
-            <AdvancedLayoutDesigner warehouseCode={selectedWarehouse} />
+        <Card className="border-purple-200 dark:border-purple-800">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Total Items</p>
+                <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">{stats.totalItems}</p>
+              </div>
+              <Package className="h-8 w-8 text-purple-300 dark:text-purple-700" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Legend */}
+      <Card className="border-amber-200 dark:border-amber-800">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-6 flex-wrap">
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-4 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+              <span className="text-xs text-muted-foreground">Empty (0%)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-4 rounded bg-green-100 dark:bg-green-950 border border-green-300 dark:border-green-800" />
+              <span className="text-xs text-muted-foreground">Low (1-25%)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-4 rounded bg-blue-100 dark:bg-blue-950 border border-blue-300 dark:border-blue-800" />
+              <span className="text-xs text-muted-foreground">Medium (25-50%)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-4 rounded bg-amber-100 dark:bg-amber-950 border border-amber-300 dark:border-amber-800" />
+              <span className="text-xs text-muted-foreground">High (50-75%)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-4 rounded bg-red-100 dark:bg-red-950 border border-red-300 dark:border-red-800" />
+              <span className="text-xs text-muted-foreground">Full (75-100%)</span>
+            </div>
           </div>
-        </TabsContent>
+        </CardContent>
+      </Card>
 
-        <TabsContent value="inventory">
-          <Card>
-            <CardHeader>
-              <CardTitle>Inventory by Location</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {(locations as any[])?.filter((loc: any) => loc.type === "BIN").map((location: any) => (
-                  <div key={location.id} className="flex items-center justify-between p-3 border rounded">
-                    <div>
-                      <div className="font-medium">{location.address}</div>
-                      <div className="text-sm text-gray-500">
-                        Occupancy: {location.currentOccupancy}%
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      {location.temperature && (
-                        <Badge variant="secondary">
-                          <Thermometer className="h-3 w-3 mr-1" />
-                          {location.temperature}
-                        </Badge>
-                      )}
-                      {location.hazmat && (
-                        <Badge variant="destructive">
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          Hazmat
-                        </Badge>
-                      )}
-                    </div>
+      {/* Warehouse Grid */}
+      <Card className="border-amber-200 dark:border-amber-800">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Warehouse className="h-4 w-4 text-amber-600" />
+            Warehouse {warehouse} - Aisle & Rack Map
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <div className="inline-block min-w-full">
+              {/* Column Headers (Racks) */}
+              <div className="flex mb-2">
+                <div className="w-16 flex-shrink-0" /> {/* Spacer for aisle labels */}
+                {Array.from({ length: maxRacks }, (_, i) => (
+                  <div key={i} className="flex-1 min-w-[60px] text-center">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      R{String(i + 1).padStart(2, '0')}
+                    </span>
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
 
-      {/* Bin Details Sheet */}
-      {selectedLocation && (
-        <BinDetails
-          location={selectedLocation}
-          open={detailsOpen}
-          onOpenChange={setDetailsOpen}
-          onUpdate={(updates) => {
-            // Update location
-            queryClient.invalidateQueries({ queryKey: [`/api/warehouses/${selectedWarehouse}/locations`] });
-          }}
-        />
-      )}
+              {/* Grid Rows (Aisles) */}
+              {gridData.map((row, aisleIndex) => (
+                <div key={aisleIndex} className="flex mb-2">
+                  {/* Aisle Label */}
+                  <div className="w-16 flex-shrink-0 flex items-center justify-center">
+                    <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+                      A{String(aisleIndex + 1).padStart(2, '0')}
+                    </span>
+                  </div>
+
+                  {/* Rack Cells */}
+                  {row.map((location, rackIndex) => (
+                    <TooltipProvider key={rackIndex}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => handleCellClick(location)}
+                            className={`flex-1 min-w-[60px] h-14 rounded border-2 transition-all hover:scale-105 hover:shadow-md ${getOccupancyColor(location.occupancyPercent)}`}
+                          >
+                            <div className="flex flex-col items-center justify-center h-full">
+                              {location.totalQuantity > 0 && (
+                                <>
+                                  <span className="text-xs font-bold">{location.totalQuantity}</span>
+                                  <span className="text-[10px] opacity-70">{location.productCount} SKU</span>
+                                </>
+                              )}
+                            </div>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div className="text-xs">
+                            <p className="font-semibold">{location.aisle}-{location.rack}</p>
+                            <p>Items: {location.totalQuantity}</p>
+                            <p>Products: {location.productCount}</p>
+                            <p>Occupancy: {location.occupancyPercent.toFixed(1)}%</p>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Details Sheet */}
+      <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5 text-amber-600" />
+              Location Details
+            </SheetTitle>
+          </SheetHeader>
+
+          {selectedLocation && (
+            <div className="mt-6 space-y-4">
+              {/* Location Info */}
+              <Card>
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Location</span>
+                    <Badge variant="outline" className="font-mono">
+                      {selectedLocation.aisle}-{selectedLocation.rack}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Total Items</span>
+                    <span className="font-semibold">{selectedLocation.totalQuantity}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Product Count</span>
+                    <span className="font-semibold">{selectedLocation.productCount} SKUs</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Occupancy</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-amber-600 transition-all"
+                          style={{ width: `${selectedLocation.occupancyPercent}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-medium">{selectedLocation.occupancyPercent.toFixed(1)}%</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Products in this location */}
+              <div>
+                <h3 className="text-sm font-semibold mb-3">Products Stored</h3>
+                <div className="space-y-2">
+                  {Array.from(locationOccupancy.entries())
+                    .filter(([code]) => code.startsWith(`${warehouse}-${selectedLocation.aisle}-${selectedLocation.rack}`))
+                    .flatMap(([, occupancy]) => occupancy.products)
+                    .reduce((acc, product) => {
+                      const existing = acc.find(p => p.sku === product.sku);
+                      if (existing) {
+                        existing.quantity += product.quantity;
+                      } else {
+                        acc.push({ ...product });
+                      }
+                      return acc;
+                    }, [] as Array<{name: string; sku: string; quantity: number}>)
+                    .map((product, index) => (
+                      <Card key={index}>
+                        <CardContent className="p-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{product.name}</p>
+                              <p className="text-xs text-muted-foreground font-mono">{product.sku}</p>
+                            </div>
+                            <Badge variant="secondary" className="flex-shrink-0">
+                              {product.quantity}
+                            </Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  
+                  {selectedLocation.totalQuantity === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Package className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                      <p className="text-sm">No products stored in this location</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
