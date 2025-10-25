@@ -1,57 +1,12 @@
 import { useState, useMemo } from "react";
-import { useParams, useLocation } from "wouter";
+import { useParams, useLocation, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { Link } from "wouter";
-import { 
-  ArrowLeft, 
-  Edit, 
-  Warehouse as WarehouseIcon, 
-  MapPin,
-  Phone,
-  Mail,
-  User,
-  Calendar,
-  Package,
-  Hash,
-  FileText,
-  Building,
-  Upload,
-  Download,
-  Trash2,
-  FileIcon,
-  FileImage,
-  FileSpreadsheet,
-  File as FileGeneric,
-  ArrowUpDown,
-  UploadCloud,
-  ScrollText,
-  Search,
-  Box,
-  Barcode,
-  MoveRight,
-  ExternalLink
-} from "lucide-react";
-import { formatDate } from "@/lib/currencyUtils";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Warehouse, WarehouseFile, WarehouseFinancialContract } from "@shared/schema";
-import { ObjectUploader } from "@/components/ObjectUploader";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -67,29 +22,76 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-type SortField = 'name' | 'date' | 'size';
-type SortOrder = 'asc' | 'desc';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  ArrowLeft,
+  Edit,
+  Warehouse as WarehouseIcon,
+  MapPin,
+  Phone,
+  Mail,
+  User,
+  Package,
+  Box,
+  FileText,
+  Building,
+  Upload,
+  Download,
+  Trash2,
+  Search,
+  Grid3x3,
+  Activity,
+  TrendingUp,
+  Barcode,
+  MoveRight,
+  ExternalLink,
+  FileImage,
+  FileSpreadsheet,
+  File as FileGeneric,
+  UploadCloud,
+  DollarSign,
+} from "lucide-react";
+import { formatDate, formatCurrency } from "@/lib/currencyUtils";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { Warehouse, WarehouseFile, WarehouseFinancialContract } from "@shared/schema";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import { fuzzySearch } from "@/lib/fuzzySearch";
 
 export default function WarehouseDetails() {
   const { id } = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [showDeleteFileDialog, setShowDeleteFileDialog] = useState(false);
-  const [fileToDelete, setFileToDelete] = useState<WarehouseFile | null>(null);
-  const [sortField, setSortField] = useState<SortField>('date');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [searchTerm, setSearchTerm] = useState('');
+  
+  // State management
+  const [searchQuery, setSearchQuery] = useState("");
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [productToMove, setProductToMove] = useState<any | null>(null);
-  const [targetWarehouseId, setTargetWarehouseId] = useState('');
+  const [targetWarehouseId, setTargetWarehouseId] = useState("");
+  const [showDeleteFileDialog, setShowDeleteFileDialog] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState<WarehouseFile | null>(null);
 
+  // API Queries
   const { data: warehouse, isLoading: warehouseLoading } = useQuery<Warehouse>({
     queryKey: [`/api/warehouses/${id}`],
     enabled: !!id,
   });
 
-  const { data: files = [], isLoading: filesLoading, refetch: refetchFiles } = useQuery<WarehouseFile[]>({
+  const { data: warehouseProducts = [], isLoading: productsLoading } = useQuery<any[]>({
+    queryKey: [`/api/warehouses/${id}/products`],
+    enabled: !!id,
+  });
+
+  const { data: files = [], isLoading: filesLoading } = useQuery<WarehouseFile[]>({
     queryKey: [`/api/warehouses/${id}/files`],
     enabled: !!id,
   });
@@ -99,15 +101,11 @@ export default function WarehouseDetails() {
     enabled: !!id,
   });
 
-  const { data: warehouseProducts = [], isLoading: productsLoading } = useQuery<any[]>({
-    queryKey: [`/api/warehouses/${id}/products`],
-    enabled: !!id,
-  });
-
   const { data: allWarehouses = [] } = useQuery<Warehouse[]>({
     queryKey: ['/api/warehouses'],
   });
 
+  // Mutations
   const moveProductMutation = useMutation({
     mutationFn: async ({ productId, targetWarehouseId }: { productId: string; targetWarehouseId: string }) => {
       return apiRequest('POST', `/api/products/${productId}/move-warehouse`, { targetWarehouseId });
@@ -117,23 +115,8 @@ export default function WarehouseDetails() {
       queryClient.invalidateQueries({ queryKey: ['/api/products', productToMove?.id] });
       
       toast({
-        title: "Product Moved",
-        description: (
-          <div className="flex flex-col gap-2">
-            <p>{data.message}</p>
-            <Button
-              variant="link"
-              size="sm"
-              className="p-0 h-auto justify-start text-blue-600 hover:text-blue-700"
-              onClick={() => navigate(`/products/${productToMove?.id}/edit`)}
-              data-testid="button-view-product"
-            >
-              <ExternalLink className="h-3 w-3 mr-1" />
-              View Product
-            </Button>
-          </div>
-        ),
-        duration: 5000,
+        title: "Success",
+        description: `Product moved to ${allWarehouses.find(w => w.id === targetWarehouseId)?.name}`,
       });
       
       setShowMoveDialog(false);
@@ -169,6 +152,7 @@ export default function WarehouseDetails() {
     },
   });
 
+  // File upload handlers
   const handleGetUploadParameters = async () => {
     const response = await apiRequest('POST', '/api/objects/upload');
     return {
@@ -180,19 +164,16 @@ export default function WarehouseDetails() {
   const handleFileUploadComplete = async (result: any) => {
     if (result.successful && result.successful.length > 0) {
       const uploadedFile = result.successful[0];
-      const fileName = uploadedFile.name;
-      const fileSize = uploadedFile.size;
-      const fileType = uploadedFile.type || 'application/octet-stream';
       
       try {
         await apiRequest('POST', `/api/warehouses/${id}/files`, {
-          fileName,
-          fileType,
+          fileName: uploadedFile.name,
+          fileType: uploadedFile.type || 'application/octet-stream',
           fileUrl: uploadedFile.response?.uploadURL || uploadedFile.uploadURL,
-          fileSize,
+          fileSize: uploadedFile.size,
         });
         
-        refetchFiles();
+        queryClient.invalidateQueries({ queryKey: [`/api/warehouses/${id}/files`] });
         toast({
           title: "Success",
           description: "File uploaded successfully",
@@ -200,89 +181,49 @@ export default function WarehouseDetails() {
       } catch (error: any) {
         toast({
           title: "Error",
-          description: error.message || "Failed to save file information",
+          description: error.message || "Failed to save file",
           variant: "destructive",
         });
       }
     }
   };
 
-  const handleDeleteFile = (file: WarehouseFile) => {
-    setFileToDelete(file);
-    setShowDeleteFileDialog(true);
-  };
+  // Computed values
+  const totalProducts = warehouseProducts.length;
+  const totalQuantity = warehouseProducts.reduce((sum, p) => sum + (p.quantity || 0), 0);
+  const activeContracts = financialContracts.filter(c => c.status === 'active').length;
 
-  const confirmDeleteFile = () => {
-    if (fileToDelete) {
-      deleteFileMutation.mutate(fileToDelete.id);
-    }
-  };
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('asc');
-    }
-  };
-
-  const handleMoveProduct = (product: any) => {
-    setProductToMove(product);
-    setShowMoveDialog(true);
-  };
-
-  const confirmMoveProduct = () => {
-    if (productToMove && targetWarehouseId) {
-      moveProductMutation.mutate({
-        productId: productToMove.id,
-        targetWarehouseId: targetWarehouseId,
-      });
-    }
-  };
-
-  // Filter warehouse products based on search term
+  // Filtered products using fuzzy search
   const filteredProducts = useMemo(() => {
-    if (!searchTerm.trim()) return warehouseProducts;
+    if (!searchQuery.trim()) return warehouseProducts;
     
-    const term = searchTerm.toLowerCase();
-    return warehouseProducts.filter(product => 
-      product.name?.toLowerCase().includes(term) ||
-      product.sku?.toLowerCase().includes(term) ||
-      product.barcode?.toLowerCase().includes(term) ||
-      product.warehouseLocation?.toLowerCase().includes(term) ||
-      product.primaryLocation?.toLowerCase().includes(term)
-    );
-  }, [warehouseProducts, searchTerm]);
+    return fuzzySearch(warehouseProducts, searchQuery, {
+      keys: ['name', 'sku', 'barcode', 'primaryLocation'],
+      threshold: 0.2,
+      fuzzy: true,
+      vietnameseNormalization: true,
+    });
+  }, [warehouseProducts, searchQuery]);
 
+  // Utility functions
   const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      'active': { label: 'Active', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' },
-      'inactive': { label: 'Inactive', color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200' },
-      'maintenance': { label: 'Maintenance', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' },
-    };
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
-    return <Badge className={config.color} data-testid={`badge-status-${status}`}>{config.label}</Badge>;
-  };
-
-  const getContractStatusBadgeVariant = (status: string) => {
-    const variants = {
-      'active': 'default' as const,
-      'expired': 'destructive' as const,
-      'pending': 'secondary' as const,
-      'cancelled': 'outline' as const,
-    };
-    return variants[status as keyof typeof variants] || 'default';
+    const config = {
+      active: { label: 'Active', className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' },
+      inactive: { label: 'Inactive', className: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200' },
+      maintenance: { label: 'Maintenance', className: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' },
+    }[status as keyof typeof config] || { label: 'Active', className: 'bg-emerald-100 text-emerald-800' };
+    
+    return <Badge className={config.className} data-testid={`badge-status-${status}`}>{config.label}</Badge>;
   };
 
   const getTypeBadge = (type: string) => {
-    const typeConfig = {
-      'fulfillment': { label: 'Fulfillment', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
-      'storage': { label: 'Storage', color: 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200' },
-      'transit': { label: 'Transit', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
-    };
-    const config = typeConfig[type as keyof typeof typeConfig] || typeConfig.fulfillment;
-    return <Badge className={config.color} data-testid={`badge-type-${type}`}>{config.label}</Badge>;
+    const config = {
+      fulfillment: { label: 'Fulfillment', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
+      storage: { label: 'Storage', className: 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200' },
+      transit: { label: 'Transit', className: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
+    }[type as keyof typeof config] || { label: 'Fulfillment', className: 'bg-blue-100 text-blue-800' };
+    
+    return <Badge className={config.className} data-testid={`badge-type-${type}`}>{config.label}</Badge>;
   };
 
   const formatFileSize = (bytes: number) => {
@@ -296,55 +237,38 @@ export default function WarehouseDetails() {
   const getFileIcon = (fileName: string) => {
     const ext = fileName.split('.').pop()?.toLowerCase();
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '')) {
-      return <FileImage className="h-5 w-5 text-blue-500" />;
+      return <FileImage className="h-4 w-4 text-blue-500" />;
     }
     if (['xlsx', 'xls', 'csv'].includes(ext || '')) {
-      return <FileSpreadsheet className="h-5 w-5 text-green-500" />;
+      return <FileSpreadsheet className="h-4 w-4 text-green-500" />;
     }
     if (['pdf'].includes(ext || '')) {
-      return <FileText className="h-5 w-5 text-red-500" />;
+      return <FileText className="h-4 w-4 text-red-500" />;
     }
-    return <FileGeneric className="h-5 w-5 text-slate-500" />;
+    return <FileGeneric className="h-4 w-4 text-slate-500" />;
   };
 
-  const sortedFiles = [...files].sort((a, b) => {
-    let comparison = 0;
-    if (sortField === 'name') {
-      comparison = a.fileName.localeCompare(b.fileName);
-    } else if (sortField === 'date') {
-      comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    } else if (sortField === 'size') {
-      comparison = a.fileSize - b.fileSize;
-    }
-    return sortOrder === 'asc' ? comparison : -comparison;
-  });
-
+  // Loading state
   if (warehouseLoading) {
     return (
-      <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-10 w-32" />
-        </div>
+      <div className="space-y-6">
+        <Skeleton className="h-32 w-full" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24" />)}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Skeleton className="h-96 lg:col-span-2" />
-          <Skeleton className="h-96" />
-        </div>
+        <Skeleton className="h-96 w-full" />
       </div>
     );
   }
 
+  // Not found state
   if (!warehouse) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] p-6">
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
         <WarehouseIcon className="h-16 w-16 text-slate-300 mb-4" />
         <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">Warehouse Not Found</h2>
-        <p className="text-slate-600 dark:text-slate-400 mb-4">The warehouse you're looking for doesn't exist.</p>
         <Link href="/warehouses">
-          <Button variant="outline" data-testid="button-back-to-warehouses">
+          <Button variant="outline">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Warehouses
           </Button>
@@ -354,696 +278,523 @@ export default function WarehouseDetails() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      {/* Header with Navigation */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/warehouses")}
-                data-testid="button-back"
-                className="hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
-              <Separator orientation="vertical" className="h-8 hidden sm:block" />
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-sm">
-                  <WarehouseIcon className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="text-warehouse-name">
-                    {warehouse.name}
-                  </h1>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 font-mono" data-testid="text-warehouse-id">{warehouse.id}</p>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Link href={`/warehouses/${warehouse.id}/mapping`}>
-                <Button variant="outline" size="sm" data-testid="button-warehouse-mapping" className="gap-2">
-                  <MapPin className="h-4 w-4" />
-                  <span className="hidden sm:inline">Mapping</span>
-                </Button>
-              </Link>
-              <Link href={`/warehouses/${warehouse.id}/edit`}>
-                <Button size="sm" data-testid="button-edit-warehouse" className="gap-2">
-                  <Edit className="h-4 w-4" />
-                  <span className="hidden sm:inline">Edit</span>
-                </Button>
-              </Link>
-            </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/warehouses")}
+            data-testid="button-back"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100" data-testid="text-warehouse-name">
+              {warehouse.name}
+            </h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+              Warehouse Management & Operations
+            </p>
           </div>
         </div>
-      </div>
-
-      {/* Overview KPI Cards */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all hover:border-emerald-300 dark:hover:border-emerald-700" data-testid="card-status">
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2.5">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Status</p>
-                  {getStatusBadge(warehouse.status || 'active')}
-                </div>
-                <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800">
-                  <Building className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all hover:border-blue-300 dark:hover:border-blue-700" data-testid="card-type">
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2.5">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Type</p>
-                  {getTypeBadge(warehouse.type || 'fulfillment')}
-                </div>
-                <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
-                  <WarehouseIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all hover:border-violet-300 dark:hover:border-violet-700" data-testid="card-floor-area">
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div className="space-y-1.5">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Floor Area</p>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="text-floor-area">
-                    {warehouse.floorArea ? `${warehouse.floorArea}` : '-'}
-                  </p>
-                  {warehouse.floorArea && <p className="text-xs text-slate-500 dark:text-slate-400">m²</p>}
-                </div>
-                <div className="p-2.5 rounded-lg bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800">
-                  <Package className="h-5 w-5 text-violet-600 dark:text-violet-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all hover:border-amber-300 dark:hover:border-amber-700" data-testid="card-capacity">
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div className="space-y-1.5">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Capacity</p>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="text-capacity">
-                    {warehouse.capacity || '-'}
-                  </p>
-                  {warehouse.capacity && <p className="text-xs text-slate-500 dark:text-slate-400">units</p>}
-                </div>
-                <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800">
-                  <Hash className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="flex items-center gap-2">
+          <Link href={`/warehouses/${warehouse.id}/mapping`}>
+            <Button variant="outline" size="sm" data-testid="button-warehouse-mapping">
+              <MapPin className="h-4 w-4 mr-2" />
+              Mapping
+            </Button>
+          </Link>
+          <Link href={`/warehouses/${warehouse.id}/edit`}>
+            <Button className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700" size="sm" data-testid="button-edit">
+              <Edit className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
+          </Link>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-8 space-y-6">
-        {/* Warehouse Inventory Section - Full Width at Top */}
-        <Card className="border-slate-200 dark:border-slate-800 shadow-sm" data-testid="card-warehouse-inventory">
-          <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Box className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                Warehouse Inventory
-              </CardTitle>
-              <Badge variant="outline" className="font-mono" data-testid="badge-product-count">{warehouseProducts.length} items</Badge>
-            </div>
-          </CardHeader>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
           <CardContent className="p-6">
-            {/* Search Bar */}
-            <div className="mb-6">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  type="text"
-                  placeholder="Search by name, SKU, barcode, or location..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 h-11"
-                  data-testid="input-search-products"
-                />
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Status</p>
+                {getStatusBadge(warehouse.status || 'active')}
               </div>
-              {searchTerm && (
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 flex items-center gap-1">
-                  <span className="font-medium">{filteredProducts.length}</span> of {warehouseProducts.length} items
-                </p>
-              )}
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
+                <Activity className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
             </div>
+          </CardContent>
+        </Card>
 
-            {/* Products List */}
-            {productsLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24" />)}
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Type</p>
+                {getTypeBadge(warehouse.type || 'fulfillment')}
               </div>
-            ) : filteredProducts.length > 0 ? (
-              <div className="space-y-3 max-h-[650px] overflow-y-auto pr-1">
-                {filteredProducts.map((product) => (
-                  <div
-                    key={product.id}
-                    className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:shadow-sm hover:border-blue-300 dark:hover:border-blue-700 hover:bg-white dark:hover:bg-slate-800 transition-all group"
-                    data-testid={`product-item-${product.id}`}
-                  >
-                    <div className="flex items-start gap-4">
-                      {/* Product Image */}
-                      <Link href={`/products/${product.id}`} className="flex-shrink-0">
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-blue-50 to-sky-50 dark:from-blue-950 dark:to-sky-950">
+                <WarehouseIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Total Products</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 truncate" data-testid="text-total-products">
+                  {totalProducts.toLocaleString()}
+                </p>
+              </div>
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
+                <Package className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Total Units</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 truncate" data-testid="text-total-quantity">
+                  {totalQuantity.toLocaleString()}
+                </p>
+              </div>
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-teal-50 dark:from-cyan-950 dark:to-teal-950">
+                <Box className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Content Tabs */}
+      <Tabs defaultValue="details" className="w-full">
+        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+          <TabsTrigger value="details" data-testid="tab-details">Details</TabsTrigger>
+          <TabsTrigger value="inventory" data-testid="tab-inventory">
+            Inventory
+            <Badge variant="secondary" className="ml-2">{totalProducts}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="files" data-testid="tab-files">
+            Files
+            <Badge variant="secondary" className="ml-2">{files.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="contracts" data-testid="tab-contracts">
+            Contracts
+            <Badge variant="secondary" className="ml-2">{financialContracts.length}</Badge>
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Details Tab */}
+        <TabsContent value="details" className="space-y-4 mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Basic Information */}
+            <Card className="border-slate-200 dark:border-slate-800">
+              <CardHeader className="border-b border-slate-100 dark:border-slate-800">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Building className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                  Basic Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Warehouse ID</p>
+                    <p className="text-sm font-mono text-slate-900 dark:text-slate-100" data-testid="text-warehouse-id">{warehouse.id}</p>
+                  </div>
+                  {warehouse.code && (
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Code</p>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100" data-testid="text-warehouse-code">{warehouse.code}</p>
+                    </div>
+                  )}
+                </div>
+                
+                {warehouse.floorArea && (
+                  <div>
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Floor Area</p>
+                    <p className="text-sm text-slate-900 dark:text-slate-100" data-testid="text-floor-area">
+                      {warehouse.floorArea.toLocaleString()} m²
+                    </p>
+                  </div>
+                )}
+                
+                {warehouse.capacity && (
+                  <div>
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Capacity</p>
+                    <p className="text-sm text-slate-900 dark:text-slate-100" data-testid="text-capacity">
+                      {warehouse.capacity.toLocaleString()} units
+                    </p>
+                  </div>
+                )}
+
+                {warehouse.description && (
+                  <div>
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Description</p>
+                    <p className="text-sm text-slate-700 dark:text-slate-300" data-testid="text-description">{warehouse.description}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Contact Information */}
+            <Card className="border-slate-200 dark:border-slate-800">
+              <CardHeader className="border-b border-slate-100 dark:border-slate-800">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                  Contact & Location
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                {warehouse.address && (
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-4 w-4 text-slate-500 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Address</p>
+                      <p className="text-sm text-slate-900 dark:text-slate-100" data-testid="text-address">{warehouse.address}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {warehouse.phone && (
+                  <div className="flex items-start gap-2">
+                    <Phone className="h-4 w-4 text-slate-500 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Phone</p>
+                      <p className="text-sm text-slate-900 dark:text-slate-100" data-testid="text-phone">{warehouse.phone}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {warehouse.email && (
+                  <div className="flex items-start gap-2">
+                    <Mail className="h-4 w-4 text-slate-500 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Email</p>
+                      <p className="text-sm text-slate-900 dark:text-slate-100" data-testid="text-email">{warehouse.email}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {warehouse.managerName && (
+                  <div className="flex items-start gap-2">
+                    <User className="h-4 w-4 text-slate-500 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Manager</p>
+                      <p className="text-sm text-slate-900 dark:text-slate-100" data-testid="text-manager">{warehouse.managerName}</p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Inventory Tab */}
+        <TabsContent value="inventory" className="space-y-4 mt-6">
+          <Card className="border-slate-200 dark:border-slate-800">
+            <CardHeader className="border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Box className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                  Warehouse Inventory
+                </CardTitle>
+                <Badge variant="outline" className="font-mono">{filteredProducts.length} items</Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              {/* Search */}
+              <div className="mb-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input
+                    placeholder="Search products by name, SKU, barcode, or location..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                    data-testid="input-search-inventory"
+                  />
+                </div>
+              </div>
+
+              {/* Products List */}
+              {productsLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-20" />)}
+                </div>
+              ) : filteredProducts.length > 0 ? (
+                <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                  {filteredProducts.map((product) => (
+                    <div
+                      key={product.id}
+                      className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-cyan-300 dark:hover:border-cyan-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all group"
+                      data-testid={`product-item-${product.id}`}
+                    >
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
                         {product.imageUrl ? (
                           <img 
                             src={product.imageUrl} 
                             alt={product.name}
-                            className="w-16 h-16 object-cover rounded border border-slate-200 dark:border-slate-700 cursor-pointer"
+                            className="w-12 h-12 object-cover rounded border border-slate-200 dark:border-slate-700"
                           />
                         ) : (
-                          <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 flex items-center justify-center cursor-pointer">
-                            <Package className="h-8 w-8 text-slate-400" />
+                          <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 flex items-center justify-center">
+                            <Package className="h-6 w-6 text-slate-400" />
                           </div>
                         )}
-                      </Link>
-
-                      {/* Product Info */}
-                      <div className="flex-1 min-w-0">
-                        <Link href={`/products/${product.id}`}>
-                          <h4 className="font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer" data-testid={`text-product-name-${product.id}`}>
-                            {product.name}
-                          </h4>
-                        </Link>
                         
-                        <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-slate-600 dark:text-slate-400">
-                          {product.sku && (
-                            <div className="flex items-center gap-1">
-                              <Barcode className="h-3.5 w-3.5" />
-                              <span data-testid={`text-sku-${product.id}`}>{product.sku}</span>
-                            </div>
-                          )}
-                          {product.primaryLocation && (
-                            <div className="flex items-center gap-1">
-                              <MapPin className="h-3.5 w-3.5" />
-                              <span className="font-medium" data-testid={`text-location-${product.id}`}>{product.primaryLocation}</span>
-                            </div>
-                          )}
-                          {product.barcode && (
-                            <span className="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">
-                              {product.barcode}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Additional Info Row */}
-                        <div className="flex flex-wrap items-center gap-4 mt-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-slate-600 dark:text-slate-400">Stock:</span>
-                            <Badge 
-                              variant={(product.quantity || 0) <= (product.lowStockAlert || 5) ? "destructive" : "secondary"}
-                              data-testid={`badge-quantity-${product.id}`}
-                            >
-                              {product.quantity || 0}
-                            </Badge>
-                          </div>
-                          
-                          {product.totalLocationQuantity > 0 && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-slate-600 dark:text-slate-400">Bin Locations:</span>
-                              <span className="text-sm font-medium" data-testid={`text-bin-quantity-${product.id}`}>
-                                {product.totalLocationQuantity} units
+                        <div className="flex-1 min-w-0">
+                          <Link href={`/products/${product.id}`}>
+                            <h4 className="font-semibold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors truncate" data-testid={`text-product-name-${product.id}`}>
+                              {product.name}
+                            </h4>
+                          </Link>
+                          <div className="flex items-center gap-3 mt-1 text-xs text-slate-600 dark:text-slate-400">
+                            {product.sku && (
+                              <span className="flex items-center gap-1">
+                                <Barcode className="h-3 w-3" />
+                                {product.sku}
                               </span>
-                              <Badge variant="outline">{product.locations?.length || 0} bins</Badge>
-                            </div>
-                          )}
-
-                          {product.priceEur && (
-                            <span className="text-sm font-semibold text-slate-900 dark:text-white" data-testid={`text-price-${product.id}`}>
-                              €{parseFloat(product.priceEur).toFixed(2)}
-                            </span>
-                          )}
+                            )}
+                            {product.primaryLocation && (
+                              <span className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {product.primaryLocation}
+                              </span>
+                            )}
+                            <span className="font-medium">Qty: {product.quantity || 0}</span>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Move Button */}
-                      <div className="flex-shrink-0">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleMoveProduct(product);
-                          }}
-                          className="gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                          data-testid={`button-move-${product.id}`}
-                        >
-                          <MoveRight className="h-4 w-4" />
-                          Move
-                        </Button>
-                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setProductToMove(product);
+                          setShowMoveDialog(true);
+                        }}
+                        data-testid={`button-move-${product.id}`}
+                      >
+                        <MoveRight className="h-4 w-4 mr-2" />
+                        Move
+                      </Button>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : searchTerm ? (
-              <div className="text-center py-12" data-testid="empty-state-search">
-                <Search className="h-12 w-12 text-slate-400 mx-auto mb-3" />
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-1">No items found</p>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Try adjusting your search terms
-                </p>
-              </div>
-            ) : (
-              <div className="text-center py-12" data-testid="empty-state-inventory">
-                <Box className="h-12 w-12 text-slate-400 mx-auto mb-3" />
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-1">No inventory items</p>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  This warehouse doesn't have any products assigned
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Primary Information */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Warehouse Details */}
-            <Card className="border-slate-200 dark:border-slate-800 shadow-sm" data-testid="card-warehouse-info">
-              <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <WarehouseIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  Warehouse Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Location</p>
-                  <p className="text-slate-900 dark:text-slate-100" data-testid="text-location">{warehouse.location}</p>
+                  ))}
                 </div>
-                {warehouse.manager && (
-                  <div>
-                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Manager</p>
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-slate-400" />
-                      <p className="text-slate-900 dark:text-slate-100" data-testid="text-manager">{warehouse.manager}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {warehouse.address && (
-                <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Address</p>
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-800">
-                    <MapPin className="h-5 w-5 text-slate-400 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-slate-900 dark:text-slate-100" data-testid="text-address">{warehouse.address}</p>
-                      {(warehouse.city || warehouse.country) && (
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1" data-testid="text-city-country">
-                          {[warehouse.city, warehouse.zipCode, warehouse.country].filter(Boolean).join(', ')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {warehouse.phone && (
-                  <div>
-                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Phone</p>
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-slate-400" />
-                      <p className="text-slate-900 dark:text-slate-100" data-testid="text-phone">{warehouse.phone}</p>
-                    </div>
-                  </div>
-                )}
-                {warehouse.email && (
-                  <div>
-                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Email</p>
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-slate-400" />
-                      <p className="text-slate-900 dark:text-slate-100" data-testid="text-email">{warehouse.email}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {warehouse.contact && (
-                <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Primary Contact Person</p>
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-slate-400" />
-                    <p className="text-slate-900 dark:text-slate-100" data-testid="text-contact">{warehouse.contact}</p>
-                  </div>
-                </div>
-              )}
-
-              {warehouse.rentedFromDate && (
-                <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Rented From Date</p>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-slate-400" />
-                    <p className="text-slate-900 dark:text-slate-100" data-testid="text-rented-date">
-                      {formatDate(warehouse.rentedFromDate)}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {warehouse.notes && (
-                <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Notes</p>
-                  <p className="text-slate-900 dark:text-slate-100 whitespace-pre-wrap p-3 rounded-lg bg-slate-50 dark:bg-slate-800" data-testid="text-notes">
-                    {warehouse.notes}
+              ) : (
+                <div className="text-center py-12">
+                  <Box className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+                  <p className="text-slate-600 dark:text-slate-400">
+                    {searchQuery ? 'No products found' : 'No products in this warehouse'}
                   </p>
                 </div>
               )}
             </CardContent>
           </Card>
+        </TabsContent>
 
-          {/* Financial Contracts */}
-          <Card className="border-slate-200 dark:border-slate-800 shadow-sm" data-testid="card-financial-contracts">
-            <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+        {/* Files Tab */}
+        <TabsContent value="files" className="space-y-4 mt-6">
+          <Card className="border-slate-200 dark:border-slate-800">
+            <CardHeader className="border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <ScrollText className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                  Financial Contracts
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                  Documents & Files
                 </CardTitle>
-                <Badge variant="outline" className="font-mono">{financialContracts.length}</Badge>
+                <ObjectUploader
+                  onGetUploadParameters={handleGetUploadParameters}
+                  onUploadComplete={handleFileUploadComplete}
+                  trigger={
+                    <Button size="sm" data-testid="button-upload-file">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload
+                    </Button>
+                  }
+                />
               </div>
             </CardHeader>
             <CardContent className="p-6">
-              {contractsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                </div>
-              ) : financialContracts.length === 0 ? (
-                <div className="text-center py-12 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg">
-                  <ScrollText className="h-12 w-12 text-slate-400 mx-auto mb-3" />
-                  <p className="text-slate-600 dark:text-slate-400 font-medium">No financial contracts</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-500 mt-1">This warehouse has no financial agreements</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {financialContracts.map((contract: WarehouseFinancialContract) => (
-                    <Card key={contract.id} className="border-slate-200 dark:border-slate-700" data-testid={`card-contract-${contract.id}`}>
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100" data-testid={`text-contract-name-${contract.id}`}>
-                              {contract.contractName}
-                            </CardTitle>
-                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 capitalize" data-testid={`text-contract-type-${contract.id}`}>
-                              {contract.contractType}
-                            </p>
-                          </div>
-                          <Badge variant={getContractStatusBadgeVariant(contract.status || 'active')} data-testid={`badge-status-${contract.id}`}>
-                            {contract.status || 'active'}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div className="space-y-2 text-sm">
-                          <div className="flex items-center justify-between">
-                            <span className="text-slate-600 dark:text-slate-400">Amount:</span>
-                            <span className="font-semibold text-slate-900 dark:text-slate-100" data-testid={`text-contract-price-${contract.id}`}>
-                              {contract.price} {contract.currency}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-slate-600 dark:text-slate-400">Billing:</span>
-                            <span className="text-slate-900 dark:text-slate-100" data-testid={`text-contract-billing-${contract.id}`}>
-                              {contract.billingPeriod === 'custom' 
-                                ? `Every ${contract.customBillingDays} days`
-                                : contract.billingPeriod}
-                            </span>
-                          </div>
-                          {contract.rentalDueDate && (
-                            <div className="flex items-center justify-between">
-                              <span className="text-slate-600 dark:text-slate-400">Due Date:</span>
-                              <span className="text-slate-900 dark:text-slate-100" data-testid={`text-contract-due-${contract.id}`}>
-                                {formatDate(contract.rentalDueDate)}
-                              </span>
-                            </div>
-                          )}
-                          {contract.startDate && (
-                            <div className="flex items-center justify-between">
-                              <span className="text-slate-600 dark:text-slate-400">Start:</span>
-                              <span className="text-slate-900 dark:text-slate-100" data-testid={`text-contract-start-${contract.id}`}>
-                                {formatDate(contract.startDate)}
-                              </span>
-                            </div>
-                          )}
-                          {contract.endDate && (
-                            <div className="flex items-center justify-between">
-                              <span className="text-slate-600 dark:text-slate-400">End:</span>
-                              <span className="text-slate-900 dark:text-slate-100" data-testid={`text-contract-end-${contract.id}`}>
-                                {formatDate(contract.endDate)}
-                              </span>
-                            </div>
-                          )}
-                          {contract.notes && (
-                            <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
-                              <p className="text-slate-600 dark:text-slate-400 text-xs line-clamp-2" data-testid={`text-contract-notes-${contract.id}`}>
-                                {contract.notes}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Column - Files & Documents */}
-        <div className="space-y-6">
-          <Card className="border-slate-200 dark:border-slate-800 shadow-sm" data-testid="card-files">
-            <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <FileText className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-                  Documents
-                </CardTitle>
-                <Badge variant="outline" className="font-mono" data-testid="badge-file-count">{files.length} files</Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              {/* Upload Section - Clean Professional Design */}
-              <ObjectUploader
-                maxNumberOfFiles={10}
-                maxFileSize={50 * 1024 * 1024}
-                onGetUploadParameters={handleGetUploadParameters}
-                onComplete={handleFileUploadComplete}
-                buttonClassName="w-full"
-              >
-                <div 
-                  className="relative border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-8 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-all duration-200 cursor-pointer group"
-                  data-testid="section-upload"
-                >
-                  <div className="flex flex-col items-center gap-4">
-                    {/* Icon */}
-                    <div className="p-4 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 group-hover:from-blue-100 group-hover:to-blue-200 dark:group-hover:from-blue-900/50 dark:group-hover:to-blue-800/50 transition-all">
-                      <UploadCloud className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    
-                    {/* Text Content */}
-                    <div className="text-center">
-                      <p className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-1">
-                        Upload Documents
-                      </p>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
-                        Drag and drop files here, or click to browse
-                      </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">
-                        Maximum file size: 50MB • Up to 10 files
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </ObjectUploader>
-
-              {/* Files List */}
               {filesLoading ? (
                 <div className="space-y-2">
                   {[1, 2, 3].map(i => <Skeleton key={i} className="h-16" />)}
                 </div>
               ) : files.length > 0 ? (
-                <>
-                  {/* Sort Controls */}
-                  <div className="flex items-center justify-between py-2">
-                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Uploaded Files</p>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleSort('name')}
-                        data-testid="button-sort-name"
-                      >
-                        Name
-                        {sortField === 'name' && <ArrowUpDown className="h-3 w-3 ml-1" />}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleSort('date')}
-                        data-testid="button-sort-date"
-                      >
-                        Date
-                        {sortField === 'date' && <ArrowUpDown className="h-3 w-3 ml-1" />}
-                      </Button>
-                    </div>
-                  </div>
-                  <Separator />
-                  <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                    {sortedFiles.map((file) => (
-                      <div
-                        key={file.id}
-                        className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group"
-                        data-testid={`file-item-${file.id}`}
-                      >
-                        <div className="flex-shrink-0">
-                          {getFileIcon(file.fileName)}
-                        </div>
+                <div className="space-y-2">
+                  {files.map((file) => (
+                    <div
+                      key={file.id}
+                      className="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all"
+                      data-testid={`file-item-${file.id}`}
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {getFileIcon(file.fileName)}
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate" data-testid={`text-filename-${file.id}`}>
+                          <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate" data-testid={`text-file-name-${file.id}`}>
                             {file.fileName}
                           </p>
-                          <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 mt-1">
-                            <span data-testid={`text-filesize-${file.id}`}>{formatFileSize(file.fileSize)}</span>
-                            <span>•</span>
-                            <span data-testid={`text-filedate-${file.id}`}>{formatDate(file.createdAt)}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => window.open(file.fileUrl, '_blank')}
-                            data-testid={`button-download-${file.id}`}
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDeleteFile(file)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                            data-testid={`button-delete-${file.id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <p className="text-xs text-slate-500">
+                            {formatFileSize(file.fileSize)} • {formatDate(file.createdAt)}
+                          </p>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </>
+                      
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          asChild
+                          data-testid={`button-download-${file.id}`}
+                        >
+                          <a href={file.fileUrl} target="_blank" rel="noopener noreferrer">
+                            <Download className="h-4 w-4" />
+                          </a>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setFileToDelete(file);
+                            setShowDeleteFileDialog(true);
+                          }}
+                          data-testid={`button-delete-${file.id}`}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : (
-                <div className="text-center py-12" data-testid="empty-state-files">
-                  <div className="inline-flex p-4 rounded-full bg-slate-100 dark:bg-slate-800 mb-4">
-                    <FileIcon className="h-8 w-8 text-slate-400" />
-                  </div>
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-1">No files uploaded</p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Upload files to keep important documents organized
-                  </p>
+                <div className="text-center py-12">
+                  <UploadCloud className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+                  <p className="text-slate-600 dark:text-slate-400 mb-4">No files uploaded yet</p>
+                  <ObjectUploader
+                    onGetUploadParameters={handleGetUploadParameters}
+                    onUploadComplete={handleFileUploadComplete}
+                    trigger={
+                      <Button variant="outline" size="sm">
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload First File
+                      </Button>
+                    }
+                  />
                 </div>
               )}
             </CardContent>
           </Card>
-        </div>
-        </div>
-      </div>
+        </TabsContent>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={showDeleteFileDialog} onOpenChange={setShowDeleteFileDialog}>
-        <AlertDialogContent data-testid="dialog-delete-file">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete File</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete "{fileToDelete?.fileName}"? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDeleteFile}
-              className="bg-red-600 hover:bg-red-700"
-              data-testid="button-confirm-delete"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        {/* Contracts Tab */}
+        <TabsContent value="contracts" className="space-y-4 mt-6">
+          <Card className="border-slate-200 dark:border-slate-800">
+            <CardHeader className="border-b border-slate-100 dark:border-slate-800">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                Financial Contracts
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {contractsLoading ? (
+                <div className="space-y-3">
+                  {[1, 2].map(i => <Skeleton key={i} className="h-24" />)}
+                </div>
+              ) : financialContracts.length > 0 ? (
+                <div className="space-y-3">
+                  {financialContracts.map((contract) => (
+                    <div
+                      key={contract.id}
+                      className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all"
+                      data-testid={`contract-item-${contract.id}`}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h4 className="font-semibold text-slate-900 dark:text-slate-100" data-testid={`text-contract-type-${contract.id}`}>
+                            {contract.contractType}
+                          </h4>
+                          <p className="text-xs text-slate-500 mt-1">
+                            {formatDate(contract.startDate)} - {formatDate(contract.endDate)}
+                          </p>
+                        </div>
+                        <Badge 
+                          variant={contract.status === 'active' ? 'default' : 'secondary'}
+                          data-testid={`badge-contract-status-${contract.id}`}
+                        >
+                          {contract.status}
+                        </Badge>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">Monthly Cost</p>
+                          <p className="font-semibold text-slate-900 dark:text-slate-100" data-testid={`text-contract-cost-${contract.id}`}>
+                            {formatCurrency(contract.monthlyCost, contract.currency)}
+                          </p>
+                        </div>
+                        {contract.notes && (
+                          <div className="col-span-2">
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Notes</p>
+                            <p className="text-sm text-slate-700 dark:text-slate-300">{contract.notes}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <DollarSign className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+                  <p className="text-slate-600 dark:text-slate-400">No financial contracts</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Move Product Dialog */}
       <Dialog open={showMoveDialog} onOpenChange={setShowMoveDialog}>
-        <DialogContent className="sm:max-w-md" data-testid="dialog-move-product">
+        <DialogContent data-testid="dialog-move-product">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <MoveRight className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              Move Product to Another Warehouse
-            </DialogTitle>
+            <DialogTitle>Move Product to Another Warehouse</DialogTitle>
             <DialogDescription>
-              Select the warehouse where you want to move "{productToMove?.name}"
+              Select the destination warehouse for {productToMove?.name}
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            {/* Current Warehouse Info */}
-            {productToMove && (
-              <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Current Location</p>
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  {warehouse?.name}
-                </p>
-              </div>
-            )}
-
-            {/* Warehouse Selector */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                Target Warehouse
-              </label>
-              <Select value={targetWarehouseId} onValueChange={setTargetWarehouseId}>
-                <SelectTrigger className="w-full" data-testid="select-target-warehouse">
-                  <SelectValue placeholder="Select a warehouse..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {allWarehouses
-                    .filter(w => w.id !== id) // Exclude current warehouse
-                    .map((wh) => (
-                      <SelectItem key={wh.id} value={wh.id}>
-                        <div className="flex items-center gap-2">
-                          <WarehouseIcon className="h-4 w-4 text-slate-400" />
-                          <span>{wh.name}</span>
-                          {wh.location && (
-                            <span className="text-xs text-slate-500">• {wh.location}</span>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="py-4">
+            <Select value={targetWarehouseId} onValueChange={setTargetWarehouseId}>
+              <SelectTrigger data-testid="select-target-warehouse">
+                <SelectValue placeholder="Select warehouse" />
+              </SelectTrigger>
+              <SelectContent>
+                {allWarehouses
+                  .filter(w => w.id !== id && w.status === 'active')
+                  .map((warehouse) => (
+                    <SelectItem key={warehouse.id} value={warehouse.id}>
+                      {warehouse.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
+          <DialogFooter>
+            <Button 
+              variant="outline" 
               onClick={() => {
                 setShowMoveDialog(false);
                 setProductToMove(null);
@@ -1054,26 +805,44 @@ export default function WarehouseDetails() {
               Cancel
             </Button>
             <Button
-              onClick={confirmMoveProduct}
+              onClick={() => {
+                if (productToMove && targetWarehouseId) {
+                  moveProductMutation.mutate({
+                    productId: productToMove.id,
+                    targetWarehouseId: targetWarehouseId,
+                  });
+                }
+              }}
               disabled={!targetWarehouseId || moveProductMutation.isPending}
               data-testid="button-confirm-move"
-              className="gap-2"
             >
-              {moveProductMutation.isPending ? (
-                <>
-                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Moving...
-                </>
-              ) : (
-                <>
-                  <MoveRight className="h-4 w-4" />
-                  Move Product
-                </>
-              )}
+              {moveProductMutation.isPending ? 'Moving...' : 'Move Product'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete File Dialog */}
+      <AlertDialog open={showDeleteFileDialog} onOpenChange={setShowDeleteFileDialog}>
+        <AlertDialogContent data-testid="dialog-delete-file">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete File</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{fileToDelete?.fileName}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => fileToDelete && deleteFileMutation.mutate(fileToDelete.id)}
+              className="bg-red-600 hover:bg-red-700"
+              data-testid="button-confirm-delete"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
