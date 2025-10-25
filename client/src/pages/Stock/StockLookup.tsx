@@ -170,8 +170,8 @@ export default function StockLookup() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-6">
       {/* Header - Sticky on mobile */}
       <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="px-4 py-4">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Stock Lookup</h1>
+        <div className="px-3 py-3">
+          <h1 className="text-lg font-bold text-gray-900 dark:text-white mb-2.5">Stock Lookup</h1>
           
           {/* Search Bar */}
           <div className="relative">
@@ -197,18 +197,18 @@ export default function StockLookup() {
       </div>
 
       {/* Content */}
-      <div className="px-4 py-4 space-y-3">
+      <div className="px-3 py-3 space-y-2">
         {isLoading ? (
           // Loading skeletons
           Array.from({ length: 5 }).map((_, i) => (
             <Card key={i} className="border-gray-200 dark:border-gray-700">
-              <CardContent className="p-4">
+              <CardContent className="p-3">
                 <div className="flex gap-3">
-                  <Skeleton className="h-16 w-16 rounded-lg flex-shrink-0" />
+                  <Skeleton className="h-20 w-20 rounded-md flex-shrink-0" />
                   <div className="flex-1 space-y-2">
                     <Skeleton className="h-4 w-3/4" />
                     <Skeleton className="h-3 w-1/2" />
-                    <Skeleton className="h-3 w-1/3" />
+                    <Skeleton className="h-3 w-2/3" />
                   </div>
                 </div>
               </CardContent>
@@ -244,7 +244,7 @@ export default function StockLookup() {
                 onClick={() => setSelectedProduct(isExpanded ? null : product.id)}
                 data-testid={`card-product-${product.id}`}
               >
-                <CardContent className="p-4">
+                <CardContent className="p-3">
                   {/* Product Header */}
                   <div className="flex gap-3">
                     {/* Product Image */}
@@ -253,74 +253,75 @@ export default function StockLookup() {
                         <img
                           src={product.imageUrl}
                           alt={product.name}
-                          className="h-16 w-16 rounded-lg object-cover bg-gray-100 dark:bg-gray-800"
+                          className="h-20 w-20 rounded-md object-cover bg-gray-100 dark:bg-gray-800"
                         />
                       ) : (
-                        <div className="h-16 w-16 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center">
+                        <div className="h-20 w-20 rounded-md bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center">
                           <Package className="h-8 w-8 text-gray-400" />
                         </div>
                       )}
                     </div>
 
                     {/* Product Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-900 dark:text-white truncate" data-testid={`text-product-name-${product.id}`}>
+                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                      {/* Top Row: Name + Stock */}
+                      <div>
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <h3 className="font-semibold text-sm leading-tight text-gray-900 dark:text-white line-clamp-2" data-testid={`text-product-name-${product.id}`}>
                             {product.name}
                           </h3>
-                          <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            {product.sku && (
-                              <span className="flex items-center gap-1">
-                                <Barcode className="h-3 w-3" />
-                                {product.sku}
-                              </span>
-                            )}
-                            {product.categoryName && (
-                              <>
-                                <span>•</span>
-                                <span>{product.categoryName}</span>
-                              </>
-                            )}
-                          </div>
+                          <Badge className={`${status.color} text-white flex items-center gap-1 flex-shrink-0 h-6 px-2`}>
+                            <StatusIcon className="h-3 w-3" />
+                            <span className="font-bold">{displayProduct.totalStock}</span>
+                          </Badge>
                         </div>
                         
-                        {/* Stock Badge */}
-                        <Badge className={`${status.color} text-white flex items-center gap-1 flex-shrink-0`}>
-                          <StatusIcon className="h-3 w-3" />
-                          <span className="text-xs">{displayProduct.totalStock}</span>
-                        </Badge>
+                        {/* SKU and Category - More compact */}
+                        <div className="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400 mb-1.5">
+                          {product.sku && (
+                            <span className="flex items-center gap-0.5 font-mono">
+                              <Barcode className="h-3 w-3" />
+                              {product.sku}
+                            </span>
+                          )}
+                          {product.categoryName && (
+                            <>
+                              {product.sku && <span>•</span>}
+                              <span className="truncate">{product.categoryName}</span>
+                            </>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Quick Info Row */}
-                      <div className="mt-3 flex items-center justify-between text-sm">
-                        <div className="flex flex-col gap-1">
+                      {/* Bottom Row: Pricing - Horizontal layout */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm">
                           {priceCzk > 0 && (
-                            <span className="text-green-600 dark:text-green-400 font-semibold" data-testid={`text-price-czk-${product.id}`}>
-                              {formatCurrency(priceCzk, 'CZK')}
+                            <span className="font-bold text-gray-900 dark:text-white" data-testid={`text-price-czk-${product.id}`}>
+                              {formatCurrency(priceCzk, 'CZK').replace(/\s/g, '')}
                             </span>
                           )}
                           {priceEur > 0 && (
-                            <span className="text-blue-600 dark:text-blue-400 font-semibold" data-testid={`text-price-eur-${product.id}`}>
-                              {formatCurrency(priceEur, 'EUR')}
+                            <span className="font-semibold text-blue-600 dark:text-blue-400" data-testid={`text-price-eur-${product.id}`}>
+                              {formatCurrency(priceEur, 'EUR').replace(/\s/g, '')}
                             </span>
                           )}
                           {!priceCzk && !priceEur && (
-                            <span className="text-gray-500 dark:text-gray-400">N/A</span>
+                            <span className="text-gray-500 dark:text-gray-400 text-xs">No price</span>
                           )}
                         </div>
                         
                         {displayProduct.locations && displayProduct.locations.length > 0 && (
-                          <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
-                            <MapPin className="h-4 w-4" />
-                            <span className="text-xs">{displayProduct.locations.length} location{displayProduct.locations.length > 1 ? 's' : ''}</span>
+                          <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                            <MapPin className="h-3.5 w-3.5" />
+                            <span className="text-[11px] font-medium">{displayProduct.locations.length}</span>
                           </div>
                         )}
                       </div>
                     </div>
 
                     {/* Expand Indicator */}
-                    <ChevronRight className={`h-5 w-5 text-gray-400 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                    <ChevronRight className={`h-4 w-4 text-gray-400 flex-shrink-0 self-center transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                   </div>
 
                   {/* Expanded Details */}
