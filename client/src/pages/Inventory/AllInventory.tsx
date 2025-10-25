@@ -479,7 +479,7 @@ export default function AllInventory() {
     }
 
     // Category filter
-    if (categoryFilter !== "all" && product.categoryId !== categoryFilter) {
+    if (categoryFilter !== "all" && String(product.categoryId) !== String(categoryFilter)) {
       return false;
     }
 
