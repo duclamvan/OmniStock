@@ -628,15 +628,6 @@ export default function EditOrder() {
     form.setValue('currency', newCurrency);
   }, [selectedShippingAddress, form]);
 
-  // Auto-focus product search (not customer search) since customer is already selected when editing
-  useEffect(() => {
-    if (existingOrder && productSearchRef.current) {
-      setTimeout(() => {
-        productSearchRef.current?.focus();
-      }, 500);
-    }
-  }, [existingOrder]);
-
   // Auto-show discount section when discount value > 0
   useEffect(() => {
     const discountValue = form.watch('discountValue');
