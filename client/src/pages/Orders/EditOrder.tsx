@@ -23,7 +23,7 @@ import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import OrderDocumentSelector from "@/components/OrderDocumentSelector";
-import { ShippingAddressForm } from "@/components/ShippingAddressForm";
+import { ShippingAddressModal } from "@/components/ShippingAddressModal";
 import { 
   Plus, 
   Search, 
@@ -58,7 +58,8 @@ import {
   Upload,
   Download,
   Settings,
-  Clock
+  Clock,
+  Pencil
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import {
@@ -164,7 +165,8 @@ export default function EditOrder() {
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
   const [selectedShippingAddress, setSelectedShippingAddress] = useState<any>(null);
-  const [showNewAddressForm, setShowNewAddressForm] = useState(false);
+  const [showShippingModal, setShowShippingModal] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<any>(null);
   const [newCustomer, setNewCustomer] = useState({
     name: "",
     facebookName: "",
@@ -675,9 +677,14 @@ export default function EditOrder() {
       const response = await apiRequest('POST', `/api/customers/${selectedCustomer.id}/shipping-addresses`, addressData);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (newAddress) => {
       queryClient.invalidateQueries({ queryKey: ['/api/customers', selectedCustomer?.id, 'shipping-addresses'] });
-      setShowNewAddressForm(false);
+      setShowShippingModal(false);
+      setEditingAddress(null);
+      // Automatically select the new address
+      if (newAddress) {
+        setSelectedShippingAddress(newAddress);
+      }
       toast({
         title: "Success",
         description: "Shipping address created successfully",
@@ -1968,46 +1975,36 @@ export default function EditOrder() {
                     </div>
                   )}
 
-                  {!showNewAddressForm && (
+                  <div className="flex gap-2">
                     <Button
                       type="button"
                       variant="outline"
-                      className="w-full"
-                      onClick={() => setShowNewAddressForm(true)}
+                      className="flex-1"
+                      onClick={() => {
+                        setEditingAddress(null);
+                        setShowShippingModal(true);
+                      }}
                       data-testid="button-add-address"
                     >
                       <Plus className="h-4 w-4 mr-2" />
                       Add New Address
                     </Button>
-                  )}
-
-                  {/* New Address Form */}
-                  {showNewAddressForm && (
-                    <ShippingAddressForm
-                      onSave={(address) => {
-                        // For quick customers that need saving, store address temporarily
-                        if (selectedCustomer?.needsSaving) {
-                          const newAddress = {
-                            id: `temp-address-${Date.now()}`,
-                            ...address,
-                            isNew: true,
-                          };
-                          setSelectedShippingAddress(newAddress);
-                          setShowNewAddressForm(false);
-                          toast({
-                            title: "Success",
-                            description: "Address saved (will be created with customer)",
-                          });
-                        } else {
-                          // For existing customers, save immediately
-                          createShippingAddressMutation.mutate(address);
-                        }
-                      }}
-                      onCancel={() => setShowNewAddressForm(false)}
-                      isSaving={createShippingAddressMutation.isPending && !selectedCustomer?.needsSaving}
-                      title="New Shipping Address"
-                    />
-                  )}
+                    
+                    {selectedShippingAddress && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          setEditingAddress(selectedShippingAddress);
+                          setShowShippingModal(true);
+                        }}
+                        data-testid="button-edit-address"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -3930,6 +3927,35 @@ export default function EditOrder() {
         </div>
         </form>
       </div>
+      
+      {/* Shipping Address Modal */}
+      <ShippingAddressModal
+        open={showShippingModal}
+        onOpenChange={setShowShippingModal}
+        onSave={(address) => {
+          // For quick customers that need saving, store address temporarily
+          if (selectedCustomer?.needsSaving) {
+            const newAddress = {
+              id: `temp-address-${Date.now()}`,
+              ...address,
+              isNew: true,
+            };
+            setSelectedShippingAddress(newAddress);
+            setShowShippingModal(false);
+            toast({
+              title: "Success",
+              description: "Address saved (will be created with customer)",
+            });
+          } else {
+            // For existing customers, save immediately
+            createShippingAddressMutation.mutate(address);
+          }
+        }}
+        editingAddress={editingAddress}
+        existingAddresses={shippingAddresses || []}
+        title={editingAddress ? "Edit Shipping Address" : "Add Shipping Address"}
+        description={editingAddress ? "Update the shipping address details below" : "Enter the new shipping address details below"}
+      />
     </div>
   );
 }

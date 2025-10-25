@@ -1,10 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,7 +27,19 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Save, Globe, Building, Receipt } from "lucide-react";
+import { ArrowLeft, Save, Globe, Building, Receipt, Plus, Edit2, Trash2, MapPin, Star, Truck } from "lucide-react";
+import { ShippingAddressModal } from "@/components/ShippingAddressModal";
+import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const editCustomerSchema = z.object({
   name: z.string().min(1, "Customer name is required"),
@@ -87,11 +99,29 @@ export default function EditCustomer() {
   const { id } = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  
+  // Shipping address state management
+  const [shippingAddresses, setShippingAddresses] = useState<any[]>([]);
+  const [showShippingModal, setShowShippingModal] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<any>(null);
+  const [addressToDelete, setAddressToDelete] = useState<any>(null);
 
   const { data: customer, isLoading } = useQuery<any>({
     queryKey: [`/api/customers/${id}`],
     enabled: !!id,
   });
+
+  // Fetch customer shipping addresses
+  const { data: addressesData } = useQuery<any>({
+    queryKey: [`/api/customers/${id}/shipping-addresses`],
+    enabled: !!id,
+  });
+
+  useEffect(() => {
+    if (addressesData) {
+      setShippingAddresses(addressesData);
+    }
+  }, [addressesData]);
 
   const form = useForm<EditCustomerForm>({
     resolver: zodResolver(editCustomerSchema),
@@ -204,8 +234,114 @@ export default function EditCustomer() {
     },
   });
 
+  // Shipping address mutations
+  const createShippingAddressMutation = useMutation({
+    mutationFn: async (address: any) => {
+      return apiRequest('POST', `/api/customers/${id}/shipping-addresses`, address);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/customers/${id}/shipping-addresses`] });
+      toast({
+        title: "Success",
+        description: "Shipping address added successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add shipping address",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateShippingAddressMutation = useMutation({
+    mutationFn: async ({ addressId, data }: { addressId: string; data: any }) => {
+      return apiRequest('PATCH', `/api/customers/${id}/shipping-addresses/${addressId}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/customers/${id}/shipping-addresses`] });
+      toast({
+        title: "Success",
+        description: "Shipping address updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update shipping address",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteShippingAddressMutation = useMutation({
+    mutationFn: async (addressId: string) => {
+      return apiRequest('DELETE', `/api/customers/${id}/shipping-addresses/${addressId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/customers/${id}/shipping-addresses`] });
+      toast({
+        title: "Success",
+        description: "Shipping address deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete shipping address",
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (data: EditCustomerForm) => {
     updateCustomerMutation.mutate(data);
+  };
+
+  // Shipping address handlers
+  const handleAddShippingAddress = () => {
+    setEditingAddress(null);
+    setShowShippingModal(true);
+  };
+
+  const handleEditShippingAddress = (address: any) => {
+    setEditingAddress(address);
+    setShowShippingModal(true);
+  };
+
+  const handleSaveShippingAddress = (address: any) => {
+    if (editingAddress) {
+      updateShippingAddressMutation.mutate({
+        addressId: editingAddress.id,
+        data: address,
+      });
+    } else {
+      createShippingAddressMutation.mutate(address);
+    }
+    setShowShippingModal(false);
+    setEditingAddress(null);
+  };
+
+  const handleDeleteShippingAddress = (addressId: string) => {
+    deleteShippingAddressMutation.mutate(addressId);
+    setAddressToDelete(null);
+  };
+
+  const handleSetPrimaryAddress = (addressId: string) => {
+    // Update all addresses to set the selected one as primary
+    const updatedAddresses = shippingAddresses.map(addr => ({
+      ...addr,
+      isPrimary: addr.id === addressId,
+    }));
+    
+    // Update each address on the server
+    updatedAddresses.forEach(addr => {
+      updateShippingAddressMutation.mutate({
+        addressId: addr.id,
+        data: { isPrimary: addr.isPrimary },
+      });
+    });
   };
 
   if (isLoading) {
@@ -514,88 +650,109 @@ export default function EditCustomer() {
                 />
               </div>
 
-              <div className="space-y-4 mt-4">
-                <FormField
-                  control={form.control}
-                  name="address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Street Address (Legacy)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="123 Main Street" 
-                          {...field} 
-                          value={field.value || ""} 
-                          data-testid="input-address"
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Note: Use shipping addresses for current orders
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            </CardContent>
+          </Card>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="city"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>City</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="City" 
-                            {...field} 
-                            value={field.value || ""} 
-                            data-testid="input-city"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="state"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>State/Province</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="State" 
-                            {...field} 
-                            value={field.value || ""} 
-                            data-testid="input-state"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="zipCode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>ZIP/Postal Code</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="12345" 
-                            {...field} 
-                            value={field.value || ""} 
-                            data-testid="input-zipcode"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <Truck className="inline-block h-5 w-5 mr-2" />
+                Shipping Addresses
+              </CardTitle>
+              <CardDescription>
+                Manage multiple shipping addresses for this customer
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center">
+                <p className="text-sm text-muted-foreground">
+                  {shippingAddresses.length} shipping {shippingAddresses.length === 1 ? 'address' : 'addresses'}
+                </p>
+                <Button
+                  type="button"
+                  onClick={handleAddShippingAddress}
+                  size="sm"
+                  data-testid="button-add-shipping"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Shipping Address
+                </Button>
               </div>
+
+              {shippingAddresses.length > 0 && (
+                <div className="space-y-3">
+                  {shippingAddresses.map((address) => (
+                    <div
+                      key={address.id}
+                      className="border rounded-lg p-4 space-y-2"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">{address.label || 'Shipping Address'}</span>
+                            {address.isPrimary && (
+                              <Badge variant="secondary" className="ml-2">
+                                <Star className="h-3 w-3 mr-1" />
+                                Primary
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {address.firstName} {address.lastName}
+                            {address.company && <span className="block">{address.company}</span>}
+                          </p>
+                          <p className="text-sm">
+                            {address.street} {address.streetNumber}
+                            <br />
+                            {address.city}, {address.state} {address.zipCode}
+                            <br />
+                            {address.country}
+                          </p>
+                          {(address.email || address.tel) && (
+                            <p className="text-sm text-muted-foreground">
+                              {address.email && <span className="block">{address.email}</span>}
+                              {address.tel && <span className="block">{address.tel}</span>}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex gap-1">
+                          {!address.isPrimary && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleSetPrimaryAddress(address.id)}
+                              title="Set as primary"
+                              data-testid={`button-set-primary-${address.id}`}
+                            >
+                              <Star className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditShippingAddress(address)}
+                            data-testid={`button-edit-shipping-${address.id}`}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setAddressToDelete(address)}
+                            data-testid={`button-delete-shipping-${address.id}`}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -1011,6 +1168,42 @@ export default function EditCustomer() {
           </div>
         </form>
       </Form>
+
+      {/* Shipping Address Modal */}
+      <ShippingAddressModal
+        open={showShippingModal}
+        onOpenChange={setShowShippingModal}
+        onSave={handleSaveShippingAddress}
+        editingAddress={editingAddress}
+        existingAddresses={shippingAddresses}
+        title={editingAddress ? 'Edit Shipping Address' : 'Add Shipping Address'}
+        description={
+          editingAddress 
+            ? 'Update the shipping address details below'
+            : 'Enter the new shipping address details below'
+        }
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!addressToDelete} onOpenChange={(open) => !open && setAddressToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Shipping Address</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this shipping address? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => addressToDelete && handleDeleteShippingAddress(addressToDelete.id)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
