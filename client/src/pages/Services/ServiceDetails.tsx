@@ -133,16 +133,7 @@ export default function ServiceDetails() {
   }
 
   if (error || !service) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 space-y-4" data-testid="error-state">
-        <Wrench className="h-12 w-12 text-gray-400" />
-        <p className="text-gray-500">Service not found</p>
-        <Button onClick={() => navigate('/services')} data-testid="button-back-to-services">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Services
-        </Button>
-      </div>
-    );
+    return null;
   }
 
   const getStatusBadge = (status: string) => {
