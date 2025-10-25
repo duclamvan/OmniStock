@@ -1019,7 +1019,8 @@ Important:
         totalAisles: warehouse.totalAisles || 6,
         maxRacks: warehouse.maxRacks || 10,
         maxLevels: warehouse.maxLevels || 5,
-        maxBins: warehouse.maxBins || 5
+        maxBins: warehouse.maxBins || 5,
+        aisleConfigs: warehouse.aisleConfigs || {}
       });
     } catch (error) {
       console.error("Error fetching warehouse map config:", error);
@@ -1079,6 +1080,68 @@ Important:
     } catch (error) {
       console.error("Error updating warehouse map config:", error);
       res.status(500).json({ message: "Failed to update warehouse map configuration" });
+    }
+  });
+
+  // Update per-aisle configuration
+  app.put('/api/warehouses/:id/aisle-config/:aisleId', async (req: any, res) => {
+    try {
+      const aisleConfigSchema = z.object({
+        maxRacks: z.number().int().min(1).max(100),
+        maxLevels: z.number().int().min(1).max(20),
+        maxBins: z.number().int().min(1).max(20)
+      });
+
+      const validationResult = aisleConfigSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid aisle configuration",
+          errors: validationResult.error.errors.map(e => ({
+            field: e.path.join('.'),
+            message: e.message
+          }))
+        });
+      }
+
+      const { aisleId } = req.params;
+      const { maxRacks, maxLevels, maxBins } = validationResult.data;
+
+      // Get current warehouse
+      const warehouse = await storage.getWarehouse(req.params.id);
+      if (!warehouse) {
+        return res.status(404).json({ message: "Warehouse not found" });
+      }
+
+      // Update aisle configs
+      const aisleConfigs = (warehouse.aisleConfigs as any) || {};
+      aisleConfigs[aisleId] = { maxRacks, maxLevels, maxBins };
+
+      // Save back to warehouse
+      const updatedWarehouse = await storage.updateWarehouse(req.params.id, {
+        aisleConfigs
+      });
+
+      if (!updatedWarehouse) {
+        return res.status(404).json({ message: "Failed to update warehouse" });
+      }
+
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated',
+        entityType: 'warehouse',
+        entityId: updatedWarehouse.id,
+        description: `Updated aisle ${aisleId} configuration: ${updatedWarehouse.name}`,
+      });
+      
+      res.json({
+        aisleId,
+        config: { maxRacks, maxLevels, maxBins },
+        aisleConfigs: updatedWarehouse.aisleConfigs
+      });
+    } catch (error) {
+      console.error("Error updating aisle config:", error);
+      res.status(500).json({ message: "Failed to update aisle configuration" });
     }
   });
 
