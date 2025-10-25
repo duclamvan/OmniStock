@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
+import { fuzzySearch } from "@/lib/fuzzySearch";
 import { Plus, Search, Edit, Trash2, Wrench, CheckCircle2, ChevronDown } from "lucide-react";
 import {
   AlertDialog,
@@ -101,12 +101,13 @@ export default function Services() {
     
     // Apply search filter
     if (searchQuery) {
-      const matcher = createVietnameseSearchMatcher(searchQuery);
-      filtered = filtered.filter((service) => 
-        matcher(service.name || '') ||
-        matcher(service.customer?.name || '') ||
-        matcher(service.description || '')
-      );
+      const results = fuzzySearch(filtered, searchQuery, {
+        fields: ['name', 'customer.name', 'description'],
+        threshold: 0.2,
+        fuzzy: true,
+        vietnameseNormalization: true,
+      });
+      filtered = results.map(r => r.item);
     }
     
     return filtered;

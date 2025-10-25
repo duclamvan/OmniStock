@@ -24,7 +24,7 @@ import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Input } from "@/components/ui/input";
-import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
+import { fuzzySearch } from "@/lib/fuzzySearch";
 import type { Supplier } from "@shared/schema";
 import type { DataTableColumn } from "@/components/ui/data-table";
 import {
@@ -127,17 +127,14 @@ export default function AllSuppliers() {
     }
   };
 
-  const searchMatcher = createVietnameseSearchMatcher(searchQuery);
-  const filteredSuppliers = suppliers.filter((supplier) => {
-    if (!searchQuery) return true;
-    return (
-      searchMatcher(supplier.name) ||
-      (supplier.contactPerson && searchMatcher(supplier.contactPerson)) ||
-      (supplier.email && supplier.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (supplier.phone && supplier.phone.includes(searchQuery)) ||
-      (supplier.country && searchMatcher(supplier.country))
-    );
-  });
+  const filteredSuppliers = searchQuery
+    ? fuzzySearch(suppliers, searchQuery, {
+        fields: ['name', 'contactPerson', 'email', 'phone', 'country'],
+        threshold: 0.2,
+        fuzzy: true,
+        vietnameseNormalization: true,
+      }).map(r => r.item)
+    : suppliers;
 
   // Calculate stats
   const totalSuppliers = suppliers.length;

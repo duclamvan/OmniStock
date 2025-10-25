@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
-import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
+import { fuzzySearch } from "@/lib/fuzzySearch";
 import { Plus, Package, PackageX, RefreshCw, Search, Eye } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -70,17 +70,14 @@ export default function AllReturns() {
   });
 
   // Filter returns based on search query
-  const filteredReturns = returns?.filter((returnItem: any) => {
-    if (!searchQuery) return true;
-    
-    const matcher = createVietnameseSearchMatcher(searchQuery);
-    return (
-      matcher(returnItem.returnId || '') ||
-      matcher(returnItem.customer?.name || '') ||
-      matcher(returnItem.orderId || '') ||
-      matcher(returnItem.notes || '')
-    );
-  });
+  const filteredReturns = searchQuery
+    ? fuzzySearch(returns || [], searchQuery, {
+        fields: ['returnId', 'customer.name', 'orderId', 'notes'],
+        threshold: 0.2,
+        fuzzy: true,
+        vietnameseNormalization: true,
+      }).map(r => r.item)
+    : returns;
 
   // Define table columns
   const columns: DataTableColumn<any>[] = [

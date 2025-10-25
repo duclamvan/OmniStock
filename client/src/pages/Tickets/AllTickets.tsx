@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
+import { fuzzySearch } from "@/lib/fuzzySearch";
 import { cn } from "@/lib/utils";
 import { 
   Plus, 
@@ -87,19 +87,25 @@ export default function AllTickets() {
   };
 
   // Filter tickets
-  const searchMatcher = createVietnameseSearchMatcher(searchQuery);
-  const filteredTickets = tickets.filter(ticket => {
-    const matchesSearch = searchMatcher(ticket.ticketId || '') ||
-      searchMatcher(ticket.title || '') ||
-      searchMatcher(ticket.description || '') ||
-      searchMatcher(ticket.category || '') ||
-      searchMatcher(ticket.customer?.name || '');
-    
+  let filteredTickets = tickets;
+  
+  // Apply status and priority filters
+  filteredTickets = filteredTickets.filter(ticket => {
     const matchesStatus = statusFilter === "all" || ticket.status === statusFilter;
     const matchesPriority = priorityFilter === "all" || ticket.priority === priorityFilter;
-
-    return matchesSearch && matchesStatus && matchesPriority;
+    return matchesStatus && matchesPriority;
   });
+  
+  // Apply search filter
+  if (searchQuery) {
+    const results = fuzzySearch(filteredTickets, searchQuery, {
+      fields: ['ticketId', 'title', 'description', 'category', 'customer.name'],
+      threshold: 0.2,
+      fuzzy: true,
+      vietnameseNormalization: true,
+    });
+    filteredTickets = results.map(r => r.item);
+  }
 
   // Calculate stats
   const totalTickets = tickets.length;

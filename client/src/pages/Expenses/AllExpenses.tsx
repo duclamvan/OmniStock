@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
-import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
+import { fuzzySearch } from "@/lib/fuzzySearch";
 import { 
   Plus, 
   DollarSign, 
@@ -87,14 +87,14 @@ export default function AllExpenses() {
     }
   };
 
-  const searchMatcher = createVietnameseSearchMatcher(searchQuery);
-  const filteredExpenses = expenses.filter(expense => 
-    searchMatcher(expense.expenseId || '') ||
-    searchMatcher(expense.name || '') ||
-    searchMatcher(expense.category || '') ||
-    searchMatcher(expense.description || '') ||
-    searchMatcher(expense.paymentMethod || '')
-  );
+  const filteredExpenses = searchQuery
+    ? fuzzySearch(expenses, searchQuery, {
+        fields: ['expenseId', 'name', 'category', 'description', 'paymentMethod'],
+        threshold: 0.2,
+        fuzzy: true,
+        vietnameseNormalization: true,
+      }).map(r => r.item)
+    : expenses;
 
   // Calculate stats
   const totalExpenses = expenses.reduce((sum, expense) => {

@@ -3,7 +3,7 @@ import { nanoid } from "nanoid";
 import { useLocation, useParams } from "wouter";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { normalizeVietnamese } from "@/lib/searchUtils";
+import { fuzzySearch } from "@/lib/fuzzySearch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -365,17 +365,14 @@ export default function CreatePurchase() {
   }, [frequentSuppliers, suppliers]);
 
   // Filter products based on search with Vietnamese diacritics support
-  const filteredProducts = products.filter(product => {
-    if (!currentItem.name) return false;
-    const normalizedSearch = normalizeVietnamese(currentItem.name.toLowerCase());
-    const normalizedName = normalizeVietnamese(product.name.toLowerCase());
-    const normalizedSku = product.sku ? normalizeVietnamese(product.sku.toLowerCase()) : '';
-    
-    return normalizedName.includes(normalizedSearch) || 
-           normalizedSku.includes(normalizedSearch) ||
-           product.name.toLowerCase().includes(currentItem.name.toLowerCase()) ||
-           (product.sku && product.sku.toLowerCase().includes(currentItem.name.toLowerCase()));
-  });
+  const filteredProducts = currentItem.name
+    ? fuzzySearch(products, currentItem.name, {
+        fields: ['name', 'sku'],
+        threshold: 0.2,
+        fuzzy: true,
+        vietnameseNormalization: true,
+      }).map(r => r.item)
+    : [];
 
   // Calculated values
   const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);

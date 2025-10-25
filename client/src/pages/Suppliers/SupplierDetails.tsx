@@ -32,7 +32,7 @@ import { ObjectUploader } from "@/components/ObjectUploader";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { UploadResult } from "@uppy/core";
 import { toast } from "@/hooks/use-toast";
-import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
+import { fuzzySearch } from "@/lib/fuzzySearch";
 
 export default function SupplierDetails() {
   const { id } = useParams();
@@ -121,18 +121,24 @@ export default function SupplierDetails() {
     : [];
   
   // Filter products by search term
-  const filteredProducts = supplierProducts.filter(product => {
-    if (!productSearch) return true;
-    const matcher = createVietnameseSearchMatcher(productSearch);
-    return matcher(product.name) || matcher(product.sku);
-  });
+  const filteredProducts = productSearch
+    ? fuzzySearch(supplierProducts, productSearch, {
+        fields: ['name', 'sku'],
+        threshold: 0.2,
+        fuzzy: true,
+        vietnameseNormalization: true,
+      }).map(r => r.item)
+    : supplierProducts;
   
   // Filter purchases by search term
-  const filteredPurchases = supplierPurchases.filter(purchase => {
-    if (!purchaseSearch) return true;
-    const matcher = createVietnameseSearchMatcher(purchaseSearch);
-    return matcher(purchase.productName) || (purchase.sku && matcher(purchase.sku));
-  });
+  const filteredPurchases = purchaseSearch
+    ? fuzzySearch(supplierPurchases, purchaseSearch, {
+        fields: ['productName', 'sku'],
+        threshold: 0.2,
+        fuzzy: true,
+        vietnameseNormalization: true,
+      }).map(r => r.item)
+    : supplierPurchases;
 
   if (isLoading) {
     return (

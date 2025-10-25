@@ -14,7 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
+import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { getCountryFlag } from "@/lib/countries";
@@ -425,12 +425,13 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     
     // Apply search filter
     if (searchQuery) {
-      const matcher = createVietnameseSearchMatcher(searchQuery);
-      filtered = filtered.filter((order: any) => 
-        matcher(order.orderId || '') ||
-        matcher(order.customer?.name || '') ||
-        matcher(order.customer?.facebookName || '')
-      );
+      const results = fuzzySearch(filtered, searchQuery, {
+        fields: ['orderId', 'customer.name', 'customer.facebookName'],
+        threshold: 0.2,
+        fuzzy: true,
+        vietnameseNormalization: true,
+      });
+      filtered = results.map(r => r.item);
     }
     
     return filtered;

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
+import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft, Sparkles, TrendingUp } from "lucide-react";
@@ -431,12 +431,13 @@ export default function AllInventory() {
     // Search filter
     if (!searchQuery) return true;
     
-    const matcher = createVietnameseSearchMatcher(searchQuery);
-    return (
-      matcher(product.name || '') ||
-      matcher(product.sku || '') ||
-      matcher(product.description || '')
-    );
+    const results = fuzzySearch([product], searchQuery, {
+      fields: ['name', 'sku', 'description'],
+      threshold: 0.2,
+      fuzzy: true,
+      vietnameseNormalization: true,
+    });
+    return results.length > 0;
   });
 
   const getStockStatus = (quantity: number, lowStockAlert: number) => {

@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
-import { removeDiacritics } from "@/lib/vietnameseSearch";
+import { normalizeVietnamese } from "@/lib/fuzzySearch";
 
 export function TopBar() {
   const { user } = useAuth();
@@ -18,7 +18,7 @@ export function TopBar() {
     setSearchQuery(value);
     
     // Real-time search with Vietnamese diacritics support
-    const normalizedQuery = removeDiacritics(value.toLowerCase());
+    const normalizedQuery = normalizeVietnamese(value.toLowerCase());
     // TODO: Implement search across all entities
     console.log('Searching for:', normalizedQuery);
   };

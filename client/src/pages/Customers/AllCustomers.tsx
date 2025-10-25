@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
 import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { Plus, Search, Edit, Trash2, User, Mail, Phone, Star, MessageCircle, MapPin, MoreVertical, Ban } from "lucide-react";
 import {

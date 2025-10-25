@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
+import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { calculateShippingCost } from "@/lib/shippingCosts";
@@ -1236,13 +1236,13 @@ export default function EditOrder() {
     // If there's a search query, filter items
     let items = allItems;
     if (debouncedProductSearch && debouncedProductSearch.length >= 2) {
-      const matcher = createVietnameseSearchMatcher(debouncedProductSearch);
-      items = allItems.filter((item: any) => {
-        return matcher(item.name) || 
-               matcher(item.sku) || 
-               matcher(item.description || '') ||
-               matcher(item.categoryName || '');
+      const results = fuzzySearch(allItems, debouncedProductSearch, {
+        fields: ['name', 'sku', 'description', 'categoryName'],
+        threshold: 0.2,
+        fuzzy: true,
+        vietnameseNormalization: true,
       });
+      items = results.map(r => r.item);
     }
 
     // Group items by category
@@ -1307,16 +1307,14 @@ export default function EditOrder() {
   const filteredCustomers = useMemo(() => {
     if (!Array.isArray(allCustomers) || !debouncedCustomerSearch || debouncedCustomerSearch.length < 2) return [];
 
-    const matcher = createVietnameseSearchMatcher(debouncedCustomerSearch);
+    const results = fuzzySearch(allCustomers, debouncedCustomerSearch, {
+      fields: ['name', 'facebookName', 'email', 'phone'],
+      threshold: 0.2,
+      fuzzy: true,
+      vietnameseNormalization: true,
+    });
 
-    return allCustomers
-      .filter((customer: any) => {
-        return matcher(customer.name) || 
-               matcher(customer.facebookName || '') || 
-               matcher(customer.email || '') ||
-               matcher(customer.phone || '');
-      })
-      .slice(0, 8); // Limit to 8 results for better UX
+    return results.map(r => r.item).slice(0, 8); // Limit to 8 results for better UX
   }, [allCustomers, debouncedCustomerSearch]);
 
   // Dummy function for calculateTotals, as it's not provided in the original code snippet

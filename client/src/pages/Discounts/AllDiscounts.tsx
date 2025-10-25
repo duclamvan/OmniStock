@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
+import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { format } from "date-fns";
 import { Plus, Search, Edit, Trash2, Tag, Calendar, Percent } from "lucide-react";
@@ -71,16 +71,14 @@ export default function AllDiscounts() {
   });
 
   // Filter sales based on search query
-  const filteredSales = sales?.filter((sale: any) => {
-    if (!searchQuery) return true;
-    
-    const matcher = createVietnameseSearchMatcher(searchQuery);
-    return (
-      matcher(sale.name || '') ||
-      matcher(sale.description || '') ||
-      matcher(sale.discountId || '')
-    );
-  });
+  const filteredSales = searchQuery
+    ? fuzzySearch(sales || [], searchQuery, {
+        fields: ['name', 'description', 'discountId'],
+        threshold: 0.2,
+        fuzzy: true,
+        vietnameseNormalization: true,
+      }).map(r => r.item)
+    : sales;
 
   // Check if sale is active
   const isSaleActive = (sale: any) => {

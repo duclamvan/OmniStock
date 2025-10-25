@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
+import { fuzzySearch } from "@/lib/fuzzySearch";
 import { Plus, Search, Edit, Trash2, Warehouse, MapPin, Package, Ruler, Building2, User, Settings, Check, MoreVertical } from "lucide-react";
 import {
   DropdownMenu,
@@ -104,19 +104,14 @@ export default function AllWarehouses() {
   });
 
   // Filter warehouses based on search query
-  const filteredWarehouses = warehouses?.filter((warehouse: any) => {
-    if (!searchQuery) return true;
-    
-    const matcher = createVietnameseSearchMatcher(searchQuery);
-    return (
-      matcher(warehouse.name || '') ||
-      matcher(warehouse.location || '') ||
-      matcher(warehouse.address || '') ||
-      matcher(warehouse.city || '') ||
-      matcher(warehouse.manager || '') ||
-      matcher(warehouse.notes || '')
-    );
-  });
+  const filteredWarehouses = searchQuery
+    ? fuzzySearch(warehouses || [], searchQuery, {
+        fields: ['name', 'location', 'address', 'city', 'manager', 'notes'],
+        threshold: 0.2,
+        fuzzy: true,
+        vietnameseNormalization: true,
+      }).map(r => r.item)
+    : warehouses;
 
   // Define table columns
   const columns: DataTableColumn<any>[] = [

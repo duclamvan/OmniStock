@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
+import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { calculateShippingCost } from "@/lib/shippingCosts";
@@ -1286,170 +1286,67 @@ export default function AddOrder() {
 
   // Filter products, services, and bundles with enhanced fuzzy search and smart scoring (memoized for performance)
   const filteredProducts = useMemo(() => {
-    const scoredItems: Array<any> = [];
     const searchTerm = debouncedProductSearch;
     const hasSearchTerm = searchTerm && searchTerm.length >= 2;
 
-    // Helper function to calculate match score
-    const calculateScore = (item: any, searchTerm: string, matcher: (text: string) => boolean) => {
-      if (!searchTerm || searchTerm.length < 2) return 0;
-      
-      const normalizedSearch = searchTerm.toLowerCase().trim();
-      const name = (item.name || '').toLowerCase();
-      const sku = (item.sku || '').toLowerCase();
-      const description = (item.description || '').toLowerCase();
-      
-      let score = 0;
-      
-      // Exact match (highest priority - 1000 points)
-      if (name === normalizedSearch || sku === normalizedSearch) {
-        score += 1000;
-      }
-      
-      // Starts with search term (high priority - 500 points)
-      if (name.startsWith(normalizedSearch)) {
-        score += 500;
-      } else if (sku.startsWith(normalizedSearch)) {
-        score += 450;
-      }
-      
-      // Contains search term (medium priority - 200 points)
-      if (name.includes(normalizedSearch)) {
-        score += 200;
-      } else if (sku.includes(normalizedSearch)) {
-        score += 150;
-      } else if (description.includes(normalizedSearch)) {
-        score += 100;
-      }
-      
-      // Vietnamese matcher bonus (50 points if it matches via Vietnamese search)
-      if (matcher(item.name) || matcher(item.sku || '') || matcher(item.description || '')) {
-        score += 50;
-      }
-      
-      // Multiple word matches bonus (100 points)
-      const searchWords = normalizedSearch.split(/\s+/);
-      if (searchWords.length > 1) {
-        const matchedWords = searchWords.filter(word => 
-          name.includes(word) || sku.includes(word) || description.includes(word)
-        );
-        if (matchedWords.length === searchWords.length) {
-          score += 100;
-        } else if (matchedWords.length > 1) {
-          score += 50;
-        }
-      }
-      
-      // Frequency bonus (up to 50 points based on how often it's ordered)
-      const frequency = productFrequency[item.id] || 0;
-      score += Math.min(frequency * 5, 50);
-      
-      return score;
-    };
-
-    const matcher = hasSearchTerm ? createVietnameseSearchMatcher(searchTerm) : () => true;
-
-    // Process products
-    if (Array.isArray(allProducts)) {
-      allProducts.forEach((product: any) => {
-        if (!hasSearchTerm) {
-          // No search term - include all products with frequency as score
-          scoredItems.push({
-            ...product,
-            isService: false,
-            isBundle: false,
-            score: productFrequency[product.id] || 0
-          });
-        } else {
-          const score = calculateScore(product, searchTerm, matcher);
-          if (score > 0) {
-            scoredItems.push({
-              ...product,
-              isService: false,
-              isBundle: false,
-              score
-            });
-          }
-        }
+    if (!hasSearchTerm) {
+      // No search term - include all items sorted by frequency
+      const allItems = [
+        ...(Array.isArray(allProducts) ? allProducts.map((p: any) => ({ ...p, isService: false, isBundle: false })) : []),
+        ...(Array.isArray(allServices) ? allServices.map((s: any) => ({ ...s, isService: true, isBundle: false })) : []),
+        ...(Array.isArray(allBundles) ? allBundles.map((b: any) => ({ ...b, isService: false, isBundle: true })) : []),
+      ];
+      // Sort by frequency
+      return allItems.sort((a, b) => {
+        const freqA = productFrequency[a.id] || 0;
+        const freqB = productFrequency[b.id] || 0;
+        return freqB - freqA;
       });
     }
 
-    // Process services
-    if (Array.isArray(allServices)) {
-      allServices.forEach((service: any) => {
-        if (!hasSearchTerm) {
-          // No search term - include all services
-          scoredItems.push({
-            ...service,
-            isService: true,
-            isBundle: false,
-            score: 0
-          });
-        } else {
-          const score = calculateScore(service, searchTerm, matcher);
-          if (score > 0) {
-            scoredItems.push({
-              ...service,
-              isService: true,
-              isBundle: false,
-              score
-            });
-          }
-        }
-      });
-    }
+    // Combine all items for search
+    const allItems = [
+      ...(Array.isArray(allProducts) ? allProducts.map((p: any) => ({ ...p, isService: false, isBundle: false })) : []),
+      ...(Array.isArray(allServices) ? allServices.map((s: any) => ({ ...s, isService: true, isBundle: false })) : []),
+      ...(Array.isArray(allBundles) ? allBundles.map((b: any) => ({ ...b, isService: false, isBundle: true })) : []),
+    ];
 
-    // Process bundles
-    if (Array.isArray(allBundles)) {
-      allBundles.forEach((bundle: any) => {
-        if (!hasSearchTerm) {
-          // No search term - include all bundles
-          scoredItems.push({
-            ...bundle,
-            isService: false,
-            isBundle: true,
-            score: 0
-          });
-        } else {
-          const score = calculateScore(bundle, searchTerm, matcher);
-          if (score > 0) {
-            scoredItems.push({
-              ...bundle,
-              isService: false,
-              isBundle: true,
-              score
-            });
-          }
-        }
-      });
-    }
-
-    // Sort by score (highest first), then by name alphabetically
-    scoredItems.sort((a, b) => {
-      if (b.score !== a.score) {
-        return b.score - a.score;
-      }
-      return (a.name || '').localeCompare(b.name || '');
+    // Use fuzzySearch with custom scoring that includes frequency
+    const results = fuzzySearch(allItems, searchTerm, {
+      fields: ['name', 'sku', 'description', 'nameCz', 'nameVn'],
+      threshold: 0.15, // Lower threshold for better recall
+      fuzzy: true,
+      vietnameseNormalization: true,
     });
 
-    // Return results: limit to 8 when searching, show ALL when empty (no limit)
-    return hasSearchTerm ? scoredItems.slice(0, 8) : scoredItems;
+    // Apply frequency bonus to scores
+    const scoredResults = results.map(result => {
+      const frequency = productFrequency[result.item.id] || 0;
+      const frequencyBonus = Math.min(frequency * 0.5, 10); // Up to 10 points bonus
+      return {
+        ...result,
+        score: result.score + frequencyBonus,
+      };
+    });
+
+    // Sort by adjusted score and return top 8
+    scoredResults.sort((a, b) => b.score - a.score);
+    return scoredResults.slice(0, 8).map(r => r.item);
   }, [allProducts, allServices, allBundles, debouncedProductSearch, productFrequency]);
 
   // Filter customers with Vietnamese search (memoized for performance)
   const filteredCustomers = useMemo(() => {
     if (!Array.isArray(allCustomers) || !debouncedCustomerSearch || debouncedCustomerSearch.length < 2) return [];
 
-    const matcher = createVietnameseSearchMatcher(debouncedCustomerSearch);
+    const results = fuzzySearch(allCustomers, debouncedCustomerSearch, {
+      fields: ['name', 'facebookName', 'email', 'phone', 'company'],
+      threshold: 0.2, // Lower threshold for more results
+      fuzzy: true,
+      vietnameseNormalization: true,
+    });
 
-    return allCustomers
-      .filter((customer: any) => {
-        return matcher(customer.name) || 
-               matcher(customer.facebookName || '') || 
-               matcher(customer.email || '') ||
-               matcher(customer.phone || '');
-      })
-      .slice(0, 8); // Limit to 8 results for better UX
+    // Limit to top 8 results
+    return results.slice(0, 8).map(r => r.item);
   }, [allCustomers, debouncedCustomerSearch]);
 
   // Dummy function for calculateTotals, as it's not provided in the original code snippet
