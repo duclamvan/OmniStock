@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
   Dialog,
@@ -24,7 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Plus, Minus, Package, AlertCircle } from "lucide-react";
+import { Plus, Minus, Package, AlertCircle, Barcode, ScanLine } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -65,6 +65,10 @@ export default function StockAdjustmentDialog({
   const [newQuantity, setNewQuantity] = useState(0);
   const [adjustmentAmount, setAdjustmentAmount] = useState(0);
   const [notes, setNotes] = useState("");
+  const [barcodeScanMode, setBarcodeScanMode] = useState(false);
+  const [barcodeInput, setBarcodeInput] = useState("");
+  const [scanCount, setScanCount] = useState(0);
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open && location) {
@@ -72,8 +76,18 @@ export default function StockAdjustmentDialog({
       setAdjustmentAmount(0);
       setAdjustmentType("set");
       setNotes("");
+      setBarcodeScanMode(false);
+      setBarcodeInput("");
+      setScanCount(0);
     }
   }, [open, location]);
+
+  // Auto-focus barcode input when scan mode is enabled
+  useEffect(() => {
+    if (barcodeScanMode && barcodeInputRef.current) {
+      barcodeInputRef.current.focus();
+    }
+  }, [barcodeScanMode]);
 
   const createRequestMutation = useMutation({
     mutationFn: async (data: { 
@@ -187,6 +201,34 @@ export default function StockAdjustmentDialog({
     }
   };
 
+  const handleBarcodeScan = () => {
+    if (!barcodeInput.trim()) return;
+    
+    // Increment the count and adjustment amount
+    setScanCount(prev => prev + 1);
+    setAdjustmentAmount(prev => prev + 1);
+    setBarcodeInput(""); // Clear for next scan
+    
+    // Show success feedback
+    toast({
+      title: "Item Scanned",
+      description: `Total: ${scanCount + 1} items`,
+      duration: 1000,
+    });
+    
+    // Refocus the barcode input
+    setTimeout(() => {
+      barcodeInputRef.current?.focus();
+    }, 50);
+  };
+
+  const handleBarcodeKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleBarcodeScan();
+    }
+  };
+
   const finalQuantity = calculateFinalQuantity();
   const isValid = finalQuantity >= 0;
 
@@ -262,18 +304,68 @@ export default function StockAdjustmentDialog({
 
           {(adjustmentType === "increment" || adjustmentType === "decrement") && (
             <div className="space-y-2">
-              <Label htmlFor="adjustment-amount" className="text-xs">
-                {adjustmentType === "increment" ? "Amount to Add" : "Amount to Reduce"} *
-              </Label>
-              <Input
-                id="adjustment-amount"
-                type="number"
-                min={0}
-                value={adjustmentAmount}
-                onChange={(e) => setAdjustmentAmount(parseInt(e.target.value) || 0)}
-                disabled={createRequestMutation.isPending}
-                data-testid="input-adjustment-amount"
-              />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="adjustment-amount" className="text-xs">
+                  {adjustmentType === "increment" ? "Amount to Add" : "Amount to Reduce"} *
+                </Label>
+                {adjustmentType === "increment" && (
+                  <Button
+                    type="button"
+                    variant={barcodeScanMode ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setBarcodeScanMode(!barcodeScanMode)}
+                    className="h-7 text-xs"
+                    data-testid="button-toggle-barcode-scan"
+                  >
+                    <Barcode className="h-3.5 w-3.5 mr-1" />
+                    {barcodeScanMode ? "Scanning" : "Scan"}
+                  </Button>
+                )}
+              </div>
+              
+              {barcodeScanMode ? (
+                <div className="space-y-2">
+                  <div className="relative">
+                    <ScanLine className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <Input
+                      ref={barcodeInputRef}
+                      type="text"
+                      placeholder="Scan barcode or press Enter..."
+                      value={barcodeInput}
+                      onChange={(e) => setBarcodeInput(e.target.value)}
+                      onKeyPress={handleBarcodeKeyPress}
+                      disabled={createRequestMutation.isPending}
+                      className="pl-10 border-blue-300 focus:border-blue-500 dark:border-blue-700 dark:focus:border-blue-500"
+                      data-testid="input-barcode-scan-adjust"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
+                      <div className="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse"></div>
+                      <span>Ready to scan</span>
+                    </div>
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                      {scanCount} scans
+                    </Badge>
+                  </div>
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-600 dark:text-gray-400">Total items to add:</span>
+                      <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{adjustmentAmount}</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <Input
+                  id="adjustment-amount"
+                  type="number"
+                  min={0}
+                  value={adjustmentAmount}
+                  onChange={(e) => setAdjustmentAmount(parseInt(e.target.value) || 0)}
+                  disabled={createRequestMutation.isPending}
+                  data-testid="input-adjustment-amount"
+                />
+              )}
             </div>
           )}
 
