@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Save, Plus, X, Percent, Banknote, ShoppingBag, Tag, Calendar, Info, Gift, Hash, FileText, Loader2, ChevronsUpDown } from "lucide-react";
+import { ArrowLeft, Save, Plus, X, Percent, Banknote, ShoppingBag, Tag, Calendar, Info, Gift, Hash, FileText, Loader2, ChevronsUpDown, Package, DollarSign, AlertCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import {
   Command,
@@ -20,6 +20,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from "@/components/ui/command";
 import {
   Popover,
@@ -30,7 +31,10 @@ import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import type { Product, Category } from "@/shared/schema";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import type { Product, Category } from "@shared/schema";
+import { fuzzySearch, calculateSearchScore } from "@/lib/fuzzySearch";
 
 const discountSchema = z.object({
   name: z.string().min(1, "Discount name is required"),
@@ -94,19 +98,23 @@ export default function AddDiscount() {
   const [productSearchOpen, setProductSearchOpen] = useState(false);
   const [categorySearchOpen, setCategorySearchOpen] = useState(false);
   const [getProductSearchOpen, setGetProductSearchOpen] = useState(false);
-  const [displayName, setDisplayName] = useState("");
+  const [productSearch, setProductSearch] = useState("");
+  const [categorySearch, setCategorySearch] = useState("");
+  const [getProductSearch, setGetProductSearch] = useState("");
+  const [selectedProductSearchOpen, setSelectedProductSearchOpen] = useState<number | null>(null);
+  const [selectedProductSearchTerm, setSelectedProductSearchTerm] = useState("");
   
   // Refs for debouncing currency conversion
   const czkTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const eurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch products
-  const { data: products = [] } = useQuery<Product[]>({
+  const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ['/api/products'],
   });
 
   // Fetch categories
-  const { data: categories = [] } = useQuery<Category[]>({
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
   });
 
@@ -139,6 +147,57 @@ export default function AddDiscount() {
   const watchDiscountType = form.watch("discountType");
   const watchApplicationScope = form.watch("applicationScope");
   const watchGetProductType = form.watch("getProductType");
+  const watchSelectedProductIds = form.watch("selectedProductIds");
+
+  // Filtered and sorted products with fuzzy search
+  const filteredProducts = useMemo(() => {
+    if (!productSearch.trim()) return products;
+    
+    return fuzzySearch(products, productSearch, {
+      fields: ['name', 'sku', 'description'],
+      threshold: 0.3,
+    }).map(result => result.item);
+  }, [products, productSearch]);
+
+  const filteredGetProducts = useMemo(() => {
+    if (!getProductSearch.trim()) return products;
+    
+    return fuzzySearch(products, getProductSearch, {
+      fields: ['name', 'sku', 'description'],
+      threshold: 0.3,
+    }).map(result => result.item);
+  }, [products, getProductSearch]);
+
+  const filteredSelectedProducts = useMemo(() => {
+    if (!selectedProductSearchTerm.trim()) return products;
+    
+    return fuzzySearch(products, selectedProductSearchTerm, {
+      fields: ['name', 'sku', 'description'],
+      threshold: 0.3,
+    }).map(result => result.item);
+  }, [products, selectedProductSearchTerm]);
+
+  // Filtered categories with product count
+  const categoriesWithCount = useMemo(() => {
+    return categories.map(category => {
+      const productCount = products.filter(p => String(p.categoryId) === String(category.id)).length;
+      return { ...category, productCount };
+    });
+  }, [categories, products]);
+
+  const filteredCategories = useMemo(() => {
+    if (!categorySearch.trim()) return categoriesWithCount;
+    
+    return fuzzySearch(categoriesWithCount, categorySearch, {
+      fields: ['name', 'description'],
+      threshold: 0.3,
+    }).map(result => result.item);
+  }, [categoriesWithCount, categorySearch]);
+
+  // Check for duplicate products in selected products
+  const getAlreadySelectedProductIds = () => {
+    return new Set(watchSelectedProductIds?.map(item => item.productId).filter(Boolean) || []);
+  };
 
   // Generate discount ID when name or start date changes
   useEffect(() => {
@@ -210,6 +269,18 @@ export default function AddDiscount() {
     createDiscountMutation.mutate(submitData);
   };
 
+  const formatPrice = (price: string | number | null | undefined, currency: 'CZK' | 'EUR') => {
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+    if (numPrice === null || numPrice === undefined || isNaN(numPrice)) return '-';
+    
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(numPrice);
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
@@ -260,7 +331,6 @@ export default function AddDiscount() {
                 <Input 
                   {...form.register("name")}
                   placeholder="e.g., Summer Sale 2024"
-                  onBlur={(e) => setDisplayName(e.target.value)}
                   data-testid="input-name"
                 />
                 {form.formState.errors.name && (
@@ -496,7 +566,7 @@ export default function AddDiscount() {
                         type="number"
                         min="0.01"
                         step="0.01"
-                        value={form.watch('fixedAmountEur') || (form.watch('fixedAmount') && !czkTimeoutRef.current ? (form.watch('fixedAmount') / 25).toFixed(2) : '')}
+                        value={form.watch('fixedAmountEur') || (form.watch('fixedAmount') && !czkTimeoutRef.current ? ((form.watch('fixedAmount') ?? 0) / 25).toFixed(2) : '')}
                         onChange={(e) => {
                           const eurValue = parseFloat(e.target.value);
                           if (!isNaN(eurValue)) {
@@ -579,7 +649,10 @@ export default function AddDiscount() {
 
                 {watchGetProductType === 'different_product' && (
                   <div>
-                    <Label>Select Free Product *</Label>
+                    <Label className="flex items-center justify-between">
+                      <span>Select Free Product *</span>
+                      <span className="text-xs text-muted-foreground">Press ↑↓ to navigate, Enter to select</span>
+                    </Label>
                     <Popover open={getProductSearchOpen} onOpenChange={setGetProductSearchOpen}>
                       <PopoverTrigger asChild>
                         <Button
@@ -591,37 +664,84 @@ export default function AddDiscount() {
                         >
                           {form.watch('getProductId')
                             ? products.find((product) => product.id === form.watch('getProductId'))?.name
-                            : "Select product..."}
+                            : "Search products..."}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-full p-0">
+                      <PopoverContent className="w-[500px] p-0" align="start">
                         <Command>
-                          <CommandInput placeholder="Search products..." />
-                          <CommandEmpty>No product found.</CommandEmpty>
-                          <CommandGroup className="max-h-60 overflow-auto">
-                            {products.map((product) => (
-                              <CommandItem
-                                key={product.id}
-                                onSelect={() => {
-                                  form.setValue('getProductId', product.id);
-                                  setGetProductSearchOpen(false);
-                                }}
-                                data-testid={`option-free-product-${product.id}`}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    form.watch('getProductId') === product.id ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                {product.name}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
+                          <CommandInput 
+                            placeholder="Search by name, SKU, or description..." 
+                            value={getProductSearch}
+                            onValueChange={setGetProductSearch}
+                          />
+                          <CommandEmpty>
+                            {productsLoading ? "Loading products..." : "No product found."}
+                          </CommandEmpty>
+                          <CommandList>
+                            <CommandGroup className="max-h-[300px]">
+                              {filteredGetProducts.map((product) => (
+                                <CommandItem
+                                  key={product.id}
+                                  value={product.id}
+                                  onSelect={() => {
+                                    form.setValue('getProductId', product.id);
+                                    setGetProductSearchOpen(false);
+                                    setGetProductSearch("");
+                                  }}
+                                  data-testid={`option-free-product-${product.id}`}
+                                  className="flex items-center gap-3 py-3"
+                                >
+                                  <Check
+                                    className={cn(
+                                      "h-4 w-4 shrink-0",
+                                      form.watch('getProductId') === product.id ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <p className="font-medium truncate">{product.name}</p>
+                                      {product.sku && (
+                                        <Badge variant="outline" className="text-xs shrink-0">
+                                          {product.sku}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                      {product.priceCzk && (
+                                        <span className="flex items-center gap-1">
+                                          <DollarSign className="h-3 w-3" />
+                                          {formatPrice(product.priceCzk, 'CZK')}
+                                        </span>
+                                      )}
+                                      <span className="flex items-center gap-1">
+                                        <Package className="h-3 w-3" />
+                                        Stock: {product.quantity || 0}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
                         </Command>
                       </PopoverContent>
                     </Popover>
+                    {form.watch('getProductId') && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          form.setValue('getProductId', undefined);
+                          setGetProductSearch("");
+                        }}
+                        className="mt-2"
+                      >
+                        <XCircle className="h-4 w-4 mr-2" />
+                        Clear selection
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
@@ -636,29 +756,59 @@ export default function AddDiscount() {
               <ShoppingBag className="h-5 w-5 text-purple-600" />
               Application Scope
             </CardTitle>
+            <CardDescription>Define which products this discount applies to</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
               <Label>Apply Discount To</Label>
               <Select 
                 value={watchApplicationScope} 
-                onValueChange={(value) => form.setValue('applicationScope', value as any)}
+                onValueChange={(value) => {
+                  form.setValue('applicationScope', value as any);
+                  // Clear related fields when changing scope
+                  form.setValue('productId', undefined);
+                  form.setValue('categoryId', undefined);
+                  form.setValue('selectedProductIds', []);
+                }}
               >
                 <SelectTrigger className="mt-2" data-testid="select-applicationScope">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all_products">All Products</SelectItem>
-                  <SelectItem value="specific_product">Specific Product</SelectItem>
-                  <SelectItem value="specific_category">Specific Category</SelectItem>
-                  <SelectItem value="selected_products">Selected Products</SelectItem>
+                  <SelectItem value="all_products">
+                    <div className="flex items-center gap-2">
+                      <Package className="h-4 w-4" />
+                      All Products
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="specific_product">
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-4 w-4" />
+                      Specific Product
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="specific_category">
+                    <div className="flex items-center gap-2">
+                      <ShoppingBag className="h-4 w-4" />
+                      Specific Category
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="selected_products">
+                    <div className="flex items-center gap-2">
+                      <ShoppingBag className="h-4 w-4" />
+                      Multiple Products
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {watchApplicationScope === 'specific_product' && (
               <div>
-                <Label>Select Product *</Label>
+                <Label className="flex items-center justify-between">
+                  <span>Select Product *</span>
+                  <span className="text-xs text-muted-foreground">Searchable with fuzzy matching</span>
+                </Label>
                 <Popover open={productSearchOpen} onOpenChange={setProductSearchOpen}>
                   <PopoverTrigger asChild>
                     <Button
@@ -670,43 +820,93 @@ export default function AddDiscount() {
                     >
                       {form.watch('productId')
                         ? products.find((product) => product.id === form.watch('productId'))?.name
-                        : "Select product..."}
+                        : "Search products..."}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-full p-0">
+                  <PopoverContent className="w-[500px] p-0" align="start">
                     <Command>
-                      <CommandInput placeholder="Search products..." />
-                      <CommandEmpty>No product found.</CommandEmpty>
-                      <CommandGroup className="max-h-60 overflow-auto">
-                        {products.map((product) => (
-                          <CommandItem
-                            key={product.id}
-                            onSelect={() => {
-                              form.setValue('productId', product.id);
-                              setProductSearchOpen(false);
-                            }}
-                            data-testid={`option-product-${product.id}`}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                form.watch('productId') === product.id ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {product.name}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
+                      <CommandInput 
+                        placeholder="Search by name, SKU, or description..." 
+                        value={productSearch}
+                        onValueChange={setProductSearch}
+                      />
+                      <CommandEmpty>
+                        {productsLoading ? "Loading products..." : "No product found."}
+                      </CommandEmpty>
+                      <CommandList>
+                        <CommandGroup className="max-h-[300px]">
+                          {filteredProducts.map((product) => (
+                            <CommandItem
+                              key={product.id}
+                              value={product.id}
+                              onSelect={() => {
+                                form.setValue('productId', product.id);
+                                setProductSearchOpen(false);
+                                setProductSearch("");
+                              }}
+                              data-testid={`option-product-${product.id}`}
+                              className="flex items-center gap-3 py-3"
+                            >
+                              <Check
+                                className={cn(
+                                  "h-4 w-4 shrink-0",
+                                  form.watch('productId') === product.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <p className="font-medium truncate">{product.name}</p>
+                                  {product.sku && (
+                                    <Badge variant="outline" className="text-xs shrink-0">
+                                      {product.sku}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                  {product.priceCzk && (
+                                    <span className="flex items-center gap-1">
+                                      <DollarSign className="h-3 w-3" />
+                                      {formatPrice(product.priceCzk, 'CZK')}
+                                    </span>
+                                  )}
+                                  <span className="flex items-center gap-1">
+                                    <Package className="h-3 w-3" />
+                                    Stock: {product.quantity || 0}
+                                  </span>
+                                </div>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
                     </Command>
                   </PopoverContent>
                 </Popover>
+                {form.watch('productId') && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      form.setValue('productId', undefined);
+                      setProductSearch("");
+                    }}
+                    className="mt-2"
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Clear selection
+                  </Button>
+                )}
               </div>
             )}
 
             {watchApplicationScope === 'specific_category' && (
               <div>
-                <Label>Select Category *</Label>
+                <Label className="flex items-center justify-between">
+                  <span>Select Category *</span>
+                  <span className="text-xs text-muted-foreground">Searchable with product count</span>
+                </Label>
                 <Popover open={categorySearchOpen} onOpenChange={setCategorySearchOpen}>
                   <PopoverTrigger asChild>
                     <Button
@@ -717,73 +917,83 @@ export default function AddDiscount() {
                       data-testid="button-select-category"
                     >
                       {form.watch('categoryId')
-                        ? categories.find((category) => category.id === form.watch('categoryId'))?.name
-                        : "Select category..."}
+                        ? categories.find((category) => String(category.id) === String(form.watch('categoryId')))?.name
+                        : "Search categories..."}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-full p-0">
+                  <PopoverContent className="w-[400px] p-0" align="start">
                     <Command>
-                      <CommandInput placeholder="Search categories..." />
-                      <CommandEmpty>No category found.</CommandEmpty>
-                      <CommandGroup className="max-h-60 overflow-auto">
-                        {categories.map((category) => (
-                          <CommandItem
-                            key={category.id}
-                            onSelect={() => {
-                              form.setValue('categoryId', category.id);
-                              setCategorySearchOpen(false);
-                            }}
-                            data-testid={`option-category-${category.id}`}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                form.watch('categoryId') === category.id ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {category.name}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
+                      <CommandInput 
+                        placeholder="Search categories..." 
+                        value={categorySearch}
+                        onValueChange={setCategorySearch}
+                      />
+                      <CommandEmpty>
+                        {categoriesLoading ? "Loading categories..." : "No category found."}
+                      </CommandEmpty>
+                      <CommandList>
+                        <CommandGroup className="max-h-[300px]">
+                          {filteredCategories.map((category) => (
+                            <CommandItem
+                              key={category.id}
+                              value={String(category.id)}
+                              onSelect={() => {
+                                form.setValue('categoryId', String(category.id));
+                                setCategorySearchOpen(false);
+                                setCategorySearch("");
+                              }}
+                              data-testid={`option-category-${category.id}`}
+                              className="flex items-center gap-3 py-3"
+                            >
+                              <Check
+                                className={cn(
+                                  "h-4 w-4 shrink-0",
+                                  form.watch('categoryId') === String(category.id) ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <p className="font-medium truncate">{category.name}</p>
+                                  <Badge variant="secondary" className="text-xs shrink-0">
+                                    {category.productCount} products
+                                  </Badge>
+                                </div>
+                                {category.description && (
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {category.description}
+                                  </p>
+                                )}
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
                     </Command>
                   </PopoverContent>
                 </Popover>
+                {form.watch('categoryId') && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      form.setValue('categoryId', undefined);
+                      setCategorySearch("");
+                    }}
+                    className="mt-2"
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Clear selection
+                  </Button>
+                )}
               </div>
             )}
 
             {watchApplicationScope === 'selected_products' && (
-              <div className="space-y-2">
-                <Label>Selected Products *</Label>
-                <div className="space-y-2 mt-2">
-                  {fields.map((field, index) => (
-                    <div key={field.id} className="flex gap-2">
-                      <Select
-                        value={form.watch(`selectedProductIds.${index}.productId`)}
-                        onValueChange={(value) => form.setValue(`selectedProductIds.${index}.productId`, value)}
-                      >
-                        <SelectTrigger data-testid={`select-product-${index}`}>
-                          <SelectValue placeholder="Select product..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {products.map((product) => (
-                            <SelectItem key={product.id} value={product.id}>
-                              {product.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => remove(index)}
-                        data-testid={`button-remove-product-${index}`}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Selected Products * ({fields.length})</Label>
                   <Button
                     type="button"
                     variant="outline"
@@ -794,6 +1004,140 @@ export default function AddDiscount() {
                     <Plus className="h-4 w-4 mr-2" />
                     Add Product
                   </Button>
+                </div>
+
+                {fields.length === 0 && (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Click "Add Product" to start adding products to this discount.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="space-y-2 mt-2">
+                  {fields.map((field, index) => {
+                    const selectedProductId = form.watch(`selectedProductIds.${index}.productId`);
+                    const selectedProduct = products.find(p => p.id === selectedProductId);
+                    const alreadySelected = getAlreadySelectedProductIds();
+                    
+                    return (
+                      <div key={field.id} className="flex gap-2 items-start">
+                        <div className="flex-1">
+                          <Popover 
+                            open={selectedProductSearchOpen === index} 
+                            onOpenChange={(open) => setSelectedProductSearchOpen(open ? index : null)}
+                          >
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={selectedProductSearchOpen === index}
+                                className="w-full justify-between"
+                                data-testid={`button-select-product-${index}`}
+                              >
+                                <span className="truncate">
+                                  {selectedProduct?.name || "Search products..."}
+                                </span>
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[500px] p-0" align="start">
+                              <Command>
+                                <CommandInput 
+                                  placeholder="Search by name, SKU..." 
+                                  value={selectedProductSearchTerm}
+                                  onValueChange={setSelectedProductSearchTerm}
+                                />
+                                <CommandEmpty>No product found.</CommandEmpty>
+                                <CommandList>
+                                  <CommandGroup className="max-h-[250px]">
+                                    {filteredSelectedProducts
+                                      .filter(product => !alreadySelected.has(product.id) || product.id === selectedProductId)
+                                      .map((product) => {
+                                        const isDuplicate = alreadySelected.has(product.id) && product.id !== selectedProductId;
+                                        
+                                        return (
+                                          <CommandItem
+                                            key={product.id}
+                                            value={product.id}
+                                            disabled={isDuplicate}
+                                            onSelect={() => {
+                                              if (!isDuplicate) {
+                                                form.setValue(`selectedProductIds.${index}.productId`, product.id);
+                                                setSelectedProductSearchOpen(null);
+                                                setSelectedProductSearchTerm("");
+                                              }
+                                            }}
+                                            data-testid={`option-product-${index}-${product.id}`}
+                                            className="flex items-center gap-3 py-3"
+                                          >
+                                            <Check
+                                              className={cn(
+                                                "h-4 w-4 shrink-0",
+                                                selectedProductId === product.id ? "opacity-100" : "opacity-0"
+                                              )}
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                              <div className="flex items-center gap-2 mb-1">
+                                                <p className={cn(
+                                                  "font-medium truncate",
+                                                  isDuplicate && "text-muted-foreground"
+                                                )}>
+                                                  {product.name}
+                                                </p>
+                                                {product.sku && (
+                                                  <Badge variant="outline" className="text-xs shrink-0">
+                                                    {product.sku}
+                                                  </Badge>
+                                                )}
+                                                {isDuplicate && (
+                                                  <Badge variant="destructive" className="text-xs shrink-0">
+                                                    Already added
+                                                  </Badge>
+                                                )}
+                                              </div>
+                                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                                {product.priceCzk && (
+                                                  <span className="flex items-center gap-1">
+                                                    <DollarSign className="h-3 w-3" />
+                                                    {formatPrice(product.priceCzk, 'CZK')}
+                                                  </span>
+                                                )}
+                                                <span className="flex items-center gap-1">
+                                                  <Package className="h-3 w-3" />
+                                                  Stock: {product.quantity || 0}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          </CommandItem>
+                                        );
+                                      })}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                          {selectedProduct && (
+                            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
+                              {selectedProduct.sku && <span>SKU: {selectedProduct.sku}</span>}
+                              {selectedProduct.priceCzk && <span>• {formatPrice(selectedProduct.priceCzk, 'CZK')}</span>}
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => remove(index)}
+                          data-testid={`button-remove-product-${index}`}
+                          className="shrink-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
