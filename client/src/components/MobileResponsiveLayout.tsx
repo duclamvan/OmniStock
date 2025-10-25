@@ -770,20 +770,62 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
         {/* Top Navigation Bar - Desktop Only - Hidden on Pick & Pack page */}
         {!isPickPackPage && (
         <header className="hidden lg:block sticky top-0 z-30 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between px-6 py-3">
+          <div className="flex items-center justify-between px-6 py-2">
             {/* Breadcrumb and Page Title */}
-            <div className="flex flex-col gap-1 flex-1 min-w-0">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
               {/* Breadcrumb */}
-              <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Link href="/">
                   <button className="hover:text-foreground transition-colors flex items-center gap-1">
-                    <Home className="h-3.5 w-3.5" />
+                    <Home className="h-3 w-3" />
                     <span className="hidden xl:inline">Home</span>
                   </button>
                 </Link>
                 {location !== '/' && (
                   <>
-                    <BreadcrumbChevron className="h-3.5 w-3.5" />
+                    {/* Parent Page Link */}
+                    {(location.includes('/orders/') || location.includes('/packing-materials/') || 
+                      location.includes('/inventory/') || location.includes('/warehouses/') || 
+                      location.includes('/customers/') || location.includes('/suppliers/') || 
+                      location.includes('/discounts/') || location.includes('/services/') || 
+                      location.includes('/tickets/') || location.includes('/expenses/') ||
+                      location.includes('/imports/') || location.includes('/receiving/')) && (
+                      <>
+                        <BreadcrumbChevron className="h-3 w-3" />
+                        <Link href={
+                          location.includes('/orders') ? '/orders' :
+                          location.includes('/packing-materials') ? '/packing-materials' :
+                          location.includes('/inventory') ? '/inventory' :
+                          location.includes('/warehouses') ? '/warehouses' :
+                          location.includes('/customers') ? '/customers' :
+                          location.includes('/suppliers') ? '/suppliers' :
+                          location.includes('/discounts') ? '/discounts' :
+                          location.includes('/services') ? '/services' :
+                          location.includes('/tickets') ? '/tickets' :
+                          location.includes('/expenses') ? '/expenses' :
+                          location.includes('/imports') ? '/imports' :
+                          location.includes('/receiving') ? '/receiving' :
+                          '/'
+                        }>
+                          <button className="hover:text-foreground transition-colors">
+                            {location.includes('/orders') ? 'Orders' :
+                             location.includes('/packing-materials') ? 'Packing Materials' :
+                             location.includes('/inventory') ? 'Inventory' :
+                             location.includes('/warehouses') ? 'Warehouses' :
+                             location.includes('/customers') ? 'Customers' :
+                             location.includes('/suppliers') ? 'Suppliers' :
+                             location.includes('/discounts') ? 'Discounts' :
+                             location.includes('/services') ? 'Services' :
+                             location.includes('/tickets') ? 'Tickets' :
+                             location.includes('/expenses') ? 'Expenses' :
+                             location.includes('/imports') ? 'Imports' :
+                             location.includes('/receiving') ? 'Receiving' :
+                             'Dashboard'}
+                          </button>
+                        </Link>
+                      </>
+                    )}
+                    <BreadcrumbChevron className="h-3 w-3" />
                     <span className="text-foreground font-medium truncate">
                       {location.includes('/orders/add') ? 'Add Order' :
                        location.includes('/orders/edit') ? 'Edit Order' :
@@ -792,6 +834,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                        location.includes('/orders') ? 'Orders' :
                        location.includes('/packing-materials/add') ? 'Add Material' :
                        location.includes('/packing-materials/edit') ? 'Edit Material' :
+                       location.includes('/packing-materials/') ? 'Material Details' :
                        location.includes('/packing-materials') ? 'Packing Materials' :
                        location.includes('/inventory/add') ? 'Add Product' :
                        location.includes('/inventory/edit') ? 'Edit Product' :
@@ -803,6 +846,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                        location.includes('/warehouses/') ? 'Warehouse Details' :
                        location.includes('/warehouses') ? 'Warehouses' :
                        location.includes('/discounts/add') ? 'Add Discount' :
+                       location.includes('/discounts/') ? 'Discount Details' :
                        location.includes('/discounts') ? 'Discounts' :
                        location.includes('/customers/add') ? 'Add Customer' :
                        location.includes('/customers/edit') ? 'Edit Customer' :
@@ -810,21 +854,27 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                        location.includes('/customers') ? 'Customers' :
                        location.includes('/suppliers/add') ? 'Add Supplier' :
                        location.includes('/suppliers/edit') ? 'Edit Supplier' :
+                       location.includes('/suppliers/') ? 'Supplier Details' :
                        location.includes('/suppliers') ? 'Suppliers' :
                        location.includes('/returns') ? 'Returns' :
                        location.includes('/expenses/add') ? 'Add Expense' :
+                       location.includes('/expenses/') ? 'Expense Details' :
                        location.includes('/expenses') ? 'Expenses' :
                        location.includes('/services/add') ? 'Add Service' :
                        location.includes('/services/edit') ? 'Edit Service' :
+                       location.includes('/services/') ? 'Service Details' :
                        location.includes('/services') ? 'Services' :
                        location.includes('/tickets/add') ? 'Add Ticket' :
+                       location.includes('/tickets/') ? 'Ticket Details' :
                        location.includes('/tickets') ? 'Tickets' :
                        location.includes('/pos') ? 'Point of Sale' :
                        location.includes('/shipping') ? 'Shipping Management' :
                        location.includes('/reports') ? 'Reports' :
                        location.includes('/imports/dashboard') ? 'Import Dashboard' :
+                       location.includes('/imports/') ? 'Import Details' :
                        location.includes('/imports') ? 'Imports' :
                        location.includes('/receiving/storage') ? 'Items to Store' :
+                       location.includes('/receiving/') ? 'Receiving Details' :
                        location.includes('/receiving') ? 'Receiving' :
                        'Dashboard'}
                     </span>
@@ -832,32 +882,30 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                 )}
               </nav>
               {/* Page Title */}
-              <div className="flex items-center gap-4">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {location === '/' ? 'Dashboard' : 
-                   location.includes('/orders/pick-pack') ? 'Pick & Pack' :
-                   location.includes('/orders') ? 'Orders Management' :
-                   location.includes('/packing-materials') ? 'Packing Materials' :
-                   location.includes('/inventory') ? 'Inventory Management' :
-                   location.includes('/warehouses/map') ? 'Warehouse Space Map' :
-                   location.includes('/warehouses') ? 'Warehouse Management' :
-                   location.includes('/discounts') ? 'Discounts & Promotions' :
-                   location.includes('/customers') ? 'Customer Management' :
-                   location.includes('/suppliers') ? 'Supplier Management' :
-                   location.includes('/returns') ? 'Returns Processing' :
-                   location.includes('/expenses') ? 'Expense Tracking' :
-                   location.includes('/services') ? 'Service Management' :
-                   location.includes('/tickets') ? 'Support Tickets' :
-                   location.includes('/pos') ? 'Point of Sale' :
-                   location.includes('/shipping') ? 'Shipping Management' :
-                   location.includes('/reports') ? 'Reports & Analytics' :
-                   location.includes('/imports') ? 'Import Management' :
-                   location.includes('/receiving') ? 'Receiving & Storage' :
-                   'Dashboard'}
-                </h2>
-                <div className="flex-1 max-w-md">
-                  <GlobalSearch />
-                </div>
+              <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 border-l pl-3 border-gray-200 dark:border-gray-700">
+                {location === '/' ? 'Dashboard' : 
+                 location.includes('/orders/pick-pack') ? 'Pick & Pack' :
+                 location.includes('/orders') ? 'Orders Management' :
+                 location.includes('/packing-materials') ? 'Packing Materials' :
+                 location.includes('/inventory') ? 'Inventory Management' :
+                 location.includes('/warehouses/map') ? 'Warehouse Space Map' :
+                 location.includes('/warehouses') ? 'Warehouse Management' :
+                 location.includes('/discounts') ? 'Discounts & Promotions' :
+                 location.includes('/customers') ? 'Customer Management' :
+                 location.includes('/suppliers') ? 'Supplier Management' :
+                 location.includes('/returns') ? 'Returns Processing' :
+                 location.includes('/expenses') ? 'Expense Tracking' :
+                 location.includes('/services') ? 'Service Management' :
+                 location.includes('/tickets') ? 'Support Tickets' :
+                 location.includes('/pos') ? 'Point of Sale' :
+                 location.includes('/shipping') ? 'Shipping Management' :
+                 location.includes('/reports') ? 'Reports & Analytics' :
+                 location.includes('/imports') ? 'Import Management' :
+                 location.includes('/receiving') ? 'Receiving & Storage' :
+                 'Dashboard'}
+              </h2>
+              <div className="flex-1 max-w-sm ml-2">
+                <GlobalSearch />
               </div>
             </div>
 
