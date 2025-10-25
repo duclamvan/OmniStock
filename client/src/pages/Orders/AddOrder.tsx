@@ -2693,7 +2693,7 @@ export default function AddOrder() {
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm mt-1">Search and add products to order</CardDescription>
           </CardHeader>
-          <CardContent className="sticky top-0 z-40 p-3 space-y-3 bg-white dark:bg-slate-950 border-b shadow-sm backdrop-blur-sm">
+          <CardContent className="sticky top-0 z-40 p-3 space-y-3 bg-white dark:bg-slate-950 shadow-sm backdrop-blur-sm">
             <div className="relative product-search-container">
               <div className="flex items-center justify-between mb-2">
                 <Label htmlFor="product">Search Products</Label>
