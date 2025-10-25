@@ -787,13 +787,27 @@ router.get("/consolidations", async (req, res) => {
   try {
     const consolidationList = await db.select().from(consolidations).orderBy(desc(consolidations.createdAt));
     
-    // Get items for each consolidation
+    // Get items for each consolidation with full details
     const consolidationsWithItems = await Promise.all(
       consolidationList.map(async (consolidation) => {
         const items = await db
-          .select()
+          .select({
+            id: customItems.id,
+            name: customItems.name,
+            source: customItems.source,
+            quantity: customItems.quantity,
+            weight: customItems.weight,
+            classification: customItems.classification,
+            unitPrice: customItems.unitPrice,
+            customerName: customItems.customerName,
+            orderNumber: customItems.orderNumber,
+            trackingNumber: customItems.trackingNumber,
+            addedAt: consolidationItems.createdAt,
+          })
           .from(consolidationItems)
-          .where(eq(consolidationItems.consolidationId, consolidation.id));
+          .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
+          .where(eq(consolidationItems.consolidationId, consolidation.id))
+          .orderBy(consolidationItems.createdAt);
         
         return {
           ...consolidation,

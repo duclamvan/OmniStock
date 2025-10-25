@@ -634,7 +634,7 @@ export default function ImportKanbanDashboard() {
             data-testid={`column-${column.id}`}
           >
             {/* Column Header */}
-            <div className={`p-4 border-b border-slate-200 dark:border-slate-700 ${column.bgLight}`}>
+            <div className="p-4 border-b border-slate-200 dark:border-slate-700">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className={`p-2 rounded-lg bg-gradient-to-r ${column.gradient} text-white`}>
