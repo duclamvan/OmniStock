@@ -2955,12 +2955,38 @@ export default function AddOrder() {
                         }}
                         data-testid={`${isService ? 'service' : isBundle ? 'bundle' : 'product'}-item-${product.id}`}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              {isService && <Wrench className="h-4 w-4 text-orange-500" />}
-                              {isBundle && <Box className="h-4 w-4 text-purple-500" />}
-                              <div className="font-medium text-slate-900">{product.name}</div>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 flex-1">
+                            {/* Product Thumbnail */}
+                            {!isService && !isBundle && (
+                              <div className="w-12 h-12 flex-shrink-0 rounded overflow-hidden bg-slate-100 border border-slate-200">
+                                {product.imageUrl ? (
+                                  <img
+                                    src={product.imageUrl.replace('.webp', '_thumb.webp')}
+                                    alt={product.name}
+                                    loading="lazy"
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                      e.currentTarget.nextElementSibling!.classList.remove('hidden');
+                                    }}
+                                  />
+                                ) : null}
+                                <div className={`${product.imageUrl ? 'hidden' : ''} w-full h-full flex items-center justify-center`}>
+                                  <Package className="h-6 w-6 text-slate-400" />
+                                </div>
+                              </div>
+                            )}
+                            {/* Service/Bundle Icon */}
+                            {(isService || isBundle) && (
+                              <div className="w-12 h-12 flex-shrink-0 rounded bg-slate-100 border border-slate-200 flex items-center justify-center">
+                                {isService && <Wrench className="h-6 w-6 text-orange-500" />}
+                                {isBundle && <Box className="h-6 w-6 text-purple-500" />}
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <div className="font-medium text-slate-900">{product.name}</div>
                               {isBestMatch && (
                                 <Badge variant="default" className="text-xs px-1.5 py-0 bg-blue-600">
                                   Best Match
@@ -2991,8 +3017,9 @@ export default function AddOrder() {
                             {isBundle && product.description && (
                               <div className="text-sm text-slate-500">{product.description}</div>
                             )}
+                            </div>
                           </div>
-                          <div className="text-right ml-4">
+                          <div className="text-right ml-4 flex-shrink-0">
                             <div className="font-medium text-slate-900">
                               {isService ? (
                                 formatCurrency(parseFloat(product.totalCost || '0'), 'EUR')
