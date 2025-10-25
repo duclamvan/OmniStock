@@ -719,9 +719,7 @@ export default function AllTickets() {
             data={filteredTickets}
             columns={visibleColumnsFiltered}
             bulkActions={bulkActions}
-            onSelectionChange={setSelectedTickets}
             getRowKey={(ticket) => ticket.id}
-            searchable={false}
           />
         </CardContent>
       </Card>
