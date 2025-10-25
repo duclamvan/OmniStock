@@ -455,25 +455,93 @@ export default function ImportKanbanDashboard() {
     setDraggedItem(null);
   };
 
-  // Filter data with fuzzy search
+  // Deep search helper - searches within nested items
+  const deepSearchPurchases = (purchase: Purchase, query: string): boolean => {
+    const { calculateSearchScore } = require('@/lib/fuzzySearch');
+    const threshold = 20; // 0.2 * 100
+    
+    // Search in main fields
+    if (calculateSearchScore(purchase.supplier, query) >= threshold) return true;
+    if (purchase.trackingNumber && calculateSearchScore(purchase.trackingNumber, query) >= threshold) return true;
+    if (calculateSearchScore(purchase.status, query) >= threshold) return true;
+    
+    // Deep search in items
+    for (const item of purchase.items) {
+      if (calculateSearchScore(item.name, query) >= threshold) return true;
+      if (calculateSearchScore(item.quantity.toString(), query) >= threshold) return true;
+    }
+    
+    return false;
+  };
+
+  const deepSearchCustomItem = (item: CustomItem, query: string): boolean => {
+    const { calculateSearchScore } = require('@/lib/fuzzySearch');
+    const threshold = 20;
+    
+    if (calculateSearchScore(item.name, query) >= threshold) return true;
+    if (calculateSearchScore(item.source, query) >= threshold) return true;
+    if (item.customerName && calculateSearchScore(item.customerName, query) >= threshold) return true;
+    if (calculateSearchScore(item.status, query) >= threshold) return true;
+    
+    return false;
+  };
+
+  const deepSearchConsolidation = (consolidation: Consolidation, query: string): boolean => {
+    const { calculateSearchScore } = require('@/lib/fuzzySearch');
+    const threshold = 20;
+    
+    if (calculateSearchScore(consolidation.name, query) >= threshold) return true;
+    if (calculateSearchScore(consolidation.shippingMethod, query) >= threshold) return true;
+    if (calculateSearchScore(consolidation.warehouse, query) >= threshold) return true;
+    if (calculateSearchScore(consolidation.status, query) >= threshold) return true;
+    
+    // Deep search in consolidation items
+    for (const item of consolidation.items) {
+      if (calculateSearchScore(item.name, query) >= threshold) return true;
+      if (calculateSearchScore(item.quantity.toString(), query) >= threshold) return true;
+    }
+    
+    return false;
+  };
+
+  const deepSearchShipment = (shipment: Shipment, query: string): boolean => {
+    const { calculateSearchScore } = require('@/lib/fuzzySearch');
+    const threshold = 20;
+    
+    if (calculateSearchScore(shipment.trackingNumber, query) >= threshold) return true;
+    if (calculateSearchScore(shipment.carrier, query) >= threshold) return true;
+    if (calculateSearchScore(shipment.origin, query) >= threshold) return true;
+    if (calculateSearchScore(shipment.destination, query) >= threshold) return true;
+    if (shipment.currentLocation && calculateSearchScore(shipment.currentLocation, query) >= threshold) return true;
+    if (calculateSearchScore(shipment.status, query) >= threshold) return true;
+    
+    // Search in linked consolidation if available
+    if (shipment.consolidationId) {
+      const linkedConsolidation = consolidations.find(c => c.id === shipment.consolidationId);
+      if (linkedConsolidation && deepSearchConsolidation(linkedConsolidation, query)) {
+        return true;
+      }
+    }
+    
+    return false;
+  };
+
+  // Filter data with deep fuzzy search and Vietnamese support
   const filteredPurchases = useMemo(() => {
     const pending = purchases.filter(p => 
       p.status === 'pending' || p.status === 'processing'
     );
-    if (!searchQuery) return pending;
-    return fuzzySearch(pending, searchQuery, {
-      fields: ['supplier', 'trackingNumber'],
-      threshold: 0.2,
-    }).map(r => r.item);
+    if (!searchQuery.trim()) return pending;
+    
+    // Real-time deep filtering
+    return pending.filter(purchase => deepSearchPurchases(purchase, searchQuery));
   }, [purchases, searchQuery]);
 
   const filteredCustomItems = useMemo(() => {
     const available = customItems.filter(item => item.status === 'available');
-    if (!searchQuery) return available;
-    return fuzzySearch(available, searchQuery, {
-      fields: ['name', 'source'],
-      threshold: 0.2,
-    }).map(r => r.item);
+    if (!searchQuery.trim()) return available;
+    
+    return available.filter(item => deepSearchCustomItem(item, searchQuery));
   }, [customItems, searchQuery]);
 
   const filteredConsolidations = useMemo(() => {
@@ -483,26 +551,24 @@ export default function ImportKanbanDashboard() {
         c.warehouse.toLowerCase().includes(filterWarehouse.toLowerCase())
       );
     }
-    return filtered;
-  }, [consolidations, filterWarehouse]);
+    
+    if (!searchQuery.trim()) return filtered;
+    return filtered.filter(consolidation => deepSearchConsolidation(consolidation, searchQuery));
+  }, [consolidations, filterWarehouse, searchQuery]);
 
   const activeShipments = useMemo(() => {
     const active = shipments.filter(s => s.status !== 'delivered');
-    if (!searchQuery) return active;
-    return fuzzySearch(active, searchQuery, {
-      fields: ['trackingNumber', 'carrier'],
-      threshold: 0.2,
-    }).map(r => r.item);
-  }, [shipments, searchQuery]);
+    if (!searchQuery.trim()) return active;
+    
+    return active.filter(shipment => deepSearchShipment(shipment, searchQuery));
+  }, [shipments, searchQuery, consolidations]);
 
   const deliveredShipments = useMemo(() => {
     const delivered = shipments.filter(s => s.status === 'delivered');
-    if (!searchQuery) return delivered;
-    return fuzzySearch(delivered, searchQuery, {
-      fields: ['trackingNumber', 'carrier'],
-      threshold: 0.2,
-    }).map(r => r.item);
-  }, [shipments, searchQuery]);
+    if (!searchQuery.trim()) return delivered;
+    
+    return delivered.filter(shipment => deepSearchShipment(shipment, searchQuery));
+  }, [shipments, searchQuery, consolidations]);
 
   const isLoading = purchasesLoading || customItemsLoading || consolidationsLoading || shipmentsLoading;
 
@@ -585,7 +651,7 @@ export default function ImportKanbanDashboard() {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search by supplier, tracking, order..."
+                placeholder="Search supplier, tracking, items, location... (Vietnamese supported)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
