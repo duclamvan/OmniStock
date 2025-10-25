@@ -322,7 +322,7 @@ export default function OrderDocumentSelector({
                           </div>
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <span className="text-xs text-slate-500">
-                              {flag} {file.language.toUpperCase()}
+                              {flag} {file.language?.toUpperCase() || ''}
                             </span>
                           </div>
                         </div>
