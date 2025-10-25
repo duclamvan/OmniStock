@@ -278,16 +278,6 @@ export default function ItemsToStore() {
   const [showScanner, setShowScanner] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
-
-  // Auto-prefill suggested location when sheet opens
-  useEffect(() => {
-    if (showScanner && currentItem) {
-      const suggestedLocation = getSuggestedLocation(currentItem) || generateSuggestedLocation(currentItem);
-      if (suggestedLocation) {
-        setLocationCode(suggestedLocation);
-      }
-    }
-  }, [showScanner, currentItem]);
   const [isScanning, setIsScanning] = useState(false);
   const [scanningProgress, setScanningProgress] = useState({ current: 0, total: 0 });
   const [lastScanResult, setLastScanResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -493,6 +483,16 @@ export default function ItemsToStore() {
     currentItem.newLocations.reduce((sum, loc) => sum + loc.quantity, 0) : 0;
   const remainingQuantity = currentItem ? 
     currentItem.receivedQuantity - totalAssigned : 0;
+
+  // Auto-prefill suggested location when sheet opens
+  useEffect(() => {
+    if (showScanner && currentItem) {
+      const suggestedLocation = getSuggestedLocation(currentItem) || generateSuggestedLocation(currentItem);
+      if (suggestedLocation) {
+        setLocationCode(suggestedLocation);
+      }
+    }
+  }, [showScanner, currentItem]);
 
   // Calculate progress
   const totalItems = filteredItems.length;
