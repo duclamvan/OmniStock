@@ -612,18 +612,24 @@ export default function ReceiptDetails() {
             )}
           </div>
 
-          {receipt.trackingNumbers?.length > 0 && (
-            <div className="mt-2 pt-2 border-t">
-              <div className="flex flex-wrap gap-1.5">
-                {receipt.trackingNumbers.map((tn: string, index: number) => (
-                  <Badge key={index} variant="secondary" className="text-xs px-1.5 py-0">
-                    <Hash className="h-2.5 w-2.5 mr-0.5" />
-                    {tn}
-                  </Badge>
-                ))}
+          {(() => {
+            // Handle both new format { numbers: string[] } and legacy format string[]
+            const trackingNums = Array.isArray(receipt.trackingNumbers) 
+              ? receipt.trackingNumbers 
+              : (receipt.trackingNumbers as any)?.numbers || [];
+            return trackingNums.length > 0 && (
+              <div className="mt-2 pt-2 border-t">
+                <div className="flex flex-wrap gap-1.5">
+                  {trackingNums.map((tn: string, index: number) => (
+                    <Badge key={index} variant="secondary" className="text-xs px-1.5 py-0">
+                      <Hash className="h-2.5 w-2.5 mr-0.5" />
+                      {tn}
+                    </Badge>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {receipt.notes && (
             <div className="mt-2 pt-2 border-t">
