@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { 
   ArrowLeft, 
   Edit, 
@@ -37,10 +38,13 @@ import {
   Maximize2,
   Minimize2,
   Ticket,
-  Plus
+  Plus,
+  Search,
+  X
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { CustomerPrices } from "./CustomerPrices";
+import { calculateSearchScore } from "@/lib/fuzzySearch";
 
 const EXPAND_ALL_KEY = 'customerOrdersExpandAll';
 
@@ -52,6 +56,7 @@ export default function CustomerDetails() {
     const saved = localStorage.getItem(EXPAND_ALL_KEY);
     return saved === 'true';
   });
+  const [orderSearch, setOrderSearch] = useState('');
 
   // Fetch customer data
   const { data: customer, isLoading: customerLoading } = useQuery<any>({
@@ -96,6 +101,59 @@ export default function CustomerDetails() {
     setExpandAll(newValue);
     localStorage.setItem(EXPAND_ALL_KEY, String(newValue));
   };
+
+  // Filter orders based on search term
+  const filteredOrders = useMemo(() => {
+    if (!orderSearch.trim()) {
+      return orders;
+    }
+
+    const searchTerm = orderSearch.trim();
+    const threshold = 30; // Minimum score to match (out of 100)
+
+    return orders.filter((order: any) => {
+      // Search in order properties
+      const orderFields = [
+        order.orderId || '',
+        order.id || '',
+        order.orderStatus || '',
+        order.paymentStatus || '',
+        order.shippingMethod || '',
+        formatDate(order.createdAt) || '',
+      ];
+
+      // Check if any order field matches
+      const orderMatches = orderFields.some(field => 
+        calculateSearchScore(String(field), searchTerm) >= threshold
+      );
+
+      if (orderMatches) {
+        return true;
+      }
+
+      // Search in order items
+      if (order.items && Array.isArray(order.items)) {
+        const itemMatches = order.items.some((item: any) => {
+          const itemFields = [
+            item.productName || '',
+            item.name || '',
+            item.variantName || '',
+            item.sku || '',
+          ];
+
+          return itemFields.some(field => 
+            calculateSearchScore(String(field), searchTerm) >= threshold
+          );
+        });
+
+        if (itemMatches) {
+          return true;
+        }
+      }
+
+      return false;
+    });
+  }, [orders, orderSearch]);
 
   if (isLoading) {
     return (
@@ -516,10 +574,10 @@ export default function CustomerDetails() {
           <TabsContent value="orders" className="space-y-4 mt-0">
             <Card className="overflow-hidden">
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-4">
                   <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
                     <Package className="h-5 w-5 text-blue-600" />
-                    Order History ({orders.length})
+                    Order History ({filteredOrders.length}{orderSearch && orders.length !== filteredOrders.length ? ` of ${orders.length}` : ''})
                   </CardTitle>
                   {orders.length > 0 && (
                     <Button
@@ -543,6 +601,28 @@ export default function CustomerDetails() {
                     </Button>
                   )}
                 </div>
+                {orders.length > 0 && (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      type="text"
+                      placeholder="Search orders, items, products..."
+                      value={orderSearch}
+                      onChange={(e) => setOrderSearch(e.target.value)}
+                      className="pl-10 pr-10"
+                      data-testid="input-orderSearch"
+                    />
+                    {orderSearch && (
+                      <button
+                        onClick={() => setOrderSearch('')}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        data-testid="button-clearSearch"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
                 {orders.length === 0 ? (
@@ -551,9 +631,23 @@ export default function CustomerDetails() {
                     <p className="text-sm font-medium text-slate-700">No orders found</p>
                     <p className="text-xs text-slate-500 mt-1">Orders will appear here once created</p>
                   </div>
+                ) : filteredOrders.length === 0 ? (
+                  <div className="text-center py-12 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
+                    <Search className="mx-auto h-12 w-12 mb-3 text-slate-300" />
+                    <p className="text-sm font-medium text-slate-700">No orders match your search</p>
+                    <p className="text-xs text-slate-500 mt-1">Try a different search term</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-3"
+                      onClick={() => setOrderSearch('')}
+                    >
+                      Clear Search
+                    </Button>
+                  </div>
                 ) : (
                   <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2">
-                    {orders.map((order: any) => (
+                    {filteredOrders.map((order: any) => (
                       <div key={order.id} className="bg-white border border-slate-200 rounded-lg hover:shadow-md hover:border-blue-300 transition-all overflow-hidden">
                         {/* Header Section - Clickable */}
                         <Link href={`/orders/${order.id}`}>
