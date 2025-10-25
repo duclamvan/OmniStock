@@ -649,6 +649,24 @@ export const productLocations = pgTable('product_locations', {
   updatedAt: timestamp('updated_at').notNull().defaultNow()
 });
 
+// Stock adjustment requests table - for warehouse staff to request inventory changes
+export const stockAdjustmentRequests = pgTable('stock_adjustment_requests', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  productId: varchar('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  locationId: varchar('location_id').notNull().references(() => productLocations.id, { onDelete: 'cascade' }),
+  requestedBy: varchar('requested_by').notNull().references(() => users.id),
+  adjustmentType: text('adjustment_type').notNull(), // 'add', 'remove', 'set'
+  currentQuantity: integer('current_quantity').notNull(), // snapshot at time of request
+  requestedQuantity: integer('requested_quantity').notNull(), // the new quantity value
+  reason: text('reason').notNull(),
+  status: text('status').notNull().default('pending'), // 'pending', 'approved', 'rejected'
+  approvedBy: varchar('approved_by').references(() => users.id),
+  approvedAt: timestamp('approved_at'),
+  rejectionReason: text('rejection_reason'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
 // AI-powered carton packing tables
 export const packingCartons = pgTable('packing_cartons', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
@@ -1155,6 +1173,15 @@ export const insertProductLocationSchema = createInsertSchema(productLocations)
     quantity: z.number().int().min(0, 'Quantity must be non-negative')
   });
 
+export const insertStockAdjustmentRequestSchema = createInsertSchema(stockAdjustmentRequests)
+  .omit({ id: true, createdAt: true, updatedAt: true, approvedBy: true, approvedAt: true, rejectionReason: true })
+  .extend({
+    adjustmentType: z.enum(['add', 'remove', 'set']),
+    currentQuantity: z.number().int().min(0),
+    requestedQuantity: z.number().int().min(0),
+    reason: z.string().min(3, 'Reason must be at least 3 characters')
+  });
+
 // AI-powered carton packing schemas
 export const insertPackingCartonSchema = createInsertSchema(packingCartons).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertOrderCartonPlanSchema = createInsertSchema(orderCartonPlans).omit({ id: true, createdAt: true, updatedAt: true });
@@ -1242,6 +1269,8 @@ export type OrderItem = typeof orderItems.$inferSelect;
 export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;
 export type ProductLocation = typeof productLocations.$inferSelect;
 export type InsertProductLocation = z.infer<typeof insertProductLocationSchema>;
+export type StockAdjustmentRequest = typeof stockAdjustmentRequests.$inferSelect;
+export type InsertStockAdjustmentRequest = z.infer<typeof insertStockAdjustmentRequestSchema>;
 
 // Tickets (Customer Support System)
 export const tickets = pgTable('tickets', {
