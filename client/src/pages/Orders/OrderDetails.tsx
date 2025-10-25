@@ -227,10 +227,24 @@ export default function OrderDetails() {
     if (!invoiceCardRef.current) return;
     
     try {
+      // Hide interactive elements before capture
+      const elementsToHide = invoiceCardRef.current.querySelectorAll('[data-hide-in-screenshot]');
+      elementsToHide.forEach((el: any) => {
+        el.style.visibility = 'hidden';
+      });
+      
+      // Capture the screenshot
       const canvas = await html2canvas(invoiceCardRef.current, {
         backgroundColor: '#ffffff',
-        scale: 2, // Higher quality
+        scale: 3, // Higher quality for professional output
         logging: false,
+        useCORS: true,
+        allowTaint: true,
+      });
+      
+      // Restore hidden elements
+      elementsToHide.forEach((el: any) => {
+        el.style.visibility = 'visible';
       });
       
       const link = document.createElement('a');
@@ -243,6 +257,12 @@ export default function OrderDetails() {
         description: "Invoice screenshot saved successfully",
       });
     } catch (error) {
+      // Restore hidden elements in case of error
+      const elementsToHide = invoiceCardRef.current?.querySelectorAll('[data-hide-in-screenshot]');
+      elementsToHide?.forEach((el: any) => {
+        el.style.visibility = 'visible';
+      });
+      
       toast({
         title: "Download Failed",
         description: "Could not capture invoice screenshot",
@@ -662,10 +682,10 @@ export default function OrderDetails() {
           </div>
 
           {/* Invoice - Order Items & Pricing */}
-          <Card ref={invoiceCardRef}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Package className="h-4 w-4" />
+          <Card ref={invoiceCardRef} className="overflow-hidden">
+            <CardHeader className="border-b border-slate-200">
+              <CardTitle className="flex items-center gap-2 text-lg font-bold">
+                <Package className="h-5 w-5" />
                 Invoice
               </CardTitle>
             </CardHeader>
@@ -673,22 +693,24 @@ export default function OrderDetails() {
               {/* Order Items - Professional Invoice Layout */}
               <div className="divide-y divide-slate-200 dark:divide-slate-700">
                 {order.items?.map((item: any, index: number) => (
-                  <div key={item.id || index} className="px-6 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                  <div key={item.id || index} className="px-6 py-4">
                     <div className="flex items-start gap-3">
                       {showPickingMode && (
-                        <Checkbox
-                          checked={pickedItems.has(item.id)}
-                          onCheckedChange={(checked) => {
-                            const newPickedItems = new Set(pickedItems);
-                            if (checked) {
-                              newPickedItems.add(item.id);
-                            } else {
-                              newPickedItems.delete(item.id);
-                            }
-                            setPickedItems(newPickedItems);
-                          }}
-                          className="mt-1"
-                        />
+                        <div data-hide-in-screenshot>
+                          <Checkbox
+                            checked={pickedItems.has(item.id)}
+                            onCheckedChange={(checked) => {
+                              const newPickedItems = new Set(pickedItems);
+                              if (checked) {
+                                newPickedItems.add(item.id);
+                              } else {
+                                newPickedItems.delete(item.id);
+                              }
+                              setPickedItems(newPickedItems);
+                            }}
+                            className="mt-1"
+                          />
+                        </div>
                       )}
                       
                       {/* Product Image */}
@@ -757,40 +779,42 @@ export default function OrderDetails() {
                                 </p>
                               )}
                             </div>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem 
-                                  onClick={() => {
-                                    // Set only this item for return
-                                    const newSelectedItems = new Set<string>([item.id]);
-                                    const newQuantities: Record<string, number> = {
-                                      [item.id]: item.quantity
-                                    };
-                                    setSelectedItems(newSelectedItems);
-                                    setReturnQuantities(newQuantities);
-                                    setShowReturnDialog(true);
-                                  }}
-                                >
-                                  <RotateCcw className="mr-2 h-4 w-4" />
-                                  Return this item
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => {
-                                    // Set the selected item for custom pricing
-                                    setSelectedPriceItem(item);
-                                    setShowCustomPriceDialog(true);
-                                  }}
-                                >
-                                  <Banknote className="mr-2 h-4 w-4" />
-                                  Make custom price
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            <div data-hide-in-screenshot>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem 
+                                    onClick={() => {
+                                      // Set only this item for return
+                                      const newSelectedItems = new Set<string>([item.id]);
+                                      const newQuantities: Record<string, number> = {
+                                        [item.id]: item.quantity
+                                      };
+                                      setSelectedItems(newSelectedItems);
+                                      setReturnQuantities(newQuantities);
+                                      setShowReturnDialog(true);
+                                    }}
+                                  >
+                                    <RotateCcw className="mr-2 h-4 w-4" />
+                                    Return this item
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => {
+                                      // Set the selected item for custom pricing
+                                      setSelectedPriceItem(item);
+                                      setShowCustomPriceDialog(true);
+                                    }}
+                                  >
+                                    <Banknote className="mr-2 h-4 w-4" />
+                                    Make custom price
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -885,19 +909,19 @@ export default function OrderDetails() {
               )}
 
               {/* Pricing Breakdown - Integrated */}
-              <div className="mt-4 pt-4 px-6 border-t">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-600">Subtotal</span>
-                    <span className="font-medium">{formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</span>
+              <div className="mt-6 pt-6 px-6 border-t-2 border-slate-200">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-700 font-medium">Subtotal</span>
+                    <span className="font-semibold text-slate-900">{formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</span>
                   </div>
                   
                   {order.discountValue > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-green-600">
+                    <div className="flex justify-between items-center">
+                      <span className="text-green-700 font-medium">
                         Discount {order.discountType === 'rate' && `(${order.discountValue}%)`}
                       </span>
-                      <span className="font-medium text-green-600">
+                      <span className="font-semibold text-green-700">
                         -{formatCurrency(
                           order.discountType === 'rate' 
                             ? (order.subtotal * order.discountValue / 100) 
@@ -909,22 +933,22 @@ export default function OrderDetails() {
                   )}
                   
                   {order.taxAmount > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-600">Tax ({order.taxRate}%)</span>
-                      <span className="font-medium">{formatCurrency(order.taxAmount || 0, order.currency || 'EUR')}</span>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-700 font-medium">Tax ({order.taxRate}%)</span>
+                      <span className="font-semibold text-slate-900">{formatCurrency(order.taxAmount || 0, order.currency || 'EUR')}</span>
                     </div>
                   )}
                   
                   {order.shippingCost > 0 && (
                     <>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">Shipping ({order.shippingMethod})</span>
-                        <span className="font-medium">{formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-700 font-medium">Shipping ({order.shippingMethod})</span>
+                        <span className="font-semibold text-slate-900">{formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</span>
                       </div>
                       {order.actualShippingCost > 0 && order.actualShippingCost !== order.shippingCost && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-slate-500 text-xs">Actual Shipping Cost</span>
-                          <span className="text-slate-500 text-xs">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-slate-500">Actual Shipping Cost</span>
+                          <span className="text-slate-500">
                             {formatCurrency(order.actualShippingCost || 0, order.currency || 'EUR')}
                           </span>
                         </div>
@@ -932,11 +956,11 @@ export default function OrderDetails() {
                     </>
                   )}
                   
-                  <Separator />
+                  <div className="border-t-2 border-slate-300 my-3"></div>
                   
-                  <div className="flex justify-between pt-1.5">
-                    <span className="font-semibold text-slate-900 text-sm">Grand Total</span>
-                    <span className="font-bold text-base text-slate-900">
+                  <div className="flex justify-between items-center pt-2 pb-1">
+                    <span className="font-bold text-slate-900 text-lg">Grand Total</span>
+                    <span className="font-bold text-xl text-slate-900">
                       {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
                     </span>
                   </div>
