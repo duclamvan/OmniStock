@@ -61,7 +61,7 @@ interface ProductBundle {
 
 interface CartItem {
   id: string;
-  productId: string;
+  productId?: string;
   variantId?: string;
   bundleId?: string;
   name: string;
@@ -109,7 +109,7 @@ export default function POS() {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [amountReceived, setAmountReceived] = useState('');
   const [showQuantityDialog, setShowQuantityDialog] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [quantityInput, setQuantityInput] = useState('1');
   const [customPriceEnabled, setCustomPriceEnabled] = useState(false);
   const [customPrice, setCustomPrice] = useState('');
@@ -144,6 +144,16 @@ export default function POS() {
     },
   });
 
+  // Fetch product variants
+  const { data: productVariants = [] } = useQuery<any[]>({
+    queryKey: ['/api/variants'],
+    queryFn: async () => {
+      const response = await fetch('/api/variants');
+      if (!response.ok) throw new Error('Failed to fetch variants');
+      return response.json();
+    },
+  });
+
   // Fetch bundles
   const { data: bundles = [] } = useQuery<ProductBundle[]>({
     queryKey: ['/api/bundles']
@@ -159,35 +169,63 @@ export default function POS() {
     },
   });
 
+  // Combine products, variants, and bundles into displayable items
+  const allItems = [
+    ...products.map((p: any) => ({ ...p, itemType: 'product' as const })),
+    ...productVariants.map((v: any) => ({ 
+      id: v.id,
+      name: v.name,
+      sku: `${v.sku || ''}`,
+      barcode: v.barcode,
+      priceEur: v.priceEur,
+      priceCzk: v.priceCzk,
+      categoryId: v.categoryId,
+      imageUrl: v.imageUrl,
+      productId: v.productId,
+      variantId: v.id,
+      itemType: 'variant' as const,
+      parentName: products.find((p: any) => p.id === v.productId)?.name || 'Unknown'
+    })),
+    ...bundles.map((b: any) => ({
+      id: b.id,
+      name: b.name,
+      sku: b.sku,
+      priceEur: b.priceEur,
+      priceCzk: b.priceCzk,
+      bundleId: b.bundleId,
+      itemType: 'bundle' as const
+    }))
+  ];
+
   // Categories from products
   const categories = ['favorites', 'all', ...Array.from(new Set(products.map(p => p.categoryId).filter(Boolean)))];
 
-  // Get favorite products (first 12 products)
-  const favoriteProducts = products.slice(0, 12);
+  // Get favorite products (first 12 items)
+  const favoriteItems = allItems.slice(0, 12);
 
-  // Filter products based on category first
-  const categoryFilteredProducts = products.filter(product => {
+  // Filter items based on category first
+  const categoryFilteredItems = allItems.filter((item: any) => {
     if (selectedCategory === 'favorites') {
-      return favoriteProducts.some(fav => fav.id === product.id);
+      return favoriteItems.some(fav => fav.id === item.id);
     }
-    return selectedCategory === 'all' || product.categoryId === selectedCategory;
+    return selectedCategory === 'all' || item.categoryId === selectedCategory;
   });
 
-  // Apply fuzzy search with scoring
+  // Apply fuzzy search with scoring across all item types
   const searchResults = searchQuery.trim()
-    ? fuzzySearch(categoryFilteredProducts, searchQuery, {
-        fields: ['name', 'sku', 'barcode'],
+    ? fuzzySearch(categoryFilteredItems, searchQuery, {
+        fields: ['name', 'sku', 'barcode', 'parentName'],
         threshold: 0.2,
         fuzzy: true,
         vietnameseNormalization: true,
       })
-    : categoryFilteredProducts.map(item => ({ item, score: 0 }));
+    : categoryFilteredItems.map(item => ({ item, score: 0 }));
 
-  // Extract products and sort by score
-  const filteredProducts = searchResults.map(r => r.item);
+  // Extract items and sort by score
+  const filteredItems = searchResults.map(r => r.item);
 
-  // Always use filtered products (search applies to all categories)
-  const displayProducts = filteredProducts;
+  // Always use filtered items (search applies to all categories)
+  const displayProducts = filteredItems;
 
   // Background barcode scanning - detects rapid keystrokes from scanner
   useEffect(() => {
@@ -211,27 +249,37 @@ export default function POS() {
       if (e.key === 'Enter') {
         const barcode = barcodeBufferRef.current.trim();
         if (barcode) {
-          const product = products.find(p => 
-            p.barcode === barcode || 
-            p.sku === barcode
+          // Search across all items (products, variants, bundles)
+          const item = allItems.find((item: any) => 
+            item.barcode === barcode || 
+            item.sku === barcode
           );
           
-          if (product) {
+          if (item) {
+            const price = currency === 'EUR' ? parseFloat(item.priceEur || '0') : parseFloat(item.priceCzk || '0');
+            const itemType = item.itemType || 'product';
+            const productId = itemType === 'variant' ? item.productId : item.id;
+            const variantId = itemType === 'variant' ? item.id : undefined;
+            const bundleId = itemType === 'bundle' ? item.bundleId || item.id : undefined;
+            
             addToCart({
-              id: product.id,
-              name: product.name,
-              price: currency === 'EUR' ? parseFloat(product.priceEur || '0') : parseFloat(product.priceCzk || '0'),
-              type: 'product',
-              sku: product.sku,
-              landingCost: product.latestLandingCost ? parseFloat(product.latestLandingCost) : null,
-              latestLandingCost: product.latestLandingCost ? parseFloat(product.latestLandingCost) : null
+              id: item.id,
+              name: item.name,
+              price: price,
+              type: itemType,
+              productId: productId,
+              variantId: variantId,
+              bundleId: bundleId,
+              sku: item.sku,
+              landingCost: item.latestLandingCost ? parseFloat(item.latestLandingCost) : null,
+              latestLandingCost: item.latestLandingCost ? parseFloat(item.latestLandingCost) : null
             });
             playSound('add');
           } else {
             playSound('error');
             toast({
-              title: 'Product Not Found',
-              description: `No product found with barcode/SKU: ${barcode}`,
+              title: 'Item Not Found',
+              description: `No item found with barcode/SKU: ${barcode}`,
               variant: 'destructive'
             });
           }
@@ -259,7 +307,7 @@ export default function POS() {
         clearTimeout(barcodeTimeoutRef.current);
       }
     };
-  }, [products, currency]);
+  }, [allItems, currency]);
 
   // Auto-focus quantity input when dialog opens
   useEffect(() => {
@@ -307,9 +355,9 @@ export default function POS() {
     }
   }, [selectedWarehouse]);
 
-  // Open quantity dialog for product
-  const openQuantityDialog = (product: Product) => {
-    setSelectedProduct(product);
+  // Open quantity dialog for any item type (product/variant/bundle)
+  const openQuantityDialog = (item: any) => {
+    setSelectedProduct(item);
     setQuantityInput('1');
     setCustomPriceEnabled(false);
     setCustomPrice('');
@@ -350,11 +398,21 @@ export default function POS() {
     }
 
     shouldScrollRef.current = true; // Enable auto-scroll when adding from product grid
+    
+    // Determine item type and IDs
+    const itemType = selectedProduct.itemType || 'product';
+    const productId = itemType === 'variant' ? selectedProduct.productId : selectedProduct.id;
+    const variantId = itemType === 'variant' ? selectedProduct.id : undefined;
+    const bundleId = itemType === 'bundle' ? selectedProduct.bundleId || selectedProduct.id : undefined;
+    
     addToCartWithQuantity({
       id: selectedProduct.id,
       name: selectedProduct.name,
       price: price,
-      type: 'product',
+      type: itemType,
+      productId: productId,
+      variantId: variantId,
+      bundleId: bundleId,
       sku: selectedProduct.sku,
       landingCost: selectedProduct.latestLandingCost ? parseFloat(selectedProduct.latestLandingCost) : null,
       latestLandingCost: selectedProduct.latestLandingCost ? parseFloat(selectedProduct.latestLandingCost) : null
@@ -370,7 +428,10 @@ export default function POS() {
     id: string; 
     name: string; 
     price: number; 
-    type: 'product' | 'bundle';
+    type: 'product' | 'variant' | 'bundle';
+    productId?: string;
+    variantId?: string;
+    bundleId?: string;
     sku?: string;
     landingCost?: number | null;
     latestLandingCost?: number | null;
@@ -384,7 +445,9 @@ export default function POS() {
     } else {
       setCart([...cart, {
         id: item.id,
-        productId: item.id,
+        productId: item.productId || (item.type === 'product' ? item.id : undefined),
+        variantId: item.variantId,
+        bundleId: item.bundleId,
         name: item.name,
         price: item.price,
         quantity: quantity,
@@ -400,7 +463,10 @@ export default function POS() {
     id: string; 
     name: string; 
     price: number; 
-    type: 'product' | 'bundle';
+    type: 'product' | 'variant' | 'bundle';
+    productId?: string;
+    variantId?: string;
+    bundleId?: string;
     sku?: string;
     landingCost?: number | null;
     latestLandingCost?: number | null;
@@ -459,7 +525,7 @@ export default function POS() {
         customerName: 'Walk-in Customer',
         currency: currency,
         items: cart.map(item => ({
-          productId: item.id,
+          productId: item.productId ?? item.id,
           variantId: item.variantId || undefined,
           bundleId: item.bundleId || undefined,
           quantity: item.quantity,
@@ -892,7 +958,7 @@ export default function POS() {
                 className="whitespace-nowrap h-10 px-4 text-sm"
                 data-testid="button-category-all"
               >
-                All Products
+                All Items
               </Button>
               {categories.filter(c => c !== 'favorites' && c !== 'all').map(category => (
                 category && (
@@ -916,7 +982,7 @@ export default function POS() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
               <Input
-                placeholder="Search products..."
+                placeholder="Search items by name, SKU, or barcode..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 h-12 text-lg"
@@ -927,7 +993,7 @@ export default function POS() {
           {/* Products Grid */}
           <ScrollArea className="flex-1">
             <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 p-6">
-              {displayProducts.map(product => {
+              {displayProducts.map((product: any) => {
                 const cartItem = cart.find(item => item.id === product.id);
                 const isInCart = !!cartItem;
                 return (
@@ -942,6 +1008,18 @@ export default function POS() {
                     onClick={() => openQuantityDialog(product)}
                     data-testid={`card-product-${product.id}`}
                   >
+                    {/* Type Badge */}
+                    {product.itemType === 'variant' && (
+                      <div className="absolute top-2 left-2 bg-purple-600 text-white rounded px-2 py-0.5 z-10 text-xs font-semibold shadow-sm">
+                        Variant
+                      </div>
+                    )}
+                    {product.itemType === 'bundle' && (
+                      <div className="absolute top-2 left-2 bg-orange-600 text-white rounded px-2 py-0.5 z-10 text-xs font-semibold shadow-sm">
+                        Bundle
+                      </div>
+                    )}
+
                     {/* Quantity indicator */}
                     {isInCart && cartItem && (
                       <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full px-2.5 py-1 z-10 font-bold text-sm shadow-md">
@@ -972,6 +1050,11 @@ export default function POS() {
                           <h3 className="font-medium text-sm leading-tight line-clamp-2 text-foreground/90 group-hover:text-foreground min-h-[2.5rem]">
                             {product.name}
                           </h3>
+                          {product.itemType === 'variant' && product.parentName && (
+                            <p className="text-xs text-purple-600 dark:text-purple-400 mt-1 font-medium">
+                              {product.parentName}
+                            </p>
+                          )}
                           {product.sku && (
                             <p className="text-xs text-muted-foreground mt-1">
                               SKU: {product.sku}
