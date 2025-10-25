@@ -259,11 +259,14 @@ export default function OrderDetails() {
               display: flex;
               align-items: center;
               gap: 12px;
+              line-height: 1;
             }
             .invoice-icon {
               width: 24px;
               height: 24px;
               color: #64748b;
+              display: block;
+              flex-shrink: 0;
             }
             .invoice-body {
               padding: 0;
