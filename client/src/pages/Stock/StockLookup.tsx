@@ -5,7 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Package, MapPin, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers, MoveRight, ArrowUpDown } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Search, Package, MapPin, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers, MoveRight, ArrowUpDown, FileText } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Link } from "wouter";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import MoveInventoryDialog from "@/components/warehouse/MoveInventoryDialog";
@@ -48,7 +51,9 @@ export default function StockLookup() {
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
+  const [descriptionDialogOpen, setDescriptionDialogOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<ProductLocation | null>(null);
+  const isMobile = useIsMobile();
 
   // Fetch all products
   const { data: rawProducts = [], isLoading: productsLoading } = useQuery<any[]>({
@@ -441,16 +446,21 @@ export default function StockLookup() {
                         </div>
                       )}
 
-                      {/* Item Description */}
+                      {/* Item Description Button */}
                       {selectedProductData.description && (
-                        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-                          <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
-                            Item Description
-                          </h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
-                            {selectedProductData.description}
-                          </p>
-                        </div>
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDescriptionDialogOpen(true);
+                          }}
+                          data-testid={`button-view-description-${product.id}`}
+                        >
+                          <FileText className="h-4 w-4 mr-2" />
+                          View Item Description
+                        </Button>
                       )}
                     </div>
                   )}
@@ -460,6 +470,85 @@ export default function StockLookup() {
           })
         )}
       </div>
+
+      {/* Item Description Dialog */}
+      {selectedProduct && selectedProductData && selectedProductData.description && (
+        <>
+          {isMobile ? (
+            <Drawer open={descriptionDialogOpen} onOpenChange={setDescriptionDialogOpen}>
+              <DrawerContent className="max-h-[85vh]">
+                <DrawerHeader>
+                  <DrawerTitle className="text-left">Item Description</DrawerTitle>
+                </DrawerHeader>
+                <div className="px-4 pb-6 overflow-y-auto">
+                  <div className="mb-4">
+                    <div className="flex items-center gap-3 mb-4">
+                      {selectedProductData.imageUrl && (
+                        <img
+                          src={selectedProductData.imageUrl}
+                          alt={selectedProductData.name}
+                          className="h-16 w-16 rounded-md object-cover bg-gray-100 dark:bg-gray-800"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm text-gray-900 dark:text-white mb-1">
+                          {selectedProductData.name}
+                        </h3>
+                        {selectedProductData.sku && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                            {selectedProductData.sku}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+                      {selectedProductData.description}
+                    </p>
+                  </div>
+                </div>
+              </DrawerContent>
+            </Drawer>
+          ) : (
+            <Dialog open={descriptionDialogOpen} onOpenChange={setDescriptionDialogOpen}>
+              <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+                <DialogHeader>
+                  <DialogTitle>Item Description</DialogTitle>
+                </DialogHeader>
+                <div className="overflow-y-auto flex-1 pr-2">
+                  <div className="mb-4">
+                    <div className="flex items-center gap-3 mb-4">
+                      {selectedProductData.imageUrl && (
+                        <img
+                          src={selectedProductData.imageUrl}
+                          alt={selectedProductData.name}
+                          className="h-16 w-16 rounded-md object-cover bg-gray-100 dark:bg-gray-800"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-base text-gray-900 dark:text-white mb-1">
+                          {selectedProductData.name}
+                        </h3>
+                        {selectedProductData.sku && (
+                          <p className="text-sm text-gray-500 dark:text-gray-400 font-mono">
+                            {selectedProductData.sku}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+                      {selectedProductData.description}
+                    </p>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+        </>
+      )}
 
       {/* Warehouse Management Dialogs */}
       {selectedProduct && selectedProductData && (
