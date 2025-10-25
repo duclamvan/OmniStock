@@ -82,6 +82,7 @@ import ItemsToStore from "@/pages/Receiving/ItemsToStore";
 import Login from "@/pages/Auth/Login";
 import Register from "@/pages/Auth/Register";
 import CustomReport from "@/pages/Reports/CustomReport";
+import Settings from "@/pages/Settings/Settings";
 // Legacy imports - commented out
 // import AllImports from "@/pages/Imports/AllImports";
 // import AddImportOrder from "@/pages/Imports/AddImportOrder";
@@ -199,9 +200,7 @@ function Router() {
         <Route path="/reports">
           {() => <div>Reports page coming soon</div>}
         </Route>
-        <Route path="/settings">
-          {() => <div>Settings page coming soon</div>}
-        </Route>
+        <Route path="/settings" component={Settings} />
       </Layout>
       <Route component={NotFound} />
     </Switch>
