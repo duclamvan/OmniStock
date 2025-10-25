@@ -1920,42 +1920,51 @@ export default function EditOrder() {
                       {shippingAddresses.map((address: any) => (
                         <div
                           key={address.id}
-                          className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-all ${
+                          className={`rounded-lg border-2 transition-all ${
                             selectedShippingAddress?.id === address.id
-                              ? 'border-blue-500 bg-blue-50'
+                              ? 'border-teal-500 bg-teal-50/50 shadow-sm'
                               : 'border-slate-200 hover:border-slate-300'
                           }`}
                           data-testid={`card-address-${address.id}`}
                         >
-                          <RadioGroupItem value={address.id} id={address.id} data-testid={`radio-address-${address.id}`} />
-                          <div className="flex-1">
-                            <Label htmlFor={address.id} className="cursor-pointer">
-                              <div className="font-medium text-slate-900">
-                                {address.firstName} {address.lastName}
+                          <div className="flex items-start gap-3 p-4">
+                            <RadioGroupItem 
+                              value={address.id} 
+                              id={address.id} 
+                              data-testid={`radio-address-${address.id}`} 
+                              className="mt-1"
+                            />
+                            <div className="flex-1 cursor-pointer" onClick={() => setSelectedShippingAddress(address)}>
+                              <div className="flex items-start gap-2">
+                                <MapPin className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                                <div className="text-sm text-slate-700 leading-relaxed">
+                                  <div className="font-semibold text-slate-900">{address.firstName} {address.lastName}</div>
+                                  {address.company && (
+                                    <div className="font-medium text-slate-800">{address.company}</div>
+                                  )}
+                                  <div className="mt-1">{address.street}</div>
+                                  <div>{address.city}, {address.zipCode}</div>
+                                  <div>{address.country}</div>
+                                </div>
                               </div>
-                              {address.company && (
-                                <div className="text-sm text-slate-600 mt-1">
-                                  <Building className="h-3 w-3 inline mr-1" />
-                                  {address.company}
-                                </div>
-                              )}
-                              <div className="text-sm text-slate-600 mt-1">
-                                {address.street}, {address.city}, {address.zipCode}, {address.country}
-                              </div>
-                              {address.email && (
-                                <div className="text-sm text-slate-500 mt-1">
-                                  <Mail className="h-3 w-3 inline mr-1" />
-                                  {address.email}
-                                </div>
-                              )}
-                              {address.tel && (
-                                <div className="text-sm text-slate-500 mt-1">
-                                  <Phone className="h-3 w-3 inline mr-1" />
-                                  {address.tel}
-                                </div>
-                              )}
-                            </Label>
+                            </div>
                           </div>
+                          {(address.tel || address.email) && (
+                            <div className="px-4 pb-4 pt-0 flex flex-col gap-2 border-t border-slate-100">
+                              {address.tel && (
+                                <div className="flex items-center gap-2 mt-2">
+                                  <Phone className="h-3.5 w-3.5 text-slate-400" />
+                                  <span className="text-sm text-slate-600">{address.tel}</span>
+                                </div>
+                              )}
+                              {address.email && (
+                                <div className="flex items-center gap-2">
+                                  <Mail className="h-3.5 w-3.5 text-slate-400" />
+                                  <span className="text-sm text-slate-600">{address.email}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </RadioGroup>

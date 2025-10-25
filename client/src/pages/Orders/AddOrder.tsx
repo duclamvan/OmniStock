@@ -2288,17 +2288,18 @@ export default function AddOrder() {
                                   }
                                 }}
                               >
-                                <Label htmlFor={address.id} className="cursor-pointer">
-                                  <div className="text-base font-semibold text-slate-900">
-                                    {address.firstName} {address.lastName}
+                                <div className="flex items-start gap-2">
+                                  <MapPin className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                                  <div className="text-sm text-slate-700 leading-relaxed">
+                                    <div className="font-semibold text-slate-900">{address.firstName} {address.lastName}</div>
+                                    {address.company && (
+                                      <div className="font-medium text-slate-800">{address.company}</div>
+                                    )}
+                                    <div className="mt-1">{address.street}</div>
+                                    <div>{address.city}, {address.zipCode}</div>
+                                    <div>{address.country}</div>
                                   </div>
-                                  {address.company && (
-                                    <div className="flex items-center gap-1.5 mt-1.5 text-slate-700">
-                                      <Building className="h-3.5 w-3.5 text-slate-500" />
-                                      <span className="text-sm font-medium">{address.company}</span>
-                                    </div>
-                                  )}
-                                </Label>
+                                </div>
                               </div>
                               <div className="flex items-center gap-1">
                                 <Button
@@ -2339,9 +2340,9 @@ export default function AddOrder() {
                               </div>
                             </div>
 
-                            {/* Address Details */}
+                            {/* Contact Details */}
                             <div 
-                              className="px-4 pb-4 pt-0 space-y-2 cursor-pointer border-t border-slate-100"
+                              className="px-4 pb-4 pt-0 space-y-2 cursor-pointer"
                               onClick={() => {
                                 if (selectedShippingAddress?.id === address.id) {
                                   setSelectedShippingAddress(null);
@@ -2350,14 +2351,6 @@ export default function AddOrder() {
                                 }
                               }}
                             >
-                              <div className="flex items-start gap-2 mt-3">
-                                <MapPin className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
-                                <div className="text-sm text-slate-700 leading-relaxed">
-                                  <div>{address.street}</div>
-                                  <div>{address.city}, {address.zipCode}</div>
-                                  <div className="font-medium text-slate-800 mt-0.5">{address.country}</div>
-                                </div>
-                              </div>
 
                               {(address.tel || address.email) && (
                                 <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
