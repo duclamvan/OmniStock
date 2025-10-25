@@ -10,7 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCompactNumber } from "@/lib/currencyUtils";
-import { Plus, Search, Edit, Wrench, Clock, PlayCircle, CheckCircle2, Filter, Settings, Check, Calendar } from "lucide-react";
+import { Plus, Search, Edit, Wrench, Clock, PlayCircle, CheckCircle2, Filter, Settings, Check, Calendar, FileDown, FileText } from "lucide-react";
+import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import {
   Tooltip,
   TooltipContent,
@@ -43,6 +44,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatCzechDate } from "@/lib/dateUtils";
+import { format } from "date-fns";
 
 interface Service {
   id: string;
@@ -349,6 +351,87 @@ export default function Services() {
     setShowDeleteDialog(false);
   };
 
+  // Export handlers
+  const handleExportXLSX = () => {
+    try {
+      const exportData = filteredServices.map(service => ({
+        'Service ID': service.id.substring(0, 8) || '-',
+        'Customer': service.customer?.name || '-',
+        'Description': service.name || '-',
+        'Service Cost': formatCurrency(service.serviceCost),
+        'Parts Cost': formatCurrency(service.partsCost),
+        'Total Cost': formatCurrency(service.totalCost),
+        'Status': service.status === 'pending' ? 'Pending'
+          : service.status === 'in_progress' ? 'In Progress'
+          : service.status === 'completed' ? 'Completed'
+          : service.status === 'cancelled' ? 'Cancelled'
+          : service.status || '-',
+        'Created Date': formatDate(service.createdAt),
+        'Completed Date': service.status === 'completed' ? formatDate(service.updatedAt) : '-',
+      }));
+
+      exportToXLSX(exportData, `Services_${format(new Date(), 'yyyy-MM-dd')}`, 'Services');
+      
+      toast({
+        title: "Export Successful",
+        description: `Exported ${exportData.length} service(s) to XLSX`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export services to XLSX",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExportPDF = () => {
+    try {
+      const exportData = filteredServices.map(service => ({
+        serviceId: service.id.substring(0, 8) || '-',
+        customer: service.customer?.name || '-',
+        description: service.name || '-',
+        serviceCost: formatCurrency(service.serviceCost),
+        partsCost: formatCurrency(service.partsCost),
+        totalCost: formatCurrency(service.totalCost),
+        status: service.status === 'pending' ? 'Pending'
+          : service.status === 'in_progress' ? 'In Progress'
+          : service.status === 'completed' ? 'Completed'
+          : service.status === 'cancelled' ? 'Cancelled'
+          : service.status || '-',
+        createdDate: formatDate(service.createdAt),
+        completedDate: service.status === 'completed' ? formatDate(service.updatedAt) : '-',
+      }));
+
+      const columns: PDFColumn[] = [
+        { key: 'serviceId', header: 'Service ID' },
+        { key: 'customer', header: 'Customer' },
+        { key: 'description', header: 'Description' },
+        { key: 'serviceCost', header: 'Service Cost' },
+        { key: 'partsCost', header: 'Parts Cost' },
+        { key: 'totalCost', header: 'Total Cost' },
+        { key: 'status', header: 'Status' },
+        { key: 'createdDate', header: 'Created Date' },
+        { key: 'completedDate', header: 'Completed Date' },
+      ];
+
+      exportToPDF('Services Report', exportData, columns, `Services_${format(new Date(), 'yyyy-MM-dd')}`);
+      
+      toast({
+        title: "Export Successful",
+        description: `Exported ${exportData.length} service(s) to PDF`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export services to PDF",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[600px]">
@@ -375,12 +458,34 @@ export default function Services() {
             Track repair services and manage service bills
           </p>
         </div>
-        <Link href="/services/add">
-          <Button data-testid="button-add-service">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Service
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" data-testid="button-export">
+                <FileDown className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportXLSX} data-testid="button-export-xlsx">
+                <FileDown className="h-4 w-4 mr-2" />
+                Export as XLSX
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF} data-testid="button-export-pdf">
+                <FileText className="h-4 w-4 mr-2" />
+                Export as PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Link href="/services/add">
+            <Button data-testid="button-add-service">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Service
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats Overview */}

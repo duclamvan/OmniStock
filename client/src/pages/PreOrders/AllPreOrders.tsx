@@ -10,7 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCompactNumber } from "@/lib/currencyUtils";
 import { fuzzySearch } from "@/lib/fuzzySearch";
-import { Plus, Eye, Edit, Trash2, MoreVertical, ShoppingCart, Filter, Package, Clock, CheckCircle, Activity, Calendar, Search } from "lucide-react";
+import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
+import { Plus, Eye, Edit, Trash2, MoreVertical, ShoppingCart, Filter, Package, Clock, CheckCircle, Activity, Calendar, Search, FileDown, FileText } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -142,6 +143,89 @@ export default function AllPreOrders() {
       return format(new Date(dateString), "MMM d, yyyy");
     } catch {
       return "—";
+    }
+  };
+
+  // Export handlers
+  const handleExportXLSX = () => {
+    try {
+      if (!filteredPreOrders || filteredPreOrders.length === 0) {
+        toast({
+          title: "No data to export",
+          description: "There are no pre-orders to export",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const exportData = filteredPreOrders.map(preOrder => ({
+        'Pre-Order ID': preOrder.id,
+        'Customer': preOrder.customer?.name || 'Unknown',
+        'Items': preOrder.itemsCount,
+        'Status': statusConfig[preOrder.status as keyof typeof statusConfig]?.label || preOrder.status,
+        'Created Date': formatDate(preOrder.createdAt),
+        'Expected Delivery': formatDate(preOrder.expectedDate),
+        'Notes': preOrder.notes || '',
+      }));
+
+      exportToXLSX(exportData, 'pre-orders', 'PreOrders');
+      
+      toast({
+        title: "Success",
+        description: `Exported ${exportData.length} pre-orders to XLSX`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export pre-orders to XLSX",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExportPDF = () => {
+    try {
+      if (!filteredPreOrders || filteredPreOrders.length === 0) {
+        toast({
+          title: "No data to export",
+          description: "There are no pre-orders to export",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const exportData = filteredPreOrders.map(preOrder => ({
+        id: preOrder.id,
+        customer: preOrder.customer?.name || 'Unknown',
+        items: preOrder.itemsCount.toString(),
+        status: statusConfig[preOrder.status as keyof typeof statusConfig]?.label || preOrder.status,
+        createdDate: formatDate(preOrder.createdAt),
+        expectedDelivery: formatDate(preOrder.expectedDate),
+      }));
+
+      const columns: PDFColumn[] = [
+        { key: 'id', header: 'Pre-Order ID' },
+        { key: 'customer', header: 'Customer' },
+        { key: 'items', header: 'Items' },
+        { key: 'status', header: 'Status' },
+        { key: 'createdDate', header: 'Created Date' },
+        { key: 'expectedDelivery', header: 'Expected Delivery' },
+      ];
+
+      exportToPDF('Pre-Orders Report', exportData, columns, 'pre-orders');
+      
+      toast({
+        title: "Success",
+        description: `Exported ${exportData.length} pre-orders to PDF`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export pre-orders to PDF",
+        variant: "destructive",
+      });
     }
   };
 
@@ -333,13 +417,33 @@ export default function AllPreOrders() {
             Manage customer pre-orders and advance bookings
           </p>
         </div>
-        <Button 
-          onClick={() => setLocation('/orders/pre-orders/add')}
-          data-testid="button-add-pre-order"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Pre-Order
-        </Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" data-testid="button-export">
+                <FileDown className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportXLSX} data-testid="action-export-xlsx">
+                <FileDown className="h-4 w-4 mr-2" />
+                Export to XLSX
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF} data-testid="action-export-pdf">
+                <FileText className="h-4 w-4 mr-2" />
+                Export to PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button 
+            onClick={() => setLocation('/orders/pre-orders/add')}
+            data-testid="button-add-pre-order"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Pre-Order
+          </Button>
+        </div>
       </div>
 
       {/* Stats Overview */}

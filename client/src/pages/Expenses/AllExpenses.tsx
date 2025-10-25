@@ -10,6 +10,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCompactNumber } from "@/lib/currencyUtils";
+import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
 import { 
   Plus, 
   DollarSign, 
@@ -23,6 +24,9 @@ import {
   Filter,
   MoreVertical,
   CheckCircle2,
+  Download,
+  FileSpreadsheet,
+  FileText,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -225,6 +229,113 @@ export default function AllExpenses() {
     }
   };
 
+  // Export to XLSX
+  const handleExportXLSX = () => {
+    try {
+      if (!filteredExpenses || filteredExpenses.length === 0) {
+        toast({
+          title: "No data to export",
+          description: "There are no expenses to export.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Prepare export data
+      const exportData = filteredExpenses.map(expense => {
+        const amount = parseFloat(expense.amount || '0') || 0;
+        const symbol = getCurrencySymbol(expense.currency || 'USD');
+        
+        return {
+          'Invoice Number': expense.expenseId || expense.name || '-',
+          'Description': expense.description || expense.name || '-',
+          'Supplier/Vendor': expense.vendor || expense.name || '-',
+          'Amount': `${symbol}${amount.toFixed(2)}`,
+          'Currency': expense.currency || 'USD',
+          'Category': expense.category || 'General',
+          'Date': formatDate(expense.date),
+          'Status': expense.status || 'pending',
+          'Payment Method': expense.paymentMethod ? 
+            expense.paymentMethod.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : '-',
+        };
+      });
+
+      exportToXLSX(exportData, 'expenses', 'Expenses');
+      
+      toast({
+        title: "Export successful",
+        description: `Exported ${filteredExpenses.length} expense(s) to XLSX`,
+      });
+    } catch (error) {
+      console.error('Error exporting to XLSX:', error);
+      toast({
+        title: "Export failed",
+        description: "Failed to export expenses. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Export to PDF
+  const handleExportPDF = () => {
+    try {
+      if (!filteredExpenses || filteredExpenses.length === 0) {
+        toast({
+          title: "No data to export",
+          description: "There are no expenses to export.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Define columns for PDF
+      const pdfColumns: PDFColumn[] = [
+        { key: 'invoiceNumber', header: 'Invoice #' },
+        { key: 'description', header: 'Description' },
+        { key: 'vendor', header: 'Supplier/Vendor' },
+        { key: 'amount', header: 'Amount' },
+        { key: 'currency', header: 'Currency' },
+        { key: 'category', header: 'Category' },
+        { key: 'date', header: 'Date' },
+        { key: 'status', header: 'Status' },
+        { key: 'paymentMethod', header: 'Payment Method' },
+      ];
+
+      // Prepare export data
+      const exportData = filteredExpenses.map(expense => {
+        const amount = parseFloat(expense.amount || '0') || 0;
+        const symbol = getCurrencySymbol(expense.currency || 'USD');
+        
+        return {
+          invoiceNumber: expense.expenseId || expense.name || '-',
+          description: expense.description || expense.name || '-',
+          vendor: expense.vendor || expense.name || '-',
+          amount: `${symbol}${amount.toFixed(2)}`,
+          currency: expense.currency || 'USD',
+          category: expense.category || 'General',
+          date: formatDate(expense.date),
+          status: expense.status ? expense.status.charAt(0).toUpperCase() + expense.status.slice(1) : 'Pending',
+          paymentMethod: expense.paymentMethod ? 
+            expense.paymentMethod.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : '-',
+        };
+      });
+
+      exportToPDF('Expenses Report', exportData, pdfColumns, 'expenses');
+      
+      toast({
+        title: "Export initiated",
+        description: `Preparing PDF export of ${filteredExpenses.length} expense(s)`,
+      });
+    } catch (error) {
+      console.error('Error exporting to PDF:', error);
+      toast({
+        title: "Export failed",
+        description: "Failed to export expenses. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const columns: DataTableColumn<any>[] = [
     {
       key: "invoiceNumber",
@@ -399,10 +510,32 @@ export default function AllExpenses() {
             Track business expenses and manage invoices
           </p>
         </div>
-        <Button onClick={() => navigate('/expenses/add')} data-testid="button-add-expense">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Expense
-        </Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="border-slate-200 dark:border-slate-700" data-testid="button-export">
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Export Format</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportXLSX} data-testid="button-export-xlsx">
+                <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-600" />
+                Export to XLSX
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF} data-testid="button-export-pdf">
+                <FileText className="h-4 w-4 mr-2 text-red-600" />
+                Export to PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button onClick={() => navigate('/expenses/add')} data-testid="button-add-expense">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Expense
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}

@@ -1,7 +1,9 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Plus, Search, Package2, Edit, Trash2, DollarSign, Layers, Archive, ExternalLink, Filter, ShoppingCart, Copy, Tag, MoreVertical, Check } from "lucide-react";
+import { Plus, Search, Package2, Edit, Trash2, DollarSign, Layers, Archive, ExternalLink, Filter, ShoppingCart, Copy, Tag, MoreVertical, Check, FileDown, FileText } from "lucide-react";
+import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
+import { format } from "date-fns";
 import { DataTable, DataTableColumn, BulkAction } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -387,6 +389,86 @@ export default function PackingMaterials() {
     totalValue: materials.reduce((sum, m) => sum + ((m.unitCost || 0) * (m.stockQuantity || 0)), 0),
   };
 
+  // Export handlers
+  const handleExportXLSX = () => {
+    try {
+      const exportData = materials.map(material => ({
+        'Name': material.name || '-',
+        'Category': material.category === 'cartons' ? 'Cartons & Boxes'
+          : material.category === 'filling' ? 'Filling Materials'
+          : material.category === 'protective' ? 'Protective Materials'
+          : material.category === 'supplies' ? 'General Supplies'
+          : material.category === 'packaging' ? 'Product Packaging'
+          : material.category || '-',
+        'Dimensions': material.dimensions || '-',
+        'Weight': material.weight ? `${material.weight} kg` : '-',
+        'Unit Price': material.unitCost ? formatCurrency(material.unitCost, 'EUR') : '-',
+        'Stock': material.stockQuantity ? material.stockQuantity.toLocaleString() : '-',
+        'Supplier': material.supplier ? getDisplayUrl(material.supplier)?.display || material.supplier : '-',
+        'Status': (material.stockQuantity || 0) <= (material.minStockLevel || 10) ? 'Low Stock' : 'In Stock',
+      }));
+
+      exportToXLSX(exportData, `Packing_Materials_${format(new Date(), 'yyyy-MM-dd')}`, 'Packing Materials');
+      
+      toast({
+        title: "Export Successful",
+        description: `Exported ${exportData.length} material(s) to XLSX`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export packing materials to XLSX",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExportPDF = () => {
+    try {
+      const exportData = materials.map(material => ({
+        name: material.name || '-',
+        category: material.category === 'cartons' ? 'Cartons & Boxes'
+          : material.category === 'filling' ? 'Filling Materials'
+          : material.category === 'protective' ? 'Protective Materials'
+          : material.category === 'supplies' ? 'General Supplies'
+          : material.category === 'packaging' ? 'Product Packaging'
+          : material.category || '-',
+        dimensions: material.dimensions || '-',
+        weight: material.weight ? `${material.weight} kg` : '-',
+        unitPrice: material.unitCost ? formatCurrency(material.unitCost, 'EUR') : '-',
+        stock: material.stockQuantity ? material.stockQuantity.toLocaleString() : '-',
+        supplier: material.supplier ? getDisplayUrl(material.supplier)?.display || material.supplier : '-',
+        status: (material.stockQuantity || 0) <= (material.minStockLevel || 10) ? 'Low Stock' : 'In Stock',
+      }));
+
+      const columns: PDFColumn[] = [
+        { key: 'name', header: 'Name' },
+        { key: 'category', header: 'Category' },
+        { key: 'dimensions', header: 'Dimensions' },
+        { key: 'weight', header: 'Weight' },
+        { key: 'unitPrice', header: 'Unit Price' },
+        { key: 'stock', header: 'Stock' },
+        { key: 'supplier', header: 'Supplier' },
+        { key: 'status', header: 'Status' },
+      ];
+
+      exportToPDF('Packing Materials Report', exportData, columns, `Packing_Materials_${format(new Date(), 'yyyy-MM-dd')}`);
+      
+      toast({
+        title: "Export Successful",
+        description: `Exported ${exportData.length} material(s) to PDF`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export packing materials to PDF",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[600px]">
@@ -412,12 +494,34 @@ export default function PackingMaterials() {
             Manage packing materials inventory and suppliers
           </p>
         </div>
-        <Link href="/packing-materials/add">
-          <Button data-testid="button-add-material">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Material
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" data-testid="button-export">
+                <FileDown className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportXLSX} data-testid="button-export-xlsx">
+                <FileDown className="h-4 w-4 mr-2" />
+                Export as XLSX
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF} data-testid="button-export-pdf">
+                <FileText className="h-4 w-4 mr-2" />
+                Export as PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Link href="/packing-materials/add">
+            <Button data-testid="button-add-material">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Material
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

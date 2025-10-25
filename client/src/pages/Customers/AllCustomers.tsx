@@ -9,7 +9,8 @@ import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency, formatDate, formatCompactNumber } from "@/lib/currencyUtils";
-import { Plus, Search, Edit, Trash2, User, Mail, Phone, Star, MessageCircle, MapPin, MoreVertical, Ban, Filter, Users, DollarSign } from "lucide-react";
+import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
+import { Plus, Search, Edit, Trash2, User, Mail, Phone, Star, MessageCircle, MapPin, MoreVertical, Ban, Filter, Users, DollarSign, FileDown, FileText } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -73,6 +74,10 @@ export default function AllCustomers() {
     retry: false,
   });
 
+  // Note: Backend API filters customers based on searchQuery parameter
+  // filteredCustomers is the same as customers since filtering is done server-side
+  const filteredCustomers = customers;
+
   // Error handling
   useEffect(() => {
     if (error) {
@@ -110,7 +115,7 @@ export default function AllCustomers() {
   });
 
   // Calculate stats
-  const totalRevenue = customers?.reduce((sum: number, c: any) => 
+  const totalRevenue = filteredCustomers?.reduce((sum: number, c: any) => 
     sum + parseFloat(c.totalSpent || '0'), 0) || 0;
 
   // Define table columns
@@ -314,6 +319,90 @@ export default function AllCustomers() {
     // TODO: Implement blacklist functionality
   };
 
+  const handleExportXLSX = () => {
+    try {
+      if (!filteredCustomers || filteredCustomers.length === 0) {
+        toast({
+          title: "No Data",
+          description: "No customers to export",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const exportData = filteredCustomers.map(customer => ({
+        "Name": customer.name || '',
+        "Email": customer.email || '',
+        "Phone": customer.phone || '',
+        "Country": customer.country || '',
+        "Last Purchase": customer.lastOrderDate ? formatDate(customer.lastOrderDate) : '',
+        "Order Count": customer.orderCount || 0,
+        "Total Spent": formatCurrency(parseFloat(customer.totalSpent || '0'), 'EUR'),
+      }));
+
+      exportToXLSX(exportData, 'customers', 'Customers');
+      
+      toast({
+        title: "Export Successful",
+        description: `Exported ${filteredCustomers.length} customers to XLSX`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export customers to XLSX",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExportPDF = () => {
+    try {
+      if (!filteredCustomers || filteredCustomers.length === 0) {
+        toast({
+          title: "No Data",
+          description: "No customers to export",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const columns: PDFColumn[] = [
+        { key: "name", header: "Name" },
+        { key: "email", header: "Email" },
+        { key: "phone", header: "Phone" },
+        { key: "country", header: "Country" },
+        { key: "lastPurchase", header: "Last Purchase" },
+        { key: "orderCount", header: "Order Count" },
+        { key: "totalSpent", header: "Total Spent" },
+      ];
+
+      const exportData = filteredCustomers.map(customer => ({
+        name: customer.name || '',
+        email: customer.email || '',
+        phone: customer.phone || '',
+        country: customer.country || '',
+        lastPurchase: customer.lastOrderDate ? formatDate(customer.lastOrderDate) : '',
+        orderCount: customer.orderCount || 0,
+        totalSpent: formatCurrency(parseFloat(customer.totalSpent || '0'), 'EUR'),
+      }));
+
+      exportToPDF('Customers Report', exportData, columns, 'customers');
+      
+      toast({
+        title: "Export Successful",
+        description: `Exported ${filteredCustomers.length} customers to PDF`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export customers to PDF",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[600px]">
@@ -340,12 +429,32 @@ export default function AllCustomers() {
             Monitor customer relationships and track sales performance
           </p>
         </div>
-        <Link href="/customers/add">
-          <Button data-testid="button-add-customer">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Customer
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" data-testid="button-export-customers">
+                <FileDown className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportXLSX} data-testid="menu-item-export-xlsx">
+                <FileDown className="h-4 w-4 mr-2" />
+                Export to XLSX
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF} data-testid="menu-item-export-pdf">
+                <FileText className="h-4 w-4 mr-2" />
+                Export to PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Link href="/customers/add">
+            <Button data-testid="button-add-customer">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Customer
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -359,7 +468,7 @@ export default function AllCustomers() {
                   Total Customers
                 </p>
                 <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
-                  {customers?.length || 0}
+                  {filteredCustomers?.length || 0}
                 </p>
               </div>
               <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
@@ -378,7 +487,7 @@ export default function AllCustomers() {
                   VIP Customers
                 </p>
                 <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
-                  {customers?.filter((c: any) => c.type === 'vip').length || 0}
+                  {filteredCustomers?.filter((c: any) => c.type === 'vip').length || 0}
                 </p>
               </div>
               <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950">
@@ -397,7 +506,7 @@ export default function AllCustomers() {
                   Regular Customers
                 </p>
                 <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
-                  {customers?.filter((c: any) => c.type === 'regular').length || 0}
+                  {filteredCustomers?.filter((c: any) => c.type === 'regular').length || 0}
                 </p>
               </div>
               <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
@@ -465,7 +574,7 @@ export default function AllCustomers() {
         <CardContent className="p-0 sm:p-6">
           <div className="overflow-x-auto">
             <DataTable
-              data={customers}
+              data={filteredCustomers}
               columns={visibleColumnsFiltered}
               bulkActions={bulkActions}
               getRowKey={(customer) => customer.id}
@@ -475,7 +584,7 @@ export default function AllCustomers() {
                 <div className="px-4 sm:px-0 pb-3">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="text-mobile-lg font-semibold">Customers ({customers?.length || 0})</h2>
+                      <h2 className="text-mobile-lg font-semibold">Customers ({filteredCustomers?.length || 0})</h2>
                       {selectedRows.size > 0 && (
                         <>
                           <Badge variant="secondary" className="text-xs h-6 px-2">

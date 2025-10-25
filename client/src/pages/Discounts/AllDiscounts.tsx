@@ -11,7 +11,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
 import { format } from "date-fns";
-import { Plus, Search, Edit, Trash2, Tag, Calendar, Percent, Filter, MoreVertical, TrendingDown, DollarSign, Check } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Tag, Calendar, Percent, Filter, MoreVertical, TrendingDown, DollarSign, Check, FileDown, FileText } from "lucide-react";
+import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import {
   Tooltip,
   TooltipContent,
@@ -336,6 +337,97 @@ export default function AllDiscounts() {
     setShowDeleteDialog(false);
   };
 
+  // Export handlers
+  const handleExportXLSX = () => {
+    try {
+      const exportData = filteredSales.map(sale => ({
+        'Code': sale.discountId || '-',
+        'Description': sale.name || '-',
+        'Type': sale.discountType === 'percentage' ? 'Percentage' 
+          : sale.discountType === 'fixed_amount' ? 'Fixed Amount' 
+          : sale.discountType === 'buy_x_get_y' ? 'Buy X Get Y' 
+          : sale.discountType || '-',
+        'Value': sale.discountType === 'percentage' ? `${sale.percentage}%`
+          : sale.discountType === 'fixed_amount' ? `$${sale.fixedAmount}`
+          : sale.discountType === 'buy_x_get_y' ? `B${sale.buyQuantity}G${sale.getQuantity}`
+          : '-',
+        'Min Purchase': sale.minPurchaseAmount ? `$${sale.minPurchaseAmount}` : '-',
+        'Max Uses': sale.maxUses || 'Unlimited',
+        'Valid From': format(new Date(sale.startDate), 'dd/MM/yyyy'),
+        'Valid Until': format(new Date(sale.endDate), 'dd/MM/yyyy'),
+        'Status': sale.status === 'active' ? 'Active' 
+          : sale.status === 'inactive' ? 'Inactive' 
+          : sale.status === 'finished' ? 'Finished' 
+          : sale.status || '-',
+      }));
+
+      exportToXLSX(exportData, `Discounts_${format(new Date(), 'yyyy-MM-dd')}`, 'Discounts');
+      
+      toast({
+        title: "Export Successful",
+        description: `Exported ${exportData.length} discount(s) to XLSX`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export discounts to XLSX",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExportPDF = () => {
+    try {
+      const exportData = filteredSales.map(sale => ({
+        code: sale.discountId || '-',
+        description: sale.name || '-',
+        type: sale.discountType === 'percentage' ? 'Percentage' 
+          : sale.discountType === 'fixed_amount' ? 'Fixed Amount' 
+          : sale.discountType === 'buy_x_get_y' ? 'Buy X Get Y' 
+          : sale.discountType || '-',
+        value: sale.discountType === 'percentage' ? `${sale.percentage}%`
+          : sale.discountType === 'fixed_amount' ? `$${sale.fixedAmount}`
+          : sale.discountType === 'buy_x_get_y' ? `B${sale.buyQuantity}G${sale.getQuantity}`
+          : '-',
+        minPurchase: sale.minPurchaseAmount ? `$${sale.minPurchaseAmount}` : '-',
+        maxUses: sale.maxUses || 'Unlimited',
+        validFrom: format(new Date(sale.startDate), 'dd/MM/yyyy'),
+        validUntil: format(new Date(sale.endDate), 'dd/MM/yyyy'),
+        status: sale.status === 'active' ? 'Active' 
+          : sale.status === 'inactive' ? 'Inactive' 
+          : sale.status === 'finished' ? 'Finished' 
+          : sale.status || '-',
+      }));
+
+      const columns: PDFColumn[] = [
+        { key: 'code', header: 'Code' },
+        { key: 'description', header: 'Description' },
+        { key: 'type', header: 'Type' },
+        { key: 'value', header: 'Value' },
+        { key: 'minPurchase', header: 'Min Purchase' },
+        { key: 'maxUses', header: 'Max Uses' },
+        { key: 'validFrom', header: 'Valid From' },
+        { key: 'validUntil', header: 'Valid Until' },
+        { key: 'status', header: 'Status' },
+      ];
+
+      exportToPDF('Discounts Report', exportData, columns, `Discounts_${format(new Date(), 'yyyy-MM-dd')}`);
+      
+      toast({
+        title: "Export Successful",
+        description: `Exported ${exportData.length} discount(s) to PDF`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export discounts to PDF",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[600px]">
@@ -362,12 +454,34 @@ export default function AllDiscounts() {
             Manage promotional discounts and special offers
           </p>
         </div>
-        <Link href="/discounts/add">
-          <Button data-testid="button-add-discount">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Discount
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" data-testid="button-export">
+                <FileDown className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportXLSX} data-testid="button-export-xlsx">
+                <FileDown className="h-4 w-4 mr-2" />
+                Export as XLSX
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF} data-testid="button-export-pdf">
+                <FileText className="h-4 w-4 mr-2" />
+                Export as PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Link href="/discounts/add">
+            <Button data-testid="button-add-discount">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Discount
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats Cards */}

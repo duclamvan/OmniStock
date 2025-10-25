@@ -13,7 +13,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft, Sparkles, TrendingUp, Filter, PackageX, DollarSign, Settings, Check } from "lucide-react";
+import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
+import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft, Sparkles, TrendingUp, Filter, PackageX, DollarSign, Settings, Check, FileText } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -65,7 +66,6 @@ export default function AllInventory() {
   const [showArchive, setShowArchive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showImportDialog, setShowImportDialog] = useState(false);
-  const [showExportDialog, setShowExportDialog] = useState(false);
 
   // Column visibility state with localStorage persistence
   const [columnVisibility, setColumnVisibility] = useState<{ [key: string]: boolean }>(() => {
@@ -247,8 +247,8 @@ export default function AllInventory() {
     },
   });
 
-  // Export to Excel
-  const handleExport = () => {
+  // Export to XLSX
+  const handleExportXLSX = () => {
     if (!filteredProducts || filteredProducts.length === 0) {
       toast({
         title: "No data to export",
@@ -258,64 +258,85 @@ export default function AllInventory() {
       return;
     }
 
-    // Prepare data for export
-    const exportData = filteredProducts.map((product: any) => ({
-      Name: product.name,
-      SKU: product.sku,
-      Barcode: product.barcode || '',
-      Category: (categories as any[])?.find((c: any) => String(c.id) === product.categoryId)?.name || '',
-      Quantity: product.quantity,
-      'Units Sold': unitsSoldByProduct[product.id] || 0,
-      'Low Stock Alert': product.lowStockAlert,
-      'Price EUR': product.priceEur,
-      'Price CZK': product.priceCzk,
-      'Import Cost USD': product.importCostUsd || '',
-      'Import Cost EUR': product.importCostEur || '',
-      'Import Cost CZK': product.importCostCzk || '',
-      Supplier: product.supplier?.name || '',
-      Warehouse: (warehouses as any[])?.find((w: any) => w.id === product.warehouseId)?.name || '',
-      Description: product.description || '',
-      Status: product.isActive ? 'Active' : 'Inactive',
-    }));
+    try {
+      // Prepare data for export
+      const exportData = filteredProducts.map((product: any) => ({
+        Name: product.name,
+        SKU: product.sku,
+        Category: (categories as any[])?.find((c: any) => String(c.id) === product.categoryId)?.name || '',
+        Quantity: product.quantity,
+        'Units Sold': unitsSoldByProduct[product.id] || 0,
+        'Price (EUR)': formatCurrency(parseFloat(product.priceEur || '0'), 'EUR'),
+        'Price (CZK)': formatCurrency(parseFloat(product.priceCzk || '0'), 'CZK'),
+        Status: product.isActive ? 'Active' : 'Inactive',
+      }));
 
-    // Create worksheet
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    
-    // Set column widths
-    ws['!cols'] = [
-      { wch: 30 }, // Name
-      { wch: 15 }, // SKU
-      { wch: 15 }, // Barcode
-      { wch: 20 }, // Category
-      { wch: 10 }, // Quantity
-      { wch: 12 }, // Units Sold
-      { wch: 15 }, // Low Stock Alert
-      { wch: 12 }, // Price EUR
-      { wch: 12 }, // Price CZK
-      { wch: 15 }, // Import Cost USD
-      { wch: 15 }, // Import Cost EUR
-      { wch: 15 }, // Import Cost CZK
-      { wch: 20 }, // Supplier
-      { wch: 20 }, // Warehouse
-      { wch: 40 }, // Description
-      { wch: 10 }, // Status
-    ];
+      exportToXLSX(exportData, 'inventory', 'Products');
 
-    // Create workbook
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Products');
+      toast({
+        title: "Export successful",
+        description: `Exported ${filteredProducts.length} products to XLSX`,
+      });
+    } catch (error: any) {
+      console.error("Export error:", error);
+      toast({
+        title: "Export failed",
+        description: error.message || "Failed to export to XLSX",
+        variant: "destructive",
+      });
+    }
+  };
 
-    // Generate filename with timestamp
-    const timestamp = new Date().toISOString().split('T')[0];
-    const filename = `inventory_${timestamp}.xlsx`;
+  // Export to PDF
+  const handleExportPDF = () => {
+    if (!filteredProducts || filteredProducts.length === 0) {
+      toast({
+        title: "No data to export",
+        description: "There are no products to export",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    // Save file
-    XLSX.writeFile(wb, filename);
+    try {
+      // Prepare data for export
+      const exportData = filteredProducts.map((product: any) => ({
+        name: product.name,
+        sku: product.sku,
+        category: (categories as any[])?.find((c: any) => String(c.id) === product.categoryId)?.name || '',
+        quantity: product.quantity,
+        unitsSold: unitsSoldByProduct[product.id] || 0,
+        priceEur: formatCurrency(parseFloat(product.priceEur || '0'), 'EUR'),
+        priceCzk: formatCurrency(parseFloat(product.priceCzk || '0'), 'CZK'),
+        status: product.isActive ? 'Active' : 'Inactive',
+      }));
 
-    toast({
-      title: "Export successful",
-      description: `Exported ${filteredProducts.length} products to ${filename}`,
-    });
+      // Define columns for PDF
+      const columns: PDFColumn[] = [
+        { key: 'name', header: 'Name' },
+        { key: 'sku', header: 'SKU' },
+        { key: 'category', header: 'Category' },
+        { key: 'quantity', header: 'Quantity' },
+        { key: 'unitsSold', header: 'Units Sold' },
+        { key: 'priceEur', header: 'Price (EUR)' },
+        { key: 'priceCzk', header: 'Price (CZK)' },
+        { key: 'status', header: 'Status' },
+      ];
+
+      exportToPDF('Inventory Report', exportData, columns, 'inventory');
+
+      toast({
+        title: "Export successful",
+        description: `Exported ${filteredProducts.length} products to PDF`,
+      });
+    } catch (error: any) {
+      console.error("Export error:", error);
+      toast({
+        title: "Export failed",
+        description: error.message || "Failed to export to PDF",
+        variant: "destructive",
+      });
+    }
   };
 
   // Import from Excel
@@ -959,16 +980,37 @@ export default function AllInventory() {
                 <FileUp className="mr-2 h-4 w-4" />
                 Import XLS
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="flex-1 sm:flex-none touch-target"
-                onClick={() => setShowExportDialog(true)}
-                data-testid="button-export-xls"
-              >
-                <FileDown className="mr-2 h-4 w-4" />
-                Export XLS
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1 sm:flex-none touch-target"
+                    data-testid="button-export"
+                  >
+                    <FileDown className="mr-2 h-4 w-4" />
+                    Export
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Export Format</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={handleExportXLSX}
+                    data-testid="menuitem-export-xlsx"
+                  >
+                    <FileDown className="mr-2 h-4 w-4" />
+                    Export as XLSX
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={handleExportPDF}
+                    data-testid="menuitem-export-pdf"
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Export as PDF
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Link href="/inventory/add" className="flex-1 sm:flex-none">
                 <Button className="w-full touch-target">
                   <Plus className="mr-2 h-4 w-4" />
@@ -1494,75 +1536,6 @@ export default function AllInventory() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Export Dialog */}
-      <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Export Inventory to Excel</DialogTitle>
-            <DialogDescription>
-              Export your current inventory data to an Excel file
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <h4 className="font-semibold text-sm mb-2">What will be exported:</h4>
-              <ul className="text-sm space-y-1 text-muted-foreground">
-                <li>• {filteredProducts?.length || 0} products (based on current filters)</li>
-                <li>• All product details including prices, stock, and suppliers</li>
-                <li>• Categories and warehouses will be included by name</li>
-              </ul>
-            </div>
-
-            <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
-              <h4 className="font-semibold text-sm mb-3">Exported Columns:</h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="space-y-1">
-                  <p className="text-muted-foreground">• Name</p>
-                  <p className="text-muted-foreground">• SKU</p>
-                  <p className="text-muted-foreground">• Barcode</p>
-                  <p className="text-muted-foreground">• Category</p>
-                  <p className="text-muted-foreground">• Quantity</p>
-                  <p className="text-muted-foreground">• Units Sold</p>
-                  <p className="text-muted-foreground">• Low Stock Alert</p>
-                  <p className="text-muted-foreground">• Price EUR</p>
-                  <p className="text-muted-foreground">• Price CZK</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-muted-foreground">• Import Cost USD</p>
-                  <p className="text-muted-foreground">• Import Cost EUR</p>
-                  <p className="text-muted-foreground">• Import Cost CZK</p>
-                  <p className="text-muted-foreground">• Supplier</p>
-                  <p className="text-muted-foreground">• Warehouse</p>
-                  <p className="text-muted-foreground">• Description</p>
-                  <p className="text-muted-foreground">• Status</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="text-xs text-muted-foreground">
-              The file will be saved as <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">inventory_YYYY-MM-DD.xlsx</code>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowExportDialog(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={() => {
-                handleExport();
-                setShowExportDialog(false);
-              }}
-              data-testid="button-confirm-export"
-            >
-              <FileDown className="mr-2 h-4 w-4" />
-              Export Now
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Import Dialog */}
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>

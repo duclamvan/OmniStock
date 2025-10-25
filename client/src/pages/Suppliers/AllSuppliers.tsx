@@ -20,7 +20,10 @@ import {
   Mail,
   Phone,
   Filter,
-  Check
+  Check,
+  Download,
+  FileSpreadsheet,
+  FileText
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -28,6 +31,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Input } from "@/components/ui/input";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCompactNumber } from "@/lib/currencyUtils";
+import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
 import type { Supplier } from "@shared/schema";
 import type { DataTableColumn } from "@/components/ui/data-table";
 import {
@@ -160,6 +164,97 @@ export default function AllSuppliers() {
       );
     } catch (error) {
       console.error('Error deleting suppliers:', error);
+    }
+  };
+
+  const handleExportXLSX = () => {
+    try {
+      if (!filteredSuppliers || filteredSuppliers.length === 0) {
+        toast({
+          title: "No Data",
+          description: "No suppliers to export",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const exportData = filteredSuppliers.map(supplier => ({
+        Name: supplier.name || '',
+        Company: supplier.name || '',
+        'Contact Person': supplier.contactPerson || '',
+        Email: supplier.email || '',
+        Phone: supplier.phone || '',
+        Country: supplier.country || '',
+        'Total Purchases': `$${parseFloat(supplier.totalPurchased || '0').toFixed(2)}`,
+        'Last Purchase Date': supplier.lastPurchaseDate 
+          ? format(new Date(supplier.lastPurchaseDate), 'dd/MM/yyyy')
+          : 'Never',
+        Address: supplier.address || '',
+        Website: supplier.website || '',
+      }));
+
+      exportToXLSX(exportData, 'suppliers', 'Suppliers');
+      
+      toast({
+        title: "Success",
+        description: `Exported ${exportData.length} suppliers to XLSX`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export suppliers to XLSX",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExportPDF = () => {
+    try {
+      if (!filteredSuppliers || filteredSuppliers.length === 0) {
+        toast({
+          title: "No Data",
+          description: "No suppliers to export",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const columns: PDFColumn[] = [
+        { key: 'name', header: 'Name' },
+        { key: 'contactPerson', header: 'Contact Person' },
+        { key: 'email', header: 'Email' },
+        { key: 'phone', header: 'Phone' },
+        { key: 'country', header: 'Country' },
+        { key: 'totalPurchases', header: 'Total Purchases' },
+        { key: 'lastPurchaseDate', header: 'Last Purchase' },
+      ];
+
+      const exportData = filteredSuppliers.map(supplier => ({
+        name: supplier.name || '',
+        contactPerson: supplier.contactPerson || '',
+        email: supplier.email || '',
+        phone: supplier.phone || '',
+        country: supplier.country || '',
+        totalPurchases: `$${parseFloat(supplier.totalPurchased || '0').toFixed(2)}`,
+        lastPurchaseDate: supplier.lastPurchaseDate 
+          ? format(new Date(supplier.lastPurchaseDate), 'dd/MM/yyyy')
+          : 'Never',
+      }));
+
+      exportToPDF('Suppliers Report', exportData, columns, 'suppliers');
+      
+      toast({
+        title: "Success",
+        description: `Exported ${exportData.length} suppliers to PDF`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export suppliers to PDF",
+        variant: "destructive",
+      });
     }
   };
 
@@ -424,10 +519,32 @@ export default function AllSuppliers() {
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Suppliers</h1>
           <p className="text-slate-600 dark:text-slate-400 mt-1">Manage supplier relationships and purchase orders</p>
         </div>
-        <Button onClick={() => navigate('/suppliers/new')} size="lg" data-testid="button-add-supplier">
-          <Plus className="mr-2 h-5 w-5" />
-          Add Supplier
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="lg" data-testid="button-export">
+                <Download className="mr-2 h-5 w-5" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Export Format</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportXLSX} data-testid="button-export-xlsx">
+                <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
+                Export as XLSX
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF} data-testid="button-export-pdf">
+                <FileText className="h-4 w-4 mr-2 text-red-600" />
+                Export as PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button onClick={() => navigate('/suppliers/new')} size="lg" data-testid="button-add-supplier">
+            <Plus className="mr-2 h-5 w-5" />
+            Add Supplier
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}

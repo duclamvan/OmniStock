@@ -10,8 +10,9 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCompactNumber } from "@/lib/currencyUtils";
-import { Plus, Package, PackageX, RefreshCw, Search, Eye, Filter, Clock, CheckCircle, MoreVertical } from "lucide-react";
+import { Plus, Package, PackageX, RefreshCw, Search, Eye, Filter, Clock, CheckCircle, MoreVertical, FileDown } from "lucide-react";
 import { format } from "date-fns";
+import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
 import {
   Tooltip,
   TooltipContent,
@@ -273,6 +274,106 @@ export default function AllReturns() {
     setShowDeleteDialog(false);
   };
 
+  const handleExportXLSX = () => {
+    try {
+      const exportData = filteredReturns.map((returnItem: any) => {
+        const statusMap: Record<string, string> = {
+          'awaiting': 'Awaiting',
+          'processing': 'Processing',
+          'completed': 'Completed',
+          'cancelled': 'Cancelled',
+        };
+
+        const returnTypeMap: Record<string, string> = {
+          'exchange': 'Exchange',
+          'refund': 'Refund',
+          'store_credit': 'Store Credit',
+        };
+
+        return {
+          'Return ID': returnItem.returnId || returnItem.id,
+          'Customer': returnItem.customer?.name || '-',
+          'Order ID': returnItem.orderId || '-',
+          'Items Count': returnItem.items?.length || 0,
+          'Total Refund': returnItem.total ? `$${returnItem.total.toFixed(2)}` : '-',
+          'Status': statusMap[returnItem.status] || returnItem.status,
+          'Return Type': returnTypeMap[returnItem.returnType] || returnItem.returnType,
+          'Date': format(new Date(returnItem.returnDate), 'dd MMM yyyy'),
+          'Reason': returnItem.notes || '-',
+        };
+      });
+
+      exportToXLSX(exportData, 'returns', 'Returns');
+      
+      toast({
+        title: "Success",
+        description: `Exported ${exportData.length} returns to XLSX`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export returns to XLSX",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExportPDF = () => {
+    try {
+      const statusMap: Record<string, string> = {
+        'awaiting': 'Awaiting',
+        'processing': 'Processing',
+        'completed': 'Completed',
+        'cancelled': 'Cancelled',
+      };
+
+      const returnTypeMap: Record<string, string> = {
+        'exchange': 'Exchange',
+        'refund': 'Refund',
+        'store_credit': 'Store Credit',
+      };
+
+      const exportData = filteredReturns.map((returnItem: any) => ({
+        returnId: returnItem.returnId || returnItem.id,
+        customer: returnItem.customer?.name || '-',
+        orderId: returnItem.orderId || '-',
+        itemsCount: returnItem.items?.length || 0,
+        total: returnItem.total ? `$${returnItem.total.toFixed(2)}` : '-',
+        status: statusMap[returnItem.status] || returnItem.status,
+        returnType: returnTypeMap[returnItem.returnType] || returnItem.returnType,
+        date: format(new Date(returnItem.returnDate), 'dd MMM yyyy'),
+        reason: returnItem.notes || '-',
+      }));
+
+      const columns: PDFColumn[] = [
+        { key: 'returnId', header: 'Return ID' },
+        { key: 'customer', header: 'Customer' },
+        { key: 'orderId', header: 'Order ID' },
+        { key: 'itemsCount', header: 'Items Count' },
+        { key: 'total', header: 'Total Refund' },
+        { key: 'status', header: 'Status' },
+        { key: 'returnType', header: 'Return Type' },
+        { key: 'date', header: 'Date' },
+        { key: 'reason', header: 'Reason' },
+      ];
+
+      exportToPDF('Returns Report', exportData, columns, 'returns');
+      
+      toast({
+        title: "Success",
+        description: `Exported ${exportData.length} returns to PDF`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export returns to PDF",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[600px]">
@@ -299,12 +400,34 @@ export default function AllReturns() {
             Process customer returns and manage refunds
           </p>
         </div>
-        <Link href="/returns/add">
-          <Button data-testid="button-add-return">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Return
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" data-testid="button-export-returns">
+                <FileDown className="mr-2 h-4 w-4" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportXLSX} data-testid="button-export-xlsx">
+                <FileDown className="mr-2 h-4 w-4" />
+                Export to XLSX
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF} data-testid="button-export-pdf">
+                <FileDown className="mr-2 h-4 w-4" />
+                Export to PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Link href="/returns/add">
+            <Button data-testid="button-add-return">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Return
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats Cards */}

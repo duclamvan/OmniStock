@@ -19,7 +19,8 @@ import { formatCurrency, formatDate, formatCompactNumber } from "@/lib/currencyU
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { getCountryFlag } from "@/lib/countries";
 import { cn } from "@/lib/utils";
-import { Plus, Search, Filter, Download, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal, Sparkles, RefreshCw, Heart, AlertTriangle, TrendingUp, ArrowUp, ArrowDown, MoreVertical, ShoppingCart, DollarSign, Users } from "lucide-react";
+import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
+import { Plus, Search, Filter, Download, FileDown, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal, Sparkles, RefreshCw, Heart, AlertTriangle, TrendingUp, ArrowUp, ArrowDown, MoreVertical, ShoppingCart, DollarSign, Users } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -784,6 +785,102 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     setOrdersToDelete([]);
   };
 
+  // Export to XLSX handler
+  const handleExportXLSX = () => {
+    try {
+      // Handle empty state
+      if (!filteredOrders || filteredOrders.length === 0) {
+        toast({
+          title: "No Data",
+          description: "No orders to export",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Prepare export data
+      const exportData = filteredOrders.map((order: any) => ({
+        'Order ID': order.orderId || 'N/A',
+        'Customer': order.customer?.name || 'N/A',
+        'Items': order.items?.length || 0,
+        'Total': formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'EUR'),
+        'Status': order.orderStatus || 'N/A',
+        'Date': formatDate(order.orderDate),
+        'Shipping Method': order.shippingMethod || 'N/A',
+        'Payment Method': order.paymentMethod || 'N/A',
+      }));
+
+      // Call export function
+      exportToXLSX(exportData, 'orders', 'Orders');
+
+      toast({
+        title: "Success",
+        description: `Exported ${filteredOrders.length} orders to XLSX`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export orders",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Export to PDF handler
+  const handleExportPDF = () => {
+    try {
+      // Handle empty state
+      if (!filteredOrders || filteredOrders.length === 0) {
+        toast({
+          title: "No Data",
+          description: "No orders to export",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Prepare export data
+      const exportData = filteredOrders.map((order: any) => ({
+        orderId: order.orderId || 'N/A',
+        customer: order.customer?.name || 'N/A',
+        items: order.items?.length || 0,
+        total: formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'EUR'),
+        status: order.orderStatus || 'N/A',
+        date: formatDate(order.orderDate),
+        shippingMethod: order.shippingMethod || 'N/A',
+        paymentMethod: order.paymentMethod || 'N/A',
+      }));
+
+      // Define columns
+      const columns: PDFColumn[] = [
+        { key: 'orderId', header: 'Order ID' },
+        { key: 'customer', header: 'Customer' },
+        { key: 'items', header: 'Items' },
+        { key: 'total', header: 'Total' },
+        { key: 'status', header: 'Status' },
+        { key: 'date', header: 'Date' },
+        { key: 'shippingMethod', header: 'Shipping Method' },
+        { key: 'paymentMethod', header: 'Payment Method' },
+      ];
+
+      // Call export function
+      exportToPDF('Orders Report', exportData, columns, 'orders');
+
+      toast({
+        title: "Success",
+        description: `Exported ${filteredOrders.length} orders to PDF`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export orders",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[600px]">
@@ -810,12 +907,30 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             Track and manage customer orders and shipments
           </p>
         </div>
-        <Link href="/orders/add">
-          <Button data-testid="button-add-order">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Order
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleExportXLSX}
+            data-testid="button-export-xlsx"
+          >
+            <FileDown className="h-4 w-4 mr-2" />
+            Export XLSX
           </Button>
-        </Link>
+          <Button 
+            variant="outline" 
+            onClick={handleExportPDF}
+            data-testid="button-export-pdf"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Export PDF
+          </Button>
+          <Link href="/orders/add">
+            <Button data-testid="button-add-order">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Order
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats Overview (only show for to_fulfill) */}

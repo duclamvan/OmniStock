@@ -25,8 +25,11 @@ import {
   Edit,
   Filter,
   MoreVertical,
-  MessageSquare
+  MessageSquare,
+  FileDown,
+  FileText
 } from "lucide-react";
+import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import { format } from "date-fns";
 import {
   Tooltip,
@@ -348,6 +351,92 @@ export default function AllTickets() {
     setShowDeleteDialog(false);
   };
 
+  // Export handlers
+  const handleExportXLSX = () => {
+    try {
+      const exportData = filteredTickets.map(ticket => ({
+        'Ticket ID': ticket.ticketId || '-',
+        'Subject': ticket.subject || '-',
+        'Customer': ticket.customerName || '-',
+        'Priority': ticket.priority === 'urgent' ? 'Urgent'
+          : ticket.priority === 'high' ? 'High'
+          : ticket.priority === 'normal' ? 'Normal'
+          : ticket.priority === 'low' ? 'Low'
+          : ticket.priority || '-',
+        'Status': ticket.status === 'open' ? 'Open'
+          : ticket.status === 'in_progress' ? 'In Progress'
+          : ticket.status === 'resolved' ? 'Resolved'
+          : ticket.status === 'closed' ? 'Closed'
+          : ticket.status || '-',
+        'Category': ticket.category || '-',
+        'Created Date': format(new Date(ticket.createdAt), 'dd/MM/yyyy HH:mm'),
+        'Updated Date': format(new Date(ticket.updatedAt), 'dd/MM/yyyy HH:mm'),
+      }));
+
+      exportToXLSX(exportData, `Tickets_${format(new Date(), 'yyyy-MM-dd')}`, 'Tickets');
+      
+      toast({
+        title: "Export Successful",
+        description: `Exported ${exportData.length} ticket(s) to XLSX`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export tickets to XLSX",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExportPDF = () => {
+    try {
+      const exportData = filteredTickets.map(ticket => ({
+        ticketId: ticket.ticketId || '-',
+        subject: ticket.subject || '-',
+        customer: ticket.customerName || '-',
+        priority: ticket.priority === 'urgent' ? 'Urgent'
+          : ticket.priority === 'high' ? 'High'
+          : ticket.priority === 'normal' ? 'Normal'
+          : ticket.priority === 'low' ? 'Low'
+          : ticket.priority || '-',
+        status: ticket.status === 'open' ? 'Open'
+          : ticket.status === 'in_progress' ? 'In Progress'
+          : ticket.status === 'resolved' ? 'Resolved'
+          : ticket.status === 'closed' ? 'Closed'
+          : ticket.status || '-',
+        category: ticket.category || '-',
+        createdDate: format(new Date(ticket.createdAt), 'dd/MM/yyyy HH:mm'),
+        updatedDate: format(new Date(ticket.updatedAt), 'dd/MM/yyyy HH:mm'),
+      }));
+
+      const columns: PDFColumn[] = [
+        { key: 'ticketId', header: 'Ticket ID' },
+        { key: 'subject', header: 'Subject' },
+        { key: 'customer', header: 'Customer' },
+        { key: 'priority', header: 'Priority' },
+        { key: 'status', header: 'Status' },
+        { key: 'category', header: 'Category' },
+        { key: 'createdDate', header: 'Created Date' },
+        { key: 'updatedDate', header: 'Updated Date' },
+      ];
+
+      exportToPDF('Tickets Report', exportData, columns, `Tickets_${format(new Date(), 'yyyy-MM-dd')}`);
+      
+      toast({
+        title: "Export Successful",
+        description: `Exported ${exportData.length} ticket(s) to PDF`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export tickets to PDF",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[600px]">
@@ -374,12 +463,34 @@ export default function AllTickets() {
             Track customer support tickets and issues
           </p>
         </div>
-        <Link href="/tickets/add">
-          <Button data-testid="button-add-ticket">
-            <Plus className="h-4 w-4 mr-2" />
-            New Ticket
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" data-testid="button-export">
+                <FileDown className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportXLSX} data-testid="button-export-xlsx">
+                <FileDown className="h-4 w-4 mr-2" />
+                Export as XLSX
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF} data-testid="button-export-pdf">
+                <FileText className="h-4 w-4 mr-2" />
+                Export as PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Link href="/tickets/add">
+            <Button data-testid="button-add-ticket">
+              <Plus className="h-4 w-4 mr-2" />
+              New Ticket
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats Overview */}
