@@ -26,7 +26,7 @@ Utilizes PostgreSQL with Neon serverless driver and Drizzle ORM. The schema supp
 - **Discount Management**: Advanced system supporting various types (percentage, fixed, Buy X Get Y) with flexible scopes.
 - **Customer-Specific Pricing**: Custom pricing per customer-product with validity periods.
 - **Supplier Management**: CRUD operations, file upload, and purchase history.
-- **Warehouse Management**: Location codes, barcode scanning, quantity tracking, professional column visibility, localStorage preference persistence, consistent pagination, and a defined location code format (Shelves, Pallets, Office zones). Includes smart field selection based on storage context and an interactive 2D map with real inventory data, color-coded occupancy, and detailed statistics.
+- **Warehouse Management**: Location codes, barcode scanning, quantity tracking, professional column visibility, localStorage preference persistence, consistent pagination, and a defined location code format (Shelves, Pallets, Office zones). Includes smart field selection based on storage context, interactive 2D map with real inventory data, color-coded occupancy, detailed statistics, and rapid barcode scanning mode for quick stock additions with admin approval workflow.
 - **Packing Materials Management**: Tracking inventory for cartons, filling, protective materials, and general supplies, with image upload, dimension/weight/cost tracking, and supplier integration.
 - **Returns Management**: Professional processing system with auto-selection, order history display, real-time invoice totals, intelligent order/item auto-population, status tracking, and barcode scanning integration.
 - **Services Management**: Tracks repair bills and service work, including customer tracking, cost tracking (parts, labor), status management, and integration with order creation.
@@ -41,7 +41,7 @@ Utilizes PostgreSQL with Neon serverless driver and Drizzle ORM. The schema supp
 - **Reusable Components**: Generic DataTable with bulk selection, sorting, pagination, and actions.
 - **Reporting**: Comprehensive sales, inventory, customer, and financial reports.
 - **Landing Cost Engine**: Tracks import costs with volumetric weight calculations, multi-currency, FX rate management, automatic cost allocation methods (AUTO, WEIGHT, VALUE, UNITS, HYBRID), and real-time previews.
-- **Smart Barcode Scanning**: Automatic shipment matching with audio/visual feedback.
+- **Smart Barcode Scanning**: Automatic shipment matching with audio/visual feedback, and dedicated barcode scanning mode in Stock Lookup for rapid stock additions (scan barcode → auto-find product → quick adjustment request).
 - **UI Enhancements**: Modernized invoice UI, clear order detail displays, optimized country/shipping flag selectors, and advanced localStorage-based sidebar state persistence with defensive guards.
 - **Settings Management**: Comprehensive page with 6 categories (General, Display, Orders, Inventory, Notifications, Advanced) for system-wide configuration, including company info, regional settings, currency, theme, table preferences, order defaults, inventory settings, notifications, security, and API integrations.
 

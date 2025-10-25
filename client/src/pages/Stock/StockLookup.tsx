@@ -53,6 +53,10 @@ export default function StockLookup() {
   const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
   const [descriptionDialogOpen, setDescriptionDialogOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<ProductLocation | null>(null);
+  const [barcodeMode, setBarcodeMode] = useState(false);
+  const [barcodeInput, setBarcodeInput] = useState("");
+  const [quickAddDialogOpen, setQuickAddDialogOpen] = useState(false);
+  const [scannedProduct, setScannedProduct] = useState<EnrichedProduct | null>(null);
   const isMobile = useIsMobile();
 
   // Fetch all products
@@ -160,6 +164,32 @@ export default function StockLookup() {
     return { label: "In Stock", color: "bg-green-500", icon: TrendingUp };
   };
 
+  const handleBarcodeScan = (barcode: string) => {
+    if (!barcode.trim()) return;
+
+    // Find product by barcode (check both product barcode and variant barcodes)
+    const product = products.find(p => 
+      p.barcode?.toLowerCase() === barcode.toLowerCase() ||
+      p.sku?.toLowerCase() === barcode.toLowerCase()
+    );
+
+    if (product) {
+      setScannedProduct(product);
+      setSelectedProduct(product.id);
+      setQuickAddDialogOpen(true);
+      setBarcodeInput(""); // Clear for next scan
+    } else {
+      alert(`No product found with barcode: ${barcode}`);
+      setBarcodeInput("");
+    }
+  };
+
+  const handleBarcodeKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleBarcodeScan(barcodeInput);
+    }
+  };
+
   const isLoading = productsLoading;
 
   return (
@@ -167,28 +197,68 @@ export default function StockLookup() {
       {/* Header - Sticky on mobile */}
       <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="px-3 py-3">
-          <h1 className="text-lg font-bold text-gray-900 dark:text-white mb-2.5">Stock Lookup</h1>
+          <div className="flex items-center justify-between mb-2.5">
+            <h1 className="text-lg font-bold text-gray-900 dark:text-white">Stock Lookup</h1>
+            <Button
+              variant={barcodeMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => setBarcodeMode(!barcodeMode)}
+              className="h-8"
+              data-testid="button-toggle-barcode-mode"
+            >
+              <Barcode className="h-4 w-4 mr-1.5" />
+              {barcodeMode ? "Scanning" : "Scan"}
+            </Button>
+          </div>
           
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Search by name, SKU, or barcode..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-12 text-base"
-              data-testid="input-search-stock"
-              autoFocus
-            />
-          </div>
+          {/* Search/Barcode Input */}
+          {barcodeMode ? (
+            <div>
+              <div className="relative">
+                <Barcode className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-600" />
+                <Input
+                  type="text"
+                  placeholder="Scan or enter barcode to add stock..."
+                  value={barcodeInput}
+                  onChange={(e) => setBarcodeInput(e.target.value)}
+                  onKeyPress={handleBarcodeKeyPress}
+                  className="pl-10 h-12 text-base border-blue-300 focus:border-blue-500"
+                  data-testid="input-barcode-scan"
+                  autoFocus
+                />
+              </div>
+              <div className="mt-2 flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
+                <div className="flex items-center gap-1">
+                  <div className="h-2 w-2 rounded-full bg-blue-600 animate-pulse"></div>
+                  <span>Ready to scan</span>
+                </div>
+                <span>•</span>
+                <span>Press Enter after scanning</span>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Search by name, SKU, or barcode..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-12 text-base"
+                  data-testid="input-search-stock"
+                  autoFocus
+                />
+              </div>
 
-          {/* Quick Stats */}
-          <div className="mt-3 flex gap-2 text-xs text-gray-600 dark:text-gray-400">
-            <span>{products.length} products</span>
-            <span>•</span>
-            <span>{filteredProducts.length} results</span>
-          </div>
+              {/* Quick Stats */}
+              <div className="mt-3 flex gap-2 text-xs text-gray-600 dark:text-gray-400">
+                <span>{products.length} products</span>
+                <span>•</span>
+                <span>{filteredProducts.length} results</span>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -548,6 +618,35 @@ export default function StockLookup() {
             </Dialog>
           )}
         </>
+      )}
+
+      {/* Quick Add Stock Dialog (from barcode scan) */}
+      {scannedProduct && selectedProductData && (
+        <StockAdjustmentDialog
+          open={quickAddDialogOpen}
+          onOpenChange={(open) => {
+            setQuickAddDialogOpen(open);
+            if (!open) {
+              // Clear scanned product when dialog closes
+              setScannedProduct(null);
+              setSelectedProduct(null);
+              setSelectedLocation(null);
+            }
+          }}
+          productId={scannedProduct.id}
+          productName={scannedProduct.name}
+          location={selectedProductData.locations && selectedProductData.locations.length > 0 ? selectedProductData.locations[0] : null}
+          onSuccess={() => {
+            setScannedProduct(null);
+            setSelectedProduct(null);
+            setSelectedLocation(null);
+            // Refocus barcode input for next scan
+            setTimeout(() => {
+              const barcodeInput = document.querySelector('[data-testid="input-barcode-scan"]') as HTMLInputElement;
+              if (barcodeInput) barcodeInput.focus();
+            }, 100);
+          }}
+        />
       )}
 
       {/* Warehouse Management Dialogs */}
