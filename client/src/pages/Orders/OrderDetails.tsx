@@ -440,8 +440,8 @@ export default function OrderDetails() {
       const iframe = document.createElement('iframe');
       iframe.style.position = 'absolute';
       iframe.style.left = '-9999px';
-      iframe.style.width = '1000px';
-      iframe.style.height = '2000px';
+      iframe.style.width = '1080px';
+      iframe.style.height = '3000px';
       document.body.appendChild(iframe);
 
       // Write the HTML to the iframe
@@ -452,14 +452,20 @@ export default function OrderDetails() {
       // Wait for images to load
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Capture the invoice
-      const canvas = await html2canvas(iframe.contentDocument!.body, {
+      // Get the actual invoice card element
+      const invoiceCard = iframe.contentDocument!.querySelector('.invoice-card') as HTMLElement;
+      if (!invoiceCard) {
+        document.body.removeChild(iframe);
+        throw new Error('Invoice card not found');
+      }
+
+      // Capture only the invoice card (no extra white space)
+      const canvas = await html2canvas(invoiceCard, {
         backgroundColor: '#ffffff',
         scale: 3,
         logging: false,
         useCORS: true,
         allowTaint: true,
-        width: 1000,
       });
 
       // Remove the iframe
