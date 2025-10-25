@@ -1,79 +1,158 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Package, MapPin, DollarSign, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight } from "lucide-react";
+import { Search, Package, MapPin, DollarSign, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers } from "lucide-react";
 import { Link } from "wouter";
 import { fuzzySearch } from "@/lib/fuzzySearch";
+import { formatCurrency } from "@/lib/currencyUtils";
 
-interface Product {
+interface Variant {
+  id: string;
+  name: string;
+  barcode?: string;
+  quantity: number;
+  imageUrl?: string;
+}
+
+interface ProductLocation {
+  id: string;
+  productId: string;
+  warehouseId: string;
+  locationCode: string;
+  quantity: number;
+  isPrimary: boolean;
+}
+
+interface EnrichedProduct {
   id: string;
   name: string;
   sku?: string;
   barcode?: string;
-  category?: string;
+  categoryName?: string;
+  quantity: number;
+  variants: Variant[];
   totalStock: number;
-  reservedStock?: number;
-  availableStock: number;
-  price: number;
-  costPrice?: number;
-  locations?: Array<{
-    warehouseId: string;
-    warehouseName: string;
-    location: string;
-    quantity: number;
-  }>;
-  image?: string;
+  priceCzk?: string;
+  priceEur?: string;
+  importCostCzk?: string;
+  importCostEur?: string;
+  latestLandingCost?: string;
+  locations?: ProductLocation[];
+  imageUrl?: string;
+  images?: any;
 }
 
 export default function StockLookup() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
 
-  // Fetch all products with stock and location info
-  const { data: products = [], isLoading } = useQuery<Product[]>({
+  // Fetch all products
+  const { data: rawProducts = [], isLoading: productsLoading } = useQuery<any[]>({
     queryKey: ['/api/products'],
-    select: (data: any[]) => {
-      return data.map((p) => {
-        const totalStock = p.totalStock || 0;
-        const reservedStock = p.reservedStock || 0;
-        const availableStock = totalStock - reservedStock;
-        
-        return {
-          id: p.id,
-          name: p.name,
-          sku: p.sku,
-          barcode: p.barcode,
-          category: p.category,
-          totalStock,
-          reservedStock,
-          availableStock,
-          price: p.price || 0,
-          costPrice: p.costPrice,
-          locations: p.locations || [],
-          image: p.image
-        };
-      });
-    }
   });
 
-  // Filter products using fuzzy search
-  const filteredProducts = searchQuery.trim()
-    ? fuzzySearch(products, searchQuery, {
-        fields: ['name', 'sku', 'barcode', 'category'],
-        threshold: 0.3
-      }).map(result => result.item)
-    : products;
+  // Fetch warehouses for location display
+  const { data: warehouses = [] } = useQuery<any[]>({
+    queryKey: ['/api/warehouses'],
+  });
 
-  const getStockStatus = (available: number, total: number) => {
-    if (total === 0) return { label: "Out of Stock", color: "bg-red-500", icon: AlertCircle };
-    if (available === 0) return { label: "Reserved", color: "bg-orange-500", icon: AlertCircle };
-    if (available < total * 0.2) return { label: "Low Stock", color: "bg-yellow-500", icon: TrendingDown };
+  // Create warehouse lookup map
+  const warehouseMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    warehouses.forEach((w: any) => {
+      map[w.id] = w.name;
+    });
+    return map;
+  }, [warehouses]);
+
+  // Enrich products with variant data and calculate total stock
+  const products: EnrichedProduct[] = useMemo(() => {
+    return rawProducts.map((p: any) => {
+      // Parse images if needed
+      let productImages: any[] = [];
+      try {
+        if (p.images) {
+          const parsed = typeof p.images === 'string' ? JSON.parse(p.images) : p.images;
+          productImages = Array.isArray(parsed) ? parsed : [];
+        }
+      } catch {
+        productImages = [];
+      }
+
+      // Get primary image
+      const primaryImage = productImages.find((img: any) => img.isPrimary)?.url || 
+                          productImages[0]?.url || 
+                          p.imageUrl;
+
+      // Note: We don't have variants data here yet, this will be enhanced with a better API
+      const productQuantity = parseInt(p.quantity) || 0;
+      
+      return {
+        id: p.id,
+        name: p.name,
+        sku: p.sku,
+        barcode: p.barcode,
+        categoryName: p.categoryName,
+        quantity: productQuantity,
+        variants: [], // Will be fetched on-demand when product is expanded
+        totalStock: productQuantity, // Will include variants when fetched
+        priceCzk: p.priceCzk,
+        priceEur: p.priceEur,
+        importCostCzk: p.importCostCzk,
+        importCostEur: p.importCostEur,
+        latestLandingCost: p.latestLandingCost,
+        locations: p.locations,
+        imageUrl: primaryImage,
+        images: p.images
+      };
+    });
+  }, [rawProducts]);
+
+  // Filter products using fuzzy search
+  const filteredProducts = useMemo(() => {
+    if (!searchQuery.trim()) return products;
+    
+    return fuzzySearch(products, searchQuery, {
+      fields: ['name', 'sku', 'barcode', 'categoryName'],
+      threshold: 0.3
+    }).map(result => result.item);
+  }, [products, searchQuery]);
+
+  // Fetch variants for selected product
+  const { data: selectedVariants = [] } = useQuery<Variant[]>({
+    queryKey: [`/api/products/${selectedProduct}/variants`],
+    enabled: !!selectedProduct,
+  });
+
+  // Get enriched selected product with variants
+  const selectedProductData = useMemo(() => {
+    if (!selectedProduct) return null;
+    
+    const product = products.find(p => p.id === selectedProduct);
+    if (!product) return null;
+
+    const variantsTotalStock = selectedVariants.reduce((sum, v) => sum + (v.quantity || 0), 0);
+    const totalStock = product.quantity + variantsTotalStock;
+
+    return {
+      ...product,
+      variants: selectedVariants,
+      totalStock
+    };
+  }, [selectedProduct, products, selectedVariants]);
+
+  const getStockStatus = (stock: number, lowStockThreshold: number = 5) => {
+    if (stock === 0) return { label: "Out of Stock", color: "bg-red-500", icon: AlertCircle };
+    if (stock <= lowStockThreshold) return { label: "Low Stock", color: "bg-yellow-500", icon: TrendingDown };
+    if (stock <= lowStockThreshold * 2) return { label: "Medium Stock", color: "bg-blue-500", icon: TrendingUp };
     return { label: "In Stock", color: "bg-green-500", icon: TrendingUp };
   };
+
+  const isLoading = productsLoading;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-6">
@@ -135,14 +214,22 @@ export default function StockLookup() {
         ) : (
           // Product Cards
           filteredProducts.map((product) => {
-            const status = getStockStatus(product.availableStock, product.totalStock);
+            const isExpanded = selectedProduct === product.id;
+            const displayProduct = isExpanded && selectedProductData ? selectedProductData : product;
+            const status = getStockStatus(displayProduct.totalStock);
             const StatusIcon = status.icon;
+            
+            // Calculate pricing
+            const priceCzk = parseFloat(displayProduct.priceCzk || '0');
+            const priceEur = parseFloat(displayProduct.priceEur || '0');
+            const costCzk = parseFloat(displayProduct.latestLandingCost || displayProduct.importCostCzk || '0');
+            const costEur = parseFloat(displayProduct.importCostEur || '0');
             
             return (
               <Card
                 key={product.id}
                 className="border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => setSelectedProduct(selectedProduct?.id === product.id ? null : product)}
+                onClick={() => setSelectedProduct(isExpanded ? null : product.id)}
                 data-testid={`card-product-${product.id}`}
               >
                 <CardContent className="p-4">
@@ -150,9 +237,9 @@ export default function StockLookup() {
                   <div className="flex gap-3">
                     {/* Product Image */}
                     <div className="flex-shrink-0">
-                      {product.image ? (
+                      {product.imageUrl ? (
                         <img
-                          src={product.image}
+                          src={product.imageUrl}
                           alt={product.name}
                           className="h-16 w-16 rounded-lg object-cover bg-gray-100 dark:bg-gray-800"
                         />
@@ -177,10 +264,10 @@ export default function StockLookup() {
                                 {product.sku}
                               </span>
                             )}
-                            {product.category && (
+                            {product.categoryName && (
                               <>
                                 <span>•</span>
-                                <span>{product.category}</span>
+                                <span>{product.categoryName}</span>
                               </>
                             )}
                           </div>
@@ -189,7 +276,7 @@ export default function StockLookup() {
                         {/* Stock Badge */}
                         <Badge className={`${status.color} text-white flex items-center gap-1 flex-shrink-0`}>
                           <StatusIcon className="h-3 w-3" />
-                          <span className="text-xs">{product.availableStock}</span>
+                          <span className="text-xs">{displayProduct.totalStock}</span>
                         </Badge>
                       </div>
 
@@ -197,83 +284,138 @@ export default function StockLookup() {
                       <div className="mt-3 flex items-center justify-between text-sm">
                         <div className="flex items-center gap-1 text-green-600 dark:text-green-400 font-semibold">
                           <DollarSign className="h-4 w-4" />
-                          <span data-testid={`text-price-${product.id}`}>{product.price.toFixed(2)} CZK</span>
+                          <span data-testid={`text-price-${product.id}`}>
+                            {priceCzk > 0 ? formatCurrency(priceCzk, 'CZK') : 
+                             priceEur > 0 ? formatCurrency(priceEur, 'EUR') : 
+                             'N/A'}
+                          </span>
                         </div>
                         
-                        {product.locations && product.locations.length > 0 && (
+                        {displayProduct.locations && displayProduct.locations.length > 0 && (
                           <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                             <MapPin className="h-4 w-4" />
-                            <span className="text-xs">{product.locations.length} location{product.locations.length > 1 ? 's' : ''}</span>
+                            <span className="text-xs">{displayProduct.locations.length} location{displayProduct.locations.length > 1 ? 's' : ''}</span>
                           </div>
                         )}
                       </div>
                     </div>
 
                     {/* Expand Indicator */}
-                    <ChevronRight className={`h-5 w-5 text-gray-400 flex-shrink-0 transition-transform ${selectedProduct?.id === product.id ? 'rotate-90' : ''}`} />
+                    <ChevronRight className={`h-5 w-5 text-gray-400 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                   </div>
 
                   {/* Expanded Details */}
-                  {selectedProduct?.id === product.id && (
+                  {isExpanded && selectedProductData && (
                     <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
                       {/* Stock Breakdown */}
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Stock</p>
-                          <p className="text-lg font-bold text-gray-900 dark:text-white">{product.totalStock}</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Base Stock</p>
+                          <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{selectedProductData.quantity}</p>
                         </div>
-                        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Reserved</p>
-                          <p className="text-lg font-bold text-orange-600 dark:text-orange-400">{product.reservedStock || 0}</p>
-                        </div>
-                        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Available</p>
-                          <p className="text-lg font-bold text-green-600 dark:text-green-400">{product.availableStock}</p>
-                        </div>
-                      </div>
-
-                      {/* Pricing Info */}
-                      <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Sale Price</p>
-                            <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                              {product.price.toFixed(2)} CZK
+                        {selectedProductData.variants.length > 0 && (
+                          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Variant Stock</p>
+                            <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                              {selectedProductData.variants.reduce((sum, v) => sum + (v.quantity || 0), 0)}
                             </p>
                           </div>
-                          {product.costPrice && (
-                            <div className="text-right">
-                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Cost Price</p>
-                              <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
-                                {product.costPrice.toFixed(2)} CZK
-                              </p>
-                              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                                Margin: {((product.price - product.costPrice) / product.price * 100).toFixed(1)}%
-                              </p>
-                            </div>
-                          )}
-                        </div>
+                        )}
                       </div>
 
+                      {/* Variants List */}
+                      {selectedProductData.variants.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                            <Layers className="h-4 w-4" />
+                            Product Variants ({selectedProductData.variants.length})
+                          </h4>
+                          <div className="space-y-2">
+                            {selectedProductData.variants.map((variant) => (
+                              <div
+                                key={variant.id}
+                                className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
+                              >
+                                <div className="flex items-center gap-3">
+                                  {variant.imageUrl ? (
+                                    <img
+                                      src={variant.imageUrl}
+                                      alt={variant.name}
+                                      className="h-10 w-10 rounded object-cover"
+                                    />
+                                  ) : (
+                                    <div className="h-10 w-10 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                      <Package className="h-5 w-5 text-gray-400" />
+                                    </div>
+                                  )}
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                      {variant.name}
+                                    </p>
+                                    {variant.barcode && (
+                                      <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                                        {variant.barcode}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                                <Badge variant="secondary" className="ml-2">
+                                  {variant.quantity} units
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Pricing Info */}
+                      {(priceCzk > 0 || priceEur > 0) && (
+                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Sale Price</p>
+                              <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                                {priceCzk > 0 ? formatCurrency(priceCzk, 'CZK') : formatCurrency(priceEur, 'EUR')}
+                              </p>
+                            </div>
+                            {(costCzk > 0 || costEur > 0) && (
+                              <div className="text-right">
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Cost Price</p>
+                                <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+                                  {costCzk > 0 ? formatCurrency(costCzk, 'CZK') : formatCurrency(costEur, 'EUR')}
+                                </p>
+                                {((priceCzk > 0 && costCzk > 0) || (priceEur > 0 && costEur > 0)) && (
+                                  <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                                    Margin: {priceCzk > 0 && costCzk > 0 
+                                      ? ((priceCzk - costCzk) / priceCzk * 100).toFixed(1)
+                                      : ((priceEur - costEur) / priceEur * 100).toFixed(1)}%
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Warehouse Locations */}
-                      {product.locations && product.locations.length > 0 && (
+                      {selectedProductData.locations && selectedProductData.locations.length > 0 && (
                         <div>
                           <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
                             <MapPin className="h-4 w-4" />
                             Warehouse Locations
                           </h4>
                           <div className="space-y-2">
-                            {product.locations.map((loc, idx) => (
+                            {selectedProductData.locations.map((loc, idx) => (
                               <div
                                 key={idx}
                                 className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
                               >
                                 <div className="flex-1">
                                   <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {loc.warehouseName || loc.warehouseId}
+                                    {warehouseMap[loc.warehouseId] || loc.warehouseId}
                                   </p>
                                   <p className="text-xs text-gray-600 dark:text-gray-400 font-mono mt-1">
-                                    {loc.location}
+                                    {loc.locationCode}
                                   </p>
                                 </div>
                                 <Badge variant="secondary" className="ml-2">
