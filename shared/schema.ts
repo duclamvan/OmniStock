@@ -361,7 +361,12 @@ export const warehouses = pgTable('warehouses', {
   contact: text('contact'),
   notes: text('notes'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-  floorArea: decimal('floor_area', { precision: 10, scale: 2 })
+  floorArea: decimal('floor_area', { precision: 10, scale: 2 }),
+  // Warehouse map configuration
+  totalAisles: integer('total_aisles').default(6),
+  maxRacks: integer('max_racks').default(10),
+  maxLevels: integer('max_levels').default(5),
+  maxBins: integer('max_bins').default(5)
 });
 
 export const warehouseFiles = pgTable('warehouse_files', {

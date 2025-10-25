@@ -1008,6 +1008,138 @@ Important:
     }
   });
 
+  // Get warehouse map configuration
+  app.get('/api/warehouses/:id/map-config', async (req, res) => {
+    try {
+      const warehouse = await storage.getWarehouse(req.params.id);
+      if (!warehouse) {
+        return res.status(404).json({ message: "Warehouse not found" });
+      }
+      res.json({
+        totalAisles: warehouse.totalAisles || 6,
+        maxRacks: warehouse.maxRacks || 10,
+        maxLevels: warehouse.maxLevels || 5,
+        maxBins: warehouse.maxBins || 5
+      });
+    } catch (error) {
+      console.error("Error fetching warehouse map config:", error);
+      res.status(500).json({ message: "Failed to fetch warehouse map configuration" });
+    }
+  });
+
+  // Update warehouse map configuration
+  app.put('/api/warehouses/:id/map-config', async (req: any, res) => {
+    try {
+      const warehouseConfigSchema = z.object({
+        totalAisles: z.number().int().min(1).max(50),
+        maxRacks: z.number().int().min(1).max(100),
+        maxLevels: z.number().int().min(1).max(20),
+        maxBins: z.number().int().min(1).max(20)
+      });
+
+      const validationResult = warehouseConfigSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid warehouse configuration",
+          errors: validationResult.error.errors.map(e => ({
+            field: e.path.join('.'),
+            message: e.message
+          }))
+        });
+      }
+
+      const { totalAisles, maxRacks, maxLevels, maxBins } = validationResult.data;
+      
+      const warehouse = await storage.updateWarehouse(req.params.id, {
+        totalAisles,
+        maxRacks,
+        maxLevels,
+        maxBins
+      });
+      
+      if (!warehouse) {
+        return res.status(404).json({ message: "Warehouse not found" });
+      }
+
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated',
+        entityType: 'warehouse',
+        entityId: warehouse.id,
+        description: `Updated warehouse map configuration: ${warehouse.name}`,
+      });
+      
+      res.json({
+        totalAisles: warehouse.totalAisles,
+        maxRacks: warehouse.maxRacks,
+        maxLevels: warehouse.maxLevels,
+        maxBins: warehouse.maxBins
+      });
+    } catch (error) {
+      console.error("Error updating warehouse map config:", error);
+      res.status(500).json({ message: "Failed to update warehouse map configuration" });
+    }
+  });
+
+  // Get product locations for a warehouse with product details
+  app.get('/api/product-locations', async (req, res) => {
+    try {
+      const { warehouseId } = req.query;
+      
+      if (!warehouseId || typeof warehouseId !== 'string') {
+        return res.status(400).json({ message: "warehouseId query parameter is required" });
+      }
+
+      // Get all products
+      const allProducts = await storage.getProducts();
+      
+      // Build product locations with details
+      const productLocationDetails = [];
+      
+      for (const product of allProducts) {
+        const locations = await storage.getProductLocations(product.id);
+        
+        // Filter locations for this warehouse
+        const warehouseLocations = locations.filter(loc => {
+          // Parse location code to check warehouse
+          // Format: WH1-A06-R04-L04-B2 or WH-CZ-PRG-A01-R02-L03
+          const parts = loc.locationCode.split('-');
+          
+          // Handle both formats
+          if (parts.length >= 5) {
+            // Could be WH1-... or WH-CZ-PRG-...
+            const locWarehouseId = parts[0].startsWith('WH') && parts[1].match(/^[A-Z]{2}$/) 
+              ? parts.slice(0, 3).join('-')  // WH-CZ-PRG format
+              : parts[0];  // WH1 format
+            
+            return locWarehouseId === warehouseId;
+          }
+          return false;
+        });
+        
+        // Add each location with product details
+        for (const location of warehouseLocations) {
+          productLocationDetails.push({
+            locationCode: location.locationCode,
+            quantity: location.quantity,
+            productId: product.id,
+            productName: product.name,
+            productSku: product.sku,
+            locationType: location.locationType,
+            isPrimary: location.isPrimary,
+            notes: location.notes
+          });
+        }
+      }
+      
+      res.json(productLocationDetails);
+    } catch (error) {
+      console.error("Error fetching product locations:", error);
+      res.status(500).json({ message: "Failed to fetch product locations" });
+    }
+  });
+
   // Get products in a warehouse
   app.get('/api/warehouses/:id/products', async (req, res) => {
     try {
