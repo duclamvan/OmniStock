@@ -102,3 +102,23 @@ export function formatDate(date: Date | string | null | undefined): string {
   
   return `${day}.${month}.${year}`;
 }
+
+export function formatCompactNumber(value: number): string {
+  if (value === undefined || value === null || isNaN(value)) {
+    return '0';
+  }
+
+  const absValue = Math.abs(value);
+  
+  if (absValue >= 1_000_000_000) {
+    return (value / 1_000_000_000).toFixed(1).replace(/\.0$/, '') + 'B';
+  }
+  if (absValue >= 1_000_000) {
+    return (value / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+  }
+  if (absValue >= 10_000) {
+    return (value / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+  }
+  
+  return value.toLocaleString();
+}

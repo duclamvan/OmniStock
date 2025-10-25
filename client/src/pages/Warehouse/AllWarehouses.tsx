@@ -9,7 +9,14 @@ import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
+import { formatCompactNumber } from "@/lib/currencyUtils";
 import { Plus, Search, Edit, Trash2, Warehouse, MapPin, Package, Ruler, Building2, User, Settings, Check, MoreVertical, Activity, TrendingUp, Grid3x3, Filter } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -436,9 +443,18 @@ export default function AllWarehouses() {
                 <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                   Total Inventory
                 </p>
-                <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
-                  {totalItems.toLocaleString()}
-                </p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 cursor-help">
+                        {formatCompactNumber(totalItems)}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-mono">{totalItems.toLocaleString()} units</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
               <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
                 <Package className="h-7 w-7 text-purple-600 dark:text-purple-400" />
@@ -455,10 +471,19 @@ export default function AllWarehouses() {
                 <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                   Total Area
                 </p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 truncate">
-                  {totalFloorArea.toLocaleString()}
-                  <span className="text-sm font-normal text-slate-500 ml-1">m²</span>
-                </p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 cursor-help">
+                        {formatCompactNumber(totalFloorArea)}
+                        <span className="text-sm font-normal text-slate-500 ml-1">m²</span>
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-mono">{totalFloorArea.toLocaleString()} m²</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
               <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950">
                 <Grid3x3 className="h-7 w-7 text-orange-600 dark:text-orange-400" />
