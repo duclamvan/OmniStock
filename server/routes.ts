@@ -17,6 +17,7 @@ import {
   insertProductSchema,
   insertProductVariantSchema,
   insertProductLocationSchema,
+  insertStockAdjustmentRequestSchema,
   insertProductTieredPricingSchema,
   insertOrderSchema,
   insertOrderItemSchema,
@@ -3014,6 +3015,103 @@ Important:
       console.error("Error moving inventory:", error);
       res.status(500).json({ 
         message: error.message || "Failed to move inventory" 
+      });
+    }
+  });
+
+  // Stock Adjustment Request endpoints
+  app.get('/api/stock-adjustment-requests', async (req: any, res) => {
+    try {
+      const requests = await storage.getStockAdjustmentRequests();
+      res.json(requests);
+    } catch (error) {
+      console.error("Error fetching stock adjustment requests:", error);
+      res.status(500).json({ message: "Failed to fetch stock adjustment requests" });
+    }
+  });
+
+  app.post('/api/stock-adjustment-requests', async (req: any, res) => {
+    try {
+      const requestData = insertStockAdjustmentRequestSchema.parse(req.body);
+      const request = await storage.createStockAdjustmentRequest(requestData);
+      
+      await storage.createUserActivity({
+        userId: req.body.requestedBy || "test-user",
+        action: 'created',
+        entityType: 'stock_adjustment_request',
+        entityId: request.id,
+        description: `Requested stock adjustment: ${request.adjustmentType} ${request.requestedQuantity}`,
+      });
+      
+      res.status(201).json(request);
+    } catch (error: any) {
+      console.error("Error creating stock adjustment request:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: error.errors 
+        });
+      }
+      res.status(500).json({ message: "Failed to create stock adjustment request" });
+    }
+  });
+
+  app.patch('/api/stock-adjustment-requests/:id/approve', async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const approvedBy = req.body.approvedBy || "test-user";
+      
+      const request = await storage.approveStockAdjustmentRequest(id, approvedBy);
+      
+      if (!request) {
+        return res.status(404).json({ message: "Request not found or already processed" });
+      }
+      
+      await storage.createUserActivity({
+        userId: approvedBy,
+        action: 'approved',
+        entityType: 'stock_adjustment_request',
+        entityId: request.id,
+        description: `Approved stock adjustment: ${request.adjustmentType} ${request.requestedQuantity}`,
+      });
+      
+      res.json(request);
+    } catch (error: any) {
+      console.error("Error approving stock adjustment request:", error);
+      res.status(500).json({ 
+        message: error.message || "Failed to approve stock adjustment request" 
+      });
+    }
+  });
+
+  app.patch('/api/stock-adjustment-requests/:id/reject', async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { approvedBy = "test-user", reason } = req.body;
+      
+      if (!reason) {
+        return res.status(400).json({ message: "Rejection reason is required" });
+      }
+      
+      const request = await storage.rejectStockAdjustmentRequest(id, approvedBy, reason);
+      
+      if (!request) {
+        return res.status(404).json({ message: "Request not found or already processed" });
+      }
+      
+      await storage.createUserActivity({
+        userId: approvedBy,
+        action: 'rejected',
+        entityType: 'stock_adjustment_request',
+        entityId: request.id,
+        description: `Rejected stock adjustment: ${request.adjustmentType} ${request.requestedQuantity}`,
+      });
+      
+      res.json(request);
+    } catch (error: any) {
+      console.error("Error rejecting stock adjustment request:", error);
+      res.status(500).json({ 
+        message: error.message || "Failed to reject stock adjustment request" 
       });
     }
   });

@@ -15,6 +15,7 @@ import {
   productVariants,
   productFiles,
   productLocations,
+  stockAdjustmentRequests,
   productTieredPricing,
   productBundles,
   bundleItems,
@@ -72,6 +73,8 @@ import {
   type InsertProductFile,
   type ProductLocation,
   type InsertProductLocation,
+  type StockAdjustmentRequest,
+  type InsertStockAdjustmentRequest,
   type ProductTieredPricing,
   type InsertProductTieredPricing,
   type ProductBundle,
@@ -227,6 +230,13 @@ export interface IStorage {
   updateProductLocation(id: string, location: Partial<InsertProductLocation>): Promise<ProductLocation | undefined>;
   deleteProductLocation(id: string): Promise<boolean>;
   moveInventory(fromLocationId: string, toLocationId: string, quantity: number): Promise<boolean>;
+  
+  // Stock Adjustment Requests
+  getStockAdjustmentRequests(): Promise<StockAdjustmentRequest[]>;
+  getStockAdjustmentRequest(id: string): Promise<StockAdjustmentRequest | undefined>;
+  createStockAdjustmentRequest(request: InsertStockAdjustmentRequest): Promise<StockAdjustmentRequest>;
+  approveStockAdjustmentRequest(id: string, approvedBy: string): Promise<StockAdjustmentRequest | undefined>;
+  rejectStockAdjustmentRequest(id: string, approvedBy: string, reason: string): Promise<StockAdjustmentRequest | undefined>;
   
   // Product Files
   getProductFiles(productId: string): Promise<ProductFile[]>;
@@ -1829,6 +1839,149 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error moving inventory:', error);
       return false;
+    }
+  }
+
+  // Stock Adjustment Requests
+  async getStockAdjustmentRequests(): Promise<StockAdjustmentRequest[]> {
+    try {
+      const requests = await db
+        .select()
+        .from(stockAdjustmentRequests)
+        .orderBy(desc(stockAdjustmentRequests.createdAt));
+      return requests;
+    } catch (error) {
+      console.error('Error fetching stock adjustment requests:', error);
+      return [];
+    }
+  }
+
+  async getStockAdjustmentRequest(id: string): Promise<StockAdjustmentRequest | undefined> {
+    try {
+      const [request] = await db
+        .select()
+        .from(stockAdjustmentRequests)
+        .where(eq(stockAdjustmentRequests.id, id));
+      return request;
+    } catch (error) {
+      console.error('Error fetching stock adjustment request:', error);
+      return undefined;
+    }
+  }
+
+  async createStockAdjustmentRequest(request: InsertStockAdjustmentRequest): Promise<StockAdjustmentRequest> {
+    try {
+      const [newRequest] = await db
+        .insert(stockAdjustmentRequests)
+        .values(request)
+        .returning();
+      return newRequest;
+    } catch (error) {
+      console.error('Error creating stock adjustment request:', error);
+      throw error;
+    }
+  }
+
+  async approveStockAdjustmentRequest(id: string, approvedBy: string): Promise<StockAdjustmentRequest | undefined> {
+    try {
+      return await db.transaction(async (tx) => {
+        // Get the request
+        const [request] = await tx
+          .select()
+          .from(stockAdjustmentRequests)
+          .where(eq(stockAdjustmentRequests.id, id));
+        
+        if (!request) {
+          throw new Error('Request not found');
+        }
+        
+        if (request.status !== 'pending') {
+          throw new Error('Request has already been processed');
+        }
+        
+        // Get the location
+        const [location] = await tx
+          .select()
+          .from(productLocations)
+          .where(eq(productLocations.id, request.locationId));
+        
+        if (!location) {
+          throw new Error('Location not found');
+        }
+        
+        // Apply the adjustment based on type
+        let newQuantity = location.quantity;
+        if (request.adjustmentType === 'set') {
+          newQuantity = request.requestedQuantity;
+        } else if (request.adjustmentType === 'add') {
+          newQuantity = location.quantity + request.requestedQuantity;
+        } else if (request.adjustmentType === 'remove') {
+          newQuantity = location.quantity - request.requestedQuantity;
+          if (newQuantity < 0) {
+            throw new Error('Adjustment would result in negative quantity');
+          }
+        }
+        
+        // Update the location quantity
+        await tx
+          .update(productLocations)
+          .set({ 
+            quantity: newQuantity,
+            updatedAt: new Date() 
+          })
+          .where(eq(productLocations.id, request.locationId));
+        
+        // Mark request as approved
+        const [updatedRequest] = await tx
+          .update(stockAdjustmentRequests)
+          .set({ 
+            status: 'approved',
+            approvedBy,
+            approvedAt: new Date(),
+            updatedAt: new Date()
+          })
+          .where(eq(stockAdjustmentRequests.id, id))
+          .returning();
+        
+        return updatedRequest;
+      });
+    } catch (error) {
+      console.error('Error approving stock adjustment request:', error);
+      return undefined;
+    }
+  }
+
+  async rejectStockAdjustmentRequest(id: string, approvedBy: string, reason: string): Promise<StockAdjustmentRequest | undefined> {
+    try {
+      const [request] = await db
+        .select()
+        .from(stockAdjustmentRequests)
+        .where(eq(stockAdjustmentRequests.id, id));
+      
+      if (!request) {
+        throw new Error('Request not found');
+      }
+      
+      if (request.status !== 'pending') {
+        throw new Error('Request has already been processed');
+      }
+      
+      const [updatedRequest] = await db
+        .update(stockAdjustmentRequests)
+        .set({ 
+          status: 'rejected',
+          approvedBy,
+          approvedAt: new Date(),
+          rejectionReason: reason,
+          updatedAt: new Date()
+        })
+        .where(eq(stockAdjustmentRequests.id, id))
+        .returning();
+      
+      return updatedRequest;
+    } catch (error) {
+      console.error('Error rejecting stock adjustment request:', error);
+      return undefined;
     }
   }
 
