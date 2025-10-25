@@ -83,6 +83,18 @@ const shippingMethodIcons: Record<string, any> = {
   'ground': Truck
 };
 
+// Status colors matching original import pages
+const statusColors: Record<string, string> = {
+  pending: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+  processing: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+  at_warehouse: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+  in_transit: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200",
+  shipped: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
+  delivered: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
+  cancelled: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  delayed: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+};
+
 // Compact Purchase Card
 function PurchaseCard({ 
   purchase, 
@@ -105,7 +117,9 @@ function PurchaseCard({
       <CardContent className="p-3 space-y-2">
         <div className="flex items-center justify-between gap-2">
           <h4 className="font-semibold text-sm truncate">{purchase.supplier}</h4>
-          <Badge variant="outline" className="text-xs">{purchase.status}</Badge>
+          <Badge className={`text-xs ${statusColors[purchase.status] || "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"}`}>
+            {purchase.status}
+          </Badge>
         </div>
 
         {purchase.trackingNumber && (
@@ -314,9 +328,10 @@ function ShipmentCard({
     return 'text-slate-600 dark:text-slate-400';
   };
 
-  const statusColor = isDelivered 
-    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
-    : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+  const getShipmentStatusColor = () => {
+    if (isDelivered) return statusColors.delivered;
+    return statusColors[shipment.status] || statusColors.in_transit;
+  };
 
   return (
     <Card
@@ -327,7 +342,7 @@ function ShipmentCard({
     >
       <CardContent className="p-3 space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <Badge className={`text-xs ${statusColor}`}>
+          <Badge className={`text-xs ${getShipmentStatusColor()}`}>
             {isDelivered ? 'Delivered' : shipment.status}
           </Badge>
           <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate">
