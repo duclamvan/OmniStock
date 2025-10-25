@@ -127,7 +127,7 @@ const getShipmentTypeIcon = (shipmentType: string, className = "h-3.5 w-3.5") =>
     const iconColor = isSensitive ? 'text-purple-600' : 'text-purple-500';
     return <Train className={`${className} ${iconColor}`} />;
   } else if (shipmentType?.includes('sea')) {
-    const iconColor = isSensitive ? 'text-indigo-600' : 'text-teal-500';
+    const iconColor = isSensitive ? 'text-indigo-600' : 'text-amber-700';
     return <Ship className={`${className} ${iconColor}`} />;
   }
   return <Package className={`${className} text-muted-foreground`} />;
@@ -206,7 +206,7 @@ function PricingTableRow({ item, index, qty, unitCost, shippingCost, landingCost
       <TableCell className="text-right font-semibold font-mono text-xs">
         {formatCurrency(landingCost, currency)}
       </TableCell>
-      <TableCell className="text-right font-mono text-xs text-cyan-700 dark:text-cyan-400">
+      <TableCell className="text-right font-mono text-xs text-amber-700 dark:text-amber-400">
         {displayCurrency === 'EUR' ? `€${landingCostConverted.toFixed(2)}` : `${landingCostConverted.toFixed(0)} Kč`}
       </TableCell>
       <TableCell className="text-right">
@@ -219,7 +219,7 @@ function PricingTableRow({ item, index, qty, unitCost, shippingCost, landingCost
           data-testid={`input-retail-price-${index}`}
         />
       </TableCell>
-      <TableCell className="text-right font-mono text-xs text-cyan-700 dark:text-cyan-400">
+      <TableCell className="text-right font-mono text-xs text-amber-700 dark:text-amber-400">
         {displayCurrency === 'EUR' ? `€${retailPriceConverted.toFixed(2)}` : `${retailPriceConverted.toFixed(0)} Kč`}
       </TableCell>
     </TableRow>
@@ -1039,11 +1039,11 @@ export default function ItemsToStore() {
             className="p-2 -mr-2"
           >
             {saveStorageMutation.isPending ? (
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <Loader2 className="h-6 w-6 animate-spin text-amber-600" />
             ) : saveStorageMutation.isSuccess ? (
               <Check className="h-6 w-6 text-green-500" />
             ) : (
-              <Save className={`h-6 w-6 ${items.filter(item => item.newLocations.length > 0).length === 0 ? 'text-gray-300' : 'text-primary'}`} />
+              <Save className={`h-6 w-6 ${items.filter(item => item.newLocations.length > 0).length === 0 ? 'text-gray-300' : 'text-amber-600'}`} />
             )}
           </button>
         </div>
@@ -1079,7 +1079,7 @@ export default function ItemsToStore() {
                       }}
                       className={`flex-shrink-0 p-3 rounded-xl border-2 transition-all min-w-[240px] text-left ${
                         selectedReceipt === receiptData.receipt.id
-                          ? 'border-primary bg-primary/10 shadow-md'
+                          ? 'border-amber-600 bg-amber-50 dark:bg-amber-950/20 shadow-md'
                           : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
                       }`}
                     >
@@ -1130,7 +1130,7 @@ export default function ItemsToStore() {
                             {assignedCount}/{receiptItems.length} items
                           </span>
                         </div>
-                        <span className="text-xs font-medium text-primary">
+                        <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
                           {Math.round(completionPercent)}%
                         </span>
                       </div>
@@ -1156,13 +1156,13 @@ export default function ItemsToStore() {
             }}
             className={`flex-1 py-3 text-sm font-medium transition-all relative ${
               activeTab === 'pending' 
-                ? 'text-primary' 
+                ? 'text-amber-700 dark:text-amber-400' 
                 : 'text-muted-foreground'
             }`}
           >
             Pending ({filteredItems.filter(item => item.newLocations.length === 0 && !item.existingLocations.length).length})
             {activeTab === 'pending' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-600" />
             )}
           </button>
           <button
@@ -1172,13 +1172,13 @@ export default function ItemsToStore() {
             }}
             className={`flex-1 py-3 text-sm font-medium transition-all relative ${
               activeTab === 'completed' 
-                ? 'text-primary' 
+                ? 'text-amber-700 dark:text-amber-400' 
                 : 'text-muted-foreground'
             }`}
           >
             Completed ({filteredItems.filter(item => item.newLocations.length > 0 || item.existingLocations.length > 0).length})
             {activeTab === 'completed' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-600" />
             )}
           </button>
         </div>
@@ -1201,7 +1201,7 @@ export default function ItemsToStore() {
                 onClick={() => setSelectedItemIndex(index)}
                 className={`bg-white rounded-xl border-2 overflow-hidden transition-all ${
                   isSelected 
-                    ? 'border-primary shadow-lg' 
+                    ? 'border-amber-600 shadow-lg' 
                     : 'border-gray-200 shadow-sm'
                 }`}
               >
@@ -1288,7 +1288,7 @@ export default function ItemsToStore() {
                   {(item.newLocations.length > 0 || item.existingLocations.length > 0) && (
                     <div className="mt-3 pt-3 border-t">
                       <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-primary" />
+                        <MapPin className="h-4 w-4 text-amber-600" />
                         <span className="text-xs text-muted-foreground">
                           {item.newLocations.length > 0 && `${item.newLocations.length} new location(s)`}
                           {item.existingLocations.length > 0 && ` • ${item.existingLocations.length} existing`}
@@ -1309,10 +1309,10 @@ export default function ItemsToStore() {
                   >
                     <div className="p-4 space-y-3">
                       {/* Prominent Location Display */}
-                      <div className="bg-primary/10 rounded-lg p-3 border border-primary/20">
+                      <div className="bg-amber-50 dark:bg-amber-950/20 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
                         <div className="flex items-center gap-2">
-                          <MapPin className="h-5 w-5 text-primary" />
-                          <span className="text-2xl font-mono font-bold text-primary">
+                          <MapPin className="h-5 w-5 text-amber-700 dark:text-amber-400" />
+                          <span className="text-2xl font-mono font-bold text-amber-700 dark:text-amber-400">
                             {getSuggestedLocation(item) || generateSuggestedLocation(item)}
                           </span>
                           {item.existingLocations.some(loc => loc.isPrimary) && (
@@ -1332,7 +1332,7 @@ export default function ItemsToStore() {
                         </div>
                         <div className="bg-white rounded-lg p-3 border">
                           <p className="text-xs text-muted-foreground">Remaining</p>
-                          <p className="text-lg font-bold text-primary">{remainingQuantity}</p>
+                          <p className="text-lg font-bold text-amber-700 dark:text-amber-400">{remainingQuantity}</p>
                         </div>
                       </div>
 
@@ -1357,7 +1357,7 @@ export default function ItemsToStore() {
                         <div className="space-y-2">
                           {item.newLocations.map((loc, locIndex) => (
                             <div key={loc.id} className="bg-white rounded-lg p-3 border flex items-center gap-2">
-                              <MapPin className="h-4 w-4 text-primary" />
+                              <MapPin className="h-4 w-4 text-amber-600" />
                               <span className="font-mono text-sm font-medium">{loc.locationCode}</span>
                               <input
                                 type="number"
@@ -1388,7 +1388,7 @@ export default function ItemsToStore() {
                       <div className="flex gap-2">
                         <button
                           onClick={() => setShowScanner(true)}
-                          className="flex-1 bg-primary text-white rounded-lg py-3 flex items-center justify-center gap-2"
+                          className="flex-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg py-3 flex items-center justify-center gap-2"
                           data-testid="button-scan-location"
                         >
                           <QrCode className="h-5 w-5" />
@@ -1457,7 +1457,7 @@ export default function ItemsToStore() {
           <button
             onClick={() => setShowScanner(true)}
             disabled={!currentItem}
-            className="flex-1 bg-primary text-white rounded-lg py-3 flex items-center justify-center gap-2 font-medium"
+            className="flex-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg py-3 flex items-center justify-center gap-2 font-medium"
           >
             <ScanLine className="h-5 w-5" />
             Quick Scan
@@ -2032,7 +2032,7 @@ export default function ItemsToStore() {
                 <SheetHeader className="pb-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      {receiptData.shipment?.shipmentType && getShipmentTypeIcon(receiptData.shipment.shipmentType, 'h-5 w-5 text-primary')}
+                      {receiptData.shipment?.shipmentType && getShipmentTypeIcon(receiptData.shipment.shipmentType, 'h-5 w-5 text-amber-600')}
                       <div>
                         <SheetTitle className="text-lg font-semibold">
                           {receiptData.shipment?.shipmentName || `Shipment #${shipmentId}`}
@@ -2079,12 +2079,12 @@ export default function ItemsToStore() {
 
                 {/* Allocation Method Selector */}
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between p-3 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-950/30 dark:to-blue-950/30 rounded-lg border border-cyan-200 dark:border-cyan-800">
+                  <div className="flex items-center justify-between p-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
                     <div className="flex items-center gap-2">
-                      <Calculator className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                      <Calculator className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                       <div>
-                        <p className="text-xs font-medium text-cyan-900 dark:text-cyan-100">Cost Allocation Method</p>
-                        <p className="text-[10px] text-cyan-700 dark:text-cyan-300">How shipping costs are distributed</p>
+                        <p className="text-xs font-medium text-amber-900 dark:text-amber-100">Cost Allocation Method</p>
+                        <p className="text-[10px] text-amber-700 dark:text-amber-300">How shipping costs are distributed</p>
                       </div>
                     </div>
                     <Select 
@@ -2097,7 +2097,7 @@ export default function ItemsToStore() {
                       <SelectContent>
                         <SelectItem value="AUTO">
                           <div className="flex items-center gap-2">
-                            <Zap className="h-3 w-3 text-cyan-500" />
+                            <Zap className="h-3 w-3 text-amber-500" />
                             <span>Auto-Select</span>
                           </div>
                         </SelectItem>
@@ -2135,27 +2135,27 @@ export default function ItemsToStore() {
                       <p className="text-[11px] text-slate-700 dark:text-slate-300 flex-1">
                         {allocationMethod === 'AUTO' && (
                           <span>
-                            <strong className="text-cyan-700 dark:text-cyan-400">Auto-Select:</strong> System automatically chooses the best method based on shipment type (boxes/pallets/containers)
+                            <strong className="text-amber-700 dark:text-amber-400">Auto-Select:</strong> System automatically chooses the best method based on shipment type (boxes/pallets/containers)
                           </span>
                         )}
                         {allocationMethod === 'WEIGHT' && (
                           <span>
-                            <strong className="text-cyan-700 dark:text-cyan-400">Weight-Based:</strong> Costs allocated proportionally by item weight — heavier items bear more shipping cost
+                            <strong className="text-amber-700 dark:text-amber-400">Weight-Based:</strong> Costs allocated proportionally by item weight — heavier items bear more shipping cost
                           </span>
                         )}
                         {allocationMethod === 'VALUE' && (
                           <span>
-                            <strong className="text-cyan-700 dark:text-cyan-400">Value-Based:</strong> Costs allocated proportionally by item value — more expensive items bear more shipping cost
+                            <strong className="text-amber-700 dark:text-amber-400">Value-Based:</strong> Costs allocated proportionally by item value — more expensive items bear more shipping cost
                           </span>
                         )}
                         {allocationMethod === 'UNITS' && (
                           <span>
-                            <strong className="text-cyan-700 dark:text-cyan-400">Unit-Based:</strong> Costs distributed equally across all units — each item gets the same shipping cost
+                            <strong className="text-amber-700 dark:text-amber-400">Unit-Based:</strong> Costs distributed equally across all units — each item gets the same shipping cost
                           </span>
                         )}
                         {allocationMethod === 'HYBRID' && (
                           <span>
-                            <strong className="text-cyan-700 dark:text-cyan-400">Hybrid:</strong> Combines weight, value, and unit factors for balanced cost distribution
+                            <strong className="text-amber-700 dark:text-amber-400">Hybrid:</strong> Combines weight, value, and unit factors for balanced cost distribution
                           </span>
                         )}
                       </p>
@@ -2174,7 +2174,7 @@ export default function ItemsToStore() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold text-sm flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-primary" />
+                        <TrendingUp className="h-4 w-4 text-amber-600" />
                         Item Pricing & Landing Cost
                       </h3>
                       <div className="flex items-center gap-2">
@@ -2253,7 +2253,7 @@ export default function ItemsToStore() {
                                 currency
                               )}
                             </TableCell>
-                            <TableCell className="text-right font-mono text-sm text-cyan-700 dark:text-cyan-400">
+                            <TableCell className="text-right font-mono text-sm text-amber-700 dark:text-amber-400">
                               {(() => {
                                 // Convert each item's landing cost to display currency, then sum
                                 const totalLandingConverted = receiptData.items.reduce((sum: number, item: any) => {
