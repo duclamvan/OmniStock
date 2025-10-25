@@ -743,19 +743,6 @@ export default function OrderDetails() {
                                 <span className="text-slate-500">×</span> {formatCurrency(item.unitPrice || item.price || 0, order.currency || 'EUR')}
                               </div>
                             </div>
-
-                            {item.landingCost && (
-                              <div className="mt-1.5">
-                                <MarginPill 
-                                  sellingPrice={item.unitPrice || item.price || 0}
-                                  landingCost={item.landingCost}
-                                  currency={order.currency || 'EUR'}
-                                  quantity={item.quantity}
-                                  showProfit={false}
-                                  className="text-xs"
-                                />
-                              </div>
-                            )}
                           </div>
 
                           {/* Price and Actions */}
