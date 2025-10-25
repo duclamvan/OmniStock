@@ -7206,11 +7206,34 @@ PHONE NUMBER RULES:
 - Remove prefixes and return only the number
 
 ADDRESS RULES:
-- Extract street name and house number separately
+- **Separate street name and house number carefully**:
+  * If street and number are combined (e.g., "Dragounska2545/9A"), split them intelligently
+  * Street name is typically alphabetic characters, number is numeric with optional slash notation (e.g., "2545/9A")
+  * Common European patterns: "StreetName123", "StreetName123/4A", "StreetName 123"
+  * Example: "Dragounska2545/9A" → street: "Dragounska", streetNumber: "2545/9A"
 - Keep original spelling for street names (including diacritics if present)
-- Extract city, postal code, and country
+- Extract city, postal code, and country from remaining text
+- **Handle compact formats** where all fields are space-separated without labels:
+  * Example: "Company StreetNumber City PostalCode PhoneNumber"
+  * Use context clues: 5-digit numbers often postal codes, 9-digit numbers often phone numbers
 
 Return ONLY valid JSON with these exact fields: firstName, lastName, company, email, phone, street, streetNumber, city, zipCode, country, state. Use null for missing fields.
+
+EXAMPLE PARSING:
+Input: "Van Duy Lam Pro Nails Dragounska2545/9A Cheb 35002 776887045"
+Output: {
+  "firstName": "Duy",
+  "lastName": "Lam Van",
+  "company": "Pro Nails",
+  "email": null,
+  "phone": "776887045",
+  "street": "Dragounska",
+  "streetNumber": "2545/9A",
+  "city": "Cheb",
+  "zipCode": "35002",
+  "country": null,
+  "state": null
+}
 
 Text: ${rawAddress}`;
 

@@ -197,11 +197,11 @@ export function ShippingAddressModal({
 
   const parseAddressMutation = useMutation({
     mutationFn: async (rawText: string) => {
-      return apiRequest('/api/ai/parse-address', 'POST', { text: rawText });
+      return apiRequest('POST', '/api/addresses/parse', { rawAddress: rawText });
     },
     onSuccess: (data: any) => {
-      if (data?.parsed) {
-        Object.entries(data.parsed).forEach(([key, value]) => {
+      if (data?.fields) {
+        Object.entries(data.fields).forEach(([key, value]) => {
           if (value && key !== 'label') {
             form.setValue(key as any, value as any);
           }
@@ -210,7 +210,7 @@ export function ShippingAddressModal({
         setRawAddress('');
         toast({
           title: "Address Parsed",
-          description: "Address information has been extracted and filled",
+          description: `Filled with ${data.confidence || 'medium'} confidence`,
         });
       }
     },
