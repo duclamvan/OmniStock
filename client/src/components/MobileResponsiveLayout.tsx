@@ -263,154 +263,168 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
   }, [openItems, location, isCollapsed]);
 
   const navigation = [
+    // Operational Section (Mobile-optimized for warehouse employees)
     {
-      name: "Dashboard",
-      href: "/",
-      icon: LayoutDashboard,
-      color: "text-blue-600",
-      description: "Overview & Analytics"
+      type: "section",
+      name: "Warehouse Operations",
+      items: [
+        {
+          name: "Pick & Pack",
+          href: "/orders/pick-pack",
+          icon: PackageCheck,
+          color: "text-amber-600",
+          description: "Order Fulfillment"
+        },
+        {
+          name: "Receiving",
+          href: "/receiving",
+          icon: ClipboardCheck,
+          color: "text-violet-600",
+          description: "Incoming Shipments"
+        },
+        {
+          name: "Storage",
+          href: "/receiving/storage",
+          icon: PackageCheck,
+          color: "text-lime-600",
+          description: "Items to Store"
+        },
+        {
+          name: "POS",
+          href: "/pos",
+          icon: Store,
+          color: "text-green-600",
+          description: "Point of Sale"
+        },
+        {
+          name: "Shipping",
+          href: "/shipping",
+          icon: Send,
+          color: "text-blue-500",
+          description: "Outbound Logistics"
+        },
+      ]
     },
+    // Admin/Management Section
     {
-      name: "Orders",
-      icon: ShoppingCart,
-      color: "text-emerald-600",
-      description: "Order Management",
-      children: [
-        { name: "All Orders", href: "/orders" },
-        { name: "Add Order", href: "/orders/add" },
-        { name: "To Fulfill", href: "/orders/to-fulfill" },
-        { name: "Shipped", href: "/orders/shipped" },
-        { name: "Pay Later", href: "/orders/pay-later" },
-        { name: "Pre-Orders", href: "/orders/pre-orders" },
-      ],
-    },
-    {
-      name: "Pick & Pack",
-      href: "/orders/pick-pack",
-      icon: PackageCheck,
-      color: "text-amber-600",
-      description: "Order Fulfillment"
-    },
-    {
-      name: "Inventory",
-      icon: Boxes,
-      color: "text-purple-600",
-      description: "Product Management",
-      children: [
-        { name: "All Products", href: "/inventory" },
-        { name: "Categories", href: "/inventory/categories" },
-        { name: "Product Bundles", href: "/inventory/bundles" },
-        { name: "Packing Materials", href: "/packing-materials" },
-        { name: "Add Product", href: "/inventory/add" },
-      ],
-    },
-    {
-      name: "Warehouses",
-      icon: Building2,
-      color: "text-orange-600",
-      description: "Storage Facilities",
-      children: [
-        { name: "All Warehouses", href: "/warehouses" },
-        { name: "Warehouse Map", href: "/warehouses/map" },
-        { name: "Add Warehouse", href: "/warehouses/add" },
-      ],
-    },
-    {
-      name: "Discounts",
-      href: "/discounts",
-      icon: Percent,
-      color: "text-red-600",
-      description: "Pricing & Offers"
-    },
-    {
-      name: "Customers",
-      href: "/customers",
-      icon: UserCheck,
-      color: "text-indigo-600",
-      description: "Client Management"
-    },
-    {
-      name: "Suppliers",
-      href: "/suppliers",
-      icon: Building,
-      color: "text-teal-600",
-      description: "Vendor Network"
-    },
-    {
-      name: "Returns",
-      href: "/returns",
-      icon: RefreshCw,
-      color: "text-yellow-600",
-      description: "Return Processing"
-    },
-    {
-      name: "Expenses",
-      href: "/expenses",
-      icon: Calculator,
-      color: "text-pink-600",
-      description: "Cost Tracking"
-    },
-    {
-      name: "Services",
-      href: "/services",
-      icon: Wrench,
-      color: "text-purple-600",
-      description: "Repairs & Services"
-    },
-    {
-      name: "Tickets",
-      href: "/tickets",
-      icon: Ticket,
-      color: "text-blue-600",
-      description: "Support Tickets"
-    },
-    {
-      name: "POS",
-      href: "/pos",
-      icon: Store,
-      color: "text-green-600",
-      description: "Point of Sale"
-    },
-    {
-      name: "Imports",
-      icon: Import,
-      color: "text-cyan-600",
-      description: "International Orders",
-      children: [
-        { name: "Kanban Dashboard", href: "/imports/kanban" },
-        { name: "Purchase Orders", href: "/purchase-orders" },
-        { name: "Consolidation", href: "/consolidation" },
-        { name: "International Transit", href: "/imports/international-transit" },
-      ],
-    },
-    {
-      name: "Receiving",
-      href: "/receiving",
-      icon: ClipboardCheck,
-      color: "text-violet-600",
-      description: "Incoming Shipments"
-    },
-    {
-      name: "Storage",
-      href: "/receiving/storage",
-      icon: PackageCheck,
-      color: "text-lime-600",
-      description: "Storage Queue"
-    },
-    {
-      name: "Shipping",
-      href: "/shipping",
-      icon: Send,
-      color: "text-blue-500",
-      description: "Outbound Logistics"
-    },
-    {
-      name: "Reports",
-      href: "/reports",
-      icon: FileText,
-      color: "text-gray-600",
-      description: "Analytics & Reports"
-    },
+      type: "section",
+      name: "Administration",
+      items: [
+        {
+          name: "Dashboard",
+          href: "/",
+          icon: LayoutDashboard,
+          color: "text-blue-600",
+          description: "Overview & Analytics"
+        },
+        {
+          name: "Orders",
+          icon: ShoppingCart,
+          color: "text-emerald-600",
+          description: "Order Management",
+          children: [
+            { name: "All Orders", href: "/orders" },
+            { name: "Add Order", href: "/orders/add" },
+            { name: "To Fulfill", href: "/orders/to-fulfill" },
+            { name: "Shipped", href: "/orders/shipped" },
+            { name: "Pay Later", href: "/orders/pay-later" },
+            { name: "Pre-Orders", href: "/orders/pre-orders" },
+          ],
+        },
+        {
+          name: "Inventory",
+          icon: Boxes,
+          color: "text-purple-600",
+          description: "Product Management",
+          children: [
+            { name: "All Products", href: "/inventory" },
+            { name: "Categories", href: "/inventory/categories" },
+            { name: "Product Bundles", href: "/inventory/bundles" },
+            { name: "Packing Materials", href: "/packing-materials" },
+            { name: "Add Product", href: "/inventory/add" },
+          ],
+        },
+        {
+          name: "Warehouses",
+          icon: Building2,
+          color: "text-orange-600",
+          description: "Storage Facilities",
+          children: [
+            { name: "All Warehouses", href: "/warehouses" },
+            { name: "Warehouse Map", href: "/warehouses/map" },
+            { name: "Add Warehouse", href: "/warehouses/add" },
+          ],
+        },
+        {
+          name: "Customers",
+          href: "/customers",
+          icon: UserCheck,
+          color: "text-indigo-600",
+          description: "Client Management"
+        },
+        {
+          name: "Suppliers",
+          href: "/suppliers",
+          icon: Building,
+          color: "text-teal-600",
+          description: "Vendor Network"
+        },
+        {
+          name: "Discounts",
+          href: "/discounts",
+          icon: Percent,
+          color: "text-red-600",
+          description: "Pricing & Offers"
+        },
+        {
+          name: "Returns",
+          href: "/returns",
+          icon: RefreshCw,
+          color: "text-yellow-600",
+          description: "Return Processing"
+        },
+        {
+          name: "Expenses",
+          href: "/expenses",
+          icon: Calculator,
+          color: "text-pink-600",
+          description: "Cost Tracking"
+        },
+        {
+          name: "Services",
+          href: "/services",
+          icon: Wrench,
+          color: "text-purple-600",
+          description: "Repairs & Services"
+        },
+        {
+          name: "Tickets",
+          href: "/tickets",
+          icon: Ticket,
+          color: "text-blue-600",
+          description: "Support Tickets"
+        },
+        {
+          name: "Imports",
+          icon: Import,
+          color: "text-cyan-600",
+          description: "International Orders",
+          children: [
+            { name: "Kanban Dashboard", href: "/imports/kanban" },
+            { name: "Purchase Orders", href: "/purchase-orders" },
+            { name: "Consolidation", href: "/consolidation" },
+            { name: "International Transit", href: "/imports/international-transit" },
+          ],
+        },
+        {
+          name: "Reports",
+          href: "/reports",
+          icon: FileText,
+          color: "text-gray-600",
+          description: "Analytics & Reports"
+        },
+      ]
+    }
   ];
 
   // Automatically open parent menus when location changes (without scrolling)
@@ -423,13 +437,15 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
     
     // Find parent menus that should be open based on current location
     const activeParentMenus: string[] = [];
-    navigation.forEach(item => {
-      if (item.children) {
-        const hasActiveChild = item.children.some(child => child.href === location);
-        if (hasActiveChild) {
-          activeParentMenus.push(item.name);
+    navigation.forEach(section => {
+      section.items?.forEach(item => {
+        if (item.children) {
+          const hasActiveChild = item.children.some(child => child.href === location);
+          if (hasActiveChild) {
+            activeParentMenus.push(item.name);
+          }
         }
-      }
+      });
     });
     
     // Open parent menus if they have active children
@@ -443,7 +459,22 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
 
   const NavLinks = ({ collapsed = false }: { collapsed?: boolean }) => (
     <>
-      {navigation.map((item) => {
+      {navigation.map((section, sectionIdx) => (
+        <div key={section.name}>
+          {/* Section Header */}
+          {!collapsed && (
+            <div className={cn(
+              "px-4 py-2 mb-2",
+              sectionIdx > 0 && "mt-6 pt-6 border-t border-gray-200 dark:border-gray-700"
+            )}>
+              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                {section.name}
+              </h3>
+            </div>
+          )}
+          
+          {/* Section Items */}
+          {section.items?.map((item) => {
         if (item.children) {
           const isOpen = openItems.includes(item.name);
           const isActive = item.children.some(child => location === child.href);
@@ -664,6 +695,8 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
           </div>
         );
       })}
+        </div>
+      ))}
     </>
   );
 
