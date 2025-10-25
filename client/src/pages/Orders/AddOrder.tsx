@@ -62,7 +62,8 @@ import {
   Wrench,
   Star,
   Award,
-  Clock
+  Clock,
+  Settings
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import {
@@ -1461,13 +1462,13 @@ export default function AddOrder() {
             <div className="lg:hidden space-y-4">
               {/* Order Location */}
               <Card className="shadow-sm">
-                <CardHeader className="p-4">
-                  <CardTitle className="flex items-center gap-2 text-base">
+                <CardHeader className="p-3 border-b">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                     <MapPin className="h-4 w-4 text-blue-600" />
                     Order Location
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-4 pt-0">
+                <CardContent className="p-3">
                   <Input
                     placeholder="e.g., Prague Warehouse, Main Office"
                     value={form.watch('orderLocation') || ''}
@@ -1479,57 +1480,56 @@ export default function AddOrder() {
 
               {/* Order Settings */}
               <Card className="shadow-sm">
-                <CardHeader className="p-3">
-                  <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                    <Package className="h-4 w-4 text-blue-600" />
-                    Settings
+                <CardHeader className="p-3 border-b">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                    <Settings className="h-4 w-4 text-blue-600" />
+                    Order Settings
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-3 pt-0 space-y-2.5">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label htmlFor="currency-mobile" className="text-xs">Currency</Label>
-                      <Select value={form.watch('currency')} onValueChange={(value) => form.setValue('currency', value as any)}>
-                        <SelectTrigger className="mt-1 h-9 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="CZK">CZK</SelectItem>
-                          <SelectItem value="EUR">EUR</SelectItem>
-                          <SelectItem value="USD">USD</SelectItem>
-                          <SelectItem value="VND">VND</SelectItem>
-                          <SelectItem value="CNY">CNY</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="priority-mobile" className="text-xs">Priority</Label>
-                      <Select value={form.watch('priority')} onValueChange={(value) => form.setValue('priority', value as any)}>
-                        <SelectTrigger className="mt-1 h-9 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="low">
-                            <div className="flex items-center gap-2">
-                              <div className="h-2 w-2 bg-gray-500 rounded-full" />
-                              Low
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="medium">
-                            <div className="flex items-center gap-2">
-                              <div className="h-2 w-2 bg-yellow-500 rounded-full" />
-                              Medium
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="high">
-                            <div className="flex items-center gap-2">
-                              <div className="h-2 w-2 bg-red-500 rounded-full" />
-                              High
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                <CardContent className="p-3 space-y-3">
+                  <div>
+                    <Label htmlFor="currency-mobile" className="text-xs">Currency</Label>
+                    <Select value={form.watch('currency')} onValueChange={(value) => form.setValue('currency', value as any)}>
+                      <SelectTrigger className="mt-1 h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="CZK">CZK</SelectItem>
+                        <SelectItem value="EUR">EUR</SelectItem>
+                        <SelectItem value="USD">USD</SelectItem>
+                        <SelectItem value="VND">VND</SelectItem>
+                        <SelectItem value="CNY">CNY</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="priority-mobile" className="text-xs">Priority</Label>
+                    <Select value={form.watch('priority')} onValueChange={(value) => form.setValue('priority', value as any)}>
+                      <SelectTrigger className="mt-1 h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 bg-gray-500 rounded-full" />
+                            Low
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="medium">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 bg-yellow-500 rounded-full" />
+                            Medium
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="high">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 bg-red-500 rounded-full" />
+                            High
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   {/* Order Status and Payment Status side by side */}
@@ -1537,7 +1537,7 @@ export default function AddOrder() {
                     <div>
                       <Label htmlFor="orderStatus-mobile" className="text-xs">Order Status</Label>
                       <Select value={form.watch('orderStatus')} onValueChange={(value) => form.setValue('orderStatus', value as any)}>
-                        <SelectTrigger className="mt-1 h-9 text-xs">
+                        <SelectTrigger className="mt-1 h-9">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1566,7 +1566,7 @@ export default function AddOrder() {
                     <div>
                       <Label htmlFor="paymentStatus-mobile" className="text-xs">Payment Status</Label>
                       <Select value={form.watch('paymentStatus')} onValueChange={(value) => form.setValue('paymentStatus', value as any)}>
-                        <SelectTrigger className="mt-1 h-9 text-xs">
+                        <SelectTrigger className="mt-1 h-9">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1604,14 +1604,14 @@ export default function AddOrder() {
 
             {/* Customer Selection - Mobile Optimized */}
             <Card className="shadow-sm">
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  <User className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+              <CardHeader className="p-3 border-b">
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                  <User className="h-4 w-4 text-blue-600" />
                   Customer Details
                 </CardTitle>
                 <CardDescription className="text-xs sm:text-sm mt-1">Search and select or create new</CardDescription>
               </CardHeader>
-              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
+              <CardContent className="p-3 space-y-3">
             {/* Quick Customer Options */}
             {!selectedCustomer && !quickCustomerType && (
               <div className="space-y-2">
@@ -2028,7 +2028,7 @@ export default function AddOrder() {
                                  selectedCustomer.country.toLowerCase().includes('austria') ? '🇦🇹' : '🌍'}
                               </span>
                             )}
-                            <h3 className="text-lg font-semibold text-slate-900">
+                            <h3 className="text-sm font-semibold text-slate-900">
                               {selectedCustomer.name}
                             </h3>
                             <CheckCircle className="h-5 w-5 text-green-600" />
@@ -2171,14 +2171,14 @@ export default function AddOrder() {
             {/* Shipping Address Section */}
             {selectedCustomer && selectedCustomer.id && (
               <Card className="mt-4" data-testid="card-shipping-address">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5" />
+                <CardHeader className="p-3 border-b">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                    <MapPin className="h-4 w-4" />
                     Shipping Address
                   </CardTitle>
                   <CardDescription>Select or add a shipping address for this order</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="p-3 space-y-3">
                   {isLoadingShippingAddresses ? (
                     <div className="text-center py-4 text-slate-500">Loading addresses...</div>
                   ) : shippingAddresses && Array.isArray(shippingAddresses) && shippingAddresses.length > 0 ? (
@@ -2802,14 +2802,14 @@ export default function AddOrder() {
 
         {/* Product Selection - Mobile Optimized */}
         <Card className="shadow-sm">
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Package className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+          <CardHeader className="p-3 border-b">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <Package className="h-4 w-4 text-blue-600" />
               Add Products
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm mt-1">Search and add products to order</CardDescription>
           </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
+          <CardContent className="p-3 space-y-3">
             <div className="relative product-search-container">
               <div className="flex items-center justify-between mb-2">
                 <Label htmlFor="product">Search Products</Label>
@@ -3006,11 +3006,11 @@ export default function AddOrder() {
 
         {/* Order Items - Mobile Optimized */}
         <Card className="shadow-sm">
-          <CardHeader className="p-4 sm:p-6">
+          <CardHeader className="p-3 border-b">
             <div className="flex items-start justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                  <ShoppingCart className="h-4 w-4 text-blue-600" />
                   Order Items
                 </CardTitle>
                 <CardDescription className="text-xs sm:text-sm mt-1">
@@ -3050,7 +3050,7 @@ export default function AddOrder() {
               )}
             </div>
           </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+          <CardContent className="p-3">
             {orderItems.length > 0 ? (
               <div className="overflow-x-auto -mx-4 sm:mx-0">
                 <div className="inline-block min-w-full align-middle">
@@ -3249,14 +3249,14 @@ export default function AddOrder() {
 
         {/* Payment Details - Mobile Optimized */}
         <Card className="shadow-sm">
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+          <CardHeader className="p-3 border-b">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <CreditCard className="h-4 w-4 text-blue-600" />
               Payment Details
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm mt-1">Configure pricing and notes</CardDescription>
           </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
+          <CardContent className="p-3 space-y-3">
             {/* Shipping & Payment Methods */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
@@ -3483,8 +3483,8 @@ export default function AddOrder() {
               {showTaxInvoice && (
                 <div className="mt-4 p-4 border-2 border-blue-100 rounded-lg bg-blue-50/30 space-y-4">
                   <div className="flex items-center gap-2 mb-4">
-                    <FileText className="h-5 w-5 text-blue-600" />
-                    <h3 className="font-semibold text-blue-900">Tax Invoice Information</h3>
+                    <FileText className="h-4 w-4 text-blue-600" />
+                    <h3 className="text-sm font-semibold text-blue-900">Tax Invoice Information</h3>
                   </div>
 
                   {form.watch('currency') === 'CZK' && (
@@ -3654,11 +3654,11 @@ export default function AddOrder() {
         {/* AI Carton Packing Optimization Panel */}
         {orderItems.length > 0 && (
           <Card className="shadow-sm border-2 border-blue-100 dark:border-blue-900">
-            <CardHeader className="p-4 sm:p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
+            <CardHeader className="p-3 border-b bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1 flex-1">
-                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-semibold">
-                    <Box className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                    <Box className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                     AI Carton Packing Optimization
                   </CardTitle>
                   <CardDescription className="text-xs sm:text-sm">
@@ -3689,7 +3689,7 @@ export default function AddOrder() {
             </CardHeader>
 
             {packingPlan && (
-              <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+              <CardContent className="p-3 space-y-3">
                 {/* Summary Cards */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   {/* Total Cartons */}
@@ -3881,11 +3881,11 @@ export default function AddOrder() {
         {/* Files Section */}
         {orderItems.length > 0 && (
           <Card className="shadow-sm">
-            <CardHeader className="p-4 sm:p-6">
+            <CardHeader className="p-3 border-b">
               <div className="flex items-start justify-between">
                 <div>
-                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                    <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                    <FileText className="h-4 w-4 text-blue-600" />
                     Files & Documents
                   </CardTitle>
                   <CardDescription className="text-xs sm:text-sm mt-1">
@@ -3915,7 +3915,7 @@ export default function AddOrder() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-6">
+            <CardContent className="p-3 space-y-3">
               {/* Files List Section */}
               <div className="space-y-4">
                 {/* Uploaded Files */}
@@ -4027,13 +4027,13 @@ export default function AddOrder() {
                   
                   {/* Order Location - Desktop Only */}
                   <Card className="shadow-sm">
-                    <CardHeader className="p-4">
-                      <CardTitle className="flex items-center gap-2 text-sm">
+                    <CardHeader className="p-3 border-b">
+                      <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                         <MapPin className="h-4 w-4 text-blue-600" />
                         Order Location
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-4 pt-0">
+                    <CardContent className="p-3">
                       <Input
                         placeholder="e.g., Prague Warehouse, Main Office"
                         value={form.watch('orderLocation') || ''}
@@ -4045,58 +4045,56 @@ export default function AddOrder() {
 
                   {/* Quick Settings Card */}
                   <Card className="shadow-sm">
-                    <CardHeader className="p-3">
-                      <CardTitle className="flex items-center gap-2 text-xs font-medium">
-                        <Package className="h-3.5 w-3.5 text-blue-600" />
-                        Settings
+                    <CardHeader className="p-3 border-b">
+                      <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                        <Settings className="h-4 w-4 text-blue-600" />
+                        Order Settings
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-3 pt-0 space-y-2.5">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label htmlFor="currency" className="text-xs">Currency</Label>
-                          <Select value={form.watch('currency')} onValueChange={(value) => form.setValue('currency', value as any)}>
-                            <SelectTrigger className="mt-1 h-8 text-xs" data-testid="select-currency">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="CZK">CZK</SelectItem>
-                              <SelectItem value="EUR">EUR</SelectItem>
-                              <SelectItem value="USD">USD</SelectItem>
-                              <SelectItem value="VND">VND</SelectItem>
-                              <SelectItem value="CNY">CNY</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                    <CardContent className="p-3 space-y-3">
+                      <div>
+                        <Label htmlFor="currency" className="text-xs">Currency</Label>
+                        <Select value={form.watch('currency')} onValueChange={(value) => form.setValue('currency', value as any)}>
+                          <SelectTrigger className="mt-1 h-9" data-testid="select-currency">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="CZK">CZK</SelectItem>
+                            <SelectItem value="EUR">EUR</SelectItem>
+                            <SelectItem value="USD">USD</SelectItem>
+                            <SelectItem value="VND">VND</SelectItem>
+                            <SelectItem value="CNY">CNY</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                        <div>
-                          <Label htmlFor="priority" className="text-xs">Priority</Label>
-                          <Select value={form.watch('priority')} onValueChange={(value) => form.setValue('priority', value as any)}>
-                            <SelectTrigger className="mt-1 h-8 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="low">
-                                <div className="flex items-center gap-2">
-                                  <div className="h-2 w-2 bg-gray-500 rounded-full" />
-                                  Low
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="medium">
-                                <div className="flex items-center gap-2">
-                                  <div className="h-2 w-2 bg-yellow-500 rounded-full" />
-                                  Medium
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="high">
-                                <div className="flex items-center gap-2">
-                                  <div className="h-2 w-2 bg-red-500 rounded-full" />
-                                  High
-                                </div>
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                      <div>
+                        <Label htmlFor="priority" className="text-xs">Priority</Label>
+                        <Select value={form.watch('priority')} onValueChange={(value) => form.setValue('priority', value as any)}>
+                          <SelectTrigger className="mt-1 h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="low">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 bg-gray-500 rounded-full" />
+                                Low
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="medium">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 bg-yellow-500 rounded-full" />
+                                Medium
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="high">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 bg-red-500 rounded-full" />
+                                High
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       {/* Order Status and Payment Status side by side */}
@@ -4104,7 +4102,7 @@ export default function AddOrder() {
                         <div>
                           <Label htmlFor="orderStatus" className="text-xs">Order Status</Label>
                           <Select value={form.watch('orderStatus')} onValueChange={(value) => form.setValue('orderStatus', value as any)}>
-                            <SelectTrigger className="mt-1 h-8 text-xs">
+                            <SelectTrigger className="mt-1 h-9">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -4133,7 +4131,7 @@ export default function AddOrder() {
                         <div>
                           <Label htmlFor="paymentStatus" className="text-xs">Payment Status</Label>
                           <Select value={form.watch('paymentStatus')} onValueChange={(value) => form.setValue('paymentStatus', value as any)}>
-                            <SelectTrigger className="mt-1 h-8 text-xs" data-testid="select-payment-status">
+                            <SelectTrigger className="mt-1 h-9" data-testid="select-payment-status">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -4164,13 +4162,13 @@ export default function AddOrder() {
 
                   {/* Order Summary - Sticky */}
                   <Card className="shadow-sm">
-                    <CardHeader className="p-4">
-                      <CardTitle className="flex items-center gap-2 text-sm">
+                    <CardHeader className="p-3 border-b">
+                      <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                         <Calculator className="h-4 w-4 text-blue-600" />
                         Order Summary
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-4 pt-0 space-y-3">
+                    <CardContent className="p-3 space-y-3">
                     {/* Margin Analysis Section */}
                     {orderItems.length > 0 && (() => {
                       const totalLandingCost = orderItems.reduce((sum, item) => 
@@ -4295,13 +4293,13 @@ export default function AddOrder() {
 
           {/* Mobile Order Summary (bottom on mobile) */}
           <Card className="lg:hidden shadow-sm">
-            <CardHeader className="p-4">
-              <CardTitle className="flex items-center gap-2 text-base">
+            <CardHeader className="p-3 border-b">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                 <Calculator className="h-4 w-4 text-blue-600" />
                 Order Summary
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 pt-0 space-y-3">
+            <CardContent className="p-3 space-y-3">
               {/* Margin Analysis Section - Mobile */}
               {orderItems.length > 0 && (() => {
                 const totalLandingCost = orderItems.reduce((sum, item) => 

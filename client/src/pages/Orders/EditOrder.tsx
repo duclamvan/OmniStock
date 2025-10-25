@@ -56,7 +56,8 @@ import {
   Weight,
   Loader2,
   Upload,
-  Download
+  Download,
+  Settings
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import {
@@ -1364,13 +1365,13 @@ export default function EditOrder() {
           <div className="space-y-4 sm:space-y-6">
             {/* Order Location - Mobile Only (at top) */}
             <Card className="lg:hidden shadow-sm">
-              <CardHeader className="p-4">
-                <CardTitle className="flex items-center gap-2 text-base">
+              <CardHeader className="p-3 border-b">
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                   <MapPin className="h-4 w-4 text-blue-600" />
                   Order Location
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-4 pt-0">
+              <CardContent className="p-3">
                 <Input
                   placeholder="e.g., Prague Warehouse, Main Office, Customer Pickup"
                   value={form.watch('orderLocation') || ''}
@@ -1388,14 +1389,14 @@ export default function EditOrder() {
 
             {/* Customer Selection - Mobile Optimized */}
             <Card className="shadow-sm">
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  <User className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+              <CardHeader className="p-3 border-b">
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                  <User className="h-4 w-4 text-blue-600" />
                   Customer Details
                 </CardTitle>
                 <CardDescription className="text-xs sm:text-sm mt-1">Search and select or create new</CardDescription>
               </CardHeader>
-              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
+              <CardContent className="p-3 space-y-3">
             {/* Quick Customer Options */}
             {!selectedCustomer && !quickCustomerType && (
               <div className="space-y-2">
@@ -1773,110 +1774,137 @@ export default function EditOrder() {
 
             {/* Selected customer display */}
             {selectedCustomer && (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start space-x-3 flex-1 min-w-0">
-                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      {/* Name and badges */}
-                      <div className="font-medium text-green-800 flex items-center gap-2 flex-wrap">
-                        <span className="flex items-center gap-1.5 truncate">
-                          {selectedCustomer.country && (
-                            <span className="text-lg">{getCountryFlag(selectedCustomer.country)}</span>
-                          )}
-                          <span className="truncate">{selectedCustomer.name}</span>
-                        </span>
-                        {selectedCustomer.isTemporary && (
-                          <Badge variant="outline" className="text-xs bg-blue-50 border-blue-300 text-blue-700">
-                            One-time
-                          </Badge>
-                        )}
-                        {selectedCustomer.needsSaving && (
-                          <Badge variant="outline" className="text-xs bg-purple-50 border-purple-300 text-purple-700">
-                            Will Save
-                          </Badge>
-                        )}
-                        {selectedCustomer.hasPayLaterBadge && (
-                          <Badge variant="outline" className="text-xs bg-yellow-50 border-yellow-300 text-yellow-700">
-                            Pay Later
-                          </Badge>
-                        )}
-                        {selectedCustomer.type && selectedCustomer.type !== 'regular' && (
-                          <Badge variant="outline" className="text-xs bg-slate-100 border-slate-300 text-slate-700 capitalize">
-                            {selectedCustomer.type}
-                          </Badge>
+              <Card className="mt-4 border-2 border-green-500 bg-white">
+                <CardContent className="p-6">
+                  <div className="flex gap-4">
+                    {/* Avatar Section */}
+                    <div className="flex-shrink-0">
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white shadow-lg">
+                        {selectedCustomer.profilePictureUrl ? (
+                          <img 
+                            src={selectedCustomer.profilePictureUrl} 
+                            alt={selectedCustomer.name}
+                            className="w-16 h-16 rounded-full object-cover"
+                          />
+                        ) : (
+                          <User className="h-8 w-8" />
                         )}
                       </div>
-                      
-                      {/* Company */}
-                      {selectedCustomer.company && (
-                        <div className="text-sm text-green-700 mt-1 flex items-center gap-1">
-                          <Building className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{selectedCustomer.company}</span>
+                    </div>
+
+                    {/* Customer Info */}
+                    <div className="flex-1 min-w-0">
+                      {/* Name and Badges Row */}
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            {/* Country Flag */}
+                            {selectedCustomer.country && (
+                              <span className="text-xl">{getCountryFlag(selectedCustomer.country)}</span>
+                            )}
+                            <h3 className="text-sm font-semibold text-slate-900">
+                              {selectedCustomer.name}
+                            </h3>
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                          </div>
+                          
+                          {/* Badges */}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {selectedCustomer.isTemporary && (
+                              <Badge variant="outline" className="text-xs bg-purple-50 border-purple-300 text-purple-700">
+                                One-time
+                              </Badge>
+                            )}
+                            {selectedCustomer.needsSaving && (
+                              <Badge variant="outline" className="text-xs bg-green-50 border-green-300 text-green-700">
+                                New Customer
+                              </Badge>
+                            )}
+                            {selectedCustomer.hasPayLaterBadge && (
+                              <Badge className="bg-purple-50 text-purple-700 border-purple-300 text-xs">
+                                <Clock className="h-3 w-3 mr-1" />
+                                Pay Later
+                              </Badge>
+                            )}
+                            {selectedCustomer.preferredCurrency && (
+                              <Badge variant="outline" className="text-xs bg-slate-50 border-slate-300 text-slate-700">
+                                {selectedCustomer.preferredCurrency}
+                              </Badge>
+                            )}
+                            {selectedCustomer.type && selectedCustomer.type !== 'regular' && (
+                              <Badge variant="outline" className="text-xs bg-slate-100 border-slate-300 text-slate-700 capitalize">
+                                {selectedCustomer.type}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
-                      )}
-                      
-                      {/* Contact info - compact grid */}
-                      <div className="mt-2 space-y-1">
+                        
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedCustomer(null);
+                            setCustomerSearch("");
+                            setQuickCustomerType(null);
+                            setQuickCustomerName("");
+                            setQuickCustomerPhone("");
+                          }}
+                          className="flex-shrink-0"
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Change
+                        </Button>
+                      </div>
+
+                      {/* Contact & Location Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mt-3">
+                        {/* Contact Info */}
                         {selectedCustomer.phone && (
-                          <div className="text-sm text-green-600 flex items-center gap-1">
-                            <Phone className="h-3 w-3 shrink-0" />
+                          <div className="flex items-center gap-2 text-sm text-slate-700">
+                            <Phone className="h-4 w-4 text-slate-500" />
                             <span>{selectedCustomer.phone}</span>
                             {selectedCustomer.socialMediaApp && (
-                              <span className="text-xs text-green-500">({selectedCustomer.socialMediaApp})</span>
+                              <Badge variant="secondary" className="text-xs">{selectedCustomer.socialMediaApp}</Badge>
                             )}
                           </div>
                         )}
                         {selectedCustomer.email && (
-                          <div className="text-sm text-green-600 flex items-center gap-1">
-                            <Mail className="h-3 w-3 shrink-0" />
+                          <div className="flex items-center gap-2 text-sm text-slate-700 truncate">
+                            <Mail className="h-4 w-4 text-slate-500 shrink-0" />
                             <span className="truncate">{selectedCustomer.email}</span>
                           </div>
                         )}
-                        {(selectedCustomer.city || selectedCustomer.country) && (
-                          <div className="text-sm text-green-600 flex items-center gap-1">
-                            <MapPin className="h-3 w-3 shrink-0" />
-                            <span className="truncate">
-                              {[selectedCustomer.city, selectedCustomer.country].filter(Boolean).join(', ')}
-                            </span>
+                        {selectedCustomer.company && (
+                          <div className="flex items-center gap-2 text-sm text-slate-700">
+                            <Building className="h-4 w-4 text-slate-500" />
+                            <span>{selectedCustomer.company}</span>
                           </div>
                         )}
-                        {!selectedCustomer.phone && !selectedCustomer.email && (
-                          <div className="text-sm text-green-500 italic">No contact info</div>
+                        {(selectedCustomer.city || selectedCustomer.country) && (
+                          <div className="flex items-center gap-2 text-sm text-slate-700">
+                            <MapPin className="h-4 w-4 text-slate-500" />
+                            <span>{[selectedCustomer.city, selectedCustomer.country].filter(Boolean).join(', ')}</span>
+                          </div>
                         )}
                       </div>
                     </div>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="shrink-0"
-                    onClick={() => {
-                      setSelectedCustomer(null);
-                      setCustomerSearch("");
-                      setQuickCustomerType(null);
-                      setQuickCustomerName("");
-                      setQuickCustomerPhone("");
-                    }}
-                  >
-                    Change
-                  </Button>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             )}
 
             {/* Shipping Address Section */}
             {selectedCustomer && selectedCustomer.id && (
               <Card className="mt-4" data-testid="card-shipping-address">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5" />
+                <CardHeader className="p-3 border-b">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                    <MapPin className="h-4 w-4" />
                     Shipping Address
                   </CardTitle>
                   <CardDescription>Select or add a shipping address for this order</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="p-3 space-y-3">
                   {isLoadingShippingAddresses ? (
                     <div className="text-center py-4 text-slate-500">Loading addresses...</div>
                   ) : shippingAddresses && Array.isArray(shippingAddresses) && shippingAddresses.length > 0 ? (
@@ -2270,14 +2298,14 @@ export default function EditOrder() {
 
         {/* Product Selection - Mobile Optimized */}
         <Card className="shadow-sm">
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Package className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-              Add Products
+          <CardHeader className="p-3 border-b">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <Package className="h-4 w-4 text-blue-600" />
+              Products
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm mt-1">Search and add products to order</CardDescription>
           </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
+          <CardContent className="p-3 space-y-3">
             <div className="relative product-search-container">
               <div className="flex items-center justify-between mb-2">
                 <Label htmlFor="product">Search Products</Label>
@@ -2442,11 +2470,11 @@ export default function EditOrder() {
 
         {/* Order Items - Mobile Optimized */}
         <Card className="shadow-sm">
-          <CardHeader className="p-4 sm:p-6">
+          <CardHeader className="p-3 border-b">
             <div className="flex items-start justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                  <ShoppingCart className="h-4 w-4 text-blue-600" />
                   Order Items
                 </CardTitle>
                 <CardDescription className="text-xs sm:text-sm mt-1">
@@ -2486,7 +2514,7 @@ export default function EditOrder() {
               )}
             </div>
           </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+          <CardContent className="p-3">
             {orderItems.length > 0 ? (
               <div className="overflow-x-auto -mx-4 sm:mx-0">
                 <div className="inline-block min-w-full align-middle">
@@ -2494,17 +2522,17 @@ export default function EditOrder() {
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-slate-50 dark:bg-slate-900/50">
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 w-auto">Product</TableHead>
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center w-24">Qty</TableHead>
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right w-32">Price</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Product</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center">Qty</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">Price</TableHead>
                           {showDiscountColumn && (
-                            <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right w-32">Discount</TableHead>
+                            <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">Discount</TableHead>
                           )}
                           {showVatColumn && (
-                            <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right w-32">VAT</TableHead>
+                            <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">VAT</TableHead>
                           )}
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right w-32">Total</TableHead>
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center w-16">Actions</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">Total</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center w-20">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -2514,10 +2542,10 @@ export default function EditOrder() {
                             className={index % 2 === 0 ? 'bg-white dark:bg-slate-950' : 'bg-slate-50/50 dark:bg-slate-900/30'}
                             data-testid={`order-item-${item.id}`}
                           >
-                            <TableCell className="py-2">
-                              <div className="flex flex-col gap-0.5">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-medium text-slate-900 dark:text-slate-100 text-sm">
+                            <TableCell className="py-3">
+                              <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-slate-900 dark:text-slate-100">
                                     {item.productName}
                                   </span>
                                   {item.variantName && (
@@ -2536,34 +2564,39 @@ export default function EditOrder() {
                                 </span>
                               </div>
                             </TableCell>
-                            <TableCell className="py-2">
-                              <Input
-                                type="number"
-                                min="1"
-                                value={item.quantity}
-                                onChange={(e) => updateOrderItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
-                                className="w-16 h-8 text-center text-sm"
-                                data-testid={`input-quantity-${item.id}`}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    productSearchRef.current?.focus();
-                                  } else if (e.key === 'Tab') {
-                                    e.preventDefault();
-                                    const shippingCostInput = document.querySelector('[data-testid="input-shipping-cost"]') as HTMLInputElement;
-                                    shippingCostInput?.focus();
-                                  }
-                                }}
-                              />
+                            <TableCell className="text-center align-middle">
+                              <div className="flex justify-center">
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  value={item.quantity}
+                                  onChange={(e) => updateOrderItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
+                                  className="w-20 h-10 text-center"
+                                  data-testid={`input-quantity-${item.id}`}
+                                  onFocus={(e) => e.target.select()}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      productSearchRef.current?.focus();
+                                    } else if (e.key === 'Tab') {
+                                      e.preventDefault();
+                                      const shippingCostInput = document.querySelector('[data-testid="input-shipping-cost"]') as HTMLInputElement;
+                                      shippingCostInput?.focus();
+                                    }
+                                  }}
+                                />
+                              </div>
                             </TableCell>
-                            <TableCell className="py-2">
-                              <Input
-                                type="number"
-                                step="0.01"
-                                value={item.price}
-                                onChange={(e) => updateOrderItem(item.id, 'price', parseFloat(e.target.value) || 0)}
-                                className="w-full h-8 text-right text-sm"
-                                data-testid={`input-price-${item.id}`}
+                            <TableCell className="text-right align-middle">
+                              <div className="flex justify-end">
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={item.price}
+                                  onChange={(e) => updateOrderItem(item.id, 'price', parseFloat(e.target.value) || 0)}
+                                  className="w-28 h-10 text-right"
+                                  data-testid={`input-price-${item.id}`}
+                                  onFocus={(e) => e.target.select()}
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter' || e.key === 'Tab') {
                                     e.preventDefault();
@@ -2586,16 +2619,18 @@ export default function EditOrder() {
                                   }
                                 }}
                               />
+                              </div>
                             </TableCell>
                             {showDiscountColumn && (
-                              <TableCell className="py-2">
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  value={item.discount}
-                                  onChange={(e) => updateOrderItem(item.id, 'discount', parseFloat(e.target.value) || 0)}
-                                  className="w-full h-8 text-right text-sm"
-                                  data-testid={`input-discount-${item.id}`}
+                              <TableCell className="text-right align-middle">
+                                <div className="flex justify-end">
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    value={item.discount}
+                                    onChange={(e) => updateOrderItem(item.id, 'discount', parseFloat(e.target.value) || 0)}
+                                    className="w-28 h-10 text-right"
+                                    data-testid={`input-discount-${item.id}`}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === 'Tab') {
                                       e.preventDefault();
@@ -2615,18 +2650,20 @@ export default function EditOrder() {
                                       }
                                     }
                                   }}
-                                />
+                                  />
+                                </div>
                               </TableCell>
                             )}
                             {showVatColumn && (
-                              <TableCell className="py-2">
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  value={item.tax}
-                                  onChange={(e) => updateOrderItem(item.id, 'tax', parseFloat(e.target.value) || 0)}
-                                  className="w-full h-8 text-right text-sm"
-                                  data-testid={`input-vat-${item.id}`}
+                              <TableCell className="text-right align-middle">
+                                <div className="flex justify-end">
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    value={item.tax}
+                                    onChange={(e) => updateOrderItem(item.id, 'tax', parseFloat(e.target.value) || 0)}
+                                    className="w-28 h-10 text-right"
+                                    data-testid={`input-vat-${item.id}`}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === 'Tab') {
                                       e.preventDefault();
@@ -2639,18 +2676,19 @@ export default function EditOrder() {
                                     }
                                   }}
                                 />
+                                </div>
                               </TableCell>
                             )}
-                            <TableCell className="py-2 text-right font-semibold text-slate-900 dark:text-slate-100 text-sm whitespace-nowrap">
+                            <TableCell className="text-right font-semibold text-slate-900 dark:text-slate-100 align-middle">
                               {formatCurrency(item.total, form.watch('currency'))}
                             </TableCell>
-                            <TableCell className="py-2 text-center">
+                            <TableCell className="text-center">
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => removeOrderItem(item.id)}
-                                className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
+                                className="h-9 w-9 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
                                 data-testid={`button-remove-${item.id}`}
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -2688,11 +2726,11 @@ export default function EditOrder() {
         {/* AI Carton Packing Optimization Panel */}
         {orderItems.length > 0 && (
           <Card className="shadow-sm">
-            <CardHeader className="p-4 sm:p-6">
+            <CardHeader className="p-3 border-b">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                    <Box className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                    <Box className="h-4 w-4 text-blue-600" />
                     AI Carton Packing
                   </CardTitle>
                   <CardDescription className="text-xs sm:text-sm">
@@ -2722,7 +2760,7 @@ export default function EditOrder() {
             </CardHeader>
 
             {packingPlan && (
-              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
+              <CardContent className="p-3 space-y-3">
                 {/* Summary Cards */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   {/* Total Cartons */}
@@ -2901,14 +2939,14 @@ export default function EditOrder() {
 
         {/* Payment Details - Mobile Optimized */}
         <Card className="shadow-sm">
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+          <CardHeader className="p-3 border-b">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <CreditCard className="h-4 w-4 text-blue-600" />
               Payment Details
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm mt-1">Configure pricing and notes</CardDescription>
           </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
+          <CardContent className="p-3 space-y-3">
             {/* Discount Toggle Button */}
             <div>
               <Button
@@ -3258,11 +3296,11 @@ export default function EditOrder() {
         {/* Files Section */}
         {orderItems.length > 0 && (
           <Card className="shadow-sm">
-            <CardHeader className="p-4 sm:p-6">
+            <CardHeader className="p-3 border-b">
               <div className="flex items-start justify-between">
                 <div>
-                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                    <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                    <FileText className="h-4 w-4 text-blue-600" />
                     Files & Documents
                   </CardTitle>
                   <CardDescription className="text-xs sm:text-sm mt-1">
@@ -3292,7 +3330,7 @@ export default function EditOrder() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-6">
+            <CardContent className="p-3 space-y-3">
               {/* Files List Section */}
               <div className="space-y-4">
                 {/* Uploaded Files */}
@@ -3447,13 +3485,13 @@ export default function EditOrder() {
                   
                   {/* Order Location - Desktop Only */}
                   <Card className="shadow-sm">
-                    <CardHeader className="p-4">
-                      <CardTitle className="flex items-center gap-2 text-sm">
+                    <CardHeader className="p-3 border-b">
+                      <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                         <MapPin className="h-4 w-4 text-blue-600" />
                         Order Location
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-4 pt-0">
+                    <CardContent className="p-3">
                       <Input
                         placeholder="e.g., Prague Warehouse, Main Office"
                         value={form.watch('orderLocation') || ''}
@@ -3465,13 +3503,13 @@ export default function EditOrder() {
 
                   {/* Quick Settings Card */}
                   <Card className="shadow-sm">
-                    <CardHeader className="p-4">
-                      <CardTitle className="flex items-center gap-2 text-sm">
-                        <Package className="h-4 w-4 text-blue-600" />
+                    <CardHeader className="p-3 border-b">
+                      <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                        <Settings className="h-4 w-4 text-blue-600" />
                         Order Settings
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-4 pt-0 space-y-3">
+                    <CardContent className="p-3 space-y-3">
                       <div>
                         <Label htmlFor="currency" className="text-xs">Currency</Label>
                         <Select value={form.watch('currency')} onValueChange={(value) => form.setValue('currency', value as any)}>
@@ -3518,7 +3556,7 @@ export default function EditOrder() {
                       </div>
 
                       {/* Order Status and Payment Status side by side */}
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-2">
                         <div>
                           <Label htmlFor="orderStatus" className="text-xs">Order Status</Label>
                           <Select value={form.watch('orderStatus')} onValueChange={(value) => form.setValue('orderStatus', value as any)}>
@@ -3612,13 +3650,13 @@ export default function EditOrder() {
 
                   {/* Order Summary - Sticky */}
                   <Card className="shadow-sm">
-                    <CardHeader className="p-4">
-                      <CardTitle className="flex items-center gap-2 text-sm">
+                    <CardHeader className="p-3 border-b">
+                      <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                         <Calculator className="h-4 w-4 text-blue-600" />
                         Order Summary
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-4 pt-0 space-y-3">
+                    <CardContent className="p-3 space-y-3">
                     {/* Margin Analysis Section */}
                     {orderItems.length > 0 && (() => {
                       const totalLandingCost = orderItems.reduce((sum, item) => 
@@ -3743,13 +3781,13 @@ export default function EditOrder() {
 
           {/* Mobile Order Summary (bottom on mobile) */}
           <Card className="lg:hidden shadow-sm">
-            <CardHeader className="p-4">
-              <CardTitle className="flex items-center gap-2 text-base">
+            <CardHeader className="p-3 border-b">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                 <Calculator className="h-4 w-4 text-blue-600" />
                 Order Summary
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 pt-0 space-y-3">
+            <CardContent className="p-3 space-y-3">
               {/* Margin Analysis Section - Mobile */}
               {orderItems.length > 0 && (() => {
                 const totalLandingCost = orderItems.reduce((sum, item) => 
