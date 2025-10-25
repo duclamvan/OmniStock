@@ -663,13 +663,13 @@ export default function OrderDetails() {
 
           {/* Invoice - Order Items & Pricing */}
           <Card ref={invoiceCardRef}>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base px-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
                 <Package className="h-4 w-4" />
                 Invoice
               </CardTitle>
             </CardHeader>
-            <CardContent className="px-0 pt-0">
+            <CardContent className="px-0">
               {/* Order Items - Professional Invoice Layout */}
               <div className="divide-y divide-slate-200 dark:divide-slate-700">
                 {order.items?.map((item: any, index: number) => (
