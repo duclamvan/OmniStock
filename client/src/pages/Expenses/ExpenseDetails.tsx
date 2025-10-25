@@ -141,7 +141,7 @@ export default function ExpenseDetails() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/expenses')}
+            onClick={() => window.history.back()}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>

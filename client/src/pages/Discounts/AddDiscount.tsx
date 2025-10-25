@@ -288,7 +288,7 @@ export default function AddDiscount() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/discounts")}
+          onClick={() => window.history.back()}
           className="mb-4"
           data-testid="button-back"
         >

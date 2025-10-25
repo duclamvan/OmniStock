@@ -438,7 +438,7 @@ export default function AddReturn() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/returns")}
+          onClick={() => window.history.back()}
           className="mb-4"
           data-testid="button-back"
         >

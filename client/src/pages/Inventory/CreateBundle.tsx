@@ -914,7 +914,7 @@ export default function CreateBundle() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setLocation('/inventory/bundles')}
+            onClick={() => window.history.back()}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>

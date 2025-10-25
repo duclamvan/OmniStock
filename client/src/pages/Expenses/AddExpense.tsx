@@ -215,7 +215,7 @@ export default function AddExpense() {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  onClick={() => navigate('/expenses')}
+                  onClick={() => window.history.back()}
                   data-testid="button-back"
                 >
                   <ArrowLeft className="h-5 w-5" />

@@ -1641,7 +1641,7 @@ export default function ProductForm() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setLocation("/inventory")}
+                onClick={() => window.history.back()}
                 data-testid="button-back"
                 className="shrink-0"
               >

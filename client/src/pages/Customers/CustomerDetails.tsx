@@ -245,7 +245,7 @@ export default function CustomerDetails() {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => navigate("/customers")}
+                onClick={() => window.history.back()}
                 className="shrink-0"
                 data-testid="button-back"
               >

@@ -2256,7 +2256,7 @@ export default function ContinueReceiving() {
           <CardContent className="p-6 text-center">
             <Package className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
             <p className="text-muted-foreground">Shipment not found</p>
-            <Button variant="outline" className="mt-4" onClick={() => navigate('/receiving')}>
+            <Button variant="outline" className="mt-4" onClick={() => window.history.back()}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Receiving
             </Button>

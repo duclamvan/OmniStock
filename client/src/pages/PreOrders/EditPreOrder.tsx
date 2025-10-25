@@ -261,7 +261,7 @@ export default function EditPreOrder() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-3">
           <p className="text-slate-600">Pre-order not found</p>
-          <Button onClick={() => navigate('/orders/pre-orders')} data-testid="button-back-not-found">
+          <Button onClick={() => window.history.back()} data-testid="button-back-not-found">
             Go Back
           </Button>
         </div>
@@ -276,7 +276,7 @@ export default function EditPreOrder() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate('/orders/pre-orders')}
+          onClick={() => window.history.back()}
           data-testid="button-back"
         >
           <ArrowLeft className="h-4 w-4" />

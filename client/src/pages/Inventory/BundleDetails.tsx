@@ -200,11 +200,9 @@ export default function BundleDetails() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           {/* Title Section */}
           <div className="flex items-start sm:items-center gap-3">
-            <Link href="/inventory/bundles">
-              <Button variant="ghost" size="icon" className="shrink-0">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            </Link>
+            <Button variant="ghost" size="icon" className="shrink-0" onClick={() => window.history.back()}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
             <div className="flex-1 min-w-0">
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold flex items-center gap-2 flex-wrap">
                 <Package className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 shrink-0" />

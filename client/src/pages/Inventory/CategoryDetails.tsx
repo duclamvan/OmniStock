@@ -301,7 +301,7 @@ export default function CategoryDetails() {
     return (
       <div className="text-center py-12">
         <h2 className="text-xl font-semibold">Category not found</h2>
-        <Button className="mt-4" onClick={() => navigate('/inventory/categories')}>
+        <Button className="mt-4" onClick={() => window.history.back()}>
           Back to Categories
         </Button>
       </div>
@@ -316,7 +316,7 @@ export default function CategoryDetails() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/inventory/categories')}
+            onClick={() => window.history.back()}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>

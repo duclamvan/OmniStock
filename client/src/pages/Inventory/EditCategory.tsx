@@ -112,7 +112,7 @@ export default function EditCategory() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate('/inventory/categories')}
+          onClick={() => window.history.back()}
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>

@@ -1023,7 +1023,7 @@ export default function ItemsToStore() {
             <p className="text-lg font-medium text-center mb-6">No items pending storage</p>
             <Button
               variant="outline"
-              onClick={() => navigate('/receiving')}
+              onClick={() => window.history.back()}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Receiving
@@ -1039,7 +1039,7 @@ export default function ItemsToStore() {
       {/* Mobile Header */}
       <div className="sticky top-0 z-40 bg-white border-b shadow-sm">
         <div className="flex items-center justify-between p-4">
-          <button onClick={() => navigate('/receiving')} className="p-2 -ml-2">
+          <button onClick={() => window.history.back()} className="p-2 -ml-2">
             <ArrowLeft className="h-6 w-6" />
           </button>
           <h1 className="text-lg font-semibold">Items to Store</h1>

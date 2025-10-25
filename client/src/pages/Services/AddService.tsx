@@ -399,7 +399,7 @@ export default function AddService() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/services')}
+              onClick={() => window.history.back()}
               data-testid="button-back"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />

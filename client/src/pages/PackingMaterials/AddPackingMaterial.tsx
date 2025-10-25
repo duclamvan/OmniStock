@@ -229,12 +229,10 @@ export default function AddPackingMaterial() {
   return (
     <div className="container mx-auto py-6 max-w-5xl">
       <div className="mb-6">
-        <Link href="/packing-materials">
-          <Button variant="ghost" size="sm" data-testid="button-back">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Packing Materials
-          </Button>
-        </Link>
+        <Button variant="ghost" size="sm" data-testid="button-back" onClick={() => window.history.back()}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Packing Materials
+        </Button>
       </div>
 
       <Card>

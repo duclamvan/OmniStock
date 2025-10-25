@@ -131,7 +131,7 @@ export default function AddWarehouse() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/warehouses")}
+            onClick={() => window.history.back()}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Warehouses

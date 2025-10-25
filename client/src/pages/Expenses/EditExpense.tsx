@@ -176,7 +176,7 @@ export default function EditExpense() {
     return (
       <div className="text-center py-12">
         <p className="text-slate-600">Expense not found</p>
-        <Button onClick={() => navigate('/expenses')} className="mt-4">
+        <Button onClick={() => window.history.back()} className="mt-4">
           Back to Expenses
         </Button>
       </div>
@@ -190,7 +190,7 @@ export default function EditExpense() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate('/expenses')}
+          onClick={() => window.history.back()}
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>

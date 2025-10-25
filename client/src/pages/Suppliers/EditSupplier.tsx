@@ -249,7 +249,7 @@ export default function EditSupplier() {
         <Button 
           variant="outline" 
           size="icon" 
-          onClick={() => setLocation("/suppliers")}
+          onClick={() => window.history.back()}
           data-testid="button-back"
         >
           <ArrowLeft className="h-4 w-4" />

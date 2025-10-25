@@ -118,7 +118,7 @@ export default function AddCategory() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate('/inventory/categories')}
+          onClick={() => window.history.back()}
           data-testid="button-back"
         >
           <ArrowLeft className="h-4 w-4" />

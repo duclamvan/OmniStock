@@ -361,7 +361,7 @@ export default function EditCustomer() {
         <p className="text-slate-600">Customer not found</p>
         <Button
           variant="outline"
-          onClick={() => navigate("/customers")}
+          onClick={() => window.history.back()}
           className="mt-4"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -378,7 +378,7 @@ export default function EditCustomer() {
           <Button
             variant="outline"
             size="icon"
-            onClick={() => navigate("/customers")}
+            onClick={() => window.history.back()}
             data-testid="button-back"
           >
             <ArrowLeft className="h-4 w-4" />

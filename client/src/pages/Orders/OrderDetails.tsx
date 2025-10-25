@@ -89,7 +89,6 @@ export default function OrderDetails() {
   const { id } = useParams();
   const [location, navigate] = useLocation();
   const { toast } = useToast();
-  const previousPath = useRef<string>("/orders");
   const invoiceCardRef = useRef<HTMLDivElement>(null);
   const [showReturnDialog, setShowReturnDialog] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -177,14 +176,6 @@ export default function OrderDetails() {
       });
     },
   });
-
-  // Track where the user came from
-  useEffect(() => {
-    const referrer = sessionStorage.getItem('orderDetailsReferrer');
-    if (referrer) {
-      previousPath.current = referrer;
-    }
-  }, []);
 
   // Fetch order data with optimized caching
   const { data: order, isLoading } = useQuery<any>({
@@ -600,7 +591,7 @@ export default function OrderDetails() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => navigate(previousPath.current)}
+                onClick={() => window.history.back()}
                 className="mt-1"
               >
                 <ArrowLeft className="h-5 w-5" />
