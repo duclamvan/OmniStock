@@ -13,9 +13,9 @@ import { FixedSizeList as List } from "react-window";
 import { useToast } from "@/hooks/use-toast";
 
 // Lazy load heavy chart components to reduce initial bundle size
-const RevenueChart = lazy(() => import("./charts/RevenueChart").then(m => ({ default: m.RevenueChart })));
-const ExpensesChart = lazy(() => import("./charts/ExpensesChart").then(m => ({ default: m.ExpensesChart })));
-const YearlyChart = lazy(() => import("./charts/YearlyChart").then(m => ({ default: m.YearlyChart })));
+const RevenueChart = lazy(() => import("@/components/charts/RevenueChart").then(m => ({ default: m.RevenueChart })));
+const ExpensesChart = lazy(() => import("@/components/charts/ExpensesChart").then(m => ({ default: m.ExpensesChart })));
+const YearlyChart = lazy(() => import("@/components/charts/YearlyChart").then(m => ({ default: m.YearlyChart })));
 
 // Define types for dashboard data
 interface DashboardMetrics {
