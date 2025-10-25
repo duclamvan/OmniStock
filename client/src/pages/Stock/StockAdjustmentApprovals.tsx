@@ -451,6 +451,7 @@ export default function StockAdjustmentApprovals() {
               data={filteredRequests}
               searchable={false}
               filterable={false}
+              getRowKey={(request) => request.id}
             />
           )}
         </CardContent>
