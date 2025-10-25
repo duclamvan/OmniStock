@@ -55,8 +55,6 @@ export default function StockLookup() {
   const [selectedLocation, setSelectedLocation] = useState<ProductLocation | null>(null);
   const [barcodeMode, setBarcodeMode] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState("");
-  const [quickAddDialogOpen, setQuickAddDialogOpen] = useState(false);
-  const [scannedProduct, setScannedProduct] = useState<EnrichedProduct | null>(null);
   const isMobile = useIsMobile();
 
   // Fetch all products
@@ -167,25 +165,24 @@ export default function StockLookup() {
   const handleBarcodeScan = (barcode: string) => {
     if (!barcode.trim()) return;
 
-    // Find product by barcode (check both product barcode and variant barcodes)
+    // Use barcode as search query to find and filter products
+    setSearchQuery(barcode);
+    setBarcodeInput("");
+    
+    // Find matching product to auto-expand
     const product = products.find(p => 
       p.barcode?.toLowerCase() === barcode.toLowerCase() ||
       p.sku?.toLowerCase() === barcode.toLowerCase()
     );
 
     if (product) {
-      setScannedProduct(product);
       setSelectedProduct(product.id);
-      setQuickAddDialogOpen(true);
-      setBarcodeInput(""); // Clear for next scan
-    } else {
-      alert(`No product found with barcode: ${barcode}`);
-      setBarcodeInput("");
     }
   };
 
   const handleBarcodeKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
+      e.preventDefault();
       handleBarcodeScan(barcodeInput);
     }
   };
@@ -218,7 +215,7 @@ export default function StockLookup() {
                 <Barcode className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-600" />
                 <Input
                   type="text"
-                  placeholder="Scan or enter barcode to add stock..."
+                  placeholder="Scan barcode to search product..."
                   value={barcodeInput}
                   onChange={(e) => setBarcodeInput(e.target.value)}
                   onKeyPress={handleBarcodeKeyPress}
@@ -233,7 +230,7 @@ export default function StockLookup() {
                   <span>Ready to scan</span>
                 </div>
                 <span>•</span>
-                <span>Press Enter after scanning</span>
+                <span>Scan to find product</span>
               </div>
             </div>
           ) : (
@@ -618,35 +615,6 @@ export default function StockLookup() {
             </Dialog>
           )}
         </>
-      )}
-
-      {/* Quick Add Stock Dialog (from barcode scan) */}
-      {scannedProduct && selectedProductData && (
-        <StockAdjustmentDialog
-          open={quickAddDialogOpen}
-          onOpenChange={(open) => {
-            setQuickAddDialogOpen(open);
-            if (!open) {
-              // Clear scanned product when dialog closes
-              setScannedProduct(null);
-              setSelectedProduct(null);
-              setSelectedLocation(null);
-            }
-          }}
-          productId={scannedProduct.id}
-          productName={scannedProduct.name}
-          location={selectedProductData.locations && selectedProductData.locations.length > 0 ? selectedProductData.locations[0] : null}
-          onSuccess={() => {
-            setScannedProduct(null);
-            setSelectedProduct(null);
-            setSelectedLocation(null);
-            // Refocus barcode input for next scan
-            setTimeout(() => {
-              const barcodeInput = document.querySelector('[data-testid="input-barcode-scan"]') as HTMLInputElement;
-              if (barcodeInput) barcodeInput.focus();
-            }, 100);
-          }}
-        />
       )}
 
       {/* Warehouse Management Dialogs */}
