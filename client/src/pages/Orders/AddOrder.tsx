@@ -4459,7 +4459,7 @@ export default function AddOrder() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {productVariants.map((variant) => (
+                  {productVariants.map((variant, index) => (
                     <TableRow key={variant.id}>
                       <TableCell className="font-medium">{variant.name}</TableCell>
                       <TableCell className="text-muted-foreground font-mono text-xs">{variant.barcode || '-'}</TableCell>
@@ -4477,6 +4477,23 @@ export default function AddOrder() {
                             ...prev,
                             [variant.id]: Math.max(0, parseInt(e.target.value) || 0)
                           }))}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const isLastVariant = index === productVariants.length - 1;
+                              
+                              if (isLastVariant) {
+                                // On last variant, trigger add variants
+                                addVariantsToOrder();
+                              } else {
+                                // Move to next variant input
+                                const nextVariant = productVariants[index + 1];
+                                const nextInput = document.querySelector(`[data-testid="input-variant-quantity-${nextVariant.id}"]`) as HTMLInputElement;
+                                nextInput?.focus();
+                                nextInput?.select();
+                              }
+                            }
+                          }}
                           className="text-right"
                           data-testid={`input-variant-quantity-${variant.id}`}
                         />
