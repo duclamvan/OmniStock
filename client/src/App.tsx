@@ -81,6 +81,7 @@ import ReviewApprove from "@/pages/Receiving/ReviewApprove";
 import ItemsToStore from "@/pages/Receiving/ItemsToStore";
 import Login from "@/pages/Auth/Login";
 import Register from "@/pages/Auth/Register";
+import CustomReport from "@/pages/Reports/CustomReport";
 // Legacy imports - commented out
 // import AllImports from "@/pages/Imports/AllImports";
 // import AddImportOrder from "@/pages/Imports/AddImportOrder";
@@ -194,6 +195,7 @@ function Router() {
         <Route path="/receiving/receipt/:id" component={ContinueReceiving} />
         <Route path="/receiving/details/:id" component={ReceiptDetails} />
         <Route path="/receiving/approve/:id" component={ReviewApprove} />
+        <Route path="/reports/custom" component={CustomReport} />
         <Route path="/reports">
           {() => <div>Reports page coming soon</div>}
         </Route>
