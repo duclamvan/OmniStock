@@ -3769,6 +3769,17 @@ Important:
     }
   });
 
+  // Fetch all order items for analytics (e.g., units sold calculation)
+  app.get('/api/order-items/all', async (req, res) => {
+    try {
+      const items = await storage.getAllOrderItems();
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching all order items:", error);
+      res.status(500).json({ message: "Failed to fetch order items" });
+    }
+  });
+
   // Pick & Pack endpoints (OPTIMIZED - eliminates N+1 queries)
   app.get('/api/orders/pick-pack', async (req, res) => {
     try {

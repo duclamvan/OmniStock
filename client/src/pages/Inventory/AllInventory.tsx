@@ -72,6 +72,7 @@ export default function AllInventory() {
       name: true,
       categoryId: true,
       quantity: true,
+      unitsSold: true,
       priceEur: true,
       status: true,
       actions: true,
@@ -115,7 +116,28 @@ export default function AllInventory() {
     queryKey: ['/api/warehouses'],
   });
 
+  // Fetch order items to calculate units sold per product
+  const { data: orderItems = [] } = useQuery({
+    queryKey: ['/api/order-items/all'],
+    queryFn: async () => {
+      const response = await fetch('/api/order-items/all', {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        return [];
+      }
+      return response.json();
+    },
+  });
 
+  // Calculate units sold per product
+  const unitsSoldByProduct: { [productId: string]: number } = {};
+  (orderItems as any[])?.forEach((item: any) => {
+    const productId = item.productId;
+    if (productId) {
+      unitsSoldByProduct[productId] = (unitsSoldByProduct[productId] || 0) + (item.quantity || 0);
+    }
+  });
 
   // Error handling
   useEffect(() => {
@@ -233,6 +255,7 @@ export default function AllInventory() {
       Barcode: product.barcode || '',
       Category: (categories as any[])?.find((c: any) => String(c.id) === product.categoryId)?.name || '',
       Quantity: product.quantity,
+      'Units Sold': unitsSoldByProduct[product.id] || 0,
       'Low Stock Alert': product.lowStockAlert,
       'Price EUR': product.priceEur,
       'Price CZK': product.priceCzk,
@@ -255,6 +278,7 @@ export default function AllInventory() {
       { wch: 15 }, // Barcode
       { wch: 20 }, // Category
       { wch: 10 }, // Quantity
+      { wch: 12 }, // Units Sold
       { wch: 15 }, // Low Stock Alert
       { wch: 12 }, // Price EUR
       { wch: 12 }, // Price CZK
@@ -541,6 +565,21 @@ export default function AllInventory() {
       header: "Qty",
       sortable: true,
       className: "text-right w-[80px]",
+    },
+    {
+      key: "unitsSold",
+      header: "Units Sold",
+      sortable: true,
+      className: "text-right w-[100px]",
+      cell: (product) => {
+        const sold = unitsSoldByProduct[product.id] || 0;
+        return (
+          <div className="flex items-center justify-end gap-1.5">
+            <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
+            <span className="font-semibold text-emerald-700">{sold.toLocaleString()}</span>
+          </div>
+        );
+      },
     },
     {
       key: "lowStockAlert",
@@ -1060,6 +1099,7 @@ export default function AllInventory() {
                   <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Stock</div>
                   {[
                     { key: 'quantity', label: 'Qty' },
+                    { key: 'unitsSold', label: 'Units Sold' },
                     { key: 'lowStockAlert', label: 'Low Stock Alert' },
                     { key: 'status', label: 'Status' },
                     { key: 'warehouseId', label: 'Warehouse' },
@@ -1376,6 +1416,7 @@ export default function AllInventory() {
                   <p className="text-muted-foreground">• Barcode</p>
                   <p className="text-muted-foreground">• Category</p>
                   <p className="text-muted-foreground">• Quantity</p>
+                  <p className="text-muted-foreground">• Units Sold</p>
                   <p className="text-muted-foreground">• Low Stock Alert</p>
                   <p className="text-muted-foreground">• Price EUR</p>
                   <p className="text-muted-foreground">• Price CZK</p>
