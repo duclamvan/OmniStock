@@ -1272,7 +1272,8 @@ export default function EditOrder() {
     // Convert to array of { category, products } and limit total products
     const categorizedProducts: Array<{ category: string; products: any[] }> = [];
     let totalProductsCount = 0;
-    const maxTotalProducts = 30; // Increased limit to accommodate bundles and variants
+    const hasSearchTerm = debouncedProductSearch && debouncedProductSearch.length >= 2;
+    const maxTotalProducts = hasSearchTerm ? 30 : Number.MAX_SAFE_INTEGER; // Limit to 30 when searching, show ALL when empty
 
     // Sort categories alphabetically, but bundles last
     const sortedCategories = Object.keys(groupedByCategory).sort((a, b) => {

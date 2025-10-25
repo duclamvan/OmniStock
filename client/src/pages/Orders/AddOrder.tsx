@@ -516,6 +516,12 @@ export default function AddOrder() {
     staleTime: 5 * 60 * 1000, // 5 minutes - services don't change frequently
   });
 
+  // Fetch all bundles for real-time filtering
+  const { data: allBundles } = useQuery({
+    queryKey: ['/api/bundles'],
+    staleTime: 5 * 60 * 1000, // 5 minutes - bundles don't change frequently
+  });
+
   // Fetch all customers for real-time filtering
   const { data: allCustomers } = useQuery({
     queryKey: ['/api/customers'],
@@ -1273,10 +1279,11 @@ export default function AddOrder() {
     return frequency;
   }, [allOrders]);
 
-  // Filter products and services with enhanced fuzzy search and smart scoring (memoized for performance)
+  // Filter products, services, and bundles with enhanced fuzzy search and smart scoring (memoized for performance)
   const filteredProducts = useMemo(() => {
     const scoredItems: Array<any> = [];
-    const maxTotalItems = 8; // Limit to top 8 results for compact view
+    const searchTerm = debouncedProductSearch;
+    const hasSearchTerm = searchTerm && searchTerm.length >= 2;
 
     // Helper function to calculate match score
     const calculateScore = (item: any, searchTerm: string, matcher: (text: string) => boolean) => {
@@ -1335,17 +1342,17 @@ export default function AddOrder() {
       return score;
     };
 
-    const searchTerm = debouncedProductSearch;
-    const matcher = searchTerm && searchTerm.length >= 2 ? createVietnameseSearchMatcher(searchTerm) : () => true;
+    const matcher = hasSearchTerm ? createVietnameseSearchMatcher(searchTerm) : () => true;
 
     // Process products
     if (Array.isArray(allProducts)) {
       allProducts.forEach((product: any) => {
-        if (!searchTerm || searchTerm.length < 2) {
+        if (!hasSearchTerm) {
           // No search term - include all products with frequency as score
           scoredItems.push({
             ...product,
             isService: false,
+            isBundle: false,
             score: productFrequency[product.id] || 0
           });
         } else {
@@ -1354,6 +1361,7 @@ export default function AddOrder() {
             scoredItems.push({
               ...product,
               isService: false,
+              isBundle: false,
               score
             });
           }
@@ -1364,11 +1372,12 @@ export default function AddOrder() {
     // Process services
     if (Array.isArray(allServices)) {
       allServices.forEach((service: any) => {
-        if (!searchTerm || searchTerm.length < 2) {
+        if (!hasSearchTerm) {
           // No search term - include all services
           scoredItems.push({
             ...service,
             isService: true,
+            isBundle: false,
             score: 0
           });
         } else {
@@ -1377,6 +1386,32 @@ export default function AddOrder() {
             scoredItems.push({
               ...service,
               isService: true,
+              isBundle: false,
+              score
+            });
+          }
+        }
+      });
+    }
+
+    // Process bundles
+    if (Array.isArray(allBundles)) {
+      allBundles.forEach((bundle: any) => {
+        if (!hasSearchTerm) {
+          // No search term - include all bundles
+          scoredItems.push({
+            ...bundle,
+            isService: false,
+            isBundle: true,
+            score: 0
+          });
+        } else {
+          const score = calculateScore(bundle, searchTerm, matcher);
+          if (score > 0) {
+            scoredItems.push({
+              ...bundle,
+              isService: false,
+              isBundle: true,
               score
             });
           }
@@ -1392,9 +1427,9 @@ export default function AddOrder() {
       return (a.name || '').localeCompare(b.name || '');
     });
 
-    // Return top 10 items (always return an array)
-    return scoredItems.slice(0, maxTotalItems) || [];
-  }, [allProducts, allServices, debouncedProductSearch, productFrequency]);
+    // Return results: limit to 8 when searching, show ALL when empty (no limit)
+    return hasSearchTerm ? scoredItems.slice(0, 8) : scoredItems;
+  }, [allProducts, allServices, allBundles, debouncedProductSearch, productFrequency]);
 
   // Filter customers with Vietnamese search (memoized for performance)
   const filteredCustomers = useMemo(() => {
@@ -2908,7 +2943,8 @@ export default function AddOrder() {
                   {filteredProducts.map((product: any, index: number) => {
                     const frequency = productFrequency[product.id] || 0;
                     const isService = product.isService;
-                    const isBestMatch = index === 0;
+                    const isBundle = product.isBundle;
+                    const isBestMatch = index === 0 && debouncedProductSearch.length >= 2;
                     const isKeyboardSelected = index === selectedProductIndex;
                     
                     return (
@@ -2924,12 +2960,13 @@ export default function AddOrder() {
                           addProductToOrder(product);
                           setSelectedProductIndex(0);
                         }}
-                        data-testid={`${isService ? 'service' : 'product'}-item-${product.id}`}
+                        data-testid={`${isService ? 'service' : isBundle ? 'bundle' : 'product'}-item-${product.id}`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               {isService && <Wrench className="h-4 w-4 text-orange-500" />}
+                              {isBundle && <Box className="h-4 w-4 text-purple-500" />}
                               <div className="font-medium text-slate-900">{product.name}</div>
                               {isBestMatch && (
                                 <Badge variant="default" className="text-xs px-1.5 py-0 bg-blue-600">
@@ -2941,16 +2978,24 @@ export default function AddOrder() {
                                   Service
                                 </Badge>
                               )}
-                              {!isService && frequency > 0 && (
+                              {isBundle && (
+                                <Badge variant="outline" className="text-xs px-1.5 py-0 border-purple-500 text-purple-600">
+                                  Bundle
+                                </Badge>
+                              )}
+                              {!isService && !isBundle && frequency > 0 && (
                                 <Badge variant="secondary" className="text-xs px-1.5 py-0">
                                   {frequency}x
                                 </Badge>
                               )}
                             </div>
-                            {!isService && (
+                            {!isService && !isBundle && (
                               <div className="text-sm text-slate-500">SKU: {product.sku}</div>
                             )}
                             {isService && product.description && (
+                              <div className="text-sm text-slate-500">{product.description}</div>
+                            )}
+                            {isBundle && product.description && (
                               <div className="text-sm text-slate-500">{product.description}</div>
                             )}
                           </div>
