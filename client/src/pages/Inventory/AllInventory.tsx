@@ -11,9 +11,15 @@ import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
-import { formatCurrency } from "@/lib/currencyUtils";
+import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft, Sparkles, TrendingUp } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft, Sparkles, TrendingUp, Filter, PackageX, DollarSign, Settings, Check } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import * as XLSX from 'xlsx';
 import {
   DropdownMenu,
@@ -61,11 +67,15 @@ export default function AllInventory() {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
 
-  // Column visibility state with localStorage
+  // Column visibility state with localStorage persistence
   const [columnVisibility, setColumnVisibility] = useState<{ [key: string]: boolean }>(() => {
-    const saved = localStorage.getItem('inventory-visible-columns');
+    const saved = localStorage.getItem('inventoryVisibleColumns');
     if (saved) {
-      return JSON.parse(saved);
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return {};
+      }
     }
     // Default visible columns
     return {
@@ -82,7 +92,7 @@ export default function AllInventory() {
       importCostUsd: false,
       importCostCzk: false,
       importCostEur: false,
-      sku: false,
+      sku: true,
       barcode: false,
       supplierId: false,
       warehouseId: false,
@@ -91,7 +101,7 @@ export default function AllInventory() {
 
   // Save to localStorage whenever visibility changes
   useEffect(() => {
-    localStorage.setItem('inventory-visible-columns', JSON.stringify(columnVisibility));
+    localStorage.setItem('inventoryVisibleColumns', JSON.stringify(columnVisibility));
   }, [columnVisibility]);
 
   const { data: products = [], isLoading, error } = useQuery({
@@ -868,11 +878,23 @@ export default function AllInventory() {
     setShowDeleteDialog(false);
   };
 
-  // Remove loading state to prevent UI refresh indicators
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[600px]">
+        <div className="text-center">
+          <div className="relative w-16 h-16 mx-auto mb-6">
+            <div className="absolute inset-0 border-4 border-cyan-200 dark:border-cyan-800 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-cyan-600 dark:border-cyan-400 rounded-full border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-slate-600 dark:text-slate-400 font-medium">Loading inventory...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Header */}
+    <div className="space-y-6">
+      {/* Header Section */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           {showArchive && (
@@ -886,9 +908,16 @@ export default function AllInventory() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
           )}
-          <h1 className="text-mobile-2xl font-bold text-slate-900">
-            {showArchive ? "Archive" : "Inventory"}
-          </h1>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+              {showArchive ? "Archived Products" : "Inventory"}
+            </h1>
+            {!showArchive && (
+              <p className="text-slate-600 dark:text-slate-400 mt-1">
+                Manage your product catalog and inventory levels
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           {/* Archive dropdown - always visible */}
@@ -953,58 +982,124 @@ export default function AllInventory() {
 
       {/* Stats Cards */}
       {!showArchive && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center">
-                <Package className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
-                <div className="ml-3 sm:ml-4">
-                  <p className="text-mobile-sm font-medium text-slate-600">Total Products</p>
-                  <p className="text-mobile-xl font-bold text-slate-900">{filteredProducts?.length || 0}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center">
-                <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
-                <div className="ml-3 sm:ml-4">
-                  <p className="text-mobile-sm font-medium text-slate-600">Low Stock</p>
-                  <p className="text-mobile-xl font-bold text-slate-900">
-                    {filteredProducts?.filter((p: any) => p.quantity <= p.lowStockAlert).length || 0}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Total Products */}
+          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                    Total Products
                   </p>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
+                          {formatCompactNumber(filteredProducts?.length || 0)}
+                        </p>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="font-mono">{(filteredProducts?.length || 0).toLocaleString()} products</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
+                  <Package className="h-7 w-7 text-cyan-600 dark:text-cyan-400" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center">
-                <Package className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
-                <div className="ml-3 sm:ml-4">
-                  <p className="text-mobile-sm font-medium text-slate-600">Categories</p>
-                  <p className="text-mobile-xl font-bold text-slate-900">{(categories as any[])?.length || 0}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center">
-                <Package className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
-                <div className="ml-3 sm:ml-4">
-                  <p className="text-mobile-sm font-medium text-slate-600">Total Value</p>
-                  <p className="text-mobile-lg font-bold text-slate-900 break-all">
-                    {formatCurrency(
-                      filteredProducts?.reduce((sum: number, p: any) => 
-                        sum + (parseFloat(p.priceEur || '0') * p.quantity), 0) || 0, 
-                      'EUR'
-                    )}
+          {/* Low Stock */}
+          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                    Low Stock
                   </p>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <p className="text-3xl font-bold text-amber-600 dark:text-amber-400 truncate cursor-help">
+                          {formatCompactNumber(filteredProducts?.filter((p: any) => p.quantity > 0 && p.quantity <= p.lowStockAlert).length || 0)}
+                        </p>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="font-mono">{(filteredProducts?.filter((p: any) => p.quantity > 0 && p.quantity <= p.lowStockAlert).length || 0).toLocaleString()} items</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950">
+                  <AlertTriangle className="h-7 w-7 text-amber-600 dark:text-amber-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Out of Stock */}
+          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                    Out of Stock
+                  </p>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <p className="text-3xl font-bold text-red-600 dark:text-red-400 truncate cursor-help">
+                          {formatCompactNumber(filteredProducts?.filter((p: any) => p.quantity === 0).length || 0)}
+                        </p>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="font-mono">{(filteredProducts?.filter((p: any) => p.quantity === 0).length || 0).toLocaleString()} items</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950">
+                  <PackageX className="h-7 w-7 text-red-600 dark:text-red-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Total Value */}
+          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                    Total Value
+                  </p>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <p className="text-2xl font-bold text-purple-600 dark:text-purple-400 truncate cursor-help">
+                          {formatCurrency(
+                            filteredProducts?.reduce((sum: number, p: any) => 
+                              sum + (parseFloat(p.priceEur || '0') * p.quantity), 0) || 0, 
+                            'EUR'
+                          )}
+                        </p>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="font-mono">
+                          {formatCurrency(
+                            filteredProducts?.reduce((sum: number, p: any) => 
+                              sum + (parseFloat(p.priceEur || '0') * p.quantity), 0) || 0, 
+                            'EUR'
+                          )}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
+                  <DollarSign className="h-7 w-7 text-purple-600 dark:text-purple-400" />
                 </div>
               </div>
             </CardContent>
@@ -1012,23 +1107,34 @@ export default function AllInventory() {
         </div>
       )}
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 touch-target"
-                data-testid="input-search-products"
-              />
+      {/* Filters & Search */}
+      <Card className="border-slate-200 dark:border-slate-800">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-2">
+            <Filter className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+            <CardTitle className="text-lg">Filters & Search</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Search */}
+            <div className="md:col-span-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-10 border-slate-300 dark:border-slate-700 focus:border-cyan-500 dark:focus:border-cyan-500"
+                  data-testid="input-search-products"
+                />
+              </div>
             </div>
+
+            {/* Category Filter */}
             <div className="flex gap-2">
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full sm:w-48 touch-target" data-testid="select-category-filter">
+                <SelectTrigger className="h-10 border-slate-300 dark:border-slate-700" data-testid="select-category-filter">
                   <SelectValue placeholder="Filter by category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1045,7 +1151,7 @@ export default function AllInventory() {
                   variant="ghost"
                   size="icon"
                   onClick={() => setCategoryFilter("all")}
-                  className="touch-target"
+                  className="h-10 w-10"
                   data-testid="button-clear-category-filter"
                 >
                   <X className="h-4 w-4" />
@@ -1053,11 +1159,11 @@ export default function AllInventory() {
               )}
             </div>
             
-            {/* Column Selector */}
+            {/* Column Visibility Settings */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="w-full sm:w-auto touch-target" data-testid="button-columns-selector">
-                  <SlidersHorizontal className="mr-2 h-4 w-4" />
+                <Button variant="outline" className="h-10 border-slate-300 dark:border-slate-700" data-testid="button-columns-selector">
+                  <Settings className="mr-2 h-4 w-4" />
                   Columns
                 </Button>
               </DropdownMenuTrigger>
@@ -1075,8 +1181,8 @@ export default function AllInventory() {
                   ].map(col => (
                     <DropdownMenuItem
                       key={col.key}
-                      className="flex items-center gap-2 cursor-pointer"
-                      onSelect={(e) => {
+                      className="cursor-pointer"
+                      onClick={(e) => {
                         e.preventDefault();
                         if (col.key !== 'name') {
                           toggleColumnVisibility(col.key);
@@ -1084,12 +1190,12 @@ export default function AllInventory() {
                       }}
                       data-testid={`menuitem-column-${col.key}`}
                     >
-                      <Checkbox
-                        checked={columnVisibility[col.key] !== false}
-                        disabled={col.key === 'name'}
-                        data-testid={`checkbox-column-${col.key}`}
-                      />
-                      <span className={col.key === 'name' ? 'text-muted-foreground' : ''}>{col.label}</span>
+                      <div className="flex items-center justify-between w-full">
+                        <span>{col.label}</span>
+                        {columnVisibility[col.key] !== false && col.key !== 'name' && (
+                          <Check className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                        )}
+                      </div>
                     </DropdownMenuItem>
                   ))}
                   
@@ -1106,18 +1212,19 @@ export default function AllInventory() {
                   ].map(col => (
                     <DropdownMenuItem
                       key={col.key}
-                      className="flex items-center gap-2 cursor-pointer"
-                      onSelect={(e) => {
+                      className="cursor-pointer"
+                      onClick={(e) => {
                         e.preventDefault();
                         toggleColumnVisibility(col.key);
                       }}
                       data-testid={`menuitem-column-${col.key}`}
                     >
-                      <Checkbox
-                        checked={columnVisibility[col.key] !== false}
-                        data-testid={`checkbox-column-${col.key}`}
-                      />
-                      <span>{col.label}</span>
+                      <div className="flex items-center justify-between w-full">
+                        <span>{col.label}</span>
+                        {columnVisibility[col.key] !== false && (
+                          <Check className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                        )}
+                      </div>
                     </DropdownMenuItem>
                   ))}
                   
@@ -1134,18 +1241,19 @@ export default function AllInventory() {
                   ].map(col => (
                     <DropdownMenuItem
                       key={col.key}
-                      className="flex items-center gap-2 cursor-pointer"
-                      onSelect={(e) => {
+                      className="cursor-pointer"
+                      onClick={(e) => {
                         e.preventDefault();
                         toggleColumnVisibility(col.key);
                       }}
                       data-testid={`menuitem-column-${col.key}`}
                     >
-                      <Checkbox
-                        checked={columnVisibility[col.key] !== false}
-                        data-testid={`checkbox-column-${col.key}`}
-                      />
-                      <span>{col.label}</span>
+                      <div className="flex items-center justify-between w-full">
+                        <span>{col.label}</span>
+                        {columnVisibility[col.key] !== false && (
+                          <Check className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                        )}
+                      </div>
                     </DropdownMenuItem>
                   ))}
                   
@@ -1159,8 +1267,8 @@ export default function AllInventory() {
                   ].map(col => (
                     <DropdownMenuItem
                       key={col.key}
-                      className="flex items-center gap-2 cursor-pointer"
-                      onSelect={(e) => {
+                      className="cursor-pointer"
+                      onClick={(e) => {
                         e.preventDefault();
                         if (col.key !== 'actions') {
                           toggleColumnVisibility(col.key);
@@ -1168,12 +1276,12 @@ export default function AllInventory() {
                       }}
                       data-testid={`menuitem-column-${col.key}`}
                     >
-                      <Checkbox
-                        checked={columnVisibility[col.key] !== false}
-                        disabled={col.key === 'actions'}
-                        data-testid={`checkbox-column-${col.key}`}
-                      />
-                      <span className={col.key === 'actions' ? 'text-muted-foreground' : ''}>{col.label}</span>
+                      <div className="flex items-center justify-between w-full">
+                        <span>{col.label}</span>
+                        {columnVisibility[col.key] !== false && col.key !== 'actions' && (
+                          <Check className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                        )}
+                      </div>
                     </DropdownMenuItem>
                   ))}
                 </ScrollArea>
@@ -1184,7 +1292,7 @@ export default function AllInventory() {
       </Card>
 
       {/* Products Table */}
-      <Card>
+      <Card className="border-slate-200 dark:border-slate-800">
         <CardContent className="p-0 sm:p-6">
           {/* Mobile Card View */}
           <div className="sm:hidden space-y-3 p-3">

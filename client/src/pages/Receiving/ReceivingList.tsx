@@ -16,6 +16,12 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -85,6 +91,7 @@ import { Link, useLocation } from "wouter";
 import { format, differenceInHours, differenceInDays, isToday, isYesterday, isThisWeek, isThisMonth } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
+import { formatCompactNumber } from "@/lib/currencyUtils";
 
 // Memoized status icon component to avoid recreating functions on every render
 const StatusIcon = memo(({ status }: { status: string }): ReactNode => {
@@ -1237,7 +1244,7 @@ export default function ReceivingList() {
     const urgent = isUrgent(shipment); // Use the isUrgent function
 
     return (
-      <Card className={`hover:shadow-md transition-shadow ${urgent ? 'border-orange-300 bg-orange-50/50 dark:bg-orange-950/20' : ''}`}>
+      <Card className={`border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow ${urgent ? 'bg-orange-50/50 dark:bg-orange-950/20' : ''}`}>
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
             {!hasReceipt && (
@@ -1409,12 +1416,130 @@ export default function ReceivingList() {
   const isLoading = isLoadingToReceive || isLoadingReceiving || isLoadingStorage || isLoadingCompleted || isLoadingReceipts;
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Receiving</h1>
-        <p className="text-muted-foreground">
-          Manage incoming shipments and verify received items
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header Section */}
+      <div>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+          Receiving List
+        </h1>
+        <p className="text-slate-600 dark:text-slate-400 mt-1">
+          Manage incoming shipments and warehouse receipts
         </p>
+      </div>
+
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Receipts */}
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Total Receipts
+                </p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
+                        {formatCompactNumber(receipts?.length || 0)}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{(receipts?.length || 0).toLocaleString()} receipts</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
+                <FileText className="h-7 w-7 text-cyan-600 dark:text-cyan-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Pending Review */}
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Pending Review
+                </p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p className="text-3xl font-bold text-amber-600 dark:text-amber-400 truncate">
+                        {formatCompactNumber(pendingVerification?.length || 0)}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{(pendingVerification?.length || 0).toLocaleString()} awaiting verification</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950">
+                <Clock className="h-7 w-7 text-amber-600 dark:text-amber-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Items to Store */}
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Items to Store
+                </p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p className="text-3xl font-bold text-purple-600 dark:text-purple-400 truncate">
+                        {formatCompactNumber(storageShipments?.length || 0)}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{(storageShipments?.length || 0).toLocaleString()} shipments awaiting storage</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
+                <Warehouse className="h-7 w-7 text-purple-600 dark:text-purple-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Completed */}
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Completed
+                </p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 truncate">
+                        {formatCompactNumber(completedShipments?.length || 0)}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{(completedShipments?.length || 0).toLocaleString()} completed shipments</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
+                <CheckCircle className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Comprehensive Barcode Scanning Panel - Sticky at top */}
@@ -1506,8 +1631,14 @@ export default function ReceivingList() {
       </Card>
 
       {/* Search and Filters */}
-      <Card className="mb-6">
-        <CardContent className="p-3 sm:p-4 space-y-3">
+      <Card className="border-slate-200 dark:border-slate-800">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <Filter className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+            <CardTitle className="text-lg">Filters & Search</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
           <div className="flex gap-2 items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -1515,7 +1646,7 @@ export default function ReceivingList() {
                 placeholder="Search shipments..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-10 focus:border-cyan-500"
                 data-testid="input-search-receiving"
               />
             </div>
@@ -1523,7 +1654,7 @@ export default function ReceivingList() {
               variant="outline"
               size="sm"
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 whitespace-nowrap"
+              className="flex items-center gap-2 whitespace-nowrap h-10"
               data-testid="button-toggle-filters"
             >
               <Filter className="h-4 w-4" />
@@ -1537,7 +1668,7 @@ export default function ReceivingList() {
             <div className="animate-in slide-in-from-top-2 duration-200 space-y-3">
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
                 <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full h-10 focus:border-cyan-500">
                     <AlertTriangle className="h-3 w-3 mr-1" />
                     <SelectValue placeholder="Priority" />
                   </SelectTrigger>
@@ -1549,7 +1680,7 @@ export default function ReceivingList() {
                 </Select>
 
                 <Select value={carrierFilter} onValueChange={setCarrierFilter}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full h-10 focus:border-cyan-500">
                     <Truck className="h-3 w-3 mr-1" />
                     <SelectValue placeholder="Carrier" />
                   </SelectTrigger>
@@ -1564,7 +1695,7 @@ export default function ReceivingList() {
                 </Select>
 
                 <Select value={warehouseFilter} onValueChange={setWarehouseFilter}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full h-10 focus:border-cyan-500">
                     <Warehouse className="h-3 w-3 mr-1" />
                     <SelectValue placeholder="Warehouse" />
                   </SelectTrigger>
@@ -1579,7 +1710,7 @@ export default function ReceivingList() {
                 </Select>
 
                 <Select value={shipmentTypeFilter} onValueChange={setShipmentTypeFilter}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full h-10 focus:border-cyan-500">
                     <Package className="h-3 w-3 mr-1" />
                     <SelectValue placeholder="Type" />
                   </SelectTrigger>
@@ -1597,7 +1728,7 @@ export default function ReceivingList() {
                 </Select>
 
                 <Select value={cartonTypeFilter} onValueChange={setCartonTypeFilter}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full h-10 focus:border-cyan-500">
                     <Package2 className="h-3 w-3 mr-1" />
                     <SelectValue placeholder="Packaging" />
                   </SelectTrigger>
@@ -1851,10 +1982,14 @@ export default function ReceivingList() {
 
         <TabsContent value="to-receive" className="mt-6">
           {isLoadingToReceive ? (
-            <div className="space-y-4 animate-in fade-in-50 duration-500">
-              {[...Array(5)].map((_, i) => (
-                <ShipmentCardSkeleton key={i} />
-              ))}
+            <div className="flex items-center justify-center min-h-[600px]">
+              <div className="text-center">
+                <div className="relative w-16 h-16 mx-auto mb-6">
+                  <div className="absolute inset-0 border-4 border-cyan-200 dark:border-cyan-800 rounded-full"></div>
+                  <div className="absolute inset-0 border-4 border-cyan-600 dark:border-cyan-400 rounded-full border-t-transparent animate-spin"></div>
+                </div>
+                <p className="text-slate-600 dark:text-slate-400 font-medium">Loading shipments...</p>
+              </div>
             </div>
           ) : sortedShipments.length === 0 ? (
             <div className="text-center py-8">
@@ -1873,7 +2008,7 @@ export default function ReceivingList() {
                   }
 
                   return (
-                    <Card key={shipment.id} id={`shipment-${shipment.id}`} className="border hover:shadow-md transition-shadow border-sky-300">
+                    <Card key={shipment.id} id={`shipment-${shipment.id}`} className="border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow">
                       <CardContent className="p-3">
                         {/* Compact Header Row */}
                         <div className="flex items-start gap-2 mb-2">
@@ -2153,7 +2288,7 @@ export default function ReceivingList() {
                 });
 
                 return (
-                  <Card key={shipment.id} className="border hover:shadow-md transition-shadow border-amber-300">
+                  <Card key={shipment.id} className="border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow">
                     <CardContent className="p-3">
                       {/* Compact Header Row */}
                       <div className="flex items-start gap-2 mb-2">
@@ -2372,7 +2507,7 @@ export default function ReceivingList() {
                 });
 
                 return (
-                  <Card key={shipment.id} className="border hover:shadow-md transition-shadow border-orange-300">
+                  <Card key={shipment.id} className="border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow">
                     <CardContent className="p-3">
                       {/* Compact Header Row */}
                       <div className="flex items-start gap-2 mb-2">
@@ -2616,7 +2751,7 @@ export default function ReceivingList() {
                 });
 
                 return (
-                  <Card key={shipment.id} className="border hover:shadow-md transition-shadow border-green-300">
+                  <Card key={shipment.id} className="border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow">
                     <CardContent className="p-3">
                       {/* Compact Header Row */}
                       <div className="flex items-start gap-2 mb-2">

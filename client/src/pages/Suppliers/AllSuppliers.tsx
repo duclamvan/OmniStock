@@ -18,13 +18,16 @@ import {
   MoreVertical,
   ExternalLink,
   Mail,
-  Phone
+  Phone,
+  Filter,
+  Check
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Input } from "@/components/ui/input";
 import { fuzzySearch } from "@/lib/fuzzySearch";
+import { formatCompactNumber } from "@/lib/currencyUtils";
 import type { Supplier } from "@shared/schema";
 import type { DataTableColumn } from "@/components/ui/data-table";
 import {
@@ -45,6 +48,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { format } from "date-fns";
 
 const getCountryFlag = (country: string): string => {
@@ -70,6 +79,33 @@ export default function AllSuppliers() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSuppliers, setSelectedSuppliers] = useState<Supplier[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  // Column visibility state with localStorage persistence
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem('suppliersVisibleColumns');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return {};
+      }
+    }
+    return {
+      name: true,
+      contactPerson: true,
+      email: true,
+      phone: true,
+      country: true,
+      totalOrders: true,
+    };
+  });
+
+  // Toggle column visibility
+  const toggleColumnVisibility = (columnKey: string) => {
+    const newVisibility = { ...visibleColumns, [columnKey]: !visibleColumns[columnKey] };
+    setVisibleColumns(newVisibility);
+    localStorage.setItem('suppliersVisibleColumns', JSON.stringify(newVisibility));
+  };
 
   const { data: suppliers = [], isLoading, error } = useQuery<Supplier[]>({
     queryKey: ["/api/suppliers"],
@@ -157,18 +193,13 @@ export default function AllSuppliers() {
     return sum + amount;
   }, 0);
 
-  // New suppliers this month
-  const newSuppliersThisMonth = suppliers.filter(supplier => {
-    if (!supplier.createdAt) return false;
-    try {
-      const createdDate = new Date(supplier.createdAt);
-      const now = new Date();
-      return createdDate.getMonth() === now.getMonth() && 
-             createdDate.getFullYear() === now.getFullYear();
-    } catch {
-      return false;
-    }
-  });
+  // Top supplier by purchase value
+  const topSupplier = suppliers.reduce((top, supplier) => {
+    const amount = parseFloat(supplier.totalPurchased || '0') || 0;
+    const topAmount = parseFloat(top?.totalPurchased || '0') || 0;
+    return amount > topAmount ? supplier : top;
+  }, suppliers[0] || null);
+  const topSupplierValue = parseFloat(topSupplier?.totalPurchased || '0') || 0;
 
   const formatDate = (dateStr: string | Date | null | undefined) => {
     if (!dateStr) return '-';
@@ -183,17 +214,17 @@ export default function AllSuppliers() {
 
   const getStatusBadge = (supplier: Supplier) => {
     if (!supplier.lastPurchaseDate) {
-      return <Badge variant="secondary" className="bg-slate-100 text-slate-700">New</Badge>;
+      return <Badge variant="secondary" className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">New</Badge>;
     }
     const lastPurchase = new Date(supplier.lastPurchaseDate);
     const daysSince = (Date.now() - lastPurchase.getTime()) / (1000 * 60 * 60 * 24);
     
     if (daysSince <= 30) {
-      return <Badge className="bg-green-100 text-green-800 border-green-200">Active</Badge>;
+      return <Badge className="bg-green-100 text-green-800 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800">Active</Badge>;
     } else if (daysSince <= 90) {
-      return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Regular</Badge>;
+      return <Badge className="bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">Regular</Badge>;
     } else {
-      return <Badge variant="outline" className="text-slate-500">Inactive</Badge>;
+      return <Badge variant="outline" className="text-slate-500 dark:text-slate-400">Inactive</Badge>;
     }
   };
 
@@ -204,12 +235,12 @@ export default function AllSuppliers() {
       cell: (supplier) => (
         <div className="min-w-[180px]">
           <Link href={`/suppliers/${supplier.id}`}>
-            <span className="font-semibold text-slate-900 hover:text-blue-600 cursor-pointer block">
+            <span className="font-semibold text-slate-900 dark:text-slate-100 hover:text-cyan-600 dark:hover:text-cyan-400 cursor-pointer block">
               {supplier.name}
             </span>
           </Link>
           {supplier.contactPerson && (
-            <p className="text-sm text-slate-500 mt-0.5">{supplier.contactPerson}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{supplier.contactPerson}</p>
           )}
         </div>
       ),
@@ -220,11 +251,11 @@ export default function AllSuppliers() {
       cell: (supplier) => (
         <div className="space-y-1 min-w-[160px]">
           {supplier.email && (
-            <div className="flex items-center gap-1.5 text-sm text-slate-600">
-              <Mail className="h-3.5 w-3.5 text-slate-400" />
+            <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
+              <Mail className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
               <a 
                 href={`mailto:${supplier.email}`} 
-                className="hover:text-blue-600 truncate max-w-[200px]"
+                className="hover:text-cyan-600 dark:hover:text-cyan-400 truncate max-w-[200px]"
                 onClick={(e) => e.stopPropagation()}
               >
                 {supplier.email}
@@ -232,11 +263,11 @@ export default function AllSuppliers() {
             </div>
           )}
           {supplier.phone && (
-            <div className="flex items-center gap-1.5 text-sm text-slate-600">
-              <Phone className="h-3.5 w-3.5 text-slate-400" />
+            <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
+              <Phone className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
               <a 
                 href={`tel:${supplier.phone}`} 
-                className="hover:text-blue-600"
+                className="hover:text-cyan-600 dark:hover:text-cyan-400"
                 onClick={(e) => e.stopPropagation()}
               >
                 {supplier.phone}
@@ -263,8 +294,8 @@ export default function AllSuppliers() {
         
         return (
           <div className="min-w-[100px]">
-            <span className="font-medium text-slate-900 block">{dateStr}</span>
-            <span className="text-sm text-slate-500">
+            <span className="font-medium text-slate-900 dark:text-slate-100 block">{dateStr}</span>
+            <span className="text-sm text-slate-500 dark:text-slate-400">
               {daysSince === 0 ? 'Today' : 
                daysSince === 1 ? 'Yesterday' :
                `${daysSince}d ago`}
@@ -279,7 +310,7 @@ export default function AllSuppliers() {
       cell: (supplier) => {
         const amount = parseFloat(supplier.totalPurchased || '0');
         return (
-          <span className="font-semibold text-slate-900">
+          <span className="font-semibold text-slate-900 dark:text-slate-100">
             ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
         );
@@ -293,7 +324,7 @@ export default function AllSuppliers() {
         return (
           <div className="flex items-center gap-2">
             <span className="text-xl">{getCountryFlag(supplier.country)}</span>
-            <span className="font-medium text-slate-700">{supplier.country}</span>
+            <span className="font-medium text-slate-700 dark:text-slate-300">{supplier.country}</span>
           </div>
         );
       },
@@ -354,6 +385,11 @@ export default function AllSuppliers() {
     },
   ];
 
+  // Filter columns based on visibility
+  const visibleColumnsFiltered = columns.filter(col => 
+    col.key === 'actions' || visibleColumns[col.key] !== false
+  );
+
   const bulkActions = [
     {
       type: "button" as const,
@@ -366,13 +402,27 @@ export default function AllSuppliers() {
     },
   ];
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[600px]">
+        <div className="text-center">
+          <div className="relative w-16 h-16 mx-auto mb-6">
+            <div className="absolute inset-0 border-4 border-cyan-200 dark:border-cyan-800 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-cyan-600 dark:border-cyan-400 rounded-full border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-slate-600 dark:text-slate-400 font-medium">Loading suppliers...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Suppliers</h1>
-          <p className="text-slate-600 mt-1">Manage supplier relationships and track purchases</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Suppliers</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">Manage supplier relationships and purchase orders</p>
         </div>
         <Button onClick={() => navigate('/suppliers/new')} size="lg" data-testid="button-add-supplier">
           <Plus className="mr-2 h-5 w-5" />
@@ -382,117 +432,200 @@ export default function AllSuppliers() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-blue-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Total Suppliers</CardTitle>
-            <div className="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center">
-              <Building2 className="h-5 w-5 text-blue-600" />
+        {/* Total Suppliers */}
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Total Suppliers
+                </p>
+                <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
+                  {totalSuppliers}
+                </p>
+              </div>
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
+                <Building2 className="h-7 w-7 text-cyan-600 dark:text-cyan-400" />
+              </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-slate-900">{totalSuppliers}</div>
-            <p className="text-xs text-slate-500 mt-1">Registered suppliers</p>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-green-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Active Suppliers</CardTitle>
-            <div className="h-10 w-10 rounded-lg bg-green-50 flex items-center justify-center">
-              <TrendingUp className="h-5 w-5 text-green-600" />
+        {/* Active Suppliers */}
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Active
+                </p>
+                <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 truncate">
+                  {activeSuppliers.length}
+                </p>
+              </div>
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
+                <TrendingUp className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+              </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-slate-900">{activeSuppliers.length}</div>
-            <p className="text-xs text-slate-500 mt-1">Last 90 days activity</p>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-purple-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Total Value</CardTitle>
-            <div className="h-10 w-10 rounded-lg bg-purple-50 flex items-center justify-center">
-              <ShoppingBag className="h-5 w-5 text-purple-600" />
+        {/* Total Purchases */}
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Total Purchases
+                </p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 cursor-help truncate">
+                        ${formatCompactNumber(totalPurchaseValue)}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-mono">${totalPurchaseValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
+                <ShoppingBag className="h-7 w-7 text-purple-600 dark:text-purple-400" />
+              </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-slate-900">
-              ${totalPurchaseValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-            </div>
-            <p className="text-xs text-slate-500 mt-1">All time purchases</p>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-orange-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">New This Month</CardTitle>
-            <div className="h-10 w-10 rounded-lg bg-orange-50 flex items-center justify-center">
-              <Calendar className="h-5 w-5 text-orange-600" />
+        {/* Top Supplier */}
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Top Supplier
+                </p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 cursor-help truncate">
+                        ${formatCompactNumber(topSupplierValue)}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-semibold mb-1">{topSupplier?.name || 'N/A'}</p>
+                      <p className="font-mono text-sm">${topSupplierValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                {topSupplier && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
+                    {topSupplier.name}
+                  </p>
+                )}
+              </div>
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950">
+                <Calendar className="h-7 w-7 text-orange-600 dark:text-orange-400" />
+              </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-slate-900">{newSuppliersThisMonth.length}</div>
-            <p className="text-xs text-slate-500 mt-1">Recently added</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Filters & Search */}
+      <Card className="border-slate-200 dark:border-slate-800">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-2">
+            <Filter className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+            <CardTitle className="text-lg">Filters & Search</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 gap-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search suppliers by name, contact, email, phone, or country..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-10 border-slate-300 dark:border-slate-700 focus:border-cyan-500 dark:focus:border-cyan-500"
+                data-testid="input-search-suppliers"
+              />
+            </div>
+          </div>
+
+          {/* Active Filters Display */}
+          {searchQuery && (
+            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <span className="text-sm text-slate-600 dark:text-slate-400">Active filters:</span>
+              <Badge variant="secondary" className="text-xs">
+                Search: {searchQuery}
+              </Badge>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSearchQuery("")}
+                className="h-6 px-2 text-xs"
+              >
+                Clear all
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Suppliers Table */}
-      <Card>
+      <Card className="border-slate-200 dark:border-slate-800">
         <CardContent className="p-0 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 sm:px-0 py-4 sm:py-0 sm:pb-4">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">All Suppliers</h2>
+              <Badge variant="secondary" className="text-sm">
+                {filteredSuppliers?.length || 0}
+              </Badge>
+            </div>
+            
+            {/* Column Visibility Toggle */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-9">
+                  <MoreVertical className="h-4 w-4 mr-2" />
+                  Columns
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {[
+                  { key: 'name', label: 'Supplier Name' },
+                  { key: 'contact', label: 'Contact' },
+                  { key: 'lastPurchaseDate', label: 'Last Purchase' },
+                  { key: 'totalPurchased', label: 'Total Value' },
+                  { key: 'country', label: 'Location' },
+                  { key: 'status', label: 'Status' },
+                ].map(({ key, label }) => (
+                  <DropdownMenuItem
+                    key={key}
+                    onClick={() => toggleColumnVisibility(key)}
+                    className="flex items-center justify-between"
+                  >
+                    <span>{label}</span>
+                    {visibleColumns[key] && <Check className="h-4 w-4 text-cyan-600" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
           <DataTable
-            columns={columns}
+            columns={visibleColumnsFiltered}
             data={filteredSuppliers}
             bulkActions={bulkActions}
             getRowKey={(supplier) => supplier.id}
             itemsPerPageOptions={[10, 20, 50, 100]}
             defaultItemsPerPage={20}
-            renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
-              <div className="px-4 sm:px-0 pb-4">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-lg font-semibold text-slate-900">All Suppliers</h2>
-                    <Badge variant="secondary" className="text-sm">
-                      {filteredSuppliers?.length || 0}
-                    </Badge>
-                    {selectedRows.size > 0 && (
-                      <>
-                        <Badge variant="outline" className="text-sm border-blue-500 text-blue-700">
-                          {selectedRows.size} selected
-                        </Badge>
-                        {actions.map((action, index) => {
-                          if (action.type === "button") {
-                            return (
-                              <Button
-                                key={index}
-                                size="sm"
-                                variant={action.variant || "ghost"}
-                                onClick={() => action.action(selectedItems)}
-                                data-testid="button-delete-selected"
-                              >
-                                <Trash2 className="h-4 w-4 mr-1" />
-                                {action.label}
-                              </Button>
-                            );
-                          }
-                          return null;
-                        })}
-                      </>
-                    )}
-                  </div>
-                  <div className="relative w-full sm:w-80">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <Input
-                      placeholder="Search suppliers..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9"
-                      data-testid="input-search-suppliers"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
           />
         </CardContent>
       </Card>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, memo, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -15,11 +15,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
-import { formatCurrency, formatDate } from "@/lib/currencyUtils";
+import { formatCurrency, formatDate, formatCompactNumber } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { getCountryFlag } from "@/lib/countries";
 import { cn } from "@/lib/utils";
-import { Plus, Search, Filter, Download, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal, Sparkles, RefreshCw, Heart, AlertTriangle, TrendingUp, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Search, Filter, Download, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal, Sparkles, RefreshCw, Heart, AlertTriangle, TrendingUp, ArrowUp, ArrowDown, MoreVertical, ShoppingCart, DollarSign, Users } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -88,18 +88,28 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     return saved === 'true';
   });
 
-  // Column visibility state - all columns visible by default (localStorage disabled for now)
-  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
-    order: true,
-    customer: true,
-    biller: true,
-    status: true,
-    payment: true,
-    date: true,
-    items: true,
-    total: true,
-    profit: true,
-    tracking: true,
+  // Column visibility state with localStorage persistence
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem('ordersVisibleColumns');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return {};
+      }
+    }
+    return {
+      order: true,
+      customer: true,
+      items: true,
+      total: true,
+      status: true,
+      date: true,
+      biller: false,
+      payment: false,
+      profit: false,
+      tracking: false,
+    };
   });
 
   // Toggle view mode and save to localStorage
@@ -114,9 +124,11 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     localStorage.setItem('ordersExpandAll', String(expand));
   };
 
-  // Toggle column visibility (no localStorage persistence for now)
+  // Toggle column visibility and save to localStorage
   const toggleColumnVisibility = (columnKey: string) => {
-    setVisibleColumns({ ...visibleColumns, [columnKey]: !visibleColumns[columnKey] });
+    const newVisibility = { ...visibleColumns, [columnKey]: !visibleColumns[columnKey] };
+    setVisibleColumns(newVisibility);
+    localStorage.setItem('ordersVisibleColumns', JSON.stringify(newVisibility));
   };
 
   // Badges visibility state with localStorage persistence
@@ -772,102 +784,149 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     setOrdersToDelete([]);
   };
 
-  // Remove loading state to prevent UI refresh indicators
-
-  return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h1 className="text-mobile-2xl font-bold text-slate-900">{getPageTitle()}</h1>
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <Button variant="outline" size="sm" className="flex-1 sm:flex-none touch-target">
-            <Download className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Export XLS</span>
-            <span className="sm:hidden">XLS</span>
-          </Button>
-          <Button variant="outline" size="sm" className="flex-1 sm:flex-none touch-target">
-            <FileText className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Export PDF</span>
-            <span className="sm:hidden">PDF</span>
-          </Button>
-          <Link href="/orders/add" className="flex-1 sm:flex-none">
-            <Button className="w-full touch-target">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Order
-            </Button>
-          </Link>
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[600px]">
+        <div className="text-center">
+          <div className="relative w-16 h-16 mx-auto mb-6">
+            <div className="absolute inset-0 border-4 border-cyan-200 dark:border-cyan-800 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-cyan-600 dark:border-cyan-400 rounded-full border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-slate-600 dark:text-slate-400 font-medium">Loading orders...</p>
         </div>
       </div>
+    );
+  }
 
-      {/* Statistics (only show for to_fulfill) */}
+  return (
+    <div className="space-y-6">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+            {getPageTitle()}
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">
+            Track and manage customer orders and shipments
+          </p>
+        </div>
+        <Link href="/orders/add">
+          <Button data-testid="button-add-order">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Order
+          </Button>
+        </Link>
+      </div>
+
+      {/* Stats Overview (only show for to_fulfill) */}
       {statistics && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">Total Orders</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-900">{statistics.totalOrders}</div>
-              <p className="text-xs text-slate-500 mt-1">To fulfill</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">Total Revenue</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-900">
-                {formatCurrency(statistics.totalRevenue, statistics.primaryCurrency)}
+          {/* Total Orders */}
+          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                    Total Orders
+                  </p>
+                  <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
+                    {formatCompactNumber(statistics.totalOrders)}
+                  </p>
+                </div>
+                <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
+                  <ShoppingCart className="h-7 w-7 text-cyan-600 dark:text-cyan-400" />
+                </div>
               </div>
-              <p className="text-xs text-slate-500 mt-1">Expected income</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">Total Profit</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${statistics.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatCurrency(statistics.totalProfit, statistics.primaryCurrency)}
+          {/* Total Revenue */}
+          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                    Total Revenue
+                  </p>
+                  <p className="text-3xl font-bold text-purple-600 dark:text-purple-400 truncate">
+                    {formatCompactNumber(statistics.totalRevenue)}
+                  </p>
+                </div>
+                <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
+                  <DollarSign className="h-7 w-7 text-purple-600 dark:text-purple-400" />
+                </div>
               </div>
-              <p className="text-xs text-slate-500 mt-1">After costs</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">Customers</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-900">{statistics.newCustomers + statistics.returningCustomers}</div>
-              <p className="text-xs text-slate-500 mt-1">
-                <span className="text-blue-600">{statistics.newCustomers} new</span>
-                {' • '}
-                <span className="text-slate-600">{statistics.returningCustomers} returning</span>
-              </p>
+          {/* Total Profit */}
+          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                    Total Profit
+                  </p>
+                  <p className={`text-3xl font-bold truncate ${statistics.totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {formatCompactNumber(statistics.totalProfit)}
+                  </p>
+                </div>
+                <div className={`flex-shrink-0 p-3 rounded-xl bg-gradient-to-br ${statistics.totalProfit >= 0 ? 'from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950' : 'from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950'}`}>
+                  <TrendingUp className={`h-7 w-7 ${statistics.totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Customers */}
+          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                    Customers
+                  </p>
+                  <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
+                    {formatCompactNumber(statistics.newCustomers + statistics.returningCustomers)}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    <span className="text-blue-600 dark:text-blue-400">{statistics.newCustomers} new</span>
+                    {' • '}
+                    <span className="text-slate-600 dark:text-slate-400">{statistics.returningCustomers} returning</span>
+                  </p>
+                </div>
+                <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
+                  <Users className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+      {/* Filters Section */}
+      <Card className="border-slate-200 dark:border-slate-800">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Filter className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+            <CardTitle>Filters & Search</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 placeholder="Search orders..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 touch-target"
+                className="pl-10 h-10 focus:border-cyan-500 border-slate-200 dark:border-slate-800"
+                data-testid="input-search"
               />
             </div>
             {!filter && (
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-48 touch-target">
+                <SelectTrigger className="h-10 focus:border-cyan-500 border-slate-200 dark:border-slate-800" data-testid="select-status-filter">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -884,7 +943,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       </Card>
 
       {/* Orders Table */}
-      <Card>
+      <Card className="border-slate-200 dark:border-slate-800">
         <CardContent className="p-0 sm:p-6">
           {/* Header with view toggle - always visible */}
           <div className="px-4 sm:px-0 pb-4 pt-4 sm:pt-0">
@@ -941,12 +1000,13 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                 {viewMode === 'normal' && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Settings className="h-4 w-4" />
+                      <Button variant="ghost" size="icon" className="h-8 w-8" data-testid="button-column-visibility">
+                        <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
-                      <div className="px-2 py-1.5 text-sm font-semibold">Show Columns</div>
+                      <DropdownMenuLabel>Show Columns</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
                       {columns.map((column) => (
                         <DropdownMenuItem
                           key={column.key}
@@ -959,7 +1019,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                           <div className="flex items-center justify-between w-full">
                             <span>{column.header}</span>
                             {visibleColumns[column.key] !== false && (
-                              <Check className="h-4 w-4 text-blue-600" />
+                              <Check className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
                             )}
                           </div>
                         </DropdownMenuItem>

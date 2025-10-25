@@ -8,8 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { formatCurrency, formatDate } from "@/lib/currencyUtils";
-import { Plus, Search, Edit, Trash2, User, Mail, Phone, Star, MessageCircle, MapPin, MoreVertical, Ban } from "lucide-react";
+import { formatCurrency, formatDate, formatCompactNumber } from "@/lib/currencyUtils";
+import { Plus, Search, Edit, Trash2, User, Mail, Phone, Star, MessageCircle, MapPin, MoreVertical, Ban, Filter, Users, DollarSign } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +32,8 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 
 export default function AllCustomers() {
@@ -33,6 +41,32 @@ export default function AllCustomers() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedCustomers, setSelectedCustomers] = useState<any[]>([]);
+
+  // Column visibility state with localStorage persistence
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem('customersVisibleColumns');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return {};
+      }
+    }
+    return {
+      name: true,
+      country: true,
+      lastOrderDate: true,
+      orderCount: true,
+      totalSpent: true,
+    };
+  });
+
+  // Toggle column visibility
+  const toggleColumnVisibility = (columnKey: string) => {
+    const newVisibility = { ...visibleColumns, [columnKey]: !visibleColumns[columnKey] };
+    setVisibleColumns(newVisibility);
+    localStorage.setItem('customersVisibleColumns', JSON.stringify(newVisibility));
+  };
 
   const { data: customers = [], isLoading, error } = useQuery<any[]>({
     queryKey: searchQuery ? ['/api/customers', { search: searchQuery }] : ['/api/customers'],
@@ -74,6 +108,10 @@ export default function AllCustomers() {
       });
     },
   });
+
+  // Calculate stats
+  const totalRevenue = customers?.reduce((sum: number, c: any) => 
+    sum + parseFloat(c.totalSpent || '0'), 0) || 0;
 
   // Define table columns
   const columns: DataTableColumn<any>[] = [
@@ -215,6 +253,11 @@ export default function AllCustomers() {
     },
   ];
 
+  // Filter columns based on visibility
+  const visibleColumnsFiltered = columns.filter(col => 
+    col.key === 'actions' || visibleColumns[col.key] !== false
+  );
+
   // Bulk actions
   const bulkActions = [
     {
@@ -271,104 +314,159 @@ export default function AllCustomers() {
     // TODO: Implement blacklist functionality
   };
 
-  // Remove loading state to prevent UI refresh indicators
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[600px]">
+        <div className="text-center">
+          <div className="relative w-16 h-16 mx-auto mb-6">
+            <div className="absolute inset-0 border-4 border-cyan-200 dark:border-cyan-800 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-cyan-600 dark:border-cyan-400 rounded-full border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-slate-600 dark:text-slate-400 font-medium">Loading customers...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4 lg:space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl lg:text-2xl font-bold text-slate-900">Customers</h1>
+    <div className="space-y-6">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+            Customers
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">
+            Monitor customer relationships and track sales performance
+          </p>
+        </div>
         <Link href="/customers/add">
-          <Button size="sm" className="lg:size-default">
-            <Plus className="h-4 w-4" />
-            <span className="ml-2 hidden sm:inline">Add Customer</span>
+          <Button data-testid="button-add-customer">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Customer
           </Button>
         </Link>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
-        <Card>
-          <CardContent className="p-4 lg:p-6">
-            <div className="flex flex-col lg:flex-row lg:items-center">
-              <User className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 mb-2 lg:mb-0" />
-              <div className="lg:ml-4">
-                <p className="text-xs lg:text-sm font-medium text-slate-600">Total Customers</p>
-                <p className="text-lg lg:text-2xl font-bold text-slate-900">{customers?.length || 0}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Customers */}
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Total Customers
+                </p>
+                <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
+                  {customers?.length || 0}
+                </p>
+              </div>
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
+                <Users className="h-7 w-7 text-cyan-600 dark:text-cyan-400" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4 lg:p-6">
-            <div className="flex flex-col lg:flex-row lg:items-center">
-              <Star className="h-6 w-6 lg:h-8 lg:w-8 text-yellow-600 mb-2 lg:mb-0" />
-              <div className="lg:ml-4">
-                <p className="text-xs lg:text-sm font-medium text-slate-600">VIP</p>
-                <p className="text-lg lg:text-2xl font-bold text-slate-900">
+        {/* VIP Customers */}
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  VIP Customers
+                </p>
+                <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
                   {customers?.filter((c: any) => c.type === 'vip').length || 0}
                 </p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 lg:p-6">
-            <div className="flex flex-col lg:flex-row lg:items-center">
-              <User className="h-6 w-6 lg:h-8 lg:w-8 text-green-600 mb-2 lg:mb-0" />
-              <div className="lg:ml-4">
-                <p className="text-xs lg:text-sm font-medium text-slate-600">Regular</p>
-                <p className="text-lg lg:text-2xl font-bold text-slate-900">
-                  {customers?.filter((c: any) => c.type === 'regular').length || 0}
-                </p>
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950">
+                <Star className="h-7 w-7 text-amber-600 dark:text-amber-400" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4 lg:p-6">
-            <div className="flex flex-col lg:flex-row lg:items-center">
-              <User className="h-6 w-6 lg:h-8 lg:w-8 text-purple-600 mb-2 lg:mb-0" />
-              <div className="lg:ml-4">
-                <p className="text-xs lg:text-sm font-medium text-slate-600">Revenue</p>
-                <p className="text-lg lg:text-2xl font-bold text-slate-900">
-                  {formatCurrency(
-                    customers?.reduce((sum: number, c: any) => 
-                      sum + parseFloat(c.totalSpent || '0'), 0) || 0, 
-                    'EUR'
-                  )}
+        {/* Regular Customers */}
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Regular Customers
                 </p>
+                <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
+                  {customers?.filter((c: any) => c.type === 'regular').length || 0}
+                </p>
+              </div>
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
+                <User className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Total Revenue */}
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Total Revenue
+                </p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 cursor-help truncate">
+                        €{formatCompactNumber(totalRevenue)}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{formatCurrency(totalRevenue, 'EUR')}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
+                <DollarSign className="h-7 w-7 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-3 lg:p-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 lg:top-3 h-4 w-4 text-slate-400" />
-            <Input
-              placeholder="Search customers..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-9 lg:h-10 text-sm lg:text-base"
-            />
+      {/* Filters Section */}
+      <Card className="border-slate-200 dark:border-slate-800">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-2">
+            <Filter className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+            <CardTitle className="text-lg">Filters & Search</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search customers..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-10 focus:border-cyan-500"
+                data-testid="input-search-customers"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Customers Table */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden border-slate-200 dark:border-slate-800">
         <CardContent className="p-0 sm:p-6">
           <div className="overflow-x-auto">
             <DataTable
               data={customers}
-              columns={columns}
+              columns={visibleColumnsFiltered}
               bulkActions={bulkActions}
               getRowKey={(customer) => customer.id}
               itemsPerPageOptions={[10, 20, 50, 100]}
@@ -402,6 +500,47 @@ export default function AllCustomers() {
                         </>
                       )}
                     </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="icon" variant="ghost" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.name !== false}
+                          onCheckedChange={() => toggleColumnVisibility('name')}
+                        >
+                          Customer
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.country !== false}
+                          onCheckedChange={() => toggleColumnVisibility('country')}
+                        >
+                          Country
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.lastOrderDate !== false}
+                          onCheckedChange={() => toggleColumnVisibility('lastOrderDate')}
+                        >
+                          Last Purchase
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.orderCount !== false}
+                          onCheckedChange={() => toggleColumnVisibility('orderCount')}
+                        >
+                          Orders
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.totalSpent !== false}
+                          onCheckedChange={() => toggleColumnVisibility('totalSpent')}
+                        >
+                          Sales
+                        </DropdownMenuCheckboxItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               )}

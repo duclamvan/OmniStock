@@ -41,6 +41,7 @@ interface CustomItem {
   quantity: number;
   weight: string;
   customerName: string | null;
+  status: string;
 }
 
 interface ConsolidationItem {

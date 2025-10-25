@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
+import { formatCompactNumber } from "@/lib/currencyUtils";
 import { cn } from "@/lib/utils";
 import { 
   Plus, 
@@ -20,9 +22,27 @@ import {
   CheckCircle2,
   User,
   Calendar,
-  Edit
+  Edit,
+  Filter,
+  MoreVertical,
+  MessageSquare
 } from "lucide-react";
 import { format } from "date-fns";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,52 +70,82 @@ export default function AllTickets() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedTickets, setSelectedTickets] = useState<any[]>([]);
 
-  const { data: tickets = [], isLoading } = useQuery<any[]>({
-    queryKey: ['/api/tickets'],
+  // Column visibility state with localStorage persistence
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem('ticketsVisibleColumns');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return {};
+      }
+    }
+    return {
+      ticketNumber: true,
+      customer: true,
+      subject: true,
+      priority: true,
+      status: true,
+      createdAt: true,
+    };
   });
 
+  // Toggle column visibility
+  const toggleColumnVisibility = (columnKey: string) => {
+    const newVisibility = { ...visibleColumns, [columnKey]: !visibleColumns[columnKey] };
+    setVisibleColumns(newVisibility);
+    localStorage.setItem('ticketsVisibleColumns', JSON.stringify(newVisibility));
+  };
+
+  const { data: tickets = [], isLoading, error } = useQuery<any[]>({
+    queryKey: ['/api/tickets'],
+    retry: false,
+  });
+
+  // Error handling
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load tickets",
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
+
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      return await apiRequest('DELETE', `/api/tickets/${id}`);
+    mutationFn: async (ids: string[]) => {
+      await Promise.all(ids.map(id => apiRequest('DELETE', `/api/tickets/${id}`)));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
       toast({
         title: "Success",
-        description: "Ticket deleted successfully",
+        description: `Deleted ${selectedTickets.length} ticket(s) successfully`,
       });
-      setShowDeleteDialog(false);
       setSelectedTickets([]);
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Ticket delete error:", error);
+      const errorMessage = error.message || "Failed to delete tickets";
       toast({
         title: "Error",
-        description: "Failed to delete ticket",
+        description: errorMessage,
         variant: "destructive",
       });
     },
   });
 
-  const handleBulkDelete = async () => {
-    try {
-      await Promise.all(
-        selectedTickets.map(ticket => deleteMutation.mutateAsync(ticket.id))
-      );
-    } catch (error) {
-      console.error('Error deleting tickets:', error);
-    }
-  };
-
   // Filter tickets
-  let filteredTickets = tickets;
-  
+  let filteredTickets = tickets || [];
+
   // Apply status and priority filters
   filteredTickets = filteredTickets.filter(ticket => {
     const matchesStatus = statusFilter === "all" || ticket.status === statusFilter;
     const matchesPriority = priorityFilter === "all" || ticket.priority === priorityFilter;
     return matchesStatus && matchesPriority;
   });
-  
+
   // Apply search filter
   if (searchQuery) {
     const results = fuzzySearch(filteredTickets, searchQuery, {
@@ -111,7 +161,7 @@ export default function AllTickets() {
   const totalTickets = tickets.length;
   const openTickets = tickets.filter(t => t.status === 'open').length;
   const inProgressTickets = tickets.filter(t => t.status === 'in_progress').length;
-  const urgentTickets = tickets.filter(t => t.priority === 'urgent').length;
+  const resolvedTickets = tickets.filter(t => t.status === 'resolved').length;
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -157,21 +207,6 @@ export default function AllTickets() {
     );
   };
 
-  const getCategoryIcon = (category: string) => {
-    switch(category) {
-      case 'shipping_issue':
-        return '📦';
-      case 'product_question':
-        return '❓';
-      case 'payment_problem':
-        return '💳';
-      case 'complaint':
-        return '⚠️';
-      default:
-        return '📋';
-    }
-  };
-
   const formatDate = (dateStr: string | null | undefined) => {
     if (!dateStr) return '-';
     try {
@@ -183,84 +218,307 @@ export default function AllTickets() {
     }
   };
 
+  // Define table columns
+  const columns: DataTableColumn<any>[] = [
+    {
+      key: "ticketNumber",
+      header: "Ticket #",
+      sortable: true,
+      className: "min-w-[120px]",
+      cell: (ticket) => (
+        <Link href={`/tickets/${ticket.id}`}>
+          <div className="flex items-center gap-3 group cursor-pointer">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950 group-hover:from-cyan-100 group-hover:to-blue-100 dark:group-hover:from-cyan-900 dark:group-hover:to-blue-900 transition-colors">
+              <TicketIcon className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+            </div>
+            <div>
+              <div className="font-semibold text-slate-900 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
+                {ticket.ticketId || `#${ticket.id.substring(0, 8)}`}
+              </div>
+            </div>
+          </div>
+        </Link>
+      ),
+    },
+    {
+      key: "customer",
+      header: "Customer",
+      sortable: true,
+      className: "min-w-[150px]",
+      cell: (ticket) => (
+        ticket.customer ? (
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800">
+              <User className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
+            </div>
+            <span className="text-sm text-slate-700 dark:text-slate-300">
+              {ticket.customer.name}
+            </span>
+          </div>
+        ) : (
+          <span className="text-sm text-slate-400">-</span>
+        )
+      ),
+    },
+    {
+      key: "subject",
+      header: "Subject",
+      sortable: true,
+      className: "min-w-[250px]",
+      cell: (ticket) => (
+        <div className="max-w-md">
+          <div className="font-medium text-slate-900 dark:text-slate-100 truncate">
+            {ticket.title}
+          </div>
+          {ticket.description && (
+            <div className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+              {ticket.description}
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "priority",
+      header: "Priority",
+      sortable: true,
+      className: "text-center",
+      cell: (ticket) => getPriorityBadge(ticket.priority),
+    },
+    {
+      key: "status",
+      header: "Status",
+      sortable: true,
+      className: "text-center",
+      cell: (ticket) => getStatusBadge(ticket.status),
+    },
+    {
+      key: "createdAt",
+      header: "Created",
+      sortable: true,
+      className: "text-right",
+      cell: (ticket) => (
+        <div className="flex flex-col items-end gap-1">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-slate-400" />
+            <span className="font-medium text-slate-900 dark:text-slate-100">
+              {format(new Date(ticket.createdAt), 'MMM d, yyyy')}
+            </span>
+          </div>
+          <div className="text-xs text-slate-500">
+            {format(new Date(ticket.createdAt), 'HH:mm')}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "actions",
+      header: "",
+      className: "w-16 text-center",
+      cell: (ticket) => (
+        <Link href={`/tickets/edit/${ticket.id}`}>
+          <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-cyan-50 dark:hover:bg-cyan-950" data-testid={`button-edit-${ticket.id}`}>
+            <Edit className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+          </Button>
+        </Link>
+      ),
+    },
+  ];
+
+  // Filter columns based on visibility
+  const visibleColumnsFiltered = columns.filter(col => 
+    col.key === 'actions' || visibleColumns[col.key] !== false
+  );
+
+  // Bulk actions
+  const bulkActions = [
+    {
+      type: "button" as const,
+      label: "Delete",
+      variant: "destructive" as const,
+      action: (tickets: any[]) => {
+        setSelectedTickets(tickets);
+        setShowDeleteDialog(true);
+      },
+    },
+  ];
+
+  const handleDeleteConfirm = () => {
+    deleteMutation.mutate(selectedTickets.map(ticket => ticket.id));
+    setShowDeleteDialog(false);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[600px]">
+        <div className="text-center">
+          <div className="relative w-16 h-16 mx-auto mb-6">
+            <div className="absolute inset-0 border-4 border-cyan-200 dark:border-cyan-800 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-cyan-600 dark:border-cyan-400 rounded-full border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-slate-600 dark:text-slate-400 font-medium">Loading tickets...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Support Tickets</h1>
-          <p className="text-slate-600 mt-1">Manage customer support requests and issues</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+            Support Tickets
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">
+            Track customer support tickets and issues
+          </p>
         </div>
-        <Button onClick={() => navigate('/tickets/add')} size="lg" data-testid="button-add-ticket">
-          <Plus className="mr-2 h-5 w-5" />
-          New Ticket
-        </Button>
+        <Link href="/tickets/add">
+          <Button data-testid="button-add-ticket">
+            <Plus className="h-4 w-4 mr-2" />
+            New Ticket
+          </Button>
+        </Link>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
-            <TicketIcon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="stat-total-tickets">{totalTickets}</div>
-            <p className="text-xs text-muted-foreground">All time</p>
+        {/* Total Tickets */}
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Total Tickets
+                </p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help" data-testid="stat-total-tickets">
+                        {formatCompactNumber(totalTickets)}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-mono">{totalTickets.toLocaleString()} tickets</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
+                <TicketIcon className="h-7 w-7 text-cyan-600 dark:text-cyan-400" />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Open Tickets</CardTitle>
-            <AlertCircle className="h-4 w-4 text-orange-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600" data-testid="stat-open-tickets">{openTickets}</div>
-            <p className="text-xs text-muted-foreground">Needs attention</p>
+        {/* Open Tickets */}
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Open
+                </p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p className="text-3xl font-bold text-amber-600 dark:text-amber-400 truncate cursor-help" data-testid="stat-open-tickets">
+                        {formatCompactNumber(openTickets)}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-mono">{openTickets.toLocaleString()} open</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950">
+                <AlertCircle className="h-7 w-7 text-amber-600 dark:text-amber-400" />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-            <Clock className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600" data-testid="stat-inprogress-tickets">{inProgressTickets}</div>
-            <p className="text-xs text-muted-foreground">Being resolved</p>
+        {/* In Progress Tickets */}
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  In Progress
+                </p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 truncate cursor-help" data-testid="stat-inprogress-tickets">
+                        {formatCompactNumber(inProgressTickets)}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-mono">{inProgressTickets.toLocaleString()} in progress</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
+                <Clock className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Urgent</CardTitle>
-            <TrendingUp className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600" data-testid="stat-urgent-tickets">{urgentTickets}</div>
-            <p className="text-xs text-muted-foreground">High priority</p>
+        {/* Resolved Tickets */}
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Resolved
+                </p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 truncate cursor-help" data-testid="stat-resolved-tickets">
+                        {formatCompactNumber(resolvedTickets)}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-mono">{resolvedTickets.toLocaleString()} resolved</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
+                <CheckCircle2 className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Search and Filters */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search tickets..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-              data-testid="input-search"
-            />
+      {/* Filters Section */}
+      <Card className="border-slate-200 dark:border-slate-800">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-2">
+            <Filter className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+            <CardTitle className="text-lg">Filters & Search</CardTitle>
           </div>
-          <div className="flex gap-2">
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search tickets..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-10 border-slate-200 dark:border-slate-800 focus:border-cyan-500"
+                data-testid="input-search"
+              />
+            </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px]" data-testid="select-status-filter">
+              <SelectTrigger className="h-10 border-slate-200 dark:border-slate-800 focus:border-cyan-500" data-testid="select-status-filter">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -273,7 +531,7 @@ export default function AllTickets() {
             </Select>
 
             <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-[150px]" data-testid="select-priority-filter">
+              <SelectTrigger className="h-10 border-slate-200 dark:border-slate-800 focus:border-cyan-500" data-testid="select-priority-filter">
                 <SelectValue placeholder="Priority" />
               </SelectTrigger>
               <SelectContent>
@@ -285,84 +543,76 @@ export default function AllTickets() {
               </SelectContent>
             </Select>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Results Count */}
-        <p className="text-sm text-slate-600">
-          Showing {filteredTickets.length} ticket{filteredTickets.length !== 1 ? 's' : ''}
-        </p>
-      </div>
-
-      {/* Tickets Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredTickets.length === 0 ? (
-          <div className="col-span-full text-center py-12">
-            <p className="text-slate-500">No tickets found</p>
+      {/* Tickets Table */}
+      <Card className="border-slate-200 dark:border-slate-800">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>All Tickets</CardTitle>
+            <CardDescription>
+              Showing {filteredTickets.length} ticket{filteredTickets.length !== 1 ? 's' : ''}
+            </CardDescription>
           </div>
-        ) : (
-          filteredTickets.map((ticket) => {
-            const isResolved = ticket.status === 'resolved' || ticket.status === 'closed';
-            
-            return (
-            <Card 
-              key={ticket.id} 
-              className={cn(
-                "hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer h-full flex flex-col relative group",
-                isResolved && "opacity-50 bg-slate-50 dark:bg-slate-900/50"
-              )}
-              onClick={() => navigate(`/tickets/${ticket.id}`)}
-              data-testid={`card-ticket-${ticket.id}`}
-            >
-              {/* Edit Icon - Top Right */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/tickets/edit/${ticket.id}`);
-                }}
-                className="absolute top-3 right-3 p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
-                data-testid={`button-edit-${ticket.id}`}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-8 w-8">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[200px]">
+              <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuCheckboxItem
+                checked={visibleColumns.ticketNumber !== false}
+                onCheckedChange={() => toggleColumnVisibility('ticketNumber')}
               >
-                <Edit className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-              </button>
-
-              <CardContent className="p-5 flex-1 flex flex-col">
-                {/* Customer - Clean and simple */}
-                {ticket.customer && (
-                  <div className="mb-3">
-                    <p className="text-sm font-semibold text-blue-600 dark:text-blue-400" data-testid={`text-customer-${ticket.id}`}>
-                      {ticket.customer.name}
-                    </p>
-                  </div>
-                )}
-
-                {/* Title with icon */}
-                <h3 className="font-semibold text-base text-slate-900 dark:text-slate-100 mb-2 line-clamp-2" data-testid={`text-title-${ticket.id}`}>
-                  {ticket.title}
-                </h3>
-
-                {/* Description - Clean */}
-                {ticket.description && (
-                  <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-3 flex-1" data-testid={`text-description-${ticket.id}`}>
-                    {ticket.description}
-                  </p>
-                )}
-
-                {/* Footer - Compact metadata */}
-                <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-slate-800 mt-auto">
-                  <div className="flex items-center gap-1.5">
-                    {getStatusBadge(ticket.status)}
-                    {!isResolved && getPriorityBadge(ticket.priority)}
-                  </div>
-                  <span className="text-xs text-slate-500">
-                    {format(new Date(ticket.createdAt), 'MMM d')}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-            );
-          })
-        )}
-      </div>
+                Ticket #
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={visibleColumns.customer !== false}
+                onCheckedChange={() => toggleColumnVisibility('customer')}
+              >
+                Customer
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={visibleColumns.subject !== false}
+                onCheckedChange={() => toggleColumnVisibility('subject')}
+              >
+                Subject
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={visibleColumns.priority !== false}
+                onCheckedChange={() => toggleColumnVisibility('priority')}
+              >
+                Priority
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={visibleColumns.status !== false}
+                onCheckedChange={() => toggleColumnVisibility('status')}
+              >
+                Status
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={visibleColumns.createdAt !== false}
+                onCheckedChange={() => toggleColumnVisibility('createdAt')}
+              >
+                Created
+              </DropdownMenuCheckboxItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </CardHeader>
+        <CardContent>
+          <DataTable
+            data={filteredTickets}
+            columns={visibleColumnsFiltered}
+            bulkActions={bulkActions}
+            onSelectionChange={setSelectedTickets}
+            searchable={false}
+          />
+        </CardContent>
+      </Card>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
@@ -376,7 +626,7 @@ export default function AllTickets() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkDelete} data-testid="button-confirm-delete">
+            <AlertDialogAction onClick={handleDeleteConfirm} data-testid="button-confirm-delete">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Plus, Search, Package2, Edit, Trash2, DollarSign, Layers, Archive, ExternalLink, Filter, ShoppingCart, Copy, Tag } from "lucide-react";
+import { Plus, Search, Package2, Edit, Trash2, DollarSign, Layers, Archive, ExternalLink, Filter, ShoppingCart, Copy, Tag, MoreVertical, Check } from "lucide-react";
 import { DataTable, DataTableColumn, BulkAction } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,24 +14,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import type { PackingMaterial } from "@shared/schema";
-import { formatCurrency } from "@/lib/currencyUtils";
+import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
-// Helper function to extract domain from URL
 function getDisplayUrl(url: string | null): { display: string; href: string } | null {
   if (!url) return null;
   
   try {
-    // Try to parse as URL
     const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`);
     return {
       display: urlObj.hostname.replace('www.', ''),
       href: urlObj.href
     };
   } catch {
-    // If not a valid URL, treat as plain text
     return {
       display: url,
       href: url.startsWith('http') ? url : `https://${url}`
@@ -45,6 +56,31 @@ export default function PackingMaterials() {
   const [supplierFilter, setSupplierFilter] = useState<string>("all");
   const { toast } = useToast();
 
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem('packingMaterialsVisibleColumns');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return {};
+      }
+    }
+    return {
+      name: true,
+      category: true,
+      quantity: true,
+      cost: true,
+      supplier: true,
+      status: true,
+    };
+  });
+
+  const toggleColumnVisibility = (columnKey: string) => {
+    const newVisibility = { ...visibleColumns, [columnKey]: !visibleColumns[columnKey] };
+    setVisibleColumns(newVisibility);
+    localStorage.setItem('packingMaterialsVisibleColumns', JSON.stringify(newVisibility));
+  };
+
   const { data: allMaterials = [], isLoading } = useQuery<PackingMaterial[]>({
     queryKey: ["/api/packing-materials", searchQuery],
     queryFn: async () => {
@@ -56,7 +92,6 @@ export default function PackingMaterials() {
     },
   });
 
-  // Get unique suppliers for filter
   const uniqueSuppliers = useMemo(() => {
     const suppliers = allMaterials
       .map(m => m.supplier)
@@ -68,7 +103,6 @@ export default function PackingMaterials() {
     return Array.from(new Set(suppliers)).sort();
   }, [allMaterials]);
 
-  // Filter materials by category and supplier
   const materials = useMemo(() => {
     let filtered = allMaterials;
     
@@ -86,7 +120,6 @@ export default function PackingMaterials() {
     return filtered;
   }, [allMaterials, categoryFilter, supplierFilter]);
 
-  // Bulk action handlers
   const handleCopyNames = async (selectedMaterials: PackingMaterial[]) => {
     const names = selectedMaterials.map(m => m.name).join('\n');
     try {
@@ -156,7 +189,6 @@ export default function PackingMaterials() {
     }
   };
 
-  // Define bulk actions
   const bulkActions: BulkAction<PackingMaterial>[] = [
     {
       type: "button",
@@ -188,7 +220,7 @@ export default function PackingMaterials() {
     },
   ];
 
-  const columns: DataTableColumn<PackingMaterial>[] = [
+  const allColumns: DataTableColumn<PackingMaterial>[] = [
     {
       key: "imageUrl",
       header: "Image",
@@ -244,6 +276,28 @@ export default function PackingMaterials() {
       },
     },
     {
+      key: "quantity",
+      header: "Stock Qty",
+      sortable: true,
+      className: "text-right",
+      cell: (material) => (
+        <span className="font-medium text-slate-900 dark:text-slate-100">
+          {material.stockQuantity ? material.stockQuantity.toLocaleString() : '-'}
+        </span>
+      ),
+    },
+    {
+      key: "cost",
+      header: "Unit Cost",
+      sortable: true,
+      className: "text-right",
+      cell: (material) => (
+        <span className="font-medium text-slate-900 dark:text-slate-100">
+          {material.unitCost ? formatCurrency(material.unitCost, 'EUR') : '-'}
+        </span>
+      ),
+    },
+    {
       key: "supplier",
       header: "Supplier",
       sortable: true,
@@ -264,6 +318,27 @@ export default function PackingMaterials() {
           </a>
         ) : (
           <span className="text-muted-foreground text-sm">No supplier</span>
+        );
+      },
+    },
+    {
+      key: "status",
+      header: "Status",
+      sortable: true,
+      className: "text-center",
+      cell: (material) => {
+        const stockQty = material.stockQuantity || 0;
+        const minStock = material.minStockLevel || 10;
+        const isLowStock = stockQty <= minStock;
+        
+        return isLowStock ? (
+          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800">
+            Low Stock
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800">
+            In Stock
+          </Badge>
         );
       },
     },
@@ -301,82 +376,208 @@ export default function PackingMaterials() {
     },
   ];
 
+  const columns = allColumns.filter(col => 
+    col.key === 'imageUrl' || col.key === 'actions' || visibleColumns[col.key] !== false
+  );
+
   const stats = {
     total: materials.length,
     lowStock: materials.filter(m => (m.stockQuantity || 0) <= (m.minStockLevel || 10)).length,
-    fragileProtection: materials.filter(m => m.isFragile).length,
-    types: Array.from(new Set(materials.map(m => m.type).filter(Boolean))).length,
+    categories: Array.from(new Set(materials.map(m => m.category).filter(Boolean))).length,
+    totalValue: materials.reduce((sum, m) => sum + ((m.unitCost || 0) * (m.stockQuantity || 0)), 0),
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[600px]">
+        <div className="text-center">
+          <div className="relative w-16 h-16 mx-auto mb-6">
+            <div className="absolute inset-0 border-4 border-cyan-200 dark:border-cyan-800 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-cyan-600 dark:border-cyan-400 rounded-full border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-slate-600 dark:text-slate-400 font-medium">Loading packing materials...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Packing Materials</h1>
-          <p className="text-muted-foreground">Manage your packing and shipping materials inventory</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+            Packing Materials
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">
+            Manage packing materials inventory and suppliers
+          </p>
         </div>
         <Link href="/packing-materials/add">
-          <Button>
+          <Button data-testid="button-add-material">
             <Plus className="h-4 w-4 mr-2" />
             Add Material
           </Button>
         </Link>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Materials</CardTitle>
-            <Package2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Total Materials
+                </p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
+                        {formatCompactNumber(stats.total)}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-mono">{stats.total.toLocaleString()} materials</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
+                <Package2 className="h-7 w-7 text-cyan-600 dark:text-cyan-400" />
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Low Stock</CardTitle>
-            <Archive className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.lowStock}</div>
+
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Low Stock
+                </p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p className="text-3xl font-bold text-amber-600 dark:text-amber-400 truncate cursor-help">
+                        {formatCompactNumber(stats.lowStock)}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-mono">{stats.lowStock.toLocaleString()} items need restocking</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950">
+                <Archive className="h-7 w-7 text-amber-600 dark:text-amber-400" />
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Fragile Protection</CardTitle>
-            <Layers className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.fragileProtection}</div>
+
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Categories
+                </p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
+                        {formatCompactNumber(stats.categories)}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-mono">{stats.categories.toLocaleString()} unique categories</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
+                <Layers className="h-7 w-7 text-purple-600 dark:text-purple-400" />
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Material Types</CardTitle>
-            <Package2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.types}</div>
+
+        <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Total Value
+                </p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
+                        {formatCompactNumber(stats.totalValue)}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-mono">{formatCurrency(stats.totalValue, 'EUR')}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
+                <DollarSign className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search materials by name, code, or type..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground hidden sm:block" />
+      <Card className="border-slate-200 dark:border-slate-800">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Filter className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+              <CardTitle className="text-lg">Filters & Search</CardTitle>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>Column Visibility</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {allColumns
+                  .filter(col => col.key !== 'imageUrl' && col.key !== 'actions')
+                  .map((col) => (
+                    <DropdownMenuItem
+                      key={col.key}
+                      onClick={() => toggleColumnVisibility(col.key)}
+                      className="flex items-center justify-between"
+                    >
+                      <span>{col.header}</span>
+                      {visibleColumns[col.key] !== false && (
+                        <Check className="h-4 w-4 ml-2" />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="relative md:col-span-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search materials..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-10 focus:border-cyan-500"
+                data-testid="input-search"
+              />
+            </div>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="h-10 focus:border-cyan-500" data-testid="select-category">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
@@ -388,24 +589,24 @@ export default function PackingMaterials() {
                 <SelectItem value="packaging">Product Packaging</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={supplierFilter} onValueChange={setSupplierFilter}>
+              <SelectTrigger className="h-10 focus:border-cyan-500" data-testid="select-supplier">
+                <SelectValue placeholder="Supplier" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Suppliers</SelectItem>
+                {uniqueSuppliers.map((supplier) => (
+                  <SelectItem key={supplier} value={supplier}>
+                    {supplier}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <Select value={supplierFilter} onValueChange={setSupplierFilter}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Supplier" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Suppliers</SelectItem>
-              {uniqueSuppliers.map((supplier) => (
-                <SelectItem key={supplier} value={supplier}>
-                  {supplier}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      <div className="bg-white dark:bg-slate-900 rounded-lg border">
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
         <DataTable
           columns={columns}
           data={materials}
