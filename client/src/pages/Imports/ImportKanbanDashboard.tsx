@@ -1,35 +1,27 @@
-import React, { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  Package, Search, Plus, Calendar, DollarSign, Truck, Clock,
-  AlertCircle, CheckCircle, Globe, Ship, Plane, Filter,
-  MoreVertical, MapPin, Hash, Building2, Activity, Timer,
-  ChevronRight, ChevronDown, Grip, Eye, Edit, Trash2,
-  RefreshCw, Download, FileText, LayoutGrid, X, Zap,
-  BoxSelect, Copy, ArrowRight, TrendingUp, Users,
-  ShoppingCart, Warehouse, Target, ChevronUp
+  Package, Search, Plus, Truck, Globe, CheckCircle,
+  ArrowRight, MapPin, Hash, Building2, ChevronDown, ChevronUp,
+  RefreshCw, Warehouse, BoxSelect, Ship, Plane, Zap
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
+import { fuzzySearch } from "@/lib/fuzzySearch";
 
 // Type definitions
 interface PurchaseItem {
   id: number;
-  purchaseId: number;
   name: string;
-  sku: string | null;
   quantity: number;
-  unitPrice: string | null;
-  weight: string | null;
 }
 
 interface Purchase {
@@ -37,11 +29,8 @@ interface Purchase {
   supplier: string;
   trackingNumber: string | null;
   estimatedArrival: string | null;
-  notes: string | null;
-  shippingCost: string;
   totalCost: string;
   status: string;
-  createdAt: string;
   items: PurchaseItem[];
 }
 
@@ -49,24 +38,13 @@ interface CustomItem {
   id: number;
   name: string;
   source: string;
-  orderNumber: string | null;
   quantity: number;
-  unitPrice: string;
   weight: string;
-  dimensions: string | null;
-  trackingNumber: string | null;
-  notes: string | null;
   customerName: string | null;
-  customerEmail: string | null;
-  status: string;
-  createdAt: string;
 }
 
 interface ConsolidationItem {
   id: number;
-  consolidationId: number;
-  itemType: string;
-  itemId: number;
   name: string;
   quantity: number;
   weight: string;
@@ -77,11 +55,7 @@ interface Consolidation {
   name: string;
   shippingMethod: string;
   warehouse: string;
-  notes: string | null;
-  targetWeight: string | null;
-  maxItems: number | null;
   status: string;
-  createdAt: string;
   items: ConsolidationItem[];
 }
 
@@ -94,21 +68,11 @@ interface Shipment {
   destination: string;
   status: string;
   shippingCost: string;
-  insuranceValue: string;
   estimatedDelivery: string | null;
   deliveredAt: string | null;
   currentLocation: string | null;
-  notes: string | null;
   createdAt: string;
 }
-
-const shippingMethodColors: Record<string, string> = {
-  'air_express': 'border-red-300',
-  'air_standard': 'border-orange-300',
-  'sea_express': 'border-blue-300',
-  'sea_standard': 'border-cyan-300',
-  'ground': 'border-green-300'
-};
 
 const shippingMethodIcons: Record<string, any> = {
   'air_express': Zap,
@@ -118,7 +82,7 @@ const shippingMethodIcons: Record<string, any> = {
   'ground': Truck
 };
 
-// Purchase Card Component
+// Compact Purchase Card
 function PurchaseCard({ 
   purchase, 
   onDragStart 
@@ -127,53 +91,43 @@ function PurchaseCard({
   onDragStart: (e: React.DragEvent, item: any, type: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const displayItems = expanded ? purchase.items : purchase.items.slice(0, 5);
-  const hasMoreItems = purchase.items.length > 5;
+  const displayItems = expanded ? purchase.items : purchase.items.slice(0, 3);
+  const hasMore = purchase.items.length > 3;
 
   return (
     <Card
       draggable
       onDragStart={(e) => onDragStart(e, purchase, 'purchase')}
-      className="cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800 overflow-hidden w-full"
+      className="cursor-move hover:shadow-lg hover:border-cyan-300 dark:hover:border-cyan-700 transition-all duration-300 border-slate-200 dark:border-slate-700"
       data-testid={`purchase-${purchase.id}`}
     >
-      <CardContent className="p-1.5 sm:p-2 md:p-2.5 lg:p-3 space-y-1 md:space-y-1.5">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-1 sm:gap-2 min-w-0">
-          <h4 className="font-semibold text-[10px] sm:text-xs md:text-sm truncate min-w-0">
-            {purchase.supplier}
-          </h4>
-          <Badge variant="outline" className="text-[9px] sm:text-[10px] md:text-xs flex-shrink-0 px-1 sm:px-1.5">
-            {purchase.status}
-          </Badge>
+      <CardContent className="p-3 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <h4 className="font-semibold text-sm truncate">{purchase.supplier}</h4>
+          <Badge variant="outline" className="text-xs">{purchase.status}</Badge>
         </div>
 
-        {/* Tracking Info */}
         {purchase.trackingNumber && (
-          <div className="flex items-center text-[10px] md:text-xs text-muted-foreground min-w-0">
-            <Hash className="h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5 md:mr-1 flex-shrink-0" />
-            <span className="truncate min-w-0">{purchase.trackingNumber}</span>
+          <div className="flex items-center text-xs text-slate-600 dark:text-slate-400">
+            <Hash className="h-3 w-3 mr-1" />
+            <span className="truncate">{purchase.trackingNumber}</span>
           </div>
         )}
 
-        {/* Items List */}
         {purchase.items.length > 0 && (
-          <div className="space-y-0.5 pt-1">
+          <div className="space-y-1 pt-1 border-t border-slate-100 dark:border-slate-800">
             {displayItems.map((item, idx) => (
-              <div key={item.id} className="flex items-center justify-between text-xs gap-1 min-w-0">
-                <span className="text-muted-foreground truncate min-w-0 text-[10px] md:text-[11px]">
+              <div key={item.id} className="flex items-center justify-between text-xs">
+                <span className="text-slate-600 dark:text-slate-400 truncate">
                   {idx + 1}. {item.name}
                 </span>
-                <span className="text-muted-foreground flex-shrink-0 text-[10px] md:text-[11px]">
-                  x{item.quantity}
-                </span>
+                <span className="text-slate-500 dark:text-slate-500 ml-2">×{item.quantity}</span>
               </div>
             ))}
           </div>
         )}
 
-        {/* Expand/Collapse Button */}
-        {hasMoreItems && (
+        {hasMore && (
           <Button
             variant="ghost"
             size="sm"
@@ -181,29 +135,22 @@ function PurchaseCard({
               e.stopPropagation();
               setExpanded(!expanded);
             }}
-            className="w-full h-5 md:h-6 text-[10px] md:text-xs py-0"
+            className="w-full h-6 text-xs"
           >
             {expanded ? (
-              <>
-                <ChevronUp className="h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5" />
-                Show Less
-              </>
+              <><ChevronUp className="h-3 w-3 mr-1" />Show Less</>
             ) : (
-              <>
-                <ChevronDown className="h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5" />
-                +{purchase.items.length - 5} More
-              </>
+              <><ChevronDown className="h-3 w-3 mr-1" />+{purchase.items.length - 3} More</>
             )}
           </Button>
         )}
 
-        {/* Footer */}
-        <div className="flex items-center justify-between pt-1 sm:pt-1.5 border-t mt-1 sm:mt-1.5">
-          <span className="text-[9px] sm:text-[10px] md:text-xs font-semibold flex-shrink-0">
-            ${parseFloat(purchase.totalCost).toFixed(1)}
+        <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
+          <span className="text-sm font-semibold text-cyan-600 dark:text-cyan-400">
+            ${parseFloat(purchase.totalCost).toFixed(0)}
           </span>
           {purchase.estimatedArrival && (
-            <span className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground flex-shrink-0">
+            <span className="text-xs text-slate-500">
               {differenceInDays(new Date(purchase.estimatedArrival), new Date())}d
             </span>
           )}
@@ -213,7 +160,7 @@ function PurchaseCard({
   );
 }
 
-// Custom Item Card Component
+// Compact Custom Item Card
 function CustomItemCard({ 
   item, 
   onDragStart 
@@ -225,41 +172,25 @@ function CustomItemCard({
     <Card
       draggable
       onDragStart={(e) => onDragStart(e, item, 'custom')}
-      className="cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800 overflow-hidden w-full"
+      className="cursor-move hover:shadow-lg hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300 border-slate-200 dark:border-slate-700"
       data-testid={`custom-${item.id}`}
     >
-      <CardContent className="p-1.5 sm:p-2 md:p-2.5 lg:p-3 space-y-1 md:space-y-1.5">
-        {/* Header */}
-        <div className="flex items-center justify-between min-w-0">
-          <h4 className="font-semibold text-[10px] sm:text-xs md:text-sm truncate min-w-0">
-            {item.name}
-          </h4>
+      <CardContent className="p-3 space-y-2">
+        <h4 className="font-semibold text-sm truncate">{item.name}</h4>
+        
+        <div className="flex items-center justify-between gap-2">
+          <Badge variant="secondary" className="text-xs truncate">{item.source}</Badge>
         </div>
 
-        {/* Source Info */}
-        <div className="flex items-center justify-between gap-1 min-w-0">
-          <Badge className="text-[10px] sm:text-[10px] md:text-xs truncate max-w-[50%] sm:max-w-[55%] md:max-w-[60%]" variant="secondary">
-            {item.source}
-          </Badge>
-          {item.orderNumber && (
-            <span className="text-[10px] sm:text-[10px] md:text-xs text-muted-foreground truncate max-w-[30%] sm:max-w-[35%] md:max-w-[40%]">
-              #{item.orderNumber}
-            </span>
-          )}
+        <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+          <span>Qty: {item.quantity}</span>
+          <span>•</span>
+          <span>{item.weight}kg</span>
         </div>
 
-        {/* Quantity and Weight */}
-        <div className="flex items-center gap-1 text-[10px] md:text-xs text-muted-foreground">
-          <span className="flex-shrink-0">Qty: {item.quantity}</span>
-          <span className="flex-shrink-0">•</span>
-          <span className="flex-shrink-0">{item.weight}kg</span>
-        </div>
-
-        {/* Customer Info */}
         {item.customerName && (
-          <div className="flex items-center text-[10px] md:text-xs min-w-0">
-            <Users className="h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5 md:mr-1 flex-shrink-0" />
-            <span className="truncate min-w-0">{item.customerName}</span>
+          <div className="text-xs text-slate-500 truncate">
+            {item.customerName}
           </div>
         )}
       </CardContent>
@@ -267,7 +198,7 @@ function CustomItemCard({
   );
 }
 
-// Consolidation Card Component
+// Compact Consolidation Card
 function ConsolidationCard({ 
   consolidation, 
   onDragStart 
@@ -276,60 +207,47 @@ function ConsolidationCard({
   onDragStart: (e: React.DragEvent, item: any, type: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const displayItems = expanded ? consolidation.items : consolidation.items.slice(0, 5);
-  const hasMoreItems = consolidation.items.length > 5;
+  const displayItems = expanded ? consolidation.items : consolidation.items.slice(0, 3);
+  const hasMore = consolidation.items.length > 3;
   const Icon = shippingMethodIcons[consolidation.shippingMethod] || Package;
-  const borderColor = shippingMethodColors[consolidation.shippingMethod] || 'border-gray-300';
 
   return (
     <Card
       draggable
       onDragStart={(e) => onDragStart(e, consolidation, 'consolidation')}
-      className={`cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800 border-2 ${borderColor} overflow-hidden w-full`}
+      className="cursor-move hover:shadow-lg hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300 border-l-4 border-l-purple-500 dark:border-l-purple-400"
       data-testid={`consolidation-${consolidation.id}`}
     >
-      <CardContent className="p-1.5 sm:p-2 md:p-2.5 lg:p-3 space-y-1 md:space-y-1.5">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-1 sm:gap-2 min-w-0">
-          <div className="flex items-center gap-0.5 sm:gap-1 md:gap-2 min-w-0">
-            <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" />
-            <h4 className="font-bold text-[10px] sm:text-xs md:text-sm truncate">{consolidation.name}</h4>
+      <CardContent className="p-3 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Icon className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+            <h4 className="font-semibold text-sm truncate">{consolidation.name}</h4>
           </div>
-          <Badge className="text-[9px] sm:text-[10px] md:text-xs bg-green-100 text-green-800 flex-shrink-0 px-1 sm:px-1.5">
-            {consolidation.items.length} items
+          <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 text-xs">
+            {consolidation.items.length}
           </Badge>
         </div>
 
-        {/* Warehouse Info */}
-        <div className="flex items-center text-[10px] md:text-xs text-muted-foreground min-w-0">
-          <Building2 className="h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5 md:mr-1 flex-shrink-0" />
+        <div className="flex items-center text-xs text-slate-600 dark:text-slate-400">
+          <Building2 className="h-3 w-3 mr-1" />
           <span className="truncate">{consolidation.warehouse}</span>
         </div>
 
-        {/* Shipping Method */}
-        <div className="flex items-center text-[10px] md:text-xs min-w-0">
-          <Target className="h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5 md:mr-1 flex-shrink-0" />
-          <span className="truncate">{consolidation.shippingMethod.replace('_', ' ')}</span>
-        </div>
-
-        {/* Items List */}
         {consolidation.items.length > 0 && (
-          <div className="space-y-0.5 pt-1 border-t">
+          <div className="space-y-1 pt-1 border-t border-slate-100 dark:border-slate-800">
             {displayItems.map((item, idx) => (
-              <div key={item.id} className="flex items-center justify-between text-xs gap-1 min-w-0">
-                <span className="text-muted-foreground truncate min-w-0 text-[10px] md:text-[11px]">
+              <div key={item.id} className="flex items-center justify-between text-xs">
+                <span className="text-slate-600 dark:text-slate-400 truncate">
                   {idx + 1}. {item.name}
                 </span>
-                <span className="text-muted-foreground flex-shrink-0 text-[10px] md:text-[11px]">
-                  x{item.quantity}
-                </span>
+                <span className="text-slate-500 dark:text-slate-500 ml-2">×{item.quantity}</span>
               </div>
             ))}
           </div>
         )}
 
-        {/* Expand/Collapse Button */}
-        {hasMoreItems && (
+        {hasMore && (
           <Button
             variant="ghost"
             size="sm"
@@ -337,18 +255,12 @@ function ConsolidationCard({
               e.stopPropagation();
               setExpanded(!expanded);
             }}
-            className="w-full h-5 md:h-6 text-[10px] md:text-xs py-0"
+            className="w-full h-6 text-xs"
           >
             {expanded ? (
-              <>
-                <ChevronUp className="h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5" />
-                Show Less
-              </>
+              <><ChevronUp className="h-3 w-3 mr-1" />Show Less</>
             ) : (
-              <>
-                <ChevronDown className="h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5" />
-                +{consolidation.items.length - 5} More
-              </>
+              <><ChevronDown className="h-3 w-3 mr-1" />+{consolidation.items.length - 3} More</>
             )}
           </Button>
         )}
@@ -357,93 +269,121 @@ function ConsolidationCard({
   );
 }
 
-// Shipment Card Component
+// Compact Shipment Card with Items
 function ShipmentCard({ 
   shipment, 
+  consolidation,
   isDelivered = false,
   onDragStart 
 }: { 
-  shipment: Shipment; 
+  shipment: Shipment;
+  consolidation?: Consolidation;
   isDelivered?: boolean;
   onDragStart?: (e: React.DragEvent, item: any, type: string) => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const items = consolidation?.items || [];
+  const displayItems = expanded ? items : items.slice(0, 3);
+  const hasMore = items.length > 3;
+  
   const getDaysUntil = (date: string | null) => {
     if (!date) return null;
     const days = differenceInDays(new Date(date), new Date());
-    if (days < 0) return `${Math.abs(days)} days ago`;
+    if (days < 0) return `${Math.abs(days)}d ago`;
     if (days === 0) return 'Today';
     if (days === 1) return 'Tomorrow';
-    return `${days} days`;
+    return `${days}d`;
   };
+
+  const statusColor = isDelivered 
+    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
+    : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
 
   return (
     <Card
       draggable={!isDelivered}
-      onDragStart={onDragStart ? (e) => onDragStart(e, shipment, 'shipment') : undefined}
-      className={`${!isDelivered ? 'cursor-move' : ''} hover:shadow-md transition-all bg-white dark:bg-gray-800 overflow-hidden w-full`}
+      onDragStart={onDragStart && !isDelivered ? (e) => onDragStart(e, shipment, 'shipment') : undefined}
+      className={`${!isDelivered ? 'cursor-move hover:border-blue-300 dark:hover:border-blue-700' : ''} hover:shadow-lg transition-all duration-300 border-slate-200 dark:border-slate-700`}
       data-testid={`shipment-${shipment.id}`}
     >
-      <CardContent className="p-1.5 sm:p-2 md:p-2.5 lg:p-3 space-y-1 md:space-y-1.5">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-1 min-w-0">
-          <Badge 
-            variant={isDelivered ? "default" : "outline"} 
-            className={`text-[10px] md:text-xs flex-shrink-0 ${isDelivered ? 'bg-green-100 text-green-800' : ''}`}
-          >
+      <CardContent className="p-3 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <Badge className={`text-xs ${statusColor}`}>
             {isDelivered ? 'Delivered' : shipment.status}
           </Badge>
-          <span className="text-[10px] md:text-xs font-bold truncate">{shipment.carrier}</span>
+          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate">
+            {shipment.carrier}
+          </span>
         </div>
 
-        {/* Tracking Number */}
-        <h4 className="font-semibold text-[10px] sm:text-xs md:text-sm truncate">{shipment.trackingNumber}</h4>
+        <h4 className="font-semibold text-sm truncate">{shipment.trackingNumber}</h4>
 
-        {/* Route */}
-        <div className="flex items-center text-[10px] md:text-xs text-muted-foreground gap-0.5 md:gap-1 min-w-0">
-          <span className="truncate flex-1 max-w-[30%] sm:max-w-[35%] md:max-w-[40%]">{shipment.origin}</span>
-          <ArrowRight className="h-2.5 w-2.5 md:h-3 md:w-3 flex-shrink-0" />
-          <span className="truncate flex-1 max-w-[30%] sm:max-w-[35%] md:max-w-[40%]">{shipment.destination}</span>
+        <div className="flex items-center text-xs text-slate-600 dark:text-slate-400 gap-1">
+          <span className="truncate max-w-[40%]">{shipment.origin}</span>
+          <ArrowRight className="h-3 w-3" />
+          <span className="truncate max-w-[40%]">{shipment.destination}</span>
         </div>
 
-        {/* Current Location */}
         {shipment.currentLocation && !isDelivered && (
-          <div className="flex items-center text-[10px] md:text-xs min-w-0">
-            <MapPin className="h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5 md:mr-1 flex-shrink-0" />
-            <span className="truncate min-w-0">{shipment.currentLocation}</span>
+          <div className="flex items-center text-xs text-slate-500 dark:text-slate-400">
+            <MapPin className="h-3 w-3 mr-1" />
+            <span className="truncate">{shipment.currentLocation}</span>
           </div>
         )}
 
-        {/* Footer */}
-        <div className="flex items-center justify-between pt-1 sm:pt-1.5 border-t mt-1 sm:mt-1.5">
+        {/* Shipment Items */}
+        {items.length > 0 && (
+          <div className="space-y-1 pt-1 border-t border-slate-100 dark:border-slate-800">
+            <div className="text-xs font-medium text-slate-600 dark:text-slate-400">
+              Contents ({items.length} items)
+            </div>
+            {displayItems.map((item, idx) => (
+              <div key={item.id} className="flex items-center justify-between text-xs">
+                <span className="text-slate-600 dark:text-slate-400 truncate">
+                  {idx + 1}. {item.name}
+                </span>
+                <span className="text-slate-500 dark:text-slate-500 ml-2">×{item.quantity}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {hasMore && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpanded(!expanded);
+            }}
+            className="w-full h-6 text-xs"
+          >
+            {expanded ? (
+              <><ChevronUp className="h-3 w-3 mr-1" />Show Less</>
+            ) : (
+              <><ChevronDown className="h-3 w-3 mr-1" />+{items.length - 3} More</>
+            )}
+          </Button>
+        )}
+
+        <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
           {isDelivered && shipment.deliveredAt ? (
-            <>
-              <span className="text-[10px] md:text-xs">
-                <Calendar className="h-2.5 w-2.5 md:h-3 md:w-3 inline mr-0.5 md:mr-1" />
-                {format(new Date(shipment.deliveredAt), 'MMM d, yyyy')}
-              </span>
-              <Button variant="ghost" size="sm" className="h-5 md:h-6 px-1 md:px-2 text-[10px] md:text-xs py-0">
-                <Eye className="h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5 md:mr-1" />
-                View
-              </Button>
-            </>
+            <span className="text-xs text-slate-500">
+              {format(new Date(shipment.deliveredAt), 'MMM d, yyyy')}
+            </span>
           ) : (
             <>
-              <span className="text-[9px] sm:text-[10px] md:text-xs font-semibold flex-shrink-0">
+              <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
                 ${parseFloat(shipment.shippingCost).toFixed(0)}
               </span>
               {shipment.estimatedDelivery && (
-                <span className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground flex-shrink-0">
+                <span className="text-xs text-slate-500">
                   {getDaysUntil(shipment.estimatedDelivery)}
                 </span>
               )}
             </>
           )}
         </div>
-
-        {/* Progress bar for in-transit */}
-        {!isDelivered && shipment.status === 'in_transit' && (
-          <Progress value={60} className="h-0.5 mt-1" />
-        )}
       </CardContent>
     </Card>
   );
@@ -457,44 +397,27 @@ export default function ImportKanbanDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch all data
-  const { data: purchases = [], isLoading: purchasesLoading } = useQuery({
+  // Fetch data
+  const { data: purchases = [], isLoading: purchasesLoading } = useQuery<Purchase[]>({
     queryKey: ['/api/imports/purchases'],
-    queryFn: async () => {
-      const response = await apiRequest('GET', '/api/imports/purchases');
-      return response.json() as Promise<Purchase[]>;
-    }
   });
 
-  const { data: customItems = [], isLoading: customItemsLoading } = useQuery({
+  const { data: customItems = [], isLoading: customItemsLoading } = useQuery<CustomItem[]>({
     queryKey: ['/api/imports/custom-items'],
-    queryFn: async () => {
-      const response = await apiRequest('GET', '/api/imports/custom-items');
-      return response.json() as Promise<CustomItem[]>;
-    }
   });
 
-  const { data: consolidations = [], isLoading: consolidationsLoading } = useQuery({
+  const { data: consolidations = [], isLoading: consolidationsLoading } = useQuery<Consolidation[]>({
     queryKey: ['/api/imports/consolidations'],
-    queryFn: async () => {
-      const response = await apiRequest('GET', '/api/imports/consolidations');
-      return response.json() as Promise<Consolidation[]>;
-    }
   });
 
-  const { data: shipments = [], isLoading: shipmentsLoading } = useQuery({
+  const { data: shipments = [], isLoading: shipmentsLoading } = useQuery<Shipment[]>({
     queryKey: ['/api/imports/shipments'],
-    queryFn: async () => {
-      const response = await apiRequest('GET', '/api/imports/shipments');
-      return response.json() as Promise<Shipment[]>;
-    }
   });
 
-  // Update status mutations
+  // Mutations
   const updatePurchaseStatusMutation = useMutation({
     mutationFn: async ({ purchaseId, status }: { purchaseId: number; status: string }) => {
-      const response = await apiRequest('PATCH', `/api/imports/purchases/${purchaseId}/status`, { status });
-      return response.json();
+      return apiRequest('PATCH', `/api/imports/purchases/${purchaseId}/status`, { status });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
@@ -502,7 +425,7 @@ export default function ImportKanbanDashboard() {
     }
   });
 
-  // Handle drag and drop
+  // Drag handlers
   const handleDragStart = (e: React.DragEvent, item: any, type: string) => {
     setDraggedItem({ ...item, type });
     e.dataTransfer.effectAllowed = 'move';
@@ -510,13 +433,10 @@ export default function ImportKanbanDashboard() {
 
   const handleDragOver = (e: React.DragEvent, columnId: string) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
     setDragOverColumn(columnId);
   };
 
-  const handleDragLeave = () => {
-    setDragOverColumn(null);
-  };
+  const handleDragLeave = () => setDragOverColumn(null);
 
   const handleDrop = (e: React.DragEvent, targetColumn: string) => {
     e.preventDefault();
@@ -524,7 +444,6 @@ export default function ImportKanbanDashboard() {
     
     if (!draggedItem) return;
     
-    // Handle status updates based on target column
     if (draggedItem.type === 'purchase' && targetColumn === 'at_warehouse') {
       updatePurchaseStatusMutation.mutate({
         purchaseId: draggedItem.id,
@@ -535,51 +454,67 @@ export default function ImportKanbanDashboard() {
     setDraggedItem(null);
   };
 
+  // Filter data with fuzzy search
+  const filteredPurchases = useMemo(() => {
+    const pending = purchases.filter(p => 
+      p.status === 'pending' || p.status === 'processing'
+    );
+    if (!searchQuery) return pending;
+    return fuzzySearch(pending, searchQuery, {
+      fields: ['supplier', 'trackingNumber'],
+      threshold: 0.2,
+    }).map(r => r.item);
+  }, [purchases, searchQuery]);
+
+  const filteredCustomItems = useMemo(() => {
+    const available = customItems.filter(item => item.status === 'available');
+    if (!searchQuery) return available;
+    return fuzzySearch(available, searchQuery, {
+      fields: ['name', 'source'],
+      threshold: 0.2,
+    }).map(r => r.item);
+  }, [customItems, searchQuery]);
+
+  const filteredConsolidations = useMemo(() => {
+    let filtered = consolidations.filter(c => c.status === 'preparing');
+    if (filterWarehouse !== 'all') {
+      filtered = filtered.filter(c => 
+        c.warehouse.toLowerCase().includes(filterWarehouse.toLowerCase())
+      );
+    }
+    return filtered;
+  }, [consolidations, filterWarehouse]);
+
+  const activeShipments = useMemo(() => {
+    const active = shipments.filter(s => s.status !== 'delivered');
+    if (!searchQuery) return active;
+    return fuzzySearch(active, searchQuery, {
+      fields: ['trackingNumber', 'carrier'],
+      threshold: 0.2,
+    }).map(r => r.item);
+  }, [shipments, searchQuery]);
+
+  const deliveredShipments = useMemo(() => {
+    const delivered = shipments.filter(s => s.status === 'delivered');
+    if (!searchQuery) return delivered;
+    return fuzzySearch(delivered, searchQuery, {
+      fields: ['trackingNumber', 'carrier'],
+      threshold: 0.2,
+    }).map(r => r.item);
+  }, [shipments, searchQuery]);
+
   const isLoading = purchasesLoading || customItemsLoading || consolidationsLoading || shipmentsLoading;
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-6">
+        <Skeleton className="h-32 w-full" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-96" />)}
+        </div>
       </div>
     );
   }
-
-  // Filter data
-  const filteredPurchases = purchases.filter(p => 
-    (p.status === 'pending' || p.status === 'processing') &&
-    (searchQuery === '' || 
-      p.supplier.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.trackingNumber && p.trackingNumber.toLowerCase().includes(searchQuery.toLowerCase()))
-    )
-  );
-
-  const filteredCustomItems = customItems.filter(item => 
-    item.status === 'available' &&
-    (searchQuery === '' || 
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.orderNumber && item.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()))
-    )
-  );
-
-  const filteredConsolidations = consolidations.filter(c => 
-    c.status === 'preparing' &&
-    (filterWarehouse === 'all' || c.warehouse.toLowerCase().includes(filterWarehouse))
-  );
-
-  const activeShipments = shipments.filter(s => 
-    s.status !== 'delivered' &&
-    (searchQuery === '' || 
-      s.trackingNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.carrier.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
-
-  const deliveredShipments = shipments.filter(s => 
-    s.status === 'delivered' &&
-    (searchQuery === '' || 
-      s.trackingNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.carrier.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
 
   const columns = [
     {
@@ -587,87 +522,84 @@ export default function ImportKanbanDashboard() {
       title: 'Purchase Orders',
       icon: <Package className="h-4 w-4" />,
       count: filteredPurchases.length,
-      bgColor: 'bg-yellow-50 dark:bg-yellow-900/10',
-      borderColor: 'border-yellow-200 dark:border-yellow-800'
+      gradient: 'from-yellow-500 to-orange-500',
+      bgLight: 'bg-yellow-50 dark:bg-yellow-950/20',
     },
     {
       id: 'at_warehouse',
       title: 'Consolidation',
       icon: <Warehouse className="h-4 w-4" />,
       count: filteredCustomItems.length + filteredConsolidations.length,
-      bgColor: 'bg-purple-50 dark:bg-purple-900/10',
-      borderColor: 'border-purple-200 dark:border-purple-800'
+      gradient: 'from-purple-500 to-pink-500',
+      bgLight: 'bg-purple-50 dark:bg-purple-950/20',
     },
     {
       id: 'international',
       title: 'International Transit',
       icon: <Globe className="h-4 w-4" />,
       count: activeShipments.length,
-      bgColor: 'bg-blue-50 dark:bg-blue-900/10',
-      borderColor: 'border-blue-200 dark:border-blue-800'
+      gradient: 'from-blue-500 to-cyan-500',
+      bgLight: 'bg-blue-50 dark:bg-blue-950/20',
     },
     {
       id: 'delivered',
       title: 'Delivered',
       icon: <CheckCircle className="h-4 w-4" />,
       count: deliveredShipments.length,
-      bgColor: 'bg-green-50 dark:bg-green-900/10',
-      borderColor: 'border-green-200 dark:border-green-800'
+      gradient: 'from-emerald-500 to-green-500',
+      bgLight: 'bg-emerald-50 dark:bg-emerald-950/20',
     }
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Import Kanban Dashboard</h1>
-          <p className="text-muted-foreground">Drag and drop to manage import workflow</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Import Kanban</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">
+            Drag and drop to manage import workflow
+          </p>
         </div>
         <div className="flex gap-2">
           <Link href="/purchase-orders">
-            <Button variant="outline">
+            <Button variant="outline" size="sm">
               <Plus className="h-4 w-4 mr-2" />
               New Purchase
             </Button>
           </Link>
           <Link href="/consolidation">
-            <Button variant="outline">
-              <Package className="h-4 w-4 mr-2" />
-              Custom Item
-            </Button>
-          </Link>
-          <Link href="/imports/international-transit">
-            <Button>
-              <Plane className="h-4 w-4 mr-2" />
-              New Shipment
+            <Button size="sm">
+              <BoxSelect className="h-4 w-4 mr-2" />
+              Consolidate
             </Button>
           </Link>
         </div>
       </div>
 
       {/* Search and Filters */}
-      <Card>
+      <Card className="border-slate-200 dark:border-slate-800">
         <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search by order, supplier, tracking..."
+                placeholder="Search by supplier, tracking, order..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
+                data-testid="input-search-kanban"
               />
             </div>
             <Select value={filterWarehouse} onValueChange={setFilterWarehouse}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="All Warehouses" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Warehouses</SelectItem>
-                <SelectItem value="china">China Warehouse</SelectItem>
-                <SelectItem value="vietnam">Vietnam Warehouse</SelectItem>
-                <SelectItem value="usa">USA Warehouse</SelectItem>
+                <SelectItem value="china">China</SelectItem>
+                <SelectItem value="vietnam">Vietnam</SelectItem>
+                <SelectItem value="usa">USA</SelectItem>
               </SelectContent>
             </Select>
             <Button 
@@ -675,8 +607,9 @@ export default function ImportKanbanDashboard() {
               size="icon"
               onClick={() => {
                 queryClient.invalidateQueries();
-                toast({ title: "Refreshed", description: "Data has been refreshed" });
+                toast({ title: "Refreshed", description: "Data updated" });
               }}
+              data-testid="button-refresh"
             >
               <RefreshCw className="h-4 w-4" />
             </Button>
@@ -685,35 +618,41 @@ export default function ImportKanbanDashboard() {
       </Card>
 
       {/* Kanban Board */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2 md:gap-3 lg:gap-4 w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {columns.map((column) => (
           <div
             key={column.id}
-            className={`rounded-lg border-2 overflow-hidden min-w-0 ${column.bgColor} ${column.borderColor} ${
-              dragOverColumn === column.id ? 'ring-2 ring-primary ring-offset-2' : ''
+            className={`rounded-lg border-2 transition-all duration-300 ${
+              dragOverColumn === column.id 
+                ? 'ring-2 ring-cyan-500 ring-offset-2 border-cyan-400 dark:border-cyan-600' 
+                : 'border-slate-200 dark:border-slate-700'
             }`}
             onDragOver={(e) => handleDragOver(e, column.id)}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, column.id)}
+            data-testid={`column-${column.id}`}
           >
             {/* Column Header */}
-            <div className="p-3 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  {column.icon}
-                  <h3 className="font-semibold text-sm truncate">{column.title}</h3>
+            <div className={`p-4 border-b border-slate-200 dark:border-slate-700 ${column.bgLight}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className={`p-2 rounded-lg bg-gradient-to-r ${column.gradient} text-white`}>
+                    {column.icon}
+                  </div>
+                  <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100">
+                    {column.title}
+                  </h3>
                 </div>
-                <Badge variant="secondary" className="text-xs font-bold flex-shrink-0">
+                <Badge variant="secondary" className="font-semibold">
                   {column.count}
                 </Badge>
               </div>
             </div>
 
             {/* Column Content */}
-            <div className="h-[400px] md:h-[500px] lg:h-[600px] overflow-y-auto overflow-x-hidden w-full">
-              <div className="space-y-2 md:space-y-3 px-1.5 sm:px-2 md:px-2.5 lg:px-3 py-2 pr-2">
-                {/* Purchase Orders Column */}
-                {column.id === 'processing' && filteredPurchases.map((purchase) => (
+            <div className="h-[600px] overflow-y-auto overflow-x-hidden">
+              <div className="space-y-3 p-3">
+                {column.id === 'processing' && filteredPurchases.map(purchase => (
                   <PurchaseCard 
                     key={purchase.id} 
                     purchase={purchase} 
@@ -721,17 +660,16 @@ export default function ImportKanbanDashboard() {
                   />
                 ))}
 
-                {/* Consolidation Column */}
                 {column.id === 'at_warehouse' && (
                   <>
-                    {filteredCustomItems.map((item) => (
+                    {filteredCustomItems.map(item => (
                       <CustomItemCard 
                         key={`custom-${item.id}`} 
                         item={item} 
                         onDragStart={handleDragStart}
                       />
                     ))}
-                    {filteredConsolidations.map((consolidation) => (
+                    {filteredConsolidations.map(consolidation => (
                       <ConsolidationCard 
                         key={`consol-${consolidation.id}`} 
                         consolidation={consolidation} 
@@ -741,23 +679,33 @@ export default function ImportKanbanDashboard() {
                   </>
                 )}
 
-                {/* International Transit Column */}
-                {column.id === 'international' && activeShipments.map((shipment) => (
+                {column.id === 'international' && activeShipments.map(shipment => (
                   <ShipmentCard 
                     key={shipment.id} 
-                    shipment={shipment} 
+                    shipment={shipment}
+                    consolidation={consolidations.find(c => c.id === shipment.consolidationId)}
                     onDragStart={handleDragStart}
                   />
                 ))}
 
-                {/* Delivered Column */}
-                {column.id === 'delivered' && deliveredShipments.map((shipment) => (
+                {column.id === 'delivered' && deliveredShipments.map(shipment => (
                   <ShipmentCard 
                     key={shipment.id} 
-                    shipment={shipment} 
+                    shipment={shipment}
+                    consolidation={consolidations.find(c => c.id === shipment.consolidationId)}
                     isDelivered={true}
                   />
                 ))}
+
+                {/* Empty State */}
+                {column.count === 0 && (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    {column.icon}
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                      No items
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
