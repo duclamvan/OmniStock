@@ -302,7 +302,7 @@ export default function StockLookup() {
                   {isExpanded && selectedProductData && (
                     <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
                       {/* Stock Breakdown */}
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className={`grid gap-3 ${selectedProductData.variants.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
                           <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Base Stock</p>
                           <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{selectedProductData.quantity}</p>
