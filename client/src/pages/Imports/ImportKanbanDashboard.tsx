@@ -296,6 +296,24 @@ function ShipmentCard({
     return `${days}d`;
   };
 
+  const getDeliveryColorClass = (date: string | null) => {
+    if (!date) return 'text-slate-500 dark:text-slate-400';
+    const days = differenceInDays(new Date(date), new Date());
+    
+    // Overdue - Critical Red
+    if (days < 0) return 'text-red-700 dark:text-red-400 font-bold animate-pulse';
+    // Today - Urgent Red
+    if (days === 0) return 'text-red-600 dark:text-red-400 font-bold';
+    // Tomorrow - Warning Orange
+    if (days === 1) return 'text-orange-600 dark:text-orange-400 font-semibold';
+    // 2-3 days - Alert Amber
+    if (days <= 3) return 'text-amber-600 dark:text-amber-400 font-semibold';
+    // 4-7 days - Caution Yellow
+    if (days <= 7) return 'text-yellow-700 dark:text-yellow-500 font-medium';
+    // More than 7 days - Normal
+    return 'text-slate-600 dark:text-slate-400';
+  };
+
   const statusColor = isDelivered 
     ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
     : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
@@ -378,7 +396,7 @@ function ShipmentCard({
                 ${parseFloat(shipment.shippingCost).toFixed(0)}
               </span>
               {shipment.estimatedDelivery && (
-                <span className="text-xs text-slate-500">
+                <span className={`text-xs ${getDeliveryColorClass(shipment.estimatedDelivery)}`}>
                   {getDaysUntil(shipment.estimatedDelivery)}
                 </span>
               )}
