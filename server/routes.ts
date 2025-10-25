@@ -32,6 +32,7 @@ import {
   products,
   productLocations,
   purchaseItems,
+  importPurchases,
   receipts,
   receiptItems,
   orderItems,
@@ -41,7 +42,7 @@ import {
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { eq, desc, and, sql, inArray } from "drizzle-orm";
+import { eq, desc, and, sql, inArray, or, ilike } from "drizzle-orm";
 import {
   ObjectStorageService,
   ObjectNotFoundError,
@@ -56,6 +57,63 @@ import { weightCalculationService } from "./services/weightCalculation";
 import { ImageCompressionService } from "./services/imageCompression";
 import { optimizeCartonPacking } from "./services/cartonPackingService";
 import OpenAI from "openai";
+
+// Vietnamese and Czech diacritics normalization for accent-insensitive search
+function normalizeVietnamese(str: string): string {
+  const diacriticsMap: Record<string, string> = {
+    // Vietnamese diacritics
+    'á': 'a', 'à': 'a', 'ả': 'a', 'ã': 'a', 'ạ': 'a',
+    'ă': 'a', 'ắ': 'a', 'ằ': 'a', 'ẳ': 'a', 'ẵ': 'a', 'ặ': 'a',
+    'â': 'a', 'ấ': 'a', 'ầ': 'a', 'ẩ': 'a', 'ẫ': 'a', 'ậ': 'a',
+    'đ': 'd',
+    'é': 'e', 'è': 'e', 'ẻ': 'e', 'ẽ': 'e', 'ẹ': 'e',
+    'ê': 'e', 'ế': 'e', 'ề': 'e', 'ể': 'e', 'ễ': 'e', 'ệ': 'e',
+    'í': 'i', 'ì': 'i', 'ỉ': 'i', 'ĩ': 'i', 'ị': 'i',
+    'ó': 'o', 'ò': 'o', 'ỏ': 'o', 'õ': 'o', 'ọ': 'o',
+    'ô': 'o', 'ố': 'o', 'ồ': 'o', 'ổ': 'o', 'ỗ': 'o', 'ộ': 'o',
+    'ơ': 'o', 'ớ': 'o', 'ờ': 'o', 'ở': 'o', 'ỡ': 'o', 'ợ': 'o',
+    'ú': 'u', 'ù': 'u', 'ủ': 'u', 'ũ': 'u', 'ụ': 'u',
+    'ư': 'u', 'ứ': 'u', 'ừ': 'u', 'ử': 'u', 'ữ': 'u', 'ự': 'u',
+    'ý': 'y', 'ỳ': 'y', 'ỷ': 'y', 'ỹ': 'y', 'ỵ': 'y',
+    // Czech diacritics
+    'ě': 'e', 'ň': 'n', 'ř': 'r', 'š': 's', 'ť': 't', 'ů': 'u', 'ž': 'z',
+    'ď': 'd', 'č': 'c', 'ĺ': 'l', 'ľ': 'l', 'ŕ': 'r'
+  };
+
+  return str.split('').map(char => {
+    return diacriticsMap[char.toLowerCase()] || char.toLowerCase();
+  }).join('');
+}
+
+// SQL normalization helper - creates REPLACE chain for Vietnamese and Czech diacritics
+// This allows database-level filtering instead of loading entire tables
+// IMPORTANT: Apply LOWER() first, then REPLACE operations on the lowercased value
+function normalizeSQLColumn(column: any) {
+  return sql`
+    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+      LOWER(${column}),
+      'á', 'a'), 'à', 'a'), 'ả', 'a'), 'ã', 'a'), 'ạ', 'a'),
+      'ă', 'a'), 'ắ', 'a'), 'ằ', 'a'), 'ẳ', 'a'), 'ẵ', 'a'), 'ặ', 'a'),
+      'â', 'a'), 'ấ', 'a'), 'ầ', 'a'), 'ẩ', 'a'), 'ẫ', 'a'), 'ậ', 'a'),
+      'đ', 'd'),
+      'é', 'e'), 'è', 'e'), 'ẻ', 'e'), 'ẽ', 'e'), 'ẹ', 'e'),
+      'ê', 'e'), 'ế', 'e'), 'ề', 'e'), 'ể', 'e'), 'ễ', 'e'), 'ệ', 'e'),
+      'í', 'i'), 'ì', 'i'), 'ỉ', 'i'), 'ĩ', 'i'), 'ị', 'i'),
+      'ó', 'o'), 'ò', 'o'), 'ỏ', 'o'), 'õ', 'o'), 'ọ', 'o'),
+      'ô', 'o'), 'ố', 'o'), 'ồ', 'o'), 'ổ', 'o'), 'ỗ', 'o'), 'ộ', 'o'),
+      'ơ', 'o'), 'ớ', 'o'), 'ờ', 'o'), 'ở', 'o'), 'ỡ', 'o'), 'ợ', 'o'),
+      'ú', 'u'), 'ù', 'u'), 'ủ', 'u'), 'ũ', 'u'), 'ụ', 'u'),
+      'ư', 'u'), 'ứ', 'u'), 'ừ', 'u'), 'ử', 'u'), 'ữ', 'u'), 'ự', 'u'),
+      'ý', 'y'), 'ỳ', 'y'), 'ỷ', 'y'), 'ỹ', 'y'), 'ỵ', 'y'),
+      'ě', 'e'), 'ň', 'n'), 'ř', 'r'), 'š', 's'), 'ť', 't'), 'ů', 'u'), 'ž', 'z'),
+      'ď', 'd'), 'č', 'c'), 'ĺ', 'l'), 'ľ', 'l'), 'ŕ', 'r')
+  `;
+}
 
 // Configure multer for image uploads with memory storage for compression
 const upload = multer({ 
@@ -411,12 +469,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Global Search endpoint with Vietnamese diacritics normalization
+  // Calculate relevance score for search results with Vietnamese normalization
+  function calculateScore(text: string, query: string): number {
+    if (!text || !query) return 0;
+    
+    const normalizedText = normalizeVietnamese(text.toLowerCase());
+    const normalizedQuery = normalizeVietnamese(query.toLowerCase());
+    
+    let score = 0;
+    
+    // Exact match (highest priority)
+    if (normalizedText === normalizedQuery) {
+      score += 100;
+    }
+    
+    // Starts with query
+    if (normalizedText.startsWith(normalizedQuery)) {
+      score += 50;
+    }
+    
+    // Contains query
+    if (normalizedText.includes(normalizedQuery)) {
+      score += 25;
+    }
+    
+    // Word boundary match (query matches start of a word)
+    const words = normalizedText.split(/\s+/);
+    for (const word of words) {
+      if (word.startsWith(normalizedQuery)) {
+        score += 35;
+        break;
+      }
+    }
+    
+    // Multi-word bonus (all query words found)
+    const queryWords = normalizedQuery.split(/\s+/);
+    if (queryWords.length > 1) {
+      const allWordsFound = queryWords.every(qw => 
+        normalizedText.includes(qw)
+      );
+      if (allWordsFound) {
+        score += 20;
+      }
+    }
+    
+    return score;
+  }
+
+  // Global Search endpoint - PostgreSQL-native accent-insensitive search
   app.get('/api/search', async (req, res) => {
     try {
       const query = req.query.q as string || '';
       
-      if (!query.trim()) {
+      // Require minimum 2 characters
+      if (!query.trim() || query.trim().length < 2) {
         return res.json({ 
           inventoryItems: [], 
           shipmentItems: [], 
@@ -424,83 +530,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Vietnamese diacritics normalization function
-      const normalizeVietnamese = (str: string): string => {
-        const vietnameseMap: Record<string, string> = {
-          'à': 'a', 'á': 'a', 'ả': 'a', 'ã': 'a', 'ạ': 'a',
-          'ă': 'a', 'ằ': 'a', 'ắ': 'a', 'ẳ': 'a', 'ẵ': 'a', 'ặ': 'a',
-          'â': 'a', 'ầ': 'a', 'ấ': 'a', 'ẩ': 'a', 'ẫ': 'a', 'ậ': 'a',
-          'đ': 'd',
-          'è': 'e', 'é': 'e', 'ẻ': 'e', 'ẽ': 'e', 'ẹ': 'e',
-          'ê': 'e', 'ề': 'e', 'ế': 'e', 'ể': 'e', 'ễ': 'e', 'ệ': 'e',
-          'ì': 'i', 'í': 'i', 'ỉ': 'i', 'ĩ': 'i', 'ị': 'i',
-          'ò': 'o', 'ó': 'o', 'ỏ': 'o', 'õ': 'o', 'ọ': 'o',
-          'ô': 'o', 'ồ': 'o', 'ố': 'o', 'ổ': 'o', 'ỗ': 'o', 'ộ': 'o',
-          'ơ': 'o', 'ờ': 'o', 'ớ': 'o', 'ở': 'o', 'ỡ': 'o', 'ợ': 'o',
-          'ù': 'u', 'ú': 'u', 'ủ': 'u', 'ũ': 'u', 'ụ': 'u',
-          'ư': 'u', 'ừ': 'u', 'ứ': 'u', 'ử': 'u', 'ữ': 'u', 'ự': 'u',
-          'ỳ': 'y', 'ý': 'y', 'ỷ': 'y', 'ỹ': 'y', 'ỵ': 'y',
-          'À': 'A', 'Á': 'A', 'Ả': 'A', 'Ã': 'A', 'Ạ': 'A',
-          'Ă': 'A', 'Ằ': 'A', 'Ắ': 'A', 'Ẳ': 'A', 'Ẵ': 'A', 'Ặ': 'A',
-          'Â': 'A', 'Ầ': 'A', 'Ấ': 'A', 'Ẩ': 'A', 'Ẫ': 'A', 'Ậ': 'A',
-          'Đ': 'D',
-          'È': 'E', 'É': 'E', 'Ẻ': 'E', 'Ẽ': 'E', 'Ẹ': 'E',
-          'Ê': 'E', 'Ề': 'E', 'Ế': 'E', 'Ể': 'E', 'Ễ': 'E', 'Ệ': 'E',
-          'Ì': 'I', 'Í': 'I', 'Ỉ': 'I', 'Ĩ': 'I', 'Ị': 'I',
-          'Ò': 'O', 'Ó': 'O', 'Ỏ': 'O', 'Õ': 'O', 'Ọ': 'O',
-          'Ô': 'O', 'Ồ': 'O', 'Ố': 'O', 'Ổ': 'O', 'Ỗ': 'O', 'Ộ': 'O',
-          'Ơ': 'O', 'Ờ': 'O', 'Ớ': 'O', 'Ở': 'O', 'Ỡ': 'O', 'Ợ': 'O',
-          'Ù': 'U', 'Ú': 'U', 'Ủ': 'U', 'Ũ': 'U', 'Ụ': 'U',
-          'Ư': 'U', 'Ừ': 'U', 'Ứ': 'U', 'Ử': 'U', 'Ữ': 'U', 'Ự': 'U',
-          'Ỳ': 'Y', 'Ý': 'Y', 'Ỷ': 'Y', 'Ỹ': 'Y', 'Ỵ': 'Y'
-        };
-        return str.replace(/[àáảãạăằắẳẵặâầấẩẫậđèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬĐÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴ]/g, (char) => vietnameseMap[char] || char);
-      };
-
+      // Normalize query for Vietnamese accent-insensitive search
       const normalizedQuery = normalizeVietnamese(query.toLowerCase().trim());
 
-      // Fuzzy search scoring function
-      const calculateScore = (text: string, query: string): number => {
-        const normalizedText = normalizeVietnamese(text.toLowerCase());
-        let score = 0;
+      // STEP 1: Database-level filtering using SQL REPLACE() chain
+      // Only fetch ~20 candidates that match at database level (instead of 500)
+      const productCandidates = await db
+        .select()
+        .from(products)
+        .where(
+          and(
+            eq(products.isActive, true),
+            or(
+              sql`${normalizeSQLColumn(products.name)} LIKE ${`%${normalizedQuery}%`}`,
+              sql`${normalizeSQLColumn(products.sku)} LIKE ${`%${normalizedQuery}%`}`
+            )
+          )
+        )
+        .limit(20); // Much smaller limit - DB already filtered results
 
-        // Exact match (highest priority)
-        if (normalizedText === query) score += 100;
-
-        // Starts with query
-        if (normalizedText.startsWith(query)) score += 50;
-
-        // Contains query
-        if (normalizedText.includes(query)) score += 25;
-
-        // Word boundary match (any word starts with query)
-        const words = normalizedText.split(/\s+/);
-        if (words.some(word => word.startsWith(query))) score += 35;
-
-        // Multi-word bonus (all query words found)
-        const queryWords = query.split(/\s+/);
-        if (queryWords.length > 1 && queryWords.every(qw => normalizedText.includes(qw))) {
-          score += 20;
-        }
-
-        return score;
-      };
-
-      // Search inventory (current stock) with fuzzy scoring - show all matches
-      const allProducts = await storage.getProducts();
-      const scoredProducts = allProducts
-        .map(product => {
-          const nameScore = calculateScore(product.name || '', normalizedQuery);
-          const skuScore = calculateScore(product.sku || '', normalizedQuery);
-          const maxScore = Math.max(nameScore, skuScore);
-
-          return {
-            product,
-            score: maxScore
-          };
-        })
-        .filter(item => item.score > 0)
-        .sort((a, b) => b.score - a.score);
+      // STEP 2: In-memory scoring for final ranking (on much smaller result set)
+      const scoredProducts = productCandidates
+        .map(product => ({
+          product,
+          score: Math.max(
+            calculateScore(product.name || '', normalizedQuery),
+            calculateScore(product.sku || '', normalizedQuery)
+          )
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10); // Top 10 after scoring
 
       const inventoryItems = scoredProducts.map(({ product }) => ({
         id: product.id,
@@ -511,75 +570,143 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: 'inventory' as const
       }));
 
-      // Search upcoming shipments (purchase orders) - Skip for now as purchases are not in DB
-      const shipmentItems: any[] = [];
+      // STEP 1: Database-level filtering for shipments
+      const shipmentCandidates = await db
+        .select({
+          itemId: purchaseItems.id,
+          itemName: purchaseItems.name,
+          itemSku: purchaseItems.sku,
+          quantity: purchaseItems.quantity,
+          purchaseId: importPurchases.id,
+          supplier: importPurchases.supplier,
+          trackingNumber: importPurchases.trackingNumber,
+          estimatedArrival: importPurchases.estimatedArrival,
+          status: importPurchases.status
+        })
+        .from(purchaseItems)
+        .innerJoin(importPurchases, eq(purchaseItems.purchaseId, importPurchases.id))
+        .where(
+          or(
+            sql`${normalizeSQLColumn(purchaseItems.name)} LIKE ${`%${normalizedQuery}%`}`,
+            sql`${normalizeSQLColumn(purchaseItems.sku)} LIKE ${`%${normalizedQuery}%`}`
+          )
+        )
+        .limit(20); // Much smaller limit - DB already filtered results
 
-      // Search customers with fuzzy scoring - show all matches
-      const allCustomers = await storage.getCustomers();
-      const scoredCustomers = allCustomers
-        .map(customer => {
-          const nameScore = calculateScore(customer.name || '', normalizedQuery);
-          const emailScore = calculateScore(customer.email || '', normalizedQuery);
-          const companyScore = calculateScore(customer.company || '', normalizedQuery);
-          const maxScore = Math.max(nameScore, emailScore, companyScore);
+      // STEP 2: In-memory scoring for final ranking
+      const scoredShipments = shipmentCandidates
+        .map(item => ({
+          item,
+          score: Math.max(
+            calculateScore(item.itemName || '', normalizedQuery),
+            calculateScore(item.itemSku || '', normalizedQuery)
+          )
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10); // Top 10 after scoring
+
+      const shipmentItems = scoredShipments.map(({ item }) => ({
+        id: item.itemId,
+        name: item.itemName,
+        sku: item.itemSku || 'N/A',
+        quantity: item.quantity || 0,
+        supplier: item.supplier,
+        trackingNumber: item.trackingNumber || 'N/A',
+        estimatedArrival: item.estimatedArrival,
+        status: item.status,
+        type: 'shipment' as const
+      }));
+
+      // STEP 1: Database-level filtering for customers
+      const customerCandidates = await db
+        .select()
+        .from(customers)
+        .where(
+          or(
+            sql`${normalizeSQLColumn(customers.name)} LIKE ${`%${normalizedQuery}%`}`,
+            sql`${normalizeSQLColumn(customers.email)} LIKE ${`%${normalizedQuery}%`}`,
+            sql`${normalizeSQLColumn(customers.phone)} LIKE ${`%${normalizedQuery}%`}`
+          )
+        )
+        .limit(20); // Much smaller limit - DB already filtered results
+
+      // STEP 2: In-memory scoring for final ranking
+      const scoredCustomers = customerCandidates
+        .map(customer => ({
+          customer,
+          score: Math.max(
+            calculateScore(customer.name || '', normalizedQuery),
+            calculateScore(customer.email || '', normalizedQuery),
+            calculateScore(customer.phone || '', normalizedQuery)
+          )
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10); // Top 10 after scoring
+
+      const customerResults = scoredCustomers.map(({ customer }) => customer);
+
+      // Get order statistics for each customer with separate COUNT query
+      const customersWithStats = await Promise.all(
+        customerResults.map(async (customer) => {
+          // Separate COUNT query for accurate total order count
+          const [countResult] = await db
+            .select({ count: sql<number>`COUNT(*)::int` })
+            .from(orders)
+            .where(eq(orders.customerId, customer.id));
+          
+          const totalOrders = countResult?.count || 0;
+
+          // Get recent orders (limited to 3 for display)
+          const customerOrders = await db
+            .select({
+              id: orders.id,
+              orderId: orders.orderId,
+              createdAt: orders.createdAt,
+              grandTotal: orders.grandTotal,
+              currency: orders.currency,
+              orderStatus: orders.orderStatus
+            })
+            .from(orders)
+            .where(eq(orders.customerId, customer.id))
+            .orderBy(desc(orders.createdAt))
+            .limit(3);
+
+          const lastOrder = customerOrders[0];
+          const lastOrderDate = lastOrder?.createdAt ? new Date(lastOrder.createdAt) : null;
+          
+          let lastOrderText = 'Never';
+          if (lastOrderDate) {
+            const now = new Date();
+            const diffTime = Math.abs(now.getTime() - lastOrderDate.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) lastOrderText = 'Today';
+            else if (diffDays === 1) lastOrderText = '1 day ago';
+            else if (diffDays < 30) lastOrderText = `${diffDays} days ago`;
+            else if (diffDays < 60) lastOrderText = '1 month ago';
+            else lastOrderText = `${Math.floor(diffDays / 30)} months ago`;
+          }
 
           return {
-            customer,
-            score: maxScore
+            ...customer,
+            totalOrders,
+            lastOrderDate,
+            lastOrderText,
+            recentOrders: customerOrders.map(order => ({
+              id: order.id,
+              orderNumber: order.orderId || 'N/A',
+              orderDate: order.createdAt || new Date().toISOString(),
+              totalPrice: order.grandTotal || '0',
+              currency: order.currency || 'CZK',
+              status: order.orderStatus || 'pending'
+            }))
           };
         })
-        .filter(item => item.score > 0)
-        .sort((a, b) => b.score - a.score);
-
-      const customers = scoredCustomers.map(({ customer }) => customer);
-
-      // Get order statistics for each customer
-      const allOrders = await storage.getOrders();
-      const customersWithStats = customers.map(customer => {
-        const customerOrders = allOrders
-          .filter(order => order.customerId === customer.id)
-          .sort((a, b) => {
-            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-            return dateB - dateA;
-          });
-
-        const totalOrders = customerOrders.length;
-        const lastOrder = customerOrders[0];
-        const lastOrderDate = lastOrder?.createdAt ? new Date(lastOrder.createdAt) : null;
-        
-        let lastOrderText = 'Never';
-        if (lastOrderDate) {
-          const now = new Date();
-          const diffTime = Math.abs(now.getTime() - lastOrderDate.getTime());
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          
-          if (diffDays === 0) lastOrderText = 'Today';
-          else if (diffDays === 1) lastOrderText = '1 day ago';
-          else if (diffDays < 30) lastOrderText = `${diffDays} days ago`;
-          else if (diffDays < 60) lastOrderText = '1 month ago';
-          else lastOrderText = `${Math.floor(diffDays / 30)} months ago`;
-        }
-
-        return {
-          ...customer,
-          totalOrders,
-          lastOrderDate,
-          lastOrderText,
-          recentOrders: customerOrders.slice(0, 3).map(order => ({
-            id: order.id,
-            orderNumber: order.orderId || 'N/A',
-            orderDate: order.createdAt || new Date().toISOString(),
-            totalPrice: order.grandTotal || '0',
-            currency: order.currency || 'CZK',
-            status: order.orderStatus || 'pending'
-          }))
-        };
-      });
+      );
 
       res.json({
         inventoryItems,
-        shipmentItems: shipmentItems.slice(0, 10),
+        shipmentItems,
         customers: customersWithStats
       });
     } catch (error) {

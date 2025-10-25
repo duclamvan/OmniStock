@@ -58,11 +58,11 @@ export function GlobalSearch() {
   const [, setLocation] = useLocation();
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Debounce search query - wait 300ms after user stops typing
+  // Debounce search query - wait 150ms after user stops typing (reduced for snappier feel)
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchQuery);
-    }, 300);
+    }, 150);
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -74,7 +74,7 @@ export function GlobalSearch() {
       if (!response.ok) throw new Error('Search failed');
       return response.json();
     },
-    enabled: debouncedQuery.trim().length > 0,
+    enabled: debouncedQuery.trim().length >= 2,
   });
 
   // Close dropdown when clicking outside
@@ -117,19 +117,6 @@ export function GlobalSearch() {
                        (results?.shipmentItems.length || 0) + 
                        (results?.customers.length || 0);
 
-  const formatCurrency = (amount: number | undefined | null, currency: string) => {
-    if (amount === undefined || amount === null || isNaN(amount)) {
-      return new Intl.NumberFormat('cs-CZ', {
-        style: 'currency',
-        currency: currency || 'CZK',
-      }).format(0);
-    }
-    return new Intl.NumberFormat('cs-CZ', {
-      style: 'currency',
-      currency: currency || 'CZK',
-    }).format(amount);
-  };
-
   return (
     <div ref={searchRef} className="relative w-full max-w-2xl">
       <div className="relative">
@@ -151,7 +138,11 @@ export function GlobalSearch() {
 
       {showResults && searchQuery.trim().length > 0 && (
         <Card className="absolute top-full mt-2 w-full max-h-[80vh] overflow-y-auto z-50 shadow-lg">
-          {isLoading ? (
+          {searchQuery.trim().length === 1 ? (
+            <div className="p-4 text-center text-sm text-muted-foreground">
+              Type at least 2 characters to search...
+            </div>
+          ) : isLoading ? (
             <div className="p-4 text-center text-sm text-muted-foreground">
               Searching...
             </div>
