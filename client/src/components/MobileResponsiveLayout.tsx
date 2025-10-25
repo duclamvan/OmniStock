@@ -487,12 +487,12 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
               onOpenChange={() => toggleSection(section.name)}
             >
               <div className={cn(
-                sectionIdx > 0 && "mt-6 pt-6 border-t border-gray-200 dark:border-gray-700"
+                sectionIdx > 0 && "mt-3 pt-3 border-t border-gray-200 dark:border-gray-700"
               )}>
                 <CollapsibleTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="w-full justify-between px-4 py-2 mb-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-md"
+                    className="w-full justify-between px-4 py-1.5 mb-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-md"
                   >
                     <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       {section.name}
