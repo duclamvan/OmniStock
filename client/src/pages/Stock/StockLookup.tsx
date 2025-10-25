@@ -5,10 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Package, MapPin, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers } from "lucide-react";
+import { Search, Package, MapPin, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers, MoveRight, ArrowUpDown } from "lucide-react";
 import { Link } from "wouter";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCurrency } from "@/lib/currencyUtils";
+import MoveInventoryDialog from "@/components/warehouse/MoveInventoryDialog";
+import StockAdjustmentDialog from "@/components/warehouse/StockAdjustmentDialog";
 
 interface Variant {
   id: string;
@@ -49,6 +51,9 @@ interface EnrichedProduct {
 export default function StockLookup() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<ProductLocation | null>(null);
 
   // Fetch all products
   const { data: rawProducts = [], isLoading: productsLoading } = useQuery<any[]>({
@@ -128,7 +133,13 @@ export default function StockLookup() {
     enabled: !!selectedProduct,
   });
 
-  // Get enriched selected product with variants
+  // Fetch locations for selected product
+  const { data: selectedLocations = [], isLoading: locationsLoading } = useQuery<ProductLocation[]>({
+    queryKey: [`/api/products/${selectedProduct}/locations`],
+    enabled: !!selectedProduct,
+  });
+
+  // Get enriched selected product with variants and locations
   const selectedProductData = useMemo(() => {
     if (!selectedProduct) return null;
     
@@ -141,9 +152,10 @@ export default function StockLookup() {
     return {
       ...product,
       variants: selectedVariants,
+      locations: selectedLocations,
       totalStock
     };
-  }, [selectedProduct, products, selectedVariants]);
+  }, [selectedProduct, products, selectedVariants, selectedLocations]);
 
   const getStockStatus = (stock: number, lowStockThreshold: number = 5) => {
     if (stock === 0) return { label: "Out of Stock", color: "bg-red-500", icon: AlertCircle };
@@ -405,32 +417,86 @@ export default function StockLookup() {
                       )}
 
                       {/* Warehouse Locations */}
-                      {selectedProductData.locations && selectedProductData.locations.length > 0 && (
+                      {locationsLoading ? (
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-16 w-full" />
+                        </div>
+                      ) : selectedProductData.locations && selectedProductData.locations.length > 0 ? (
                         <div>
-                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                            <MapPin className="h-4 w-4" />
-                            Warehouse Locations
-                          </h4>
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                              <MapPin className="h-4 w-4" />
+                              Warehouse Locations ({selectedProductData.locations.length})
+                            </h4>
+                            <Link href={`/inventory/products/${product.id}`}>
+                              <Button variant="ghost" size="sm" className="h-7 text-xs" data-testid={`button-view-all-locations-${product.id}`}>
+                                View All
+                              </Button>
+                            </Link>
+                          </div>
                           <div className="space-y-2">
-                            {selectedProductData.locations.map((loc, idx) => (
+                            {selectedProductData.locations.map((loc) => (
                               <div
-                                key={idx}
-                                className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
+                                key={loc.id}
+                                className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
+                                data-testid={`location-card-${loc.id}`}
                               >
-                                <div className="flex-1">
-                                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {warehouseMap[loc.warehouseId] || loc.warehouseId}
-                                  </p>
-                                  <p className="text-xs text-gray-600 dark:text-gray-400 font-mono mt-1">
-                                    {loc.locationCode}
-                                  </p>
+                                <div className="flex items-start justify-between mb-2">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white font-mono">
+                                      {loc.locationCode}
+                                    </p>
+                                    {loc.isPrimary && (
+                                      <Badge variant="default" className="mt-1 h-5 text-xs">
+                                        Primary
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <Badge variant="secondary" className="ml-2">
+                                    {loc.quantity} units
+                                  </Badge>
                                 </div>
-                                <Badge variant="secondary" className="ml-2">
-                                  {loc.quantity} units
-                                </Badge>
+                                <div className="flex gap-2 mt-3">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex-1 h-8 text-xs"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedLocation(loc);
+                                      setMoveDialogOpen(true);
+                                    }}
+                                    data-testid={`button-move-${loc.id}`}
+                                  >
+                                    <MoveRight className="h-3 w-3 mr-1" />
+                                    Move
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex-1 h-8 text-xs"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedLocation(loc);
+                                      setAdjustDialogOpen(true);
+                                    }}
+                                    data-testid={`button-adjust-${loc.id}`}
+                                  >
+                                    <ArrowUpDown className="h-3 w-3 mr-1" />
+                                    Adjust
+                                  </Button>
+                                </div>
                               </div>
                             ))}
                           </div>
+                        </div>
+                      ) : (
+                        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-center">
+                          <MapPin className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            No warehouse locations assigned
+                          </p>
                         </div>
                       )}
 
@@ -455,6 +521,33 @@ export default function StockLookup() {
           })
         )}
       </div>
+
+      {/* Warehouse Management Dialogs */}
+      {selectedProduct && selectedProductData && (
+        <>
+          <MoveInventoryDialog
+            open={moveDialogOpen}
+            onOpenChange={setMoveDialogOpen}
+            productId={selectedProduct}
+            productName={selectedProductData.name}
+            fromLocation={selectedLocation}
+            locations={selectedProductData.locations || []}
+            onSuccess={() => {
+              setSelectedLocation(null);
+            }}
+          />
+          <StockAdjustmentDialog
+            open={adjustDialogOpen}
+            onOpenChange={setAdjustDialogOpen}
+            productId={selectedProduct}
+            productName={selectedProductData.name}
+            location={selectedLocation}
+            onSuccess={() => {
+              setSelectedLocation(null);
+            }}
+          />
+        </>
+      )}
     </div>
   );
 }
