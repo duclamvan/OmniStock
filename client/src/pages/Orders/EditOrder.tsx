@@ -57,7 +57,8 @@ import {
   Loader2,
   Upload,
   Download,
-  Settings
+  Settings,
+  Clock
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import {
@@ -3765,7 +3766,9 @@ export default function EditOrder() {
                             <Save className="h-4 w-4 mr-2" />
                             {updateOrderMutation.isPending ? 'Updating...' : 'Update Order'}
                           </Button>
-                          <Button type="button" variant="outline" className="w-full" onClick={() => setLocation('/orders')} data-testid="button-save-draft">
+                          <Button type="button" variant="outline" className="w-full" onClick={() => {
+                            submitButtonRef.current?.click();
+                          }} disabled={updateOrderMutation.isPending || orderItems.length === 0} data-testid="button-save-draft">
                             <Save className="h-4 w-4 mr-2" />
                             Save Draft
                           </Button>
@@ -3878,7 +3881,9 @@ export default function EditOrder() {
                       <Save className="h-4 w-4 mr-2" />
                       {updateOrderMutation.isPending ? 'Updating...' : 'Update Order'}
                     </Button>
-                    <Button type="button" variant="outline" className="w-full" onClick={() => setLocation('/orders')} data-testid="button-save-draft-mobile">
+                    <Button type="button" variant="outline" className="w-full" onClick={() => {
+                      submitButtonRef.current?.click();
+                    }} disabled={updateOrderMutation.isPending || orderItems.length === 0} data-testid="button-save-draft-mobile">
                       <Save className="h-4 w-4 mr-2" />
                       Save Draft
                     </Button>

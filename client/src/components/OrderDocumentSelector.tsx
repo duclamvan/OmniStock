@@ -88,7 +88,7 @@ export default function OrderDocumentSelector({
   );
 
   // Fetch files for all products in the order
-  const productIds = [...new Set(orderItems.map(item => item.productId))];
+  const productIds = Array.from(new Set(orderItems.map(item => item.productId)));
   
   const fileQueries = useQuery({
     queryKey: ['/api/products/files', productIds],
