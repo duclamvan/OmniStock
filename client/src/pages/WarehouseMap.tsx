@@ -62,21 +62,27 @@ export default function WarehouseMap() {
 
   // Fetch product locations for selected warehouse
   const { data: productLocations, isLoading: locationsLoading } = useQuery<ProductLocation[]>({
-    queryKey: ['/api/product-locations', { warehouseId: selectedWarehouseId }],
+    queryKey: ['/api/product-locations', selectedWarehouseId],
     enabled: !!selectedWarehouseId,
+    queryFn: async () => {
+      const response = await fetch(`/api/product-locations?warehouseId=${selectedWarehouseId}`);
+      if (!response.ok) throw new Error('Failed to fetch product locations');
+      return response.json();
+    },
   });
 
   // Update configuration mutation
   const updateConfigMutation = useMutation({
     mutationFn: async (config: WarehouseConfig) => {
-      return await apiRequest(
-        `/api/warehouses/${selectedWarehouseId}/map-config`,
-        {
-          method: 'PUT',
-          body: JSON.stringify(config),
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+      const response = await fetch(`/api/warehouses/${selectedWarehouseId}/map-config`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to save configuration');
+      }
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/warehouses', selectedWarehouseId, 'map-config'] });
@@ -85,7 +91,8 @@ export default function WarehouseMap() {
         description: "Warehouse map configuration has been updated.",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Error saving configuration:', error);
       toast({
         title: "Error",
         description: "Failed to save warehouse configuration.",
@@ -130,7 +137,8 @@ export default function WarehouseMap() {
     }, 500);
 
     saveTimeoutRef.current = timeout;
-  }, [updateConfigMutation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Handle configuration changes with debouncing
   const handleConfigChange = useCallback((field: keyof WarehouseConfig, value: number) => {
