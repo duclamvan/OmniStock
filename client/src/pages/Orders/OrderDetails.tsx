@@ -259,14 +259,17 @@ export default function OrderDetails() {
               display: flex;
               align-items: center;
               gap: 12px;
-              line-height: 24px;
+              height: 24px;
+              line-height: 1;
             }
             .invoice-icon {
               width: 24px;
               height: 24px;
               color: #64748b;
               flex-shrink: 0;
-              vertical-align: middle;
+              display: flex;
+              align-items: center;
+              justify-content: center;
             }
             .invoice-body {
               padding: 0;
@@ -276,7 +279,7 @@ export default function OrderDetails() {
               border-bottom: 1px solid #e2e8f0;
               display: flex;
               gap: 16px;
-              align-items: flex-start;
+              align-items: center;
             }
             .item-image {
               width: 56px;
@@ -291,24 +294,28 @@ export default function OrderDetails() {
             }
             .item-details {
               flex: 1;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
             }
             .item-name {
               font-size: 16px;
               font-weight: 600;
               color: #0f172a;
-              margin-bottom: 4px;
-              line-height: 1.4;
+              margin: 0 0 4px 0;
+              line-height: 1.2;
             }
             .item-sku {
               font-size: 13px;
               color: #64748b;
-              margin-bottom: 8px;
-              line-height: 1.4;
+              margin: 0 0 8px 0;
+              line-height: 1.2;
             }
             .item-qty {
               font-size: 14px;
               color: #475569;
-              line-height: 1.4;
+              margin: 0;
+              line-height: 1.2;
             }
             .item-qty-value {
               font-weight: 700;
@@ -320,7 +327,10 @@ export default function OrderDetails() {
               font-weight: 700;
               color: #0f172a;
               flex-shrink: 0;
-              line-height: 1.4;
+              display: flex;
+              align-items: center;
+              justify-content: flex-end;
+              line-height: 1;
             }
             .pricing-section {
               padding: 32px;
@@ -336,13 +346,13 @@ export default function OrderDetails() {
               font-size: 15px;
               font-weight: 500;
               color: #475569;
-              line-height: 1.5;
+              line-height: 1.2;
             }
             .price-value {
               font-size: 15px;
               font-weight: 600;
               color: #0f172a;
-              line-height: 1.5;
+              line-height: 1.2;
             }
             .price-separator {
               height: 2px;
