@@ -638,36 +638,36 @@ export default function OrderDetails() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Order Items and Pricing */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Action Buttons - Above Invoice */}
+          <div className="flex items-center gap-2 justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadInvoice}
+              data-testid="button-download-invoice"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download Invoice
+            </Button>
+            {order.orderStatus === 'to_fulfill' && (
+              <Button
+                variant={showPickingMode ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowPickingMode(!showPickingMode)}
+              >
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                {showPickingMode ? "Exit Picking Mode" : "Start Picking"}
+              </Button>
+            )}
+          </div>
+
           {/* Invoice - Order Items & Pricing */}
           <Card ref={invoiceCardRef}>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Package className="h-4 w-4" />
-                  Invoice
-                </CardTitle>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDownloadInvoice}
-                    data-testid="button-download-invoice"
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Download Invoice
-                  </Button>
-                  {order.orderStatus === 'to_fulfill' && (
-                    <Button
-                      variant={showPickingMode ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setShowPickingMode(!showPickingMode)}
-                    >
-                      <CheckCircle2 className="mr-2 h-4 w-4" />
-                      {showPickingMode ? "Exit Picking Mode" : "Start Picking"}
-                    </Button>
-                  )}
-                </div>
-              </div>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Package className="h-4 w-4" />
+                Invoice
+              </CardTitle>
             </CardHeader>
             <CardContent className="px-0">
               {/* Order Items - Professional Invoice Layout */}
