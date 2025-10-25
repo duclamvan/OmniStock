@@ -8,15 +8,17 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Warehouse, Package, Layers, MapPin, Info } from "lucide-react";
 
+interface ProductInfo {
+  name: string;
+  sku: string;
+  quantity: number;
+}
+
 interface LocationOccupancy {
   locationCode: string;
   totalQuantity: number;
   productCount: number;
-  products: Array<{
-    name: string;
-    sku: string;
-    quantity: number;
-  }>;
+  products: ProductInfo[];
 }
 
 interface LocationStats {

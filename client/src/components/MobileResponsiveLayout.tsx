@@ -61,6 +61,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { GlobalSearch } from '@/components/GlobalSearch';
+import { ChevronRight as BreadcrumbChevron, Home } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface MobileResponsiveLayoutProps {
   children: React.ReactNode;
@@ -728,81 +730,189 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       )}>
         {/* Top Navigation Bar - Desktop Only - Hidden on Pick & Pack page */}
         {!isPickPackPage && (
-        <header className="hidden lg:block sticky top-0 z-30 bg-white border-b border-gray-200">
+        <header className="hidden lg:block sticky top-0 z-30 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between px-6 py-3">
-            {/* Page Title and Search */}
-            <div className="flex items-center flex-1 gap-6">
-              <h2 className="text-xl font-semibold text-gray-900">
-                {location === '/' ? 'Dashboard' : 
-                 location.includes('/orders') ? 'Orders' :
-                 location.includes('/packing-materials') ? 'Packing Materials' :
-                 location.includes('/inventory') ? 'Inventory' :
-                 location.includes('/warehouses') ? 'Warehouses' :
-                 location.includes('/discounts') ? 'Discounts' :
-                 location.includes('/customers') ? 'Customers' :
-                 location.includes('/suppliers') ? 'Suppliers' :
-                 location.includes('/returns') ? 'Returns' :
-                 location.includes('/expenses') ? 'Expenses' :
-                 location.includes('/services') ? 'Services' :
-                 location.includes('/tickets') ? 'Tickets' :
-                 location.includes('/pos') ? 'Point of Sale' :
-                 location.includes('/shipping') ? 'Shipping Management' :
-                 location.includes('/reports') ? 'Reports' : 'Dashboard'}
-              </h2>
-              <GlobalSearch />
+            {/* Breadcrumb and Page Title */}
+            <div className="flex flex-col gap-1 flex-1 min-w-0">
+              {/* Breadcrumb */}
+              <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <Link href="/">
+                  <button className="hover:text-foreground transition-colors flex items-center gap-1">
+                    <Home className="h-3.5 w-3.5" />
+                    <span className="hidden xl:inline">Home</span>
+                  </button>
+                </Link>
+                {location !== '/' && (
+                  <>
+                    <BreadcrumbChevron className="h-3.5 w-3.5" />
+                    <span className="text-foreground font-medium truncate">
+                      {location.includes('/orders/add') ? 'Add Order' :
+                       location.includes('/orders/edit') ? 'Edit Order' :
+                       location.includes('/orders/pick-pack') ? 'Pick & Pack' :
+                       location.includes('/orders/') ? 'Order Details' :
+                       location.includes('/orders') ? 'Orders' :
+                       location.includes('/packing-materials/add') ? 'Add Material' :
+                       location.includes('/packing-materials/edit') ? 'Edit Material' :
+                       location.includes('/packing-materials') ? 'Packing Materials' :
+                       location.includes('/inventory/add') ? 'Add Product' :
+                       location.includes('/inventory/edit') ? 'Edit Product' :
+                       location.includes('/inventory/') ? 'Product Details' :
+                       location.includes('/inventory') ? 'Inventory' :
+                       location.includes('/warehouses/map') ? 'Warehouse Map' :
+                       location.includes('/warehouses/add') ? 'Add Warehouse' :
+                       location.includes('/warehouses/edit') ? 'Edit Warehouse' :
+                       location.includes('/warehouses/') ? 'Warehouse Details' :
+                       location.includes('/warehouses') ? 'Warehouses' :
+                       location.includes('/discounts/add') ? 'Add Discount' :
+                       location.includes('/discounts') ? 'Discounts' :
+                       location.includes('/customers/add') ? 'Add Customer' :
+                       location.includes('/customers/edit') ? 'Edit Customer' :
+                       location.includes('/customers/') ? 'Customer Details' :
+                       location.includes('/customers') ? 'Customers' :
+                       location.includes('/suppliers/add') ? 'Add Supplier' :
+                       location.includes('/suppliers/edit') ? 'Edit Supplier' :
+                       location.includes('/suppliers') ? 'Suppliers' :
+                       location.includes('/returns') ? 'Returns' :
+                       location.includes('/expenses/add') ? 'Add Expense' :
+                       location.includes('/expenses') ? 'Expenses' :
+                       location.includes('/services/add') ? 'Add Service' :
+                       location.includes('/services/edit') ? 'Edit Service' :
+                       location.includes('/services') ? 'Services' :
+                       location.includes('/tickets/add') ? 'Add Ticket' :
+                       location.includes('/tickets') ? 'Tickets' :
+                       location.includes('/pos') ? 'Point of Sale' :
+                       location.includes('/shipping') ? 'Shipping Management' :
+                       location.includes('/reports') ? 'Reports' :
+                       location.includes('/imports/dashboard') ? 'Import Dashboard' :
+                       location.includes('/imports') ? 'Imports' :
+                       location.includes('/receiving/storage') ? 'Items to Store' :
+                       location.includes('/receiving') ? 'Receiving' :
+                       'Dashboard'}
+                    </span>
+                  </>
+                )}
+              </nav>
+              {/* Page Title */}
+              <div className="flex items-center gap-4">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  {location === '/' ? 'Dashboard' : 
+                   location.includes('/orders') ? 'Orders Management' :
+                   location.includes('/packing-materials') ? 'Packing Materials' :
+                   location.includes('/inventory') ? 'Inventory Management' :
+                   location.includes('/warehouses/map') ? 'Warehouse Space Map' :
+                   location.includes('/warehouses') ? 'Warehouse Management' :
+                   location.includes('/discounts') ? 'Discounts & Promotions' :
+                   location.includes('/customers') ? 'Customer Management' :
+                   location.includes('/suppliers') ? 'Supplier Management' :
+                   location.includes('/returns') ? 'Returns Processing' :
+                   location.includes('/expenses') ? 'Expense Tracking' :
+                   location.includes('/services') ? 'Service Management' :
+                   location.includes('/tickets') ? 'Support Tickets' :
+                   location.includes('/pos') ? 'Point of Sale' :
+                   location.includes('/shipping') ? 'Shipping Management' :
+                   location.includes('/reports') ? 'Reports & Analytics' :
+                   location.includes('/imports') ? 'Import Management' :
+                   location.includes('/receiving') ? 'Receiving & Storage' :
+                   'Dashboard'}
+                </h2>
+                <div className="flex-1 max-w-md">
+                  <GlobalSearch />
+                </div>
+              </div>
             </div>
 
-            {/* Right Section */}
-            <div className="flex items-center gap-4">
+            {/* Right Section - Actions */}
+            <div className="flex items-center gap-2 flex-shrink-0">
               {/* Notifications */}
-              <Link href="/tickets">
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="h-5 w-5" />
-                  {dueTicketsCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-semibold">
-                      {dueTicketsCount}
-                    </span>
-                  )}
-                </Button>
-              </Link>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link href="/tickets">
+                      <Button variant="ghost" size="icon" className="relative hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <Bell className="h-5 w-5" />
+                        {dueTicketsCount > 0 && (
+                          <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-semibold animate-pulse">
+                            {dueTicketsCount}
+                          </span>
+                        )}
+                      </Button>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Notifications {dueTicketsCount > 0 && `(${dueTicketsCount})`}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
               {/* Dark Mode Toggle */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsDarkMode(!isDarkMode)}
-              >
-                {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setIsDarkMode(!isDarkMode);
+                        // Also toggle dark class on document
+                        if (isDarkMode) {
+                          document.documentElement.classList.remove('dark');
+                        } else {
+                          document.documentElement.classList.add('dark');
+                        }
+                      }}
+                      className="hover:bg-gray-100 dark:hover:bg-gray-800"
+                    >
+                      {isDarkMode ? (
+                        <Sun className="h-5 w-5 text-orange-500" />
+                      ) : (
+                        <Moon className="h-5 w-5 text-slate-700" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
               {/* User Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2 px-2">
-                    <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
-                      <User className="h-5 w-5 text-gray-600" />
+                  <Button variant="ghost" className="flex items-center gap-2 px-2 hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                      <User className="h-5 w-5 text-white" />
                     </div>
                     <div className="text-left hidden xl:block">
-                      <p className="text-sm font-medium">ronak_03</p>
-                      <p className="text-xs text-gray-500">Admin</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">ronak_03</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Admin</p>
                     </div>
+                    <ChevronDown className="h-3.5 w-3.5 text-gray-500 hidden xl:block" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium">ronak_03</p>
+                      <p className="text-xs text-muted-foreground">admin@daviesupply.com</p>
+                    </div>
+                  </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </DropdownMenuItem>
+                  <Link href="/profile">
+                    <DropdownMenuItem>
+                      <User className="mr-2 h-4 w-4" />
+                      <span>My Profile</span>
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/settings">
+                    <DropdownMenuItem>
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </DropdownMenuItem>
+                  </Link>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
+                  <DropdownMenuItem className="text-red-600 focus:text-red-600">
                     <LogOut className="mr-2 h-4 w-4" />
-                    Logout
+                    <span>Logout</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
