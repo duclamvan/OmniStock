@@ -34,6 +34,7 @@ interface EnrichedProduct {
   sku?: string;
   barcode?: string;
   categoryName?: string;
+  description?: string;
   quantity: number;
   variants: Variant[];
   totalStock: number;
@@ -96,6 +97,7 @@ export default function StockLookup() {
         sku: p.sku,
         barcode: p.barcode,
         categoryName: p.categoryName,
+        description: p.description,
         quantity: productQuantity,
         variants: [], // Will be fetched on-demand when product is expanded
         totalStock: productQuantity, // Will include variants when fetched
@@ -439,19 +441,17 @@ export default function StockLookup() {
                         </div>
                       )}
 
-                      {/* Action Buttons */}
-                      <div className="flex gap-2 pt-2">
-                        <Link href={`/inventory/products/${product.id}`} className="flex-1">
-                          <Button variant="outline" className="w-full" size="sm" data-testid={`button-view-details-${product.id}`}>
-                            View Full Details
-                          </Button>
-                        </Link>
-                        <Link href={`/inventory/${product.id}/edit`} className="flex-1">
-                          <Button variant="default" className="w-full" size="sm" data-testid={`button-edit-${product.id}`}>
-                            Edit Product
-                          </Button>
-                        </Link>
-                      </div>
+                      {/* Item Description */}
+                      {selectedProductData.description && (
+                        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                          <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
+                            Item Description
+                          </h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                            {selectedProductData.description}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>
