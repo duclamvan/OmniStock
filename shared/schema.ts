@@ -366,7 +366,9 @@ export const warehouses = pgTable('warehouses', {
   totalAisles: integer('total_aisles').default(6),
   maxRacks: integer('max_racks').default(10),
   maxLevels: integer('max_levels').default(5),
-  maxBins: integer('max_bins').default(5)
+  maxBins: integer('max_bins').default(5),
+  // Per-aisle configuration: { "A01": { maxRacks: 10, maxLevels: 4, maxBins: 5 }, ... }
+  aisleConfigs: jsonb('aisle_configs')
 });
 
 export const warehouseFiles = pgTable('warehouse_files', {

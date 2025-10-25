@@ -2292,6 +2292,10 @@ export class DatabaseStorage implements IStorage {
       if (warehouse.contact !== undefined) updateData.contact = warehouse.contact;
       if (warehouse.rented_from_date !== undefined) updateData.rentedFromDate = warehouse.rented_from_date;
       if (warehouse.expense_id !== undefined) updateData.expenseId = warehouse.expense_id;
+      if (warehouse.totalAisles !== undefined) updateData.totalAisles = warehouse.totalAisles;
+      if (warehouse.maxRacks !== undefined) updateData.maxRacks = warehouse.maxRacks;
+      if (warehouse.maxLevels !== undefined) updateData.maxLevels = warehouse.maxLevels;
+      if (warehouse.maxBins !== undefined) updateData.maxBins = warehouse.maxBins;
       
       const [updated] = await db
         .update(warehouses)
