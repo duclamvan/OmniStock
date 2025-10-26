@@ -20,6 +20,8 @@ interface Variant {
   barcode?: string;
   quantity: number;
   imageUrl?: string;
+  priceCZK?: number;
+  priceEUR?: number;
 }
 
 interface ProductLocation {
@@ -44,6 +46,8 @@ interface EnrichedProduct {
   locations?: ProductLocation[];
   imageUrl?: string;
   images?: any;
+  priceCZK?: number;
+  priceEUR?: number;
 }
 
 export default function StockLookup() {
@@ -110,7 +114,9 @@ export default function StockLookup() {
         totalStock: productQuantity, // Will include variants when fetched
         locations: p.locations,
         imageUrl: primaryImage,
-        images: p.images
+        images: p.images,
+        priceCZK: p.priceCZK,
+        priceEUR: p.priceEUR
       };
     });
   }, [rawProducts]);
@@ -348,6 +354,25 @@ export default function StockLookup() {
                             </>
                           )}
                         </div>
+
+                        {/* Prices */}
+                        {(product.priceCZK || product.priceEUR) && (
+                          <div className="flex items-center gap-2 text-xs font-medium">
+                            {product.priceCZK && (
+                              <span className="text-blue-600 dark:text-blue-400">
+                                {product.priceCZK.toLocaleString('cs-CZ')} Kč
+                              </span>
+                            )}
+                            {product.priceCZK && product.priceEUR && (
+                              <span className="text-gray-400 dark:text-gray-600">•</span>
+                            )}
+                            {product.priceEUR && (
+                              <span className="text-green-600 dark:text-green-400">
+                                €{product.priceEUR.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* Bottom Row: Location count */}
@@ -397,7 +422,7 @@ export default function StockLookup() {
                                 key={variant.id}
                                 className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
                               >
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 flex-1">
                                   {variant.imageUrl ? (
                                     <img
                                       src={variant.imageUrl}
@@ -409,7 +434,7 @@ export default function StockLookup() {
                                       <Package className="h-5 w-5 text-gray-400" />
                                     </div>
                                   )}
-                                  <div>
+                                  <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
                                       {variant.name}
                                     </p>
@@ -418,9 +443,26 @@ export default function StockLookup() {
                                         {variant.barcode}
                                       </p>
                                     )}
+                                    {(variant.priceCZK || variant.priceEUR) && (
+                                      <div className="flex items-center gap-2 text-[11px] font-medium mt-1">
+                                        {variant.priceCZK && (
+                                          <span className="text-blue-600 dark:text-blue-400">
+                                            {variant.priceCZK.toLocaleString('cs-CZ')} Kč
+                                          </span>
+                                        )}
+                                        {variant.priceCZK && variant.priceEUR && (
+                                          <span className="text-gray-400 dark:text-gray-600">•</span>
+                                        )}
+                                        {variant.priceEUR && (
+                                          <span className="text-green-600 dark:text-green-400">
+                                            €{variant.priceEUR.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
-                                <Badge variant="secondary" className="ml-2">
+                                <Badge variant="secondary" className="ml-2 flex-shrink-0">
                                   {variant.quantity} units
                                 </Badge>
                               </div>
