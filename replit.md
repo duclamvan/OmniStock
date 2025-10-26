@@ -44,6 +44,7 @@ Utilizes PostgreSQL with Neon serverless driver and Drizzle ORM. The schema supp
 - **Smart Barcode Scanning**: Automatic shipment matching with audio/visual feedback, and dedicated barcode scanning mode in Stock Lookup for rapid stock additions (scan barcode → auto-find product → quick adjustment request).
 - **UI Enhancements**: Modernized invoice UI, clear order detail displays, optimized country/shipping flag selectors, and advanced localStorage-based sidebar state persistence with defensive guards.
 - **Settings Management**: Comprehensive page with 6 categories (General, Display, Orders, Inventory, Notifications, Advanced) for system-wide configuration, including company info, regional settings, currency, theme, table preferences, order defaults, inventory settings, notifications, security, and API integrations.
+- **Inventory Allocation Warnings**: Comprehensive system for detecting and resolving inventory discrepancies with two warning types: over-allocated items (ordered quantity exceeds available stock) and under-allocated items (recorded product quantity exceeds sum of stock location quantities). Features SQL-optimized detection with 60-second polling, warning banners on Dashboard, Stock Lookup, and Inventory pages, and dedicated resolution pages at /stock/over-allocated and /stock/under-allocated with detailed item information and action buttons.
 
 # External Dependencies
 

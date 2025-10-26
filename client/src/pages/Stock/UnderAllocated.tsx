@@ -15,7 +15,7 @@ interface UnderAllocatedItem {
   variantName?: string | null;
   variantBarcode?: string | null;
   recordedQuantity: number;
-  locationPieces: number;
+  locationQuantity: number;
   discrepancy: number;
   imageUrl?: string;
 }
@@ -162,7 +162,7 @@ export default function UnderAllocated() {
                           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
                             <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">In Locations</p>
                             <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
-                              {item.locationPieces}
+                              {item.locationQuantity}
                             </p>
                           </div>
                           <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3">

@@ -2095,35 +2095,35 @@ export class DatabaseStorage implements IStorage {
 
   async getUnderAllocatedItems(): Promise<any[]> {
     try {
-      // Use SQL aggregation to calculate stock location totals per product/variant
-      const locationTotals = await db
-        .select({
-          productId: productLocations.productId,
-          variantId: productLocations.variantId,
-          totalPieces: sql<number>`SUM(${productLocations.pieces})::integer`,
-        })
-        .from(productLocations)
-        .where(sql`${productLocations.productId} IS NOT NULL`)
-        .groupBy(productLocations.productId, productLocations.variantId);
+      // Use raw SQL to calculate stock location totals per product
+      const locationTotalsResult = await db.execute(sql`
+        SELECT 
+          product_id as "productId",
+          COALESCE(SUM(quantity), 0)::integer as "totalQuantity"
+        FROM product_locations
+        GROUP BY product_id
+      `);
+      
+      const locationTotals = locationTotalsResult.rows as Array<{
+        productId: string;
+        totalQuantity: number;
+      }>;
 
-      // Get all products and variants to check against
+      // Get all products to check against
       const allProducts = await db.select().from(products);
-      const allVariants = await db.select().from(productVariants);
 
       const underAllocated: any[] = [];
 
-      // Check products without variants
+      // Check each product
       for (const product of allProducts) {
         const productQty = product.quantity || 0;
         
-        // Find location total for this product (where variantId is null)
-        const locationTotal = locationTotals.find(
-          lt => lt.productId === product.id && lt.variantId === null
-        );
-        const locationPieces = locationTotal?.totalPieces || 0;
+        // Find location total for this product
+        const locationTotal = locationTotals.find(lt => lt.productId === product.id);
+        const locationQuantity = locationTotal?.totalQuantity || 0;
 
-        // Under-allocated if product.quantity > sum of location pieces
-        if (productQty > locationPieces) {
+        // Under-allocated if product.quantity > sum of location quantities
+        if (productQty > locationQuantity) {
           underAllocated.push({
             type: 'product',
             productId: product.id,
@@ -2133,39 +2133,9 @@ export class DatabaseStorage implements IStorage {
             variantName: null,
             variantBarcode: null,
             recordedQuantity: productQty,
-            locationPieces: locationPieces,
-            discrepancy: productQty - locationPieces,
+            locationQuantity: locationQuantity,
+            discrepancy: productQty - locationQuantity,
             imageUrl: product.imageUrl
-          });
-        }
-      }
-
-      // Check variants
-      for (const variant of allVariants) {
-        const variantQty = variant.quantity || 0;
-        
-        // Find location total for this variant
-        const locationTotal = locationTotals.find(
-          lt => lt.productId === variant.productId && lt.variantId === variant.id
-        );
-        const locationPieces = locationTotal?.totalPieces || 0;
-
-        // Under-allocated if variant.quantity > sum of location pieces
-        if (variantQty > locationPieces) {
-          const product = allProducts.find(p => p.id === variant.productId);
-
-          underAllocated.push({
-            type: 'variant',
-            productId: variant.productId,
-            productName: product?.name || 'Unknown',
-            productSku: product?.sku,
-            variantId: variant.id,
-            variantName: variant.name,
-            variantBarcode: variant.barcode,
-            recordedQuantity: variantQty,
-            locationPieces: locationPieces,
-            discrepancy: variantQty - locationPieces,
-            imageUrl: variant.imageUrl || product?.imageUrl
           });
         }
       }
