@@ -3030,6 +3030,16 @@ Important:
     }
   });
 
+  app.get('/api/over-allocated-items', async (req: any, res) => {
+    try {
+      const items = await storage.getOverAllocatedItems();
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching over-allocated items:", error);
+      res.status(500).json({ message: "Failed to fetch over-allocated items" });
+    }
+  });
+
   app.post('/api/stock-adjustment-requests', async (req: any, res) => {
     try {
       const requestData = insertStockAdjustmentRequestSchema.parse(req.body);

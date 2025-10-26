@@ -125,7 +125,7 @@ import {
   type InsertTicketComment
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, like, ilike, sql, gte, lte, inArray, ne, asc, isNull, notInArray } from "drizzle-orm";
+import { eq, desc, and, or, like, ilike, sql, gte, lte, inArray, ne, asc, isNull, notInArray, not } from "drizzle-orm";
 
 // Define types for missing entities (these should match what the app expects)
 export type Return = any;
@@ -237,6 +237,9 @@ export interface IStorage {
   createStockAdjustmentRequest(request: InsertStockAdjustmentRequest): Promise<StockAdjustmentRequest>;
   approveStockAdjustmentRequest(id: string, approvedBy: string): Promise<StockAdjustmentRequest | undefined>;
   rejectStockAdjustmentRequest(id: string, approvedBy: string, reason: string): Promise<StockAdjustmentRequest | undefined>;
+  
+  // Over-Allocated Inventory
+  getOverAllocatedItems(): Promise<any[]>;
   
   // Product Files
   getProductFiles(productId: string): Promise<ProductFile[]>;
@@ -1982,6 +1985,106 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error rejecting stock adjustment request:', error);
       return undefined;
+    }
+  }
+
+  async getOverAllocatedItems(): Promise<any[]> {
+    try {
+      // Get all active orders (not delivered or cancelled)
+      const activeOrders = await db
+        .select()
+        .from(orders)
+        .where(
+          and(
+            not(eq(orders.orderStatus, 'delivered')),
+            not(eq(orders.orderStatus, 'cancelled'))
+          )
+        );
+      
+      if (activeOrders.length === 0) {
+        return [];
+      }
+      
+      const activeOrderIds = activeOrders.map(o => o.id);
+      
+      // Get all order items from active orders
+      const activeOrderItems = await db
+        .select()
+        .from(orderItems)
+        .where(inArray(orderItems.orderId, activeOrderIds));
+      
+      // Group by product and variant to calculate total ordered
+      const orderedQuantities = new Map<string, { productId: string; variantId: string | null; quantity: number }>();
+      
+      for (const item of activeOrderItems) {
+        if (!item.productId) continue;
+        
+        const key = item.variantId ? `${item.productId}-${item.variantId}` : item.productId;
+        const existing = orderedQuantities.get(key);
+        
+        if (existing) {
+          existing.quantity += item.quantity;
+        } else {
+          orderedQuantities.set(key, {
+            productId: item.productId,
+            variantId: item.variantId || null,
+            quantity: item.quantity
+          });
+        }
+      }
+      
+      // Get all products
+      const allProducts = await db.select().from(products);
+      const allVariants = await db.select().from(productVariants);
+      
+      // Find over-allocated items
+      const overAllocated: any[] = [];
+      
+      for (const [key, ordered] of orderedQuantities.entries()) {
+        if (ordered.variantId) {
+          // Check variant stock
+          const variant = allVariants.find(v => v.id === ordered.variantId);
+          if (variant && ordered.quantity > (variant.quantity || 0)) {
+            const product = allProducts.find(p => p.id === ordered.productId);
+            overAllocated.push({
+              type: 'variant',
+              productId: ordered.productId,
+              productName: product?.name || 'Unknown',
+              productSku: product?.sku,
+              variantId: variant.id,
+              variantName: variant.name,
+              variantBarcode: variant.barcode,
+              availableStock: variant.quantity || 0,
+              orderedQuantity: ordered.quantity,
+              shortfall: ordered.quantity - (variant.quantity || 0),
+              imageUrl: variant.imageUrl || product?.imageUrl
+            });
+          }
+        } else {
+          // Check product stock
+          const product = allProducts.find(p => p.id === ordered.productId);
+          if (product && ordered.quantity > (product.quantity || 0)) {
+            overAllocated.push({
+              type: 'product',
+              productId: product.id,
+              productName: product.name,
+              productSku: product.sku,
+              variantId: null,
+              variantName: null,
+              variantBarcode: null,
+              availableStock: product.quantity || 0,
+              orderedQuantity: ordered.quantity,
+              shortfall: ordered.quantity - (product.quantity || 0),
+              imageUrl: product.imageUrl
+            });
+          }
+        }
+      }
+      
+      return overAllocated;
+    } catch (error) {
+      console.error('Error fetching over-allocated items:', error);
+      return [];
     }
   }
 
