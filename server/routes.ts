@@ -3040,6 +3040,16 @@ Important:
     }
   });
 
+  app.get('/api/under-allocated-items', async (req: any, res) => {
+    try {
+      const items = await storage.getUnderAllocatedItems();
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching under-allocated items:", error);
+      res.status(500).json({ message: "Failed to fetch under-allocated items" });
+    }
+  });
+
   app.post('/api/stock-adjustment-requests', async (req: any, res) => {
     try {
       const requestData = insertStockAdjustmentRequestSchema.parse(req.body);

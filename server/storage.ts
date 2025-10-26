@@ -241,6 +241,9 @@ export interface IStorage {
   // Over-Allocated Inventory
   getOverAllocatedItems(): Promise<any[]>;
   
+  // Under-Allocated Inventory
+  getUnderAllocatedItems(): Promise<any[]>;
+  
   // Product Files
   getProductFiles(productId: string): Promise<ProductFile[]>;
   getProductFile(id: string): Promise<ProductFile | undefined>;
@@ -2086,6 +2089,90 @@ export class DatabaseStorage implements IStorage {
       return overAllocated;
     } catch (error) {
       console.error('Error fetching over-allocated items:', error);
+      return [];
+    }
+  }
+
+  async getUnderAllocatedItems(): Promise<any[]> {
+    try {
+      // Use SQL aggregation to calculate stock location totals per product/variant
+      const locationTotals = await db
+        .select({
+          productId: stockLocations.productId,
+          variantId: stockLocations.variantId,
+          totalPieces: sql<number>`SUM(${stockLocations.pieces})::integer`,
+        })
+        .from(stockLocations)
+        .where(sql`${stockLocations.productId} IS NOT NULL`)
+        .groupBy(stockLocations.productId, stockLocations.variantId);
+
+      // Get all products and variants to check against
+      const allProducts = await db.select().from(products);
+      const allVariants = await db.select().from(productVariants);
+
+      const underAllocated: any[] = [];
+
+      // Check products without variants
+      for (const product of allProducts) {
+        const productQty = product.quantity || 0;
+        
+        // Find location total for this product (where variantId is null)
+        const locationTotal = locationTotals.find(
+          lt => lt.productId === product.id && lt.variantId === null
+        );
+        const locationPieces = locationTotal?.totalPieces || 0;
+
+        // Under-allocated if product.quantity > sum of location pieces
+        if (productQty > locationPieces) {
+          underAllocated.push({
+            type: 'product',
+            productId: product.id,
+            productName: product.name,
+            productSku: product.sku,
+            variantId: null,
+            variantName: null,
+            variantBarcode: null,
+            recordedQuantity: productQty,
+            locationPieces: locationPieces,
+            discrepancy: productQty - locationPieces,
+            imageUrl: product.imageUrl
+          });
+        }
+      }
+
+      // Check variants
+      for (const variant of allVariants) {
+        const variantQty = variant.quantity || 0;
+        
+        // Find location total for this variant
+        const locationTotal = locationTotals.find(
+          lt => lt.productId === variant.productId && lt.variantId === variant.id
+        );
+        const locationPieces = locationTotal?.totalPieces || 0;
+
+        // Under-allocated if variant.quantity > sum of location pieces
+        if (variantQty > locationPieces) {
+          const product = allProducts.find(p => p.id === variant.productId);
+
+          underAllocated.push({
+            type: 'variant',
+            productId: variant.productId,
+            productName: product?.name || 'Unknown',
+            productSku: product?.sku,
+            variantId: variant.id,
+            variantName: variant.name,
+            variantBarcode: variant.barcode,
+            recordedQuantity: variantQty,
+            locationPieces: locationPieces,
+            discrepancy: variantQty - locationPieces,
+            imageUrl: variant.imageUrl || product?.imageUrl
+          });
+        }
+      }
+
+      return underAllocated;
+    } catch (error) {
+      console.error('Error fetching under-allocated items:', error);
       return [];
     }
   }
