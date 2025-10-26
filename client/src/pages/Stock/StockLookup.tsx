@@ -358,7 +358,7 @@ export default function StockLookup() {
       )}
 
       {/* Under-Allocated Items Warning */}
-      {underAllocatedItems.length > 0 && (
+      {underAllocatedItems.length > 0 && !isFromUnderAllocated && (
         <div className={`px-3 ${overAllocatedItems.length > 0 ? 'pt-2' : 'pt-3'}`}>
           <Card className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20 border-yellow-300 dark:border-yellow-700">
             <CardContent className="p-4">
