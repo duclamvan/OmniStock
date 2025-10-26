@@ -235,9 +235,9 @@ export function Dashboard() {
 
   const { data: stockAdjustmentRequests = [] } = useQuery<any[]>({
     queryKey: ['/api/stock-adjustment-requests'],
-    staleTime: 30 * 1000, // 30 seconds
-    gcTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: true, // Refetch when window gains focus
+    staleTime: 0, // Always fetch fresh data
+    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchOnWindowFocus: true,
   });
 
   const pendingAdjustments = useMemo(() => 
