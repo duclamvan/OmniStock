@@ -7,7 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { MobileCardView } from "@/components/ui/responsive-table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Truck, Package, Euro, TrendingUp, Filter, ArrowUpDown, Bell, Info, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Truck, Package, Euro, TrendingUp, Filter, ArrowUpDown, Bell, Info, AlertCircle, CheckCircle2, ClipboardCheck, ArrowRight } from "lucide-react";
+import { Link } from "wouter";
 import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { FixedSizeList as List } from "react-window";
 import { useToast } from "@/hooks/use-toast";
@@ -232,6 +233,18 @@ export function Dashboard() {
     refetchOnMount: false, // Prevent refetch on component mount
   });
 
+  const { data: stockAdjustmentRequests = [] } = useQuery<any[]>({
+    queryKey: ['/api/stock-adjustment-requests'],
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true, // Refetch when window gains focus
+  });
+
+  const pendingAdjustments = useMemo(() => 
+    stockAdjustmentRequests.filter(req => req.status === 'pending'),
+    [stockAdjustmentRequests]
+  );
+
   // Show skeleton loading state for dashboard
   if (metricsLoading && !metrics) {
     return (
@@ -310,6 +323,42 @@ export function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Stock Adjustment Approvals Notice */}
+      {pendingAdjustments.length > 0 && (
+        <Card className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20 border-orange-300 dark:border-orange-700">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-orange-100 dark:bg-orange-900/50 rounded-lg">
+                  <ClipboardCheck className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                    Pending Stock Adjustment Approvals
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                    <span className="font-bold text-orange-600 dark:text-orange-400">{pendingAdjustments.length}</span> stock adjustment {pendingAdjustments.length === 1 ? 'request' : 'requests'} waiting for admin approval
+                  </p>
+                  <Link href="/stock/approvals">
+                    <Button 
+                      size="sm" 
+                      className="bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-800 text-white"
+                      data-testid="button-view-pending-approvals"
+                    >
+                      Review Approvals
+                      <ArrowRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+              <Badge variant="destructive" className="text-sm font-bold flex-shrink-0">
+                {pendingAdjustments.length} Pending
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Key Metrics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
