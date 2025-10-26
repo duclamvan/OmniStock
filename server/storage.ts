@@ -1990,62 +1990,63 @@ export class DatabaseStorage implements IStorage {
 
   async getOverAllocatedItems(): Promise<any[]> {
     try {
-      // Get all active orders (not delivered or cancelled)
-      const activeOrders = await db
-        .select()
-        .from(orders)
+      // Use SQL aggregation to calculate ordered quantities per product/variant
+      // Only count orders that are active (pending, to_fulfill, ready_to_ship)
+      // Exclude shipped and cancelled orders as stock is already allocated or order is void
+      const orderedQuantities = await db
+        .select({
+          productId: orderItems.productId,
+          variantId: orderItems.variantId,
+          totalOrdered: sql<number>`SUM(${orderItems.quantity})::integer`,
+        })
+        .from(orderItems)
+        .innerJoin(orders, eq(orders.id, orderItems.orderId))
         .where(
           and(
-            not(eq(orders.orderStatus, 'delivered')),
-            not(eq(orders.orderStatus, 'cancelled'))
+            inArray(orders.orderStatus, ['pending', 'to_fulfill', 'ready_to_ship']),
+            sql`${orderItems.productId} IS NOT NULL`
           )
-        );
-      
-      if (activeOrders.length === 0) {
+        )
+        .groupBy(orderItems.productId, orderItems.variantId);
+
+      if (orderedQuantities.length === 0) {
         return [];
       }
-      
-      const activeOrderIds = activeOrders.map(o => o.id);
-      
-      // Get all order items from active orders
-      const activeOrderItems = await db
+
+      // Get unique product and variant IDs (filter out nulls)
+      const productIds = Array.from(new Set(
+        orderedQuantities
+          .map(oq => oq.productId)
+          .filter((id): id is string => id !== null)
+      ));
+      const variantIds = orderedQuantities
+        .filter(oq => oq.variantId !== null)
+        .map(oq => oq.variantId as string);
+
+      // Fetch only the needed products and variants in bulk
+      const allProducts = await db
         .select()
-        .from(orderItems)
-        .where(inArray(orderItems.orderId, activeOrderIds));
-      
-      // Group by product and variant to calculate total ordered
-      const orderedQuantities = new Map<string, { productId: string; variantId: string | null; quantity: number }>();
-      
-      for (const item of activeOrderItems) {
-        if (!item.productId) continue;
-        
-        const key = item.variantId ? `${item.productId}-${item.variantId}` : item.productId;
-        const existing = orderedQuantities.get(key);
-        
-        if (existing) {
-          existing.quantity += item.quantity;
-        } else {
-          orderedQuantities.set(key, {
-            productId: item.productId,
-            variantId: item.variantId || null,
-            quantity: item.quantity
-          });
-        }
-      }
-      
-      // Get all products
-      const allProducts = await db.select().from(products);
-      const allVariants = await db.select().from(productVariants);
-      
-      // Find over-allocated items
+        .from(products)
+        .where(inArray(products.id, productIds));
+
+      const allVariants = variantIds.length > 0
+        ? await db
+            .select()
+            .from(productVariants)
+            .where(inArray(productVariants.id, variantIds))
+        : [];
+
       const overAllocated: any[] = [];
-      
-      for (const [key, ordered] of Array.from(orderedQuantities.entries())) {
+
+      // Check each aggregated result against stock
+      for (const ordered of orderedQuantities) {
         if (ordered.variantId) {
-          // Check variant stock
+          // Check variant stock - use variant's own quantity field
           const variant = allVariants.find(v => v.id === ordered.variantId);
-          if (variant && ordered.quantity > (variant.quantity || 0)) {
+          
+          if (variant && ordered.totalOrdered > (variant.quantity || 0)) {
             const product = allProducts.find(p => p.id === ordered.productId);
+
             overAllocated.push({
               type: 'variant',
               productId: ordered.productId,
@@ -2055,15 +2056,16 @@ export class DatabaseStorage implements IStorage {
               variantName: variant.name,
               variantBarcode: variant.barcode,
               availableStock: variant.quantity || 0,
-              orderedQuantity: ordered.quantity,
-              shortfall: ordered.quantity - (variant.quantity || 0),
+              orderedQuantity: ordered.totalOrdered,
+              shortfall: ordered.totalOrdered - (variant.quantity || 0),
               imageUrl: variant.imageUrl || product?.imageUrl
             });
           }
         } else {
-          // Check product stock
+          // Check product stock - use product's own quantity field
           const product = allProducts.find(p => p.id === ordered.productId);
-          if (product && ordered.quantity > (product.quantity || 0)) {
+
+          if (product && ordered.totalOrdered > (product.quantity || 0)) {
             overAllocated.push({
               type: 'product',
               productId: product.id,
@@ -2073,14 +2075,14 @@ export class DatabaseStorage implements IStorage {
               variantName: null,
               variantBarcode: null,
               availableStock: product.quantity || 0,
-              orderedQuantity: ordered.quantity,
-              shortfall: ordered.quantity - (product.quantity || 0),
+              orderedQuantity: ordered.totalOrdered,
+              shortfall: ordered.totalOrdered - (product.quantity || 0),
               imageUrl: product.imageUrl
             });
           }
         }
       }
-      
+
       return overAllocated;
     } catch (error) {
       console.error('Error fetching over-allocated items:', error);
