@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { Search, Package, MapPin, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers, MoveRight, ArrowUpDown, FileText } from "lucide-react";
+import { Search, Package, MapPin, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Link } from "wouter";
 import { fuzzySearch } from "@/lib/fuzzySearch";
@@ -69,6 +69,13 @@ export default function StockLookup() {
   // Fetch warehouses for location display
   const { data: warehouses = [] } = useQuery<any[]>({
     queryKey: ['/api/warehouses'],
+  });
+
+  // Fetch over-allocated items
+  const { data: overAllocatedItems = [] } = useQuery<any[]>({
+    queryKey: ['/api/over-allocated-items'],
+    staleTime: 0,
+    refetchInterval: 60000, // Refresh every minute
   });
 
   // Create warehouse lookup map
@@ -264,6 +271,41 @@ export default function StockLookup() {
           )}
         </div>
       </div>
+
+      {/* Over-Allocated Items Warning */}
+      {overAllocatedItems.length > 0 && (
+        <div className="px-3 pt-3">
+          <Card className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 border-red-300 dark:border-red-700">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 p-2 bg-red-100 dark:bg-red-900/50 rounded-lg">
+                  <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-red-900 dark:text-red-100 mb-1">
+                    Stock Allocation Warning
+                  </h3>
+                  <p className="text-sm text-red-800 dark:text-red-200 mb-3">
+                    <span className="font-bold">{overAllocatedItems.length}</span> {overAllocatedItems.length === 1 ? 'item has' : 'items have'} more quantity ordered than available in stock
+                  </p>
+                  <Link href="/stock/over-allocated">
+                    <Button 
+                      size="sm" 
+                      className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white"
+                      data-testid="button-view-over-allocated"
+                    >
+                      View & Resolve Issues
+                    </Button>
+                  </Link>
+                </div>
+                <Badge variant="destructive" className="text-sm font-bold flex-shrink-0">
+                  {overAllocatedItems.length}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Content */}
       <div className="px-3 py-3 space-y-2">
