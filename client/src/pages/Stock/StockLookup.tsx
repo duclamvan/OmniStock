@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -60,6 +60,15 @@ export default function StockLookup() {
   const [barcodeMode, setBarcodeMode] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState("");
   const isMobile = useIsMobile();
+
+  // Check for query parameter and auto-populate search
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const searchParam = params.get('q') || params.get('search');
+    if (searchParam) {
+      setSearchQuery(searchParam);
+    }
+  }, []);
 
   // Fetch all products
   const { data: rawProducts = [], isLoading: productsLoading } = useQuery<any[]>({

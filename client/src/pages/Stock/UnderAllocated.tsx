@@ -181,15 +181,10 @@ export default function UnderAllocated() {
                               View Product
                             </Button>
                           </Link>
-                          <Link href={`/stock`}>
+                          <Link href={`/stock?q=${encodeURIComponent(item.productSku || item.productName)}`}>
                             <Button size="sm" className="bg-yellow-600 hover:bg-yellow-700 text-white" data-testid={`button-check-locations-${item.productId}`}>
                               <MapPin className="h-4 w-4 mr-1" />
-                              Check Stock Locations
-                            </Button>
-                          </Link>
-                          <Link href={`/warehouse/locations`}>
-                            <Button size="sm" variant="outline" data-testid={`button-warehouse-map-${item.productId}`}>
-                              View Warehouse Map
+                              Check All Stock Locations
                             </Button>
                           </Link>
                         </div>
