@@ -86,6 +86,7 @@ import CustomReport from "@/pages/Reports/CustomReport";
 import Settings from "@/pages/Settings/Settings";
 import StockLookup from "@/pages/Stock/StockLookup";
 import StockAdjustmentApprovals from "@/pages/Stock/StockAdjustmentApprovals";
+import OverAllocated from "@/pages/Stock/OverAllocated";
 // Legacy imports - commented out
 // import AllImports from "@/pages/Imports/AllImports";
 // import AddImportOrder from "@/pages/Imports/AddImportOrder";
@@ -180,6 +181,7 @@ function Router() {
         <Route path="/tickets/:id" component={TicketDetails} />
         <Route path="/stock" component={StockLookup} />
         <Route path="/stock/approvals" component={StockAdjustmentApprovals} />
+        <Route path="/stock/over-allocated" component={OverAllocated} />
         <Route path="/pos" component={POS} />
         <Route path="/shipping" component={ShippingManagement} />
         <Route path="/files" component={Files} />

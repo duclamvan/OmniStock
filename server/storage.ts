@@ -2040,7 +2040,7 @@ export class DatabaseStorage implements IStorage {
       // Find over-allocated items
       const overAllocated: any[] = [];
       
-      for (const [key, ordered] of orderedQuantities.entries()) {
+      for (const [key, ordered] of Array.from(orderedQuantities.entries())) {
         if (ordered.variantId) {
           // Check variant stock
           const variant = allVariants.find(v => v.id === ordered.variantId);
