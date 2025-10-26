@@ -81,6 +81,20 @@ export default function Home() {
 
   const pendingAdjustments = stockAdjustmentRequests.filter(req => req.status === 'pending');
 
+  // Fetch over-allocated items
+  const { data: overAllocatedItems = [] } = useQuery<any[]>({
+    queryKey: ['/api/over-allocated-items'],
+    staleTime: 0,
+    refetchInterval: 60000,
+  });
+
+  // Fetch under-allocated items
+  const { data: underAllocatedItems = [] } = useQuery<any[]>({
+    queryKey: ['/api/under-allocated-items'],
+    staleTime: 0,
+    refetchInterval: 60000,
+  });
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
@@ -146,6 +160,76 @@ export default function Home() {
               </div>
               <Badge variant="destructive" className="text-sm font-bold flex-shrink-0">
                 {pendingAdjustments.length} Pending
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Over-Allocated Items Warning */}
+      {overAllocatedItems.length > 0 && (
+        <Card className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 border-red-300 dark:border-red-700">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-red-100 dark:bg-red-900/50 rounded-lg">
+                  <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-red-900 dark:text-red-100 mb-1">
+                    Over-Allocated Inventory
+                  </h3>
+                  <p className="text-sm text-red-800 dark:text-red-200 mb-3">
+                    <span className="font-bold">{overAllocatedItems.length}</span> {overAllocatedItems.length === 1 ? 'item has' : 'items have'} more quantity ordered than available in stock
+                  </p>
+                  <Link href="/stock/over-allocated">
+                    <Button 
+                      size="sm" 
+                      className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white"
+                      data-testid="button-view-over-allocated"
+                    >
+                      View & Resolve Issues
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+              <Badge variant="destructive" className="text-sm font-bold flex-shrink-0">
+                {overAllocatedItems.length}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Under-Allocated Items Warning */}
+      {underAllocatedItems.length > 0 && (
+        <Card className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20 border-yellow-300 dark:border-yellow-700">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
+                    Under-Allocated Inventory
+                  </h3>
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-3">
+                    <span className="font-bold">{underAllocatedItems.length}</span> {underAllocatedItems.length === 1 ? 'item has' : 'items have'} more quantity in record than in stock locations
+                  </p>
+                  <Link href="/stock/under-allocated">
+                    <Button 
+                      size="sm" 
+                      className="bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-800 text-white"
+                      data-testid="button-view-under-allocated"
+                    >
+                      View & Resolve Issues
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+              <Badge className="bg-yellow-600 text-white text-sm font-bold flex-shrink-0">
+                {underAllocatedItems.length}
               </Badge>
             </div>
           </CardContent>
