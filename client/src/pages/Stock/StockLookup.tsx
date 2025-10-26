@@ -20,8 +20,8 @@ interface Variant {
   barcode?: string;
   quantity: number;
   imageUrl?: string;
-  priceCZK?: number;
-  priceEUR?: number;
+  priceCzk?: number;
+  priceEur?: number;
 }
 
 interface ProductLocation {
@@ -46,8 +46,8 @@ interface EnrichedProduct {
   locations?: ProductLocation[];
   imageUrl?: string;
   images?: any;
-  priceCZK?: number;
-  priceEUR?: number;
+  priceCzk?: number;
+  priceEur?: number;
 }
 
 export default function StockLookup() {
@@ -115,8 +115,8 @@ export default function StockLookup() {
         locations: p.locations,
         imageUrl: primaryImage,
         images: p.images,
-        priceCZK: p.priceCZK,
-        priceEUR: p.priceEUR
+        priceCzk: p.priceCzk,
+        priceEur: p.priceEur
       };
     });
   }, [rawProducts]);
@@ -356,19 +356,19 @@ export default function StockLookup() {
                         </div>
 
                         {/* Prices */}
-                        {(product.priceCZK || product.priceEUR) && (
+                        {(product.priceCzk || product.priceEur) && (
                           <div className="flex items-center gap-2 text-xs font-medium">
-                            {product.priceCZK && (
+                            {product.priceCzk && (
                               <span className="text-blue-600 dark:text-blue-400">
-                                {product.priceCZK.toLocaleString('cs-CZ')} Kč
+                                {Number(product.priceCzk).toLocaleString('cs-CZ')} Kč
                               </span>
                             )}
-                            {product.priceCZK && product.priceEUR && (
+                            {product.priceCzk && product.priceEur && (
                               <span className="text-gray-400 dark:text-gray-600">•</span>
                             )}
-                            {product.priceEUR && (
+                            {product.priceEur && (
                               <span className="text-green-600 dark:text-green-400">
-                                €{product.priceEUR.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                €{Number(product.priceEur).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </span>
                             )}
                           </div>
@@ -443,19 +443,19 @@ export default function StockLookup() {
                                         {variant.barcode}
                                       </p>
                                     )}
-                                    {(variant.priceCZK || variant.priceEUR) && (
+                                    {(variant.priceCzk || variant.priceEur) && (
                                       <div className="flex items-center gap-2 text-[11px] font-medium mt-1">
-                                        {variant.priceCZK && (
+                                        {variant.priceCzk && (
                                           <span className="text-blue-600 dark:text-blue-400">
-                                            {variant.priceCZK.toLocaleString('cs-CZ')} Kč
+                                            {Number(variant.priceCzk).toLocaleString('cs-CZ')} Kč
                                           </span>
                                         )}
-                                        {variant.priceCZK && variant.priceEUR && (
+                                        {variant.priceCzk && variant.priceEur && (
                                           <span className="text-gray-400 dark:text-gray-600">•</span>
                                         )}
-                                        {variant.priceEUR && (
+                                        {variant.priceEur && (
                                           <span className="text-green-600 dark:text-green-400">
-                                            €{variant.priceEUR.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            €{Number(variant.priceEur).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                           </span>
                                         )}
                                       </div>
