@@ -32,18 +32,28 @@ export default function UnderAllocated() {
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
         <div className="px-4 py-4 max-w-7xl mx-auto">
-          <div className="flex items-center gap-3 mb-2">
-            <Link href="/stock">
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" data-testid="button-back-to-stock">
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Under-Allocated Inventory
-              </h1>
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <div className="flex items-center gap-3">
+              <Link href="/stock">
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" data-testid="button-back-to-stock">
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+              </Link>
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Under-Allocated Inventory
+                </h1>
+              </div>
             </div>
+            {!isLoading && items.length > 0 && (
+              <Link href={`/stock?q=${items.map(i => i.productSku || i.productName).filter(Boolean).join(' ')}`}>
+                <Button className="bg-yellow-600 hover:bg-yellow-700 text-white" data-testid="button-check-all-locations">
+                  <MapPin className="h-4 w-4 mr-2" />
+                  Check All Stock Locations
+                </Button>
+              </Link>
+            )}
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 ml-11">
             Items with more quantity in record than in stock locations
@@ -184,7 +194,7 @@ export default function UnderAllocated() {
                           <Link href={`/stock?q=${encodeURIComponent(item.productSku || item.productName)}`}>
                             <Button size="sm" className="bg-yellow-600 hover:bg-yellow-700 text-white" data-testid={`button-check-locations-${item.productId}`}>
                               <MapPin className="h-4 w-4 mr-1" />
-                              Check All Stock Locations
+                              Check Stock Locations
                             </Button>
                           </Link>
                         </div>
