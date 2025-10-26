@@ -2098,13 +2098,13 @@ export class DatabaseStorage implements IStorage {
       // Use SQL aggregation to calculate stock location totals per product/variant
       const locationTotals = await db
         .select({
-          productId: stockLocations.productId,
-          variantId: stockLocations.variantId,
-          totalPieces: sql<number>`SUM(${stockLocations.pieces})::integer`,
+          productId: productLocations.productId,
+          variantId: productLocations.variantId,
+          totalPieces: sql<number>`SUM(${productLocations.pieces})::integer`,
         })
-        .from(stockLocations)
-        .where(sql`${stockLocations.productId} IS NOT NULL`)
-        .groupBy(stockLocations.productId, stockLocations.variantId);
+        .from(productLocations)
+        .where(sql`${productLocations.productId} IS NOT NULL`)
+        .groupBy(productLocations.productId, productLocations.variantId);
 
       // Get all products and variants to check against
       const allProducts = await db.select().from(products);
