@@ -62,11 +62,19 @@ export default function StockLookup() {
   const isMobile = useIsMobile();
 
   // Check for query parameter and auto-populate search
+  const [isFromUnderAllocated, setIsFromUnderAllocated] = useState(false);
+  
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const searchParam = params.get('q') || params.get('search');
+    const fromParam = params.get('from');
+    
     if (searchParam) {
       setSearchQuery(searchParam);
+    }
+    
+    if (fromParam === 'under-allocated') {
+      setIsFromUnderAllocated(true);
     }
   }, []);
 
@@ -377,6 +385,32 @@ export default function StockLookup() {
                 </div>
                 <Badge className="bg-yellow-600 text-white text-sm font-bold flex-shrink-0">
                   {underAllocatedItems.length}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Under-Allocated Filter Banner */}
+      {isFromUnderAllocated && filteredProducts.length > 0 && (
+        <div className="px-3 pt-3">
+          <Card className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20 border-yellow-300 dark:border-yellow-700">
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0 p-2 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg">
+                  <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600 dark:text-yellow-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-sm sm:text-base text-yellow-900 dark:text-yellow-100 mb-0.5">
+                    Showing Under-Allocated Items
+                  </h3>
+                  <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200">
+                    Products below have discrepancies between recorded and stock location quantities
+                  </p>
+                </div>
+                <Badge className="bg-yellow-600 text-white text-xs sm:text-sm font-bold flex-shrink-0">
+                  {filteredProducts.length}
                 </Badge>
               </div>
             </CardContent>

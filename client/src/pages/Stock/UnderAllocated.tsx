@@ -50,7 +50,7 @@ export default function UnderAllocated() {
           </p>
           {!isLoading && items.length > 0 && (
             <div className="ml-10 sm:ml-11">
-              <Link href={`/stock?q=${items.map(i => i.productSku || i.productName).filter(Boolean).join(' ')}`}>
+              <Link href={`/stock?q=${items.map(i => i.productSku || i.productName).filter(Boolean).join(' ')}&from=under-allocated`}>
                 <Button className="w-full sm:w-auto bg-yellow-600 hover:bg-yellow-700 text-white" size="sm" data-testid="button-check-all-locations">
                   <MapPin className="h-4 w-4 mr-2" />
                   Check All Stock Locations
