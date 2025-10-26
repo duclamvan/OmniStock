@@ -144,14 +144,40 @@ export default function StockLookup() {
     });
   }, [rawProducts]);
 
-  // Filter products using fuzzy search
+  // Filter products using fuzzy search - supports multiple search terms
   const filteredProducts = useMemo(() => {
     if (!searchQuery.trim()) return products;
     
-    return fuzzySearch(products, searchQuery, {
-      fields: ['name', 'sku', 'barcode', 'categoryName'],
-      threshold: 0.3
-    }).map(result => result.item);
+    // Split by spaces to handle multiple SKUs/product names
+    const searchTerms = searchQuery.trim().split(/\s+/);
+    
+    // If only one search term, use regular fuzzy search
+    if (searchTerms.length === 1) {
+      return fuzzySearch(products, searchQuery, {
+        fields: ['name', 'sku', 'barcode', 'categoryName'],
+        threshold: 0.3
+      }).map(result => result.item);
+    }
+    
+    // Multiple search terms: find products that match any of the terms
+    const matchedProductIds = new Set<string>();
+    const matchedProducts: EnrichedProduct[] = [];
+    
+    searchTerms.forEach(term => {
+      const results = fuzzySearch(products, term, {
+        fields: ['name', 'sku', 'barcode', 'categoryName'],
+        threshold: 0.3
+      });
+      
+      results.forEach(result => {
+        if (!matchedProductIds.has(result.item.id)) {
+          matchedProductIds.add(result.item.id);
+          matchedProducts.push(result.item);
+        }
+      });
+    });
+    
+    return matchedProducts;
   }, [products, searchQuery]);
 
   // Fetch variants for selected product
