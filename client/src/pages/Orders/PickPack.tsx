@@ -2828,7 +2828,8 @@ export default function PickPack() {
     return transformedOrders.filter(order => {
       if (status === 'pending') return order.status === 'to_fulfill' && (order.pickStatus === 'not_started' || !order.pickStatus);
       if (status === 'picking') return order.status === 'to_fulfill' && order.pickStatus === 'in_progress';
-      if (status === 'packing') return order.status === 'to_fulfill' && (order.packStatus === 'in_progress' || (order.pickStatus === 'completed' && order.packStatus === 'not_started'));
+      // Allow packing to start as soon as picking has started (in_progress), not just when completed
+      if (status === 'packing') return order.status === 'to_fulfill' && (order.packStatus === 'in_progress' || (order.pickStatus === 'in_progress' && order.packStatus === 'not_started') || (order.pickStatus === 'completed' && order.packStatus === 'not_started'));
       if (status === 'ready') return order.status === 'ready_to_ship' && order.packStatus === 'completed';
       return false;
     });
