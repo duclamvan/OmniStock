@@ -660,11 +660,9 @@ export default function PickPack() {
       // Ctrl/Cmd + S: Start/Resume picking for first pending order
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        if (!activePickingOrder && !activePackingOrder && allOrders.length > 0) {
-          // Find first pending order
-          const pendingOrders = allOrders.filter((o: any) => 
-            o.pickStatus === 'not_started' && o.orderStatus === 'to_fulfill'
-          );
+        if (!activePickingOrder && !activePackingOrder && transformedOrders.length > 0) {
+          // Find first pending order (status = 'to_fulfill')
+          const pendingOrders = transformedOrders.filter(o => o.status === 'to_fulfill');
           if (pendingOrders.length > 0) {
             const order = pendingOrders[0];
             setActivePickingOrder(order);
@@ -1558,15 +1556,12 @@ export default function PickPack() {
   const transformedOrders: PickPackOrder[] = [
     // Use only real orders from database (removed demo orders)
     ...((allOrders as any[] || [])
+    // The backend now sets orderStatus to match the current state
     .filter((order: any) => 
       order.status === 'to_fulfill' || 
       order.status === 'picking' || 
       order.status === 'packing' ||
-      order.status === 'ready_to_ship' ||
-      order.pickStatus === 'in_progress' ||
-      order.pickStatus === 'completed' ||
-      order.packStatus === 'in_progress' ||
-      order.packStatus === 'completed'
+      order.status === 'ready_to_ship'
     )
     .map((order: any) => ({
       id: order.id,
@@ -2143,8 +2138,8 @@ export default function PickPack() {
 
   // Quick Action: Start Next Priority Order
   const startNextPriorityOrder = () => {
-    // Find the highest priority pending order
-    const pendingOrders = transformedOrders.filter(o => o.pickStatus === 'not_started');
+    // Find the highest priority pending order (status = 'to_fulfill')
+    const pendingOrders = transformedOrders.filter(o => o.status === 'to_fulfill');
     const priorityOrder = pendingOrders.sort((a, b) => {
       const priorityWeight = { high: 3, medium: 2, low: 1 };
       return priorityWeight[b.priority] - priorityWeight[a.priority];
@@ -2778,14 +2773,13 @@ export default function PickPack() {
     barcodeInputRef.current?.focus();
   };
 
-  // Filter orders by status - Updated to work with "to_fulfill" orders
+  // Filter orders by status - Updated to match backend state machine
   const getOrdersByStatus = (status: string) => {
     return transformedOrders.filter(order => {
-      if (status === 'pending') return order.status === 'to_fulfill' && (order.pickStatus === 'not_started' || !order.pickStatus);
-      if (status === 'picking') return order.status === 'to_fulfill' && order.pickStatus === 'in_progress';
-      // Allow packing to start as soon as picking has started (in_progress), not just when completed
-      if (status === 'packing') return order.status === 'to_fulfill' && (order.packStatus === 'in_progress' || (order.pickStatus === 'in_progress' && order.packStatus === 'not_started') || (order.pickStatus === 'completed' && order.packStatus === 'not_started'));
-      if (status === 'ready') return order.status === 'ready_to_ship' && order.packStatus === 'completed';
+      if (status === 'pending') return order.status === 'to_fulfill';
+      if (status === 'picking') return order.status === 'picking';
+      if (status === 'packing') return order.status === 'packing';
+      if (status === 'ready') return order.status === 'ready_to_ship';
       return false;
     });
   };
@@ -5273,9 +5267,9 @@ export default function PickPack() {
                     <>
                       {
                         (() => {
-                          // Count orders to pick (not started + in progress)
+                          // Count pending orders (ready to pick)
                           const ordersToPickCount = transformedOrders.filter(o => 
-                            o.pickStatus === 'not_started' || o.pickStatus === 'in_progress'
+                            o.status === 'to_fulfill'
                           ).length;
                           const hasOrders = ordersToPickCount > 0;
                           
@@ -5286,6 +5280,7 @@ export default function PickPack() {
                               variant={hasOrders ? "default" : "secondary"}
                               onClick={startNextPriorityOrder}
                               disabled={!hasOrders}
+                              data-testid="button-start-next-priority-order"
                             >
                               <PlayCircle className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
                               Start Next Priority Order {hasOrders && `(${ordersToPickCount})`}

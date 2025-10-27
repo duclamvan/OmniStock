@@ -1076,35 +1076,27 @@ export class DatabaseStorage implements IStorage {
       // If status is provided, filter by that status
       // Otherwise, return all orders that need pick/pack processing
       if (status) {
-        // Map frontend status to database status/columns
+        // Map frontend status to database orderStatus
         if (status === 'pending' || status === 'to_fulfill') {
           query = query.where(eq(orders.orderStatus, 'to_fulfill')) as any;
         } else if (status === 'picking') {
-          // Orders that are in to_fulfill status AND pick_status is in_progress
-          query = query.where(
-            and(
-              eq(orders.orderStatus, 'to_fulfill'),
-              eq(orders.pickStatus, 'in_progress')
-            )
-          ) as any;
+          // Orders with orderStatus = 'picking' (set by startPickingOrder)
+          query = query.where(eq(orders.orderStatus, 'picking')) as any;
         } else if (status === 'packing') {
-          // Orders that are in to_fulfill status AND pack_status is in_progress
-          query = query.where(
-            and(
-              eq(orders.orderStatus, 'to_fulfill'),
-              eq(orders.packStatus, 'in_progress')
-            )
-          ) as any;
+          // Orders with orderStatus = 'packing' (set by startPackingOrder)
+          query = query.where(eq(orders.orderStatus, 'packing')) as any;
         } else if (status === 'ready') {
           query = query.where(eq(orders.orderStatus, 'ready_to_ship')) as any;
         } else {
           query = query.where(eq(orders.orderStatus, status)) as any;
         }
       } else {
-        // Default: return all orders that need fulfillment (to_fulfill and ready_to_ship)
+        // Default: return all orders in the pick/pack workflow
         query = query.where(
           or(
             eq(orders.orderStatus, 'to_fulfill'),
+            eq(orders.orderStatus, 'picking'),
+            eq(orders.orderStatus, 'packing'),
             eq(orders.orderStatus, 'ready_to_ship')
           )
         ) as any;
@@ -1127,26 +1119,7 @@ export class DatabaseStorage implements IStorage {
 
   // Helper method to determine the pick/pack status for display
   private getPickPackStatus(order: any): string {
-    // If order is ready to ship, it's ready
-    if (order.orderStatus === 'ready_to_ship') {
-      return 'ready_to_ship';
-    }
-    
-    // If order is to_fulfill, check pick/pack statuses
-    if (order.orderStatus === 'to_fulfill') {
-      if (order.packStatus === 'completed') {
-        return 'ready_to_ship';
-      } else if (order.packStatus === 'in_progress') {
-        return 'packing';
-      } else if (order.pickStatus === 'completed') {
-        return 'packing';
-      } else if (order.pickStatus === 'in_progress') {
-        return 'picking';
-      } else {
-        return 'to_fulfill';
-      }
-    }
-    
+    // Use orderStatus directly as it now reflects the current state
     return order.orderStatus;
   }
 
