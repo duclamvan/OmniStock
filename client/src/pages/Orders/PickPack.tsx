@@ -5411,8 +5411,8 @@ export default function PickPack() {
                   {batchPickingMode ? "Select multiple orders for batch picking" : "Select an order to start the picking process"}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="px-4 sm:px-6">
-                <div className="space-y-3 sm:space-y-4">
+              <CardContent className="px-3 sm:px-4">
+                <div className="space-y-2">
                   {getOrdersByStatus('pending').map(order => (
                     <Card 
                       key={order.id} 
@@ -5433,51 +5433,51 @@ export default function PickPack() {
                         }
                       }}
                     >
-                      <CardContent className="p-4 sm:p-6">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <CardContent className="p-2 sm:p-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-3">
+                            <div className="flex items-center gap-1.5 mb-1.5">
                               {batchPickingMode && (
                                 <input
                                   type="checkbox"
                                   checked={selectedBatchItems.has(order.id)}
-                                  className="h-5 w-5 text-purple-600 rounded"
+                                  className="h-4 w-4 text-purple-600 rounded"
                                   onClick={(e) => e.stopPropagation()}
                                   onChange={() => {}}
                                 />
                               )}
-                              <h3 className="text-lg sm:text-xl font-bold text-gray-900">{order.orderId}</h3>
-                              <Badge variant={getPriorityColor(order.priority)} className="text-xs font-semibold">
+                              <h3 className="text-sm sm:text-base font-bold text-gray-900">{order.orderId}</h3>
+                              <Badge variant={getPriorityColor(order.priority)} className="text-xs font-semibold py-0 px-1.5">
                                 {order.priority.toUpperCase()}
                               </Badge>
                               {order.priority === 'high' && (
-                                <Zap className="h-4 w-4 text-red-500 fill-red-500" />
+                                <Zap className="h-3 w-3 text-red-500 fill-red-500" />
                               )}
                               {/* Status indicator */}
                               {(() => {
                                 const status = getOrderStatusDisplay(order);
                                 return (
-                                  <span className={`text-xs px-2.5 py-1 rounded-full border font-semibold ${status.color}`}>
+                                  <span className={`text-xs px-1.5 py-0.5 rounded-full border font-semibold ${status.color}`}>
                                     {status.label}
                                   </span>
                                 );
                               })()}
                             </div>
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-600">
-                              <div className="flex items-center gap-2">
-                                <User className="h-4 w-4 text-gray-400" />
+                            <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs text-gray-600">
+                              <div className="flex items-center gap-1.5">
+                                <User className="h-3 w-3 text-gray-400" />
                                 <span className="truncate font-medium">{order.customerName}</span>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <Globe className="h-4 w-4 text-gray-400" />
+                              <div className="flex items-center gap-1.5">
+                                <Globe className="h-3 w-3 text-gray-400" />
                                 <span className="font-semibold text-gray-900">{getOrderCountryCode(order)}</span>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <Package className="h-4 w-4 text-gray-400" />
+                              <div className="flex items-center gap-1.5">
+                                <Package className="h-3 w-3 text-gray-400" />
                                 <span className="font-medium">{order.totalItems} items</span>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <Truck className="h-4 w-4 text-gray-400" />
+                              <div className="flex items-center gap-1.5">
+                                <Truck className="h-3 w-3 text-gray-400" />
                                 <span className="truncate font-medium">{order.shippingMethod}</span>
                               </div>
                             </div>
@@ -5485,13 +5485,13 @@ export default function PickPack() {
                           {!batchPickingMode && (
                             <Button
                               size="sm"
-                              className="w-full sm:w-auto min-h-[44px] font-semibold"
+                              className="w-full sm:w-auto h-8 text-xs font-semibold"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 startPicking(order);
                               }}
                             >
-                              <PlayCircle className="h-5 w-5 mr-2" />
+                              <PlayCircle className="h-3.5 w-3.5 mr-1.5" />
                               Start Picking
                             </Button>
                           )}
@@ -5524,51 +5524,51 @@ export default function PickPack() {
               <CardHeader className="pb-4 sm:pb-6">
                 <CardTitle className="text-lg sm:text-xl font-bold">Orders Being Picked</CardTitle>
               </CardHeader>
-              <CardContent className="px-4 sm:px-6">
+              <CardContent className="px-3 sm:px-4">
                 {isLoading ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {[1, 2].map(i => (
                       <OrderCardSkeleton key={i} />
                     ))}
                   </div>
                 ) : getOrdersByStatus('picking').length === 0 ? (
-                  <div className="text-center py-8 sm:py-12 fade-in">
-                    <Package className="h-10 sm:h-12 w-10 sm:w-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
-                    <p className="text-sm sm:text-base text-gray-500">No orders currently being picked</p>
+                  <div className="text-center py-6 sm:py-8 fade-in">
+                    <Package className="h-8 sm:h-10 w-8 sm:w-10 text-gray-300 mx-auto mb-2 sm:mb-3" />
+                    <p className="text-xs sm:text-sm text-gray-500">No orders currently being picked</p>
                   </div>
                 ) : (
-                  <div className="space-y-3 sm:space-y-4 stagger-animation">
+                  <div className="space-y-2 stagger-animation">
                     {getOrdersByStatus('picking').map(order => (
                       <Card key={order.id} className="fade-in transition-shadow hover:shadow-md">
-                        <CardContent className="p-4 sm:p-6">
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <CardContent className="p-2 sm:p-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                             <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-3">
-                                <h3 className="text-lg sm:text-xl font-bold text-gray-900">{order.orderId}</h3>
+                              <div className="flex items-center gap-1.5 mb-1.5">
+                                <h3 className="text-sm sm:text-base font-bold text-gray-900">{order.orderId}</h3>
                                 {/* Status indicator */}
                                 {(() => {
                                   const status = getOrderStatusDisplay(order);
                                   return (
-                                    <span className={`text-xs px-2.5 py-1 rounded-full border font-semibold ${status.color}`}>
+                                    <span className={`text-xs px-1.5 py-0.5 rounded-full border font-semibold ${status.color}`}>
                                       {status.label}
                                     </span>
                                   );
                                 })()}
                               </div>
-                              <div className="flex items-center gap-4 text-sm text-gray-600">
-                                <div className="flex items-center gap-2">
-                                  <Globe className="h-4 w-4 text-gray-400" />
+                              <div className="flex items-center gap-3 text-xs text-gray-600">
+                                <div className="flex items-center gap-1.5">
+                                  <Globe className="h-3 w-3 text-gray-400" />
                                   <span className="font-semibold text-gray-900">{getOrderCountryCode(order)}</span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <User className="h-4 w-4 text-gray-400" />
+                                <div className="flex items-center gap-1.5">
+                                  <User className="h-3 w-3 text-gray-400" />
                                   <span className="font-medium">Picked by: {order.pickedBy}</span>
                                 </div>
                               </div>
                             </div>
                             <Button 
                               size="sm" 
-                              className="w-full sm:w-auto min-h-[44px] bg-amber-500 hover:bg-amber-600 text-white font-semibold"
+                              className="w-full sm:w-auto h-8 text-xs bg-amber-500 hover:bg-amber-600 text-white font-semibold"
                               onClick={() => {
                                 // Resume picking by setting the active order and switching to picking view
                                 setActivePickingOrder(order);
@@ -5599,75 +5599,75 @@ export default function PickPack() {
                 <CardTitle className="text-lg sm:text-xl font-bold">Ready for Packing</CardTitle>
                 <CardDescription className="text-sm mt-1">Orders that have been picked and ready to pack</CardDescription>
               </CardHeader>
-              <CardContent className="px-4 sm:px-6">
+              <CardContent className="px-3 sm:px-4">
                 {isLoading ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {[1, 2, 3].map(i => (
                       <OrderCardSkeleton key={i} />
                     ))}
                   </div>
                 ) : getOrdersByStatus('packing').length === 0 ? (
-                  <div className="text-center py-8 sm:py-12 fade-in">
-                    <Box className="h-10 sm:h-12 w-10 sm:w-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
-                    <p className="text-sm sm:text-base text-gray-500">No orders ready for packing</p>
+                  <div className="text-center py-6 sm:py-8 fade-in">
+                    <Box className="h-8 sm:h-10 w-8 sm:w-10 text-gray-300 mx-auto mb-2 sm:mb-3" />
+                    <p className="text-xs sm:text-sm text-gray-500">No orders ready for packing</p>
                   </div>
                 ) : (
-                  <div className="space-y-3 sm:space-y-4 stagger-animation">
+                  <div className="space-y-2 stagger-animation">
                     {getOrdersByStatus('packing')
                       .filter(order => !ordersSentBack.has(order.id)) // Filter out orders being sent back
                       .map(order => (
                       <Card key={order.id} className="fade-in transition-shadow hover:shadow-md">
-                        <CardContent className="p-4 sm:p-6">
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <CardContent className="p-2 sm:p-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                             <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-3">
-                                <h3 className="text-lg sm:text-xl font-bold text-gray-900">{order.orderId}</h3>
+                              <div className="flex items-center gap-1.5 mb-1.5">
+                                <h3 className="text-sm sm:text-base font-bold text-gray-900">{order.orderId}</h3>
                                 {/* Status indicator */}
                                 {(() => {
                                   const status = getOrderStatusDisplay(order);
                                   return (
-                                    <span className={`text-xs px-2.5 py-1 rounded-full border font-semibold ${status.color}`}>
+                                    <span className={`text-xs px-1.5 py-0.5 rounded-full border font-semibold ${status.color}`}>
                                       {status.label}
                                     </span>
                                   );
                                 })()}
                               </div>
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm text-gray-600">
-                                <div className="flex items-center gap-2">
-                                  <User className="h-4 w-4 text-gray-400" />
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-gray-600">
+                                <div className="flex items-center gap-1.5">
+                                  <User className="h-3 w-3 text-gray-400" />
                                   <span className="truncate font-medium">{order.customerName}</span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <Globe className="h-4 w-4 text-gray-400" />
+                                <div className="flex items-center gap-1.5">
+                                  <Globe className="h-3 w-3 text-gray-400" />
                                   <span className="font-semibold text-gray-900">{getOrderCountryCode(order)}</span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <Package className="h-4 w-4 text-gray-400" />
+                                <div className="flex items-center gap-1.5">
+                                  <Package className="h-3 w-3 text-gray-400" />
                                   <span className="font-medium">{order.totalItems} items</span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <CheckCircle className="h-4 w-4 text-green-500" />
+                                <div className="flex items-center gap-1.5">
+                                  <CheckCircle className="h-3 w-3 text-green-500" />
                                   <span className="text-green-600 font-medium">Picked by {order.pickedBy}</span>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
                               {/* Quick View Button */}
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-11 w-11"
+                                className="h-8 w-8"
                                 onClick={() => setPreviewOrder(order)}
                                 title="View Order Details"
                               >
-                                <Eye className="h-5 w-5" />
+                                <Eye className="h-4 w-4" />
                               </Button>
                               <Button
                                 size="sm"
-                                className="w-full sm:w-auto min-h-[44px] bg-purple-600 hover:bg-purple-700 font-semibold"
+                                className="w-full sm:w-auto h-8 text-xs bg-purple-600 hover:bg-purple-700 font-semibold"
                                 onClick={() => startPacking(order)}
                               >
-                                <Box className="h-5 w-5 mr-2" />
+                                <Box className="h-3.5 w-3.5 mr-1.5" />
                                 Start Packing
                               </Button>
                               <DropdownMenu>
@@ -5675,10 +5675,10 @@ export default function PickPack() {
                                   <Button 
                                     variant="ghost" 
                                     size="icon" 
-                                    className="h-11 w-11"
+                                    className="h-8 w-8"
                                     onClick={(e) => e.stopPropagation()}
                                   >
-                                    <MoreVertical className="h-5 w-5" />
+                                    <MoreVertical className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
@@ -5688,7 +5688,7 @@ export default function PickPack() {
                                       sendBackToPick(order);
                                     }}
                                   >
-                                    <RotateCcw className="h-4 w-4 mr-2" />
+                                    <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
                                     Send back to Pick
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -5727,17 +5727,17 @@ export default function PickPack() {
                   )}
                 </div>
               </CardHeader>
-              <CardContent className="px-4 sm:px-6">
+              <CardContent className="px-3 sm:px-4">
                 {isLoading ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {[1, 2, 3].map(i => (
                       <OrderCardSkeleton key={i} />
                     ))}
                   </div>
                 ) : getOrdersByStatus('ready').length === 0 ? (
-                  <div className="text-center py-8 sm:py-12 fade-in">
-                    <Truck className="h-10 sm:h-12 w-10 sm:w-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
-                    <p className="text-sm sm:text-base text-gray-500">No orders ready to ship</p>
+                  <div className="text-center py-6 sm:py-8 fade-in">
+                    <Truck className="h-8 sm:h-10 w-8 sm:w-10 text-gray-300 mx-auto mb-2 sm:mb-3" />
+                    <p className="text-xs sm:text-sm text-gray-500">No orders ready to ship</p>
                   </div>
                 ) : (
                   <div className="space-y-4 sm:space-y-6">
@@ -5949,9 +5949,9 @@ export default function PickPack() {
                             
                             {/* Section Content - Collapsible */}
                             {!collapsedSections.has(section.title) && (
-                              <div className="p-4">
+                              <div className="p-2">
                               {/* Section Orders */}
-                              <div className="space-y-2">
+                              <div className="space-y-1.5">
                               {section.orders
                                 .filter(order => !ordersReturnedToPacking.has(order.id)) // Filter out orders being returned
                                 .map(order => (
@@ -5960,59 +5960,59 @@ export default function PickPack() {
                                   className="bg-white border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                                   onClick={() => setPreviewOrder(order)}
                                 >
-                                  <CardContent className="p-3 sm:p-4">
-                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                  <CardContent className="p-2">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
                                       <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1 sm:mb-2">
-                                          <h3 className="font-semibold text-sm sm:text-base">{order.orderId}</h3>
-                                          <span className="text-xs px-2 py-0.5 rounded-full border font-medium bg-green-100 text-green-700 border-green-200">
+                                        <div className="flex items-center gap-1.5 mb-1">
+                                          <h3 className="font-semibold text-xs sm:text-sm">{order.orderId}</h3>
+                                          <span className="text-xs px-1.5 py-0.5 rounded-full border font-medium bg-green-100 text-green-700 border-green-200">
                                             Ready to Ship
                                           </span>
                                           {order.modifiedAfterPacking && (
-                                            <span className="text-xs px-2 py-0.5 rounded-full border font-medium bg-amber-100 text-amber-700 border-amber-200 flex items-center gap-1 animate-pulse">
+                                            <span className="text-xs px-1.5 py-0.5 rounded-full border font-medium bg-amber-100 text-amber-700 border-amber-200 flex items-center gap-1 animate-pulse">
                                               <AlertTriangle className="h-3 w-3" />
                                               Modified
                                             </span>
                                           )}
                                         </div>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-xs text-gray-600">
                                           <div className="flex items-center gap-1">
-                                            <User className="h-3 sm:h-4 w-3 sm:w-4" />
+                                            <User className="h-3 w-3" />
                                             <span className="truncate">{order.customerName}</span>
                                           </div>
                                           <div className="flex items-center gap-1">
-                                            <Globe className="h-3 sm:h-4 w-3 sm:w-4" />
+                                            <Globe className="h-3 w-3" />
                                             <span className="font-semibold">{getOrderCountryCode(order)}</span>
                                           </div>
                                           <div className="flex items-center gap-1 col-span-2 sm:col-span-1">
-                                            <PackageCheck className="h-3 sm:h-4 w-3 sm:w-4 text-green-500" />
+                                            <PackageCheck className="h-3 w-3 text-green-500" />
                                             <span className="text-green-600">Packed by {order.packedBy}</span>
                                           </div>
                                         </div>
                                       </div>
-                                      <div className="flex gap-2 items-center ml-auto">
+                                      <div className="flex gap-1.5 items-center ml-auto">
                                         <Button
                                           size="sm"
                                           variant="outline"
-                                          className="min-w-[70px] max-w-[90px]"
+                                          className="h-7 text-xs px-2"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             // Print shipping label
                                             playSound('success');
                                           }}
                                         >
-                                          <Printer className="h-4 w-4 mr-1" />
+                                          <Printer className="h-3 w-3 mr-1" />
                                           Label
                                         </Button>
                                         <Button
                                           size="sm"
-                                          className="min-w-[70px] max-w-[90px] bg-green-600 hover:bg-green-700"
+                                          className="h-7 text-xs px-2 bg-green-600 hover:bg-green-700"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             markAsShipped(order);
                                           }}
                                         >
-                                          <Truck className="h-4 w-4 mr-1" />
+                                          <Truck className="h-3 w-3 mr-1" />
                                           Ship
                                         </Button>
                                         <DropdownMenu>
@@ -6020,10 +6020,10 @@ export default function PickPack() {
                                             <Button 
                                               variant="ghost" 
                                               size="sm" 
-                                              className="h-8 w-8 p-0"
+                                              className="h-7 w-7 p-0"
                                               onClick={(e) => e.stopPropagation()}
                                             >
-                                              <MoreVertical className="h-4 w-4" />
+                                              <MoreVertical className="h-3.5 w-3.5" />
                                             </Button>
                                           </DropdownMenuTrigger>
                                           <DropdownMenuContent align="end">
@@ -6033,9 +6033,9 @@ export default function PickPack() {
                                                   e.stopPropagation();
                                                   handleRepack(order);
                                                 }}
-                                                className="text-amber-600 font-medium"
+                                                className="text-amber-600 font-medium text-xs"
                                               >
-                                                <Package className="h-4 w-4 mr-2" />
+                                                <Package className="h-3 w-3 mr-1.5" />
                                                 Repack Order
                                               </DropdownMenuItem>
                                             )}
@@ -6044,8 +6044,9 @@ export default function PickPack() {
                                                 e.stopPropagation();
                                                 returnToPacking(order);
                                               }}
+                                              className="text-xs"
                                             >
-                                              <RotateCcw className="h-4 w-4 mr-2" />
+                                              <RotateCcw className="h-3 w-3 mr-1.5" />
                                               Return to Packing
                                             </DropdownMenuItem>
                                           </DropdownMenuContent>
