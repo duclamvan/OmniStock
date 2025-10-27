@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Lock, AlertTriangle, Clock, Package } from 'lucide-react';
+import { Lock, AlertTriangle, Clock, Package, User, Users } from 'lucide-react';
 import { usePickPackQueue } from '../../hooks/usePickPackQueue';
 import { useToast } from '@/hooks/use-toast';
+import { WaveCreationDialog } from './WaveCreationDialog';
+import { usePickPackNotifications } from '../../hooks/usePickPackNotifications';
+import { formatDistanceToNow } from 'date-fns';
 
 export function StatusBoard() {
   const { queue, isLoading, claimOrder, isClaimingOrder } = usePickPackQueue();
@@ -15,6 +18,24 @@ export function StatusBoard() {
   const [employeeName, setEmployeeName] = useState(
     () => localStorage.getItem('pick_pack_employee_name') || ''
   );
+
+  // Use notification system
+  usePickPackNotifications(queue);
+
+  // Calculate active workers
+  const activeWorkers = useMemo(() => {
+    if (!queue) return [];
+    const workers = new Set<string>();
+    
+    // Collect workers from all active statuses
+    [...(queue.picking || []), ...(queue.packing || [])].forEach((order) => {
+      if (order.lockInfo.lockedBy) {
+        workers.add(order.lockInfo.lockedBy);
+      }
+    });
+    
+    return Array.from(workers);
+  }, [queue]);
 
   const handleEmployeeNameChange = (name: string) => {
     setEmployeeName(name);
@@ -86,20 +107,40 @@ export function StatusBoard() {
 
   return (
     <div className="space-y-4" data-testid="status-board">
-      {/* Employee Name Input */}
-      <div className="flex items-center gap-4">
-        <label htmlFor="employee-name" className="text-sm font-medium">
-          Employee Name:
-        </label>
-        <Input
-          id="employee-name"
-          placeholder="Enter your name"
-          value={employeeName}
-          onChange={(e) => handleEmployeeNameChange(e.target.value)}
-          className="max-w-xs"
-          data-testid="input-employee-name"
-        />
+      {/* Header with Employee Name and Wave Creation */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-4">
+          <label htmlFor="employee-name" className="text-sm font-medium">
+            Employee Name:
+          </label>
+          <Input
+            id="employee-name"
+            placeholder="Enter your name"
+            value={employeeName}
+            onChange={(e) => handleEmployeeNameChange(e.target.value)}
+            className="max-w-xs"
+            data-testid="input-employee-name"
+          />
+        </div>
+        <WaveCreationDialog />
       </div>
+
+      {/* Active Workers Summary */}
+      {activeWorkers.length > 0 && (
+        <Card className="bg-blue-50 border-blue-200" data-testid="card-active-workers">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-900">
+                {activeWorkers.length} active worker{activeWorkers.length > 1 ? 's' : ''}:
+              </span>
+              <span className="text-sm text-blue-700" data-testid="text-worker-names">
+                {activeWorkers.join(', ')}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Kanban Board */}
       <div className="overflow-x-auto">
@@ -165,13 +206,24 @@ export function StatusBoard() {
                               </div>
                             </div>
 
-                            {/* Lock Status */}
-                            {order.lockInfo.isLocked && (
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
-                                <Lock className="h-3 w-3" />
-                                <span data-testid={`text-locked-by-${order.orderId}`}>
-                                  {order.lockInfo.lockedBy}
-                                </span>
+                            {/* Lock Status with Timestamp */}
+                            {order.lockInfo.isLocked && order.lockInfo.expiresAt && (
+                              <div className="space-y-1 mb-2">
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <User className="h-3 w-3" />
+                                  <span data-testid={`text-locked-by-${order.orderId}`}>
+                                    {order.lockInfo.lockedBy}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Clock className="h-3 w-3" />
+                                  <span data-testid={`text-started-${order.orderId}`}>
+                                    Started {formatDistanceToNow(
+                                      new Date(new Date(order.lockInfo.expiresAt).getTime() - 15 * 60 * 1000),
+                                      { addSuffix: true }
+                                    )}
+                                  </span>
+                                </div>
                               </div>
                             )}
 

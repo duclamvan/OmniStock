@@ -25,6 +25,7 @@ import {
   Box,
   FileText,
   Truck,
+  Clock,
 } from 'lucide-react';
 import { usePickPackQueue } from '../../hooks/usePickPackQueue';
 import { useOrderLocking } from '../../hooks/useOrderLocking';
@@ -40,6 +41,7 @@ export function StationWorkspace() {
   );
   const [timer, setTimer] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [verifiedItems, setVerifiedItems] = useState<Set<string>>(new Set());
   const [selectedCarton, setSelectedCarton] = useState('');
   const [packageWeight, setPackageWeight] = useState('');
@@ -101,6 +103,20 @@ export function StationWorkspace() {
       });
     }
   }, [myTask?.id]);
+
+  // Lock expiration countdown
+  useEffect(() => {
+    if (!myTask?.lockExpiresAt) return;
+
+    const interval = setInterval(() => {
+      const now = new Date();
+      const expiry = new Date(myTask.lockExpiresAt);
+      const remaining = Math.floor((expiry.getTime() - now.getTime()) / 1000);
+      setTimeRemaining(Math.max(0, remaining));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [myTask?.lockExpiresAt]);
 
   const formatTimer = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -339,6 +355,18 @@ export function StationWorkspace() {
                     </span>
                   </div>
                 </div>
+                {/* Lock Expiration Countdown */}
+                {myTask.lockExpiresAt && (
+                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/20 text-sm">
+                    <Clock className="h-4 w-4" />
+                    <span data-testid="text-lock-countdown">
+                      Lock expires in {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+                    </span>
+                    {timeRemaining < 180 && (
+                      <Badge variant="destructive" data-testid="badge-expiring-soon">Expiring Soon</Badge>
+                    )}
+                  </div>
+                )}
               </CardHeader>
             </Card>
 

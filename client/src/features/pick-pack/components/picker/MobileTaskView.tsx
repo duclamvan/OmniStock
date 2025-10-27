@@ -1,11 +1,19 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { 
   Package, 
   CheckCircle, 
@@ -14,7 +22,10 @@ import {
   ScanLine,
   ArrowLeft,
   ArrowRight,
-  XCircle
+  XCircle,
+  Clock,
+  Keyboard,
+  Route
 } from 'lucide-react';
 import { usePickPackQueue } from '../../hooks/usePickPackQueue';
 import { useOrderLocking } from '../../hooks/useOrderLocking';
@@ -33,6 +44,7 @@ export function MobileTaskView() {
   const [pickedItems, setPickedItems] = useState<Set<string>>(new Set());
   const [timer, setTimer] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
   // Find my active picking task
@@ -71,6 +83,61 @@ export function MobileTaskView() {
       barcodeInputRef.current.focus();
     }
   }, [myTask, currentItemIndex]);
+
+  // Lock expiration countdown
+  useEffect(() => {
+    if (!myTask?.lockExpiresAt) return;
+
+    const interval = setInterval(() => {
+      const now = new Date();
+      const expiry = new Date(myTask.lockExpiresAt);
+      const remaining = Math.floor((expiry.getTime() - now.getTime()) / 1000);
+      setTimeRemaining(Math.max(0, remaining));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [myTask?.lockExpiresAt]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (!myTask) return;
+
+    const handleKeyPress = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      
+      // Don't trigger shortcuts if typing in input/textarea
+      if (target.matches('input, textarea')) return;
+
+      // Space = Mark current item as picked
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (!pickedItems.has(`item-${currentItemIndex}`)) {
+          handleMarkPicked(currentItemIndex);
+        }
+      }
+
+      // Enter = Complete picking (if all items picked)
+      if (e.code === 'Enter' && pickedCount === totalItems) {
+        e.preventDefault();
+        handleCompletePicking();
+      }
+
+      // Arrow Up = Previous item
+      if (e.code === 'ArrowUp') {
+        e.preventDefault();
+        setCurrentItemIndex((prev) => Math.max(0, prev - 1));
+      }
+
+      // Arrow Down = Next item
+      if (e.code === 'ArrowDown') {
+        e.preventDefault();
+        setCurrentItemIndex((prev) => Math.min(totalItems - 1, prev + 1));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [myTask, currentItemIndex, pickedItems, pickedCount, totalItems]);
 
   const formatTimer = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -234,6 +301,26 @@ export function MobileTaskView() {
   const pickedCount = pickedItems.size;
   const progress = (pickedCount / totalItems) * 100;
 
+  // Pick path optimization - mock items with locations
+  const mockItems = useMemo(() => [
+    { id: 1, name: 'Sample Product 1', sku: 'SKU-001', qty: 1, location: 'WH1-A06-R04-L04-B2' },
+    { id: 2, name: 'Sample Product 2', sku: 'SKU-002', qty: 1, location: 'WH1-A08-R02-L03-B1' },
+    { id: 3, name: 'Sample Product 3', sku: 'SKU-003', qty: 1, location: 'WH1-A10-R01-L05-B3' },
+    { id: 4, name: 'Sample Product 4', sku: 'SKU-004', qty: 1, location: 'WH1-A12-R03-L02-B2' },
+    { id: 5, name: 'Sample Product 5', sku: 'SKU-005', qty: 1, location: 'WH1-A15-R05-L04-B1' },
+  ], []);
+
+  // Sort items by warehouse location for optimal path
+  const optimizedItems = useMemo(() => {
+    return [...mockItems].sort((a, b) => {
+      const locA = a.location || '';
+      const locB = b.location || '';
+      return locA.localeCompare(locB);
+    });
+  }, [mockItems]);
+
+  const currentItem = optimizedItems[currentItemIndex];
+
   return (
     <div className="space-y-4 pb-20" data-testid="mobile-task-view">
       {/* Header with Timer */}
@@ -255,8 +342,64 @@ export function MobileTaskView() {
               </span>
             </div>
           </div>
+          {/* Lock Expiration Countdown */}
+          {myTask.lockExpiresAt && (
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/20">
+              <div className="flex items-center gap-2 text-sm">
+                <Clock className="h-4 w-4" />
+                <span data-testid="text-lock-countdown">
+                  Lock expires in {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+                </span>
+                {timeRemaining < 180 && (
+                  <Badge variant="destructive" data-testid="badge-expiring-soon">Expiring Soon</Badge>
+                )}
+              </div>
+              {/* Keyboard Shortcuts Dialog */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-7 text-white hover:bg-white/20" data-testid="button-shortcuts">
+                    <Keyboard className="h-3 w-3 mr-1" />
+                    Shortcuts
+                  </Button>
+                </DialogTrigger>
+                <DialogContent data-testid="dialog-shortcuts">
+                  <DialogHeader>
+                    <DialogTitle>Keyboard Shortcuts</DialogTitle>
+                    <DialogDescription>
+                      Use these shortcuts to speed up your picking workflow
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <kbd className="px-3 py-1.5 text-sm font-semibold bg-gray-100 border border-gray-300 rounded">Space</kbd>
+                      <span className="text-sm text-muted-foreground">Mark item as picked</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <kbd className="px-3 py-1.5 text-sm font-semibold bg-gray-100 border border-gray-300 rounded">Enter</kbd>
+                      <span className="text-sm text-muted-foreground">Complete picking (when all items picked)</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <kbd className="px-3 py-1.5 text-sm font-semibold bg-gray-100 border border-gray-300 rounded">↑ / ↓</kbd>
+                      <span className="text-sm text-muted-foreground">Navigate between items</span>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          )}
         </CardHeader>
       </Card>
+
+      {/* Pick Path Optimization Alert */}
+      {optimizedItems.length > 1 && (
+        <Alert className="border-blue-200 bg-blue-50" data-testid="alert-optimized-route">
+          <Route className="h-4 w-4 text-blue-600" />
+          <AlertTitle className="text-blue-900">Optimized Route</AlertTitle>
+          <AlertDescription className="text-blue-800">
+            Items sorted for fastest picking path through warehouse
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Progress Bar */}
       <Card>
@@ -309,18 +452,18 @@ export function MobileTaskView() {
           {/* Item Details */}
           <div className="space-y-2">
             <h3 className="font-bold text-lg" data-testid="text-item-name">
-              Sample Product Name
+              {currentItem.name}
             </h3>
             <div className="text-sm text-muted-foreground">
-              <span className="font-semibold">SKU:</span> SAMPLE-SKU-001
+              <span className="font-semibold">SKU:</span> {currentItem.sku}
             </div>
             <div className="text-sm text-muted-foreground">
-              <span className="font-semibold">Quantity:</span> 1
+              <span className="font-semibold">Quantity:</span> {currentItem.qty}
             </div>
           </div>
 
           {/* Location Guidance */}
-          <LocationGuidance locationCode="WH1-A06-R04-L04-B2" />
+          <LocationGuidance locationCode={currentItem.location} />
 
           {/* Action Buttons */}
           <div className="grid grid-cols-2 gap-3 pt-4">
