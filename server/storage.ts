@@ -1151,19 +1151,117 @@ export class DatabaseStorage implements IStorage {
   }
 
   async startPickingOrder(id: string, employeeId: string): Promise<Order | undefined> {
-    return undefined;
+    try {
+      const [updated] = await db
+        .update(orders)
+        .set({
+          orderStatus: 'picking',
+          pickStatus: 'in_progress',
+          pickStartTime: new Date(),
+          pickedBy: employeeId,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(orders.id, id),
+            eq(orders.orderStatus, 'to_fulfill'),
+            or(
+              eq(orders.pickStatus, 'not_started'),
+              isNull(orders.pickStatus)
+            )
+          )
+        )
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error('Error starting picking order:', error);
+      return undefined;
+    }
   }
 
   async completePickingOrder(id: string): Promise<Order | undefined> {
-    return undefined;
+    try {
+      const [updated] = await db
+        .update(orders)
+        .set({
+          pickStatus: 'completed',
+          pickEndTime: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(orders.id, id),
+            eq(orders.pickStatus, 'in_progress')
+          )
+        )
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error('Error completing picking order:', error);
+      return undefined;
+    }
   }
 
   async startPackingOrder(id: string, employeeId: string): Promise<Order | undefined> {
-    return undefined;
+    try {
+      const [updated] = await db
+        .update(orders)
+        .set({
+          orderStatus: 'packing',
+          packStatus: 'in_progress',
+          packStartTime: new Date(),
+          packedBy: employeeId,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(orders.id, id),
+            // Must be in picking state (picking has started)
+            eq(orders.orderStatus, 'picking'),
+            or(
+              eq(orders.packStatus, 'not_started'),
+              isNull(orders.packStatus)
+            ),
+            // Allow packing to start when picking is in_progress or completed
+            or(
+              eq(orders.pickStatus, 'in_progress'),
+              eq(orders.pickStatus, 'completed')
+            )
+          )
+        )
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error('Error starting packing order:', error);
+      return undefined;
+    }
   }
 
   async completePackingOrder(id: string, packingDetails: any[]): Promise<Order | undefined> {
-    return undefined;
+    try {
+      const [updated] = await db
+        .update(orders)
+        .set({
+          packStatus: 'completed',
+          packEndTime: new Date(),
+          orderStatus: 'ready_to_ship',
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(orders.id, id),
+            eq(orders.packStatus, 'in_progress'),
+            eq(orders.orderStatus, 'packing'),
+            // Can only complete packing when picking is also completed
+            eq(orders.pickStatus, 'completed')
+          )
+        )
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error('Error completing packing order:', error);
+      return undefined;
+    }
   }
 
   // Order Items
