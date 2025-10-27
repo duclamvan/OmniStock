@@ -591,6 +591,45 @@ export const orders = pgTable('orders', {
   includedDocuments: jsonb('included_documents') // {invoicePrint: boolean, custom: boolean, fileIds: string[], uploadedFiles: {name: string, url: string}[]}
 });
 
+// Pick & Pack Workflow Management Tables
+export const pickPackWorkflows = pgTable('pick_pack_workflows', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
+  status: varchar('status').notNull().default('pending'), // pending, picking, ready_to_pack, packing, complete
+  lockedBy: varchar('locked_by').references(() => users.id),
+  lockExpiresAt: timestamp('lock_expires_at'),
+  priority: varchar('priority').notNull().default('medium'), // low, medium, high, rush
+  waveId: varchar('wave_id').references(() => pickWaves.id),
+  rushFlag: boolean('rush_flag').default(false),
+  pickerNotes: text('picker_notes'),
+  packerNotes: text('packer_notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+export const pickPackEvents = pgTable('pick_pack_events', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
+  eventType: varchar('event_type').notNull(), // claim_pick, start_pick, complete_pick, claim_pack, start_pack, complete_pack, release, message
+  actorId: varchar('actor_id').references(() => users.id),
+  metadata: jsonb('metadata'), // Additional event data (notes, scan timestamps, etc.)
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
+export const pickWaves = pgTable('pick_waves', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar('name').notNull(),
+  createdBy: varchar('created_by').notNull().references(() => users.id),
+  pickedBy: varchar('picked_by').references(() => users.id),
+  status: varchar('status').notNull().default('pending'), // pending, picking, completed, cancelled
+  orderIds: text('order_ids').array().notNull(), // Array of order IDs in this wave
+  priority: varchar('priority').notNull().default('medium'),
+  totalItems: integer('total_items').notNull().default(0),
+  pickedItems: integer('picked_items').notNull().default(0),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  completedAt: timestamp('completed_at')
+});
+
 // Product Files table for document management
 export const productFiles = pgTable('product_files', {
   id: text('id').primaryKey(),
@@ -1163,6 +1202,9 @@ export const insertProductFileSchema = createInsertSchema(productFiles).omit({ i
 export const insertDailySequenceSchema = createInsertSchema(dailySequences).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true });
 export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: true });
+export const insertPickPackWorkflowSchema = createInsertSchema(pickPackWorkflows).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPickPackEventSchema = createInsertSchema(pickPackEvents).omit({ id: true, createdAt: true });
+export const insertPickWaveSchema = createInsertSchema(pickWaves).omit({ id: true, createdAt: true });
 export const insertProductLocationSchema = createInsertSchema(productLocations)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
@@ -1361,3 +1403,11 @@ export type Ticket = typeof tickets.$inferSelect;
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
 export type TicketComment = typeof ticketComments.$inferSelect;
 export type InsertTicketComment = z.infer<typeof insertTicketCommentSchema>;
+
+// Pick & Pack Workflow types
+export type PickPackWorkflow = typeof pickPackWorkflows.$inferSelect;
+export type InsertPickPackWorkflow = z.infer<typeof insertPickPackWorkflowSchema>;
+export type PickPackEvent = typeof pickPackEvents.$inferSelect;
+export type InsertPickPackEvent = z.infer<typeof insertPickPackEventSchema>;
+export type PickWave = typeof pickWaves.$inferSelect;
+export type InsertPickWave = z.infer<typeof insertPickWaveSchema>;

@@ -40,11 +40,14 @@ import {
   orderItems,
   orders,
   customers,
+  pickPackWorkflows,
+  pickPackEvents,
+  pickWaves,
 } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { eq, desc, and, sql, inArray, or, ilike } from "drizzle-orm";
+import { eq, desc, and, sql, inArray, or, ilike, gte } from "drizzle-orm";
 import {
   ObjectStorageService,
   ObjectNotFoundError,
@@ -4951,6 +4954,400 @@ Important:
       res.status(500).json({ message: "Failed to get pick/pack logs" });
     }
   });
+
+  // ============================================================================
+  // NEW PICK & PACK WORKFLOW API ROUTES
+  // ============================================================================
+
+  // Queue Management - Get all workflows grouped by status
+  app.get('/api/pick-pack/queue', async (req, res) => {
+    try {
+      const workflows = await db
+        .select()
+        .from(pickPackWorkflows)
+        .orderBy(
+          sql`CASE 
+            WHEN ${pickPackWorkflows.priority} = 'rush' THEN 1
+            WHEN ${pickPackWorkflows.priority} = 'high' THEN 2
+            WHEN ${pickPackWorkflows.priority} = 'medium' THEN 3
+            WHEN ${pickPackWorkflows.priority} = 'low' THEN 4
+          END`,
+          pickPackWorkflows.createdAt
+        );
+
+      // Group by status
+      const queue = {
+        pending: [] as any[],
+        picking: [] as any[],
+        ready_to_pack: [] as any[],
+        packing: [] as any[],
+        complete: [] as any[]
+      };
+
+      // Fetch order details for each workflow
+      for (const workflow of workflows) {
+        const [order] = await db
+          .select()
+          .from(orders)
+          .where(eq(orders.id, workflow.orderId))
+          .limit(1);
+
+        if (order) {
+          const enrichedWorkflow = {
+            ...workflow,
+            order: {
+              id: order.id,
+              orderNumber: order.orderNumber,
+              customerName: order.customerName,
+              orderStatus: order.orderStatus
+            },
+            lockInfo: {
+              isLocked: !!workflow.lockedBy,
+              lockedBy: workflow.lockedBy,
+              expiresAt: workflow.lockExpiresAt
+            }
+          };
+
+          const status = workflow.status as keyof typeof queue;
+          if (queue[status]) {
+            queue[status].push(enrichedWorkflow);
+          }
+        }
+      }
+
+      res.json(queue);
+    } catch (error) {
+      console.error("Error fetching pick-pack queue:", error);
+      res.status(500).json({ message: "Failed to fetch queue" });
+    }
+  });
+
+  // Claim order for picking or packing
+  app.post('/api/pick-pack/claim/:orderId', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { role, refresh } = req.body; // 'picker' or 'packer', or refresh: true
+      
+      // Check if workflow exists
+      const [existingWorkflow] = await db
+        .select()
+        .from(pickPackWorkflows)
+        .where(eq(pickPackWorkflows.orderId, orderId))
+        .limit(1);
+
+      if (!existingWorkflow) {
+        return res.status(404).json({ message: "Workflow not found" });
+      }
+
+      // Set lock expiration (15 minutes from now)
+      const lockExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+      const userId = req.user?.id || 'test-user';
+
+      // Update workflow with lock
+      const [updatedWorkflow] = await db
+        .update(pickPackWorkflows)
+        .set({
+          lockedBy: userId,
+          lockExpiresAt,
+          status: refresh ? existingWorkflow.status : (role === 'picker' ? 'picking' : 'packing'),
+          updatedAt: new Date()
+        })
+        .where(eq(pickPackWorkflows.orderId, orderId))
+        .returning();
+
+      // Log event if not just refreshing
+      if (!refresh) {
+        await db.insert(pickPackEvents).values({
+          orderId,
+          eventType: role === 'picker' ? 'claim_pick' : 'claim_pack',
+          actorId: userId,
+          metadata: { role }
+        });
+      }
+
+      res.json(updatedWorkflow);
+    } catch (error) {
+      console.error("Error claiming order:", error);
+      res.status(500).json({ message: "Failed to claim order" });
+    }
+  });
+
+  // Release lock on order
+  app.post('/api/pick-pack/release/:orderId', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const userId = req.user?.id || 'test-user';
+
+      // Update workflow to release lock
+      await db
+        .update(pickPackWorkflows)
+        .set({
+          lockedBy: null,
+          lockExpiresAt: null,
+          updatedAt: new Date()
+        })
+        .where(eq(pickPackWorkflows.orderId, orderId));
+
+      // Log release event
+      await db.insert(pickPackEvents).values({
+        orderId,
+        eventType: 'release',
+        actorId: userId
+      });
+
+      res.json({ success: true, message: "Order released" });
+    } catch (error) {
+      console.error("Error releasing order:", error);
+      res.status(500).json({ message: "Failed to release order" });
+    }
+  });
+
+  // Create pick wave and claim multiple orders
+  app.post('/api/pick-pack/batch-claim', async (req, res) => {
+    try {
+      const { orderIds, employeeName } = req.body;
+      const userId = req.user?.id || 'test-user';
+
+      if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+        return res.status(400).json({ message: "Order IDs required" });
+      }
+
+      // Calculate total items across all orders
+      const orderItemsList = await Promise.all(
+        orderIds.map(id => storage.getOrderItems(id))
+      );
+      const totalItems = orderItemsList.reduce((sum, items) => sum + items.length, 0);
+
+      // Create pick wave
+      const [wave] = await db
+        .insert(pickWaves)
+        .values({
+          name: `Wave-${new Date().getTime()}`,
+          createdBy: userId,
+          pickedBy: userId,
+          status: 'picking',
+          orderIds: orderIds,
+          priority: 'medium',
+          totalItems
+        })
+        .returning();
+
+      // Claim all orders in the wave
+      const lockExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+      
+      for (const orderId of orderIds) {
+        await db
+          .update(pickPackWorkflows)
+          .set({
+            lockedBy: userId,
+            lockExpiresAt,
+            status: 'picking',
+            waveId: wave.id,
+            updatedAt: new Date()
+          })
+          .where(eq(pickPackWorkflows.orderId, orderId));
+
+        // Log event
+        await db.insert(pickPackEvents).values({
+          orderId,
+          eventType: 'claim_pick',
+          actorId: userId,
+          metadata: { waveId: wave.id, employeeName }
+        });
+      }
+
+      res.json(wave);
+    } catch (error) {
+      console.error("Error creating pick wave:", error);
+      res.status(500).json({ message: "Failed to create pick wave" });
+    }
+  });
+
+  // Get orders locked to a specific employee
+  app.get('/api/pick-pack/my-tasks', async (req, res) => {
+    try {
+      const { employeeName } = req.query;
+      const userId = req.user?.id || 'test-user';
+
+      // Get all workflows locked by this user
+      const myWorkflows = await db
+        .select()
+        .from(pickPackWorkflows)
+        .where(eq(pickPackWorkflows.lockedBy, userId))
+        .orderBy(pickPackWorkflows.createdAt);
+
+      // Enrich with order details
+      const tasks = await Promise.all(
+        myWorkflows.map(async (workflow) => {
+          const [order] = await db
+            .select()
+            .from(orders)
+            .where(eq(orders.id, workflow.orderId))
+            .limit(1);
+
+          const orderItems = await storage.getOrderItems(workflow.orderId);
+
+          return {
+            ...workflow,
+            order: order || null,
+            itemCount: orderItems.length
+          };
+        })
+      );
+
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error fetching my tasks:", error);
+      res.status(500).json({ message: "Failed to fetch tasks" });
+    }
+  });
+
+  // Log workflow event
+  app.post('/api/pick-pack/log-event', async (req, res) => {
+    try {
+      const { orderId, eventType, actorId, metadata } = req.body;
+
+      if (!orderId || !eventType) {
+        return res.status(400).json({ message: "orderId and eventType required" });
+      }
+
+      const [event] = await db
+        .insert(pickPackEvents)
+        .values({
+          orderId,
+          eventType,
+          actorId: actorId || req.user?.id || 'test-user',
+          metadata: metadata || {}
+        })
+        .returning();
+
+      res.json(event);
+    } catch (error) {
+      console.error("Error logging event:", error);
+      res.status(500).json({ message: "Failed to log event" });
+    }
+  });
+
+  // Get metrics for pick/pack performance
+  app.get('/api/pick-pack/metrics', async (req, res) => {
+    try {
+      const { period = '24h' } = req.query;
+      
+      // Calculate time range
+      const now = new Date();
+      let startDate = new Date();
+      
+      switch (period) {
+        case '24h':
+          startDate.setHours(now.getHours() - 24);
+          break;
+        case '7d':
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case '30d':
+          startDate.setDate(now.getDate() - 30);
+          break;
+        default:
+          startDate.setHours(now.getHours() - 24);
+      }
+
+      // Get completed workflows in period
+      const completedWorkflows = await db
+        .select()
+        .from(pickPackWorkflows)
+        .where(
+          and(
+            eq(pickPackWorkflows.status, 'complete'),
+            gte(pickPackWorkflows.updatedAt, startDate)
+          )
+        );
+
+      // Get all workflows for queue depth
+      const allWorkflows = await db
+        .select()
+        .from(pickPackWorkflows);
+
+      // Calculate queue depths
+      const queueDepth = {
+        pending: allWorkflows.filter(w => w.status === 'pending').length,
+        picking: allWorkflows.filter(w => w.status === 'picking').length,
+        ready_to_pack: allWorkflows.filter(w => w.status === 'ready_to_pack').length,
+        packing: allWorkflows.filter(w => w.status === 'packing').length
+      };
+
+      // Get pick/pack events for timing calculations
+      const events = await db
+        .select()
+        .from(pickPackEvents)
+        .where(gte(pickPackEvents.createdAt, startDate));
+
+      // Calculate metrics (simplified - in production would calculate actual times)
+      const metrics = {
+        ordersCompleted: completedWorkflows.length,
+        avgPickTime: 12.5, // minutes - placeholder
+        avgPackTime: 8.3, // minutes - placeholder
+        itemsPerHour: 45, // placeholder
+        queueDepth,
+        period
+      };
+
+      res.json(metrics);
+    } catch (error) {
+      console.error("Error fetching metrics:", error);
+      res.status(500).json({ message: "Failed to fetch metrics" });
+    }
+  });
+
+  // Get leaderboard for top performers
+  app.get('/api/pick-pack/leaderboard', async (req, res) => {
+    try {
+      const { period = '7d', type = 'picker' } = req.query;
+      
+      // Calculate time range
+      const now = new Date();
+      let startDate = new Date();
+      
+      switch (period) {
+        case '7d':
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case '30d':
+          startDate.setDate(now.getDate() - 30);
+          break;
+        default:
+          startDate.setDate(now.getDate() - 7);
+      }
+
+      // Get events for this type
+      const eventType = type === 'picker' ? 'complete_pick' : 'complete_pack';
+      
+      const events = await db
+        .select()
+        .from(pickPackEvents)
+        .where(
+          and(
+            eq(pickPackEvents.eventType, eventType),
+            gte(pickPackEvents.createdAt, startDate)
+          )
+        );
+
+      // Group by actor and calculate stats (placeholder data)
+      const leaderboard = [
+        { employeeName: 'John Doe', ordersCompleted: 45, avgTime: 11.2, accuracy: 98.5 },
+        { employeeName: 'Jane Smith', ordersCompleted: 42, avgTime: 12.1, accuracy: 99.1 },
+        { employeeName: 'Bob Wilson', ordersCompleted: 38, avgTime: 13.5, accuracy: 97.8 }
+      ];
+
+      res.json(leaderboard);
+    } catch (error) {
+      console.error("Error fetching leaderboard:", error);
+      res.status(500).json({ message: "Failed to fetch leaderboard" });
+    }
+  });
+
+  // ============================================================================
+  // END NEW PICK & PACK WORKFLOW API ROUTES
+  // ============================================================================
 
   app.get('/api/orders/:id', async (req, res) => {
     try {
