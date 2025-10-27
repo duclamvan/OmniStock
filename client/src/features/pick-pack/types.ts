@@ -60,6 +60,14 @@ export interface QueuedOrder {
     orderNumber: string;
     customerName: string;
     orderStatus: string;
+    items?: Array<{
+      id: string;
+      productName: string | null;
+      sku: string | null;
+      quantity: number;
+      warehouseLocation: string | null;
+      barcode: string | null;
+    }>;
   };
   lockInfo: {
     isLocked: boolean;

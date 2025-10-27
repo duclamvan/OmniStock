@@ -4993,13 +4993,27 @@ Important:
           .limit(1);
 
         if (order) {
+          // Fetch order items for this order
+          const items = await db
+            .select({
+              id: orderItems.id,
+              productName: orderItems.productName,
+              sku: orderItems.sku,
+              quantity: orderItems.quantity,
+              warehouseLocation: orderItems.warehouseLocation,
+              barcode: orderItems.barcode
+            })
+            .from(orderItems)
+            .where(eq(orderItems.orderId, order.id));
+
           const enrichedWorkflow = {
             ...workflow,
             order: {
               id: order.id,
               orderNumber: order.orderNumber,
               customerName: order.customerName,
-              orderStatus: order.orderStatus
+              orderStatus: order.orderStatus,
+              items: items
             },
             lockInfo: {
               isLocked: !!workflow.lockedBy,

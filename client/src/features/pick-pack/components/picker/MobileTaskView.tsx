@@ -75,7 +75,10 @@ export function MobileTaskView() {
       setPickedItems(new Set());
       setCurrentItemIndex(0);
     }
-  }, [myTask?.id]);
+    // Reset picked items when items change (switching to different order)
+    setPickedItems(new Set());
+    setCurrentItemIndex(0);
+  }, [myTask?.id, myTask?.order?.items?.length]);
 
   // Auto-focus barcode input
   useEffect(() => {
@@ -88,15 +91,21 @@ export function MobileTaskView() {
   useEffect(() => {
     if (!myTask?.lockExpiresAt) return;
 
+    const lockExpiry = myTask.lockExpiresAt;
     const interval = setInterval(() => {
       const now = new Date();
-      const expiry = new Date(myTask.lockExpiresAt);
+      const expiry = new Date(lockExpiry);
       const remaining = Math.floor((expiry.getTime() - now.getTime()) / 1000);
       setTimeRemaining(Math.max(0, remaining));
     }, 1000);
 
     return () => clearInterval(interval);
   }, [myTask?.lockExpiresAt]);
+
+  // Calculate picked items and progress (must be before keyboard shortcuts useEffect)
+  const totalItems = myTask?.order.items?.length ?? 0;
+  const pickedCount = pickedItems.size;
+  const progress = totalItems > 0 ? (pickedCount / totalItems) * 100 : 0;
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -296,28 +305,48 @@ export function MobileTaskView() {
     );
   }
 
-  // For demo purposes, create mock items
-  const totalItems = 5; // In production, get from myTask.order items
-  const pickedCount = pickedItems.size;
-  const progress = (pickedCount / totalItems) * 100;
+  // Guard for empty orders
+  if (!myTask.order.items || myTask.order.items.length === 0) {
+    return (
+      <Card data-testid="card-empty-order">
+        <CardContent className="p-12 text-center">
+          <AlertCircle className="h-16 w-16 mx-auto mb-4 text-orange-500" />
+          <h3 className="text-lg font-semibold mb-2">Order Has No Items</h3>
+          <p className="text-muted-foreground mb-4">
+            This order doesn't have any items to pick. Please contact management.
+          </p>
+          <Button onClick={handleRelease} variant="outline" data-testid="button-release-empty-order">
+            Release Order
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
-  // Pick path optimization - mock items with locations
-  const mockItems = useMemo(() => [
-    { id: 1, name: 'Sample Product 1', sku: 'SKU-001', qty: 1, location: 'WH1-A06-R04-L04-B2' },
-    { id: 2, name: 'Sample Product 2', sku: 'SKU-002', qty: 1, location: 'WH1-A08-R02-L03-B1' },
-    { id: 3, name: 'Sample Product 3', sku: 'SKU-003', qty: 1, location: 'WH1-A10-R01-L05-B3' },
-    { id: 4, name: 'Sample Product 4', sku: 'SKU-004', qty: 1, location: 'WH1-A12-R03-L02-B2' },
-    { id: 5, name: 'Sample Product 5', sku: 'SKU-005', qty: 1, location: 'WH1-A15-R05-L04-B1' },
-  ], []);
+  // Map real order items to the format needed for display
+  const itemsForDisplay = useMemo(() => {
+    if (!myTask?.order?.items || myTask.order.items.length === 0) {
+      return [];
+    }
+    
+    return myTask.order.items.map((item, index) => ({
+      id: item.id,
+      name: item.productName || 'Unknown Product',
+      sku: item.sku || 'N/A',
+      qty: item.quantity,
+      location: item.warehouseLocation || 'Location Not Set',
+      barcode: item.barcode
+    }));
+  }, [myTask?.order?.items]);
 
-  // Sort items by warehouse location for optimal path
+  // Sort items by warehouse location for optimal pick path
   const optimizedItems = useMemo(() => {
-    return [...mockItems].sort((a, b) => {
+    return [...itemsForDisplay].sort((a, b) => {
       const locA = a.location || '';
       const locB = b.location || '';
       return locA.localeCompare(locB);
     });
-  }, [mockItems]);
+  }, [itemsForDisplay]);
 
   const currentItem = optimizedItems[currentItemIndex];
 
