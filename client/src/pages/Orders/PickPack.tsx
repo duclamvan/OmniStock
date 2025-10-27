@@ -5481,6 +5481,19 @@ export default function PickPack() {
                                 <span className="truncate font-medium">{order.shippingMethod}</span>
                               </div>
                             </div>
+                            {/* Compact product list */}
+                            {order.items && order.items.length > 0 && (
+                              <div className="mt-1.5 pt-1.5 border-t border-gray-200">
+                                <div className="space-y-0.5">
+                                  {order.items.map((item, idx) => (
+                                    <div key={idx} className="flex items-center gap-1 text-xs text-gray-600">
+                                      <span className="w-4 text-center text-gray-400">{item.quantity}x</span>
+                                      <span className="truncate">{item.productName}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                           {!batchPickingMode && (
                             <Button
@@ -5565,6 +5578,19 @@ export default function PickPack() {
                                   <span className="font-medium">Picked by: {order.pickedBy}</span>
                                 </div>
                               </div>
+                              {/* Compact product list */}
+                              {order.items && order.items.length > 0 && (
+                                <div className="mt-1.5 pt-1.5 border-t border-gray-200">
+                                  <div className="space-y-0.5">
+                                    {order.items.map((item, idx) => (
+                                      <div key={idx} className="flex items-center gap-1 text-xs text-gray-600">
+                                        <span className="w-4 text-center text-gray-400">{item.quantity}x</span>
+                                        <span className="truncate">{item.productName}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                             <Button 
                               size="sm" 
@@ -5650,6 +5676,19 @@ export default function PickPack() {
                                   <span className="text-green-600 font-medium">Picked by {order.pickedBy}</span>
                                 </div>
                               </div>
+                              {/* Compact product list */}
+                              {order.items && order.items.length > 0 && (
+                                <div className="mt-1.5 pt-1.5 border-t border-gray-200">
+                                  <div className="space-y-0.5">
+                                    {order.items.map((item, idx) => (
+                                      <div key={idx} className="flex items-center gap-1 text-xs text-gray-600">
+                                        <span className="w-4 text-center text-gray-400">{item.quantity}x</span>
+                                        <span className="truncate">{item.productName}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                             <div className="flex items-center gap-1.5">
                               {/* Quick View Button */}
@@ -5989,6 +6028,19 @@ export default function PickPack() {
                                             <span className="text-green-600">Packed by {order.packedBy}</span>
                                           </div>
                                         </div>
+                                        {/* Compact product list */}
+                                        {order.items && order.items.length > 0 && (
+                                          <div className="mt-1.5 pt-1.5 border-t border-gray-200">
+                                            <div className="space-y-0.5">
+                                              {order.items.map((item, idx) => (
+                                                <div key={idx} className="flex items-center gap-1 text-xs text-gray-600">
+                                                  <span className="w-4 text-center text-gray-400">{item.quantity}x</span>
+                                                  <span className="truncate">{item.productName}</span>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
                                       </div>
                                       <div className="flex gap-1.5 items-center ml-auto">
                                         <Button
