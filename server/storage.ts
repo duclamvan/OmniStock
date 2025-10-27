@@ -1081,48 +1081,14 @@ export class DatabaseStorage implements IStorage {
         .from(orders)
         .leftJoin(customers, eq(orders.customerId, customers.id));
 
-      // If status is provided, filter by fulfillmentStage
-      // Otherwise, return all orders that need pick/pack processing
-      if (status) {
-        // Map frontend status to database fulfillmentStage
-        if (status === 'pending' || status === 'to_fulfill') {
-          query = query.where(
-            and(
-              eq(orders.orderStatus, 'to_fulfill'),
-              or(
-                isNull(orders.fulfillmentStage),
-                eq(orders.fulfillmentStage, '')
-              )
-            )
-          ) as any;
-        } else if (status === 'picking') {
-          query = query.where(
-            and(
-              eq(orders.orderStatus, 'to_fulfill'),
-              eq(orders.fulfillmentStage, 'picking')
-            )
-          ) as any;
-        } else if (status === 'packing') {
-          query = query.where(
-            and(
-              eq(orders.orderStatus, 'to_fulfill'),
-              eq(orders.fulfillmentStage, 'packing')
-            )
-          ) as any;
-        } else if (status === 'ready') {
-          query = query.where(
-            and(
-              eq(orders.orderStatus, 'to_fulfill'),
-              eq(orders.fulfillmentStage, 'ready')
-            )
-          ) as any;
-        } else {
-          query = query.where(eq(orders.orderStatus, status)) as any;
-        }
-      } else {
-        // Default: return all orders with orderStatus='to_fulfill' (in the pick/pack workflow)
-        query = query.where(eq(orders.orderStatus, 'to_fulfill')) as any;
-      }
+      // Always get all orders in the pick/pack workflow
+      // Status mapping happens in getPickPackStatus for both new and old orders
+      query = query.where(
+        or(
+          eq(orders.orderStatus, 'to_fulfill'),
+          eq(orders.orderStatus, 'ready_to_ship')
+        )
+      ) as any;
 
       const results = await query.orderBy(desc(orders.createdAt));
 

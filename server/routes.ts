@@ -4366,7 +4366,7 @@ Important:
         
         return {
           ...order,
-          status: order.orderStatus, // Map orderStatus to status for client compatibility
+          // Keep the status already mapped by getPickPackStatus in storage layer
           items: itemsWithBundleDetails
         };
       });
