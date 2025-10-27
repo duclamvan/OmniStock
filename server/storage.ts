@@ -41,9 +41,6 @@ import {
   discounts,
   tickets,
   ticketComments,
-  pickPackWorkflows,
-  pickPackEvents,
-  pickWaves,
   type User,
   type InsertUser,
   type Category,
@@ -125,13 +122,7 @@ import {
   type Ticket,
   type InsertTicket,
   type TicketComment,
-  type InsertTicketComment,
-  type PickPackWorkflow,
-  type InsertPickPackWorkflow,
-  type PickPackEvent,
-  type InsertPickPackEvent,
-  type PickWave,
-  type InsertPickWave
+  type InsertTicketComment
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, ilike, sql, gte, lte, inArray, ne, asc, isNull, notInArray, not } from "drizzle-orm";
@@ -473,27 +464,6 @@ export interface IStorage {
   getOrderCartonItems(planId: string): Promise<OrderCartonItem[]>;
   createOrderCartonItem(item: InsertOrderCartonItem): Promise<OrderCartonItem>;
   deleteOrderCartonPlan(planId: string): Promise<boolean>;
-  
-  // Pick & Pack Workflows
-  getPickPackWorkflows(): Promise<PickPackWorkflow[]>;
-  getPickPackWorkflow(orderId: string): Promise<PickPackWorkflow | undefined>;
-  createPickPackWorkflow(workflow: InsertPickPackWorkflow): Promise<PickPackWorkflow>;
-  updatePickPackWorkflow(orderId: string, workflow: Partial<InsertPickPackWorkflow>): Promise<PickPackWorkflow | undefined>;
-  claimOrderForPicking(orderId: string, userId: string): Promise<PickPackWorkflow | undefined>;
-  claimOrderForPacking(orderId: string, userId: string): Promise<PickPackWorkflow | undefined>;
-  releaseOrder(orderId: string): Promise<PickPackWorkflow | undefined>;
-  getMyTasks(userId: string): Promise<PickPackWorkflow[]>;
-  
-  // Pick & Pack Events
-  createPickPackEvent(event: InsertPickPackEvent): Promise<PickPackEvent>;
-  getPickPackEvents(orderId: string): Promise<PickPackEvent[]>;
-  
-  // Pick Waves
-  getPickWaves(): Promise<PickWave[]>;
-  getPickWave(id: string): Promise<PickWave | undefined>;
-  createPickWave(wave: InsertPickWave): Promise<PickWave>;
-  updatePickWave(id: string, wave: Partial<InsertPickWave>): Promise<PickWave | undefined>;
-  getActivePickWaves(userId: string): Promise<PickWave[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4363,205 +4333,6 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error deleting order carton plan:', error);
       return false;
-    }
-  }
-  
-  // Pick & Pack Workflows
-  async getPickPackWorkflows(): Promise<PickPackWorkflow[]> {
-    try {
-      return await db.select().from(pickPackWorkflows).orderBy(desc(pickPackWorkflows.createdAt));
-    } catch (error) {
-      console.error('Error fetching pick pack workflows:', error);
-      return [];
-    }
-  }
-  
-  async getPickPackWorkflow(orderId: string): Promise<PickPackWorkflow | undefined> {
-    try {
-      const [workflow] = await db.select().from(pickPackWorkflows).where(eq(pickPackWorkflows.orderId, orderId));
-      return workflow || undefined;
-    } catch (error) {
-      console.error('Error fetching pick pack workflow:', error);
-      return undefined;
-    }
-  }
-  
-  async createPickPackWorkflow(workflow: InsertPickPackWorkflow): Promise<PickPackWorkflow> {
-    try {
-      const [newWorkflow] = await db.insert(pickPackWorkflows).values(workflow).returning();
-      return newWorkflow;
-    } catch (error) {
-      console.error('Error creating pick pack workflow:', error);
-      throw error;
-    }
-  }
-  
-  async updatePickPackWorkflow(orderId: string, workflow: Partial<InsertPickPackWorkflow>): Promise<PickPackWorkflow | undefined> {
-    try {
-      const [updated] = await db
-        .update(pickPackWorkflows)
-        .set({ ...workflow, updatedAt: new Date() })
-        .where(eq(pickPackWorkflows.orderId, orderId))
-        .returning();
-      return updated || undefined;
-    } catch (error) {
-      console.error('Error updating pick pack workflow:', error);
-      return undefined;
-    }
-  }
-  
-  async claimOrderForPicking(orderId: string, userId: string): Promise<PickPackWorkflow | undefined> {
-    try {
-      const lockExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes from now
-      const [updated] = await db
-        .update(pickPackWorkflows)
-        .set({ 
-          status: 'picking', 
-          lockedBy: userId, 
-          lockExpiresAt, 
-          updatedAt: new Date() 
-        })
-        .where(eq(pickPackWorkflows.orderId, orderId))
-        .returning();
-      return updated || undefined;
-    } catch (error) {
-      console.error('Error claiming order for picking:', error);
-      return undefined;
-    }
-  }
-  
-  async claimOrderForPacking(orderId: string, userId: string): Promise<PickPackWorkflow | undefined> {
-    try {
-      const lockExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes from now
-      const [updated] = await db
-        .update(pickPackWorkflows)
-        .set({ 
-          status: 'packing', 
-          lockedBy: userId, 
-          lockExpiresAt, 
-          updatedAt: new Date() 
-        })
-        .where(eq(pickPackWorkflows.orderId, orderId))
-        .returning();
-      return updated || undefined;
-    } catch (error) {
-      console.error('Error claiming order for packing:', error);
-      return undefined;
-    }
-  }
-  
-  async releaseOrder(orderId: string): Promise<PickPackWorkflow | undefined> {
-    try {
-      const [updated] = await db
-        .update(pickPackWorkflows)
-        .set({ 
-          lockedBy: null, 
-          lockExpiresAt: null, 
-          updatedAt: new Date() 
-        })
-        .where(eq(pickPackWorkflows.orderId, orderId))
-        .returning();
-      return updated || undefined;
-    } catch (error) {
-      console.error('Error releasing order:', error);
-      return undefined;
-    }
-  }
-  
-  async getMyTasks(userId: string): Promise<PickPackWorkflow[]> {
-    try {
-      return await db
-        .select()
-        .from(pickPackWorkflows)
-        .where(eq(pickPackWorkflows.lockedBy, userId))
-        .orderBy(desc(pickPackWorkflows.updatedAt));
-    } catch (error) {
-      console.error('Error fetching my tasks:', error);
-      return [];
-    }
-  }
-  
-  // Pick & Pack Events
-  async createPickPackEvent(event: InsertPickPackEvent): Promise<PickPackEvent> {
-    try {
-      const [newEvent] = await db.insert(pickPackEvents).values(event).returning();
-      return newEvent;
-    } catch (error) {
-      console.error('Error creating pick pack event:', error);
-      throw error;
-    }
-  }
-  
-  async getPickPackEvents(orderId: string): Promise<PickPackEvent[]> {
-    try {
-      return await db
-        .select()
-        .from(pickPackEvents)
-        .where(eq(pickPackEvents.orderId, orderId))
-        .orderBy(desc(pickPackEvents.createdAt));
-    } catch (error) {
-      console.error('Error fetching pick pack events:', error);
-      return [];
-    }
-  }
-  
-  // Pick Waves
-  async getPickWaves(): Promise<PickWave[]> {
-    try {
-      return await db.select().from(pickWaves).orderBy(desc(pickWaves.createdAt));
-    } catch (error) {
-      console.error('Error fetching pick waves:', error);
-      return [];
-    }
-  }
-  
-  async getPickWave(id: string): Promise<PickWave | undefined> {
-    try {
-      const [wave] = await db.select().from(pickWaves).where(eq(pickWaves.id, id));
-      return wave || undefined;
-    } catch (error) {
-      console.error('Error fetching pick wave:', error);
-      return undefined;
-    }
-  }
-  
-  async createPickWave(wave: InsertPickWave): Promise<PickWave> {
-    try {
-      const [newWave] = await db.insert(pickWaves).values(wave).returning();
-      return newWave;
-    } catch (error) {
-      console.error('Error creating pick wave:', error);
-      throw error;
-    }
-  }
-  
-  async updatePickWave(id: string, wave: Partial<InsertPickWave>): Promise<PickWave | undefined> {
-    try {
-      const [updated] = await db
-        .update(pickWaves)
-        .set(wave)
-        .where(eq(pickWaves.id, id))
-        .returning();
-      return updated || undefined;
-    } catch (error) {
-      console.error('Error updating pick wave:', error);
-      return undefined;
-    }
-  }
-  
-  async getActivePickWaves(userId: string): Promise<PickWave[]> {
-    try {
-      return await db
-        .select()
-        .from(pickWaves)
-        .where(and(
-          eq(pickWaves.pickedBy, userId),
-          inArray(pickWaves.status, ['pending', 'picking'])
-        ))
-        .orderBy(desc(pickWaves.createdAt));
-    } catch (error) {
-      console.error('Error fetching active pick waves:', error);
-      return [];
     }
   }
 }
