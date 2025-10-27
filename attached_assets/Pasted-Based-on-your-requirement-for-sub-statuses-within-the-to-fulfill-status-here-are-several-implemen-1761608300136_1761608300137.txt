@@ -1,0 +1,181 @@
+Based on your requirement for sub-statuses within the "to fulfill" status, here are several implementation approaches:
+
+## Option 1: Separate Sub-Status Field (Recommended)
+
+Add a `fulfillment_stage` field to track the sub-status while keeping the main status intact:
+
+```javascript
+// Database schema
+{
+  id: "ORDER123",
+  status: "to_fulfill",  // Main status remains unchanged
+  fulfillment_stage: "picking", // Sub-status: null, "picking", "packing", "ready"
+  picking_started_at: "2024-01-10T10:00:00Z",
+  packing_started_at: null,
+  // ... other fields
+}
+```
+
+**Implementation:**
+```javascript
+// Angular service example
+app.service('OrderService', function() {
+  this.updateFulfillmentStage = function(orderId, stage) {
+    // Update only the sub-status
+    return $http.patch(`/api/orders/${orderId}`, {
+      fulfillment_stage: stage,
+      [`${stage}_started_at`]: new Date()
+    });
+  };
+  
+  this.getOrdersWithStage = function(mainStatus, stage) {
+    return $http.get('/api/orders', {
+      params: {
+        status: mainStatus,
+        fulfillment_stage: stage
+      }
+    });
+  };
+});
+```
+
+## Option 2: Status Metadata Object
+
+Store sub-status information in a JSON field:
+
+```javascript
+{
+  id: "ORDER123",
+  status: "to_fulfill",
+  status_metadata: {
+    stage: "picking",
+    picker_id: "USER456",
+    items_picked: 3,
+    total_items: 5,
+    started_at: "2024-01-10T10:00:00Z"
+  }
+}
+```
+
+## Option 3: Client-Side State Management
+
+Keep sub-statuses in frontend state only, deriving them from timestamps or activities:
+
+```javascript
+app.controller('PickPackController', function($scope) {
+  // Derive sub-status from order data
+  this.getSubStatus = function(order) {
+    if (order.status !== 'to_fulfill') return null;
+    
+    if (order.packed_at) return 'ready_to_ship';
+    if (order.picking_completed_at) return 'packing';
+    if (order.picking_started_at) return 'picking';
+    return 'pending';
+  };
+  
+  // Track current work session
+  this.workSessions = {}; // orderId -> {stage: 'picking', startedAt: Date}
+  
+  this.startPicking = function(order) {
+    this.workSessions[order.id] = {
+      stage: 'picking',
+      startedAt: new Date()
+    };
+    // Update UI immediately, sync to backend periodically
+  };
+});
+```
+
+## Option 4: Activity Log Based
+
+Track sub-statuses through an activity/event log:
+
+```javascript
+// Separate activities table
+{
+  order_id: "ORDER123",
+  activity_type: "picking_started",
+  user_id: "USER456",
+  timestamp: "2024-01-10T10:00:00Z",
+  metadata: { location: "Warehouse A" }
+}
+
+// Derive current sub-status from latest activity
+app.service('OrderActivityService', function() {
+  this.getCurrentStage = function(orderId) {
+    return $http.get(`/api/orders/${orderId}/activities/latest`)
+      .then(response => {
+        const latest = response.data;
+        if (latest.activity_type === 'packing_completed') return 'ready';
+        if (latest.activity_type === 'packing_started') return 'packing';
+        if (latest.activity_type === 'picking_started') return 'picking';
+        return 'pending';
+      });
+  };
+});
+```
+
+## UI Implementation Example
+
+Here's how you might display this in your pick & pack page:
+
+```html
+<div class="order-card" ng-repeat="order in orders">
+  <div class="order-header">
+    <span class="order-id">{{order.id}}</span>
+    <span class="main-status">{{order.status}}</span>
+  </div>
+  
+  <!-- Sub-status indicators -->
+  <div class="fulfillment-progress">
+    <div class="stage" ng-class="{
+      'active': order.fulfillment_stage === 'picking',
+      'completed': isStageCompleted(order, 'picking')
+    }">
+      <i class="icon-basket"></i>
+      <span>Picking</span>
+    </div>
+    
+    <div class="stage" ng-class="{
+      'active': order.fulfillment_stage === 'packing',
+      'completed': isStageCompleted(order, 'packing')
+    }">
+      <i class="icon-box"></i>
+      <span>Packing</span>
+    </div>
+    
+    <div class="stage" ng-class="{
+      'active': order.fulfillment_stage === 'ready'
+    }">
+      <i class="icon-check"></i>
+      <span>Ready</span>
+    </div>
+  </div>
+  
+  <!-- Action buttons based on current stage -->
+  <div class="actions">
+    <button ng-if="!order.fulfillment_stage" 
+            ng-click="startPicking(order)">
+      Start Picking
+    </button>
+    <button ng-if="order.fulfillment_stage === 'picking'" 
+            ng-click="completePicking(order)">
+      Complete Picking
+    </button>
+    <button ng-if="order.fulfillment_stage === 'packing'" 
+            ng-click="completePacking(order)">
+      Complete Packing
+    </button>
+  </div>
+</div>
+```
+
+## Recommendation
+
+I recommend **Option 1** (separate sub-status field) because it:
+- Keeps the main status intact for system compatibility
+- Makes querying and filtering easy
+- Provides clear state transitions
+- Is simple to implement and maintain
+
+Would you like me to elaborate on any of these approaches or help you implement a specific solution?

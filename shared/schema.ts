@@ -588,7 +588,11 @@ export const orders = pgTable('orders', {
   selectedDocumentIds: text('selected_document_ids').array(), // Array of product_file IDs to print
   trackingNumber: text('tracking_number'),
   orderType: varchar('order_type').notNull().default('ord'), // 'pos', 'ord', 'web', 'tel'
-  includedDocuments: jsonb('included_documents') // {invoicePrint: boolean, custom: boolean, fileIds: string[], uploadedFiles: {name: string, url: string}[]}
+  includedDocuments: jsonb('included_documents'), // {invoicePrint: boolean, custom: boolean, fileIds: string[], uploadedFiles: {name: string, url: string}[]}
+  // Fulfillment stage tracking (Option 1: Separate sub-status field)
+  fulfillmentStage: varchar('fulfillment_stage'), // null (pending), 'picking', 'packing', 'ready'
+  pickingStartedAt: timestamp('picking_started_at'),
+  packingStartedAt: timestamp('packing_started_at')
 });
 
 // Product Files table for document management
