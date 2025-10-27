@@ -1141,12 +1141,27 @@ export class DatabaseStorage implements IStorage {
 
   // Helper method to determine the pick/pack status for display
   private getPickPackStatus(order: any): string {
-    // Map fulfillmentStage to frontend status
-    if (!order.fulfillmentStage) return 'to_fulfill'; // pending/not started
-    if (order.fulfillmentStage === 'picking') return 'picking';
-    if (order.fulfillmentStage === 'packing') return 'packing';
-    if (order.fulfillmentStage === 'ready') return 'ready_to_ship';
-    return order.fulfillmentStage; // fallback
+    // If fulfillmentStage is set (new Option 1 architecture), use it
+    if (order.fulfillmentStage) {
+      if (order.fulfillmentStage === 'picking') return 'picking';
+      if (order.fulfillmentStage === 'packing') return 'packing';
+      if (order.fulfillmentStage === 'ready') return 'ready_to_ship';
+    }
+    
+    // Backward compatibility: fall back to old pick/pack status logic
+    // For orders that haven't been updated to use fulfillmentStage yet
+    if (order.packStatus === 'completed' && order.pickStatus === 'completed') {
+      return 'ready_to_ship';
+    }
+    if (order.packStatus === 'in_progress' || order.orderStatus === 'packing') {
+      return 'packing';
+    }
+    if (order.pickStatus === 'in_progress' || order.orderStatus === 'picking') {
+      return 'picking';
+    }
+    
+    // Default: pending/not started
+    return 'to_fulfill';
   }
 
   async startPickingOrder(id: string, employeeId: string): Promise<Order | undefined> {
