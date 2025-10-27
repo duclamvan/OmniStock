@@ -432,7 +432,7 @@ export const layoutBins = pgTable('layout_bins', {
 export const products = pgTable('products', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
   name: varchar('name').notNull(),
-  englishName: varchar('english_name'),
+  vietnameseName: varchar('vietnamese_name'),
   sku: varchar('sku').notNull(),
   categoryId: varchar('category_id'),
   warehouseId: varchar('warehouse_id'),

@@ -315,10 +315,10 @@ export default function ProductDetails() {
                   <p className="text-muted-foreground">Category</p>
                   <p className="font-medium">{category?.name || 'Uncategorized'}</p>
                 </div>
-                {product.englishName && (
+                {product.vietnameseName && (
                   <div>
-                    <p className="text-muted-foreground">English Name</p>
-                    <p className="font-medium">{product.englishName}</p>
+                    <p className="text-muted-foreground">Vietnamese Name</p>
+                    <p className="font-medium">{product.vietnameseName}</p>
                   </div>
                 )}
                 {product.barcode && (

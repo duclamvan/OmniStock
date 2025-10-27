@@ -110,7 +110,7 @@ import { format } from "date-fns";
 // Unified schema with all fields from both AddProduct and EditProduct
 const productSchema = z.object({
   name: z.string().min(1, "Product name is required"),
-  englishName: z.string().optional(),
+  vietnameseName: z.string().optional(),
   sku: z.string().min(1, "SKU is required"),
   categoryId: z.string().optional(),
   warehouseId: z.string().optional(),
@@ -691,7 +691,7 @@ export default function ProductForm() {
     if (isEditMode && product) {
       form.reset({
         name: product.name || '',
-        englishName: product.englishName || '',
+        vietnameseName: product.vietnameseName || '',
         sku: product.sku || '',
         categoryId: product.categoryId || '',
         warehouseId: product.warehouseId || '',
@@ -1217,7 +1217,7 @@ export default function ProductForm() {
     
     // Get form values
     const name = form.watch('name') || '';
-    const englishName = form.watch('englishName') || '';
+    const vietnameseName = form.watch('vietnameseName') || '';
     const priceCzk = form.watch('priceCzk') || 0;
     const priceEur = form.watch('priceEur') || 0;
     const quantity = form.watch('quantity') || 0;
@@ -1230,8 +1230,8 @@ export default function ProductForm() {
     const supplierName = suppliers?.find((s: any) => s.id === supplierId)?.name || '';
     const supplierPart = supplierName ? cleanText(supplierName).slice(0, 2) : '';
     
-    // 3. Product Name Part (4-6 chars) - prefer English name if available
-    const productText = englishName || name || 'ITEM';
+    // 3. Product Name Part (4-6 chars) - prefer Vietnamese name if available
+    const productText = vietnameseName || name || 'ITEM';
     const words = productText.split(/\s+/).filter(w => w.length > 0);
     let productPart = '';
     
@@ -1921,11 +1921,11 @@ export default function ProductForm() {
                     </div>
 
                     <div>
-                      <Label htmlFor="englishName" className="text-sm font-medium">English Name</Label>
+                      <Label htmlFor="vietnameseName" className="text-sm font-medium">Vietnamese Name</Label>
                       <Input
-                        {...form.register('englishName')}
-                        placeholder="Enter English name (optional)"
-                        data-testid="input-english-name"
+                        {...form.register('vietnameseName')}
+                        placeholder="Enter Vietnamese name (optional)"
+                        data-testid="input-vietnamese-name"
                         className="mt-1"
                       />
                     </div>

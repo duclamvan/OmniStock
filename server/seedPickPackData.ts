@@ -118,7 +118,7 @@ export async function seedPickPackData() {
       {
         id: 'prod-laptop',
         name: 'Dell XPS 15 Laptop',
-        englishName: 'Dell XPS 15 Laptop',
+        vietnameseName: 'Dell XPS 15 Laptop',
         sku: 'DELL-XPS-15-2024',
         categoryId: 'cat-electronics',
         warehouseId: 'wh-main',
@@ -141,7 +141,7 @@ export async function seedPickPackData() {
       {
         id: 'prod-headphones',
         name: 'Sony WH-1000XM5 Headphones',
-        englishName: 'Sony WH-1000XM5 Headphones',
+        vietnameseName: 'Sony WH-1000XM5 Headphones',
         sku: 'SONY-WH1000XM5',
         categoryId: 'cat-electronics',
         warehouseId: 'wh-main',
@@ -164,7 +164,7 @@ export async function seedPickPackData() {
       {
         id: 'prod-tshirt',
         name: 'Premium Cotton T-Shirt',
-        englishName: 'Premium Cotton T-Shirt',
+        vietnameseName: 'Premium Cotton T-Shirt',
         sku: 'TSHIRT-COTTON-001',
         categoryId: 'cat-clothing',
         warehouseId: 'wh-main',
@@ -187,7 +187,7 @@ export async function seedPickPackData() {
       {
         id: 'prod-lipstick',
         name: 'Luxury Matte Lipstick',
-        englishName: 'Luxury Matte Lipstick',
+        vietnameseName: 'Luxury Matte Lipstick',
         sku: 'LIPS-MAT-001',
         categoryId: 'cat-cosmetics',
         warehouseId: 'wh-main',
@@ -210,7 +210,7 @@ export async function seedPickPackData() {
       {
         id: 'prod-lego',
         name: 'LEGO City Police Station',
-        englishName: 'LEGO City Police Station',
+        vietnameseName: 'LEGO City Police Station',
         sku: 'LEGO-CITY-60316',
         categoryId: 'cat-toys',
         warehouseId: 'wh-main',
@@ -233,7 +233,7 @@ export async function seedPickPackData() {
       {
         id: 'prod-book',
         name: 'The Great Gatsby - Hardcover',
-        englishName: 'The Great Gatsby - Hardcover',
+        vietnameseName: 'The Great Gatsby - Hardcover',
         sku: 'BOOK-GATSBY-HC',
         categoryId: 'cat-books',
         warehouseId: 'wh-secondary',
@@ -256,7 +256,7 @@ export async function seedPickPackData() {
       {
         id: 'prod-fragile-vase',
         name: 'Crystal Glass Vase',
-        englishName: 'Crystal Glass Vase',
+        vietnameseName: 'Crystal Glass Vase',
         sku: 'VASE-CRYSTAL-001',
         categoryId: 'cat-electronics',
         warehouseId: 'wh-main',
