@@ -1081,33 +1081,47 @@ export class DatabaseStorage implements IStorage {
         .from(orders)
         .leftJoin(customers, eq(orders.customerId, customers.id));
 
-      // If status is provided, filter by that status
+      // If status is provided, filter by fulfillmentStage
       // Otherwise, return all orders that need pick/pack processing
       if (status) {
-        // Map frontend status to database orderStatus
+        // Map frontend status to database fulfillmentStage
         if (status === 'pending' || status === 'to_fulfill') {
-          query = query.where(eq(orders.orderStatus, 'to_fulfill')) as any;
+          query = query.where(
+            and(
+              eq(orders.orderStatus, 'to_fulfill'),
+              or(
+                isNull(orders.fulfillmentStage),
+                eq(orders.fulfillmentStage, '')
+              )
+            )
+          ) as any;
         } else if (status === 'picking') {
-          // Orders with orderStatus = 'picking' (set by startPickingOrder)
-          query = query.where(eq(orders.orderStatus, 'picking')) as any;
+          query = query.where(
+            and(
+              eq(orders.orderStatus, 'to_fulfill'),
+              eq(orders.fulfillmentStage, 'picking')
+            )
+          ) as any;
         } else if (status === 'packing') {
-          // Orders with orderStatus = 'packing' (set by startPackingOrder)
-          query = query.where(eq(orders.orderStatus, 'packing')) as any;
+          query = query.where(
+            and(
+              eq(orders.orderStatus, 'to_fulfill'),
+              eq(orders.fulfillmentStage, 'packing')
+            )
+          ) as any;
         } else if (status === 'ready') {
-          query = query.where(eq(orders.orderStatus, 'ready_to_ship')) as any;
+          query = query.where(
+            and(
+              eq(orders.orderStatus, 'to_fulfill'),
+              eq(orders.fulfillmentStage, 'ready')
+            )
+          ) as any;
         } else {
           query = query.where(eq(orders.orderStatus, status)) as any;
         }
       } else {
-        // Default: return all orders in the pick/pack workflow
-        query = query.where(
-          or(
-            eq(orders.orderStatus, 'to_fulfill'),
-            eq(orders.orderStatus, 'picking'),
-            eq(orders.orderStatus, 'packing'),
-            eq(orders.orderStatus, 'ready_to_ship')
-          )
-        ) as any;
+        // Default: return all orders with orderStatus='to_fulfill' (in the pick/pack workflow)
+        query = query.where(eq(orders.orderStatus, 'to_fulfill')) as any;
       }
 
       const results = await query.orderBy(desc(orders.createdAt));
@@ -1127,8 +1141,12 @@ export class DatabaseStorage implements IStorage {
 
   // Helper method to determine the pick/pack status for display
   private getPickPackStatus(order: any): string {
-    // Use orderStatus directly as it now reflects the current state
-    return order.orderStatus;
+    // Map fulfillmentStage to frontend status
+    if (!order.fulfillmentStage) return 'to_fulfill'; // pending/not started
+    if (order.fulfillmentStage === 'picking') return 'picking';
+    if (order.fulfillmentStage === 'packing') return 'packing';
+    if (order.fulfillmentStage === 'ready') return 'ready_to_ship';
+    return order.fulfillmentStage; // fallback
   }
 
   async startPickingOrder(id: string, employeeId: string): Promise<Order | undefined> {
@@ -1141,7 +1159,8 @@ export class DatabaseStorage implements IStorage {
       const [updated] = await db
         .update(orders)
         .set({
-          orderStatus: 'picking',
+          fulfillmentStage: 'picking',
+          pickingStartedAt: new Date(),
           pickStatus: 'in_progress',
           pickStartTime: new Date(),
           pickedBy: employeeId,
@@ -1152,8 +1171,8 @@ export class DatabaseStorage implements IStorage {
             eq(orders.id, id),
             eq(orders.orderStatus, 'to_fulfill'),
             or(
-              eq(orders.pickStatus, 'not_started'),
-              isNull(orders.pickStatus)
+              isNull(orders.fulfillmentStage),
+              eq(orders.fulfillmentStage, '')
             )
           )
         )
@@ -1176,6 +1195,7 @@ export class DatabaseStorage implements IStorage {
       const [updated] = await db
         .update(orders)
         .set({
+          fulfillmentStage: 'packing',
           pickStatus: 'completed',
           pickEndTime: new Date(),
           updatedAt: new Date(),
@@ -1183,6 +1203,7 @@ export class DatabaseStorage implements IStorage {
         .where(
           and(
             eq(orders.id, id),
+            eq(orders.fulfillmentStage, 'picking'),
             eq(orders.pickStatus, 'in_progress')
           )
         )
@@ -1210,7 +1231,7 @@ export class DatabaseStorage implements IStorage {
       const [updated] = await db
         .update(orders)
         .set({
-          orderStatus: 'packing',
+          packingStartedAt: new Date(),
           packStatus: 'in_progress',
           packStartTime: new Date(),
           packedBy: employeeId,
@@ -1219,8 +1240,9 @@ export class DatabaseStorage implements IStorage {
         .where(
           and(
             eq(orders.id, id),
-            // Must be in picking state (picking has started)
-            eq(orders.orderStatus, 'picking'),
+            eq(orders.orderStatus, 'to_fulfill'),
+            // Must be in packing stage (picking completed)
+            eq(orders.fulfillmentStage, 'packing'),
             or(
               eq(orders.packStatus, 'not_started'),
               isNull(orders.packStatus)
@@ -1251,16 +1273,17 @@ export class DatabaseStorage implements IStorage {
       const [updated] = await db
         .update(orders)
         .set({
+          fulfillmentStage: 'ready',
           packStatus: 'completed',
           packEndTime: new Date(),
-          orderStatus: 'ready_to_ship',
           updatedAt: new Date(),
         })
         .where(
           and(
             eq(orders.id, id),
+            eq(orders.orderStatus, 'to_fulfill'),
+            eq(orders.fulfillmentStage, 'packing'),
             eq(orders.packStatus, 'in_progress'),
-            eq(orders.orderStatus, 'packing'),
             // Can only complete packing when picking is also completed
             eq(orders.pickStatus, 'completed')
           )
