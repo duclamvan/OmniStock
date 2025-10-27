@@ -1170,9 +1170,14 @@ export class DatabaseStorage implements IStorage {
           and(
             eq(orders.id, id),
             eq(orders.orderStatus, 'to_fulfill'),
+            // Only allow starting picking when not yet started (guard against re-entry)
             or(
               isNull(orders.fulfillmentStage),
               eq(orders.fulfillmentStage, '')
+            ),
+            or(
+              eq(orders.pickStatus, 'not_started'),
+              isNull(orders.pickStatus)
             )
           )
         )
@@ -1274,6 +1279,7 @@ export class DatabaseStorage implements IStorage {
         .update(orders)
         .set({
           fulfillmentStage: 'ready',
+          orderStatus: 'ready_to_ship', // Advance main status for shipping flow compatibility
           packStatus: 'completed',
           packEndTime: new Date(),
           updatedAt: new Date(),

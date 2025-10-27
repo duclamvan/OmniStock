@@ -2,12 +2,14 @@
 Davie Supply is a full-stack web application designed for comprehensive warehouse and order management. Its primary goal is to optimize supply chain operations, encompassing the entire order lifecycle, inventory tracking, customer relationship management, and multi-currency financial reporting. The project includes features like real-time Vietnamese diacritics search, customer-specific pricing, external shipping API integrations, and extensive settings management. Key ambitions include advanced warehouse mapping, a comprehensive Pick & Pack workflow, and future AI-powered optimization.
 
 # Recent Changes
-**October 27, 2025**: Fixed critical Pick & Pack workflow state machine with comprehensive guard clauses:
-- Implemented all four Pick & Pack storage methods (startPickingOrder, completePickingOrder, startPackingOrder, completePackingOrder)
-- Added proper orderStatus transitions: to_fulfill → picking → packing → ready_to_ship
-- Enabled parallel pick/pack workflow: packing can start when picking is in_progress
-- Enforced state machine guards to prevent invalid transitions and concurrent update issues
-- Fixed "Start Next Priority Order" button functionality and order count accuracy
+**October 27, 2025**: Implemented Option 1 architecture with separate fulfillment sub-status tracking and performance analytics:
+- Added separate `fulfillmentStage` field (null → 'picking' → 'packing' → 'ready') to track pick/pack progress while keeping main `orderStatus` for system compatibility
+- Main `orderStatus` remains 'to_fulfill' during pick/pack workflow, advances to 'ready_to_ship' only when fully packed
+- Added timestamp tracking fields: `pickingStartedAt`, `packingStartedAt` for precise fulfillment stage timing
+- Implemented comprehensive performance tracking system with `order_fulfillment_logs` table logging all pick/pack sessions
+- Intelligent time predictions based on user-specific historical data (averages last 20 sessions, falls back to 6min/4min defaults)
+- Enhanced guard clauses to prevent invalid state transitions and re-entry scenarios
+- Frontend displays total item counts and AI-powered time estimates based on actual performance data
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
