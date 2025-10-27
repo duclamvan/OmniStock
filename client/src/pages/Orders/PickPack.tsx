@@ -5406,7 +5406,14 @@ export default function PickPack() {
             
             <Card className="shadow-sm">
               <CardHeader className="pb-4 sm:pb-6">
-                <CardTitle className="text-lg sm:text-xl font-bold">Orders Ready to Pick</CardTitle>
+                <CardTitle className="text-lg sm:text-xl font-bold">
+                  Orders Ready to Pick ({getOrdersByStatus('pending').length})
+                  {getOrdersByStatus('pending').length > 0 && (
+                    <span className="ml-2 text-sm font-normal text-gray-500">
+                      ~{Math.ceil(getOrdersByStatus('pending').length * 6 / 60)}h {(getOrdersByStatus('pending').length * 6) % 60}m est.
+                    </span>
+                  )}
+                </CardTitle>
                 <CardDescription className="text-sm mt-1">
                   {batchPickingMode ? "Select multiple orders for batch picking" : "Select an order to start the picking process"}
                 </CardDescription>
@@ -5535,7 +5542,9 @@ export default function PickPack() {
           <TabsContent value="picking" className="mt-4 sm:mt-6">
             <Card className="shadow-sm">
               <CardHeader className="pb-4 sm:pb-6">
-                <CardTitle className="text-lg sm:text-xl font-bold">Orders Being Picked</CardTitle>
+                <CardTitle className="text-lg sm:text-xl font-bold">
+                  Orders Being Picked ({getOrdersByStatus('picking').length})
+                </CardTitle>
               </CardHeader>
               <CardContent className="px-3 sm:px-4">
                 {isLoading ? (
@@ -5622,7 +5631,14 @@ export default function PickPack() {
           <TabsContent value="packing" className="mt-4 sm:mt-6">
             <Card className="shadow-sm">
               <CardHeader className="pb-4 sm:pb-6">
-                <CardTitle className="text-lg sm:text-xl font-bold">Ready for Packing</CardTitle>
+                <CardTitle className="text-lg sm:text-xl font-bold">
+                  Ready for Packing ({getOrdersByStatus('packing').length})
+                  {getOrdersByStatus('packing').length > 0 && (
+                    <span className="ml-2 text-sm font-normal text-gray-500">
+                      ~{Math.ceil(getOrdersByStatus('packing').length * 4 / 60)}h {(getOrdersByStatus('packing').length * 4) % 60}m est.
+                    </span>
+                  )}
+                </CardTitle>
                 <CardDescription className="text-sm mt-1">Orders that have been picked and ready to pack</CardDescription>
               </CardHeader>
               <CardContent className="px-3 sm:px-4">
