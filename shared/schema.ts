@@ -1315,6 +1315,24 @@ export const insertTicketCommentSchema = createInsertSchema(ticketComments).omit
   updatedAt: true
 });
 
+// Order Fulfillment Performance Tracking
+export const orderFulfillmentLogs = pgTable('order_fulfillment_logs', {
+  id: serial('id').primaryKey(),
+  orderId: varchar('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
+  userId: varchar('user_id').notNull().references(() => users.id),
+  activityType: varchar('activity_type').notNull(), // 'pick' or 'pack'
+  startedAt: timestamp('started_at').notNull(),
+  completedAt: timestamp('completed_at'),
+  itemCount: integer('item_count').notNull().default(0),
+  totalQuantity: integer('total_quantity').notNull().default(0),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
+export const insertOrderFulfillmentLogSchema = createInsertSchema(orderFulfillmentLogs).omit({
+  id: true,
+  createdAt: true
+});
+
 // AI-powered carton packing types
 export type PackingCarton = typeof packingCartons.$inferSelect;
 export type InsertPackingCarton = z.infer<typeof insertPackingCartonSchema>;
@@ -1361,3 +1379,7 @@ export type Ticket = typeof tickets.$inferSelect;
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
 export type TicketComment = typeof ticketComments.$inferSelect;
 export type InsertTicketComment = z.infer<typeof insertTicketCommentSchema>;
+
+// Order Fulfillment Performance types
+export type OrderFulfillmentLog = typeof orderFulfillmentLogs.$inferSelect;
+export type InsertOrderFulfillmentLog = z.infer<typeof insertOrderFulfillmentLogSchema>;

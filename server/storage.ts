@@ -41,6 +41,7 @@ import {
   discounts,
   tickets,
   ticketComments,
+  orderFulfillmentLogs,
   type User,
   type InsertUser,
   type Category,
@@ -122,7 +123,9 @@ import {
   type Ticket,
   type InsertTicket,
   type TicketComment,
-  type InsertTicketComment
+  type InsertTicketComment,
+  type OrderFulfillmentLog,
+  type InsertOrderFulfillmentLog
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, ilike, sql, gte, lte, inArray, ne, asc, isNull, notInArray, not } from "drizzle-orm";
@@ -464,6 +467,11 @@ export interface IStorage {
   getOrderCartonItems(planId: string): Promise<OrderCartonItem[]>;
   createOrderCartonItem(item: InsertOrderCartonItem): Promise<OrderCartonItem>;
   deleteOrderCartonPlan(planId: string): Promise<boolean>;
+  
+  // Order Fulfillment Performance Tracking
+  logFulfillmentStart(orderId: string, userId: string, activityType: 'pick' | 'pack', itemCount: number, totalQuantity: number): Promise<OrderFulfillmentLog>;
+  logFulfillmentComplete(orderId: string, userId: string, activityType: 'pick' | 'pack'): Promise<OrderFulfillmentLog | undefined>;
+  getPickPackPredictions(userId: string): Promise<{ pickingTimePerOrder: number; packingTimePerOrder: number; pickingTimePerItem: number; packingTimePerItem: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1125,6 +1133,11 @@ export class DatabaseStorage implements IStorage {
 
   async startPickingOrder(id: string, employeeId: string): Promise<Order | undefined> {
     try {
+      // Get order items to count
+      const items = await this.getOrderItems(id);
+      const itemCount = items.length;
+      const totalQuantity = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+      
       const [updated] = await db
         .update(orders)
         .set({
@@ -1145,6 +1158,12 @@ export class DatabaseStorage implements IStorage {
           )
         )
         .returning();
+      
+      // Log performance tracking
+      if (updated) {
+        await this.logFulfillmentStart(id, employeeId, 'pick', itemCount, totalQuantity);
+      }
+      
       return updated;
     } catch (error) {
       console.error('Error starting picking order:', error);
@@ -1168,6 +1187,12 @@ export class DatabaseStorage implements IStorage {
           )
         )
         .returning();
+      
+      // Log performance tracking completion
+      if (updated && updated.pickedBy) {
+        await this.logFulfillmentComplete(id, updated.pickedBy, 'pick');
+      }
+      
       return updated;
     } catch (error) {
       console.error('Error completing picking order:', error);
@@ -1177,6 +1202,11 @@ export class DatabaseStorage implements IStorage {
 
   async startPackingOrder(id: string, employeeId: string): Promise<Order | undefined> {
     try {
+      // Get order items to count
+      const items = await this.getOrderItems(id);
+      const itemCount = items.length;
+      const totalQuantity = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+      
       const [updated] = await db
         .update(orders)
         .set({
@@ -1203,6 +1233,12 @@ export class DatabaseStorage implements IStorage {
           )
         )
         .returning();
+      
+      // Log performance tracking
+      if (updated) {
+        await this.logFulfillmentStart(id, employeeId, 'pack', itemCount, totalQuantity);
+      }
+      
       return updated;
     } catch (error) {
       console.error('Error starting packing order:', error);
@@ -1230,6 +1266,12 @@ export class DatabaseStorage implements IStorage {
           )
         )
         .returning();
+      
+      // Log performance tracking completion
+      if (updated && updated.packedBy) {
+        await this.logFulfillmentComplete(id, updated.packedBy, 'pack');
+      }
+      
       return updated;
     } catch (error) {
       console.error('Error completing packing order:', error);
@@ -4404,6 +4446,155 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error deleting order carton plan:', error);
       return false;
+    }
+  }
+  
+  // Order Fulfillment Performance Tracking
+  async logFulfillmentStart(orderId: string, userId: string, activityType: 'pick' | 'pack', itemCount: number, totalQuantity: number): Promise<OrderFulfillmentLog> {
+    try {
+      const [log] = await db
+        .insert(orderFulfillmentLogs)
+        .values({
+          orderId,
+          userId,
+          activityType,
+          startedAt: new Date(),
+          completedAt: null,
+          itemCount,
+          totalQuantity,
+        })
+        .returning();
+      return log;
+    } catch (error) {
+      console.error('Error logging fulfillment start:', error);
+      throw error;
+    }
+  }
+  
+  async logFulfillmentComplete(orderId: string, userId: string, activityType: 'pick' | 'pack'): Promise<OrderFulfillmentLog | undefined> {
+    try {
+      // Find the most recent incomplete log for this order/user/activity
+      const [existingLog] = await db
+        .select()
+        .from(orderFulfillmentLogs)
+        .where(
+          and(
+            eq(orderFulfillmentLogs.orderId, orderId),
+            eq(orderFulfillmentLogs.userId, userId),
+            eq(orderFulfillmentLogs.activityType, activityType),
+            isNull(orderFulfillmentLogs.completedAt)
+          )
+        )
+        .orderBy(desc(orderFulfillmentLogs.startedAt))
+        .limit(1);
+      
+      if (!existingLog) {
+        console.warn(`No incomplete ${activityType} log found for order ${orderId}`);
+        return undefined;
+      }
+      
+      const [updated] = await db
+        .update(orderFulfillmentLogs)
+        .set({ completedAt: new Date() })
+        .where(eq(orderFulfillmentLogs.id, existingLog.id))
+        .returning();
+      
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error logging fulfillment complete:', error);
+      return undefined;
+    }
+  }
+  
+  async getPickPackPredictions(userId: string): Promise<{ pickingTimePerOrder: number; packingTimePerOrder: number; pickingTimePerItem: number; packingTimePerItem: number }> {
+    try {
+      // Get completed pick logs for this user
+      const pickLogs = await db
+        .select()
+        .from(orderFulfillmentLogs)
+        .where(
+          and(
+            eq(orderFulfillmentLogs.userId, userId),
+            eq(orderFulfillmentLogs.activityType, 'pick'),
+            not(isNull(orderFulfillmentLogs.completedAt))
+          )
+        )
+        .orderBy(desc(orderFulfillmentLogs.startedAt))
+        .limit(20); // Last 20 completed picks
+      
+      // Get completed pack logs for this user
+      const packLogs = await db
+        .select()
+        .from(orderFulfillmentLogs)
+        .where(
+          and(
+            eq(orderFulfillmentLogs.userId, userId),
+            eq(orderFulfillmentLogs.activityType, 'pack'),
+            not(isNull(orderFulfillmentLogs.completedAt))
+          )
+        )
+        .orderBy(desc(orderFulfillmentLogs.startedAt))
+        .limit(20); // Last 20 completed packs
+      
+      // Calculate average pick time
+      let pickingTimePerOrder = 6; // Default 6 minutes
+      let pickingTimePerItem = 1; // Default 1 minute per item
+      
+      if (pickLogs.length > 0) {
+        const pickTimes = pickLogs
+          .filter(log => log.completedAt && log.startedAt)
+          .map(log => {
+            const duration = (log.completedAt!.getTime() - log.startedAt.getTime()) / 60000; // minutes
+            return { duration, itemCount: log.itemCount, totalQuantity: log.totalQuantity };
+          });
+        
+        if (pickTimes.length > 0) {
+          pickingTimePerOrder = pickTimes.reduce((sum, t) => sum + t.duration, 0) / pickTimes.length;
+          const totalItems = pickTimes.reduce((sum, t) => sum + t.totalQuantity, 0);
+          const totalTime = pickTimes.reduce((sum, t) => sum + t.duration, 0);
+          if (totalItems > 0) {
+            pickingTimePerItem = totalTime / totalItems;
+          }
+        }
+      }
+      
+      // Calculate average pack time
+      let packingTimePerOrder = 4; // Default 4 minutes
+      let packingTimePerItem = 0.5; // Default 0.5 minutes per item
+      
+      if (packLogs.length > 0) {
+        const packTimes = packLogs
+          .filter(log => log.completedAt && log.startedAt)
+          .map(log => {
+            const duration = (log.completedAt!.getTime() - log.startedAt.getTime()) / 60000; // minutes
+            return { duration, itemCount: log.itemCount, totalQuantity: log.totalQuantity };
+          });
+        
+        if (packTimes.length > 0) {
+          packingTimePerOrder = packTimes.reduce((sum, t) => sum + t.duration, 0) / packTimes.length;
+          const totalItems = packTimes.reduce((sum, t) => sum + t.totalQuantity, 0);
+          const totalTime = packTimes.reduce((sum, t) => sum + t.duration, 0);
+          if (totalItems > 0) {
+            packingTimePerItem = totalTime / totalItems;
+          }
+        }
+      }
+      
+      return {
+        pickingTimePerOrder,
+        packingTimePerOrder,
+        pickingTimePerItem,
+        packingTimePerItem,
+      };
+    } catch (error) {
+      console.error('Error getting pick/pack predictions:', error);
+      // Return defaults on error
+      return {
+        pickingTimePerOrder: 6,
+        packingTimePerOrder: 4,
+        pickingTimePerItem: 1,
+        packingTimePerItem: 0.5,
+      };
     }
   }
 }
