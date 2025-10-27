@@ -4377,6 +4377,18 @@ Important:
       res.status(500).json({ message: "Failed to fetch pick-pack orders" });
     }
   });
+  
+  // Get pick/pack performance predictions for current user
+  app.get('/api/orders/pick-pack/predictions', async (req: any, res) => {
+    try {
+      const userId = req.user?.id || "test-user"; // Use authenticated user ID
+      const predictions = await storage.getPickPackPredictions(userId);
+      res.json(predictions);
+    } catch (error) {
+      console.error("Error fetching pick-pack predictions:", error);
+      res.status(500).json({ message: "Failed to fetch predictions" });
+    }
+  });
 
   // Start picking an order
   app.post('/api/orders/:id/pick/start', async (req: any, res) => {
