@@ -28,7 +28,6 @@ import {
 import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { 
   Dialog, 
   DialogContent, 
@@ -37,7 +36,6 @@ import {
   DialogDescription 
 } from "@/components/ui/dialog";
 import { Link } from "wouter";
-import logoPath from '@assets/logo_1754349267160.png';
 import { ImagePlaceholder } from "@/components/ImagePlaceholder";
 import { 
   Package, 
@@ -86,7 +84,6 @@ import {
   BarChart3,
   TrendingUp,
   ShoppingCart,
-  Menu,
   Check
 } from "lucide-react";
 
@@ -323,52 +320,10 @@ export default function PickPack() {
   const [showPerformanceStats, setShowPerformanceStats] = useState(false);
   const [batchPickingMode, setBatchPickingMode] = useState(false);
   const [selectedBatchItems, setSelectedBatchItems] = useState<Set<string>>(new Set());
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [manualItemIndex, setManualItemIndex] = useState(0);
   const [modificationDialog, setModificationDialog] = useState<PickPackOrder | null>(null);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-
-  // Navigation structure
-  const navigation = [
-    {
-      name: "Dashboard",
-      href: "/",
-      icon: Home,
-    },
-    {
-      name: "Orders",
-      icon: Package,
-      children: [
-        { name: "All Orders", href: "/orders" },
-        { name: "Add Order", href: "/orders/add" },
-        { name: "Pick & Pack", href: "/orders/pick-pack" },
-        { name: "To Fulfill", href: "/orders/to-fulfill" },
-        { name: "Shipped", href: "/orders/shipped" },
-        { name: "Pre-Orders", href: "/orders/pre-orders" },
-      ],
-    },
-    {
-      name: "Inventory",
-      icon: Box,
-      children: [
-        { name: "All Products", href: "/inventory" },
-        { name: "Categories", href: "/inventory/categories" },
-        { name: "Product Bundles", href: "/inventory/bundles" },
-        { name: "Add Product", href: "/inventory/add" },
-      ],
-    },
-    {
-      name: "Customers",
-      href: "/customers",
-      icon: Users,
-    },
-    {
-      name: "Reports",
-      href: "/reports",
-      icon: BarChart3,
-    },
-  ];
   
   // State for packing process
   const [packingChecklist, setPackingChecklist] = useState({
@@ -5125,101 +5080,6 @@ export default function PickPack() {
   // Main Dashboard View
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header - Mobile Optimized */}
-      <div className="bg-white border-b sticky top-0 z-10">
-        <div className="px-3 sm:px-6 py-3 sm:py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div>
-              <h1 className="text-lg sm:text-2xl font-bold">Pick & Pack Center</h1>
-              <p className="text-xs sm:text-sm text-gray-500">Warehouse Operations Dashboard</p>
-            </div>
-            <div className="flex items-center justify-between sm:gap-4">
-              <div className="text-left sm:text-right">
-                <p className="text-xs sm:text-sm text-gray-500">Logged in as</p>
-                <p className="text-sm sm:text-base font-medium">{currentEmployee}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Link href="/">
-                  <Button variant="outline" size="sm" className="h-8 px-2 sm:px-3">
-                    <Home className="h-3 sm:h-4 w-3 sm:w-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Dashboard</span>
-                  </Button>
-                </Link>
-                
-                {/* Navigation Menu */}
-                <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-                  <SheetTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="h-8 w-8 p-0"
-                    >
-                      <Menu className="h-4 w-4" />
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="left" className="w-72 p-0 flex flex-col h-full">
-                    <div className="p-4 border-b flex-shrink-0">
-                      <div className="flex items-center gap-3">
-                        <img src={logoPath} alt="Davie Professional" className="h-8" />
-                        <div>
-                          <h2 className="text-lg font-semibold">Navigation</h2>
-                          <p className="text-sm text-gray-500">Pick & Pack Center</p>
-                        </div>
-                      </div>
-                    </div>
-                    <nav className="p-4 space-y-2 overflow-y-auto flex-1">
-                      {navigation.map((item) => {
-                        if (item.children) {
-                          return (
-                            <div key={item.name} className="space-y-1">
-                              <div className="flex items-center px-3 py-2 text-sm font-medium text-gray-900">
-                                <item.icon className="mr-3 h-4 w-4" />
-                                {item.name}
-                              </div>
-                              <div className="pl-7 space-y-1">
-                                {item.children.map((child) => (
-                                  <Link key={child.href} href={child.href}>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="w-full justify-start text-gray-600 px-3 py-2"
-                                      onClick={() => setIsMobileMenuOpen(false)}
-                                    >
-                                      {child.name}
-                                    </Button>
-                                  </Link>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        }
-                        return (
-                          <Link key={item.name} href={item.href}>
-                            <Button
-                              variant="ghost"
-                              className="w-full justify-start font-medium px-3 py-2"
-                              onClick={() => setIsMobileMenuOpen(false)}
-                            >
-                              <item.icon className="mr-3 h-4 w-4" />
-                              {item.name}
-                            </Button>
-                          </Link>
-                        );
-                      })}
-                    </nav>
-                    <div className="p-4 border-t flex-shrink-0">
-                      <div className="text-center text-sm text-gray-500">
-                        Logged in as {currentEmployee}
-                      </div>
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Stats Overview - Mobile Optimized */}
       <div className="px-3 sm:px-6 py-3 sm:py-4">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">

@@ -197,9 +197,6 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
     getLocalStorageBoolean('sidebarCollapsed', false)
   );
 
-  // Check if we're on the Pick & Pack page
-  const isPickPackPage = location === '/orders/pick-pack';
-
   // Fetch pre-orders to count fully arrived ones
   const { data: preOrders } = useQuery<any[]>({
     queryKey: ['/api/pre-orders'],
@@ -825,8 +822,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile Header - Hidden on Pick & Pack page */}
-      {!isPickPackPage && (
+      {/* Mobile Header */}
       <header className="lg:hidden sticky top-0 z-40 bg-white border-b border-gray-200">
         <div className="flex items-center justify-between px-4 py-3">
           <img src={logoPath} alt="Davie Professional" className="h-8" />
@@ -847,7 +843,6 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
           </Sheet>
         </div>
       </header>
-      )}
 
       {/* Desktop Sidebar */}
       <aside className={cn(
@@ -890,8 +885,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
         "transition-all duration-300",
         isCollapsed ? "lg:ml-16" : "lg:ml-64"
       )}>
-        {/* Top Navigation Bar - Desktop Only - Hidden on Pick & Pack page */}
-        {!isPickPackPage && (
+        {/* Top Navigation Bar - Desktop Only */}
         <header className="hidden lg:block sticky top-0 z-30 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between px-6 py-2">
             {/* Breadcrumb and Page Title */}
@@ -1135,8 +1129,6 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
             </div>
           </div>
         </header>
-        )}
-
 
         <div className={cn(
           "px-mobile py-mobile max-w-7xl mx-auto"
