@@ -5428,7 +5428,12 @@ export default function PickPack() {
                   )}
                 </CardTitle>
                 <CardDescription className="text-sm mt-1">
-                  {batchPickingMode ? "Select multiple orders for batch picking" : "Select an order to start the picking process"}
+                  {(() => {
+                    const totalItems = getOrdersByStatus('pending').reduce((sum, order) => sum + order.totalItems, 0);
+                    return batchPickingMode 
+                      ? `${totalItems} total items across ${getOrdersByStatus('pending').length} orders`
+                      : `${totalItems} total items to pick`;
+                  })()}
                 </CardDescription>
               </CardHeader>
               <CardContent className="px-3 sm:px-4">
