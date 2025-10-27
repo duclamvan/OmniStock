@@ -581,6 +581,19 @@ export default function PickPack() {
     refetchInterval: 30000, // 30 seconds instead of 10
     refetchOnWindowFocus: !activePickingOrder,
   });
+  
+  // Fetch pick/pack performance predictions for current user
+  const { data: predictions } = useQuery<{
+    pickingTimePerOrder: number;
+    packingTimePerOrder: number;
+    pickingTimePerItem: number;
+    packingTimePerItem: number;
+  }>({
+    queryKey: ['/api/orders/pick-pack/predictions'],
+    staleTime: 5 * 60 * 1000, // 5 minutes (predictions don't change frequently)
+    refetchInterval: false, // Disable interval refetch for performance
+    refetchOnWindowFocus: false,
+  });
 
   // Query for available cartons
   const { data: availableCartons = [], isLoading: isLoadingCartons } = useQuery<any[]>({
@@ -5408,9 +5421,9 @@ export default function PickPack() {
               <CardHeader className="pb-4 sm:pb-6">
                 <CardTitle className="text-lg sm:text-xl font-bold">
                   Orders Ready to Pick ({getOrdersByStatus('pending').length})
-                  {getOrdersByStatus('pending').length > 0 && (
+                  {getOrdersByStatus('pending').length > 0 && predictions && (
                     <span className="ml-2 text-sm font-normal text-gray-500">
-                      ~{Math.ceil(getOrdersByStatus('pending').length * 6 / 60)}h {(getOrdersByStatus('pending').length * 6) % 60}m est.
+                      ~{Math.ceil(getOrdersByStatus('pending').length * predictions.pickingTimePerOrder / 60)}h {Math.round((getOrdersByStatus('pending').length * predictions.pickingTimePerOrder) % 60)}m est.
                     </span>
                   )}
                 </CardTitle>
@@ -5633,9 +5646,9 @@ export default function PickPack() {
               <CardHeader className="pb-4 sm:pb-6">
                 <CardTitle className="text-lg sm:text-xl font-bold">
                   Ready for Packing ({getOrdersByStatus('packing').length})
-                  {getOrdersByStatus('packing').length > 0 && (
+                  {getOrdersByStatus('packing').length > 0 && predictions && (
                     <span className="ml-2 text-sm font-normal text-gray-500">
-                      ~{Math.ceil(getOrdersByStatus('packing').length * 4 / 60)}h {(getOrdersByStatus('packing').length * 4) % 60}m est.
+                      ~{Math.ceil(getOrdersByStatus('packing').length * predictions.packingTimePerOrder / 60)}h {Math.round((getOrdersByStatus('packing').length * predictions.packingTimePerOrder) % 60)}m est.
                     </span>
                   )}
                 </CardTitle>
