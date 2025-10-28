@@ -3583,17 +3583,20 @@ export default function AddOrder() {
         </Card>
 
         {/* Document Selection */}
-        <OrderDocumentSelector
-          orderItems={orderItems.filter(item => item.productId).map(item => ({
-            productId: item.productId!,
-            productName: item.productName,
-            sku: item.sku,
-            quantity: item.quantity
-          }))}
-          selectedDocumentIds={selectedDocumentIds}
-          onDocumentSelectionChange={setSelectedDocumentIds}
-          customerId={selectedCustomer?.id}
-        />
+        {useMemo(() => (
+          <OrderDocumentSelector
+            orderItems={orderItems.filter(item => item.productId).map(item => ({
+              id: item.id,
+              productId: item.productId!,
+              productName: item.productName,
+              sku: item.sku,
+              quantity: item.quantity
+            }))}
+            selectedDocumentIds={selectedDocumentIds}
+            onDocumentSelectionChange={setSelectedDocumentIds}
+            customerId={selectedCustomer?.id}
+          />
+        ), [orderItems, selectedDocumentIds, selectedCustomer?.id])}
 
         {/* AI Carton Packing Optimization Panel */}
         {orderItems.length > 0 && (

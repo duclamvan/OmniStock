@@ -36,6 +36,7 @@ interface ProductFile {
 }
 
 interface OrderItem {
+  id?: string;
   productId: string;
   productName: string;
   sku: string;
@@ -249,7 +250,8 @@ export default function OrderDocumentSelector({
         )}
 
         <div className="space-y-3">
-          {orderItems.map(item => {
+          {/* Group order items by productId to avoid duplicates */}
+          {Array.from(new Map(orderItems.map(item => [item.productId, item])).values()).map((item, index) => {
             const productFiles = fileQueries.data?.[item.productId] || [];
             
             if (productFiles.length === 0) {
@@ -260,7 +262,7 @@ export default function OrderDocumentSelector({
             const selectedCount = productFiles.filter(file => localSelectedIds.has(file.id)).length;
             
             return (
-              <div key={item.productId} className="space-y-2">
+              <div key={item.id || item.productId || index} className="space-y-2">
                 {/* Product Header */}
                 <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-900/50 rounded-md border border-slate-200 dark:border-slate-700">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -304,7 +306,6 @@ export default function OrderDocumentSelector({
                       >
                         <Checkbox
                           checked={isSelected}
-                          onCheckedChange={() => handleDocumentToggle(file.id)}
                           data-testid={`checkbox-document-${file.id}`}
                           onClick={(e) => e.stopPropagation()}
                         />
