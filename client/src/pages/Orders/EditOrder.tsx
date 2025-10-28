@@ -2746,6 +2746,7 @@ export default function EditOrder() {
         {/* Document Selection */}
         <OrderDocumentSelector
           orderItems={orderItems.map(item => ({
+            id: item.id,
             productId: item.productId,
             productName: item.productName,
             sku: item.sku,
@@ -2753,6 +2754,7 @@ export default function EditOrder() {
           }))}
           selectedDocumentIds={selectedDocumentIds}
           onDocumentSelectionChange={setSelectedDocumentIds}
+          customerId={selectedCustomer?.id}
         />
 
         {/* AI Carton Packing Optimization Panel */}
