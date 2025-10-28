@@ -3724,6 +3724,48 @@ Important:
     }
   });
 
+  app.patch('/api/customers/:customerId/shipping-addresses/:addressId', async (req: any, res) => {
+    try {
+      const { customerId, addressId } = req.params;
+      
+      // Validate required fields if they are being updated
+      const requiredFields = ['firstName', 'lastName', 'street', 'city', 'zipCode', 'country'];
+      const fieldsToUpdate = Object.keys(req.body);
+      const invalidFields = requiredFields.filter(field => 
+        fieldsToUpdate.includes(field) && !req.body[field]
+      );
+      
+      if (invalidFields.length > 0) {
+        return res.status(400).json({ 
+          message: `These required fields cannot be empty: ${invalidFields.join(', ')}` 
+        });
+      }
+      
+      const address = await storage.updateCustomerShippingAddress(addressId, {
+        ...req.body,
+        customerId // Ensure customer ID doesn't change
+      });
+      
+      if (!address) {
+        return res.status(404).json({ message: 'Address not found' });
+      }
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated',
+        entityType: 'shipping_address',
+        entityId: addressId,
+        description: `Updated shipping address for customer ${customerId}`,
+      });
+      
+      res.json(address);
+    } catch (error: any) {
+      console.error("Error updating shipping address:", error);
+      const errorMessage = error?.message || "Failed to update shipping address";
+      res.status(500).json({ message: errorMessage });
+    }
+  });
+
   app.patch('/api/shipping-addresses/:id', async (req: any, res) => {
     try {
       const { id } = req.params;

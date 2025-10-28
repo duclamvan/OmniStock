@@ -752,6 +752,34 @@ export default function EditOrder() {
     },
   });
 
+  // Mutation to update existing shipping address
+  const updateShippingAddressMutation = useMutation({
+    mutationFn: async (addressData: any) => {
+      const response = await apiRequest('PATCH', `/api/customers/${selectedCustomer.id}/shipping-addresses/${addressData.id}`, addressData);
+      return response.json();
+    },
+    onSuccess: (updatedAddress) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customers', selectedCustomer?.id, 'shipping-addresses'] });
+      setShowShippingModal(false);
+      setEditingAddress(null);
+      // Update the selected address if it was the one being edited
+      if (selectedShippingAddress?.id === updatedAddress.id) {
+        setSelectedShippingAddress(updatedAddress);
+      }
+      toast({
+        title: "Success",
+        description: "Shipping address updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update shipping address",
+        variant: "destructive",
+      });
+    },
+  });
+
   const deleteShippingAddressMutation = useMutation({
     mutationFn: async (addressId: string) => {
       await apiRequest('DELETE', `/api/shipping-addresses/${addressId}`);
@@ -4208,8 +4236,11 @@ export default function EditOrder() {
               title: "Success",
               description: "Address saved (will be created with customer)",
             });
+          } else if (editingAddress) {
+            // For existing addresses, update them
+            updateShippingAddressMutation.mutate(address);
           } else {
-            // For existing customers, save immediately
+            // For new addresses on existing customers, create them
             createShippingAddressMutation.mutate(address);
           }
         }}
