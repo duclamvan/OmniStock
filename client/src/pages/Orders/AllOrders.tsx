@@ -642,14 +642,16 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             className={cn(
               "text-xs font-medium",
               order.orderStatus === 'pending' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+              order.orderStatus === 'awaiting_stock' ? 'bg-orange-100 text-orange-700 border-orange-200' :
               order.orderStatus === 'to_fulfill' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-              order.orderStatus === 'ready_to_ship' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-              order.orderStatus === 'shipped' ? 'bg-green-100 text-green-700 border-green-200' :
+              order.orderStatus === 'ready_to_ship' ? 'bg-cyan-100 text-cyan-700 border-cyan-200' :
+              order.orderStatus === 'shipped' ? 'bg-purple-100 text-purple-700 border-purple-200' :
+              order.orderStatus === 'delivered' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
               order.orderStatus === 'cancelled' ? 'bg-red-100 text-red-700 border-red-200' :
               'bg-slate-100 text-slate-700 border-slate-200'
             )}
           >
-            {order.orderStatus?.replace('_', ' ')}
+            {order.orderStatus?.replace(/_/g, ' ')}
           </Badge>
         </div>
       ),
@@ -741,9 +743,12 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       placeholder: "Change status...",
       options: [
         { label: "Pending", value: "pending" },
+        { label: "Awaiting Stock", value: "awaiting_stock" },
         { label: "To Fulfill", value: "to_fulfill" },
         { label: "Ready to Ship", value: "ready_to_ship" },
         { label: "Shipped", value: "shipped" },
+        { label: "Delivered", value: "delivered" },
+        { label: "Cancelled", value: "cancelled" },
       ],
       action: (orders: any[], value: string) => {
         bulkUpdateStatusMutation.mutate({
@@ -1047,9 +1052,12 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                 <SelectContent>
                   <SelectItem value="all">All Orders</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="awaiting_stock">Awaiting Stock</SelectItem>
                   <SelectItem value="to_fulfill">To Fulfill</SelectItem>
                   <SelectItem value="ready_to_ship">Ready to Ship</SelectItem>
                   <SelectItem value="shipped">Shipped</SelectItem>
+                  <SelectItem value="delivered">Delivered</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
             )}

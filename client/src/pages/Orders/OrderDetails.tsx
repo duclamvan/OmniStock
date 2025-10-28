@@ -529,25 +529,34 @@ export default function OrderDetails() {
 
   // Color Psychology: Green=success, Amber=warning/pending, Blue=in-progress, Red=error/urgent
   const statusVariant = 
-    order.orderStatus === 'shipped' ? 'default' : // Will use custom green class
-    order.orderStatus === 'to_fulfill' ? 'default' : // Will use custom blue class
-    order.orderStatus === 'pending' ? 'default' : // Will use custom amber class
+    order.orderStatus === 'delivered' ? 'default' :
+    order.orderStatus === 'shipped' ? 'default' :
+    order.orderStatus === 'ready_to_ship' ? 'default' :
+    order.orderStatus === 'to_fulfill' ? 'default' :
+    order.orderStatus === 'awaiting_stock' ? 'default' :
+    order.orderStatus === 'pending' ? 'default' :
     order.orderStatus === 'cancelled' ? 'destructive' :
     'secondary';
 
   const statusClassName = 
-    order.orderStatus === 'shipped' ? 'bg-green-100 text-green-800 hover:bg-green-100/80' :
+    order.orderStatus === 'delivered' ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100/80' :
+    order.orderStatus === 'shipped' ? 'bg-purple-100 text-purple-800 hover:bg-purple-100/80' :
+    order.orderStatus === 'ready_to_ship' ? 'bg-cyan-100 text-cyan-800 hover:bg-cyan-100/80' :
     order.orderStatus === 'to_fulfill' ? 'bg-blue-100 text-blue-800 hover:bg-blue-100/80' :
+    order.orderStatus === 'awaiting_stock' ? 'bg-orange-100 text-orange-800 hover:bg-orange-100/80' :
     order.orderStatus === 'pending' ? 'bg-amber-100 text-amber-800 hover:bg-amber-100/80' :
     order.orderStatus === 'cancelled' ? '' : // destructive variant
     '';
 
   const statusText = 
-    order.orderStatus === 'to_fulfill' ? 'To Fulfill' :
+    order.orderStatus === 'delivered' ? 'Delivered' :
     order.orderStatus === 'shipped' ? 'Shipped' :
+    order.orderStatus === 'ready_to_ship' ? 'Ready to Ship' :
+    order.orderStatus === 'to_fulfill' ? 'To Fulfill' :
+    order.orderStatus === 'awaiting_stock' ? 'Awaiting Stock' :
     order.orderStatus === 'pending' ? 'Pending' :
     order.orderStatus === 'cancelled' ? 'Cancelled' :
-    order.orderStatus?.charAt(0).toUpperCase() + order.orderStatus?.slice(1) || 'Unknown';
+    order.orderStatus?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Unknown';
 
   const paymentStatusVariant = 
     order.paymentStatus === 'paid' ? 'default' : // Will use custom green class
@@ -684,6 +693,16 @@ export default function OrderDetails() {
                         Pending
                       </DropdownMenuItem>
                       <DropdownMenuItem 
+                        onClick={() => updateOrderStatusMutation.mutate('awaiting_stock')}
+                        className={cn(
+                          "text-orange-700",
+                          order.orderStatus === 'awaiting_stock' ? 'bg-orange-50' : ''
+                        )}
+                      >
+                        <AlertCircle className="mr-2 h-4 w-4" />
+                        Awaiting Stock
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
                         onClick={() => updateOrderStatusMutation.mutate('to_fulfill')}
                         className={cn(
                           "text-blue-700",
@@ -694,14 +713,34 @@ export default function OrderDetails() {
                         To Fulfill
                       </DropdownMenuItem>
                       <DropdownMenuItem 
+                        onClick={() => updateOrderStatusMutation.mutate('ready_to_ship')}
+                        className={cn(
+                          "text-cyan-700",
+                          order.orderStatus === 'ready_to_ship' ? 'bg-cyan-50' : ''
+                        )}
+                      >
+                        <Package className="mr-2 h-4 w-4" />
+                        Ready to Ship
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
                         onClick={() => updateOrderStatusMutation.mutate('shipped')}
                         className={cn(
-                          "text-green-700",
-                          order.orderStatus === 'shipped' ? 'bg-green-50' : ''
+                          "text-purple-700",
+                          order.orderStatus === 'shipped' ? 'bg-purple-50' : ''
                         )}
                       >
                         <Truck className="mr-2 h-4 w-4" />
                         Shipped
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => updateOrderStatusMutation.mutate('delivered')}
+                        className={cn(
+                          "text-emerald-700",
+                          order.orderStatus === 'delivered' ? 'bg-emerald-50' : ''
+                        )}
+                      >
+                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                        Delivered
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 

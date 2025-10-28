@@ -1477,8 +1477,14 @@ export default function AddOrder() {
                         <SelectContent>
                           <SelectItem value="pending">
                             <div className="flex items-center gap-2">
-                              <div className="h-2 w-2 bg-orange-500 rounded-full" />
+                              <div className="h-2 w-2 bg-amber-500 rounded-full" />
                               Pending
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="awaiting_stock">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 bg-orange-500 rounded-full" />
+                              Awaiting Stock
                             </div>
                           </SelectItem>
                           <SelectItem value="to_fulfill">
@@ -1487,10 +1493,28 @@ export default function AddOrder() {
                               To Fulfill
                             </div>
                           </SelectItem>
+                          <SelectItem value="ready_to_ship">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 bg-cyan-500 rounded-full" />
+                              Ready to Ship
+                            </div>
+                          </SelectItem>
                           <SelectItem value="shipped">
                             <div className="flex items-center gap-2">
-                              <div className="h-2 w-2 bg-green-500 rounded-full" />
+                              <div className="h-2 w-2 bg-purple-500 rounded-full" />
                               Shipped
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="delivered">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 bg-emerald-500 rounded-full" />
+                              Delivered
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="cancelled">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 bg-red-500 rounded-full" />
+                              Cancelled
                             </div>
                           </SelectItem>
                         </SelectContent>
