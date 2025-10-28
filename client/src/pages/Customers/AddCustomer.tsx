@@ -242,6 +242,7 @@ export default function AddCustomer() {
   const billingAddressForm = useForm<BillingAddressFormData>({
     resolver: zodResolver(billingAddressSchema),
     defaultValues: {
+      id: undefined,
       label: "",
       firstName: "",
       lastName: "",

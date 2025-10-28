@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 
 const shippingAddressSchema = z.object({
+  id: z.string().optional(),
   label: z.string().min(1, "Label is required"),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
@@ -118,6 +119,7 @@ export function ShippingAddressModal({
   const form = useForm<ShippingAddress>({
     resolver: zodResolver(shippingAddressSchema),
     defaultValues: editingAddress || {
+      id: undefined,
       label: '',
       firstName: '',
       lastName: '',
@@ -174,6 +176,7 @@ export function ShippingAddressModal({
         setIsLabelManuallyEdited(true);
       } else {
         form.reset({
+          id: undefined,
           label: '',
           firstName: '',
           lastName: '',
