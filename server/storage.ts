@@ -4271,8 +4271,33 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getAllFiles(): Promise<FileType[]> { return []; }
-  async getFilesByType(type: string): Promise<FileType[]> { return []; }
+  async getAllFiles(): Promise<FileType[]> {
+    try {
+      const files = await db
+        .select()
+        .from(productFiles)
+        .orderBy(productFiles.fileType);
+      return files;
+    } catch (error) {
+      console.error('Error fetching all files:', error);
+      return [];
+    }
+  }
+
+  async getFilesByType(type: string): Promise<FileType[]> {
+    try {
+      const files = await db
+        .select()
+        .from(productFiles)
+        .where(eq(productFiles.fileType, type))
+        .orderBy(productFiles.uploadedAt);
+      return files;
+    } catch (error) {
+      console.error('Error fetching files by type:', error);
+      return [];
+    }
+  }
+
   async createFile(file: any): Promise<FileType> { return { id: Date.now().toString(), ...file }; }
   async updateFile(id: string, file: any): Promise<FileType | undefined> { return { id, ...file }; }
   async deleteFile(id: string): Promise<boolean> { return true; }
