@@ -1260,13 +1260,6 @@ export default function OrderDetails() {
                   </div>
                   
                   <div className="space-y-1.5 text-sm">
-                    {/* Label */}
-                    {order.shippingAddress.label && (
-                      <p className="font-semibold text-slate-900 dark:text-slate-100" data-testid="text-shipping-label">
-                        {order.shippingAddress.label}
-                      </p>
-                    )}
-                    
                     {/* First Name, Last Name */}
                     {(order.shippingAddress.firstName || order.shippingAddress.lastName) && (
                       <p className="font-medium text-slate-900 dark:text-slate-100" data-testid="text-shipping-name">
@@ -1278,20 +1271,6 @@ export default function OrderDetails() {
                     {order.shippingAddress.company && (
                       <p className="font-medium text-slate-900 dark:text-slate-100" data-testid="text-shipping-company">
                         {order.shippingAddress.company}
-                      </p>
-                    )}
-                    
-                    {/* Email */}
-                    {order.shippingAddress.email && (
-                      <p className="text-slate-700 dark:text-slate-300" data-testid="text-shipping-email">
-                        {order.shippingAddress.email}
-                      </p>
-                    )}
-                    
-                    {/* Phone */}
-                    {order.shippingAddress.tel && (
-                      <p className="text-slate-700 dark:text-slate-300" data-testid="text-shipping-phone">
-                        {order.shippingAddress.tel}
                       </p>
                     )}
                     
@@ -1319,6 +1298,22 @@ export default function OrderDetails() {
                         <span className="text-lg">{getCountryFlag(order.shippingAddress.country)}</span>
                         <span>{order.shippingAddress.country}</span>
                       </p>
+                    )}
+                    
+                    {/* Contact Info - Only if available */}
+                    {(order.shippingAddress.email || order.shippingAddress.tel) && (
+                      <div className="pt-2 mt-2 border-t border-slate-200 dark:border-slate-700 space-y-1">
+                        {order.shippingAddress.email && (
+                          <p className="text-xs text-slate-600 dark:text-slate-400" data-testid="text-shipping-email">
+                            {order.shippingAddress.email}
+                          </p>
+                        )}
+                        {order.shippingAddress.tel && (
+                          <p className="text-xs text-slate-600 dark:text-slate-400" data-testid="text-shipping-phone">
+                            {order.shippingAddress.tel}
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
