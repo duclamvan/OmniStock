@@ -1135,7 +1135,13 @@ export default function EditOrder() {
   };
 
   const onSubmit = (data: z.infer<typeof editOrderSchema>) => {
+    console.log('=== EDIT ORDER FORM SUBMIT ===');
+    console.log('Form data:', data);
+    console.log('Order items count:', orderItems.length);
+    console.log('Form validation errors:', form.formState.errors);
+    
     if (orderItems.length === 0) {
+      console.error('BLOCKED: No order items');
       toast({
         title: "Error",
         description: "Please add at least one item to the order",
@@ -1174,6 +1180,7 @@ export default function EditOrder() {
       },
     };
 
+    console.log('Calling updateOrderMutation with orderData:', orderData);
     updateOrderMutation.mutate(orderData);
   };
 
