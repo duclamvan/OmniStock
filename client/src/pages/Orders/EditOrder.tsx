@@ -3679,119 +3679,118 @@ export default function EditOrder() {
 
                   {/* Order Summary - Sticky */}
                   <Card className="shadow-sm">
-                    <CardHeader className="p-3 border-b">
+                    <CardHeader className="p-3 border-b bg-slate-50 dark:bg-slate-900">
                       <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                         <Calculator className="h-4 w-4 text-blue-600" />
                         Order Summary
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-3 space-y-3">
-                    {/* Margin Analysis Section */}
-                    {orderItems.length > 0 && (() => {
-                      const totalLandingCost = orderItems.reduce((sum, item) => 
-                        sum + (item.landingCost || 0) * item.quantity, 0);
-                      const totalSellingPrice = orderItems.reduce((sum, item) => 
-                        sum + item.price * item.quantity, 0);
-                      const totalProfit = totalSellingPrice - totalLandingCost;
-                      const avgMargin = totalLandingCost > 0 
-                        ? ((totalProfit / totalSellingPrice) * 100).toFixed(1) 
-                        : null;
+                    <CardContent className="p-4 space-y-4">
+                      {/* Margin Analysis Section */}
+                      {orderItems.length > 0 && (() => {
+                        const totalLandingCost = orderItems.reduce((sum, item) => 
+                          sum + (item.landingCost || 0) * item.quantity, 0);
+                        const totalSellingPrice = orderItems.reduce((sum, item) => 
+                          sum + item.price * item.quantity, 0);
+                        const totalProfit = totalSellingPrice - totalLandingCost;
+                        const avgMargin = totalLandingCost > 0 
+                          ? ((totalProfit / totalSellingPrice) * 100).toFixed(1) 
+                          : null;
 
-                      return avgMargin !== null ? (
-                        <>
-                          <div className="pb-3 mb-3 border-b">
+                        return avgMargin !== null ? (
+                          <div className="pb-3 border-b">
                             <div className="flex justify-between items-center mb-2">
-                              <span className="text-sm font-medium flex items-center gap-1">
+                              <span className="text-sm font-medium flex items-center gap-1.5">
                                 <TrendingUp className="h-4 w-4 text-green-600" />
-                                Margin Analysis
+                                Margin
                               </span>
                               <MarginPill
                                 sellingPrice={totalSellingPrice}
                                 landingCost={totalLandingCost}
                                 currency={form.watch('currency')}
-                                showIcon={true}
+                                showIcon={false}
                                 showProfit={true}
                               />
                             </div>
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-xs">
-                                <span className="text-gray-500">Total Cost:</span>
-                                <span>{formatCurrency(totalLandingCost, form.watch('currency'))}</span>
-                              </div>
-                              <div className="flex justify-between text-xs">
-                                <span className="text-gray-500">Total Profit:</span>
-                                <span className={totalProfit >= 0 ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
-                                  {formatCurrency(totalProfit, form.watch('currency'))}
-                                </span>
-                              </div>
-                            </div>
                           </div>
-                        </>
-                      ) : null;
-                    })()}
+                        ) : null;
+                      })()}
 
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Subtotal:</span>
-                        <span className="font-medium">{formatCurrency(calculateSubtotal(), form.watch('currency'))}</span>
-                      </div>
-                      {showTaxInvoice && (
+                      {/* Breakdown */}
+                      <div className="space-y-2.5">
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Tax ({form.watch('taxRate') || 0}%):</span>
-                          <span className="font-medium">{formatCurrency(calculateTax(), form.watch('currency'))}</span>
+                          <span className="text-slate-600 dark:text-slate-400">Subtotal</span>
+                          <span className="font-medium text-slate-900 dark:text-slate-100">
+                            {formatCurrency(calculateSubtotal(), form.watch('currency'))}
+                          </span>
                         </div>
-                      )}
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Shipping:</span>
-                        <span className="font-medium">{formatCurrency(Number(form.watch('shippingCost')) || 0, form.watch('currency'))}</span>
+                        
+                        {showTaxInvoice && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-600 dark:text-slate-400">
+                              Tax ({form.watch('taxRate') || 0}%)
+                            </span>
+                            <span className="font-medium text-slate-900 dark:text-slate-100">
+                              {formatCurrency(calculateTax(), form.watch('currency'))}
+                            </span>
+                          </div>
+                        )}
+                        
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-600 dark:text-slate-400">Shipping</span>
+                          <span className="font-medium text-slate-900 dark:text-slate-100">
+                            {formatCurrency(Number(form.watch('shippingCost')) || 0, form.watch('currency'))}
+                          </span>
+                        </div>
+                        
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-600 dark:text-slate-400">
+                            Discount{form.watch('discountType') === 'rate' && ` (${form.watch('discountValue') || 0}%)`}
+                          </span>
+                          <span className="font-medium text-green-600 dark:text-green-500">
+                            -{formatCurrency(
+                              form.watch('discountType') === 'rate' 
+                                ? (calculateSubtotal() * (Number(form.watch('discountValue')) || 0)) / 100
+                                : Number(form.watch('discountValue')) || 0, 
+                              form.watch('currency')
+                            )}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">
-                          Discount{form.watch('discountType') === 'rate' && ` (${form.watch('discountValue') || 0}%)`}:
-                        </span>
-                        <span className="font-medium text-green-600">
-                          -{formatCurrency(
-                            form.watch('discountType') === 'rate' 
-                              ? (calculateSubtotal() * (Number(form.watch('discountValue')) || 0)) / 100
-                              : Number(form.watch('discountValue')) || 0, 
-                            form.watch('currency')
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="border-t pt-3">
-                      <div className="flex justify-between">
-                        <span className="text-lg font-semibold">Grand Total:</span>
-                        <span className="text-lg font-bold text-blue-600">{formatCurrency(calculateGrandTotal(), form.watch('currency'))}</span>
-                      </div>
-                    </div>
 
-                    <div className="pt-3 space-y-2">
+                      {/* Grand Total */}
+                      <div className="pt-3 border-t">
+                        <div className="flex justify-between items-center">
+                          <span className="text-base font-semibold text-slate-900 dark:text-slate-100">Total</span>
+                          <span className="text-xl font-bold text-blue-600 dark:text-blue-500">
+                            {formatCurrency(calculateGrandTotal(), form.watch('currency'))}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Update Button */}
                       <Button 
                         type="submit" 
                         form="edit-order-form"
-                        className="w-full" 
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white" 
                         size="lg" 
                         disabled={updateOrderMutation.isPending || orderItems.length === 0} 
                         data-testid="button-update-order"
                       >
-                        <Save className="h-4 w-4 mr-2" />
-                        {updateOrderMutation.isPending ? 'Updating...' : 'Update Order'}
+                        {updateOrderMutation.isPending ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Updating...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-4 w-4 mr-2" />
+                            Update Order
+                          </>
+                        )}
                       </Button>
-                      <Button 
-                        type="submit" 
-                        form="edit-order-form"
-                        variant="outline" 
-                        className="w-full" 
-                        disabled={updateOrderMutation.isPending || orderItems.length === 0} 
-                        data-testid="button-save-draft"
-                      >
-                        <Save className="h-4 w-4 mr-2" />
-                        Save Draft
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
               </div>
             </div>
             {/* End of Right Column */}
@@ -3800,13 +3799,13 @@ export default function EditOrder() {
 
           {/* Mobile Order Summary (bottom on mobile) */}
           <Card className="lg:hidden shadow-sm">
-            <CardHeader className="p-3 border-b">
+            <CardHeader className="p-3 border-b bg-slate-50 dark:bg-slate-900">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                 <Calculator className="h-4 w-4 text-blue-600" />
                 Order Summary
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-3 space-y-3">
+            <CardContent className="p-4 space-y-4">
               {/* Margin Analysis Section - Mobile */}
               {orderItems.length > 0 && (() => {
                 const totalLandingCost = orderItems.reduce((sum, item) => 
@@ -3819,9 +3818,12 @@ export default function EditOrder() {
                   : null;
 
                 return avgMargin !== null ? (
-                  <div className="pb-3 mb-3 border-b">
+                  <div className="pb-3 border-b">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Margin</span>
+                      <span className="text-sm font-medium flex items-center gap-1.5">
+                        <TrendingUp className="h-4 w-4 text-green-600" />
+                        Margin
+                      </span>
                       <MarginPill
                         sellingPrice={totalSellingPrice}
                         landingCost={totalLandingCost}
@@ -3834,26 +3836,38 @@ export default function EditOrder() {
                 ) : null;
               })()}
 
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal:</span>
-                  <span className="font-medium">{formatCurrency(calculateSubtotal(), form.watch('currency'))}</span>
+              {/* Breakdown */}
+              <div className="space-y-2.5">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600 dark:text-slate-400">Subtotal</span>
+                  <span className="font-medium text-slate-900 dark:text-slate-100">
+                    {formatCurrency(calculateSubtotal(), form.watch('currency'))}
+                  </span>
                 </div>
+                
                 {showTaxInvoice && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Tax ({form.watch('taxRate') || 0}%):</span>
-                    <span className="font-medium">{formatCurrency(calculateTax(), form.watch('currency'))}</span>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-600 dark:text-slate-400">
+                      Tax ({form.watch('taxRate') || 0}%)
+                    </span>
+                    <span className="font-medium text-slate-900 dark:text-slate-100">
+                      {formatCurrency(calculateTax(), form.watch('currency'))}
+                    </span>
                   </div>
                 )}
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Shipping:</span>
-                  <span className="font-medium">{formatCurrency(Number(form.watch('shippingCost')) || 0, form.watch('currency'))}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">
-                    Discount{form.watch('discountType') === 'rate' && ` (${form.watch('discountValue') || 0}%)`}:
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600 dark:text-slate-400">Shipping</span>
+                  <span className="font-medium text-slate-900 dark:text-slate-100">
+                    {formatCurrency(Number(form.watch('shippingCost')) || 0, form.watch('currency'))}
                   </span>
-                  <span className="font-medium text-green-600">
+                </div>
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600 dark:text-slate-400">
+                    Discount{form.watch('discountType') === 'rate' && ` (${form.watch('discountValue') || 0}%)`}
+                  </span>
+                  <span className="font-medium text-green-600 dark:text-green-500">
                     -{formatCurrency(
                       form.watch('discountType') === 'rate' 
                         ? (calculateSubtotal() * (Number(form.watch('discountValue')) || 0)) / 100
@@ -3863,36 +3877,38 @@ export default function EditOrder() {
                   </span>
                 </div>
               </div>
-              <Separator />
-              <div className="flex justify-between">
-                <span className="text-lg font-semibold">Total:</span>
-                <span className="text-lg font-bold text-blue-600">{formatCurrency(calculateGrandTotal(), form.watch('currency'))}</span>
+
+              {/* Grand Total */}
+              <div className="pt-3 border-t">
+                <div className="flex justify-between items-center">
+                  <span className="text-base font-semibold text-slate-900 dark:text-slate-100">Total</span>
+                  <span className="text-xl font-bold text-blue-600 dark:text-blue-500">
+                    {formatCurrency(calculateGrandTotal(), form.watch('currency'))}
+                  </span>
+                </div>
               </div>
 
-              <div className="pt-3 space-y-2">
-                <Button 
-                  type="submit" 
-                  form="edit-order-form"
-                  className="w-full" 
-                  size="lg" 
-                  disabled={updateOrderMutation.isPending || orderItems.length === 0} 
-                  data-testid="button-update-order-mobile"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {updateOrderMutation.isPending ? 'Updating...' : 'Update Order'}
-                </Button>
-                <Button 
-                  type="submit" 
-                  form="edit-order-form"
-                  variant="outline" 
-                  className="w-full" 
-                  disabled={updateOrderMutation.isPending || orderItems.length === 0} 
-                  data-testid="button-save-draft-mobile"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Draft
-                </Button>
-              </div>
+              {/* Update Button */}
+              <Button 
+                type="submit" 
+                form="edit-order-form"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white" 
+                size="lg" 
+                disabled={updateOrderMutation.isPending || orderItems.length === 0} 
+                data-testid="button-update-order-mobile"
+              >
+                {updateOrderMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Update Order
+                  </>
+                )}
+              </Button>
             </CardContent>
           </Card>
         </div>
