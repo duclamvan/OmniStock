@@ -166,6 +166,7 @@ export default function AddCustomer() {
   const [rawShippingAddress, setRawShippingAddress] = useState("");
   const [rawBillingAddress, setRawBillingAddress] = useState("");
   const [isLabelManuallyEdited, setIsLabelManuallyEdited] = useState(false);
+  const [isNameManuallyEdited, setIsNameManuallyEdited] = useState(false);
 
   // Billing addresses state (multiple addresses)
   const [billingAddresses, setBillingAddresses] = useState<BillingAddressFormData[]>([]);
@@ -377,6 +378,21 @@ export default function AddCustomer() {
       form.setValue('billingCountry', selectedCountry);
     }
   }, [selectedCountry, isEditMode, form]);
+
+  // Auto-sync Facebook name to Name field (unless manually edited)
+  useEffect(() => {
+    // Skip if in edit mode (don't override existing customer names)
+    if (isEditMode) return;
+    
+    // Skip if name has been manually edited
+    if (isNameManuallyEdited) return;
+    
+    // Skip if there's no Facebook name
+    if (!facebookNameValue || !facebookNameValue.trim()) return;
+    
+    // Sync Facebook name to Name field
+    form.setValue('name', facebookNameValue);
+  }, [facebookNameValue, isNameManuallyEdited, isEditMode, form]);
 
   // Auto-generate shipping address label
   const shippingFirstName = shippingForm.watch('firstName');
@@ -1736,7 +1752,9 @@ export default function AddCustomer() {
                   <Label htmlFor="name" className="text-base font-semibold">Name *</Label>
                   <Input
                     id="name"
-                    {...form.register('name')}
+                    {...form.register('name', {
+                      onChange: () => setIsNameManuallyEdited(true)
+                    })}
                     placeholder="Customer's display name"
                     className="text-base"
                     data-testid="input-name"
@@ -1744,6 +1762,7 @@ export default function AddCustomer() {
                   {form.formState.errors.name && (
                     <p className="text-sm text-red-500 mt-1">{form.formState.errors.name.message}</p>
                   )}
+                  <p className="text-xs text-slate-500 mt-1">Auto-syncs with Facebook name (editable)</p>
                 </div>
 
                 <div>
