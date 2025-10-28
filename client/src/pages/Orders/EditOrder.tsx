@@ -1154,10 +1154,44 @@ export default function EditOrder() {
   };
 
   const onSubmit = (data: z.infer<typeof editOrderSchema>) => {
+    // Comprehensive validation
+    const validationErrors: string[] = [];
+
+    // Check if customer is selected
+    if (!selectedCustomer) {
+      validationErrors.push("Please select a customer");
+    }
+
+    // Check if at least one product is added
     if (orderItems.length === 0) {
+      validationErrors.push("Please add at least one product to the order");
+    }
+
+    // Check if shipping address is selected
+    if (!selectedShippingAddress) {
+      validationErrors.push("Please select a shipping address");
+    }
+
+    // Check if any product has zero or negative quantity
+    const invalidQuantities = orderItems.filter(item => item.quantity <= 0);
+    if (invalidQuantities.length > 0) {
+      validationErrors.push("All products must have a quantity greater than 0");
+    }
+
+    // If there are validation errors, show them and prevent submission
+    if (validationErrors.length > 0) {
       toast({
-        title: "Error",
-        description: "Please add at least one item to the order",
+        title: "Cannot Update Order",
+        description: (
+          <div className="space-y-1">
+            <p className="font-medium">Please fix the following issues:</p>
+            <ul className="list-disc list-inside space-y-1">
+              {validationErrors.map((error, index) => (
+                <li key={index} className="text-sm">{error}</li>
+              ))}
+            </ul>
+          </div>
+        ),
         variant: "destructive",
       });
       return;
@@ -3767,13 +3801,36 @@ export default function EditOrder() {
                         </div>
                       </div>
 
+                      {/* Validation Warning */}
+                      {(() => {
+                        const missingFields: string[] = [];
+                        if (!selectedCustomer) missingFields.push("Customer");
+                        if (orderItems.length === 0) missingFields.push("Products");
+                        if (!selectedShippingAddress) missingFields.push("Shipping Address");
+                        
+                        if (missingFields.length > 0) {
+                          return (
+                            <div className="p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md">
+                              <div className="flex items-start gap-2">
+                                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                                <div className="text-sm text-amber-800 dark:text-amber-200">
+                                  <p className="font-medium">Required fields missing:</p>
+                                  <p className="text-amber-700 dark:text-amber-300">{missingFields.join(", ")}</p>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+
                       {/* Update Button */}
                       <Button 
                         type="submit" 
                         form="edit-order-form"
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white" 
                         size="lg" 
-                        disabled={updateOrderMutation.isPending || orderItems.length === 0} 
+                        disabled={updateOrderMutation.isPending || !selectedCustomer || orderItems.length === 0 || !selectedShippingAddress} 
                         data-testid="button-update-order"
                       >
                         {updateOrderMutation.isPending ? (
@@ -3887,13 +3944,36 @@ export default function EditOrder() {
                 </div>
               </div>
 
+              {/* Validation Warning - Mobile */}
+              {(() => {
+                const missingFields: string[] = [];
+                if (!selectedCustomer) missingFields.push("Customer");
+                if (orderItems.length === 0) missingFields.push("Products");
+                if (!selectedShippingAddress) missingFields.push("Shipping Address");
+                
+                if (missingFields.length > 0) {
+                  return (
+                    <div className="p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                        <div className="text-sm text-amber-800 dark:text-amber-200">
+                          <p className="font-medium">Required fields missing:</p>
+                          <p className="text-amber-700 dark:text-amber-300">{missingFields.join(", ")}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
               {/* Update Button */}
               <Button 
                 type="submit" 
                 form="edit-order-form"
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white" 
                 size="lg" 
-                disabled={updateOrderMutation.isPending || orderItems.length === 0} 
+                disabled={updateOrderMutation.isPending || !selectedCustomer || orderItems.length === 0 || !selectedShippingAddress} 
                 data-testid="button-update-order-mobile"
               >
                 {updateOrderMutation.isPending ? (
