@@ -378,28 +378,33 @@ export default function AddCustomer() {
 
   // Helper function to format phone number with country code
   const formatPhoneNumber = (phone: string, countryCode: string): string => {
-    if (!phone || !countryCode) return phone;
+    if (!phone) return phone;
+    if (!countryCode) return phone;
     
     // Remove all spaces and special chars except + and digits
     let cleaned = phone.replace(/[^\d+]/g, '');
+    
+    if (!cleaned) return phone;
     
     // Handle "00" prefix (international format) - convert to "+"
     if (cleaned.startsWith('00')) {
       cleaned = '+' + cleaned.substring(2);
     }
     
-    // If already has proper + at start with country code, return cleaned version
+    // If already has proper + at start, just clean and return
     if (cleaned.startsWith('+')) {
       return cleaned;
     }
     
-    // Remove country code digits if present (e.g., 420 → +420)
+    // Get country code digits (e.g., "420" from "+420")
     const codeDigits = countryCode.replace('+', '');
+    
+    // Remove country code digits if present at start (e.g., "420776887045" → "776887045")
     if (cleaned.startsWith(codeDigits)) {
       cleaned = cleaned.substring(codeDigits.length);
     }
     
-    // Add country code prefix with no spaces
+    // Always add country code prefix with no spaces
     return `${countryCode}${cleaned}`;
   };
 
@@ -1273,10 +1278,6 @@ export default function AddCustomer() {
         shippingForm.setValue('email', fields.email);
         filledFields.email = data.confidence;
       }
-      if (fields.phone) {
-        shippingForm.setValue('tel', fields.phone);
-        filledFields.tel = data.confidence;
-      }
       
       // Use Nominatim-validated address values, capitalize and format properly
       if (fields.street) {
@@ -1307,6 +1308,22 @@ export default function AddCustomer() {
             form.setValue('country', countryCode);
           }
         }
+      }
+      
+      // Format phone number with country code after country is set
+      if (fields.phone && fields.country) {
+        const countryCode = getPhoneCountryCode(capitalizeWords(fields.country));
+        if (countryCode) {
+          const formatted = formatPhoneNumber(fields.phone, countryCode);
+          shippingForm.setValue('tel', formatted);
+          filledFields.tel = data.confidence;
+        } else {
+          shippingForm.setValue('tel', fields.phone);
+          filledFields.tel = data.confidence;
+        }
+      } else if (fields.phone) {
+        shippingForm.setValue('tel', fields.phone);
+        filledFields.tel = data.confidence;
       }
       
       // Update confidence tracking
@@ -1545,10 +1562,6 @@ export default function AddCustomer() {
         billingAddressForm.setValue('email', fields.email);
         filledFields.email = data.confidence;
       }
-      if (fields.phone) {
-        billingAddressForm.setValue('tel', fields.phone);
-        filledFields.tel = data.confidence;
-      }
       
       if (fields.street) {
         billingAddressForm.setValue('street', capitalizeWords(fields.street));
@@ -1569,6 +1582,22 @@ export default function AddCustomer() {
       if (fields.country) {
         billingAddressForm.setValue('country', capitalizeWords(fields.country));
         filledFields.country = data.confidence;
+      }
+      
+      // Format phone number with country code after country is set
+      if (fields.phone && fields.country) {
+        const countryCode = getPhoneCountryCode(capitalizeWords(fields.country));
+        if (countryCode) {
+          const formatted = formatPhoneNumber(fields.phone, countryCode);
+          billingAddressForm.setValue('tel', formatted);
+          filledFields.tel = data.confidence;
+        } else {
+          billingAddressForm.setValue('tel', fields.phone);
+          filledFields.tel = data.confidence;
+        }
+      } else if (fields.phone) {
+        billingAddressForm.setValue('tel', fields.phone);
+        filledFields.tel = data.confidence;
       }
       
       setBillingAddressFieldConfidence(filledFields);
@@ -2218,6 +2247,14 @@ export default function AddCustomer() {
                               const formatted = formatPhoneNumber(e.target.value, countryCode);
                               shippingForm.setValue('tel', formatted);
                             }
+                          },
+                          onBlur: (e) => {
+                            const currentCountry = shippingForm.watch('country');
+                            const countryCode = getPhoneCountryCode(currentCountry);
+                            if (countryCode && e.target.value) {
+                              const formatted = formatPhoneNumber(e.target.value, countryCode);
+                              shippingForm.setValue('tel', formatted);
+                            }
                           }
                         })}
                         placeholder="+420123456789"
@@ -2617,6 +2654,16 @@ export default function AddCustomer() {
                             if (currentCountry) {
                               const countryCode = getPhoneCountryCode(currentCountry);
                               if (countryCode) {
+                                const formatted = formatPhoneNumber(e.target.value, countryCode);
+                                billingAddressForm.setValue('tel', formatted);
+                              }
+                            }
+                          },
+                          onBlur: (e) => {
+                            const currentCountry = billingAddressForm.watch('country');
+                            if (currentCountry) {
+                              const countryCode = getPhoneCountryCode(currentCountry);
+                              if (countryCode && e.target.value) {
                                 const formatted = formatPhoneNumber(e.target.value, countryCode);
                                 billingAddressForm.setValue('tel', formatted);
                               }
