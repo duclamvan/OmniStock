@@ -380,11 +380,18 @@ export default function AddCustomer() {
   const formatPhoneNumber = (phone: string, countryCode: string): string => {
     if (!phone || !countryCode) return phone;
     
-    // Remove all spaces and special chars except +
+    // Remove all spaces and special chars except + and digits
     let cleaned = phone.replace(/[^\d+]/g, '');
     
-    // If already has + at start, return as is
-    if (cleaned.startsWith('+')) return phone;
+    // Handle "00" prefix (international format) - convert to "+"
+    if (cleaned.startsWith('00')) {
+      cleaned = '+' + cleaned.substring(2);
+    }
+    
+    // If already has proper + at start with country code, return cleaned version
+    if (cleaned.startsWith('+')) {
+      return cleaned;
+    }
     
     // Remove country code digits if present (e.g., 420 → +420)
     const codeDigits = countryCode.replace('+', '');
@@ -392,8 +399,8 @@ export default function AddCustomer() {
       cleaned = cleaned.substring(codeDigits.length);
     }
     
-    // Add country code prefix
-    return `${countryCode} ${cleaned}`;
+    // Add country code prefix with no spaces
+    return `${countryCode}${cleaned}`;
   };
 
   // Helper function to convert country name to country code
@@ -2220,7 +2227,7 @@ export default function AddCustomer() {
                             }
                           }
                         })}
-                        placeholder="+420 123 456 789"
+                        placeholder="+420123456789"
                         className={cn(getConfidenceClass('tel', shippingFieldConfidence))}
                         data-testid="input-shippingTel"
                       />
@@ -2622,7 +2629,7 @@ export default function AddCustomer() {
                             }
                           }
                         })}
-                        placeholder="+420 123 456 789"
+                        placeholder="+420123456789"
                         className={cn(getConfidenceClass('tel', billingAddressFieldConfidence))}
                         data-testid="input-billingTel"
                       />
