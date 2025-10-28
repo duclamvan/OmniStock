@@ -218,13 +218,51 @@ export function ShippingAddressModal({
         const currentValues = form.getValues();
         const updatedValues = { ...currentValues };
         
+        // Process name fields with Vietnamese naming convention
+        // Vietnamese names: [Family Name] [Middle Name(s)] [Given Name]
+        // Last Name field = only the family name (first word)
+        // First Name field = everything else (middle + given names)
+        let processedFirstName = data.fields.firstName;
+        let processedLastName = data.fields.lastName;
+        
+        if (data.fields.firstName || data.fields.lastName) {
+          // Combine all name parts
+          const allNameParts = [
+            data.fields.lastName || '',
+            data.fields.firstName || ''
+          ].filter(Boolean).join(' ').trim();
+          
+          const nameParts = allNameParts.split(/\s+/).filter(Boolean);
+          
+          if (nameParts.length > 1) {
+            // First word is the family name (Last Name)
+            processedLastName = nameParts[0];
+            // Rest is the given name + middle names (First Name)
+            processedFirstName = nameParts.slice(1).join(' ');
+          } else if (nameParts.length === 1) {
+            // Only one word - keep original values to avoid breaking validation
+            // Use the single word as-is without processing
+            processedFirstName = data.fields.firstName || nameParts[0];
+            processedLastName = data.fields.lastName || nameParts[0];
+          }
+        }
+        
         Object.entries(data.fields).forEach(([key, value]) => {
           // Skip id and label fields, don't set empty values
           if (value && key !== 'label' && key !== 'id' && value !== null && value !== '') {
+            let processedValue = value;
+            
+            // Apply name processing
+            if (key === 'firstName') {
+              processedValue = processedFirstName;
+            } else if (key === 'lastName') {
+              processedValue = processedLastName;
+            }
+            
             // Map the field name if needed
             const formFieldName = fieldMapping[key] || key;
-            console.log(`Setting field ${formFieldName} to:`, value);
-            (updatedValues as any)[formFieldName] = value;
+            console.log(`Setting field ${formFieldName} to:`, processedValue);
+            (updatedValues as any)[formFieldName] = processedValue;
             newFieldConfidence[formFieldName] = confidenceValue;
           }
         });
