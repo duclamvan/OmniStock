@@ -277,7 +277,7 @@ export default function AddCustomer() {
     if (existingCustomer && isEditMode) {
       form.reset({
         name: existingCustomer.name || "",
-        country: existingCustomer.country || "",
+        country: getCountryCode(existingCustomer.country || ""),
         preferredCurrency: (existingCustomer as any).preferredCurrency || "EUR",
         facebookName: existingCustomer.facebookName || "",
         facebookUrl: existingCustomer.facebookUrl || "",
@@ -361,6 +361,23 @@ export default function AddCustomer() {
   const nameValue = form.watch('name');
   const facebookNameValue = form.watch('facebookName');
   const facebookUrlValue = form.watch('facebookUrl');
+
+  // Helper function to convert country name to country code
+  const getCountryCode = (countryNameOrCode: string): string => {
+    if (!countryNameOrCode) return '';
+    
+    // Check if it's already a country code (2-3 letters uppercase)
+    if (countryNameOrCode.length <= 3 && countryNameOrCode === countryNameOrCode.toUpperCase()) {
+      return countryNameOrCode;
+    }
+    
+    // Try to find the country by name
+    const country = availableCountries.find(
+      c => c.name.toLowerCase() === countryNameOrCode.toLowerCase()
+    );
+    
+    return country ? country.code : countryNameOrCode;
+  };
 
   useEffect(() => {
     if (selectedCountry && !isEditMode) {
