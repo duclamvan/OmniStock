@@ -892,6 +892,15 @@ export default function AddCustomer() {
   };
 
   const handleEditShippingAddress = (index: number) => {
+    // Toggle: if already editing this address, close it
+    if (editingShippingIndex === index && isAddingShipping) {
+      setIsAddingShipping(false);
+      setEditingShippingIndex(null);
+      setIsLabelManuallyEdited(false);
+      shippingForm.reset();
+      return;
+    }
+    
     setEditingShippingIndex(index);
     setIsLabelManuallyEdited(true); // Preserve existing label when editing
     
@@ -1007,6 +1016,15 @@ export default function AddCustomer() {
   };
 
   const handleEditBillingAddress = (index: number) => {
+    // Toggle: if already editing this address, close it
+    if (editingBillingIndex === index && isAddingBilling) {
+      setIsAddingBilling(false);
+      setEditingBillingIndex(null);
+      setIsBillingLabelManuallyEdited(false);
+      billingAddressForm.reset();
+      return;
+    }
+    
     setEditingBillingIndex(index);
     setIsBillingLabelManuallyEdited(true);
     
