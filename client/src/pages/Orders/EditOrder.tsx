@@ -612,6 +612,16 @@ export default function EditOrder() {
     if (order.selectedDocumentIds && Array.isArray(order.selectedDocumentIds)) {
       setSelectedDocumentIds(order.selectedDocumentIds);
     }
+
+    // Pre-fill included documents checkboxes
+    if (order.includedDocuments) {
+      if (order.includedDocuments.invoicePrint) {
+        setIncludeInvoice(true);
+      }
+      if (order.includedDocuments.custom) {
+        setIncludeCustom(true);
+      }
+    }
   }, [existingOrder]);
 
   // Auto-update currency based on shipping address country
@@ -3913,7 +3923,7 @@ export default function EditOrder() {
           }
         }}
         editingAddress={editingAddress}
-        existingAddresses={shippingAddresses || []}
+        existingAddresses={Array.isArray(shippingAddresses) ? shippingAddresses : []}
         title={editingAddress ? "Edit Shipping Address" : "Add Shipping Address"}
         description={editingAddress ? "Update the shipping address details below" : "Enter the new shipping address details below"}
       />
