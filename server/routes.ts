@@ -7591,6 +7591,51 @@ Return ONLY the subject line without quotes or extra formatting.`,
         return res.status(500).json({ message: 'DeepSeek API key not configured' });
       }
 
+      // Country code to English name mapping (matching frontend dropdown)
+      const countryCodeToName: { [key: string]: string } = {
+        'cz': 'Czech Republic',
+        'de': 'Germany',
+        'at': 'Austria',
+        'pl': 'Poland',
+        'sk': 'Slovakia',
+        'hu': 'Hungary',
+        'fr': 'France',
+        'it': 'Italy',
+        'es': 'Spain',
+        'nl': 'Netherlands',
+        'be': 'Belgium',
+        'gb': 'United Kingdom',
+        'us': 'United States',
+        'ca': 'Canada',
+      };
+
+      // Local country name to English name mapping
+      const localToEnglishCountry: { [key: string]: string } = {
+        'česko': 'Czech Republic',
+        'deutschland': 'Germany',
+        'österreich': 'Austria',
+        'polska': 'Poland',
+        'slovensko': 'Slovakia',
+        'magyarország': 'Hungary',
+        'france': 'France',
+        'italia': 'Italy',
+        'españa': 'Spain',
+        'nederland': 'Netherlands',
+        'belgië': 'Belgium',
+        'united kingdom': 'United Kingdom',
+        'česká republika': 'Czech Republic',
+        'czech republic': 'Czech Republic',
+        'germany': 'Germany',
+        'austria': 'Austria',
+        'poland': 'Poland',
+        'slovakia': 'Slovakia',
+        'hungary': 'Hungary',
+        'italy': 'Italy',
+        'spain': 'Spain',
+        'netherlands': 'Netherlands',
+        'belgium': 'Belgium',
+      };
+
       const OpenAI = (await import('openai')).default;
       const openai = new OpenAI({ 
         apiKey,
@@ -7631,6 +7676,7 @@ ADDRESS RULES:
   * Example: "Dragounska2545/9A" → street: "Dragounska", streetNumber: "2545/9A"
 - Keep original spelling for street names (including diacritics if present)
 - Extract city, postal code, and country from remaining text
+- **IMPORTANT: Always use English country names** (e.g., "Czech Republic" not "Česko", "Germany" not "Deutschland")
 - **Handle compact formats** where all fields are space-separated without labels:
   * Example: "Company StreetNumber City PostalCode PhoneNumber"
   * Use context clues: 5-digit numbers often postal codes, 9-digit numbers often phone numbers
@@ -7741,9 +7787,20 @@ Text: ${rawAddress}`;
                 }
                 parsedFields.zipCode = postcode;
               }
-              // Use local country name (e.g., "Česko" instead of "Czech Republic")
-              if (nominatimAddress?.country) {
-                parsedFields.country = nominatimAddress.country;
+              // Normalize country to English name matching frontend dropdown
+              if (nominatimAddress?.country_code) {
+                const englishCountry = countryCodeToName[nominatimAddress.country_code.toLowerCase()];
+                if (englishCountry) {
+                  parsedFields.country = englishCountry;
+                } else if (nominatimAddress?.country) {
+                  // Fallback to country name normalization
+                  const normalizedCountry = localToEnglishCountry[nominatimAddress.country.toLowerCase()];
+                  parsedFields.country = normalizedCountry || nominatimAddress.country;
+                }
+              } else if (nominatimAddress?.country) {
+                // No country code, try normalizing the country name
+                const normalizedCountry = localToEnglishCountry[nominatimAddress.country.toLowerCase()];
+                parsedFields.country = normalizedCountry || nominatimAddress.country;
               }
               
               // Increase confidence if Nominatim validated the address
@@ -7753,6 +7810,14 @@ Text: ${rawAddress}`;
           }
         } catch (nominatimError) {
           console.error('Nominatim validation error:', nominatimError);
+        }
+      }
+
+      // Normalize country name to English if it wasn't already normalized by Nominatim
+      if (parsedFields.country && typeof parsedFields.country === 'string') {
+        const normalizedCountry = localToEnglishCountry[parsedFields.country.toLowerCase()];
+        if (normalizedCountry) {
+          parsedFields.country = normalizedCountry;
         }
       }
 
