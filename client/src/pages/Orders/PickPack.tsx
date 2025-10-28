@@ -5234,69 +5234,75 @@ export default function PickPack() {
               </div>
             )}
 
-            {/* Workflow Statistics Overview - Clean Design */}
-            <div className="mb-4 sm:mb-6 bg-white border border-gray-200 rounded-lg shadow-sm p-4 sm:p-6">
+            {/* Workflow Statistics Overview - Compact Design */}
+            <div className="mb-4 sm:mb-6 bg-white border border-gray-200 rounded-lg shadow-sm p-3 sm:p-4">
               {isLoading ? (
-                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-20 w-full" />
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {/* Pending */}
-                  <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Clock className="h-4 w-4 text-orange-600" />
+                  <div className="bg-orange-50 rounded-lg p-3 border border-orange-200">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <Clock className="h-3.5 w-3.5 text-orange-600" />
                       <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Pending</span>
                     </div>
-                    <div className="text-3xl font-bold text-gray-900 mb-1">{getOrdersByStatus('pending').length}</div>
-                    <div className="text-sm text-gray-600 mb-2">{getOrdersByStatus('pending').reduce((sum, order) => sum + order.totalItems, 0)} items</div>
-                    {predictions && getOrdersByStatus('pending').length > 0 && (
-                      <div className="text-xs font-medium text-orange-600">
-                        Est. ~{Math.floor(getOrdersByStatus('pending').length * predictions.pickingTimePerOrder / 60)}h {Math.round((getOrdersByStatus('pending').length * predictions.pickingTimePerOrder) % 60)}m
-                      </div>
-                    )}
+                    <div className="text-2xl font-bold text-gray-900">{getOrdersByStatus('pending').length}</div>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-xs text-gray-600">{getOrdersByStatus('pending').reduce((sum, order) => sum + order.totalItems, 0)} items</span>
+                      {predictions && getOrdersByStatus('pending').length > 0 && (
+                        <span className="text-xs font-medium text-orange-600">
+                          ~{Math.floor(getOrdersByStatus('pending').length * predictions.pickingTimePerOrder / 60)}h {Math.round((getOrdersByStatus('pending').length * predictions.pickingTimePerOrder) % 60)}m
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* To Pack */}
-                  <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Box className="h-4 w-4 text-purple-600" />
+                  <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <Box className="h-3.5 w-3.5 text-purple-600" />
                       <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">To Pack</span>
                     </div>
-                    <div className="text-3xl font-bold text-gray-900 mb-1">{getOrdersByStatus('packing').length}</div>
-                    <div className="text-sm text-gray-600 mb-2">{getOrdersByStatus('packing').reduce((sum, order) => sum + order.totalItems, 0)} items</div>
-                    {predictions && getOrdersByStatus('packing').length > 0 && (
-                      <div className="text-xs font-medium text-purple-600">
-                        Est. ~{Math.floor(getOrdersByStatus('packing').length * predictions.packingTimePerOrder / 60)}h {Math.round((getOrdersByStatus('packing').length * predictions.packingTimePerOrder) % 60)}m
-                      </div>
-                    )}
+                    <div className="text-2xl font-bold text-gray-900">{getOrdersByStatus('packing').length}</div>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-xs text-gray-600">{getOrdersByStatus('packing').reduce((sum, order) => sum + order.totalItems, 0)} items</span>
+                      {predictions && getOrdersByStatus('packing').length > 0 && (
+                        <span className="text-xs font-medium text-purple-600">
+                          ~{Math.floor(getOrdersByStatus('packing').length * predictions.packingTimePerOrder / 60)}h {Math.round((getOrdersByStatus('packing').length * predictions.packingTimePerOrder) % 60)}m
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Total */}
-                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <TrendingUp className="h-4 w-4 text-blue-600" />
+                  <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <TrendingUp className="h-3.5 w-3.5 text-blue-600" />
                       <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Total Active</span>
                     </div>
-                    <div className="text-3xl font-bold text-gray-900 mb-1">
+                    <div className="text-2xl font-bold text-gray-900">
                       {getOrdersByStatus('pending').length + getOrdersByStatus('picking').length + getOrdersByStatus('packing').length}
                     </div>
-                    <div className="text-sm text-gray-600 mb-2">
-                      {(
-                        getOrdersByStatus('pending').reduce((sum, order) => sum + order.totalItems, 0) +
-                        getOrdersByStatus('picking').reduce((sum, order) => sum + order.totalItems, 0) +
-                        getOrdersByStatus('packing').reduce((sum, order) => sum + order.totalItems, 0)
-                      )} items
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-xs text-gray-600">
+                        {(
+                          getOrdersByStatus('pending').reduce((sum, order) => sum + order.totalItems, 0) +
+                          getOrdersByStatus('picking').reduce((sum, order) => sum + order.totalItems, 0) +
+                          getOrdersByStatus('packing').reduce((sum, order) => sum + order.totalItems, 0)
+                        )} items
+                      </span>
+                      {predictions && (getOrdersByStatus('pending').length + getOrdersByStatus('packing').length) > 0 && (
+                        <span className="text-xs font-medium text-blue-600">
+                          ~{Math.floor((
+                            getOrdersByStatus('pending').length * predictions.pickingTimePerOrder +
+                            getOrdersByStatus('packing').length * predictions.packingTimePerOrder
+                          ) / 60)}h {Math.round((
+                            getOrdersByStatus('pending').length * predictions.pickingTimePerOrder +
+                            getOrdersByStatus('packing').length * predictions.packingTimePerOrder
+                          ) % 60)}m
+                        </span>
+                      )}
                     </div>
-                    {predictions && (getOrdersByStatus('pending').length + getOrdersByStatus('packing').length) > 0 && (
-                      <div className="text-xs font-medium text-blue-600">
-                        Est. ~{Math.floor((
-                          getOrdersByStatus('pending').length * predictions.pickingTimePerOrder +
-                          getOrdersByStatus('packing').length * predictions.packingTimePerOrder
-                        ) / 60)}h {Math.round((
-                          getOrdersByStatus('pending').length * predictions.pickingTimePerOrder +
-                          getOrdersByStatus('packing').length * predictions.packingTimePerOrder
-                        ) % 60)}m total
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
