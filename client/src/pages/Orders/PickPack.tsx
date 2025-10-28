@@ -1695,6 +1695,7 @@ export default function PickPack() {
       promises.push(
         apiRequest('PATCH', `/api/orders/${order.id}`, {
           orderStatus: 'to_fulfill',
+          fulfillmentStage: 'packing',
           packStatus: 'not_started',
           packStartTime: null,
           packEndTime: null,
@@ -1837,6 +1838,7 @@ export default function PickPack() {
       // Reset order status (non-blocking)
       promises.push(
         apiRequest('PATCH', `/api/orders/${order.id}`, {
+          fulfillmentStage: null,
           pickStatus: 'not_started',
           packStatus: 'not_started',
           pickStartTime: null,
