@@ -62,7 +62,8 @@ import {
   BarChart3,
   MessageCircle,
   Ticket,
-  Plus
+  Plus,
+  ChevronRight
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import { cn } from "@/lib/utils";
@@ -586,17 +587,19 @@ export default function OrderDetails() {
       {/* Clean Header */}
       <Card>
         <CardContent className="pt-6">
+          {/* Breadcrumb Navigation */}
+          <div className="mb-4">
+            <nav className="flex items-center text-sm text-slate-600">
+              <Link href="/orders">
+                <span className="hover:text-slate-900 cursor-pointer font-medium">Orders</span>
+              </Link>
+              <ChevronRight className="h-4 w-4 mx-2 text-slate-400" />
+              <span className="text-slate-900 font-semibold">Order Details</span>
+            </nav>
+          </div>
+
           <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-4 flex-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => window.history.back()}
-                className="mt-1"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div className="flex-1">
+            <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <h1 className="text-xl font-bold text-slate-900">#{order.orderId}</h1>
                   <Button
@@ -835,7 +838,6 @@ export default function OrderDetails() {
                   </div>
                 </div>
               </div>
-            </div>
 
             {/* Action Buttons */}
             <div className="flex items-center gap-2">
