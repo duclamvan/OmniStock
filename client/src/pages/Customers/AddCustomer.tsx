@@ -804,27 +804,69 @@ export default function AddCustomer() {
     });
   };
 
-  const handleSaveShippingAddress = (data: ShippingAddressFormData) => {
-    if (editingShippingIndex !== null) {
-      const updated = [...shippingAddresses];
-      updated[editingShippingIndex] = data;
-      setShippingAddresses(updated);
-      setEditingShippingIndex(null);
-    } else {
-      setShippingAddresses([...shippingAddresses, data]);
-    }
-    
-    // Auto-populate main country if empty and shipping address has a country
-    if (!form.getValues('country') && data.country) {
-      const countryCode = europeanCountries.find(c => c.name.toLowerCase() === data.country.toLowerCase())?.code;
-      if (countryCode) {
-        form.setValue('country', countryCode);
+  const handleSaveShippingAddress = async (data: ShippingAddressFormData) => {
+    if (isEditMode && customerId) {
+      // In edit mode, save directly to database
+      try {
+        const shippingData = {
+          customerId: customerId,
+          ...data,
+        };
+        
+        if (editingShippingIndex !== null && shippingAddresses[editingShippingIndex]?.id) {
+          // Update existing address
+          const addressId = shippingAddresses[editingShippingIndex].id;
+          await apiRequest('PATCH', `/api/shipping-addresses/${addressId}`, shippingData);
+          toast({
+            title: "Success",
+            description: "Shipping address updated successfully",
+          });
+        } else {
+          // Create new address
+          await apiRequest('POST', `/api/customers/${customerId}/shipping-addresses`, shippingData);
+          toast({
+            title: "Success",
+            description: "Shipping address added successfully",
+          });
+        }
+        
+        // Refresh the addresses from the server
+        queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'shipping-addresses'] });
+        
+        setIsAddingShipping(false);
+        setEditingShippingIndex(null);
+        setIsLabelManuallyEdited(false);
+        shippingForm.reset();
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to save shipping address",
+          variant: "destructive",
+        });
       }
+    } else {
+      // In add mode, just update local state
+      if (editingShippingIndex !== null) {
+        const updated = [...shippingAddresses];
+        updated[editingShippingIndex] = data;
+        setShippingAddresses(updated);
+        setEditingShippingIndex(null);
+      } else {
+        setShippingAddresses([...shippingAddresses, data]);
+      }
+      
+      // Auto-populate main country if empty and shipping address has a country
+      if (!form.getValues('country') && data.country) {
+        const countryCode = europeanCountries.find(c => c.name.toLowerCase() === data.country.toLowerCase())?.code;
+        if (countryCode) {
+          form.setValue('country', countryCode);
+        }
+      }
+      
+      setIsAddingShipping(false);
+      setIsLabelManuallyEdited(false); // Reset for next address
+      shippingForm.reset();
     }
-    
-    setIsAddingShipping(false);
-    setIsLabelManuallyEdited(false); // Reset for next address
-    shippingForm.reset();
   };
 
   const handleEditShippingAddress = (index: number) => {
@@ -885,19 +927,61 @@ export default function AddCustomer() {
     });
   };
 
-  const handleSaveBillingAddress = (data: BillingAddressFormData) => {
-    if (editingBillingIndex !== null) {
-      const updated = [...billingAddresses];
-      updated[editingBillingIndex] = data;
-      setBillingAddresses(updated);
-      setEditingBillingIndex(null);
+  const handleSaveBillingAddress = async (data: BillingAddressFormData) => {
+    if (isEditMode && customerId) {
+      // In edit mode, save directly to database
+      try {
+        const billingData = {
+          customerId: customerId,
+          ...data,
+        };
+        
+        if (editingBillingIndex !== null && billingAddresses[editingBillingIndex]?.id) {
+          // Update existing address
+          const addressId = billingAddresses[editingBillingIndex].id;
+          await apiRequest('PATCH', `/api/billing-addresses/${addressId}`, billingData);
+          toast({
+            title: "Success",
+            description: "Billing address updated successfully",
+          });
+        } else {
+          // Create new address
+          await apiRequest('POST', `/api/customers/${customerId}/billing-addresses`, billingData);
+          toast({
+            title: "Success",
+            description: "Billing address added successfully",
+          });
+        }
+        
+        // Refresh the addresses from the server
+        queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'billing-addresses'] });
+        
+        setIsAddingBilling(false);
+        setEditingBillingIndex(null);
+        setIsBillingLabelManuallyEdited(false);
+        billingAddressForm.reset();
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to save billing address",
+          variant: "destructive",
+        });
+      }
     } else {
-      setBillingAddresses([...billingAddresses, data]);
+      // In add mode, just update local state
+      if (editingBillingIndex !== null) {
+        const updated = [...billingAddresses];
+        updated[editingBillingIndex] = data;
+        setBillingAddresses(updated);
+        setEditingBillingIndex(null);
+      } else {
+        setBillingAddresses([...billingAddresses, data]);
+      }
+      
+      setIsAddingBilling(false);
+      setIsBillingLabelManuallyEdited(false);
+      billingAddressForm.reset();
     }
-    
-    setIsAddingBilling(false);
-    setIsBillingLabelManuallyEdited(false);
-    billingAddressForm.reset();
   };
 
   const handleEditBillingAddress = (index: number) => {
