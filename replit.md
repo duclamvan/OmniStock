@@ -2,6 +2,14 @@
 Davie Supply is a full-stack web application designed for comprehensive warehouse and order management. Its primary goal is to optimize supply chain operations, encompassing the entire order lifecycle, inventory tracking, customer relationship management, and multi-currency financial reporting. The project includes features like real-time Vietnamese diacritics search, customer-specific pricing, external shipping API integrations, and extensive settings management. Key ambitions include advanced warehouse mapping, a comprehensive Pick & Pack workflow, and future AI-powered optimization.
 
 # Recent Changes
+**October 28, 2025**: Unified Customer Form Architecture and Enhanced Shipping Address Management:
+- Confirmed AddCustomer.tsx handles both add and edit modes using a single unified component (isEditMode flag)
+- Edit mode properly prefills all customer data: name, country, currency, Facebook info, billing details, tax/VAT info
+- Automatically loads and displays existing shipping and billing addresses when editing
+- Enhanced duplicate customer detection with detailed info card showing profile pic, contact details, and quick navigation
+- Shipping address improvements: star toggle for primary addresses, copy button for formatted address text, and fixed delete functionality
+- EditCustomer.tsx is legacy/unused code - all customer CRUD operations use AddCustomer.tsx for consistency
+
 **October 28, 2025**: Fixed critical Edit Order page issues and simplified document management:
 - Resolved form submission bug where Update Order buttons were outside the form element, preventing submission
 - Fixed by adding `id="edit-order-form"` to the form and `form="edit-order-form"` attribute to all submit buttons  
@@ -25,6 +33,10 @@ Preferred communication style: Simple, everyday language.
 
 ## Frontend
 The frontend is a React and TypeScript application, built with Vite. It uses Shadcn/ui (Radix UI primitives), Tailwind CSS for styling, TanStack Query for state management, Wouter for routing, and React Hook Form with Zod for form validation. The UI/UX emphasizes mobile-first responsiveness, card-based layouts, sticky navigation, and clear visual separation. It features an interactive Pick & Pack interface and advanced warehouse mapping with a 2D floor plan. The architecture promotes unified form components for both creation and editing, reducing code duplication.
+
+**Key Architecture Patterns:**
+- **Unified Form Components**: AddCustomer.tsx handles both add and edit modes via isEditMode flag. When editing, it loads existing data via useQuery and prefills all form fields automatically. This pattern ensures consistency and reduces maintenance burden.
+- **Auto-fill in Edit Mode**: Edit pages automatically populate all available fields including customer info, Facebook details, billing addresses, tax/VAT info, and associated shipping/billing addresses.
 
 ## Backend
 The backend is an Express.js application written in TypeScript (ESM modules), providing RESTful API endpoints with consistent error handling.

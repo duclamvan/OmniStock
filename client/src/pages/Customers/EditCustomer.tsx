@@ -1,3 +1,18 @@
+/**
+ * LEGACY/UNUSED COMPONENT
+ * 
+ * This file is no longer used in the application. The AddCustomer.tsx component
+ * handles both creating new customers and editing existing customers through a
+ * unified interface (using isEditMode flag).
+ * 
+ * Route mapping in App.tsx:
+ * - /customers/add → AddCustomer.tsx (add mode)
+ * - /customers/:id/edit → AddCustomer.tsx (edit mode)
+ * 
+ * This file is kept for reference but should not be modified.
+ * All customer CRUD operations should be done through AddCustomer.tsx.
+ */
+
 import { useEffect, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
