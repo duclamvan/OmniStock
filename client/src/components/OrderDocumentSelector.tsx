@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueries } from '@tanstack/react-query';
 import {
   Card,
   CardContent,
@@ -27,10 +27,15 @@ import {
 interface ProductFile {
   id: string;
   productId: string;
+  fileName: string;
   fileType: string;
-  displayName: string;
-  language: string;
-  filePath: string;
+  fileUrl: string;
+  fileSize: number;
+  mimeType: string;
+  description: string | null;
+  language: string | null;
+  uploadedAt: string;
+  isActive: boolean;
 }
 
 interface OrderItem {
@@ -49,11 +54,11 @@ interface OrderDocumentSelectorProps {
 }
 
 const FILE_TYPE_ICONS: Record<string, typeof FileText> = {
+  sds: Shield,
+  cpnp: Award,
+  flyer: FileImage,
   certificate: Award,
-  msds: Shield,
-  instruction: Book,
-  image: FileImage,
-  technical: FileText,
+  manual: Book,
   other: File,
 };
 
@@ -96,11 +101,25 @@ export default function OrderDocumentSelector({
     [orderItems]
   );
 
-  // Fetch files for all products
-  const { data: allFiles = [], isLoading: filesLoading } = useQuery<ProductFile[]>({
-    queryKey: ['/api/files/products', productIds],
-    enabled: productIds.length > 0,
+  // Fetch files for all products in parallel
+  const fileQueries = useQueries({
+    queries: productIds.map(productId => ({
+      queryKey: ['/api/product-files', productId],
+      queryFn: async () => {
+        const response = await fetch(`/api/product-files?productId=${productId}`);
+        if (!response.ok) return [];
+        return response.json() as Promise<ProductFile[]>;
+      },
+      enabled: !!productId,
+    })),
   });
+
+  // Combine all files from all queries
+  const allFiles = useMemo(() => {
+    return fileQueries.flatMap(query => query.data || []);
+  }, [fileQueries]);
+
+  const filesLoading = fileQueries.some(query => query.isLoading);
 
   // Fetch customer document history
   const { data: customerHistory = [] } = useQuery<string[]>({
@@ -255,7 +274,7 @@ export default function OrderDocumentSelector({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {files.map(file => {
                     const Icon = FILE_TYPE_ICONS[file.fileType] || FileText;
-                    const flag = LANGUAGE_FLAGS[file.language] || '🌐';
+                    const flag = file.language ? (LANGUAGE_FLAGS[file.language] || '🌐') : '🌐';
                     const isSelected = selectedSet.has(file.id);
                     const wasSent = historySet.has(file.id);
 
@@ -279,7 +298,7 @@ export default function OrderDocumentSelector({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
                             <span className={`text-xs font-medium truncate ${isSelected ? 'text-teal-900 dark:text-teal-100' : 'text-slate-900 dark:text-slate-100'}`}>
-                              {file.displayName}
+                              {file.description || file.fileName}
                             </span>
                             {wasSent && (
                               <span title="Previously sent to this customer">
@@ -289,7 +308,7 @@ export default function OrderDocumentSelector({
                           </div>
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <span className="text-xs text-slate-500">
-                              {flag} {file.language?.toUpperCase() || ''}
+                              {file.language && `${flag} ${file.language.toUpperCase()}`}
                             </span>
                           </div>
                         </div>
