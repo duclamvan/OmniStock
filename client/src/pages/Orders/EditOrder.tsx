@@ -1167,11 +1167,6 @@ export default function EditOrder() {
       validationErrors.push("Please add at least one product to the order");
     }
 
-    // Check if shipping address is selected
-    if (!selectedShippingAddress) {
-      validationErrors.push("Please select a shipping address");
-    }
-
     // Check if any product has zero or negative quantity
     const invalidQuantities = orderItems.filter(item => item.quantity <= 0);
     if (invalidQuantities.length > 0) {
@@ -3806,7 +3801,6 @@ export default function EditOrder() {
                         const missingFields: string[] = [];
                         if (!selectedCustomer) missingFields.push("Customer");
                         if (orderItems.length === 0) missingFields.push("Products");
-                        if (!selectedShippingAddress) missingFields.push("Shipping Address");
                         
                         if (missingFields.length > 0) {
                           return (
@@ -3830,7 +3824,7 @@ export default function EditOrder() {
                         form="edit-order-form"
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white" 
                         size="lg" 
-                        disabled={updateOrderMutation.isPending || !selectedCustomer || orderItems.length === 0 || !selectedShippingAddress} 
+                        disabled={updateOrderMutation.isPending || !selectedCustomer || orderItems.length === 0} 
                         data-testid="button-update-order"
                       >
                         {updateOrderMutation.isPending ? (
@@ -3949,7 +3943,6 @@ export default function EditOrder() {
                 const missingFields: string[] = [];
                 if (!selectedCustomer) missingFields.push("Customer");
                 if (orderItems.length === 0) missingFields.push("Products");
-                if (!selectedShippingAddress) missingFields.push("Shipping Address");
                 
                 if (missingFields.length > 0) {
                   return (
@@ -3973,7 +3966,7 @@ export default function EditOrder() {
                 form="edit-order-form"
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white" 
                 size="lg" 
-                disabled={updateOrderMutation.isPending || !selectedCustomer || orderItems.length === 0 || !selectedShippingAddress} 
+                disabled={updateOrderMutation.isPending || !selectedCustomer || orderItems.length === 0} 
                 data-testid="button-update-order-mobile"
               >
                 {updateOrderMutation.isPending ? (
