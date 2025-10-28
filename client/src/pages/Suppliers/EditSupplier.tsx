@@ -87,7 +87,6 @@ const insertSupplierSchema = z.object({
   phone: z.string().optional(),
   address: z.string().optional(),
   city: z.string().optional(),
-  state: z.string().optional(),
   zipCode: z.string().optional(),
   country: z.string().optional(),
   notes: z.string().optional(),
@@ -175,7 +174,6 @@ export default function EditSupplier() {
       phone: "",
       address: "",
       city: "",
-      state: "",
       zipCode: "",
       country: "",
       website: "",
@@ -193,7 +191,6 @@ export default function EditSupplier() {
         phone: supplier.phone || "",
         address: supplier.address || "",
         city: supplier.city || "",
-        state: supplier.state || "",
         zipCode: supplier.zipCode || "",
         country: supplier.country || "",
         website: supplier.website || "",
@@ -493,7 +490,7 @@ export default function EditSupplier() {
                 )}
               />
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="city"
@@ -506,25 +503,6 @@ export default function EditSupplier() {
                           value={field.value || ""}
                           placeholder="Shanghai"
                           data-testid="input-city"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="state"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>State / Province</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          value={field.value || ""}
-                          placeholder="Guangdong"
-                          data-testid="input-state"
                         />
                       </FormControl>
                       <FormMessage />

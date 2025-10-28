@@ -73,7 +73,6 @@ const editCustomerSchema = z.object({
   // Shipping Address fields (legacy)
   address: z.string().optional().nullable(),
   city: z.string().optional().nullable(),
-  state: z.string().optional().nullable(),
   zipCode: z.string().optional().nullable(),
   
   // Customer type and notes
@@ -91,7 +90,6 @@ const editCustomerSchema = z.object({
   billingCity: z.string().optional().nullable(),
   billingZipCode: z.string().optional().nullable(),
   billingCountry: z.string().optional().nullable(),
-  billingState: z.string().optional().nullable(),
   
   // Tax/VAT information
   ico: z.string().optional().nullable(),
@@ -151,7 +149,6 @@ export default function EditCustomer() {
       phone: "",
       address: "",
       city: "",
-      state: "",
       zipCode: "",
       type: "regular",
       notes: "",
@@ -165,7 +162,6 @@ export default function EditCustomer() {
       billingCity: "",
       billingZipCode: "",
       billingCountry: "",
-      billingState: "",
       ico: "",
       dic: "",
       vatNumber: "",
@@ -192,7 +188,6 @@ export default function EditCustomer() {
         phone: customer.phone || "",
         address: customer.address || "",
         city: customer.city || "",
-        state: customer.state || "",
         zipCode: customer.zipCode || "",
         type: customer.type || "regular",
         notes: customer.notes || "",
@@ -206,7 +201,6 @@ export default function EditCustomer() {
         billingCity: customer.billingCity || "",
         billingZipCode: customer.billingZipCode || "",
         billingCountry: customer.billingCountry || "",
-        billingState: customer.billingState || "",
         ico: customer.ico || "",
         dic: customer.dic || "",
         vatNumber: customer.vatNumber || "",
@@ -970,25 +964,6 @@ export default function EditCustomer() {
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-billing-country"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="billingState"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>State</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="State" 
-                          {...field} 
-                          value={field.value || ""} 
-                          data-testid="input-billing-state"
                         />
                       </FormControl>
                       <FormMessage />
