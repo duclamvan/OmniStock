@@ -754,7 +754,7 @@ export default function EditOrder() {
 
   const deleteShippingAddressMutation = useMutation({
     mutationFn: async (addressId: string) => {
-      await apiRequest('DELETE', `/api/customers/${selectedCustomer.id}/shipping-addresses/${addressId}`);
+      await apiRequest('DELETE', `/api/shipping-addresses/${addressId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/customers', selectedCustomer?.id, 'shipping-addresses'] });
