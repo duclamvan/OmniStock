@@ -1259,59 +1259,57 @@ export default function OrderDetails() {
                     <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Shipping Address</h3>
                   </div>
                   
-                  <div className="space-y-1.5 text-sm">
-                    {/* First Name, Last Name */}
+                  <div className="space-y-1 text-sm">
+                    {/* Name */}
                     {(order.shippingAddress.firstName || order.shippingAddress.lastName) && (
-                      <p className="font-medium text-slate-900 dark:text-slate-100" data-testid="text-shipping-name">
+                      <div className="font-semibold text-slate-900 dark:text-slate-100" data-testid="text-shipping-name">
                         {[order.shippingAddress.firstName, order.shippingAddress.lastName].filter(Boolean).join(' ')}
-                      </p>
+                      </div>
                     )}
                     
                     {/* Company */}
                     {order.shippingAddress.company && (
-                      <p className="font-medium text-slate-900 dark:text-slate-100" data-testid="text-shipping-company">
+                      <div className="font-medium text-slate-800 dark:text-slate-200" data-testid="text-shipping-company">
                         {order.shippingAddress.company}
-                      </p>
+                      </div>
                     )}
                     
                     {/* Street Address */}
                     {order.shippingAddress.street && (
-                      <p className="text-slate-700 dark:text-slate-300" data-testid="text-shipping-street">
+                      <div className="text-slate-700 dark:text-slate-300" data-testid="text-shipping-street">
                         {order.shippingAddress.street}
                         {order.shippingAddress.streetNumber && ` ${order.shippingAddress.streetNumber}`}
-                      </p>
+                      </div>
                     )}
                     
-                    {/* City, ZIP */}
+                    {/* Postal Code and City */}
                     {order.shippingAddress.city && (
-                      <p className="text-slate-700 dark:text-slate-300" data-testid="text-shipping-city">
-                        {[
-                          order.shippingAddress.zipCode,
-                          order.shippingAddress.city
-                        ].filter(Boolean).join(' ')}
-                      </p>
+                      <div className="text-slate-700 dark:text-slate-300" data-testid="text-shipping-city">
+                        {[order.shippingAddress.zipCode, order.shippingAddress.city].filter(Boolean).join(' ')}
+                      </div>
                     )}
                     
-                    {/* Country with Flag */}
+                    {/* Country */}
                     {order.shippingAddress.country && (
-                      <p className="text-slate-700 dark:text-slate-300 flex items-center gap-1.5" data-testid="text-shipping-country">
-                        <span className="text-lg">{getCountryFlag(order.shippingAddress.country)}</span>
-                        <span>{order.shippingAddress.country}</span>
-                      </p>
+                      <div className="text-slate-700 dark:text-slate-300 font-medium" data-testid="text-shipping-country">
+                        {order.shippingAddress.country}
+                      </div>
                     )}
                     
-                    {/* Contact Info - Only if available */}
-                    {(order.shippingAddress.email || order.shippingAddress.tel) && (
-                      <div className="pt-2 mt-2 border-t border-slate-200 dark:border-slate-700 space-y-1">
-                        {order.shippingAddress.email && (
-                          <p className="text-xs text-slate-600 dark:text-slate-400" data-testid="text-shipping-email">
-                            {order.shippingAddress.email}
-                          </p>
-                        )}
+                    {/* Contact Info */}
+                    {(order.shippingAddress.tel || order.shippingAddress.email) && (
+                      <div className="pt-2 space-y-1 border-t border-slate-200 dark:border-slate-700 mt-2">
                         {order.shippingAddress.tel && (
-                          <p className="text-xs text-slate-600 dark:text-slate-400" data-testid="text-shipping-phone">
-                            {order.shippingAddress.tel}
-                          </p>
+                          <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400" data-testid="text-shipping-phone">
+                            <Phone className="h-3.5 w-3.5 text-slate-400" />
+                            <span className="text-xs">{order.shippingAddress.tel}</span>
+                          </div>
+                        )}
+                        {order.shippingAddress.email && (
+                          <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400" data-testid="text-shipping-email">
+                            <Mail className="h-3.5 w-3.5 text-slate-400" />
+                            <span className="text-xs">{order.shippingAddress.email}</span>
+                          </div>
                         )}
                       </div>
                     )}
