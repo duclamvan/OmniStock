@@ -1195,6 +1195,7 @@ export default function EditOrder() {
     const orderData = {
       ...data,
       // Don't override customerId - it's set in updateOrderMutation if a new customer is created
+      shippingAddressId: selectedShippingAddress?.id || null,
       subtotal: calculateSubtotal().toFixed(2),
       taxAmount: (showTaxInvoice ? calculateTax() : 0).toFixed(2),
       grandTotal: calculateGrandTotal().toFixed(2),

@@ -1210,8 +1210,8 @@ export default function OrderDetails() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Shipping Address - Only show if there's actual address data */}
-              {(order.customer?.billingStreet || order.customer?.address || order.customer?.billingCity || order.customer?.city) && (
+              {/* Shipping Address - Only show if shippingAddressId exists */}
+              {order.shippingAddressId ? (
                 <div className="border-2 border-blue-500 dark:border-blue-600 rounded-lg p-4" data-testid="section-shipping-address">
                   <div className="flex items-center gap-2 mb-3">
                     <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -1272,6 +1272,14 @@ export default function OrderDetails() {
                       </p>
                     )}
                   </div>
+                </div>
+              ) : (
+                <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-slate-50 dark:bg-slate-900/20" data-testid="section-no-shipping-address">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MapPin className="h-4 w-4 text-slate-400" />
+                    <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400">Shipping Address</h3>
+                  </div>
+                  <p className="text-sm text-slate-500 dark:text-slate-500">No shipping address selected for this order</p>
                 </div>
               )}
 
