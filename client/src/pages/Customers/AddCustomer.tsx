@@ -15,9 +15,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Plus, Trash2, Edit2, Check, X, Loader2, CheckCircle, XCircle, Globe, Building, MapPin, FileText, Truck, ChevronsUpDown, Pin, AlertCircle, Copy, Receipt } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Edit2, Check, X, Loader2, CheckCircle, XCircle, Globe, Building, MapPin, FileText, Truck, ChevronsUpDown, Pin, AlertCircle, Copy, Receipt, ChevronDown } from "lucide-react";
 import { europeanCountries, euCountryCodes, getCountryFlag } from "@/lib/countries";
 import type { Customer, CustomerShippingAddress, CustomerBillingAddress } from "@shared/schema";
 import { cn } from "@/lib/utils";
@@ -187,6 +188,41 @@ export default function AddCustomer() {
   const [shippingFieldConfidence, setShippingFieldConfidence] = useState<Record<string, string>>({});
   const [billingFieldConfidence, setBillingFieldConfidence] = useState<Record<string, string>>({});
   const [billingAddressFieldConfidence, setBillingAddressFieldConfidence] = useState<Record<string, string>>({});
+
+  // Collapsible sections state with localStorage persistence
+  const [customerDetailsOpen, setCustomerDetailsOpen] = useState<boolean>(() => {
+    const stored = localStorage.getItem('customerDetailsOpen');
+    return stored !== null ? JSON.parse(stored) : true;
+  });
+  const [shippingAddressesOpen, setShippingAddressesOpen] = useState<boolean>(() => {
+    const stored = localStorage.getItem('shippingAddressesOpen');
+    return stored !== null ? JSON.parse(stored) : true;
+  });
+  const [billingAddressesOpen, setBillingAddressesOpen] = useState<boolean>(() => {
+    const stored = localStorage.getItem('billingAddressesOpen');
+    return stored !== null ? JSON.parse(stored) : true;
+  });
+  const [taxInfoOpen, setTaxInfoOpen] = useState<boolean>(() => {
+    const stored = localStorage.getItem('taxInfoOpen');
+    return stored !== null ? JSON.parse(stored) : true;
+  });
+
+  // Save collapsible states to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('customerDetailsOpen', JSON.stringify(customerDetailsOpen));
+  }, [customerDetailsOpen]);
+
+  useEffect(() => {
+    localStorage.setItem('shippingAddressesOpen', JSON.stringify(shippingAddressesOpen));
+  }, [shippingAddressesOpen]);
+
+  useEffect(() => {
+    localStorage.setItem('billingAddressesOpen', JSON.stringify(billingAddressesOpen));
+  }, [billingAddressesOpen]);
+
+  useEffect(() => {
+    localStorage.setItem('taxInfoOpen', JSON.stringify(taxInfoOpen));
+  }, [taxInfoOpen]);
 
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerFormSchema),
@@ -1725,13 +1761,20 @@ export default function AddCustomer() {
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Globe className="h-5 w-5 text-blue-500" />
-              Location & Business Info
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+          <Collapsible open={customerDetailsOpen} onOpenChange={setCustomerDetailsOpen}>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-slate-50 transition-colors">
+                <div className="flex items-center justify-between w-full">
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="h-5 w-5 text-blue-500" />
+                    Location & Business Info
+                  </CardTitle>
+                  <ChevronDown className={cn("h-5 w-5 text-slate-500 transition-transform duration-200", customerDetailsOpen ? "rotate-0" : "-rotate-90")} />
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent>
             <div className="space-y-4">
                 <div>
                   <Label htmlFor="facebookUrl" className="text-base font-semibold">Facebook URL</Label>
@@ -2030,31 +2073,43 @@ export default function AddCustomer() {
                   )}
                 </div>
               </div>
-          </CardContent>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <Truck className="h-5 w-5 text-orange-500" />
-                Shipping Addresses
-              </span>
-              {!isAddingShipping && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAddShippingAddress}
-                  data-testid="button-addShipping"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Shipping Address
-                </Button>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          <Collapsible open={shippingAddressesOpen} onOpenChange={setShippingAddressesOpen}>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-slate-50 transition-colors">
+                <div className="flex items-center justify-between w-full">
+                  <CardTitle className="flex items-center gap-2">
+                    <Truck className="h-5 w-5 text-orange-500" />
+                    Shipping Addresses
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    {!isAddingShipping && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddShippingAddress();
+                        }}
+                        data-testid="button-addShipping"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Shipping Address
+                      </Button>
+                    )}
+                    <ChevronDown className={cn("h-5 w-5 text-slate-500 transition-transform duration-200", shippingAddressesOpen ? "rotate-0" : "-rotate-90")} />
+                  </div>
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-4">
             {shippingAddresses.map((addr, index) => (
               <div key={index} className="p-4 border rounded-lg bg-slate-50">
                 <div className="flex items-start justify-between mb-2">
@@ -2421,31 +2476,43 @@ export default function AddCustomer() {
             {shippingAddresses.length === 0 && !isAddingShipping && (
               <p className="text-center text-slate-500 py-8">No shipping addresses added yet</p>
             )}
-          </CardContent>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <Receipt className="h-5 w-5 text-blue-500" />
-                Billing Addresses
-              </span>
-              {!isAddingBilling && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAddBillingAddress}
-                  data-testid="button-addBilling"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Billing Address
-                </Button>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          <Collapsible open={billingAddressesOpen} onOpenChange={setBillingAddressesOpen}>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-slate-50 transition-colors">
+                <div className="flex items-center justify-between w-full">
+                  <CardTitle className="flex items-center gap-2">
+                    <Receipt className="h-5 w-5 text-blue-500" />
+                    Billing Addresses
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    {!isAddingBilling && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddBillingAddress();
+                        }}
+                        data-testid="button-addBilling"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Billing Address
+                      </Button>
+                    )}
+                    <ChevronDown className={cn("h-5 w-5 text-slate-500 transition-transform duration-200", billingAddressesOpen ? "rotate-0" : "-rotate-90")} />
+                  </div>
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-4">
             {billingAddresses.map((addr, index) => (
               <div key={index} className="p-4 border rounded-lg bg-slate-50">
                 <div className="flex items-start justify-between mb-2">
@@ -2861,18 +2928,27 @@ export default function AddCustomer() {
             {billingAddresses.length === 0 && !isAddingBilling && (
               <p className="text-center text-slate-500 py-8">No billing addresses added yet</p>
             )}
-          </CardContent>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
         </Card>
 
         {(isCzech || isEU) && (
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-purple-500" />
-                Tax & Business Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            <Collapsible open={taxInfoOpen} onOpenChange={setTaxInfoOpen}>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-slate-50 transition-colors">
+                  <div className="flex items-center justify-between w-full">
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-purple-500" />
+                      Tax & Business Information
+                    </CardTitle>
+                    <ChevronDown className={cn("h-5 w-5 text-slate-500 transition-transform duration-200", taxInfoOpen ? "rotate-0" : "-rotate-90")} />
+                  </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-4">
               {isCzech && (
                 <div className="space-y-4 pb-4 border-b">
                   <h4 className="font-semibold text-sm flex items-center gap-2">
@@ -2965,7 +3041,9 @@ export default function AddCustomer() {
                   </div>
                 </div>
               )}
-            </CardContent>
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
           </Card>
         )}
 
