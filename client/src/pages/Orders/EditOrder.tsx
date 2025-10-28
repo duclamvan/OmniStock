@@ -785,13 +785,33 @@ export default function EditOrder() {
       queryClient.invalidateQueries({ queryKey: ['/api/customers', selectedCustomer?.id, 'shipping-addresses'] });
       toast({
         title: "Success",
-        description: "Primary address updated",
+        description: "Primary address set",
       });
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to update primary address",
+        description: "Failed to set primary address",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const removePrimaryShippingAddressMutation = useMutation({
+    mutationFn: async (addressId: string) => {
+      await apiRequest('DELETE', `/api/customers/${selectedCustomer.id}/shipping-addresses/${addressId}/remove-primary`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customers', selectedCustomer?.id, 'shipping-addresses'] });
+      toast({
+        title: "Success",
+        description: "Primary address removed",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to remove primary address",
         variant: "destructive",
       });
     },
@@ -2137,12 +2157,45 @@ export default function EditOrder() {
                                 className={`h-8 w-8 ${address.isPrimary ? 'text-amber-500 hover:text-amber-600 hover:bg-amber-50' : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'}`}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setPrimaryShippingAddressMutation.mutate(address.id);
+                                  if (address.isPrimary) {
+                                    removePrimaryShippingAddressMutation.mutate(address.id);
+                                  } else {
+                                    setPrimaryShippingAddressMutation.mutate(address.id);
+                                  }
                                 }}
                                 data-testid={`button-star-address-${address.id}`}
-                                title={address.isPrimary ? "Primary address" : "Set as primary"}
+                                title={address.isPrimary ? "Remove from primary" : "Set as primary"}
                               >
                                 <Star className={`h-3.5 w-3.5 ${address.isPrimary ? 'fill-amber-500' : ''}`} />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const addressText = [
+                                    `${address.firstName} ${address.lastName}`,
+                                    address.company,
+                                    `${address.street}${address.streetNumber ? ` ${address.streetNumber}` : ''}`,
+                                    `${address.zipCode} ${address.city}`,
+                                    address.state,
+                                    address.country,
+                                    address.tel ? `Tel: ${address.tel}` : '',
+                                    address.email ? `Email: ${address.email}` : ''
+                                  ].filter(Boolean).join('\n');
+                                  
+                                  navigator.clipboard.writeText(addressText);
+                                  toast({
+                                    title: "Copied!",
+                                    description: "Address copied to clipboard",
+                                  });
+                                }}
+                                data-testid={`button-copy-address-${address.id}`}
+                                title="Copy address"
+                              >
+                                <Copy className="h-3.5 w-3.5" />
                               </Button>
                               <Button
                                 type="button"

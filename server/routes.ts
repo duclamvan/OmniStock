@@ -3778,6 +3778,28 @@ Important:
     }
   });
 
+  app.delete('/api/customers/:customerId/shipping-addresses/:addressId/remove-primary', async (req: any, res) => {
+    try {
+      const { customerId, addressId } = req.params;
+      
+      // Set this specific address to non-primary
+      await storage.updateCustomerShippingAddress(addressId, { isPrimary: false });
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated',
+        entityType: 'shipping_address',
+        entityId: addressId,
+        description: `Removed primary status from shipping address for customer ${customerId}`,
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error removing primary shipping address:", error);
+      res.status(500).json({ message: "Failed to remove primary shipping address" });
+    }
+  });
+
   // Customer Billing Addresses endpoints
   app.get('/api/customers/:customerId/billing-addresses', async (req, res) => {
     try {
