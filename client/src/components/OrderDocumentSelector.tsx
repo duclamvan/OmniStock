@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from 'react';
-import { useQuery, useQueries } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   Card,
   CardContent,
@@ -90,8 +90,9 @@ export default function OrderDocumentSelector({
   customerId,
 }: OrderDocumentSelectorProps) {
   // Memoize unique product IDs to prevent query refetches
+  // Sort to ensure stable array order for queryKey comparison
   const productIds = useMemo(
-    () => Array.from(new Set(orderItems.map(item => item.productId))),
+    () => Array.from(new Set(orderItems.map(item => item.productId))).sort(),
     [orderItems]
   );
 
@@ -101,25 +102,18 @@ export default function OrderDocumentSelector({
     [orderItems]
   );
 
-  // Fetch files for all products in parallel
-  const fileQueries = useQueries({
-    queries: productIds.map(productId => ({
-      queryKey: ['/api/product-files', productId],
-      queryFn: async () => {
-        const response = await fetch(`/api/product-files?productId=${productId}`);
-        if (!response.ok) return [];
-        return response.json() as Promise<ProductFile[]>;
-      },
-      enabled: !!productId,
-    })),
+  // Fetch all files in a single query instead of multiple parallel queries
+  // This prevents infinite loop issues with useQueries creating new array refs
+  const { data: allFilesRaw = [], isLoading: filesLoading } = useQuery<ProductFile[]>({
+    queryKey: ['/api/product-files'],
+    enabled: productIds.length > 0,
   });
 
-  // Combine all files from all queries
+  // Filter files to only include products in this order
   const allFiles = useMemo(() => {
-    return fileQueries.flatMap(query => query.data || []);
-  }, [fileQueries]);
-
-  const filesLoading = fileQueries.some(query => query.isLoading);
+    const productIdSet = new Set(productIds);
+    return allFilesRaw.filter(file => productIdSet.has(file.productId));
+  }, [allFilesRaw, productIds]);
 
   // Fetch customer document history
   const { data: customerHistory = [] } = useQuery<string[]>({
@@ -289,11 +283,13 @@ export default function OrderDocumentSelector({
                         onClick={() => handleToggle(file.id)}
                         data-testid={`document-row-${file.id}`}
                       >
-                        <Checkbox
-                          checked={isSelected}
-                          data-testid={`checkbox-document-${file.id}`}
-                          onClick={(e) => e.stopPropagation()}
-                        />
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => handleToggle(file.id)}
+                            data-testid={`checkbox-document-${file.id}`}
+                          />
+                        </div>
                         <Icon className={`h-3.5 w-3.5 shrink-0 ${isSelected ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400'}`} />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
