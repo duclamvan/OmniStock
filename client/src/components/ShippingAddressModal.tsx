@@ -197,9 +197,13 @@ export function ShippingAddressModal({
 
   const parseAddressMutation = useMutation({
     mutationFn: async (rawText: string) => {
-      return apiRequest('POST', '/api/addresses/parse', { rawAddress: rawText });
+      const response = await apiRequest('POST', '/api/addresses/parse', { rawAddress: rawText });
+      const jsonData = await response.json();
+      console.log('Parse response:', jsonData);
+      return jsonData;
     },
     onSuccess: (data: any) => {
+      console.log('onSuccess called with data:', data);
       if (data?.fields) {
         // Map overall confidence level to field-level confidence values
         const confidenceValue = data.confidence === 'high' ? 0.9 : data.confidence === 'medium' ? 0.6 : 0.3;
@@ -215,10 +219,14 @@ export function ShippingAddressModal({
           if (value && key !== 'label' && key !== 'id' && value !== null && value !== '') {
             // Map the field name if needed
             const formFieldName = fieldMapping[key] || key;
-            form.setValue(formFieldName as any, value as any, { shouldValidate: true });
+            console.log(`Setting field ${formFieldName} to:`, value);
+            form.setValue(formFieldName as any, value as any, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
             newFieldConfidence[formFieldName] = confidenceValue;
           }
         });
+        
+        // Force form to re-render
+        form.trigger();
         
         setFieldConfidence(newFieldConfidence);
         setRawAddress('');
