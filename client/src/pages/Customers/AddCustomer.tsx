@@ -55,7 +55,7 @@ const customerFormSchema = z.object({
 });
 
 const shippingAddressSchema = z.object({
-  id: z.number().optional(),
+  id: z.string().optional(),
   label: z.string().optional(),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
