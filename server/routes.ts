@@ -3692,6 +3692,17 @@ Important:
   app.post('/api/customers/:customerId/shipping-addresses', async (req: any, res) => {
     try {
       const { customerId } = req.params;
+      
+      // Validate required fields
+      const requiredFields = ['firstName', 'lastName', 'street', 'city', 'zipCode', 'country'];
+      const missingFields = requiredFields.filter(field => !req.body[field]);
+      
+      if (missingFields.length > 0) {
+        return res.status(400).json({ 
+          message: `Missing required fields: ${missingFields.join(', ')}` 
+        });
+      }
+      
       const address = await storage.createCustomerShippingAddress({
         customerId,
         ...req.body
@@ -3706,15 +3717,30 @@ Important:
       });
       
       res.status(201).json(address);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating shipping address:", error);
-      res.status(500).json({ message: "Failed to create shipping address" });
+      const errorMessage = error?.message || "Failed to create shipping address";
+      res.status(500).json({ message: errorMessage });
     }
   });
 
   app.patch('/api/shipping-addresses/:id', async (req: any, res) => {
     try {
       const { id } = req.params;
+      
+      // Validate required fields if they are being updated
+      const requiredFields = ['firstName', 'lastName', 'street', 'city', 'zipCode', 'country'];
+      const fieldsToUpdate = Object.keys(req.body);
+      const invalidFields = requiredFields.filter(field => 
+        fieldsToUpdate.includes(field) && !req.body[field]
+      );
+      
+      if (invalidFields.length > 0) {
+        return res.status(400).json({ 
+          message: `Cannot set required fields to empty: ${invalidFields.join(', ')}` 
+        });
+      }
+      
       const address = await storage.updateCustomerShippingAddress(id, req.body);
       if (!address) {
         return res.status(404).json({ message: 'Address not found' });
@@ -3729,9 +3755,10 @@ Important:
       });
       
       res.json(address);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating shipping address:", error);
-      res.status(500).json({ message: "Failed to update shipping address" });
+      const errorMessage = error?.message || "Failed to update shipping address";
+      res.status(500).json({ message: errorMessage });
     }
   });
 

@@ -38,11 +38,11 @@ const shippingAddressSchema = z.object({
   company: z.string().optional(),
   email: z.string().email().optional().or(z.literal("")),
   tel: z.string().optional(),
-  street: z.string().optional(),
+  street: z.string().min(1, "Street is required"),
   streetNumber: z.string().optional(),
-  city: z.string().optional(),
-  zipCode: z.string().optional(),
-  country: z.string().optional(),
+  city: z.string().min(1, "City is required"),
+  zipCode: z.string().min(1, "Zip code is required"),
+  country: z.string().min(1, "Country is required"),
   isPrimary: z.boolean().optional(),
 });
 
