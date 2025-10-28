@@ -199,7 +199,6 @@ export default function EditOrder() {
   const [quickCustomerSocialApp, setQuickCustomerSocialApp] = useState<'viber' | 'whatsapp' | 'zalo' | 'email'>('whatsapp');
 
   // Packing optimization state
-  const [orderId, setOrderId] = useState<string | null>(null);
   const [packingPlan, setPackingPlan] = useState<any>(null);
 
   // File inclusion state
@@ -3772,40 +3771,16 @@ export default function EditOrder() {
                     </div>
 
                     <div className="pt-3 space-y-2">
-                      {orderId ? (
-                        <>
-                          <Button 
-                            type="button" 
-                            className="w-full" 
-                            size="lg" 
-                            onClick={() => setLocation(`/orders/${orderId}`)}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            View Order
-                          </Button>
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            className="w-full" 
-                            onClick={() => setLocation('/orders')}
-                          >
-                            Back to Orders
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Button ref={submitButtonRef} type="submit" className="w-full" size="lg" disabled={updateOrderMutation.isPending || orderItems.length === 0} data-testid="button-update-order">
-                            <Save className="h-4 w-4 mr-2" />
-                            {updateOrderMutation.isPending ? 'Updating...' : 'Update Order'}
-                          </Button>
-                          <Button type="button" variant="outline" className="w-full" onClick={() => {
-                            submitButtonRef.current?.click();
-                          }} disabled={updateOrderMutation.isPending || orderItems.length === 0} data-testid="button-save-draft">
-                            <Save className="h-4 w-4 mr-2" />
-                            Save Draft
-                          </Button>
-                        </>
-                      )}
+                      <Button ref={submitButtonRef} type="submit" className="w-full" size="lg" disabled={updateOrderMutation.isPending || orderItems.length === 0} data-testid="button-update-order">
+                        <Save className="h-4 w-4 mr-2" />
+                        {updateOrderMutation.isPending ? 'Updating...' : 'Update Order'}
+                      </Button>
+                      <Button type="button" variant="outline" className="w-full" onClick={() => {
+                        submitButtonRef.current?.click();
+                      }} disabled={updateOrderMutation.isPending || orderItems.length === 0} data-testid="button-save-draft">
+                        <Save className="h-4 w-4 mr-2" />
+                        Save Draft
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -3887,40 +3862,16 @@ export default function EditOrder() {
               </div>
 
               <div className="pt-3 space-y-2">
-                {orderId ? (
-                  <>
-                    <Button 
-                      type="button" 
-                      className="w-full" 
-                      size="lg" 
-                      onClick={() => setLocation(`/orders/${orderId}`)}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      View Order
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      className="w-full" 
-                      onClick={() => setLocation('/orders')}
-                    >
-                      Back to Orders
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button type="submit" className="w-full" size="lg" disabled={updateOrderMutation.isPending || orderItems.length === 0} data-testid="button-update-order-mobile">
-                      <Save className="h-4 w-4 mr-2" />
-                      {updateOrderMutation.isPending ? 'Updating...' : 'Update Order'}
-                    </Button>
-                    <Button type="button" variant="outline" className="w-full" onClick={() => {
-                      submitButtonRef.current?.click();
-                    }} disabled={updateOrderMutation.isPending || orderItems.length === 0} data-testid="button-save-draft-mobile">
-                      <Save className="h-4 w-4 mr-2" />
-                      Save Draft
-                    </Button>
-                  </>
-                )}
+                <Button type="submit" className="w-full" size="lg" disabled={updateOrderMutation.isPending || orderItems.length === 0} data-testid="button-update-order-mobile">
+                  <Save className="h-4 w-4 mr-2" />
+                  {updateOrderMutation.isPending ? 'Updating...' : 'Update Order'}
+                </Button>
+                <Button type="button" variant="outline" className="w-full" onClick={() => {
+                  submitButtonRef.current?.click();
+                }} disabled={updateOrderMutation.isPending || orderItems.length === 0} data-testid="button-save-draft-mobile">
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Draft
+                </Button>
               </div>
             </CardContent>
           </Card>
