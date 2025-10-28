@@ -397,6 +397,15 @@ export default function PickPack() {
   
   // Track orders being returned to packing (for instant UI update)
   const [ordersReturnedToPacking, setOrdersReturnedToPacking] = useState<Set<string>>(new Set());
+  
+  // Track animated counters for bouncy animation
+  const [animatingCounters, setAnimatingCounters] = useState<Set<string>>(new Set());
+  const previousCountsRef = useRef<{
+    pending: number;
+    picking: number;
+    packing: number;
+    ready: number;
+  }>({ pending: 0, picking: 0, packing: 0, ready: 0 });
 
   // Toggle section collapse state
   const toggleSectionCollapse = (sectionName: string) => {
@@ -2848,6 +2857,41 @@ export default function PickPack() {
     ).length,
     avgPickTime: '15:30' // Mock average
   };
+  
+  // Trigger bouncy animation when counts change
+  useEffect(() => {
+    const countersToAnimate = new Set<string>();
+    
+    if (stats.pending !== previousCountsRef.current.pending) {
+      countersToAnimate.add('pending');
+    }
+    if (stats.picking !== previousCountsRef.current.picking) {
+      countersToAnimate.add('picking');
+    }
+    if (stats.packing !== previousCountsRef.current.packing) {
+      countersToAnimate.add('packing');
+    }
+    if (stats.ready !== previousCountsRef.current.ready) {
+      countersToAnimate.add('ready');
+    }
+    
+    if (countersToAnimate.size > 0) {
+      setAnimatingCounters(countersToAnimate);
+      
+      // Remove animation class after animation completes
+      setTimeout(() => {
+        setAnimatingCounters(new Set());
+      }, 600);
+    }
+    
+    // Update previous counts
+    previousCountsRef.current = {
+      pending: stats.pending,
+      picking: stats.picking,
+      packing: stats.packing,
+      ready: stats.ready
+    };
+  }, [stats.pending, stats.picking, stats.packing, stats.ready]);
 
   // Skeleton loader component for order cards
   const OrderCardSkeleton = () => (
@@ -5177,19 +5221,19 @@ export default function PickPack() {
               </TabsTrigger>
               <TabsTrigger value="pending" className="flex flex-col items-center justify-center gap-1 py-3 px-2 text-xs sm:text-sm font-semibold bg-white data-[state=active]:bg-gradient-to-b data-[state=active]:from-orange-50 data-[state=active]:to-orange-100 data-[state=active]:text-orange-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-orange-500 rounded-md transition-all min-h-[60px]">
                 <Clock className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                <span className="text-center">Pending ({stats.pending})</span>
+                <span className="text-center">Pending (<span className={animatingCounters.has('pending') ? 'animate-bounce-count' : ''}>{stats.pending}</span>)</span>
               </TabsTrigger>
               <TabsTrigger value="picking" className="flex flex-col items-center justify-center gap-1 py-3 px-2 text-xs sm:text-sm font-semibold bg-white data-[state=active]:bg-gradient-to-b data-[state=active]:from-yellow-50 data-[state=active]:to-yellow-100 data-[state=active]:text-yellow-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-yellow-500 rounded-md transition-all min-h-[60px]">
                 <Package className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                <span className="text-center">Picking ({stats.picking})</span>
+                <span className="text-center">Picking (<span className={animatingCounters.has('picking') ? 'animate-bounce-count' : ''}>{stats.picking}</span>)</span>
               </TabsTrigger>
               <TabsTrigger value="packing" className="flex flex-col items-center justify-center gap-1 py-3 px-2 text-xs sm:text-sm font-semibold bg-white data-[state=active]:bg-gradient-to-b data-[state=active]:from-purple-50 data-[state=active]:to-purple-100 data-[state=active]:text-purple-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-purple-500 rounded-md transition-all min-h-[60px]">
                 <Box className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                <span className="text-center">Packing ({stats.packing})</span>
+                <span className="text-center">Packing (<span className={animatingCounters.has('packing') ? 'animate-bounce-count' : ''}>{stats.packing}</span>)</span>
               </TabsTrigger>
               <TabsTrigger value="ready" className="flex flex-col items-center justify-center gap-1 py-3 px-2 text-xs sm:text-sm font-semibold bg-white data-[state=active]:bg-gradient-to-b data-[state=active]:from-green-50 data-[state=active]:to-green-100 data-[state=active]:text-green-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-green-500 rounded-md transition-all min-h-[60px]">
                 <Truck className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                <span className="text-center">Ready ({stats.ready})</span>
+                <span className="text-center">Ready (<span className={animatingCounters.has('ready') ? 'animate-bounce-count' : ''}>{stats.ready}</span>)</span>
               </TabsTrigger>
             </TabsList>
           </div>
