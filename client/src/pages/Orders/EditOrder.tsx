@@ -894,11 +894,8 @@ export default function EditOrder() {
 
       console.log('Updating order with customerId:', data.customerId);
 
-      // Include selected document IDs with the order
-      const orderData = {
-        ...data,
-        selectedDocumentIds: selectedDocumentIds.length > 0 ? selectedDocumentIds : undefined
-      };
+      // Order data already includes selectedDocumentIds from onSubmit
+      const orderData = data;
 
       const response = await apiRequest('PATCH', `/api/orders/${id}`, orderData);
       const updatedOrder = await response.json();
@@ -1135,13 +1132,7 @@ export default function EditOrder() {
   };
 
   const onSubmit = (data: z.infer<typeof editOrderSchema>) => {
-    console.log('=== EDIT ORDER FORM SUBMIT ===');
-    console.log('Form data:', data);
-    console.log('Order items count:', orderItems.length);
-    console.log('Form validation errors:', form.formState.errors);
-    
     if (orderItems.length === 0) {
-      console.error('BLOCKED: No order items');
       toast({
         title: "Error",
         description: "Please add at least one item to the order",
@@ -1178,9 +1169,9 @@ export default function EditOrder() {
         custom: includeCustom,
         uploadedFiles: uploadedFiles.map(f => ({ name: f.name, size: f.size })),
       },
+      selectedDocumentIds: selectedDocumentIds.length > 0 ? selectedDocumentIds : undefined
     };
 
-    console.log('Calling updateOrderMutation with orderData:', orderData);
     updateOrderMutation.mutate(orderData);
   };
 
@@ -1387,7 +1378,7 @@ export default function EditOrder() {
           </div>
         </div>
 
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form id="edit-order-form" onSubmit={form.handleSubmit(onSubmit)}>
           <div className="space-y-4 sm:space-y-6">
             {/* Order Location - Mobile Only (at top) */}
             <Card className="lg:hidden shadow-sm">
@@ -3798,13 +3789,25 @@ export default function EditOrder() {
                     </div>
 
                     <div className="pt-3 space-y-2">
-                      <Button ref={submitButtonRef} type="submit" className="w-full" size="lg" disabled={updateOrderMutation.isPending || orderItems.length === 0} data-testid="button-update-order">
+                      <Button 
+                        type="submit" 
+                        form="edit-order-form"
+                        className="w-full" 
+                        size="lg" 
+                        disabled={updateOrderMutation.isPending || orderItems.length === 0} 
+                        data-testid="button-update-order"
+                      >
                         <Save className="h-4 w-4 mr-2" />
                         {updateOrderMutation.isPending ? 'Updating...' : 'Update Order'}
                       </Button>
-                      <Button type="button" variant="outline" className="w-full" onClick={() => {
-                        submitButtonRef.current?.click();
-                      }} disabled={updateOrderMutation.isPending || orderItems.length === 0} data-testid="button-save-draft">
+                      <Button 
+                        type="submit" 
+                        form="edit-order-form"
+                        variant="outline" 
+                        className="w-full" 
+                        disabled={updateOrderMutation.isPending || orderItems.length === 0} 
+                        data-testid="button-save-draft"
+                      >
                         <Save className="h-4 w-4 mr-2" />
                         Save Draft
                       </Button>
@@ -3889,13 +3892,25 @@ export default function EditOrder() {
               </div>
 
               <div className="pt-3 space-y-2">
-                <Button type="submit" className="w-full" size="lg" disabled={updateOrderMutation.isPending || orderItems.length === 0} data-testid="button-update-order-mobile">
+                <Button 
+                  type="submit" 
+                  form="edit-order-form"
+                  className="w-full" 
+                  size="lg" 
+                  disabled={updateOrderMutation.isPending || orderItems.length === 0} 
+                  data-testid="button-update-order-mobile"
+                >
                   <Save className="h-4 w-4 mr-2" />
                   {updateOrderMutation.isPending ? 'Updating...' : 'Update Order'}
                 </Button>
-                <Button type="button" variant="outline" className="w-full" onClick={() => {
-                  submitButtonRef.current?.click();
-                }} disabled={updateOrderMutation.isPending || orderItems.length === 0} data-testid="button-save-draft-mobile">
+                <Button 
+                  type="submit" 
+                  form="edit-order-form"
+                  variant="outline" 
+                  className="w-full" 
+                  disabled={updateOrderMutation.isPending || orderItems.length === 0} 
+                  data-testid="button-save-draft-mobile"
+                >
                   <Save className="h-4 w-4 mr-2" />
                   Save Draft
                 </Button>

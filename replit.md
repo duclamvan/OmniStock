@@ -2,6 +2,12 @@
 Davie Supply is a full-stack web application designed for comprehensive warehouse and order management. Its primary goal is to optimize supply chain operations, encompassing the entire order lifecycle, inventory tracking, customer relationship management, and multi-currency financial reporting. The project includes features like real-time Vietnamese diacritics search, customer-specific pricing, external shipping API integrations, and extensive settings management. Key ambitions include advanced warehouse mapping, a comprehensive Pick & Pack workflow, and future AI-powered optimization.
 
 # Recent Changes
+**October 28, 2025**: Fixed critical Edit Order page issues:
+- Resolved form submission bug where Update Order buttons were outside the form element, preventing submission
+- Fixed by adding `id="edit-order-form"` to the form and `form="edit-order-form"` attribute to all submit buttons  
+- Added automatic pre-filling of document selections and invoice/custom print checkboxes when editing orders
+- Synchronized Edit Order page with Add Order page for consistent data handling
+
 **October 27, 2025**: Implemented Option 1 architecture with separate fulfillment sub-status tracking and performance analytics:
 - Added separate `fulfillmentStage` field (null → 'picking' → 'packing' → 'ready') to track pick/pack progress while keeping main `orderStatus` for system compatibility
 - Main `orderStatus` remains 'to_fulfill' during pick/pack workflow, advances to 'ready_to_ship' only when fully packed
