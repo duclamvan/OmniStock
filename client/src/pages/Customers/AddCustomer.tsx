@@ -1514,25 +1514,83 @@ export default function AddCustomer() {
                   </div>
                   
                   {duplicateCustomer && !isEditMode && (
-                    <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-md" data-testid="alert-duplicate-customer">
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <div className="mt-3 p-4 bg-amber-50 border-2 border-amber-300 rounded-lg shadow-sm" data-testid="alert-duplicate-customer">
+                      <div className="flex items-start gap-3 mb-3">
+                        <AlertCircle className="h-6 w-6 text-amber-600 flex-shrink-0 mt-0.5" />
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-amber-900">Customer Already Exists</p>
-                          <p className="text-sm text-amber-700 mt-1">
-                            A customer with Facebook ID "{extractedFacebookId}" already exists: <strong>{duplicateCustomer.name}</strong>
+                          <p className="text-base font-bold text-amber-900">Customer Already Exists</p>
+                          <p className="text-sm text-amber-700 mt-0.5">
+                            A customer with Facebook ID "{extractedFacebookId}" already exists in the database
                           </p>
-                          <Button
-                            type="button"
-                            variant="link"
-                            className="h-auto p-0 text-amber-700 hover:text-amber-900 font-semibold mt-2"
-                            onClick={() => navigate(`/customers/${duplicateCustomer.id}/edit`)}
-                            data-testid="button-go-to-existing-customer"
-                          >
-                            Go to {duplicateCustomer.name}'s profile →
-                          </Button>
                         </div>
                       </div>
+                      
+                      {/* Customer Info Card */}
+                      <div className="bg-white border border-amber-200 rounded-md p-4 mt-3">
+                        <div className="flex items-start gap-3">
+                          {duplicateCustomer.profilePictureUrl && (
+                            <img 
+                              src={duplicateCustomer.profilePictureUrl} 
+                              alt={duplicateCustomer.name}
+                              className="w-16 h-16 rounded-full object-cover border-2 border-slate-200"
+                              data-testid="img-duplicate-customer-avatar"
+                            />
+                          )}
+                          <div className="flex-1 space-y-2">
+                            <div>
+                              <p className="text-lg font-bold text-slate-900" data-testid="text-duplicate-customer-name">
+                                {duplicateCustomer.name}
+                              </p>
+                              {duplicateCustomer.facebookName && (
+                                <p className="text-sm text-slate-600">
+                                  Facebook: {duplicateCustomer.facebookName}
+                                </p>
+                              )}
+                            </div>
+                            
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                              {duplicateCustomer.billingEmail && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-slate-500">Email:</span>
+                                  <span className="font-medium text-slate-900">{duplicateCustomer.billingEmail}</span>
+                                </div>
+                              )}
+                              {duplicateCustomer.billingTel && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-slate-500">Phone:</span>
+                                  <span className="font-medium text-slate-900">{duplicateCustomer.billingTel}</span>
+                                </div>
+                              )}
+                              {duplicateCustomer.country && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-slate-500">Country:</span>
+                                  <span className="font-medium text-slate-900">
+                                    {getCountryFlag(duplicateCustomer.country)} {europeanCountries.find(c => c.code === duplicateCustomer.country)?.name || duplicateCustomer.country}
+                                  </span>
+                                </div>
+                              )}
+                              {duplicateCustomer.preferredCurrency && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-slate-500">Currency:</span>
+                                  <Badge variant="outline" className="font-medium">
+                                    {duplicateCustomer.preferredCurrency}
+                                  </Badge>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <Button
+                        type="button"
+                        variant="default"
+                        className="w-full mt-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold"
+                        onClick={() => navigate(`/customers/${duplicateCustomer.id}/edit`)}
+                        data-testid="button-go-to-existing-customer"
+                      >
+                        Go to {duplicateCustomer.name}'s Profile →
+                      </Button>
                     </div>
                   )}
                 </div>
