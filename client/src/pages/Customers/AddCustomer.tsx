@@ -686,7 +686,6 @@ export default function AddCustomer() {
     shippingForm.setValue('city', suggestion.city);
     shippingForm.setValue('zipCode', suggestion.zipCode);
     shippingForm.setValue('country', suggestion.country);
-    shippingForm.setValue('state', suggestion.state);
     setShippingAddressQuery(suggestion.displayName);
     setShowShippingDropdown(false);
   };
@@ -715,7 +714,6 @@ export default function AddCustomer() {
     billingAddressForm.setValue('city', suggestion.city);
     billingAddressForm.setValue('zipCode', suggestion.zipCode);
     billingAddressForm.setValue('country', suggestion.country);
-    billingAddressForm.setValue('state', suggestion.state);
     setBillingAddressQueryAutocomplete(suggestion.displayName);
     setShowBillingAutocompleteDropdown(false);
   };
@@ -869,7 +867,7 @@ export default function AddCustomer() {
         vatNumber,
         countryCode,
       });
-      const data: VatValidationResult = response as VatValidationResult;
+      const data: VatValidationResult = await response.json();
       setVatValidationResult(data);
       form.setValue('vatValid', data.valid);
       if (data.companyName) {
@@ -1310,10 +1308,6 @@ export default function AddCustomer() {
           }
         }
       }
-      if (fields.state) {
-        shippingForm.setValue('state', capitalizeWords(fields.state));
-        filledFields.state = data.confidence;
-      }
       
       // Update confidence tracking
       setShippingFieldConfidence(filledFields);
@@ -1576,10 +1570,6 @@ export default function AddCustomer() {
         billingAddressForm.setValue('country', capitalizeWords(fields.country));
         filledFields.country = data.confidence;
       }
-      if (fields.state) {
-        billingAddressForm.setValue('state', capitalizeWords(fields.state));
-        filledFields.state = data.confidence;
-      }
       
       setBillingAddressFieldConfidence(filledFields);
       
@@ -1600,10 +1590,13 @@ export default function AddCustomer() {
 
   const createOrUpdateCustomerMutation = useMutation({
     mutationFn: async (data: CustomerFormData) => {
+      let response;
       if (isEditMode) {
-        return apiRequest('PATCH', `/api/customers/${customerId}`, data);
+        response = await apiRequest('PATCH', `/api/customers/${customerId}`, data);
+      } else {
+        response = await apiRequest('POST', '/api/customers', data);
       }
-      return apiRequest('POST', '/api/customers', data);
+      return response.json();
     },
     onSuccess: async (customer: Customer) => {
       for (const shippingAddr of shippingAddresses) {
@@ -1651,7 +1644,7 @@ export default function AddCustomer() {
   };
 
   const isCzech = selectedCountry === 'CZ';
-  const isEU = euCountryCodes.includes(selectedCountry);
+  const isEU = selectedCountry ? euCountryCodes.includes(selectedCountry) : false;
 
   const togglePinCountry = (countryCode: string) => {
     const newPinned = pinnedCountries.includes(countryCode)
@@ -2495,7 +2488,6 @@ export default function AddCustomer() {
                           billingAddressForm.setValue('city', primaryAddress.city || '');
                           billingAddressForm.setValue('zipCode', primaryAddress.zipCode || '');
                           billingAddressForm.setValue('country', primaryAddress.country || '');
-                          billingAddressForm.setValue('state', primaryAddress.state || '');
                           toast({
                             title: "Address Copied",
                             description: "Shipping address has been copied to billing address",
@@ -2622,10 +2614,12 @@ export default function AddCustomer() {
                         {...billingAddressForm.register('tel', {
                           onChange: (e) => {
                             const currentCountry = billingAddressForm.watch('country');
-                            const countryCode = getPhoneCountryCode(currentCountry);
-                            if (countryCode) {
-                              const formatted = formatPhoneNumber(e.target.value, countryCode);
-                              billingAddressForm.setValue('tel', formatted);
+                            if (currentCountry) {
+                              const countryCode = getPhoneCountryCode(currentCountry);
+                              if (countryCode) {
+                                const formatted = formatPhoneNumber(e.target.value, countryCode);
+                                billingAddressForm.setValue('tel', formatted);
+                              }
                             }
                           }
                         })}
