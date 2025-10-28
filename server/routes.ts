@@ -7566,7 +7566,6 @@ Return ONLY the subject line without quotes or extra formatting.`,
         city: item.address?.city || item.address?.town || item.address?.village || '',
         zipCode: item.address?.postcode || '',
         country: item.address?.country || '',
-        state: item.address?.state || '',
         lat: item.lat,
         lon: item.lon
       }));
@@ -7636,7 +7635,7 @@ ADDRESS RULES:
   * Example: "Company StreetNumber City PostalCode PhoneNumber"
   * Use context clues: 5-digit numbers often postal codes, 9-digit numbers often phone numbers
 
-Return ONLY valid JSON with these exact fields: firstName, lastName, company, email, phone, street, streetNumber, city, zipCode, country, state. Use null for missing fields.
+Return ONLY valid JSON with these exact fields: firstName, lastName, company, email, phone, street, streetNumber, city, zipCode, country. Use null for missing fields.
 
 EXAMPLE PARSING:
 Input: "Van Duy Lam Pro Nails Dragounska2545/9A Cheb 35002 776887045"
@@ -7650,8 +7649,7 @@ Output: {
   "streetNumber": "2545/9A",
   "city": "Cheb",
   "zipCode": "35002",
-  "country": null,
-  "state": null
+  "country": null
 }
 
 Text: ${rawAddress}`;
@@ -7746,9 +7744,6 @@ Text: ${rawAddress}`;
               // Use local country name (e.g., "Česko" instead of "Czech Republic")
               if (nominatimAddress?.country) {
                 parsedFields.country = nominatimAddress.country;
-              }
-              if (nominatimAddress?.state) {
-                parsedFields.state = nominatimAddress.state;
               }
               
               // Increase confidence if Nominatim validated the address
