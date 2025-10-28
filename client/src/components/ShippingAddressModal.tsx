@@ -214,19 +214,23 @@ export function ShippingAddressModal({
           'phone': 'tel', // API returns 'phone', form uses 'tel'
         };
         
+        // Build new form values, preserving existing values not in parsed data
+        const currentValues = form.getValues();
+        const updatedValues = { ...currentValues };
+        
         Object.entries(data.fields).forEach(([key, value]) => {
           // Skip id and label fields, don't set empty values
           if (value && key !== 'label' && key !== 'id' && value !== null && value !== '') {
             // Map the field name if needed
             const formFieldName = fieldMapping[key] || key;
             console.log(`Setting field ${formFieldName} to:`, value);
-            form.setValue(formFieldName as any, value as any, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+            (updatedValues as any)[formFieldName] = value;
             newFieldConfidence[formFieldName] = confidenceValue;
           }
         });
         
-        // Force form to re-render
-        form.trigger();
+        // Reset form with new values to force re-render
+        form.reset(updatedValues, { keepDefaultValues: false });
         
         setFieldConfidence(newFieldConfidence);
         setRawAddress('');
@@ -255,7 +259,13 @@ export function ShippingAddressModal({
   };
 
   const handleSubmit = (data: ShippingAddress) => {
-    onSave(data);
+    // When creating a new address (not editing), remove the id field
+    // to prevent duplicate key errors
+    const addressData = { ...data };
+    if (!editingAddress) {
+      delete addressData.id;
+    }
+    onSave(addressData);
     onOpenChange(false);
   };
 
