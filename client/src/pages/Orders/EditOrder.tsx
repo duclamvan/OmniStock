@@ -59,7 +59,8 @@ import {
   Download,
   Settings,
   Clock,
-  Pencil
+  Pencil,
+  Star
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import {
@@ -771,6 +772,26 @@ export default function EditOrder() {
       toast({
         title: "Error",
         description: "Failed to delete shipping address",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const setPrimaryShippingAddressMutation = useMutation({
+    mutationFn: async (addressId: string) => {
+      await apiRequest('POST', `/api/customers/${selectedCustomer.id}/shipping-addresses/${addressId}/set-primary`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customers', selectedCustomer?.id, 'shipping-addresses'] });
+      toast({
+        title: "Success",
+        description: "Primary address updated",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update primary address",
         variant: "destructive",
       });
     },
@@ -2025,6 +2046,8 @@ export default function EditOrder() {
                           className={`rounded-lg border-2 transition-all relative ${
                             selectedShippingAddress?.id === address.id
                               ? 'border-teal-500 bg-teal-50/50 shadow-sm'
+                              : address.isPrimary
+                              ? 'border-amber-300 bg-amber-50/30'
                               : 'border-slate-200 hover:border-slate-300'
                           }`}
                           data-testid={`card-address-${address.id}`}
@@ -2057,8 +2080,11 @@ export default function EditOrder() {
                                 <MapPin className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
                                 <div className="text-sm text-slate-700 space-y-0.5 select-none flex-1">
                                   {/* Name */}
-                                  <div className="font-semibold text-slate-900">
+                                  <div className="font-semibold text-slate-900 flex items-center gap-1.5">
                                     {address.firstName} {address.lastName}
+                                    {address.isPrimary && (
+                                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                                    )}
                                   </div>
                                   {/* Company */}
                                   {address.company && (
@@ -2104,6 +2130,20 @@ export default function EditOrder() {
                             </div>
                             {/* Action buttons */}
                             <div className="flex flex-col gap-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className={`h-8 w-8 ${address.isPrimary ? 'text-amber-500 hover:text-amber-600 hover:bg-amber-50' : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPrimaryShippingAddressMutation.mutate(address.id);
+                                }}
+                                data-testid={`button-star-address-${address.id}`}
+                                title={address.isPrimary ? "Primary address" : "Set as primary"}
+                              >
+                                <Star className={`h-3.5 w-3.5 ${address.isPrimary ? 'fill-amber-500' : ''}`} />
+                              </Button>
                               <Button
                                 type="button"
                                 variant="ghost"
@@ -4109,16 +4149,16 @@ export default function EditOrder() {
             <AlertDialogTitle>Delete Shipping Address?</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete this shipping address? This action cannot be undone.
-              {addressToDelete && (
-                <div className="mt-3 p-3 bg-slate-50 rounded-md text-sm text-slate-900">
-                  <div className="font-medium">{addressToDelete.firstName} {addressToDelete.lastName}</div>
-                  {addressToDelete.company && <div>{addressToDelete.company}</div>}
-                  <div>{addressToDelete.street}{addressToDelete.streetNumber && ` ${addressToDelete.streetNumber}`}</div>
-                  <div>{addressToDelete.zipCode} {addressToDelete.city}</div>
-                  <div>{addressToDelete.country}</div>
-                </div>
-              )}
             </AlertDialogDescription>
+            {addressToDelete && (
+              <div className="mt-3 p-3 bg-slate-50 rounded-md text-sm text-slate-900">
+                <div className="font-medium">{addressToDelete.firstName} {addressToDelete.lastName}</div>
+                {addressToDelete.company && <div>{addressToDelete.company}</div>}
+                <div>{addressToDelete.street}{addressToDelete.streetNumber && ` ${addressToDelete.streetNumber}`}</div>
+                <div>{addressToDelete.zipCode} {addressToDelete.city}</div>
+                <div>{addressToDelete.country}</div>
+              </div>
+            )}
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
