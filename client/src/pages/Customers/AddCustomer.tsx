@@ -153,6 +153,8 @@ export default function AddCustomer() {
   
   // Track the latest Facebook ID being checked for duplicates
   const latestDuplicateCheckRef = useRef<string>('');
+  const shippingCountryDropdownRef = useRef<HTMLDivElement>(null);
+  const billingCountryDropdownRef = useRef<HTMLDivElement>(null);
 
   const [shippingAddresses, setShippingAddresses] = useState<ShippingAddressFormData[]>([]);
   const [isAddingShipping, setIsAddingShipping] = useState(false);
@@ -497,6 +499,26 @@ export default function AddCustomer() {
     billingAddressForm,
     billingAddresses.length
   ]);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (shippingCountryDropdownRef.current && !shippingCountryDropdownRef.current.contains(event.target as Node)) {
+        setShowShippingCountryDropdown(false);
+      }
+      if (billingCountryDropdownRef.current && !billingCountryDropdownRef.current.contains(event.target as Node)) {
+        setShowBillingCountryDropdown(false);
+      }
+    };
+
+    if (showShippingCountryDropdown || showBillingCountryDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showShippingCountryDropdown, showBillingCountryDropdown]);
 
   const debounce = <T extends (...args: any[]) => any>(
     func: T,
@@ -2129,7 +2151,7 @@ export default function AddCustomer() {
                     </div>
                     <div>
                       <Label htmlFor="shippingCountry">Country</Label>
-                      <div className="relative">
+                      <div className="relative" ref={shippingCountryDropdownRef}>
                         <Input
                           id="shippingCountry"
                           value={shippingCountryQuery || shippingForm.watch('country') || ''}
@@ -2509,7 +2531,7 @@ export default function AddCustomer() {
                     </div>
                     <div>
                       <Label htmlFor="billingCountry">Country</Label>
-                      <div className="relative">
+                      <div className="relative" ref={billingCountryDropdownRef}>
                         <Input
                           id="billingCountry"
                           value={billingCountryQuery || billingAddressForm.watch('country') || ''}
