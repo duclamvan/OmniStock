@@ -201,12 +201,19 @@ export function ShippingAddressModal({
     },
     onSuccess: (data: any) => {
       if (data?.fields) {
+        // Map overall confidence level to field-level confidence values
+        const confidenceValue = data.confidence === 'high' ? 0.9 : data.confidence === 'medium' ? 0.6 : 0.3;
+        const newFieldConfidence: Record<string, number> = {};
+        
         Object.entries(data.fields).forEach(([key, value]) => {
-          if (value && key !== 'label') {
-            form.setValue(key as any, value as any);
+          // Skip id and label fields, don't set empty values
+          if (value && key !== 'label' && key !== 'id' && value !== null && value !== '') {
+            form.setValue(key as any, value as any, { shouldValidate: true });
+            newFieldConfidence[key] = confidenceValue;
           }
         });
-        setFieldConfidence(data?.confidence || {});
+        
+        setFieldConfidence(newFieldConfidence);
         setRawAddress('');
         toast({
           title: "Address Parsed",
@@ -214,12 +221,12 @@ export function ShippingAddressModal({
         });
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Failed to parse address:', error);
       toast({
         variant: "destructive",
         title: "Parse Failed",
-        description: "Could not parse the address. Please check the format and try again.",
+        description: error?.message || "Could not parse the address. Please check the format and try again.",
       });
     },
   });
