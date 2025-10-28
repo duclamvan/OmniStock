@@ -18,6 +18,7 @@ import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { calculateShippingCost } from "@/lib/shippingCosts";
+import { getCustomerBadges } from "@/lib/customerBadges";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -123,29 +124,106 @@ interface OrderItem {
 const getCountryFlag = (country: string | null | undefined): string => {
   if (!country) return '';
   
+  const normalizedCountry = country.toLowerCase();
+  
   const countryFlagMap: Record<string, string> = {
     'czechia': '🇨🇿',
     'czech republic': '🇨🇿',
+    'česko': '🇨🇿',
+    'česká republika': '🇨🇿',
+    'cesko': '🇨🇿',
+    'ceska republika': '🇨🇿',
     'germany': '🇩🇪',
+    'deutschland': '🇩🇪',
+    'německo': '🇩🇪',
+    'nemecko': '🇩🇪',
     'austria': '🇦🇹',
+    'österreich': '🇦🇹',
+    'osterreich': '🇦🇹',
+    'rakousko': '🇦🇹',
     'vietnam': '🇻🇳',
+    'viet nam': '🇻🇳',
     'poland': '🇵🇱',
+    'polska': '🇵🇱',
+    'polsko': '🇵🇱',
     'slovakia': '🇸🇰',
+    'slovensko': '🇸🇰',
     'hungary': '🇭🇺',
+    'magyarország': '🇭🇺',
+    'magyarorszag': '🇭🇺',
+    'maďarsko': '🇭🇺',
+    'madarsko': '🇭🇺',
     'united states': '🇺🇸',
     'usa': '🇺🇸',
+    'us': '🇺🇸',
     'united kingdom': '🇬🇧',
     'uk': '🇬🇧',
+    'britain': '🇬🇧',
+    'great britain': '🇬🇧',
     'france': '🇫🇷',
+    'francie': '🇫🇷',
+    'frankreich': '🇫🇷',
     'italy': '🇮🇹',
+    'italia': '🇮🇹',
+    'itálie': '🇮🇹',
+    'italie': '🇮🇹',
     'spain': '🇪🇸',
+    'españa': '🇪🇸',
+    'espana': '🇪🇸',
+    'španělsko': '🇪🇸',
+    'spanelsko': '🇪🇸',
     'netherlands': '🇳🇱',
+    'holland': '🇳🇱',
+    'niederlande': '🇳🇱',
+    'nizozemsko': '🇳🇱',
     'belgium': '🇧🇪',
+    'belgië': '🇧🇪',
+    'belgie': '🇧🇪',
+    'belgien': '🇧🇪',
     'switzerland': '🇨🇭',
+    'schweiz': '🇨🇭',
+    'suisse': '🇨🇭',
+    'svizzera': '🇨🇭',
+    'švýcarsko': '🇨🇭',
+    'svycarsko': '🇨🇭',
     'china': '🇨🇳',
+    'čína': '🇨🇳',
+    'cina': '🇨🇳',
+    'russia': '🇷🇺',
+    'rusko': '🇷🇺',
+    'russland': '🇷🇺',
+    'denmark': '🇩🇰',
+    'dánsko': '🇩🇰',
+    'dansko': '🇩🇰',
+    'dänemark': '🇩🇰',
+    'sweden': '🇸🇪',
+    'švédsko': '🇸🇪',
+    'svedsko': '🇸🇪',
+    'schweden': '🇸🇪',
+    'norway': '🇳🇴',
+    'norsko': '🇳🇴',
+    'norwegen': '🇳🇴',
+    'finland': '🇫🇮',
+    'finsko': '🇫🇮',
+    'finnland': '🇫🇮',
+    'portugal': '🇵🇹',
+    'portugalsko': '🇵🇹',
+    'greece': '🇬🇷',
+    'řecko': '🇬🇷',
+    'recko': '🇬🇷',
+    'griechenland': '🇬🇷',
+    'croatia': '🇭🇷',
+    'chorvatsko': '🇭🇷',
+    'kroatien': '🇭🇷',
+    'romania': '🇷🇴',
+    'rumunsko': '🇷🇴',
+    'rumänien': '🇷🇴',
+    'bulgaria': '🇧🇬',
+    'bulharsko': '🇧🇬',
+    'bulgarien': '🇧🇬',
   };
   
-  return countryFlagMap[country.toLowerCase()] || '🌍';
+  return countryFlagMap[normalizedCountry] || '🌍';
 };
 
 export default function AddOrder() {
@@ -1981,16 +2059,7 @@ export default function AddOrder() {
                             {/* Country Flag */}
                             {selectedCustomer.country && (
                               <span className="text-xl">
-                                {selectedCustomer.country.toLowerCase().includes('czech') || selectedCustomer.country.toLowerCase().includes('česko') ? '🇨🇿' :
-                                 selectedCustomer.country.toLowerCase().includes('german') || selectedCustomer.country.toLowerCase().includes('němec') ? '🇩🇪' :
-                                 selectedCustomer.country.toLowerCase().includes('vietnam') ? '🇻🇳' :
-                                 selectedCustomer.country.toLowerCase().includes('china') ? '🇨🇳' :
-                                 selectedCustomer.country.toLowerCase().includes('usa') || selectedCustomer.country.toLowerCase().includes('united states') ? '🇺🇸' :
-                                 selectedCustomer.country.toLowerCase().includes('uk') || selectedCustomer.country.toLowerCase().includes('united kingdom') ? '🇬🇧' :
-                                 selectedCustomer.country.toLowerCase().includes('france') ? '🇫🇷' :
-                                 selectedCustomer.country.toLowerCase().includes('poland') ? '🇵🇱' :
-                                 selectedCustomer.country.toLowerCase().includes('slovakia') ? '🇸🇰' :
-                                 selectedCustomer.country.toLowerCase().includes('austria') ? '🇦🇹' : '🌍'}
+                                {getCountryFlag(selectedCustomer.country)}
                               </span>
                             )}
                             <h3 className="text-sm font-semibold text-slate-900">
@@ -2001,53 +2070,17 @@ export default function AddOrder() {
                           
                           {/* Badges */}
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            {/* VIP Badge - for customers with high spending or rank */}
-                            {(selectedCustomer.type === 'vip' || selectedCustomer.customerRank === 'VIP' || 
-                              (selectedCustomer.totalSpent && parseFloat(selectedCustomer.totalSpent) >= 50000)) && (
-                              <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 text-xs">
-                                <Star className="h-3 w-3 mr-1" />
-                                VIP
+                            {getCustomerBadges(selectedCustomer).map((badge, index) => (
+                              <Badge 
+                                key={index} 
+                                variant={badge.variant} 
+                                className={badge.className}
+                                data-testid={`badge-${badge.label.toLowerCase().replace(/\s+/g, '-')}`}
+                              >
+                                {badge.icon && <badge.icon className="h-3 w-3 mr-1" />}
+                                {badge.label}
                               </Badge>
-                            )}
-                            {/* TOP50 Badge - for top customers */}
-                            {(selectedCustomer.customerRank === 'TOP50' || selectedCustomer.customerRank === 'TOP' ||
-                              (selectedCustomer.totalOrders && selectedCustomer.totalOrders >= 20)) && (
-                              <Badge className="bg-blue-50 text-blue-700 border-blue-300 text-xs">
-                                <Award className="h-3 w-3 mr-1" />
-                                TOP 50
-                              </Badge>
-                            )}
-                            {/* Pay Later Badge */}
-                            {selectedCustomer.hasPayLaterBadge && (
-                              <Badge className="bg-purple-50 text-purple-700 border-purple-300 text-xs">
-                                <Clock className="h-3 w-3 mr-1" />
-                                Pay Later
-                              </Badge>
-                            )}
-                            {/* Currency Badge */}
-                            {selectedCustomer.preferredCurrency && (
-                              <Badge variant="outline" className="text-xs bg-slate-50 border-slate-300 text-slate-700">
-                                {selectedCustomer.preferredCurrency}
-                              </Badge>
-                            )}
-                            {/* Customer Type */}
-                            {selectedCustomer.type && selectedCustomer.type !== 'regular' && selectedCustomer.type !== 'vip' && (
-                              <Badge variant="outline" className="text-xs bg-slate-100 border-slate-300 text-slate-700 capitalize">
-                                {selectedCustomer.type}
-                              </Badge>
-                            )}
-                            {/* One-time Badge */}
-                            {selectedCustomer.isTemporary && (
-                              <Badge variant="outline" className="text-xs bg-purple-50 border-purple-300 text-purple-700">
-                                One-time
-                              </Badge>
-                            )}
-                            {/* New Customer Badge */}
-                            {selectedCustomer.needsSaving && (
-                              <Badge variant="outline" className="text-xs bg-green-50 border-green-300 text-green-700">
-                                New Customer
-                              </Badge>
-                            )}
+                            ))}
                           </div>
                         </div>
                         
