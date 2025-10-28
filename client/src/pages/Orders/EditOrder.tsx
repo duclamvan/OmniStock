@@ -1998,8 +1998,24 @@ export default function EditOrder() {
                               id={address.id} 
                               data-testid={`radio-address-${address.id}`} 
                               className="mt-1"
+                              onClick={() => {
+                                if (selectedShippingAddress?.id === address.id) {
+                                  setSelectedShippingAddress(null);
+                                } else {
+                                  setSelectedShippingAddress(address);
+                                }
+                              }}
                             />
-                            <div className="flex-1 cursor-pointer" onClick={() => setSelectedShippingAddress(address)}>
+                            <div 
+                              className="flex-1 cursor-pointer" 
+                              onClick={() => {
+                                if (selectedShippingAddress?.id === address.id) {
+                                  setSelectedShippingAddress(null);
+                                } else {
+                                  setSelectedShippingAddress(address);
+                                }
+                              }}
+                            >
                               <div className="flex items-start gap-2">
                                 <MapPin className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
                                 <div className="text-sm text-slate-700 leading-relaxed select-none">
