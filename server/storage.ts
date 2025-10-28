@@ -1401,6 +1401,7 @@ export class DatabaseStorage implements IStorage {
           
           return {
             ...row.product,
+            image: row.product.imageUrl, // Map imageUrl to image for frontend compatibility
             categoryName: category?.name || category?.nameEn || 'Uncategorized',
             primaryLocation: primaryLocation || null,
             supplier: row.supplier ? {
@@ -1442,6 +1443,7 @@ export class DatabaseStorage implements IStorage {
       
       return {
         ...productData.product,
+        image: productData.product.imageUrl, // Map imageUrl to image for frontend compatibility
         locations,
         supplier: productData.supplier ? {
           id: productData.supplier.id,
