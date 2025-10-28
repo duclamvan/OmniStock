@@ -84,9 +84,8 @@ export default function OrderDocumentSelector({
   onDocumentSelectionChange,
   customerId,
 }: OrderDocumentSelectorProps) {
-  const [localSelectedIds, setLocalSelectedIds] = useState<Set<string>>(
-    new Set(selectedDocumentIds)
-  );
+  // Use prop directly instead of local state to avoid circular updates
+  const localSelectedIds = new Set(selectedDocumentIds);
 
   // Fetch files for all products in the order
   const productIds = Array.from(new Set(orderItems.map(item => item.productId)));
@@ -152,7 +151,6 @@ export default function OrderDocumentSelector({
     } else {
       newSelection.add(documentId);
     }
-    setLocalSelectedIds(newSelection);
     onDocumentSelectionChange(Array.from(newSelection));
   };
 
@@ -169,7 +167,6 @@ export default function OrderDocumentSelector({
       }
     });
     
-    setLocalSelectedIds(newSelection);
     onDocumentSelectionChange(Array.from(newSelection));
   };
 

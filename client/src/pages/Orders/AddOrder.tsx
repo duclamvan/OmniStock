@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
@@ -3583,20 +3583,21 @@ export default function AddOrder() {
         </Card>
 
         {/* Document Selection */}
-        {useMemo(() => (
-          <OrderDocumentSelector
-            orderItems={orderItems.filter(item => item.productId).map(item => ({
+        <OrderDocumentSelector
+          orderItems={useMemo(() => 
+            orderItems.filter(item => item.productId).map(item => ({
               id: item.id,
               productId: item.productId!,
               productName: item.productName,
               sku: item.sku,
               quantity: item.quantity
-            }))}
-            selectedDocumentIds={selectedDocumentIds}
-            onDocumentSelectionChange={setSelectedDocumentIds}
-            customerId={selectedCustomer?.id}
-          />
-        ), [orderItems, selectedDocumentIds, selectedCustomer?.id])}
+            })),
+            [orderItems]
+          )}
+          selectedDocumentIds={selectedDocumentIds}
+          onDocumentSelectionChange={useCallback((ids: string[]) => setSelectedDocumentIds(ids), [])}
+          customerId={selectedCustomer?.id}
+        />
 
         {/* AI Carton Packing Optimization Panel */}
         {orderItems.length > 0 && (
