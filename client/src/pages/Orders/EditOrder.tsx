@@ -471,6 +471,12 @@ export default function EditOrder() {
     enabled: !!selectedCustomer?.id,
   });
 
+  // Fetch packing plan for this order
+  const { data: savedPackingPlan } = useQuery({
+    queryKey: ['/api/orders', id, 'packing-plans'],
+    enabled: !!id,
+  });
+
   // Debounce search inputs for better performance
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -615,6 +621,23 @@ export default function EditOrder() {
 
     // Note: Document management simplified to file upload only
   }, [existingOrder]);
+
+  // Pre-fill packing plan when order loads
+  useEffect(() => {
+    if (!savedPackingPlan) return;
+    
+    const plan = savedPackingPlan as any;
+    
+    // Transform the database format to UI format
+    setPackingPlan({
+      totalCartons: plan.totalCartons,
+      totalWeight: parseFloat(plan.totalWeightKg || '0'),
+      avgUtilization: parseFloat(plan.avgUtilization || '0'),
+      estimatedShippingCost: parseFloat(plan.totalShippingCost || '0'),
+      suggestions: plan.suggestions ? JSON.parse(plan.suggestions) : [],
+      cartons: plan.cartons || []
+    });
+  }, [savedPackingPlan]);
 
   // Auto-update currency based on shipping address country
   useEffect(() => {
