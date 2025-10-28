@@ -1369,7 +1369,7 @@ export default function AddOrder() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setLocation("/orders")}
+                onClick={() => window.history.back()}
                 className="w-fit"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
