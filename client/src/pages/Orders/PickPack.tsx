@@ -4313,7 +4313,7 @@ export default function PickPack() {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         {/* Header - Optimized for Mobile */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg z-20">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg z-20">
           <div className="px-4 lg:px-6 py-3 lg:py-4">
             {/* Mobile Layout - Clean and Organized */}
             <div className="lg:hidden">
@@ -4506,23 +4506,23 @@ export default function PickPack() {
             <div className="flex-1 p-3 lg:p-6">
             {!allItemsPicked && currentItem ? (
               <div className="max-w-4xl mx-auto">
-                <Card className="mb-4 lg:mb-6 shadow-xl border-0 overflow-hidden">
+                <Card className="mb-4 lg:mb-6 shadow-2xl border-0 overflow-hidden rounded-2xl">
                   <CardHeader className={`${
                     currentItem?.pickedQuantity === currentItem?.quantity
-                      ? 'bg-gradient-to-r from-emerald-500 to-teal-600'
-                      : 'bg-gradient-to-r from-slate-600 to-slate-700'
-                  } text-white p-3 lg:p-4`}>
+                      ? 'bg-gradient-to-r from-emerald-500 to-emerald-600'
+                      : 'bg-gradient-to-r from-slate-700 to-slate-800'
+                  } text-white p-4 lg:p-5`}>
                     <CardTitle className="flex items-center justify-between">
-                      <span className="text-base lg:text-lg flex items-center gap-2">
+                      <span className="text-lg lg:text-xl flex items-center gap-2.5">
                         {currentItem?.pickedQuantity === currentItem?.quantity ? (
-                          <CheckCircle className="h-5 w-5" />
+                          <CheckCircle className="h-6 w-6 lg:h-7 lg:w-7" />
                         ) : (
-                          <Package className="h-5 w-5" />
+                          <Package className="h-6 w-6 lg:h-7 lg:w-7" />
                         )}
-                        <span className="hidden sm:inline">
+                        <span className="hidden sm:inline font-bold">
                           {currentItem?.pickedQuantity === currentItem?.quantity ? 'Item Picked' : 'Current Item to Pick'}
                         </span>
-                        <span className="sm:hidden">
+                        <span className="sm:hidden font-bold">
                           {currentItem?.pickedQuantity === currentItem?.quantity ? 'Picked' : 'Pick Item'}
                         </span>
                         {preferExpandedImages && (
@@ -4535,8 +4535,8 @@ export default function PickPack() {
                       <Badge className={`${
                         currentItem?.pickedQuantity === currentItem?.quantity
                           ? 'bg-white text-emerald-600'
-                          : 'bg-white text-slate-700'
-                      } text-sm lg:text-base px-2 lg:px-3 py-1 font-bold`}>
+                          : 'bg-white text-slate-800'
+                      } text-base lg:text-lg px-3 lg:px-4 py-1.5 font-bold rounded-lg`}>
                         {currentItemIndex + 1} / {activePickingOrder.items.length}
                       </Badge>
                     </CardTitle>
@@ -4589,13 +4589,13 @@ export default function PickPack() {
                       )}
 
                       {/* Location - Mobile Optimized */}
-                      <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl lg:rounded-2xl p-3 lg:p-6 text-center shadow-lg">
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                          <MapPin className="h-5 lg:h-8 w-5 lg:w-8 text-orange-500" />
-                          <p className="text-xs lg:text-sm font-semibold text-orange-700 uppercase tracking-wide">Warehouse Location</p>
+                      <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-orange-300 rounded-2xl p-4 lg:p-8 text-center shadow-lg">
+                        <div className="flex items-center justify-center gap-2 mb-3">
+                          <MapPin className="h-5 lg:h-7 w-5 lg:w-7 text-orange-500" />
+                          <p className="text-xs lg:text-sm font-bold text-orange-700 uppercase tracking-wide">Warehouse Location</p>
                         </div>
-                        <p className="text-2xl sm:text-3xl lg:text-5xl font-black text-orange-600 font-mono tracking-wider">{currentItem.warehouseLocation}</p>
-                        <p className="text-xs text-orange-600 mt-1">Navigate to this location</p>
+                        <p className="text-3xl sm:text-4xl lg:text-6xl font-black text-orange-600 font-mono tracking-wider my-2">{currentItem.warehouseLocation}</p>
+                        <p className="text-xs lg:text-sm text-orange-600 font-medium">Navigate to this location</p>
                       </div>
 
                       {/* Bundle Items Picker - For gel polish colors etc */}
@@ -4724,32 +4724,32 @@ export default function PickPack() {
                               </div>
                             </div>
                           )}
-                          <p className="text-center text-base lg:text-xl font-black text-green-800 mb-4 uppercase tracking-wider">Pick Quantity</p>
-                          <div className="flex items-center justify-center gap-3 sm:gap-4 lg:gap-8">
+                          <p className="text-center text-base lg:text-xl font-black text-green-800 mb-4 lg:mb-6 uppercase tracking-wider">Pick Quantity</p>
+                          <div className="flex items-center justify-center gap-4 sm:gap-6 lg:gap-8">
                             <Button
                               size="lg"
-                              className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-xl lg:rounded-2xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white shadow-xl touch-manipulation transform hover:scale-110 transition-transform"
+                              className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-2xl bg-teal-500 hover:bg-teal-600 active:bg-teal-700 disabled:bg-gray-300 disabled:opacity-50 text-white shadow-xl touch-manipulation"
                               onClick={() => updatePickedItem(currentItem.id, Math.max(0, currentItem.pickedQuantity - 1))}
                               disabled={currentItem.pickedQuantity === 0}
                             >
-                              <Minus className="h-6 lg:h-8 w-6 lg:w-8" />
+                              <Minus className="h-7 lg:h-10 w-7 lg:w-10" />
                             </Button>
                             
-                            <div className="text-center bg-white rounded-2xl px-6 sm:px-8 lg:px-12 py-3 sm:py-4 lg:py-6 shadow-2xl min-w-[140px] border-2 border-gray-300">
-                              <div className="text-4xl sm:text-5xl lg:text-7xl font-black text-gray-900">
+                            <div className="text-center bg-white rounded-2xl px-6 sm:px-10 lg:px-14 py-4 sm:py-6 lg:py-8 shadow-2xl min-w-[160px] sm:min-w-[200px]">
+                              <div className="text-5xl sm:text-6xl lg:text-8xl font-black text-gray-900 tabular-nums">
                                 {currentItem.pickedQuantity}
-                                <span className="text-2xl sm:text-3xl lg:text-4xl text-gray-500 ml-1">/{currentItem.quantity}</span>
+                                <span className="text-2xl sm:text-3xl lg:text-5xl text-gray-500">/{currentItem.quantity}</span>
                               </div>
-                              <p className="text-sm lg:text-base font-bold text-gray-700 uppercase tracking-wider mt-1">Items</p>
+                              <p className="text-sm lg:text-lg font-bold text-gray-700 uppercase tracking-wider mt-2">Items</p>
                             </div>
                             
                             <Button
                               size="lg"
-                              className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-xl lg:rounded-2xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white shadow-xl touch-manipulation transform hover:scale-110 transition-transform"
+                              className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-2xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 disabled:bg-gray-300 disabled:opacity-50 text-white shadow-xl touch-manipulation"
                               onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.quantity, currentItem.pickedQuantity + 1))}
                               disabled={currentItem.pickedQuantity >= currentItem.quantity}
                             >
-                              <Plus className="h-6 lg:h-8 w-6 lg:w-8" />
+                              <Plus className="h-7 lg:h-10 w-7 lg:w-10" />
                             </Button>
                           </div>
                           
@@ -4766,41 +4766,43 @@ export default function PickPack() {
                           {currentItem.pickedQuantity < currentItem.quantity && (
                             <Button 
                               size="lg" 
-                              className="w-full mt-3 lg:mt-4 h-11 sm:h-12 lg:h-14 text-sm sm:text-base lg:text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:from-blue-800 active:to-indigo-800 text-white shadow-lg touch-manipulation"
+                              className="w-full mt-4 lg:mt-6 h-14 sm:h-16 lg:h-18 text-base sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 active:from-blue-700 active:to-blue-800 text-white shadow-xl touch-manipulation rounded-xl"
                               onClick={() => updatePickedItem(currentItem.id, currentItem.quantity)}
                             >
-                              <CheckCircle2 className="h-4 sm:h-5 lg:h-6 w-4 sm:w-5 lg:w-6 mr-2 lg:mr-3" />
-                              Quick Pick All ({currentItem.quantity} items)
+                              <CheckCircle2 className="h-5 sm:h-6 lg:h-7 w-5 sm:w-6 lg:w-7 mr-2 lg:mr-3" />
+                              Quick Pick All ({currentItem.quantity} item{currentItem.quantity !== 1 ? 's' : ''})
                             </Button>
                           )}
                         </div>
                       )}
                       
                       {/* Item Navigation Buttons - Below Pick Quantity */}
-                      <div className="flex justify-between items-center mt-6 lg:mt-8 px-4 lg:px-8">
+                      <div className="flex gap-3 mt-6 lg:mt-8">
                         <Button
                           variant="outline"
                           size="lg"
-                          className="flex items-center gap-2 h-12 lg:h-14 px-4 lg:px-6 font-bold text-sm lg:text-base border-2 hover:bg-gray-50"
+                          className="flex-1 flex items-center justify-center gap-2 h-14 lg:h-16 px-4 lg:px-6 font-bold text-sm lg:text-base border-2 hover:bg-gray-50 disabled:opacity-40 rounded-xl"
                           onClick={() => setManualItemIndex(Math.max(0, currentItemIndex - 1))}
                           disabled={currentItemIndex === 0}
                         >
                           <ChevronLeft className="h-5 lg:h-6 w-5 lg:w-6" />
-                          Previous Item
+                          <span className="hidden sm:inline">Previous Item</span>
+                          <span className="sm:hidden">Previous</span>
                         </Button>
                         
                         <Button
                           variant="outline"
                           size="lg"
-                          className={`flex items-center gap-2 h-12 lg:h-14 px-4 lg:px-6 font-bold text-sm lg:text-base border-2 ${
+                          className={`flex-1 flex items-center justify-center gap-2 h-14 lg:h-16 px-4 lg:px-6 font-bold text-sm lg:text-base border-2 disabled:opacity-40 rounded-xl ${
                             currentItem.pickedQuantity >= currentItem.quantity 
-                              ? 'completed-next-button' 
+                              ? 'completed-next-button border-green-500 text-green-700 hover:bg-green-50' 
                               : 'hover:bg-gray-50'
                           }`}
                           onClick={() => setManualItemIndex(Math.min(activePickingOrder.items.length - 1, currentItemIndex + 1))}
                           disabled={currentItemIndex === activePickingOrder.items.length - 1}
                         >
-                          Next Item
+                          <span className="hidden sm:inline">Next Item</span>
+                          <span className="sm:hidden">Next</span>
                           <ChevronRight className="h-5 lg:h-6 w-5 lg:w-6" />
                         </Button>
                       </div>
@@ -4809,26 +4811,26 @@ export default function PickPack() {
                 </Card>
 
                 {/* Barcode Scanner - Mobile Optimized */}
-                <Card className="shadow-lg border border-purple-200 bg-gradient-to-r from-purple-600 to-purple-700">
-                  <CardContent className="p-4 sm:p-4 lg:p-6">
-                    <div className="flex gap-3">
+                <Card className="shadow-lg border-0 bg-gradient-to-r from-purple-500 to-purple-600 overflow-hidden">
+                  <CardContent className="p-4 lg:p-6">
+                    <div className="flex gap-3 lg:gap-4">
                       <div className="relative flex-1">
-                        <ScanLine className="absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 h-5 lg:h-6 w-5 lg:w-6 text-white/70" />
+                        <ScanLine className="absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 h-5 lg:h-6 w-5 lg:w-6 text-gray-400" />
                         <Input
                           ref={barcodeInputRef}
                           placeholder="Continuous scan mode - Point scanner at item"
                           value={barcodeInput || "🎯 Ready to scan..."}
-                          className="pl-10 lg:pl-12 text-base lg:text-lg h-12 sm:h-14 bg-white border-0 placeholder:text-gray-500 font-mono cursor-default shadow-sm"
+                          className="pl-10 lg:pl-12 text-base lg:text-lg h-14 sm:h-16 bg-white border-0 placeholder:text-gray-500 font-mono cursor-default shadow-md rounded-xl"
                           readOnly
                         />
                       </div>
                       <Button 
                         size="lg" 
                         onClick={handleBarcodeScan}
-                        className="h-12 sm:h-14 px-6 lg:px-8 bg-white text-purple-600 hover:bg-gray-100 active:bg-gray-200 font-bold shadow-lg touch-manipulation"
+                        className="h-14 sm:h-16 px-6 lg:px-10 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold shadow-lg touch-manipulation rounded-xl"
                       >
-                        <ScanLine className="h-5 w-5 sm:mr-2" />
-                        <span className="hidden sm:inline">SCAN</span>
+                        <ScanLine className="h-5 w-5 lg:h-6 lg:w-6 sm:mr-2" />
+                        <span className="hidden sm:inline text-base lg:text-lg">SCAN</span>
                       </Button>
                     </div>
                   </CardContent>
