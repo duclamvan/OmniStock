@@ -201,9 +201,7 @@ export default function EditOrder() {
   // Packing optimization state
   const [packingPlan, setPackingPlan] = useState<any>(null);
 
-  // File inclusion state
-  const [includeInvoice, setIncludeInvoice] = useState(false);
-  const [includeCustom, setIncludeCustom] = useState(false);
+  // File upload state
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
   // Column visibility toggles
@@ -613,15 +611,7 @@ export default function EditOrder() {
       setSelectedDocumentIds(order.selectedDocumentIds);
     }
 
-    // Pre-fill included documents checkboxes
-    if (order.includedDocuments) {
-      if (order.includedDocuments.invoicePrint) {
-        setIncludeInvoice(true);
-      }
-      if (order.includedDocuments.custom) {
-        setIncludeCustom(true);
-      }
-    }
+    // Note: Document management simplified to file upload only
   }, [existingOrder]);
 
   // Auto-update currency based on shipping address country
@@ -1165,8 +1155,6 @@ export default function EditOrder() {
         bundleId: item.bundleId || null,
       })),
       includedDocuments: {
-        invoicePrint: includeInvoice,
-        custom: includeCustom,
         uploadedFiles: uploadedFiles.map(f => ({ name: f.name, size: f.size })),
       },
       selectedDocumentIds: selectedDocumentIds.length > 0 ? selectedDocumentIds : undefined
@@ -3481,49 +3469,6 @@ export default function EditOrder() {
                 )}
               </div>
 
-              {/* Document Selection Options */}
-              <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
-                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
-                  <Download className="h-4 w-4" />
-                  Include Documents
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div
-                    className="flex items-center space-x-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/20 hover:border-blue-300 dark:hover:border-blue-700 transition-colors cursor-pointer"
-                    onClick={() => setIncludeInvoice(!includeInvoice)}
-                    data-testid="option-include-invoice"
-                  >
-                    <Checkbox
-                      id="include-invoice"
-                      checked={includeInvoice}
-                      onCheckedChange={(checked) => setIncludeInvoice(checked as boolean)}
-                    />
-                    <label
-                      htmlFor="include-invoice"
-                      className="text-sm font-medium leading-none cursor-pointer flex-1"
-                    >
-                      Invoice
-                    </label>
-                  </div>
-                  <div
-                    className="flex items-center space-x-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/20 hover:border-blue-300 dark:hover:border-blue-700 transition-colors cursor-pointer"
-                    onClick={() => setIncludeCustom(!includeCustom)}
-                    data-testid="option-include-custom"
-                  >
-                    <Checkbox
-                      id="include-custom"
-                      checked={includeCustom}
-                      onCheckedChange={(checked) => setIncludeCustom(checked as boolean)}
-                    />
-                    <label
-                      htmlFor="include-custom"
-                      className="text-sm font-medium leading-none cursor-pointer flex-1"
-                    >
-                      Custom
-                    </label>
-                  </div>
-                </div>
-              </div>
             </CardContent>
           </Card>
         )}
