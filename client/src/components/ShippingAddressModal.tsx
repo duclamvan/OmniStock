@@ -205,11 +205,18 @@ export function ShippingAddressModal({
         const confidenceValue = data.confidence === 'high' ? 0.9 : data.confidence === 'medium' ? 0.6 : 0.3;
         const newFieldConfidence: Record<string, number> = {};
         
+        // Map API field names to form field names
+        const fieldMapping: Record<string, string> = {
+          'phone': 'tel', // API returns 'phone', form uses 'tel'
+        };
+        
         Object.entries(data.fields).forEach(([key, value]) => {
           // Skip id and label fields, don't set empty values
           if (value && key !== 'label' && key !== 'id' && value !== null && value !== '') {
-            form.setValue(key as any, value as any, { shouldValidate: true });
-            newFieldConfidence[key] = confidenceValue;
+            // Map the field name if needed
+            const formFieldName = fieldMapping[key] || key;
+            form.setValue(formFieldName as any, value as any, { shouldValidate: true });
+            newFieldConfidence[formFieldName] = confidenceValue;
           }
         });
         
