@@ -126,7 +126,7 @@ const DEFAULT_PINNED_COUNTRIES = ['CZ', 'DE', 'SK', 'PL', 'AT', 'VN'];
 export default function AddCustomer() {
   const [, navigate] = useLocation();
   const params = useParams();
-  const customerId = params.id ? parseInt(params.id) : undefined;
+  const customerId = params.id; // UUID string, not an integer
   const isEditMode = !!customerId;
   const { toast } = useToast();
 
