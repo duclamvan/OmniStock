@@ -5134,83 +5134,6 @@ export default function PickPack() {
   // Main Dashboard View
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Stats Overview - Mobile Optimized */}
-      <div className="px-3 sm:px-6 py-3 sm:py-4">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
-          <Card>
-            <CardContent className="p-3 sm:p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-500">Pending</p>
-                  <p className="text-xl sm:text-2xl font-bold">{stats.pending}</p>
-                </div>
-                <Clock className="h-6 sm:h-8 w-6 sm:w-8 text-yellow-500" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-3 sm:p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-500">Picking</p>
-                  <p className="text-xl sm:text-2xl font-bold">{stats.picking}</p>
-                </div>
-                <Package className="h-6 sm:h-8 w-6 sm:w-8 text-blue-500" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-3 sm:p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-500">Packing</p>
-                  <p className="text-xl sm:text-2xl font-bold">{stats.packing}</p>
-                </div>
-                <Box className="h-6 sm:h-8 w-6 sm:w-8 text-purple-500" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-3 sm:p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-500">Ready</p>
-                  <p className="text-xl sm:text-2xl font-bold">{stats.ready}</p>
-                </div>
-                <Truck className="h-6 sm:h-8 w-6 sm:w-8 text-green-500" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-3 sm:p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-500">Today Picked</p>
-                  <p className="text-xl sm:text-2xl font-bold">{stats.todayPicked}</p>
-                </div>
-                <TrendingUp className="h-6 sm:h-8 w-6 sm:w-8 text-teal-500" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-3 sm:p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-500">Avg Time</p>
-                  <p className="text-xl sm:text-2xl font-bold">{stats.avgPickTime}</p>
-                </div>
-                <Timer className="h-6 sm:h-8 w-6 sm:w-8 text-orange-500" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
       {/* Main Content - Mobile Optimized */}
       <div className="px-3 sm:px-6 pb-6">
         <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v as any)}>
@@ -5538,7 +5461,7 @@ export default function PickPack() {
                   Orders Ready to Pick ({getOrdersByStatus('pending').length})
                   {getOrdersByStatus('pending').length > 0 && predictions && (
                     <span className="ml-2 text-sm font-normal text-gray-500">
-                      ~{Math.ceil(getOrdersByStatus('pending').length * predictions.pickingTimePerOrder / 60)}h {Math.round((getOrdersByStatus('pending').length * predictions.pickingTimePerOrder) % 60)}m est.
+                      ~{Math.floor(getOrdersByStatus('pending').length * predictions.pickingTimePerOrder / 60)}h {Math.round((getOrdersByStatus('pending').length * predictions.pickingTimePerOrder) % 60)}m est.
                     </span>
                   )}
                 </CardTitle>
@@ -5849,7 +5772,7 @@ export default function PickPack() {
                   Ready for Packing ({getOrdersByStatus('packing').length})
                   {getOrdersByStatus('packing').length > 0 && predictions && (
                     <span className="ml-2 text-sm font-normal text-gray-500">
-                      ~{Math.ceil(getOrdersByStatus('packing').length * predictions.packingTimePerOrder / 60)}h {Math.round((getOrdersByStatus('packing').length * predictions.packingTimePerOrder) % 60)}m est.
+                      ~{Math.floor(getOrdersByStatus('packing').length * predictions.packingTimePerOrder / 60)}h {Math.round((getOrdersByStatus('packing').length * predictions.packingTimePerOrder) % 60)}m est.
                     </span>
                   )}
                 </CardTitle>
