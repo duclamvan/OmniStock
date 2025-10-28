@@ -2,6 +2,15 @@
 Davie Supply is a full-stack web application designed for comprehensive warehouse and order management. Its primary goal is to optimize supply chain operations, encompassing the entire order lifecycle, inventory tracking, customer relationship management, and multi-currency financial reporting. The project includes features like real-time Vietnamese diacritics search, customer-specific pricing, external shipping API integrations, and extensive settings management. Key ambitions include advanced warehouse mapping, a comprehensive Pick & Pack workflow, and future AI-powered optimization.
 
 # Recent Changes
+**October 28, 2025**: Complete Removal of State/Region Fields for EU-Focused Address Management:
+- Removed state/region fields from entire application (frontend forms, backend API, database schema) per EU addressing requirements
+- Dropped state columns from customers, customerShippingAddresses, customerBillingAddresses tables via SQL migrations
+- Enhanced Parse & Fill feature: excluded ID field from parsed data to prevent duplicate address errors
+- Implemented comprehensive country normalization mapping both country codes (CZ→Czech Republic) and local names (Česko→Czech Republic) to English
+- Enhanced address validation: made street, city, zipCode, and country required fields in both frontend Zod schemas and backend validation
+- Fixed confidence indicator mapping in ShippingAddressModal to properly display field-level validation colors
+- Address validation now uses React Hook Form + Zod resolver for all customer/address forms
+
 **October 28, 2025**: Unified Customer Form Architecture and Enhanced Shipping Address Management:
 - Confirmed AddCustomer.tsx handles both add and edit modes using a single unified component (isEditMode flag)
 - Edit mode properly prefills all customer data: name, country, currency, Facebook info, billing details, tax/VAT info
