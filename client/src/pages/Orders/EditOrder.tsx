@@ -602,19 +602,18 @@ export default function EditOrder() {
     if (!existingOrder || !shippingAddresses) return;
     const order = existingOrder as any;
     
-    console.log('=== Shipping Address Auto-fill ===');
-    console.log('Order shippingAddressId:', order.shippingAddressId);
-    console.log('Available shipping addresses:', shippingAddresses);
+    if (!Array.isArray(shippingAddresses)) return;
     
-    if (order.shippingAddressId && Array.isArray(shippingAddresses)) {
+    // If order has a saved shipping address, select it
+    if (order.shippingAddressId) {
       const address = shippingAddresses.find((addr: any) => addr.id === order.shippingAddressId);
-      console.log('Found matching address:', address);
       if (address) {
         setSelectedShippingAddress(address);
-        console.log('Set selected shipping address to:', address);
       }
-    } else {
-      console.log('No shippingAddressId or addresses not loaded yet');
+    } 
+    // If no saved address but only one address exists, auto-select it
+    else if (shippingAddresses.length === 1) {
+      setSelectedShippingAddress(shippingAddresses[0]);
     }
   }, [existingOrder, shippingAddresses]);
 
