@@ -1252,7 +1252,7 @@ export default function OrderDetails() {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Shipping Address - Only show if shippingAddressId exists */}
-              {order.shippingAddressId ? (
+              {order.shippingAddressId && order.shippingAddress ? (
                 <div className="border-2 border-blue-500 dark:border-blue-600 rounded-lg p-4" data-testid="section-shipping-address">
                   <div className="flex items-center gap-2 mb-3">
                     <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -1260,56 +1260,64 @@ export default function OrderDetails() {
                   </div>
                   
                   <div className="space-y-1.5 text-sm">
+                    {/* Label */}
+                    {order.shippingAddress.label && (
+                      <p className="font-semibold text-slate-900 dark:text-slate-100" data-testid="text-shipping-label">
+                        {order.shippingAddress.label}
+                      </p>
+                    )}
+                    
                     {/* First Name, Last Name */}
-                    {(order.customer?.billingFirstName || order.customer?.billingLastName) && (
+                    {(order.shippingAddress.firstName || order.shippingAddress.lastName) && (
                       <p className="font-medium text-slate-900 dark:text-slate-100" data-testid="text-shipping-name">
-                        {[order.customer.billingFirstName, order.customer.billingLastName].filter(Boolean).join(' ')}
+                        {[order.shippingAddress.firstName, order.shippingAddress.lastName].filter(Boolean).join(' ')}
                       </p>
                     )}
                     
                     {/* Company */}
-                    {order.customer?.billingCompany && (
+                    {order.shippingAddress.company && (
                       <p className="font-medium text-slate-900 dark:text-slate-100" data-testid="text-shipping-company">
-                        {order.customer.billingCompany}
+                        {order.shippingAddress.company}
                       </p>
                     )}
                     
-                    {/* Customer Name (fallback if no firstName/lastName) */}
-                    {!order.customer?.billingFirstName && !order.customer?.billingLastName && order.customer?.name && (
-                      <p className="font-medium text-slate-900 dark:text-slate-100" data-testid="text-shipping-name">
-                        {order.customer.name}
+                    {/* Email */}
+                    {order.shippingAddress.email && (
+                      <p className="text-slate-700 dark:text-slate-300" data-testid="text-shipping-email">
+                        {order.shippingAddress.email}
+                      </p>
+                    )}
+                    
+                    {/* Phone */}
+                    {order.shippingAddress.tel && (
+                      <p className="text-slate-700 dark:text-slate-300" data-testid="text-shipping-phone">
+                        {order.shippingAddress.tel}
                       </p>
                     )}
                     
                     {/* Street Address */}
-                    {(order.customer?.billingStreet || order.customer?.address) && (
+                    {order.shippingAddress.street && (
                       <p className="text-slate-700 dark:text-slate-300" data-testid="text-shipping-street">
-                        {order.customer.billingStreet && (
-                          <>
-                            {order.customer.billingStreet}
-                            {order.customer.billingStreetNumber && ` ${order.customer.billingStreetNumber}`}
-                          </>
-                        )}
-                        {!order.customer.billingStreet && order.customer.address && order.customer.address}
+                        {order.shippingAddress.street}
+                        {order.shippingAddress.streetNumber && ` ${order.shippingAddress.streetNumber}`}
                       </p>
                     )}
                     
-                    {/* City, State, ZIP */}
-                    {(order.customer?.billingCity || order.customer?.city) && (
+                    {/* City, ZIP */}
+                    {order.shippingAddress.city && (
                       <p className="text-slate-700 dark:text-slate-300" data-testid="text-shipping-city">
                         {[
-                          order.customer.billingCity || order.customer.city,
-                          order.customer.billingState || order.customer.state,
-                          order.customer.billingZipCode || order.customer.zipCode
-                        ].filter(Boolean).join(', ')}
+                          order.shippingAddress.zipCode,
+                          order.shippingAddress.city
+                        ].filter(Boolean).join(' ')}
                       </p>
                     )}
                     
                     {/* Country with Flag */}
-                    {(order.customer?.billingCountry || order.customer?.country) && (
+                    {order.shippingAddress.country && (
                       <p className="text-slate-700 dark:text-slate-300 flex items-center gap-1.5" data-testid="text-shipping-country">
-                        <span className="text-lg">{getCountryFlag(order.customer.billingCountry || order.customer.country)}</span>
-                        <span>{order.customer.billingCountry || order.customer.country}</span>
+                        <span className="text-lg">{getCountryFlag(order.shippingAddress.country)}</span>
+                        <span>{order.shippingAddress.country}</span>
                       </p>
                     )}
                   </div>

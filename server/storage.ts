@@ -880,9 +880,11 @@ export class DatabaseStorage implements IStorage {
     const [result] = await db.select({
       order: orders,
       customer: customers,
+      shippingAddress: customerShippingAddresses,
     })
     .from(orders)
     .leftJoin(customers, eq(orders.customerId, customers.id))
+    .leftJoin(customerShippingAddresses, eq(orders.shippingAddressId, customerShippingAddresses.id))
     .where(eq(orders.id, id));
     
     if (result) {
@@ -890,6 +892,7 @@ export class DatabaseStorage implements IStorage {
       return { 
         ...result.order, 
         customer: result.customer || undefined,
+        shippingAddress: result.shippingAddress || undefined,
         items 
       } as any;
     }
