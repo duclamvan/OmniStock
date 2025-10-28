@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Card,
@@ -11,7 +11,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
 import {
   FileText,
   Shield,
@@ -29,14 +28,13 @@ interface ProductFile {
   id: string;
   productId: string;
   fileType: string;
-  fileName: string;
-  language: string;
   displayName: string;
-  category?: string;
+  language: string;
+  filePath: string;
 }
 
 interface OrderItem {
-  id?: string;
+  id: string;
   productId: string;
   productName: string;
   sku: string;
@@ -46,34 +44,36 @@ interface OrderItem {
 interface OrderDocumentSelectorProps {
   orderItems: OrderItem[];
   selectedDocumentIds: string[];
-  onDocumentSelectionChange: (documentIds: string[]) => void;
+  onDocumentSelectionChange: (ids: string[]) => void;
   customerId?: string;
 }
 
-const FILE_TYPE_ICONS: Record<string, any> = {
-  sds: Shield,
-  cpnp: Award,
-  flyer: FileImage,
+const FILE_TYPE_ICONS: Record<string, typeof FileText> = {
   certificate: Award,
-  manual: Book,
+  msds: Shield,
+  instruction: Book,
+  image: FileImage,
+  technical: FileText,
   other: File,
-};
-
-const FILE_TYPE_LABELS: Record<string, string> = {
-  sds: 'Safety Data Sheet',
-  cpnp: 'CPNP Certificate',
-  flyer: 'Product Flyer',
-  certificate: 'Certificate',
-  manual: 'User Manual',
-  other: 'Other',
 };
 
 const LANGUAGE_FLAGS: Record<string, string> = {
   en: '🇬🇧',
-  cs: '🇨🇿',
   de: '🇩🇪',
+  cs: '🇨🇿',
   fr: '🇫🇷',
+  it: '🇮🇹',
   es: '🇪🇸',
+  pl: '🇵🇱',
+  sk: '🇸🇰',
+  hu: '🇭🇺',
+  ro: '🇷🇴',
+  bg: '🇧🇬',
+  hr: '🇭🇷',
+  sl: '🇸🇮',
+  sr: '🇷🇸',
+  ru: '🇷🇺',
+  uk: '🇺🇦',
   zh: '🇨🇳',
   vn: '🇻🇳',
 };
@@ -84,222 +84,191 @@ export default function OrderDocumentSelector({
   onDocumentSelectionChange,
   customerId,
 }: OrderDocumentSelectorProps) {
-  // Use prop directly instead of local state to avoid circular updates
-  const localSelectedIds = new Set(selectedDocumentIds);
+  // Memoize unique product IDs to prevent query refetches
+  const productIds = useMemo(
+    () => Array.from(new Set(orderItems.map(item => item.productId))),
+    [orderItems]
+  );
 
-  // Fetch files for all products in the order
-  const productIds = Array.from(new Set(orderItems.map(item => item.productId)));
-  
-  const fileQueries = useQuery({
-    queryKey: ['/api/products/files', productIds],
-    queryFn: async () => {
-      const allFiles: Record<string, ProductFile[]> = {};
-      
-      for (const productId of productIds) {
-        try {
-          const response = await fetch(`/api/products/${productId}/files`);
-          if (response.ok) {
-            const files = await response.json();
-            allFiles[productId] = files;
-          } else {
-            allFiles[productId] = [];
-          }
-        } catch (error) {
-          console.error(`Error fetching files for product ${productId}:`, error);
-          allFiles[productId] = [];
-        }
-      }
-      
-      return allFiles;
-    },
+  // Memoize unique products to avoid duplicate displays
+  const uniqueProducts = useMemo(
+    () => Array.from(new Map(orderItems.map(item => [item.productId, item])).values()),
+    [orderItems]
+  );
+
+  // Fetch files for all products
+  const { data: allFiles = [], isLoading: filesLoading } = useQuery<ProductFile[]>({
+    queryKey: ['/api/files/products', productIds],
     enabled: productIds.length > 0,
   });
 
-  // Fetch customer's order history to check previously sent documents
-  const { data: previouslySentDocuments } = useQuery({
+  // Fetch customer document history
+  const { data: customerHistory = [] } = useQuery<string[]>({
     queryKey: ['/api/customers', customerId, 'document-history'],
-    queryFn: async () => {
-      if (!customerId) return new Set<string>();
-      
-      try {
-        const response = await fetch(`/api/customers/${customerId}/orders`);
-        if (!response.ok) return new Set<string>();
-        
-        const orders = await response.json();
-        const sentDocIds = new Set<string>();
-        
-        // Extract all document IDs from past orders
-        orders.forEach((order: any) => {
-          if (order.selectedDocumentIds && Array.isArray(order.selectedDocumentIds)) {
-            order.selectedDocumentIds.forEach((id: string) => sentDocIds.add(id));
-          }
-        });
-        
-        return sentDocIds;
-      } catch (error) {
-        console.error('Error fetching customer document history:', error);
-        return new Set<string>();
-      }
-    },
     enabled: !!customerId,
   });
 
-  const handleDocumentToggle = (documentId: string) => {
-    const newSelection = new Set(localSelectedIds);
-    if (newSelection.has(documentId)) {
-      newSelection.delete(documentId);
-    } else {
-      newSelection.add(documentId);
-    }
-    onDocumentSelectionChange(Array.from(newSelection));
-  };
+  // Memoize files grouped by product
+  const filesByProduct = useMemo(() => {
+    const grouped: Record<string, ProductFile[]> = {};
+    allFiles.forEach(file => {
+      if (!grouped[file.productId]) {
+        grouped[file.productId] = [];
+      }
+      grouped[file.productId].push(file);
+    });
+    return grouped;
+  }, [allFiles]);
 
-  const handleSelectAll = (productId: string) => {
-    const productFiles = fileQueries.data?.[productId] || [];
-    const allSelected = productFiles.every(file => localSelectedIds.has(file.id));
+  // Memoize set for fast lookups
+  const selectedSet = useMemo(
+    () => new Set(selectedDocumentIds),
+    [selectedDocumentIds]
+  );
+
+  const historySet = useMemo(
+    () => new Set(customerHistory),
+    [customerHistory]
+  );
+
+  // Stable toggle handler
+  const handleToggle = useCallback((fileId: string) => {
+    const newSet = new Set(selectedDocumentIds);
+    if (newSet.has(fileId)) {
+      newSet.delete(fileId);
+    } else {
+      newSet.add(fileId);
+    }
+    onDocumentSelectionChange(Array.from(newSet));
+  }, [selectedDocumentIds, onDocumentSelectionChange]);
+
+  // Stable select all handler
+  const handleSelectAll = useCallback((productId: string) => {
+    const files = filesByProduct[productId] || [];
+    const allSelected = files.every(f => selectedSet.has(f.id));
     
-    const newSelection = new Set(localSelectedIds);
-    productFiles.forEach(file => {
+    const newSet = new Set(selectedDocumentIds);
+    files.forEach(file => {
       if (allSelected) {
-        newSelection.delete(file.id);
+        newSet.delete(file.id);
       } else {
-        newSelection.add(file.id);
+        newSet.add(file.id);
       }
     });
-    
-    onDocumentSelectionChange(Array.from(newSelection));
-  };
+    onDocumentSelectionChange(Array.from(newSet));
+  }, [filesByProduct, selectedSet, selectedDocumentIds, onDocumentSelectionChange]);
 
   if (orderItems.length === 0) {
     return null;
   }
 
-  if (fileQueries.isLoading) {
+  const totalFiles = allFiles.length;
+  const hasHistory = customerHistory.length > 0;
+
+  if (filesLoading) {
     return (
       <Card className="shadow-sm">
-        <CardHeader className="p-3 border-b">
-          <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-teal-600" />
-            <CardTitle className="text-sm font-semibold">Product Documents & Files</CardTitle>
-          </div>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Product Documents</CardTitle>
         </CardHeader>
-        <CardContent className="p-3">
-          <div className="space-y-2">
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
-          </div>
+        <CardContent className="p-3 space-y-3">
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-20 w-full" />
         </CardContent>
       </Card>
     );
   }
 
-  const hasAnyDocuments = productIds.some(
-    productId => (fileQueries.data?.[productId]?.length || 0) > 0
-  );
-
-  if (!hasAnyDocuments) {
-    return (
-      <Card className="shadow-sm">
-        <CardHeader className="p-3 border-b">
-          <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-teal-600" />
-            <CardTitle className="text-sm font-semibold">Product Documents & Files</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent className="p-3">
-          <p className="text-xs text-slate-500">No documents available for selected products</p>
-        </CardContent>
-      </Card>
-    );
+  if (totalFiles === 0) {
+    return null;
   }
-
-  const previouslySent = previouslySentDocuments || new Set<string>();
-  const hasHistory = previouslySent.size > 0;
 
   return (
-    <Card className="shadow-sm">
-      <CardHeader className="p-3 border-b">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-            <CardTitle className="text-sm font-semibold">Product Documents & Files</CardTitle>
+    <Card className="shadow-sm border-blue-200 dark:border-blue-800">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <CardTitle className="text-base font-semibold">
+              Product Documents
+            </CardTitle>
+            <CardDescription className="text-xs mt-1">
+              Select documents to include with this order
+            </CardDescription>
           </div>
-          {localSelectedIds.size > 0 && (
-            <Badge variant="default" className="h-5 px-2 text-xs bg-teal-600">
-              {localSelectedIds.size}
+          {totalFiles > 0 && (
+            <Badge variant="secondary" className="text-xs px-2 h-6 shrink-0">
+              {totalFiles} available
             </Badge>
           )}
         </div>
       </CardHeader>
 
       <CardContent className="p-3 space-y-3">
-        {/* Customer Document History Alert */}
         {hasHistory && (
           <Alert className="py-2 px-3 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
             <div className="flex items-center gap-2">
               <History className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
               <AlertDescription className="text-blue-800 dark:text-blue-200 text-xs">
-                {previouslySent.size} document(s) previously sent (marked with <CheckCircle className="h-3 w-3 inline text-green-600" />)
+                {customerHistory.length} document(s) previously sent (marked with <CheckCircle className="h-3 w-3 inline text-green-600" />)
               </AlertDescription>
             </div>
           </Alert>
         )}
 
         <div className="space-y-3">
-          {/* Group order items by productId to avoid duplicates */}
-          {Array.from(new Map(orderItems.map(item => [item.productId, item])).values()).map((item, index) => {
-            const productFiles = fileQueries.data?.[item.productId] || [];
+          {uniqueProducts.map((product) => {
+            const files = filesByProduct[product.productId] || [];
             
-            if (productFiles.length === 0) {
+            if (files.length === 0) {
               return null;
             }
-            
-            const allSelected = productFiles.every(file => localSelectedIds.has(file.id));
-            const selectedCount = productFiles.filter(file => localSelectedIds.has(file.id)).length;
-            
+
+            const selectedCount = files.filter(f => selectedSet.has(f.id)).length;
+            const allSelected = files.length > 0 && selectedCount === files.length;
+
             return (
-              <div key={item.id || item.productId || index} className="space-y-2">
+              <div key={product.productId} className="space-y-2">
                 {/* Product Header */}
                 <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-900/50 rounded-md border border-slate-200 dark:border-slate-700">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <Package className="h-4 w-4 text-slate-500 dark:text-slate-400 shrink-0" />
                     <span className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate">
-                      {item.productName}
+                      {product.productName}
                     </span>
                     <Badge variant="outline" className="text-xs px-1.5 h-5 shrink-0">
-                      {item.sku}
+                      {product.sku}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 ml-2">
                     <span className="text-xs text-slate-500">
-                      {selectedCount}/{productFiles.length}
+                      {selectedCount}/{files.length}
                     </span>
                     <Checkbox
                       checked={allSelected}
-                      onCheckedChange={() => handleSelectAll(item.productId)}
-                      data-testid={`checkbox-select-all-${item.productId}`}
+                      onCheckedChange={() => handleSelectAll(product.productId)}
+                      data-testid={`checkbox-select-all-${product.productId}`}
                     />
                   </div>
                 </div>
-                
+
                 {/* Document List */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {productFiles.map(file => {
+                  {files.map(file => {
                     const Icon = FILE_TYPE_ICONS[file.fileType] || FileText;
                     const flag = LANGUAGE_FLAGS[file.language] || '🌐';
-                    const wasSent = previouslySent.has(file.id);
-                    const isSelected = localSelectedIds.has(file.id);
-                    
+                    const isSelected = selectedSet.has(file.id);
+                    const wasSent = historySet.has(file.id);
+
                     return (
                       <div
                         key={file.id}
                         className={`flex items-center gap-2 py-2 px-3 rounded-md border transition-all cursor-pointer ${
-                          isSelected 
-                            ? 'bg-teal-50 dark:bg-teal-950/30 border-teal-300 dark:border-teal-700' 
+                          isSelected
+                            ? 'bg-teal-50 dark:bg-teal-950/30 border-teal-300 dark:border-teal-700'
                             : 'bg-white dark:bg-slate-900/20 border-slate-200 dark:border-slate-700 hover:border-teal-200 dark:hover:border-teal-800'
                         }`}
-                        onClick={() => handleDocumentToggle(file.id)}
+                        onClick={() => handleToggle(file.id)}
+                        data-testid={`document-row-${file.id}`}
                       >
                         <Checkbox
                           checked={isSelected}
@@ -334,11 +303,11 @@ export default function OrderDocumentSelector({
         </div>
 
         {/* Summary Footer */}
-        {localSelectedIds.size > 0 && (
+        {selectedDocumentIds.length > 0 && (
           <div className="flex items-center gap-2 py-2 px-3 bg-teal-50 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800 rounded-md mt-3">
             <Info className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
             <span className="text-xs font-medium text-teal-900 dark:text-teal-100">
-              {localSelectedIds.size} document{localSelectedIds.size !== 1 ? 's' : ''} will be included
+              {selectedDocumentIds.length} document{selectedDocumentIds.length !== 1 ? 's' : ''} will be included
             </span>
           </div>
         )}
