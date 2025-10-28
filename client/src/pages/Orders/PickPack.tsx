@@ -4357,9 +4357,9 @@ export default function PickPack() {
                       onClick={() => setIsTimerRunning(!isTimerRunning)}
                     >
                       {isTimerRunning ? (
-                        <PauseCircle className="h-4 w-4 text-orange-300" />
+                        <PauseCircle className="h-4 w-4 text-white" />
                       ) : (
-                        <PlayCircle className="h-4 w-4 text-green-300" />
+                        <PlayCircle className="h-4 w-4 text-white" />
                       )}
                     </Button>
                     <Button
@@ -4367,7 +4367,7 @@ export default function PickPack() {
                       className="h-8 w-8 bg-white/20 hover:bg-white/30 active:bg-white/40 touch-manipulation"
                       onClick={() => setAudioEnabled(!audioEnabled)}
                     >
-                      <Volume2 className={`h-4 w-4 ${audioEnabled ? 'text-yellow-300' : 'text-white/50'}`} />
+                      <Volume2 className={`h-4 w-4 ${audioEnabled ? 'text-white' : 'text-white/50'}`} />
                     </Button>
                   </div>
                 </div>
@@ -4439,7 +4439,7 @@ export default function PickPack() {
                     className="h-10 bg-white/20 hover:bg-white/30 text-white border-white/30"
                     onClick={() => setAudioEnabled(!audioEnabled)}
                   >
-                    <Volume2 className={`h-4 w-4 ${audioEnabled ? 'text-yellow-300' : 'text-white/50'}`} />
+                    <Volume2 className={`h-4 w-4 ${audioEnabled ? 'text-white' : 'text-white/50'}`} />
                   </Button>
                   
                   <Button
@@ -4448,9 +4448,9 @@ export default function PickPack() {
                     onClick={() => setIsTimerRunning(!isTimerRunning)}
                   >
                     {isTimerRunning ? (
-                      <PauseCircle className="h-4 w-4 text-orange-300" />
+                      <PauseCircle className="h-4 w-4 text-white" />
                     ) : (
-                      <PlayCircle className="h-4 w-4 text-green-300" />
+                      <PlayCircle className="h-4 w-4 text-white" />
                     )}
                   </Button>
                 </div>
