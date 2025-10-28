@@ -604,6 +604,16 @@ export default function EditOrder() {
     }
   }, [existingOrder]);
 
+  // Pre-fill selected documents when order loads
+  useEffect(() => {
+    if (!existingOrder) return;
+    const order = existingOrder as any;
+    
+    if (order.selectedDocumentIds && Array.isArray(order.selectedDocumentIds)) {
+      setSelectedDocumentIds(order.selectedDocumentIds);
+    }
+  }, [existingOrder]);
+
   // Auto-update currency based on shipping address country
   useEffect(() => {
     if (!selectedShippingAddress) return;
