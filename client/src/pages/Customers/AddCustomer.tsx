@@ -2050,9 +2050,17 @@ export default function AddCustomer() {
                         id="shippingFirstName"
                         {...shippingForm.register('firstName')}
                         placeholder="First name"
-                        className={cn(getConfidenceClass('firstName', shippingFieldConfidence))}
+                        className={cn(
+                          getConfidenceClass('firstName', shippingFieldConfidence),
+                          shippingForm.formState.errors.firstName && "border-red-500"
+                        )}
                         data-testid="input-shippingFirstName"
                       />
+                      {shippingForm.formState.errors.firstName && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {shippingForm.formState.errors.firstName.message}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="shippingLastName">Last Name *</Label>
@@ -2060,9 +2068,17 @@ export default function AddCustomer() {
                         id="shippingLastName"
                         {...shippingForm.register('lastName')}
                         placeholder="Last name"
-                        className={cn(getConfidenceClass('lastName', shippingFieldConfidence))}
+                        className={cn(
+                          getConfidenceClass('lastName', shippingFieldConfidence),
+                          shippingForm.formState.errors.lastName && "border-red-500"
+                        )}
                         data-testid="input-shippingLastName"
                       />
+                      {shippingForm.formState.errors.lastName && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {shippingForm.formState.errors.lastName.message}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -2233,7 +2249,20 @@ export default function AddCustomer() {
                     </Button>
                     <Button
                       type="button"
-                      onClick={shippingForm.handleSubmit(handleSaveShippingAddress)}
+                      onClick={shippingForm.handleSubmit(
+                        handleSaveShippingAddress,
+                        (errors) => {
+                          const errorMessages = Object.values(errors)
+                            .map(error => error?.message)
+                            .filter(Boolean)
+                            .join(', ');
+                          toast({
+                            title: "Validation Error",
+                            description: errorMessages || "Please fill in all required fields (First Name, Last Name)",
+                            variant: "destructive",
+                          });
+                        }
+                      )}
                       data-testid="button-saveShipping"
                     >
                       <Check className="h-4 w-4 mr-2" />
