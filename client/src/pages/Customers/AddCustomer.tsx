@@ -356,6 +356,46 @@ export default function AddCustomer() {
   const facebookNameValue = form.watch('facebookName');
   const facebookUrlValue = form.watch('facebookUrl');
 
+  // Helper function to get phone country code from country name
+  const getPhoneCountryCode = (countryName: string): string => {
+    const countryCodeMap: { [key: string]: string } = {
+      'Czech Republic': '+420',
+      'Germany': '+49',
+      'Austria': '+43',
+      'Poland': '+48',
+      'Slovakia': '+421',
+      'Hungary': '+36',
+      'France': '+33',
+      'Italy': '+39',
+      'Spain': '+34',
+      'Netherlands': '+31',
+      'Belgium': '+32',
+      'United Kingdom': '+44',
+      'Vietnam': '+84',
+    };
+    return countryCodeMap[countryName] || '';
+  };
+
+  // Helper function to format phone number with country code
+  const formatPhoneNumber = (phone: string, countryCode: string): string => {
+    if (!phone || !countryCode) return phone;
+    
+    // Remove all spaces and special chars except +
+    let cleaned = phone.replace(/[^\d+]/g, '');
+    
+    // If already has + at start, return as is
+    if (cleaned.startsWith('+')) return phone;
+    
+    // Remove country code digits if present (e.g., 420 → +420)
+    const codeDigits = countryCode.replace('+', '');
+    if (cleaned.startsWith(codeDigits)) {
+      cleaned = cleaned.substring(codeDigits.length);
+    }
+    
+    // Add country code prefix
+    return `${countryCode} ${cleaned}`;
+  };
+
   // Helper function to convert country name to country code
   const getCountryCode = (countryNameOrCode: string): string => {
     if (!countryNameOrCode) return '';
@@ -506,6 +546,44 @@ export default function AddCustomer() {
     billingAddressForm,
     billingAddresses.length
   ]);
+
+  // Auto-format shipping phone number when country changes
+  const shippingCountry = shippingForm.watch('country');
+  const shippingTel = shippingForm.watch('tel');
+  
+  useEffect(() => {
+    if (!shippingTel || !shippingCountry) return;
+    
+    const countryCode = getPhoneCountryCode(shippingCountry);
+    if (!countryCode) return;
+    
+    // Only format if doesn't already start with +
+    if (!shippingTel.startsWith('+')) {
+      const formatted = formatPhoneNumber(shippingTel, countryCode);
+      if (formatted !== shippingTel) {
+        shippingForm.setValue('tel', formatted);
+      }
+    }
+  }, [shippingCountry, shippingForm]);
+
+  // Auto-format billing phone number when country changes
+  const billingCountry = billingAddressForm.watch('country');
+  const billingTel = billingAddressForm.watch('tel');
+  
+  useEffect(() => {
+    if (!billingTel || !billingCountry) return;
+    
+    const countryCode = getPhoneCountryCode(billingCountry);
+    if (!countryCode) return;
+    
+    // Only format if doesn't already start with +
+    if (!billingTel.startsWith('+')) {
+      const formatted = formatPhoneNumber(billingTel, countryCode);
+      if (formatted !== billingTel) {
+        billingAddressForm.setValue('tel', formatted);
+      }
+    }
+  }, [billingCountry, billingAddressForm]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -2132,7 +2210,16 @@ export default function AddCustomer() {
                       <Label htmlFor="shippingTel">Phone</Label>
                       <Input
                         id="shippingTel"
-                        {...shippingForm.register('tel')}
+                        {...shippingForm.register('tel', {
+                          onChange: (e) => {
+                            const currentCountry = shippingForm.watch('country');
+                            const countryCode = getPhoneCountryCode(currentCountry);
+                            if (countryCode) {
+                              const formatted = formatPhoneNumber(e.target.value, countryCode);
+                              shippingForm.setValue('tel', formatted);
+                            }
+                          }
+                        })}
                         placeholder="+420 123 456 789"
                         className={cn(getConfidenceClass('tel', shippingFieldConfidence))}
                         data-testid="input-shippingTel"
@@ -2525,7 +2612,16 @@ export default function AddCustomer() {
                       <Label htmlFor="billingTel">Phone</Label>
                       <Input
                         id="billingTel"
-                        {...billingAddressForm.register('tel')}
+                        {...billingAddressForm.register('tel', {
+                          onChange: (e) => {
+                            const currentCountry = billingAddressForm.watch('country');
+                            const countryCode = getPhoneCountryCode(currentCountry);
+                            if (countryCode) {
+                              const formatted = formatPhoneNumber(e.target.value, countryCode);
+                              billingAddressForm.setValue('tel', formatted);
+                            }
+                          }
+                        })}
                         placeholder="+420 123 456 789"
                         className={cn(getConfidenceClass('tel', billingAddressFieldConfidence))}
                         data-testid="input-billingTel"
