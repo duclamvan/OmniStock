@@ -69,6 +69,16 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const editOrderSchema = z.object({
   customerId: z.string().optional(),
@@ -167,6 +177,7 @@ export default function EditOrder() {
   const [selectedShippingAddress, setSelectedShippingAddress] = useState<any>(null);
   const [showShippingModal, setShowShippingModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
+  const [addressToDelete, setAddressToDelete] = useState<any>(null);
   const [newCustomer, setNewCustomer] = useState({
     name: "",
     facebookName: "",
@@ -735,6 +746,31 @@ export default function EditOrder() {
       toast({
         title: "Error",
         description: "Failed to create shipping address",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteShippingAddressMutation = useMutation({
+    mutationFn: async (addressId: string) => {
+      await apiRequest('DELETE', `/api/customers/${selectedCustomer.id}/shipping-addresses/${addressId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customers', selectedCustomer?.id, 'shipping-addresses'] });
+      // If the deleted address was selected, unselect it
+      if (selectedShippingAddress?.id === addressToDelete?.id) {
+        setSelectedShippingAddress(null);
+      }
+      setAddressToDelete(null);
+      toast({
+        title: "Success",
+        description: "Shipping address deleted successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete shipping address",
         variant: "destructive",
       });
     },
@@ -1986,7 +2022,7 @@ export default function EditOrder() {
                       {shippingAddresses.map((address: any) => (
                         <div
                           key={address.id}
-                          className={`rounded-lg border-2 transition-all ${
+                          className={`rounded-lg border-2 transition-all relative ${
                             selectedShippingAddress?.id === address.id
                               ? 'border-teal-500 bg-teal-50/50 shadow-sm'
                               : 'border-slate-200 hover:border-slate-300'
@@ -2017,36 +2053,86 @@ export default function EditOrder() {
                                 }
                               }}
                             >
-                              <div className="flex items-start gap-2">
+                              <div className="flex items-start gap-3">
                                 <MapPin className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
-                                <div className="text-sm text-slate-700 leading-relaxed select-none">
-                                  <div className="font-semibold text-slate-900">{address.firstName} {address.lastName}</div>
+                                <div className="text-sm text-slate-700 space-y-0.5 select-none flex-1">
+                                  {/* Name */}
+                                  <div className="font-semibold text-slate-900">
+                                    {address.firstName} {address.lastName}
+                                  </div>
+                                  {/* Company */}
                                   {address.company && (
-                                    <div className="font-medium text-slate-800">{address.company}</div>
+                                    <div className="font-medium text-slate-800">
+                                      {address.company}
+                                    </div>
                                   )}
-                                  <div className="mt-1">{address.street}</div>
-                                  <div>{address.city}, {address.zipCode}</div>
-                                  <div>{address.country}</div>
+                                  {/* Street and Number */}
+                                  <div className="text-slate-700">
+                                    {address.street}{address.streetNumber && ` ${address.streetNumber}`}
+                                  </div>
+                                  {/* Postal Code and City */}
+                                  <div className="text-slate-700">
+                                    {address.zipCode} {address.city}
+                                  </div>
+                                  {/* State (if exists) */}
+                                  {address.state && (
+                                    <div className="text-slate-700">{address.state}</div>
+                                  )}
+                                  {/* Country */}
+                                  <div className="text-slate-700 font-medium">
+                                    {address.country}
+                                  </div>
+                                  {/* Contact Info */}
+                                  {(address.tel || address.email) && (
+                                    <div className="pt-2 space-y-1 border-t border-slate-200 mt-2">
+                                      {address.tel && (
+                                        <div className="flex items-center gap-2 text-slate-600">
+                                          <Phone className="h-3.5 w-3.5 text-slate-400" />
+                                          <span className="text-xs">{address.tel}</span>
+                                        </div>
+                                      )}
+                                      {address.email && (
+                                        <div className="flex items-center gap-2 text-slate-600">
+                                          <Mail className="h-3.5 w-3.5 text-slate-400" />
+                                          <span className="text-xs">{address.email}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </div>
-                          </div>
-                          {(address.tel || address.email) && (
-                            <div className="px-4 pb-4 pt-0 flex flex-col gap-2 border-t border-slate-100 select-none">
-                              {address.tel && (
-                                <div className="flex items-center gap-2 mt-2">
-                                  <Phone className="h-3.5 w-3.5 text-slate-400" />
-                                  <span className="text-sm text-slate-600">{address.tel}</span>
-                                </div>
-                              )}
-                              {address.email && (
-                                <div className="flex items-center gap-2">
-                                  <Mail className="h-3.5 w-3.5 text-slate-400" />
-                                  <span className="text-sm text-slate-600">{address.email}</span>
-                                </div>
-                              )}
+                            {/* Action buttons */}
+                            <div className="flex flex-col gap-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingAddress(address);
+                                  setShowShippingModal(true);
+                                }}
+                                data-testid={`button-edit-address-${address.id}`}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setAddressToDelete(address);
+                                }}
+                                data-testid={`button-delete-address-${address.id}`}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
                             </div>
-                          )}
+                          </div>
                         </div>
                       ))}
                     </RadioGroup>
@@ -2056,36 +2142,19 @@ export default function EditOrder() {
                     </div>
                   )}
 
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => {
-                        setEditingAddress(null);
-                        setShowShippingModal(true);
-                      }}
-                      data-testid="button-add-address"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add New Address
-                    </Button>
-                    
-                    {selectedShippingAddress && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => {
-                          setEditingAddress(selectedShippingAddress);
-                          setShowShippingModal(true);
-                        }}
-                        data-testid="button-edit-address"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      setEditingAddress(null);
+                      setShowShippingModal(true);
+                    }}
+                    data-testid="button-add-address"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add New Address
+                  </Button>
                 </CardContent>
               </Card>
             )}
@@ -4032,6 +4101,40 @@ export default function EditOrder() {
         title={editingAddress ? "Edit Shipping Address" : "Add Shipping Address"}
         description={editingAddress ? "Update the shipping address details below" : "Enter the new shipping address details below"}
       />
+
+      {/* Delete Address Confirmation Dialog */}
+      <AlertDialog open={!!addressToDelete} onOpenChange={(open) => !open && setAddressToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Shipping Address?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this shipping address? This action cannot be undone.
+              {addressToDelete && (
+                <div className="mt-3 p-3 bg-slate-50 rounded-md text-sm text-slate-900">
+                  <div className="font-medium">{addressToDelete.firstName} {addressToDelete.lastName}</div>
+                  {addressToDelete.company && <div>{addressToDelete.company}</div>}
+                  <div>{addressToDelete.street}{addressToDelete.streetNumber && ` ${addressToDelete.streetNumber}`}</div>
+                  <div>{addressToDelete.zipCode} {addressToDelete.city}</div>
+                  <div>{addressToDelete.country}</div>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (addressToDelete) {
+                  deleteShippingAddressMutation.mutate(addressToDelete.id);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete Address
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
