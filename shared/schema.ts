@@ -245,7 +245,6 @@ export const customers = pgTable('customers', {
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
   type: varchar('type').default('regular'),
-  state: varchar('state'),
   vatId: varchar('vat_id'),
   taxId: varchar('tax_id'),
   firstOrderDate: timestamp('first_order_date'),
@@ -269,7 +268,6 @@ export const customers = pgTable('customers', {
   billingCity: varchar('billing_city'),
   billingZipCode: varchar('billing_zip_code'),
   billingCountry: varchar('billing_country'),
-  billingState: varchar('billing_state'),
   
   // Tax information fields
   ico: varchar('ico'), // Czech company ID
@@ -296,7 +294,6 @@ export const customerShippingAddresses = pgTable('customer_shipping_addresses', 
   city: varchar('city').notNull(),
   zipCode: varchar('zip_code').notNull(),
   country: varchar('country').notNull(),
-  state: varchar('state'),
   isPrimary: boolean('is_primary').default(false), // Mark one as default
   label: varchar('label'), // e.g., "Home", "Office", "Warehouse"
   createdAt: timestamp('created_at').defaultNow(),
@@ -317,7 +314,6 @@ export const customerBillingAddresses = pgTable('customer_billing_addresses', {
   city: varchar('city'),
   zipCode: varchar('zip_code'),
   country: varchar('country'),
-  state: varchar('state'),
   vatId: varchar('vat_id'), // VAT ID for all countries
   ico: varchar('ico'), // IČO for Czech Republic only
   isPrimary: boolean('is_primary').default(false), // Mark one as default
