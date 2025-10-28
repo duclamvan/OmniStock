@@ -593,14 +593,16 @@ export default function EditOrder() {
 
   // Pre-fill shipping address when order loads
   useEffect(() => {
-    if (!existingOrder) return;
+    if (!existingOrder || !shippingAddresses) return;
     const order = existingOrder as any;
     
-    if (order.shippingAddressId) {
-      // The shipping address will be loaded when the customer is selected
-      // and shippingAddresses query runs
+    if (order.shippingAddressId && Array.isArray(shippingAddresses)) {
+      const address = shippingAddresses.find((addr: any) => addr.id === order.shippingAddressId);
+      if (address) {
+        setSelectedShippingAddress(address);
+      }
     }
-  }, [existingOrder]);
+  }, [existingOrder, shippingAddresses]);
 
   // Pre-fill selected documents when order loads
   useEffect(() => {
