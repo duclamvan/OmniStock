@@ -7722,11 +7722,13 @@ IMPORTANT NAME AND COMPANY PARSING RULES:
 
 - **For Vietnamese names** (family name detection):
   * Common family names: Nguyen, Tran, Le, Pham, Hoang, Phan, Vu, Vo, Dang, Bui, Do, Ho, Ngo, Duong, Ly, Phung, Trinh, Dinh, Mai, Cao, Lam, Vuong, Ta, Huynh, Luu, Dao, Tong, Thai
-  * **If a known family name is present**: That word is lastName, all words BEFORE it are firstName
+  * **If a known family name is present AND there are other words**: That word is lastName, all words BEFORE it are firstName
     - Example: "Van Hang Bui" → firstName: "Van Hang", lastName: "Bui" (Bui is a known family name)
     - Example: "Phung Thi Hong Tham" → firstName: "Thi Hong Tham", lastName: "Phung" (Phung is a known family name)
-  * **For 2-word names without known family names**: First word is lastName, second word is firstName
-    - Example: "Huong Vuong" → firstName: "Vuong", lastName: "Huong"
+  * **For EXACTLY 2-word names (regardless of family names)**: First word is firstName, second word is lastName
+    - Example: "Diet Lam" → firstName: "Diet", lastName: "Lam"
+    - Example: "Huong Vuong" → firstName: "Huong", lastName: "Vuong"
+    - Example: "Van Bui" → firstName: "Van", lastName: "Bui"
   * **For 3+ word names without known family names**: First word is lastName, remaining words are firstName
     - Example: "Minh Tuan Hoang" → firstName: "Tuan Hoang", lastName: "Minh"
 
@@ -7755,8 +7757,8 @@ Return ONLY valid JSON with these exact fields: firstName, lastName, company, em
 EXAMPLE PARSING:
 Input: "Van Duy Lam Pro Nails Dragounska2545/9A Cheb 35002 776887045"
 Output: {
-  "firstName": "Duy",
-  "lastName": "Lam Van",
+  "firstName": "Van Duy",
+  "lastName": "Lam",
   "company": "Pro Nails",
   "email": null,
   "phone": "776887045",
@@ -7765,6 +7767,20 @@ Output: {
   "city": "Cheb",
   "zipCode": "35002",
   "country": null
+}
+
+Input: "Diet Lam Pro Nails Dragounska 2545/9A Cheb 350 02 776887045"
+Output: {
+  "firstName": "Diet",
+  "lastName": "Lam",
+  "company": "Pro Nails",
+  "email": null,
+  "phone": "776887045",
+  "street": "Dragounska",
+  "streetNumber": "2545/9A",
+  "city": "Cheb",
+  "zipCode": "350 02",
+  "country": "Czech Republic"
 }
 
 Text: ${rawAddress}`;
