@@ -5748,14 +5748,22 @@ export default function PickPack() {
                                   );
                                 })()}
                               </div>
-                              <div className="flex items-center gap-3 text-xs text-gray-600">
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-gray-600">
+                                <div className="flex items-center gap-1.5">
+                                  <User className="h-3 w-3 text-gray-400" />
+                                  <span className="truncate font-medium">{order.customerName}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <Package className="h-3 w-3 text-gray-400" />
+                                  <span className="font-medium">{order.totalItems} items</span>
+                                </div>
                                 <div className="flex items-center gap-1.5">
                                   <Globe className="h-3 w-3 text-gray-400" />
                                   <span className="font-semibold text-gray-900">{getOrderCountryCode(order)}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
-                                  <User className="h-3 w-3 text-gray-400" />
-                                  <span className="font-medium">Picked by: {order.pickedBy}</span>
+                                  <CheckCircle className="h-3 w-3 text-green-500" />
+                                  <span className="text-green-600 font-medium">Picked by {order.pickedBy}</span>
                                 </div>
                               </div>
                               {/* Compact product list */}
@@ -6236,18 +6244,22 @@ export default function PickPack() {
                                             </span>
                                           )}
                                         </div>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-xs text-gray-600">
-                                          <div className="flex items-center gap-1">
-                                            <User className="h-3 w-3" />
-                                            <span className="truncate">{order.customerName}</span>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs text-gray-600">
+                                          <div className="flex items-center gap-1.5">
+                                            <User className="h-3 w-3 text-gray-400" />
+                                            <span className="truncate font-medium">{order.customerName}</span>
                                           </div>
-                                          <div className="flex items-center gap-1">
-                                            <Globe className="h-3 w-3" />
-                                            <span className="font-semibold">{getOrderCountryCode(order)}</span>
+                                          <div className="flex items-center gap-1.5">
+                                            <Globe className="h-3 w-3 text-gray-400" />
+                                            <span className="font-semibold text-gray-900">{getOrderCountryCode(order)}</span>
                                           </div>
-                                          <div className="flex items-center gap-1 col-span-2 sm:col-span-1">
-                                            <PackageCheck className="h-3 w-3 text-green-500" />
-                                            <span className="text-green-600">Packed by {order.packedBy}</span>
+                                          <div className="flex items-center gap-1.5">
+                                            <Package className="h-3 w-3 text-gray-400" />
+                                            <span className="font-medium">{order.totalItems} items</span>
+                                          </div>
+                                          <div className="flex items-center gap-1.5">
+                                            <Truck className="h-3 w-3 text-gray-400" />
+                                            <span className="truncate font-medium">{order.shippingMethod}</span>
                                           </div>
                                         </div>
                                         {/* Compact product list */}
