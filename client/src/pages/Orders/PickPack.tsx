@@ -84,7 +84,8 @@ import {
   BarChart3,
   TrendingUp,
   ShoppingCart,
-  Check
+  Check,
+  Edit
 } from "lucide-react";
 
 interface BundleItem {
@@ -5635,17 +5636,55 @@ export default function PickPack() {
                             )}
                           </div>
                           {!batchPickingMode && (
-                            <Button
-                              size="sm"
-                              className="w-full sm:w-auto h-8 text-xs font-semibold"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                startPicking(order);
-                              }}
-                            >
-                              <PlayCircle className="h-3.5 w-3.5 mr-1.5" />
-                              Start Picking
-                            </Button>
+                            <div className="flex items-center gap-1.5">
+                              {/* Quick View Button */}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPreviewOrder(order);
+                                }}
+                                title="View Order Details"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="w-full sm:w-auto h-8 text-xs font-semibold"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startPicking(order);
+                                }}
+                              >
+                                <PlayCircle className="h-3.5 w-3.5 mr-1.5" />
+                                Start Picking
+                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setModificationDialog(order);
+                                    }}
+                                  >
+                                    <Edit className="h-3.5 w-3.5 mr-1.5" />
+                                    Edit Order
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           )}
                         </div>
                       </CardContent>
@@ -5733,23 +5772,58 @@ export default function PickPack() {
                                 </div>
                               )}
                             </div>
-                            <Button 
-                              size="sm" 
-                              className="w-full sm:w-auto h-8 text-xs bg-amber-500 hover:bg-amber-600 text-white font-semibold"
-                              onClick={() => {
-                                // Resume picking by setting the active order and switching to picking view
-                                setActivePickingOrder(order);
-                                setSelectedTab('picking');
-                                // Find the first unpicked item or start at 0
-                                const firstUnpickedIndex = order.items.findIndex(item => item.pickedQuantity < item.quantity);
-                                setManualItemIndex(firstUnpickedIndex >= 0 ? firstUnpickedIndex : 0);
-                                // Resume timer
-                                setIsTimerRunning(true);
-                                playSound('success');
-                              }}
-                            >
-                              Resume Picking
-                            </Button>
+                            <div className="flex items-center gap-1.5">
+                              {/* Quick View Button */}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => setPreviewOrder(order)}
+                                title="View Order Details"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                className="w-full sm:w-auto h-8 text-xs bg-amber-500 hover:bg-amber-600 text-white font-semibold"
+                                onClick={() => {
+                                  // Resume picking by setting the active order and switching to picking view
+                                  setActivePickingOrder(order);
+                                  setSelectedTab('picking');
+                                  // Find the first unpicked item or start at 0
+                                  const firstUnpickedIndex = order.items.findIndex(item => item.pickedQuantity < item.quantity);
+                                  setManualItemIndex(firstUnpickedIndex >= 0 ? firstUnpickedIndex : 0);
+                                  // Resume timer
+                                  setIsTimerRunning(true);
+                                  playSound('success');
+                                }}
+                              >
+                                Resume Picking
+                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setModificationDialog(order);
+                                    }}
+                                  >
+                                    <Edit className="h-3.5 w-3.5 mr-1.5" />
+                                    Edit Order
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
