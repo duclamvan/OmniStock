@@ -40,11 +40,18 @@ import {
   Ticket,
   Plus,
   Search,
-  X
+  X,
+  Globe,
+  Truck,
+  Receipt,
+  Copy,
+  ExternalLink
 } from "lucide-react";
+import { Facebook } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { CustomerPrices } from "./CustomerPrices";
 import { calculateSearchScore } from "@/lib/fuzzySearch";
+import { getCountryFlag, getCountryCodeByName } from "@/lib/countries";
 
 const EXPAND_ALL_KEY = 'customerOrdersExpandAll';
 
@@ -76,7 +83,19 @@ export default function CustomerDetails() {
     enabled: !!id,
   });
 
-  const isLoading = customerLoading || ordersLoading;
+  // Fetch customer shipping addresses
+  const { data: shippingAddresses = [], isLoading: shippingAddressesLoading } = useQuery<any[]>({
+    queryKey: [`/api/customers/${id}/shipping-addresses`],
+    enabled: !!id,
+  });
+
+  // Fetch customer billing addresses
+  const { data: billingAddresses = [], isLoading: billingAddressesLoading } = useQuery<any[]>({
+    queryKey: [`/api/customers/${id}/billing-addresses`],
+    enabled: !!id,
+  });
+
+  const isLoading = customerLoading || ordersLoading || shippingAddressesLoading || billingAddressesLoading;
 
   // Update expanded orders when orders change or expandAll changes
   useEffect(() => {
@@ -403,170 +422,449 @@ export default function CustomerDetails() {
           </div>
 
           <TabsContent value="details" className="space-y-4 mt-0">
-            {/* Contact Information */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Location & Business Info Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
+                    <Globe className="h-5 w-5 text-blue-600" />
+                    Location & Business Info
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {/* Facebook Information */}
+                  {(customer.facebookUrl || customer.facebookName || customer.facebookId) && (
+                    <div className="space-y-2 pb-3 border-b">
+                      {customer.facebookUrl && (
+                        <div className="flex items-center gap-2">
+                          <Facebook className="h-4 w-4 text-blue-600 shrink-0" />
+                          <a 
+                            href={customer.facebookUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:underline truncate flex items-center gap-1"
+                            data-testid="link-facebookUrl"
+                          >
+                            <span className="truncate">{customer.facebookUrl}</span>
+                            <ExternalLink className="h-3 w-3 shrink-0" />
+                          </a>
+                        </div>
+                      )}
+                      {customer.facebookId && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="text-slate-600 ml-6">Facebook ID:</span>
+                          <span className="font-medium" data-testid="text-facebookId">{customer.facebookId}</span>
+                        </div>
+                      )}
+                      {customer.facebookName && customer.facebookName !== customer.name && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="text-slate-600 ml-6">Facebook Name:</span>
+                          <span className="font-medium" data-testid="text-facebookName">{customer.facebookName}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Customer Name */}
+                  <div className="flex items-center gap-2 text-sm">
+                    <User className="h-4 w-4 text-slate-400 shrink-0" />
+                    <span className="text-slate-600">Customer:</span>
+                    <span className="font-medium" data-testid="text-customerName">{customer.name}</span>
+                  </div>
+
+                  {/* Country */}
+                  {customer.country && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
+                      <span className="text-slate-600">Country:</span>
+                      <span className="font-medium flex items-center gap-1.5" data-testid="text-country">
+                        <span className="text-lg">{getCountryFlag(getCountryCodeByName(customer.country))}</span>
+                        {customer.country}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Preferred Currency */}
+                  {customer.preferredCurrency && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Banknote className="h-4 w-4 text-slate-400 shrink-0" />
+                      <span className="text-slate-600">Preferred Currency:</span>
+                      <Badge variant="outline" className="bg-blue-50 border-blue-300 text-blue-700" data-testid="badge-currency">
+                        {customer.preferredCurrency}
+                      </Badge>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Tax & Business Information Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
+                    <Receipt className="h-5 w-5 text-blue-600" />
+                    Tax & Business Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {(customer.ico || customer.dic || customer.vatNumber) ? (
+                    <>
+                      {/* Czech Company Information */}
+                      {customer.country === 'Czech Republic' && (customer.ico || customer.dic) && (
+                        <div className="space-y-2 pb-3 border-b">
+                          <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Czech Company Information</h4>
+                          {customer.ico && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <Building className="h-4 w-4 text-slate-400 shrink-0" />
+                              <span className="text-slate-600">IČO:</span>
+                              <span className="font-medium font-mono" data-testid="text-ico">{customer.ico}</span>
+                            </div>
+                          )}
+                          {customer.dic && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <Building className="h-4 w-4 text-slate-400 shrink-0" />
+                              <span className="text-slate-600">DIČ:</span>
+                              <span className="font-medium font-mono" data-testid="text-dic">{customer.dic}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* EU VAT Information */}
+                      {customer.vatNumber && (
+                        <div className="space-y-2">
+                          <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wide">EU VAT Information</h4>
+                          <div className="flex items-center gap-2 text-sm">
+                            <FileText className="h-4 w-4 text-slate-400 shrink-0" />
+                            <span className="text-slate-600">VAT Number:</span>
+                            <span className="font-medium font-mono" data-testid="text-vatNumber">{customer.vatNumber}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="text-slate-600 ml-6">VAT Status:</span>
+                            {customer.vatValid ? (
+                              <Badge variant="outline" className="bg-green-50 border-green-300 text-green-700" data-testid="badge-vatValid">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Valid
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-red-50 border-red-300 text-red-700" data-testid="badge-vatInvalid">
+                                <X className="h-3 w-3 mr-1" />
+                                Invalid
+                              </Badge>
+                            )}
+                          </div>
+                          {customer.vatCheckedAt && (
+                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                              <Clock className="h-3 w-3 shrink-0 ml-6" />
+                              <span>Last checked: {formatDate(customer.vatCheckedAt)}</span>
+                            </div>
+                          )}
+                          {/* VAT Company Metadata */}
+                          {(customer.vatCompanyName || customer.vatCompanyAddress) && (
+                            <div className="mt-3 pt-3 border-t border-slate-200 space-y-2">
+                              {customer.vatCompanyName && (
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Building className="h-4 w-4 text-slate-400 shrink-0" />
+                                  <span className="text-slate-600">Company Name:</span>
+                                  <span className="font-medium" data-testid="text-vatCompanyName">{customer.vatCompanyName}</span>
+                                </div>
+                              )}
+                              {customer.vatCompanyAddress && (
+                                <div className="flex items-start gap-2 text-sm">
+                                  <MapPin className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
+                                  <span className="text-slate-600 shrink-0">Company Address:</span>
+                                  <span className="font-medium" data-testid="text-vatCompanyAddress">{customer.vatCompanyAddress}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center py-6 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
+                      <Receipt className="mx-auto h-10 w-10 mb-2 text-slate-300" />
+                      <p className="text-sm text-slate-500">No tax information available</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Contact Information Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
+                    <User className="h-5 w-5 text-blue-600" />
+                    Contact Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {(customer.email || customer.phone || customer.address || customer.notes || customer.profilePictureUrl) ? (
+                    <>
+                      {/* Profile Picture */}
+                      {customer.profilePictureUrl && (
+                        <div className="flex justify-center pb-3 border-b">
+                          <img 
+                            src={customer.profilePictureUrl} 
+                            alt={customer.name}
+                            className="w-24 h-24 rounded-full object-cover border-2 border-slate-200"
+                            data-testid="img-profile"
+                          />
+                        </div>
+                      )}
+
+                      {/* Email */}
+                      {customer.email && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="h-4 w-4 text-slate-400 shrink-0" />
+                          <span className="text-slate-600">Email:</span>
+                          <a 
+                            href={`mailto:${customer.email}`}
+                            className="font-medium text-blue-600 hover:underline truncate"
+                            data-testid="link-email"
+                          >
+                            {customer.email}
+                          </a>
+                        </div>
+                      )}
+
+                      {/* Phone */}
+                      {customer.phone && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="h-4 w-4 text-slate-400 shrink-0" />
+                          <span className="text-slate-600">Phone:</span>
+                          <a 
+                            href={`tel:${customer.phone}`}
+                            className="font-medium text-blue-600 hover:underline"
+                            data-testid="link-phone"
+                          >
+                            {customer.phone}
+                          </a>
+                        </div>
+                      )}
+
+                      {/* Address */}
+                      {(customer.address || customer.city || customer.zipCode) && (
+                        <div className="flex items-start gap-2 text-sm">
+                          <MapPin className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <span className="text-slate-600">Address:</span>
+                            <div className="font-medium mt-1 space-y-0.5" data-testid="text-address">
+                              {customer.address && <p>{customer.address}</p>}
+                              {(customer.city || customer.zipCode) && (
+                                <p>
+                                  {customer.zipCode && <span>{customer.zipCode} </span>}
+                                  {customer.city}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Notes */}
+                      {customer.notes && (
+                        <div className="flex items-start gap-2 text-sm pt-3 border-t">
+                          <MessageCircle className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <span className="text-slate-600 block mb-1">Notes:</span>
+                            <p className="text-slate-700 whitespace-pre-wrap bg-slate-50 p-3 rounded-lg" data-testid="text-notes">
+                              {customer.notes}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center py-6 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
+                      <User className="mx-auto h-10 w-10 mb-2 text-slate-300" />
+                      <p className="text-sm text-slate-500">No contact information available</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Shipping Addresses Card */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
-                  <User className="h-5 w-5 text-blue-600" />
-                  Contact Information
+                  <Truck className="h-5 w-5 text-blue-600" />
+                  Shipping Addresses
+                  {shippingAddresses.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {shippingAddresses.length}
+                    </Badge>
+                  )}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Tax Information */}
-                {(customer.vatId || customer.taxId) && (
-                  <div className="pb-4 border-b">
-                    <h4 className="text-sm font-semibold text-slate-700 mb-3">Business Information</h4>
-                    <div className="space-y-2">
-                      {customer.country === 'Czech Republic' && customer.taxId && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Building className="h-4 w-4 text-slate-400 shrink-0" />
-                          <span className="text-slate-600">IČO:</span>
-                          <span className="font-medium">{customer.taxId}</span>
-                        </div>
-                      )}
-                      {customer.vatId && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Building className="h-4 w-4 text-slate-400 shrink-0" />
-                          <span className="text-slate-600">VAT ID:</span>
-                          <span className="font-medium">{customer.vatId}</span>
-                        </div>
-                      )}
-                    </div>
+              <CardContent>
+                {shippingAddresses.length === 0 ? (
+                  <div className="text-center py-8 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
+                    <Truck className="mx-auto h-12 w-12 mb-3 text-slate-300" />
+                    <p className="text-sm font-medium text-slate-700">No shipping addresses added yet</p>
+                    <p className="text-xs text-slate-500 mt-1">Shipping addresses will appear here when added</p>
                   </div>
-                )}
-                
-                {/* Contact Details */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                  {customer.email && (
-                    <div className="flex items-center gap-2 text-sm p-3 bg-slate-50 rounded-lg">
-                      <Mail className="h-4 w-4 text-slate-400 shrink-0" />
-                      <span className="truncate">{customer.email}</span>
-                    </div>
-                  )}
-                  {customer.phone && (
-                    <div className="flex items-center gap-2 text-sm p-3 bg-slate-50 rounded-lg">
-                      <Phone className="h-4 w-4 text-slate-400 shrink-0" />
-                      <span>{customer.phone}</span>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Address */}
-                {(customer.address || customer.city || customer.country) && (
-                  <div className="flex items-start gap-3 text-sm p-3 bg-slate-50 rounded-lg">
-                    <MapPin className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
-                    <div>
-                      {customer.address && <p>{customer.address}</p>}
-                      <p>
-                        {[customer.city, customer.state, customer.zipCode].filter(Boolean).join(', ')}
-                        {customer.country && <>, {customer.country}</>}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Facebook */}
-                {customer.facebookName && (
-                  <div className="flex items-center gap-2 text-sm p-3 bg-slate-50 rounded-lg">
-                    <MessageCircle className="h-4 w-4 text-slate-400 shrink-0" />
-                    <span>Facebook: {customer.facebookName}</span>
+                ) : (
+                  <div className="space-y-3">
+                    {shippingAddresses.map((address: any, index: number) => (
+                      <div 
+                        key={address.id || index} 
+                        className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 hover:bg-slate-50 transition-colors"
+                        data-testid={`card-shippingAddress-${index}`}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
+                            <span className="font-semibold text-sm text-slate-900">
+                              {address.company || `${address.firstName} ${address.lastName}`}
+                            </span>
+                          </div>
+                          {address.isPrimary && (
+                            <Badge variant="outline" className="bg-blue-50 border-blue-300 text-blue-700" data-testid={`badge-primary-${index}`}>
+                              Primary
+                            </Badge>
+                          )}
+                        </div>
+                        {address.label && (
+                          <p className="text-xs text-slate-500 mb-2 ml-6">{address.label}</p>
+                        )}
+                        <div className="space-y-1 ml-6 text-sm text-slate-600">
+                          {address.company && (
+                            <p className="font-medium">{address.company}</p>
+                          )}
+                          <p>{address.firstName} {address.lastName}</p>
+                          <p>{address.street}{address.streetNumber ? ` ${address.streetNumber}` : ''}</p>
+                          <p>{address.zipCode} {address.city}</p>
+                          <p className="flex items-center gap-1.5">
+                            <span className="text-base">{getCountryFlag(getCountryCodeByName(address.country))}</span>
+                            {address.country}
+                          </p>
+                          {address.tel && (
+                            <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-slate-200">
+                              <Phone className="h-3.5 w-3.5 text-slate-400" />
+                              <a href={`tel:${address.tel}`} className="text-blue-600 hover:underline">
+                                {address.tel}
+                              </a>
+                            </div>
+                          )}
+                          {address.email && (
+                            <div className="flex items-center gap-1.5">
+                              <Mail className="h-3.5 w-3.5 text-slate-400" />
+                              <a href={`mailto:${address.email}`} className="text-blue-600 hover:underline truncate">
+                                {address.email}
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Notes */}
-            {customer.notes && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
-                    <FileText className="h-5 w-5 text-blue-600" />
-                    Notes
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-slate-600 whitespace-pre-wrap p-3 bg-slate-50 rounded-lg">{customer.notes}</p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Files & Documents History */}
+            {/* Billing Addresses Card */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
-                  <File className="h-5 w-5 text-blue-600" />
-                  Documents Sent
+                  <Building className="h-5 w-5 text-blue-600" />
+                  Billing Addresses
+                  {billingAddresses.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {billingAddresses.length}
+                    </Badge>
+                  )}
                 </CardTitle>
-                <p className="text-xs text-slate-500 mt-1">
-                  History of all documents sent with orders
-                </p>
               </CardHeader>
               <CardContent>
-                {(() => {
-                  const ordersWithDocs = orders.filter((order: any) => 
-                    order.includedDocuments && (
-                      order.includedDocuments.invoicePrint || 
-                      order.includedDocuments.custom || 
-                      (order.includedDocuments.uploadedFiles && order.includedDocuments.uploadedFiles.length > 0)
-                    )
-                  );
-
-                  if (ordersWithDocs.length === 0) {
-                    return (
-                      <div className="text-center py-8 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
-                        <File className="mx-auto h-12 w-12 mb-3 text-slate-300" />
-                        <p className="text-sm font-medium text-slate-700">No documents sent yet</p>
-                        <p className="text-xs text-slate-500 mt-1">Documents will appear here when sent with orders</p>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {ordersWithDocs.map((order: any) => (
-                        <div key={order.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 hover:bg-slate-50 transition-colors">
-                          <div className="flex items-start justify-between mb-3">
-                            <div>
-                              <Link href={`/orders/${order.id}`}>
-                                <p className="text-sm font-semibold text-blue-600 hover:underline cursor-pointer">
-                                  Order #{order.orderId || order.id}
-                                </p>
-                              </Link>
-                              <p className="text-xs text-slate-500 mt-0.5">
-                                {formatDate(order.createdAt)}
-                              </p>
-                            </div>
+                {billingAddresses.length === 0 ? (
+                  <div className="text-center py-8 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
+                    <Building className="mx-auto h-12 w-12 mb-3 text-slate-300" />
+                    <p className="text-sm font-medium text-slate-700">No billing addresses added yet</p>
+                    <p className="text-xs text-slate-500 mt-1">Billing addresses will appear here when added</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {billingAddresses.map((address: any, index: number) => (
+                      <div 
+                        key={address.id || index} 
+                        className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 hover:bg-slate-50 transition-colors"
+                        data-testid={`card-billingAddress-${index}`}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
+                            <span className="font-semibold text-sm text-slate-900">
+                              {address.company || `${address.firstName || ''} ${address.lastName || ''}`.trim() || 'Billing Address'}
+                            </span>
                           </div>
-                          <div className="space-y-2">
-                            {order.includedDocuments?.invoicePrint && (
-                              <div className="flex items-center gap-2 text-xs bg-green-50 p-2 rounded border border-green-200">
-                                <CheckCircle className="h-3.5 w-3.5 text-green-600 shrink-0" />
-                                <span className="text-slate-700 font-medium">Invoice (Print Copy)</span>
-                              </div>
-                            )}
-                            {order.includedDocuments?.custom && (
-                              <div className="flex items-center gap-2 text-xs bg-green-50 p-2 rounded border border-green-200">
-                                <CheckCircle className="h-3.5 w-3.5 text-green-600 shrink-0" />
-                                <span className="text-slate-700 font-medium">Custom Documents</span>
-                              </div>
-                            )}
-                            {order.includedDocuments?.uploadedFiles?.map((file: any, idx: number) => (
-                              <div key={idx} className="flex items-center gap-2 text-xs bg-blue-50 p-2 rounded border border-blue-200">
-                                <FileText className="h-3.5 w-3.5 text-blue-600 shrink-0" />
-                                <span className="text-slate-700 font-medium truncate flex-1">{file.name}</span>
-                                {file.size && (
-                                  <span className="text-slate-500 text-xs shrink-0">
-                                    ({(file.size / 1024).toFixed(1)} KB)
-                                  </span>
-                                )}
-                              </div>
-                            ))}
-                          </div>
+                          {address.isPrimary && (
+                            <Badge variant="outline" className="bg-blue-50 border-blue-300 text-blue-700" data-testid={`badge-billingPrimary-${index}`}>
+                              Primary
+                            </Badge>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  );
-                })()}
+                        {address.label && (
+                          <p className="text-xs text-slate-500 mb-2 ml-6">{address.label}</p>
+                        )}
+                        <div className="space-y-1 ml-6 text-sm text-slate-600">
+                          {address.company && (
+                            <p className="font-medium">{address.company}</p>
+                          )}
+                          {(address.firstName || address.lastName) && (
+                            <p>{address.firstName} {address.lastName}</p>
+                          )}
+                          {address.street && (
+                            <p>{address.street}{address.streetNumber ? ` ${address.streetNumber}` : ''}</p>
+                          )}
+                          {(address.zipCode || address.city) && (
+                            <p>{address.zipCode} {address.city}</p>
+                          )}
+                          {address.country && (
+                            <p className="flex items-center gap-1.5">
+                              <span className="text-base">{getCountryFlag(getCountryCodeByName(address.country))}</span>
+                              {address.country}
+                            </p>
+                          )}
+                          {(address.vatId || address.ico) && (
+                            <div className="mt-2 pt-2 border-t border-slate-200 space-y-1">
+                              {address.ico && (
+                                <div className="flex items-center gap-1.5">
+                                  <Building className="h-3.5 w-3.5 text-slate-400" />
+                                  <span className="text-slate-500 text-xs">IČO: </span>
+                                  <span className="font-mono text-xs">{address.ico}</span>
+                                </div>
+                              )}
+                              {address.vatId && (
+                                <div className="flex items-center gap-1.5">
+                                  <FileText className="h-3.5 w-3.5 text-slate-400" />
+                                  <span className="text-slate-500 text-xs">VAT: </span>
+                                  <span className="font-mono text-xs">{address.vatId}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {address.tel && (
+                            <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-slate-200">
+                              <Phone className="h-3.5 w-3.5 text-slate-400" />
+                              <a href={`tel:${address.tel}`} className="text-blue-600 hover:underline">
+                                {address.tel}
+                              </a>
+                            </div>
+                          )}
+                          {address.email && (
+                            <div className="flex items-center gap-1.5">
+                              <Mail className="h-3.5 w-3.5 text-slate-400" />
+                              <a href={`mailto:${address.email}`} className="text-blue-600 hover:underline truncate">
+                                {address.email}
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
