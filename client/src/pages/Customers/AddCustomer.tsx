@@ -45,7 +45,6 @@ const customerFormSchema = z.object({
   billingCity: z.string().optional(),
   billingZipCode: z.string().optional(),
   billingCountry: z.string().optional(),
-  billingState: z.string().optional(),
   ico: z.string().optional(),
   dic: z.string().optional(),
   vatNumber: z.string().optional(),
@@ -67,7 +66,6 @@ const shippingAddressSchema = z.object({
   city: z.string().optional(),
   zipCode: z.string().optional(),
   country: z.string().optional(),
-  state: z.string().optional(),
   isPrimary: z.boolean().default(false),
 });
 
@@ -84,7 +82,6 @@ const billingAddressSchema = z.object({
   city: z.string().optional(),
   zipCode: z.string().optional(),
   country: z.string().optional(),
-  state: z.string().optional(),
   vatId: z.string().optional(),
   ico: z.string().optional(),
   isPrimary: z.boolean().default(false),
@@ -101,7 +98,6 @@ interface AddressAutocompleteResult {
   city: string;
   zipCode: string;
   country: string;
-  state: string;
 }
 
 interface AresLookupResult {
@@ -210,7 +206,6 @@ export default function AddCustomer() {
       billingCity: "",
       billingZipCode: "",
       billingCountry: "",
-      billingState: "",
       ico: "",
       dic: "",
       vatNumber: "",
@@ -234,7 +229,6 @@ export default function AddCustomer() {
       city: "",
       zipCode: "",
       country: "",
-      state: "",
       isPrimary: false,
     },
   });
@@ -254,7 +248,6 @@ export default function AddCustomer() {
       city: "",
       zipCode: "",
       country: "",
-      state: "",
       vatId: "",
       ico: "",
       isPrimary: false,
@@ -295,7 +288,6 @@ export default function AddCustomer() {
         billingCity: existingCustomer.billingCity || "",
         billingZipCode: existingCustomer.billingZipCode || "",
         billingCountry: existingCustomer.billingCountry || "",
-        billingState: existingCustomer.billingState || "",
         ico: existingCustomer.ico || "",
         dic: existingCustomer.dic || "",
         vatNumber: existingCustomer.vatNumber || "",
@@ -333,7 +325,6 @@ export default function AddCustomer() {
         city: addr.city || "",
         zipCode: addr.zipCode || "",
         country: addr.country || "",
-        state: addr.state || "",
         isPrimary: addr.isPrimary || false,
       })));
     }
@@ -354,7 +345,6 @@ export default function AddCustomer() {
         city: addr.city || "",
         zipCode: addr.zipCode || "",
         country: addr.country || "",
-        state: addr.state || "",
         isPrimary: addr.isPrimary || false,
       })));
     }
@@ -582,7 +572,6 @@ export default function AddCustomer() {
     form.setValue('billingCity', suggestion.city);
     form.setValue('billingZipCode', suggestion.zipCode);
     form.setValue('billingCountry', suggestion.country);
-    form.setValue('billingState', suggestion.state);
     setBillingAddressQuery(suggestion.displayName);
     setShowBillingDropdown(false);
   };
@@ -822,7 +811,6 @@ export default function AddCustomer() {
       city: "",
       zipCode: "",
       country: mainCountryName || form.getValues('billingCountry') || "",
-      state: "",
       isPrimary: shippingAddresses.length === 0,
     });
   };
@@ -954,7 +942,6 @@ export default function AddCustomer() {
       city: "",
       zipCode: "",
       country: mainCountryName || form.getValues('billingCountry') || "",
-      state: "",
       isPrimary: billingAddresses.length === 0,
     });
   };
@@ -1394,10 +1381,6 @@ export default function AddCustomer() {
             form.setValue('country', countryCode);
           }
         }
-      }
-      if (fields.state) {
-        form.setValue('billingState', capitalizeWords(fields.state));
-        filledFields.billingState = data.confidence;
       }
       
       // Update confidence tracking
@@ -2642,17 +2625,6 @@ export default function AddCustomer() {
                         )}
                       </div>
                     </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="billingState">State</Label>
-                    <Input
-                      id="billingState"
-                      {...billingAddressForm.register('state')}
-                      placeholder="State/Province"
-                      className={cn(getConfidenceClass('state', billingAddressFieldConfidence))}
-                      data-testid="input-billingState"
-                    />
                   </div>
 
                   <Separator className="my-6" />

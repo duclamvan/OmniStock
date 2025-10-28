@@ -41,7 +41,6 @@ const shippingAddressSchema = z.object({
   street: z.string().optional(),
   streetNumber: z.string().optional(),
   city: z.string().optional(),
-  state: z.string().optional(),
   zipCode: z.string().optional(),
   country: z.string().optional(),
   isPrimary: z.boolean().optional(),
@@ -129,7 +128,6 @@ export function ShippingAddressModal({
       street: '',
       streetNumber: '',
       city: '',
-      state: '',
       zipCode: '',
       country: '',
       isPrimary: existingAddresses.length === 0,
@@ -186,7 +184,6 @@ export function ShippingAddressModal({
           street: '',
           streetNumber: '',
           city: '',
-          state: '',
           zipCode: '',
           country: '',
           isPrimary: existingAddresses.length === 0,
@@ -491,18 +488,6 @@ export function ShippingAddressModal({
                 )}
               </div>
             </div>
-          </div>
-
-          {/* State Field (optional) */}
-          <div>
-            <Label htmlFor="state">State/Province</Label>
-            <Input
-              id="state"
-              {...form.register('state')}
-              placeholder="State or province"
-              className={cn(getConfidenceClass('state', fieldConfidence))}
-              data-testid="input-state"
-            />
           </div>
 
           {/* Primary Address Checkbox */}
