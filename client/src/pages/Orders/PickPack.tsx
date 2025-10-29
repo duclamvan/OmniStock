@@ -4678,42 +4678,43 @@ export default function PickPack() {
                           )}
                         </div>
                       ) : (
-                        /* Regular Quantity Picker - Comfortable Design */
+                        /* Regular Quantity Picker - Vertical Layout for Easy Mobile Tapping */
                         <div className="bg-white border-2 border-gray-200 rounded-lg p-4 lg:p-6">
-                          <div className="flex items-center justify-center gap-5 lg:gap-8">
-                            <Button
-                              size="lg"
-                              className="w-18 h-18 lg:w-24 lg:h-24 rounded-lg bg-gray-600 hover:bg-gray-700 disabled:bg-gray-200 text-white shadow-md touch-manipulation"
-                              onClick={() => updatePickedItem(currentItem.id, Math.max(0, currentItem.pickedQuantity - 1))}
-                              disabled={currentItem.pickedQuantity === 0}
-                            >
-                              <Minus className="h-7 lg:h-10 w-7 lg:w-10" />
-                            </Button>
-                            
-                            <div className="text-center">
-                              <div className="text-6xl sm:text-7xl font-black text-gray-900 tabular-nums leading-none">
-                                {currentItem.pickedQuantity}
-                              </div>
-                              <div className="text-xl sm:text-2xl text-gray-400 font-bold mt-2">
-                                of {currentItem.quantity}
-                              </div>
+                          {/* Plus Button - Top */}
+                          <Button
+                            size="lg"
+                            className="w-full h-16 lg:h-20 rounded-lg bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 text-white shadow-md touch-manipulation mb-3"
+                            onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.quantity, currentItem.pickedQuantity + 1))}
+                            disabled={currentItem.pickedQuantity >= currentItem.quantity}
+                          >
+                            <Plus className="h-8 lg:h-10 w-8 lg:w-10" />
+                          </Button>
+                          
+                          {/* Number Display - Center */}
+                          <div className="text-center py-2">
+                            <div className="text-6xl sm:text-7xl font-black text-gray-900 tabular-nums leading-none">
+                              {currentItem.pickedQuantity}
                             </div>
-                            
-                            <Button
-                              size="lg"
-                              className="w-18 h-18 lg:w-24 lg:h-24 rounded-lg bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 text-white shadow-md touch-manipulation"
-                              onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.quantity, currentItem.pickedQuantity + 1))}
-                              disabled={currentItem.pickedQuantity >= currentItem.quantity}
-                            >
-                              <Plus className="h-7 lg:h-10 w-7 lg:w-10" />
-                            </Button>
+                            <div className="text-xl sm:text-2xl text-gray-400 font-bold mt-2">
+                              of {currentItem.quantity}
+                            </div>
                           </div>
+                          
+                          {/* Minus Button - Bottom */}
+                          <Button
+                            size="lg"
+                            className="w-full h-16 lg:h-20 rounded-lg bg-gray-600 hover:bg-gray-700 disabled:bg-gray-200 text-white shadow-md touch-manipulation mt-3"
+                            onClick={() => updatePickedItem(currentItem.id, Math.max(0, currentItem.pickedQuantity - 1))}
+                            disabled={currentItem.pickedQuantity === 0}
+                          >
+                            <Minus className="h-8 lg:h-10 w-8 lg:w-10" />
+                          </Button>
 
                           {/* Quick Pick Button */}
                           {currentItem.pickedQuantity < currentItem.quantity && (
                             <Button 
                               size="lg" 
-                              className="w-full mt-4 h-12 text-base font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md touch-manipulation rounded-lg"
+                              className="w-full mt-4 h-14 text-base font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md touch-manipulation rounded-lg"
                               onClick={() => updatePickedItem(currentItem.id, currentItem.quantity)}
                             >
                               <CheckCircle2 className="h-5 w-5 mr-2" />
