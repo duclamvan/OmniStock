@@ -3223,7 +3223,7 @@ export default function PickPack() {
             
             {/* Sticky Barcode Scanner Card */}
             <Card className="sticky top-0 z-10 shadow-lg border-2 border-purple-300 bg-white">
-              <CardHeader className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-3">
+              <CardHeader className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-3 rounded-t-lg">
                 <CardTitle className="text-base flex items-center justify-between">
                   <span className="flex items-center gap-2">
                     <ScanLine className="h-4 w-4" />
@@ -3452,7 +3452,7 @@ export default function PickPack() {
 
           {/* Combined Carton & Weight Card */}
           <Card className="shadow-sm border border-gray-200 bg-white">
-            <CardHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-3">
+            <CardHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-3 rounded-t-lg">
               <CardTitle className="text-base flex items-center gap-2">
                 <Box className="h-4 w-4" />
                 Carton & Weight
@@ -3528,7 +3528,7 @@ export default function PickPack() {
 
           {/* Packing Completion Card - Combined Documents + Checklist */}
           <Card className="shadow-sm border border-gray-200 bg-white">
-            <CardHeader className="bg-gradient-to-r from-violet-600 to-purple-600 text-white p-3">
+            <CardHeader className="bg-gradient-to-r from-violet-600 to-purple-600 text-white p-3 rounded-t-lg">
               <CardTitle className="text-base flex items-center gap-2">
                 <ClipboardList className="h-4 w-4" />
                 Packing Completion
@@ -3704,7 +3704,7 @@ export default function PickPack() {
 
           {/* Shipping Label Card - Compact */}
           <Card className="shadow-sm border border-gray-200 bg-white">
-            <CardHeader className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white p-3">
+            <CardHeader className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white p-3 rounded-t-lg">
               <CardTitle className="text-base flex items-center gap-2">
                 <Printer className="h-4 w-4" />
                 Shipping Label
