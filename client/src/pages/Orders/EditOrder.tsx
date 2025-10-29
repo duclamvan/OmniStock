@@ -1318,42 +1318,72 @@ export default function EditOrder() {
       return;
     }
     
+    let addedCount = 0;
+    let updatedCount = 0;
+    
     for (const [variantId, quantity] of variantsToAdd) {
       const variant = productVariants.find(v => v.id === variantId);
       if (!variant) continue;
       
-      // Use product's price since variants don't have their own selling price
-      let productPrice = 0;
-      if (selectedCurrency === 'CZK' && selectedProductForVariant.priceCzk) {
-        productPrice = parseFloat(selectedProductForVariant.priceCzk);
-      } else if (selectedCurrency === 'EUR' && selectedProductForVariant.priceEur) {
-        productPrice = parseFloat(selectedProductForVariant.priceEur);
+      // Check if this variant already exists in the order
+      const existingItem = orderItems.find(
+        item => item.productId === selectedProductForVariant.id && item.variantId === variantId
+      );
+      
+      if (existingItem) {
+        // Update existing item quantity
+        setOrderItems(items =>
+          items.map(item =>
+            item.id === existingItem.id
+              ? {
+                  ...item,
+                  quantity: item.quantity + quantity,
+                  total: (item.quantity + quantity) * item.price
+                }
+              : item
+          )
+        );
+        updatedCount++;
       } else {
-        productPrice = parseFloat(selectedProductForVariant.priceEur || selectedProductForVariant.priceCzk || '0');
+        // Use product's price since variants don't have their own selling price
+        let productPrice = 0;
+        if (selectedCurrency === 'CZK' && selectedProductForVariant.priceCzk) {
+          productPrice = parseFloat(selectedProductForVariant.priceCzk);
+        } else if (selectedCurrency === 'EUR' && selectedProductForVariant.priceEur) {
+          productPrice = parseFloat(selectedProductForVariant.priceEur);
+        } else {
+          productPrice = parseFloat(selectedProductForVariant.priceEur || selectedProductForVariant.priceCzk || '0');
+        }
+        
+        const newItem: OrderItem = {
+          id: Math.random().toString(36).substr(2, 9),
+          productId: selectedProductForVariant.id,
+          variantId: variant.id,
+          variantName: variant.name,
+          productName: `${selectedProductForVariant.name} - ${variant.name}`,
+          sku: variant.barcode || selectedProductForVariant.sku,
+          quantity: quantity,
+          price: productPrice,
+          discount: 0,
+          tax: 0,
+          total: productPrice * quantity,
+          landingCost: parseFloat(variant.importCostEur || variant.importCostCzk || '0') || null,
+          image: variant.photo || selectedProductForVariant.image || null,
+        };
+        
+        setOrderItems(items => [...items, newItem]);
+        addedCount++;
       }
-      
-      const newItem: OrderItem = {
-        id: Math.random().toString(36).substr(2, 9),
-        productId: selectedProductForVariant.id,
-        variantId: variant.id,
-        variantName: variant.name,
-        productName: `${selectedProductForVariant.name} - ${variant.name}`,
-        sku: variant.barcode || selectedProductForVariant.sku,
-        quantity: quantity,
-        price: productPrice,
-        discount: 0,
-        tax: 0,
-        total: productPrice * quantity,
-        landingCost: parseFloat(variant.importCostEur || variant.importCostCzk || '0') || null,
-        image: variant.photo || selectedProductForVariant.image || null,
-      };
-      
-      setOrderItems(items => [...items, newItem]);
     }
+    
+    // Show appropriate toast message
+    const messages = [];
+    if (addedCount > 0) messages.push(`${addedCount} variant(s) added`);
+    if (updatedCount > 0) messages.push(`${updatedCount} variant(s) updated`);
     
     toast({
       title: "Success",
-      description: `Added ${variantsToAdd.length} variant(s) to order`,
+      description: messages.join(', '),
     });
     
     setShowVariantDialog(false);
