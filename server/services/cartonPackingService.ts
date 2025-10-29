@@ -14,6 +14,8 @@ export interface PackingPlanCarton {
   items: PackingPlanItem[];
   totalWeightKg: number;
   volumeUtilization: number;
+  fillingWeightKg: number;
+  unusedVolumeCm3: number;
 }
 
 export interface PackingPlan {
@@ -221,12 +223,20 @@ export async function optimizeCartonPacking(
       const volumeUtilization = (partial.totalVolumeCm3 / cartonVolume) * 100;
       const tareWeight = parseFloat(partial.carton.tareWeightKg.toString());
       
+      // Calculate unused volume and filling weight
+      const unusedVolumeCm3 = Math.max(0, cartonVolume - partial.totalVolumeCm3);
+      // Filling material density: ~0.015 kg per liter (15g per 1000 cm³)
+      // Common materials: bubble wrap, air pillows, paper filling
+      const fillingWeightKg = (unusedVolumeCm3 / 1000) * 0.015;
+      
       return {
         cartonId: partial.carton.id,
         cartonNumber: partial.cartonNumber,
         items: partial.items,
-        totalWeightKg: partial.totalWeightKg + tareWeight,
-        volumeUtilization: Math.round(volumeUtilization * 100) / 100
+        totalWeightKg: partial.totalWeightKg + tareWeight + fillingWeightKg,
+        volumeUtilization: Math.round(volumeUtilization * 100) / 100,
+        fillingWeightKg: Math.round(fillingWeightKg * 1000) / 1000,
+        unusedVolumeCm3: Math.round(unusedVolumeCm3)
       };
     });
 
