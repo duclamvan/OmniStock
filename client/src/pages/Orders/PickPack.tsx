@@ -585,11 +585,13 @@ export default function PickPack() {
   }, [selectedTab, activePickingOrder, activePackingOrder]);
 
   // Fetch real orders from the API with items and bundle details
+  // Real-time data synchronization: refetch every 5 seconds to ensure Pick & Pack always shows latest order data
   const { data: allOrders = [], isLoading, isSuccess } = useQuery({
     queryKey: ['/api/orders/pick-pack'],
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    refetchInterval: 30000, // 30 seconds instead of 10
-    refetchOnWindowFocus: !activePickingOrder,
+    staleTime: 10 * 1000, // 10 seconds - keep data fresh
+    refetchInterval: 5000, // 5 seconds - real-time updates for active picking/packing
+    refetchOnWindowFocus: true, // Always refetch when user returns to tab
+    refetchOnMount: true, // Always refetch when component mounts
   });
   
   // Fetch pick/pack performance predictions for current user

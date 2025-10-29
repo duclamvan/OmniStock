@@ -120,8 +120,10 @@ export default function OrderDetails() {
       return apiRequest('PATCH', `/api/orders/${id}`, { orderStatus: newStatus });
     },
     onSuccess: () => {
+      // Invalidate all order-related caches for real-time updates
       queryClient.invalidateQueries({ queryKey: [`/api/orders/${id}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] }); // Real-time Pick & Pack sync
       toast({
         title: "Status Updated",
         description: "Order status has been updated successfully",
@@ -141,8 +143,10 @@ export default function OrderDetails() {
       return apiRequest('PATCH', `/api/orders/${id}`, { paymentStatus: newStatus });
     },
     onSuccess: () => {
+      // Invalidate all order-related caches for real-time updates
       queryClient.invalidateQueries({ queryKey: [`/api/orders/${id}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] }); // Real-time Pick & Pack sync
       toast({
         title: "Payment Status Updated",
         description: "Payment status has been updated successfully",
@@ -162,8 +166,10 @@ export default function OrderDetails() {
       return apiRequest('PATCH', `/api/orders/${id}`, { priority: newPriority });
     },
     onSuccess: () => {
+      // Invalidate all order-related caches for real-time updates
       queryClient.invalidateQueries({ queryKey: [`/api/orders/${id}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] }); // Real-time Pick & Pack sync
       toast({
         title: "Priority Updated",
         description: "Order priority has been updated successfully",

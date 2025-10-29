@@ -1121,8 +1121,10 @@ export default function EditOrder() {
       return updatedOrder;
     },
     onSuccess: (updatedOrder) => {
+      // Invalidate all order-related caches for real-time updates across the app
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders', id] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] }); // Real-time Pick & Pack sync
       queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       
       toast({

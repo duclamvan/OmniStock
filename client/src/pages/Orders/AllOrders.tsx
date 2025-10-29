@@ -244,7 +244,9 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       await apiRequest('PATCH', `/api/orders/${id}`, updates);
     },
     onSuccess: () => {
+      // Invalidate all order-related caches for real-time updates
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] }); // Real-time Pick & Pack sync
       toast({
         title: "Success",
         description: "Order updated successfully",
