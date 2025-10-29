@@ -1047,6 +1047,11 @@ export default function OrderDetails() {
                               </p>
                             )}
                             <p className="text-xs text-slate-500 mb-1.5">SKU: {item.sku}</p>
+                            {item.serviceId && item.notes && (
+                              <div className="bg-purple-50 border border-purple-200 rounded px-2 py-1 mb-1.5">
+                                <p className="text-xs text-purple-900 font-medium">Note: {item.notes}</p>
+                              </div>
+                            )}
                             
                             <div className="flex items-center gap-2 flex-wrap">
                               {/* Quantity - More Visible */}
