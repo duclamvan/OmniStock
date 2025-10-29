@@ -39,13 +39,18 @@ export async function inferProductWeightDimensions(product: Product): Promise<We
       };
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
+    // Use DeepSeek API for AI inference
+    const apiKey = process.env.DEEPSEEK_API_KEY;
     if (!apiKey) {
-      console.warn('OPENAI_API_KEY not found in environment, using fallback estimates');
+      console.warn('DEEPSEEK_API_KEY not found in environment, using fallback estimates');
       return FALLBACK_ESTIMATES;
     }
 
-    const openai = new OpenAI({ apiKey });
+    // DeepSeek API is OpenAI-compatible
+    const openai = new OpenAI({ 
+      apiKey,
+      baseURL: 'https://api.deepseek.com/v1'
+    });
 
     const categoryInfo = product.categoryId ? ` in category ${product.categoryId}` : '';
     const descriptionInfo = product.description ? `\nDescription: ${product.description}` : '';
@@ -79,7 +84,7 @@ Base your confidence on:
 Return ONLY the JSON object, no additional text.`;
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'deepseek-chat',
       messages: [
         {
           role: 'system',
@@ -97,14 +102,14 @@ Return ONLY the JSON object, no additional text.`;
 
     const responseText = completion.choices[0]?.message?.content;
     if (!responseText) {
-      console.warn('Empty response from OpenAI, using fallback estimates');
+      console.warn('Empty response from DeepSeek AI, using fallback estimates');
       return FALLBACK_ESTIMATES;
     }
 
     const result = JSON.parse(responseText);
 
     if (!result.weightKg || !result.lengthCm || !result.widthCm || !result.heightCm) {
-      console.warn('Incomplete response from OpenAI, using fallback estimates');
+      console.warn('Incomplete response from DeepSeek AI, using fallback estimates');
       return FALLBACK_ESTIMATES;
     }
 

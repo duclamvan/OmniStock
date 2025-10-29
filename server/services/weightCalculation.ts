@@ -66,65 +66,35 @@ interface CartonSpec {
 }
 
 export class AIWeightCalculationService {
-  // Standard carton specifications with weights
-  private readonly standardCartons: CartonSpec[] = [
-    {
-      id: 'E1',
-      name: 'E1 - Small Envelope',
-      weight: 0.015, // 15g
-      dimensions: { length: 22, width: 16, height: 2 },
-      maxWeight: 0.5,
-      material: 'Padded Envelope'
-    },
-    {
-      id: 'E2',
-      name: 'E2 - Medium Envelope',
-      weight: 0.025, // 25g
-      dimensions: { length: 27, width: 20, height: 3 },
-      maxWeight: 1.0,
-      material: 'Padded Envelope'
-    },
-    {
-      id: 'K1',
-      name: 'K1 - Small Carton',
-      weight: 0.085, // 85g
-      dimensions: { length: 20, width: 15, height: 10 },
-      maxWeight: 5.0,
-      material: 'Corrugated Cardboard'
-    },
-    {
-      id: 'K2',
-      name: 'K2 - Medium Carton',
-      weight: 0.150, // 150g
-      dimensions: { length: 30, width: 20, height: 15 },
-      maxWeight: 10.0,
-      material: 'Corrugated Cardboard'
-    },
-    {
-      id: 'K3',
-      name: 'K3 - Large Carton',
-      weight: 0.220, // 220g
-      dimensions: { length: 40, width: 30, height: 20 },
-      maxWeight: 20.0,
-      material: 'Corrugated Cardboard'
-    },
-    {
-      id: 'F1',
-      name: 'F1 - Fragile Protection Box',
-      weight: 0.180, // 180g
-      dimensions: { length: 35, width: 25, height: 18 },
-      maxWeight: 15.0,
-      material: 'Reinforced Cardboard with Foam'
-    },
-    {
-      id: 'B1',
-      name: 'B1 - Bottle Protection Box',
-      weight: 0.200, // 200g
-      dimensions: { length: 25, width: 25, height: 35 },
-      maxWeight: 12.0,
-      material: 'Cardboard with Dividers'
+  /**
+   * Fetch available cartons from database and map to CartonSpec format
+   */
+  private async getAvailableCartonsFromDB(): Promise<CartonSpec[]> {
+    try {
+      const packingCartons = await storage.getPackingCartons();
+      
+      if (packingCartons.length === 0) {
+        console.warn('No packing cartons found in database');
+        return [];
+      }
+      
+      return packingCartons.map(carton => ({
+        id: carton.id,
+        name: carton.name,
+        weight: parseFloat(carton.tareWeightKg.toString()),
+        dimensions: {
+          length: parseFloat(carton.innerLengthCm.toString()),
+          width: parseFloat(carton.innerWidthCm.toString()),
+          height: parseFloat(carton.innerHeightCm.toString())
+        },
+        maxWeight: parseFloat(carton.maxWeightKg.toString()),
+        material: 'Cardboard'
+      }));
+    } catch (error) {
+      console.error('Error fetching packing cartons from database:', error);
+      return [];
     }
-  ];
+  }
 
   /**
    * Calculate the total package weight using AI analysis
@@ -212,7 +182,7 @@ export class AIWeightCalculationService {
       const packingMaterialsWeight = await this.calculatePackingMaterialsWeight(order);
       
       // Get carton weight
-      const cartonWeight = this.getCartonWeight(selectedCartonId);
+      const cartonWeight = await this.getCartonWeight(selectedCartonId);
       
       // Calculate additional weight (tape, labels, padding)
       const additionalWeight = this.calculateAdditionalWeight(itemsWeight, cartonWeight);
@@ -358,13 +328,14 @@ export class AIWeightCalculationService {
   /**
    * Get the weight of the selected carton
    */
-  private getCartonWeight(selectedCartonId?: string): number {
+  private async getCartonWeight(selectedCartonId?: string): Promise<number> {
     if (!selectedCartonId || selectedCartonId === 'non-company') {
       // Default medium carton weight if not specified
       return 0.150;
     }
     
-    const carton = this.standardCartons.find(c => c.id === selectedCartonId);
+    const cartons = await this.getAvailableCartonsFromDB();
+    const carton = cartons.find(c => c.id === selectedCartonId);
     return carton ? carton.weight : 0.150;
   }
 
@@ -525,8 +496,8 @@ export class AIWeightCalculationService {
   /**
    * Get available cartons for selection
    */
-  getAvailableCartons(): CartonSpec[] {
-    return this.standardCartons;
+  async getAvailableCartons(): Promise<CartonSpec[]> {
+    return await this.getAvailableCartonsFromDB();
   }
 
   /**
@@ -542,14 +513,21 @@ export class AIWeightCalculationService {
     const packingWeight = await this.calculatePackingMaterialsWeight(order);
     const totalContentWeight = itemsWeight + packingWeight;
 
+    const availableCartons = await this.getAvailableCartonsFromDB();
+    
+    if (availableCartons.length === 0) {
+      console.warn('No cartons available in database, using default carton');
+      throw new Error('No packing cartons available in database');
+    }
+
     // Find the smallest carton that can handle the weight
-    const suitableCartons = this.standardCartons.filter(carton => 
+    const suitableCartons = availableCartons.filter(carton => 
       carton.maxWeight >= totalContentWeight + 0.1 // Add buffer
     );
 
     if (suitableCartons.length === 0) {
       // Return largest carton if content is too heavy
-      return this.standardCartons[this.standardCartons.length - 1];
+      return availableCartons[availableCartons.length - 1];
     }
 
     // Return the smallest suitable carton
@@ -616,7 +594,7 @@ export class AIWeightCalculationService {
       
       // If not placed, create new carton
       if (!placed) {
-        const suitableCarton = this.findOptimalCartonForItem(item);
+        const suitableCarton = await this.findOptimalCartonForItem(item);
         const itemPackingWeight = this.estimatePackingMaterialWeight(item.packingMaterial);
         
         const newPlan: CartonPackingPlan = {
@@ -655,15 +633,22 @@ export class AIWeightCalculationService {
   /**
    * Find optimal carton for a specific item
    */
-  private findOptimalCartonForItem(item: any): CartonSpec {
+  private async findOptimalCartonForItem(item: any): Promise<CartonSpec> {
     const itemWeight = item.weight + 0.01; // Add packing material buffer
     
-    const suitableCartons = this.standardCartons.filter(carton => 
+    const availableCartons = await this.getAvailableCartonsFromDB();
+    
+    if (availableCartons.length === 0) {
+      console.warn('No cartons available in database for item packing');
+      throw new Error('No packing cartons available in database');
+    }
+    
+    const suitableCartons = availableCartons.filter(carton => 
       carton.maxWeight >= itemWeight + carton.weight
     );
     
     if (suitableCartons.length === 0) {
-      return this.standardCartons[this.standardCartons.length - 1]; // Largest carton
+      return availableCartons[availableCartons.length - 1]; // Largest carton
     }
     
     // Return smallest suitable carton
