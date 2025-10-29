@@ -514,6 +514,36 @@ export default function BundleDetails() {
             </CardHeader>
             <CardContent className="pt-0 space-y-3">
               <div>
+                <p className="text-xs text-muted-foreground">Available Bundle Stock</p>
+                <div className="flex items-center gap-2 mt-1">
+                  {(() => {
+                    // Calculate how many complete bundles can be made
+                    const availableBundles = bundle.items.map(item => {
+                      const availableQuantity = item.variant?.quantity ?? item.product.quantity ?? 0;
+                      return Math.floor(availableQuantity / item.quantity);
+                    });
+                    const stock = availableBundles.length > 0 ? Math.min(...availableBundles) : 0;
+                    const isInStock = stock > 0;
+                    
+                    return (
+                      <>
+                        <p className="text-2xl font-bold">{stock}</p>
+                        <Badge 
+                          variant="outline" 
+                          className={isInStock ? "bg-green-50 text-green-700 border-green-300" : "bg-red-50 text-red-700 border-red-300"}
+                        >
+                          {isInStock ? 'In Stock' : 'Out of Stock'}
+                        </Badge>
+                      </>
+                    );
+                  })()}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Complete bundles available</p>
+              </div>
+              
+              <Separator />
+              
+              <div>
                 <p className="text-xs text-muted-foreground">Total Items</p>
                 <p className="text-2xl font-bold">{bundle.items.reduce((sum, item) => sum + item.quantity, 0)}</p>
                 <p className="text-xs text-muted-foreground">{bundle.items.length} unique products</p>
