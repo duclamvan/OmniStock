@@ -80,6 +80,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const editOrderSchema = z.object({
   customerId: z.string().optional(),
@@ -256,6 +264,13 @@ export default function EditOrder() {
   const [showShippingModal, setShowShippingModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
   const [addressToDelete, setAddressToDelete] = useState<any>(null);
+  
+  // Variant/Bundle selection state
+  const [showVariantDialog, setShowVariantDialog] = useState(false);
+  const [selectedProductForVariant, setSelectedProductForVariant] = useState<any>(null);
+  const [productVariants, setProductVariants] = useState<any[]>([]);
+  const [variantQuantities, setVariantQuantities] = useState<{[key: string]: number}>({});
+  
   const [newCustomer, setNewCustomer] = useState({
     name: "",
     facebookName: "",
@@ -1178,6 +1193,29 @@ export default function EditOrder() {
   };
 
   const addProductToOrder = async (product: any) => {
+    // Check if product has variants (only for parent products, not already-selected variants)
+    if (product.itemType !== 'variant') {
+      try {
+        const variantsResponse = await fetch(`/api/products/${product.id}/variants`);
+        if (variantsResponse.ok) {
+          const variants = await variantsResponse.json();
+          if (variants && variants.length > 0) {
+            // Product has variants - show variant selector
+            setSelectedProductForVariant(product);
+            setProductVariants(variants);
+            setVariantQuantities({});
+            setShowVariantDialog(true);
+            setProductSearch("");
+            setShowProductDropdown(false);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching variants:', error);
+      }
+    }
+    
+    // Handle regular product or already-selected variant
     const existingItem = orderItems.find(item => item.productId === product.id);
 
     if (existingItem) {
@@ -1263,6 +1301,65 @@ export default function EditOrder() {
     }
     setProductSearch("");
     setShowProductDropdown(false);
+  };
+
+  const addVariantsToOrder = async () => {
+    if (!selectedProductForVariant) return;
+    
+    const selectedCurrency = form.watch('currency') || 'EUR';
+    const variantsToAdd = Object.entries(variantQuantities).filter(([_, qty]) => qty > 0);
+    
+    if (variantsToAdd.length === 0) {
+      toast({
+        title: "No variants selected",
+        description: "Please select at least one variant with quantity > 0",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    for (const [variantId, quantity] of variantsToAdd) {
+      const variant = productVariants.find(v => v.id === variantId);
+      if (!variant) continue;
+      
+      // Use product's price since variants don't have their own selling price
+      let productPrice = 0;
+      if (selectedCurrency === 'CZK' && selectedProductForVariant.priceCzk) {
+        productPrice = parseFloat(selectedProductForVariant.priceCzk);
+      } else if (selectedCurrency === 'EUR' && selectedProductForVariant.priceEur) {
+        productPrice = parseFloat(selectedProductForVariant.priceEur);
+      } else {
+        productPrice = parseFloat(selectedProductForVariant.priceEur || selectedProductForVariant.priceCzk || '0');
+      }
+      
+      const newItem: OrderItem = {
+        id: Math.random().toString(36).substr(2, 9),
+        productId: selectedProductForVariant.id,
+        variantId: variant.id,
+        variantName: variant.name,
+        productName: `${selectedProductForVariant.name} - ${variant.name}`,
+        sku: variant.barcode || selectedProductForVariant.sku,
+        quantity: quantity,
+        price: productPrice,
+        discount: 0,
+        tax: 0,
+        total: productPrice * quantity,
+        landingCost: parseFloat(variant.importCostEur || variant.importCostCzk || '0') || null,
+        image: variant.photo || selectedProductForVariant.image || null,
+      };
+      
+      setOrderItems(items => [...items, newItem]);
+    }
+    
+    toast({
+      title: "Success",
+      description: `Added ${variantsToAdd.length} variant(s) to order`,
+    });
+    
+    setShowVariantDialog(false);
+    setSelectedProductForVariant(null);
+    setProductVariants([]);
+    setVariantQuantities({});
   };
 
   const updateOrderItem = (id: string, field: keyof OrderItem, value: any) => {
@@ -4295,6 +4392,98 @@ export default function EditOrder() {
         </form>
       </div>
       
+      {/* Variant Selector Dialog */}
+      <Dialog open={showVariantDialog} onOpenChange={setShowVariantDialog}>
+        <DialogContent className="max-w-3xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold">Select Product Variants</DialogTitle>
+            <DialogDescription className="text-sm">
+              Choose variants and quantities for: <span className="font-semibold text-slate-900">{selectedProductForVariant?.name}</span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[400px] overflow-y-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead className="font-semibold">Variant Name</TableHead>
+                  <TableHead className="font-semibold">Barcode</TableHead>
+                  <TableHead className="text-right font-semibold">Stock</TableHead>
+                  <TableHead className="text-right font-semibold w-[140px]">Quantity</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {productVariants.map((variant, index) => (
+                  <TableRow key={variant.id} className="hover:bg-slate-50">
+                    <TableCell className="font-medium">{variant.name}</TableCell>
+                    <TableCell className="text-muted-foreground font-mono text-xs">{variant.barcode || '-'}</TableCell>
+                    <TableCell className="text-right">
+                      <Badge variant={variant.quantity > 10 ? "default" : variant.quantity > 0 ? "outline" : "destructive"} className="font-semibold">
+                        {variant.quantity}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={variantQuantities[variant.id] || 0}
+                        onChange={(e) => setVariantQuantities(prev => ({
+                          ...prev,
+                          [variant.id]: Math.max(0, parseInt(e.target.value) || 0)
+                        }))}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const isLastVariant = index === productVariants.length - 1;
+                            
+                            if (isLastVariant) {
+                              // On last variant, trigger add variants
+                              addVariantsToOrder();
+                            } else {
+                              // Move to next variant input
+                              const nextVariant = productVariants[index + 1];
+                              const nextInput = document.querySelector(`[data-testid="input-variant-quantity-${nextVariant.id}"]`) as HTMLInputElement;
+                              nextInput?.focus();
+                              nextInput?.select();
+                            }
+                          }
+                        }}
+                        className="text-right h-10"
+                        data-testid={`input-variant-quantity-${variant.id}`}
+                        onFocus={(e) => e.target.select()}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <DialogFooter className="flex gap-2 sm:gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowVariantDialog(false);
+                setSelectedProductForVariant(null);
+                setProductVariants([]);
+                setVariantQuantities({});
+              }}
+              className="flex-1 sm:flex-none"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={addVariantsToOrder}
+              data-testid="button-add-variants"
+              className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Selected Variants
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Shipping Address Modal */}
       <ShippingAddressModal
         open={showShippingModal}
