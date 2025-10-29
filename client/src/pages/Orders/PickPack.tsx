@@ -405,7 +405,7 @@ export default function PickPack() {
   const [selectedSearchIndex, setSelectedSearchIndex] = useState<number>(0);
   
   // Legacy states for compatibility
-  const [selectedCarton, setSelectedCarton] = useState<string>('K2');
+  const [selectedCarton, setSelectedCarton] = useState<string>('');
   const [useNonCompanyCarton, setUseNonCompanyCarton] = useState<boolean>(false);
   const [previewOrder, setPreviewOrder] = useState<PickPackOrder | null>(null);
   const [selectedReadyOrders, setSelectedReadyOrders] = useState<Set<string>>(new Set());
@@ -993,8 +993,39 @@ export default function PickPack() {
     };
   };
 
+  // Convert database cartons to BoxSize format for packing algorithm
+  const convertCartonsToBoxSizes = (cartons: any[]): BoxSize[] => {
+    return cartons.map(carton => ({
+      id: carton.id,
+      name: carton.name,
+      dimensions: {
+        length: carton.dimensions.length,
+        width: carton.dimensions.width,
+        height: carton.dimensions.height,
+        weight: carton.weight || 0.2 // Default tare weight if not provided
+      },
+      maxWeight: carton.maxWeight,
+      cost: carton.cost || 2.0, // Default cost if not in database
+      material: carton.material || 'Corrugated Cardboard'
+    }));
+  };
+
   // AI-powered packing optimization algorithm
-  const generatePackingRecommendation = (items: OrderItem[]): PackingRecommendation => {
+  const generatePackingRecommendation = (items: OrderItem[], dbCartons: any[]): PackingRecommendation => {
+    // Convert database cartons to the format expected by packing algorithms
+    const boxSizesFromDB = convertCartonsToBoxSizes(dbCartons);
+    
+    // If no cartons available, return empty recommendation
+    if (boxSizesFromDB.length === 0) {
+      return {
+        cartons: [],
+        totalCost: 0,
+        totalWeight: 0,
+        efficiency: 0,
+        reasoning: 'No cartons available'
+      };
+    }
+
     const itemsWithDimensions = items.map(item => ({
       ...item,
       dimensions: item.dimensions || generateItemDimensions(item.productName, item.quantity),
@@ -1021,12 +1052,12 @@ export default function PickPack() {
       reasoning: ''
     };
 
-    // Try different packing strategies
+    // Try different packing strategies using database cartons
     const strategies = [
-      () => packInSingleBox(itemsWithDimensions, hasFragileItems),
-      () => packByWeight(itemsWithDimensions, hasFragileItems),
-      () => packByFragility(itemsWithDimensions),
-      () => packBySize(itemsWithDimensions, hasFragileItems)
+      () => packInSingleBox(itemsWithDimensions, hasFragileItems, boxSizesFromDB),
+      () => packByWeight(itemsWithDimensions, hasFragileItems, boxSizesFromDB),
+      () => packByFragility(itemsWithDimensions, boxSizesFromDB),
+      () => packBySize(itemsWithDimensions, hasFragileItems, boxSizesFromDB)
     ];
 
     strategies.forEach(strategy => {
@@ -1040,10 +1071,10 @@ export default function PickPack() {
   };
 
   // Packing strategy: Try to fit everything in one box
-  const packInSingleBox = (items: OrderItem[], hasFragileItems: boolean): PackingRecommendation | null => {
+  const packInSingleBox = (items: OrderItem[], hasFragileItems: boolean, boxSizes: BoxSize[]): PackingRecommendation | null => {
     const totalWeight = items.reduce((sum, item) => sum + item.dimensions!.weight, 0);
     
-    const suitableBoxes = availableBoxSizes.filter(box => {
+    const suitableBoxes = boxSizes.filter(box => {
       if (hasFragileItems && !box.isFragile && box.material !== 'Double-Wall Cardboard') return false;
       return box.maxWeight >= totalWeight;
     }).sort((a, b) => a.cost - b.cost);
@@ -1078,13 +1109,13 @@ export default function PickPack() {
   };
 
   // Packing strategy: Pack by weight distribution
-  const packByWeight = (items: OrderItem[], hasFragileItems: boolean): PackingRecommendation | null => {
+  const packByWeight = (items: OrderItem[], hasFragileItems: boolean, boxSizes: BoxSize[]): PackingRecommendation | null => {
     const cartons: Carton[] = [];
     const remainingItems = [...items];
     let totalCost = 0;
 
     while (remainingItems.length > 0) {
-      const suitableBoxes = availableBoxSizes.filter(box => {
+      const suitableBoxes = boxSizes.filter(box => {
         if (hasFragileItems && !box.isFragile && box.material !== 'Double-Wall Cardboard') return false;
         return true;
       }).sort((a, b) => a.cost - b.cost);
@@ -1150,12 +1181,12 @@ export default function PickPack() {
   };
 
   // Additional packing strategies (simplified for space)
-  const packByFragility = (items: OrderItem[]): PackingRecommendation | null => {
-    return packByWeight(items, true);
+  const packByFragility = (items: OrderItem[], boxSizes: BoxSize[]): PackingRecommendation | null => {
+    return packByWeight(items, true, boxSizes);
   };
 
-  const packBySize = (items: OrderItem[], hasFragileItems: boolean): PackingRecommendation | null => {
-    return packByWeight(items, hasFragileItems);
+  const packBySize = (items: OrderItem[], hasFragileItems: boolean, boxSizes: BoxSize[]): PackingRecommendation | null => {
+    return packByWeight(items, hasFragileItems, boxSizes);
   };
 
   // Generate bundle items for gel polish products
@@ -2546,8 +2577,8 @@ export default function PickPack() {
     setPackingTimer(0);
     setIsPackingTimerRunning(true);
     
-    // Generate AI packing recommendation
-    const recommendation = generatePackingRecommendation(order.items);
+    // Generate AI packing recommendation using database cartons
+    const recommendation = generatePackingRecommendation(order.items, availableCartons);
     setPackingRecommendation(recommendation);
     
     // Update database in background for real orders (non-blocking)
