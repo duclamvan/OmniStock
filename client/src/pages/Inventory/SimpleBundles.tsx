@@ -249,6 +249,7 @@ export default function SimpleBundles() {
                 <TableHead>Description</TableHead>
                 <TableHead>Price</TableHead>
                 <TableHead>Discount</TableHead>
+                <TableHead className="text-center">Stock</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -306,6 +307,14 @@ export default function SimpleBundles() {
                     ) : (
                       '-'
                     )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge 
+                      variant="outline" 
+                      className={(bundle as any).availableStock > 0 ? "bg-green-50 text-green-700 border-green-300" : "bg-red-50 text-red-700 border-red-300"}
+                    >
+                      {(bundle as any).availableStock || 0}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-1 justify-end">
