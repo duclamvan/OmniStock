@@ -2997,7 +2997,7 @@ export default function EditOrder() {
                                     })()}
                                   </div>
                                   <div className="text-sm text-slate-500">
-                                    Stock: {product.stockQuantity || 0}
+                                    Stock: {product.stockQuantity || product.quantity || 0}
                                   </div>
                                   {product.warehouseName && (
                                     <div className="text-xs text-slate-400">{product.warehouseName}</div>
