@@ -487,6 +487,17 @@ export default function PickPack() {
     }
   }, [manualItemIndex, activePickingOrder, preferExpandedImages]);
 
+  // Track active picking/packing mode for header visibility
+  useEffect(() => {
+    const isActiveMode = !!(activePickingOrder || activePackingOrder);
+    sessionStorage.setItem('pickpack-active-mode', isActiveMode ? 'true' : 'false');
+    
+    // Cleanup when component unmounts
+    return () => {
+      sessionStorage.removeItem('pickpack-active-mode');
+    };
+  }, [activePickingOrder, activePackingOrder]);
+
   // Timer effect for undo popup
   useEffect(() => {
     if (showUndoPopup && undoTimeLeft > 0) {

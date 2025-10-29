@@ -2,6 +2,14 @@
 Davie Supply is a full-stack web application designed for comprehensive warehouse and order management. Its primary goal is to optimize supply chain operations, encompassing the entire order lifecycle, inventory tracking, customer relationship management, and multi-currency financial reporting. The project includes features like real-time Vietnamese diacritics search, customer-specific pricing, external shipping API integrations, and extensive settings management. Key ambitions include advanced warehouse mapping, a comprehensive Pick & Pack workflow, and future AI-powered optimization.
 
 # Recent Changes
+**October 29, 2025**: Refined Pick & Pack Header Visibility and Completed Database-Driven Carton Integration:
+- Fixed header visibility on Pick & Pack page: now shows header everywhere EXCEPT during active picking or packing of specific orders
+- Implemented sessionStorage tracking (`pickpack-active-mode`) to communicate active state between PickPack component and MobileResponsiveLayout
+- Header intelligently hides only when `activePickingOrder` or `activePackingOrder` state is set (user actively working on an order)
+- Removed hardcoded carton ID ('K2') from initial state, replaced with empty string for proper database integration
+- AI carton recommendations now use actual database UUIDs for auto-selection in dropdown menus
+- All packing strategy functions (packInSingleBox, packByWeight, packByFragility, packBySize) now accept database cartons as parameters
+
 **October 29, 2025**: Enhanced AI Carton Packing with DeepSeek Integration and Database-Driven Recommendations:
 - Switched AI weight/dimension inference from OpenAI to DeepSeek API using DEEPSEEK_API_KEY for cost optimization
 - Updated weight calculation service to fetch cartons from database (packingCartons table) instead of hardcoded array
