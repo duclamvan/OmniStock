@@ -822,27 +822,29 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile Header */}
-      <header className="lg:hidden sticky top-0 z-40 bg-white border-b border-gray-200">
-        <div className="flex items-center justify-between px-4 py-3">
-          <img src={logoPath} alt="Davie Professional" className="h-8" />
-          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="touch-target">
-                <Menu className="h-6 w-6" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0 flex flex-col h-full">
-              <div className="p-4 border-b flex-shrink-0">
-                <h2 className="text-lg font-semibold">Menu</h2>
-              </div>
-              <nav className="p-4 space-y-2 overflow-y-auto flex-1" ref={mobileNavRef}>
-                <NavLinks />
-              </nav>
-            </SheetContent>
-          </Sheet>
-        </div>
-      </header>
+      {/* Mobile Header - Hidden on Pick & Pack page */}
+      {!location.includes('/orders/pick-pack') && (
+        <header className="lg:hidden sticky top-0 z-40 bg-white border-b border-gray-200">
+          <div className="flex items-center justify-between px-4 py-3">
+            <img src={logoPath} alt="Davie Professional" className="h-8" />
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="touch-target">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72 p-0 flex flex-col h-full">
+                <div className="p-4 border-b flex-shrink-0">
+                  <h2 className="text-lg font-semibold">Menu</h2>
+                </div>
+                <nav className="p-4 space-y-2 overflow-y-auto flex-1" ref={mobileNavRef}>
+                  <NavLinks />
+                </nav>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </header>
+      )}
 
       {/* Desktop Sidebar */}
       <aside className={cn(
@@ -885,8 +887,9 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
         "transition-all duration-300",
         isCollapsed ? "lg:ml-16" : "lg:ml-64"
       )}>
-        {/* Top Navigation Bar - Desktop Only */}
-        <header className="hidden lg:block sticky top-0 z-30 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-700">
+        {/* Top Navigation Bar - Desktop Only - Hidden on Pick & Pack page */}
+        {!location.includes('/orders/pick-pack') && (
+          <header className="hidden lg:block sticky top-0 z-30 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between px-6 py-2">
             {/* Breadcrumb and Page Title */}
             <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -1129,6 +1132,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
             </div>
           </div>
         </header>
+        )}
 
         <div className={cn(
           "px-mobile py-mobile max-w-7xl mx-auto"
