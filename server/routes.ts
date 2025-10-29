@@ -7159,7 +7159,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
   // Get available cartons for selection
   app.get('/api/cartons/available', async (req, res) => {
     try {
-      const cartons = weightCalculationService.getAvailableCartons();
+      const cartons = await weightCalculationService.getAvailableCartons();
       res.json(cartons);
     } catch (error) {
       console.error('Error getting available cartons:', error);
