@@ -4524,7 +4524,10 @@ export default function PickPack() {
                           ) : (
                             <ImagePlaceholder size="lg" variant="product" />
                           )}
-                          <p className="text-center text-sm text-gray-500 mt-2">Click to minimize</p>
+                          <div className="mt-3 text-center">
+                            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">{currentItem.productName}</h3>
+                            <p className="text-xs text-gray-400 mt-1">Tap to minimize</p>
+                          </div>
                         </div>
                       ) : (
                         /* Compact View - Image + Details Side by Side */
