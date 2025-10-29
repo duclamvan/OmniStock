@@ -1020,6 +1020,24 @@ export default function OrderDetails() {
                                   {item.productName}
                                 </p>
                               </Link>
+                            ) : item.serviceId ? (
+                              <Link href={`/services/${item.serviceId}`}>
+                                <p className={cn(
+                                  "font-semibold text-sm mb-0.5 cursor-pointer hover:underline",
+                                  pickedItems.has(item.id) ? "line-through text-slate-400 hover:text-slate-500" : "text-purple-600 hover:text-purple-800"
+                                )}>
+                                  {item.productName}
+                                </p>
+                              </Link>
+                            ) : item.bundleId ? (
+                              <Link href={`/bundles/${item.bundleId}`}>
+                                <p className={cn(
+                                  "font-semibold text-sm mb-0.5 cursor-pointer hover:underline",
+                                  pickedItems.has(item.id) ? "line-through text-slate-400 hover:text-slate-500" : "text-green-600 hover:text-green-800"
+                                )}>
+                                  {item.productName}
+                                </p>
+                              </Link>
                             ) : (
                               <p className={cn(
                                 "font-semibold text-slate-900 text-sm mb-0.5",
