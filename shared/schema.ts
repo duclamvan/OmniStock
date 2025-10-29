@@ -614,6 +614,7 @@ export const orderItems = pgTable('order_items', {
   orderId: varchar('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
   productId: varchar('product_id').references(() => products.id),
   serviceId: varchar('service_id').references(() => services.id),
+  bundleId: varchar('bundle_id').references(() => productBundles.id),
   productName: varchar('product_name'),
   sku: varchar('sku'),
   quantity: integer('quantity').notNull(),

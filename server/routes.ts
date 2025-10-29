@@ -5053,6 +5053,8 @@ Important:
             orderId: order.id,
             productId: item.productId,
             serviceId: item.serviceId,
+            bundleId: item.bundleId || null,
+            variantId: item.variantId || null,
             productName: item.productName,
             sku: item.sku,
             quantity: item.quantity || 1,
@@ -5145,6 +5147,9 @@ Important:
           await storage.createOrderItem({
             orderId: req.params.id,
             productId: item.productId,
+            serviceId: item.serviceId || null,
+            bundleId: item.bundleId || null,
+            variantId: item.variantId || null,
             productName: item.productName,
             sku: item.sku,
             quantity: item.quantity,

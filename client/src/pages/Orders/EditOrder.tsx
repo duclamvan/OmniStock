@@ -1280,7 +1280,7 @@ export default function EditOrder() {
 
       const newItem: OrderItem = {
         id: Math.random().toString(36).substr(2, 9),
-        productId: product.itemType === 'variant' ? product.productId : product.id,
+        productId: product.itemType === 'bundle' ? null : (product.itemType === 'variant' ? product.productId : product.id),
         productName: product.itemType === 'variant' ? product.productName : product.name,
         sku: product.sku,
         quantity: 1,
