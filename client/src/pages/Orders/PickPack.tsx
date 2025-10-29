@@ -4509,31 +4509,55 @@ export default function PickPack() {
                   <CardContent className="p-3 lg:p-6 bg-white">
                     <div className="space-y-2 lg:space-y-6">
                       {/* Product Layout - Image + Name + Location */}
-                      <div className="flex gap-3 items-start">
-                        {/* Product Image - Larger */}
-                        <div className="flex-shrink-0">
-                          <div className="w-24 h-24 sm:w-28 sm:h-28 bg-gray-50 rounded-lg flex items-center justify-center border-2 border-gray-200">
-                            {currentItem.image ? (
-                              <img 
-                                src={currentItem.image} 
-                                alt={currentItem.productName}
-                                className="w-full h-full object-contain rounded-lg p-1"
-                              />
-                            ) : (
-                              <ImagePlaceholder size="sm" variant="product" />
-                            )}
+                      {expandedProductId === currentItem.id ? (
+                        /* Expanded Image View - Full Width */
+                        <div 
+                          className="w-full bg-gray-50 rounded-lg border-2 border-gray-200 p-4 cursor-pointer hover:border-blue-400 transition-colors"
+                          onClick={() => handleImageClick(currentItem.id)}
+                        >
+                          {currentItem.image ? (
+                            <img 
+                              src={currentItem.image} 
+                              alt={currentItem.productName}
+                              className="w-full max-h-96 object-contain"
+                            />
+                          ) : (
+                            <ImagePlaceholder size="lg" variant="product" />
+                          )}
+                          <p className="text-center text-sm text-gray-500 mt-2">Click to minimize</p>
+                        </div>
+                      ) : (
+                        /* Compact View - Image + Details Side by Side */
+                        <div className="flex gap-3 items-start">
+                          {/* Product Image - Clickable */}
+                          <div className="flex-shrink-0">
+                            <div 
+                              className="w-24 h-24 sm:w-28 sm:h-28 bg-gray-50 rounded-lg flex items-center justify-center border-2 border-gray-200 cursor-pointer hover:border-blue-400 transition-colors"
+                              onClick={() => handleImageClick(currentItem.id)}
+                            >
+                              {currentItem.image ? (
+                                <img 
+                                  src={currentItem.image} 
+                                  alt={currentItem.productName}
+                                  className="w-full h-full object-contain rounded-lg p-1"
+                                />
+                              ) : (
+                                <ImagePlaceholder size="sm" variant="product" />
+                              )}
+                            </div>
+                            <p className="text-center text-xs text-gray-400 mt-1">Tap to expand</p>
+                          </div>
+                          
+                          {/* Product Name - Prominent */}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 break-words leading-tight">{currentItem.productName}</h3>
+                            <div className="text-xs text-gray-500 space-y-1">
+                              <div>SKU: <span className="font-mono text-gray-700">{currentItem.sku}</span></div>
+                              <div>Barcode: <span className="font-mono text-gray-700">{currentItem.barcode}</span></div>
+                            </div>
                           </div>
                         </div>
-                        
-                        {/* Product Name - Prominent */}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 break-words leading-tight">{currentItem.productName}</h3>
-                          <div className="text-xs text-gray-500 space-y-1">
-                            <div>SKU: <span className="font-mono text-gray-700">{currentItem.sku}</span></div>
-                            <div>Barcode: <span className="font-mono text-gray-700">{currentItem.barcode}</span></div>
-                          </div>
-                        </div>
-                      </div>
+                      )}
 
                       {/* Warehouse Location - High Contrast Banner */}
                       <div className="bg-orange-100 border-3 border-orange-500 rounded-lg p-4 text-center">
