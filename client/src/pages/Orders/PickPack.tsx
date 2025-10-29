@@ -133,7 +133,9 @@ interface PackingRecommendation {
 
 interface OrderItem {
   id: string;
-  productId: string;
+  productId?: string | null;
+  serviceId?: string | null;
+  bundleId?: string | null;
   productName: string;
   sku: string;
   quantity: number;
@@ -146,6 +148,7 @@ interface OrderItem {
   dimensions?: ItemDimensions;
   isFragile?: boolean;
   bundleItems?: BundleItem[];
+  notes?: string | null;
   shipmentNotes?: string | null;
   packingMaterial?: {
     id: string;
@@ -239,7 +242,34 @@ const ProductImage = memo(({
         
         {/* Product Details Below Image */}
         <div className="space-y-2 px-2">
-          <h3 className="text-lg sm:text-xl font-bold text-gray-900">{item.productName}</h3>
+          <div className="flex items-start gap-2">
+            {item.productId ? (
+              <Link href={`/products/${item.productId}`}>
+                <h3 className="text-lg sm:text-xl font-bold text-blue-600 hover:text-blue-800 cursor-pointer hover:underline">{item.productName}</h3>
+              </Link>
+            ) : item.serviceId ? (
+              <Link href={`/services/${item.serviceId}`}>
+                <h3 className="text-lg sm:text-xl font-bold text-purple-600 hover:text-purple-800 cursor-pointer hover:underline">{item.productName}</h3>
+              </Link>
+            ) : item.bundleId ? (
+              <Link href={`/bundles/${item.bundleId}`}>
+                <h3 className="text-lg sm:text-xl font-bold text-green-600 hover:text-green-800 cursor-pointer hover:underline">{item.productName}</h3>
+              </Link>
+            ) : (
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900">{item.productName}</h3>
+            )}
+          </div>
+          {item.serviceId && (
+            <div className="bg-purple-50 border border-purple-200 rounded p-2">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Badge className="bg-purple-600 text-white text-xs">SERVICE</Badge>
+                <span className="text-xs font-medium text-purple-700">Pick last - No physical location</span>
+              </div>
+              {item.notes && (
+                <p className="text-xs text-purple-900 font-medium mt-1">Note: {item.notes}</p>
+              )}
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <Hash className="h-4 w-4 text-blue-500" />
             <span className="text-sm text-gray-500">SKU:</span>
@@ -1598,12 +1628,14 @@ export default function PickPack() {
       status: order.status || 'to_fulfill',
       pickStatus: order.pickStatus || 'not_started',
       packStatus: order.packStatus || 'not_started',
-      items: order.items?.map((item: any) => {
+      items: (order.items?.map((item: any) => {
         const warehouseLocation = item.warehouseLocation || generateMockLocation();
         
         return {
           id: item.id,
           productId: item.productId,
+          serviceId: item.serviceId,
+          bundleId: item.bundleId,
           productName: item.productName,
           sku: item.sku,
           quantity: item.quantity,
@@ -1616,6 +1648,7 @@ export default function PickPack() {
           bundleItems: item.bundleItems || undefined,
           dimensions: item.dimensions,
           isFragile: item.isFragile,
+          notes: item.notes,
           // Include pricing information from backend
           price: item.price || item.appliedPrice || item.unitPrice,
           unitPrice: item.unitPrice,
@@ -1625,7 +1658,13 @@ export default function PickPack() {
           tax: item.tax,
           total: item.total
         };
-      }) || [],
+      }) || []).sort((a: OrderItem, b: OrderItem) => {
+        // Sort services last - products and bundles first, services last
+        if (a.serviceId && !b.serviceId) return 1;
+        if (!a.serviceId && b.serviceId) return -1;
+        // Otherwise maintain original order
+        return 0;
+      }),
       totalItems: order.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0,
       pickedItems: order.items?.reduce((sum: number, item: any) => sum + (item.pickedQuantity || 0), 0) || 0,
       packedItems: order.items?.reduce((sum: number, item: any) => sum + (item.packedQuantity || 0), 0) || 0,

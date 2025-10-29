@@ -635,7 +635,8 @@ export const orderItems = pgTable('order_items', {
   pickStartTime: timestamp('pick_start_time'),
   pickEndTime: timestamp('pick_end_time'),
   packStartTime: timestamp('pack_start_time'),
-  packEndTime: timestamp('pack_end_time')
+  packEndTime: timestamp('pack_end_time'),
+  notes: text('notes')
 });
 
 // Product warehouse locations table
