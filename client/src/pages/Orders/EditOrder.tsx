@@ -1627,6 +1627,7 @@ export default function EditOrder() {
             categoryName: 'Bundles',
             itemType: 'bundle',
             bundleId: bundle.id,
+            availableStock: bundle.availableStock ?? 0,
           });
         }
       });
@@ -2997,7 +2998,7 @@ export default function EditOrder() {
                                     })()}
                                   </div>
                                   <div className="text-sm text-slate-500">
-                                    Stock: {product.stockQuantity || product.quantity || 0}
+                                    Stock: {product.itemType === 'bundle' ? (product.availableStock ?? 0) : (product.stockQuantity || product.quantity || 0)}
                                   </div>
                                   {product.warehouseName && (
                                     <div className="text-xs text-slate-400">{product.warehouseName}</div>

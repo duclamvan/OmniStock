@@ -2951,9 +2951,9 @@ export default function AddOrder() {
                             {!isService && (
                               <>
                                 <div className="text-sm text-slate-500">
-                                  Stock: {product.quantity || 0}
+                                  Stock: {isBundle ? (product.availableStock ?? 0) : (product.quantity || 0)}
                                 </div>
-                                {product.warehouseName && (
+                                {!isBundle && product.warehouseName && (
                                   <div className="text-xs text-slate-400">{product.warehouseName}</div>
                                 )}
                               </>
