@@ -1698,7 +1698,41 @@ Important:
   app.get('/api/bundles', async (req, res) => {
     try {
       const bundles = await storage.getBundles();
-      res.json(bundles);
+      
+      // Calculate available stock for each bundle
+      const bundlesWithStock = await Promise.all(bundles.map(async (bundle) => {
+        const items = await storage.getBundleItems(bundle.id);
+        
+        if (items.length === 0) {
+          return { ...bundle, availableStock: 0 };
+        }
+        
+        // Calculate how many bundles can be made based on component availability
+        const availableBundles = await Promise.all(items.map(async (item) => {
+          let availableQuantity = 0;
+          
+          if (item.variantId) {
+            // Get variant quantity
+            const variants = await storage.getProductVariants(item.productId);
+            const variant = variants.find(v => v.id === item.variantId);
+            availableQuantity = variant?.quantity || 0;
+          } else {
+            // Get product quantity
+            const product = await storage.getProductById(item.productId);
+            availableQuantity = product?.quantity || 0;
+          }
+          
+          // Calculate how many bundles can be made with this item
+          return Math.floor(availableQuantity / item.quantity);
+        }));
+        
+        // Bundle stock is the minimum across all items
+        const stock = Math.min(...availableBundles);
+        
+        return { ...bundle, availableStock: stock };
+      }));
+      
+      res.json(bundlesWithStock);
     } catch (error) {
       console.error("Error fetching bundles:", error);
       res.status(500).json({ message: "Failed to fetch bundles" });
