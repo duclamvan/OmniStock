@@ -200,6 +200,16 @@ export default function SimpleBundles() {
                         </Badge>
                       )}
                     </div>
+                    
+                    <div className="flex justify-between items-center pt-2 border-t">
+                      <span className="text-sm text-muted-foreground">Available Stock:</span>
+                      <Badge 
+                        variant="outline" 
+                        className={(bundle as any).availableStock > 0 ? "bg-green-50 text-green-700 border-green-300" : "bg-red-50 text-red-700 border-red-300"}
+                      >
+                        {(bundle as any).availableStock || 0}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
 
