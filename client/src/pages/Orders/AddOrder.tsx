@@ -3841,7 +3841,7 @@ export default function AddOrder() {
                               <div className="grid grid-cols-2 gap-3 text-sm">
                                 <div className="flex items-center gap-2">
                                   <Weight className="h-3 w-3 text-gray-500" />
-                                  <span className="text-gray-600 dark:text-gray-400">Weight:</span>
+                                  <span className="text-gray-600 dark:text-gray-400">Total Weight:</span>
                                   <span className="font-medium">{carton.weight ? `${carton.weight.toFixed(2)} kg` : 'N/A'}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -3849,6 +3849,22 @@ export default function AddOrder() {
                                   <span className="text-gray-600 dark:text-gray-400">Items:</span>
                                   <span className="font-medium">{carton.items?.length || 0}</span>
                                 </div>
+                                {carton.fillingWeight !== undefined && carton.fillingWeight > 0 && (
+                                  <>
+                                    <div className="flex items-center gap-2">
+                                      <Box className="h-3 w-3 text-amber-500" />
+                                      <span className="text-gray-600 dark:text-gray-400">Filling:</span>
+                                      <span className="font-medium text-amber-600 dark:text-amber-400">
+                                        {carton.fillingWeight.toFixed(3)} kg
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Package className="h-3 w-3 text-gray-500" />
+                                      <span className="text-gray-600 dark:text-gray-400">Empty Space:</span>
+                                      <span className="font-medium">{carton.unusedVolume ? `${carton.unusedVolume.toLocaleString()} cm³` : 'N/A'}</span>
+                                    </div>
+                                  </>
+                                )}
                               </div>
 
                               {/* Items in Carton */}

@@ -7443,6 +7443,8 @@ Return ONLY the subject line without quotes or extra formatting.`,
             dimensions: cartonInfo ? `${cartonInfo.innerLengthCm}x${cartonInfo.innerWidthCm}x${cartonInfo.innerHeightCm}` : '',
             weight: carton.totalWeightKg,
             utilization: carton.volumeUtilization,
+            fillingWeight: carton.fillingWeightKg,
+            unusedVolume: carton.unusedVolumeCm3,
             items: carton.items.map(item => ({
               productId: item.productId,
               productName: enrichedItems.find(ei => ei.productId === item.productId)?.productName || 'Unknown',
