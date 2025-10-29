@@ -7525,11 +7525,24 @@ Return ONLY the subject line without quotes or extra formatting.`,
 
       console.log(`Created packing plan ${createdPlan.id} with ${createdItems.length} items across ${packingPlan.totalCartons} cartons`);
 
-      // Return the created plan with items
+      // Return the created plan with items and mapped field names
       res.status(201).json({
         ...createdPlan,
         items: createdItems,
-        cartons: packingPlan.cartons
+        cartons: packingPlan.cartons.map(carton => {
+          const cartonInfo = cartons.find(c => c.id === carton.cartonId);
+          return {
+            cartonNumber: carton.cartonNumber,
+            cartonId: carton.cartonId,
+            cartonName: cartonInfo?.name || 'Unknown',
+            dimensions: cartonInfo ? `${cartonInfo.innerLengthCm}x${cartonInfo.innerWidthCm}x${cartonInfo.innerHeightCm}` : '',
+            weight: carton.totalWeightKg,
+            utilization: carton.volumeUtilization,
+            fillingWeight: carton.fillingWeightKg,
+            unusedVolume: carton.unusedVolumeCm3,
+            items: carton.items
+          };
+        })
       });
     } catch (error) {
       console.error('Error creating packing plan:', error);
@@ -7553,8 +7566,11 @@ Return ONLY the subject line without quotes or extra formatting.`,
 
       // Fetch carton items for this plan
       const items = await storage.getOrderCartonItems(plan.id);
+      
+      // Fetch all packing cartons for calculating filling weight
+      const allCartons = await storage.getPackingCartons();
 
-      // Group items by carton number
+      // Group items by carton number and calculate filling weight
       const cartonMap = new Map();
       for (const item of items) {
         if (!cartonMap.has(item.cartonNumber)) {
@@ -7562,23 +7578,63 @@ Return ONLY the subject line without quotes or extra formatting.`,
             cartonId: item.cartonId,
             cartonNumber: item.cartonNumber,
             items: [],
-            totalWeightKg: 0
+            totalWeightKg: 0,
+            totalVolumeCm3: 0
           });
         }
         const carton = cartonMap.get(item.cartonNumber);
         carton.items.push({
           productId: item.productId,
           quantity: item.quantity,
-          weightKg: parseFloat(item.weightKg),
+          weightKg: parseFloat(item.weightKg || item.itemWeightKg || 0),
           aiEstimated: item.aiEstimated
         });
-        carton.totalWeightKg += parseFloat(item.weightKg);
+        carton.totalWeightKg += parseFloat(item.weightKg || item.itemWeightKg || 0);
+        
+        // Estimate item volume for filling calculation (rough estimate)
+        // Assuming average density of 0.5 kg per liter (500 kg/m³)
+        const itemVolumeCm3 = (parseFloat(item.weightKg || item.itemWeightKg || 0) / 0.5) * 1000;
+        carton.totalVolumeCm3 += itemVolumeCm3;
       }
+
+      // Calculate filling weight and format response
+      const formattedCartons = Array.from(cartonMap.values()).map(carton => {
+        const cartonInfo = allCartons.find(c => c.id === carton.cartonId);
+        let fillingWeight = 0;
+        let unusedVolume = 0;
+        let utilization = 0;
+        let totalWeight = carton.totalWeightKg;
+        
+        if (cartonInfo) {
+          const cartonVolume = parseFloat(cartonInfo.innerLengthCm.toString()) *
+                              parseFloat(cartonInfo.innerWidthCm.toString()) *
+                              parseFloat(cartonInfo.innerHeightCm.toString());
+          unusedVolume = Math.max(0, cartonVolume - carton.totalVolumeCm3);
+          fillingWeight = (unusedVolume / 1000) * 0.015;
+          utilization = (carton.totalVolumeCm3 / cartonVolume) * 100;
+          
+          // Calculate total weight (items + tare + filling)
+          const tareWeight = parseFloat(cartonInfo.tareWeightKg.toString());
+          totalWeight = carton.totalWeightKg + tareWeight + fillingWeight;
+        }
+        
+        return {
+          cartonNumber: carton.cartonNumber,
+          cartonId: carton.cartonId,
+          cartonName: cartonInfo?.name || 'Unknown',
+          dimensions: cartonInfo ? `${cartonInfo.innerLengthCm}x${cartonInfo.innerWidthCm}x${cartonInfo.innerHeightCm}` : '',
+          weight: totalWeight,
+          utilization: Math.round(utilization * 100) / 100,
+          fillingWeight: Math.round(fillingWeight * 1000) / 1000,
+          unusedVolume: Math.round(unusedVolume),
+          items: carton.items
+        };
+      });
 
       // Return plan with nested carton items
       res.json({
         ...plan,
-        cartons: Array.from(cartonMap.values()),
+        cartons: formattedCartons,
         items
       });
     } catch (error) {

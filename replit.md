@@ -2,6 +2,15 @@
 Davie Supply is a full-stack web application designed for comprehensive warehouse and order management. Its primary goal is to optimize supply chain operations, encompassing the entire order lifecycle, inventory tracking, customer relationship management, and multi-currency financial reporting. The project includes features like real-time Vietnamese diacritics search, customer-specific pricing, external shipping API integrations, and extensive settings management. Key ambitions include advanced warehouse mapping, a comprehensive Pick & Pack workflow, and future AI-powered optimization.
 
 # Recent Changes
+**October 29, 2025**: Enhanced AI Carton Packing with DeepSeek Integration and Database-Driven Recommendations:
+- Switched AI weight/dimension inference from OpenAI to DeepSeek API using DEEPSEEK_API_KEY for cost optimization
+- Updated weight calculation service to fetch cartons from database (packingCartons table) instead of hardcoded array
+- Implemented filling weight calculation: automatically calculates weight of filling material needed for unused carton space
+- Filling weight formula: (unusedVolume / 1000) × 0.015 kg/L, based on typical packing materials (bubble wrap, air pillows, paper)
+- Enhanced UI to display filling weight and unused volume in carton breakdown accordion (AddOrder, EditOrder)
+- Updated all three packing endpoints to ensure consistent field mapping (fillingWeight, unusedVolume)
+- Frontend displays filling weight in amber color with 3 decimal precision, empty space in cm³ with locale formatting
+- GET endpoint recalculates filling weight using volume estimation when retrieving saved plans
 **October 28, 2025**: Complete Removal of State/Region Fields for EU-Focused Address Management:
 - Removed state/region fields from entire application (frontend forms, backend API, database schema) per EU addressing requirements
 - Dropped state columns from customers, customerShippingAddresses, customerBillingAddresses tables via SQL migrations
