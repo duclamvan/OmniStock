@@ -15,6 +15,12 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
@@ -3073,14 +3079,15 @@ export default function PickPack() {
 
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        {/* Header - Packing Mode */}
+        {/* Compact Header - Packing Mode */}
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-lg sticky top-0 z-20">
-          <div className="px-4 lg:px-6 py-3 lg:py-4">
+          <div className="px-4 lg:px-6 py-2 lg:py-3">
+            {/* Single compact row with all controls */}
             <div className="flex items-center justify-between gap-3">
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-10 sm:h-12 px-3 bg-white/20 hover:bg-white/30 text-white"
+                className="h-9 px-3 bg-white/20 hover:bg-white/30 text-white"
                 onClick={() => {
                   setActivePackingOrder(null);
                   setIsPackingTimerRunning(false);
@@ -3099,227 +3106,191 @@ export default function PickPack() {
                   setShippingLabelPrinted(false);
                 }}
               >
-                <ArrowLeft className="h-4 w-4 sm:h-5 w-5" />
-                <span className="ml-2 text-sm">Exit</span>
+                <ArrowLeft className="h-4 w-4" />
+                <span className="ml-1.5 text-sm hidden sm:inline">Exit</span>
               </Button>
               
+              {/* Order ID */}
               <div className="flex-1 text-center">
-                <div className="text-lg sm:text-xl font-bold">{activePackingOrder.orderId}</div>
-                <Badge className="text-xs px-2.5 py-0.5 bg-white/20 text-white mt-1">
-                  PACKING MODE
-                </Badge>
+                <div className="text-base sm:text-lg font-bold">{activePackingOrder.orderId}</div>
               </div>
               
-              <div className="flex items-center gap-2">
+              {/* Timer & Progress */}
+              <div className="flex items-center gap-3">
                 <div className="text-right">
-                  <div className="font-mono text-lg sm:text-xl font-bold">{formatTimer(packingTimer)}</div>
-                  <div className="text-xs text-purple-100">Time</div>
+                  <div className="font-mono text-sm font-bold">{formatTimer(packingTimer)}</div>
+                  <div className="text-[10px] text-purple-100 hidden sm:block">
+                    {verifiedItems.size}/{activePackingOrder.items.length} items
+                  </div>
                 </div>
                 <Button
                   size="icon"
-                  className="h-10 sm:h-12 w-10 sm:w-12 bg-white/20 hover:bg-white/30"
+                  className="h-9 w-9 bg-white/20 hover:bg-white/30"
                   onClick={() => setIsPackingTimerRunning(!isPackingTimerRunning)}
                 >
                   {isPackingTimerRunning ? (
-                    <PauseCircle className="h-5 w-5 text-orange-300" />
+                    <PauseCircle className="h-4 w-4 text-orange-300" />
                   ) : (
-                    <PlayCircle className="h-5 w-5 text-green-300" />
+                    <PlayCircle className="h-4 w-4 text-green-300" />
                   )}
                 </Button>
               </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="mt-2">
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-purple-100">Packing Progress</span>
-                <span className="font-bold text-white">
-                  {(() => {
-                    // Calculate overall packing progress based on all steps
-                    const steps = [
-                      verifiedItems.size === activePackingOrder.items.length, // All items verified
-                      printedDocuments.packingList && printedDocuments.invoice, // Essential documents printed
-                      selectedCarton !== null, // Carton selected
-                      packingChecklist.itemsVerified && packingChecklist.packingSlipIncluded && 
-                      packingChecklist.boxSealed && packingChecklist.weightRecorded, // Core checklist items
-                      shippingLabelPrinted // Shipping label printed
-                    ];
-                    const completedSteps = steps.filter(Boolean).length;
-                    const totalSteps = steps.length;
-                    return `${completedSteps}/${totalSteps} steps`;
-                  })()}
-                </span>
-              </div>
-              <div className="w-full bg-black/30 rounded-full h-2 overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-yellow-400 to-green-400 transition-all duration-500"
-                  style={{ 
-                    width: `${(() => {
-                      // Calculate percentage based on all packing steps
-                      const itemsProgress = (verifiedItems.size / activePackingOrder.items.length) * 20; // 20%
-                      const documentsProgress = ((printedDocuments.packingList ? 1 : 0) + (printedDocuments.invoice ? 1 : 0)) / 2 * 20; // 20%
-                      const cartonProgress = selectedCarton ? 20 : 0; // 20%
-                      const checklistProgress = [
-                        packingChecklist.itemsVerified,
-                        packingChecklist.packingSlipIncluded,
-                        packingChecklist.boxSealed,
-                        packingChecklist.weightRecorded
-                      ].filter(Boolean).length / 4 * 20; // 20%
-                      const labelProgress = shippingLabelPrinted ? 20 : 0; // 20%
-                      
-                      return itemsProgress + documentsProgress + cartonProgress + checklistProgress + labelProgress;
-                    })()}%` 
-                  }}
-                />
+            {/* Step Indicators (compact, single row) */}
+            <div className="flex items-center gap-1 mt-2 justify-center flex-wrap">
+              <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                verifiedItems.size === activePackingOrder.items.length 
+                  ? 'bg-green-500 text-white' 
+                  : 'bg-black/20 text-purple-200'
+              }`}>
+                {verifiedItems.size === activePackingOrder.items.length ? (
+                  <CheckCircle className="h-3 w-3" />
+                ) : (
+                  <Circle className="h-3 w-3" />
+                )}
+                Items
               </div>
               
-              {/* Packing Steps Indicators */}
-              <div className="flex items-center gap-1 mt-2 justify-center">
-                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                  verifiedItems.size === activePackingOrder.items.length 
-                    ? 'bg-green-500 text-white' 
-                    : 'bg-black/20 text-purple-200'
-                }`}>
-                  {verifiedItems.size === activePackingOrder.items.length ? (
-                    <CheckCircle className="h-3 w-3" />
-                  ) : (
-                    <Circle className="h-3 w-3" />
-                  )}
-                  Items
-                </div>
-                
-                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                  printedDocuments.packingList && printedDocuments.invoice
-                    ? 'bg-green-500 text-white' 
-                    : 'bg-black/20 text-purple-200'
-                }`}>
-                  {printedDocuments.packingList && printedDocuments.invoice ? (
-                    <CheckCircle className="h-3 w-3" />
-                  ) : (
-                    <Circle className="h-3 w-3" />
-                  )}
-                  Docs
-                </div>
-                
-                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                  selectedCarton 
-                    ? 'bg-green-500 text-white' 
-                    : 'bg-black/20 text-purple-200'
-                }`}>
-                  {selectedCarton ? (
-                    <CheckCircle className="h-3 w-3" />
-                  ) : (
-                    <Circle className="h-3 w-3" />
-                  )}
-                  Carton
-                </div>
-                
-                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                  packingChecklist.itemsVerified && packingChecklist.packingSlipIncluded && 
-                  packingChecklist.boxSealed && packingChecklist.weightRecorded
-                    ? 'bg-green-500 text-white' 
-                    : 'bg-black/20 text-purple-200'
-                }`}>
-                  {packingChecklist.itemsVerified && packingChecklist.packingSlipIncluded && 
-                   packingChecklist.boxSealed && packingChecklist.weightRecorded ? (
-                    <CheckCircle className="h-3 w-3" />
-                  ) : (
-                    <Circle className="h-3 w-3" />
-                  )}
-                  Checklist
-                </div>
-                
-                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                  shippingLabelPrinted 
-                    ? 'bg-green-500 text-white' 
-                    : 'bg-black/20 text-purple-200'
-                }`}>
-                  {shippingLabelPrinted ? (
-                    <CheckCircle className="h-3 w-3" />
-                  ) : (
-                    <Circle className="h-3 w-3" />
-                  )}
-                  Label
-                </div>
+              <ChevronRight className="h-3 w-3 text-purple-300" />
+              
+              <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                printedDocuments.packingList && printedDocuments.invoice
+                  ? 'bg-green-500 text-white' 
+                  : 'bg-black/20 text-purple-200'
+              }`}>
+                {printedDocuments.packingList && printedDocuments.invoice ? (
+                  <CheckCircle className="h-3 w-3" />
+                ) : (
+                  <Circle className="h-3 w-3" />
+                )}
+                Docs
+              </div>
+              
+              <ChevronRight className="h-3 w-3 text-purple-300" />
+              
+              <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                selectedCarton 
+                  ? 'bg-green-500 text-white' 
+                  : 'bg-black/20 text-purple-200'
+              }`}>
+                {selectedCarton ? (
+                  <CheckCircle className="h-3 w-3" />
+                ) : (
+                  <Circle className="h-3 w-3" />
+                )}
+                Carton
+              </div>
+              
+              <ChevronRight className="h-3 w-3 text-purple-300" />
+              
+              <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                packingChecklist.itemsVerified && packingChecklist.packingSlipIncluded && 
+                packingChecklist.boxSealed && packingChecklist.weightRecorded
+                  ? 'bg-green-500 text-white' 
+                  : 'bg-black/20 text-purple-200'
+              }`}>
+                {packingChecklist.itemsVerified && packingChecklist.packingSlipIncluded && 
+                 packingChecklist.boxSealed && packingChecklist.weightRecorded ? (
+                  <CheckCircle className="h-3 w-3" />
+                ) : (
+                  <Circle className="h-3 w-3" />
+                )}
+                Checklist
+              </div>
+              
+              <ChevronRight className="h-3 w-3 text-purple-300" />
+              
+              <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                shippingLabelPrinted 
+                  ? 'bg-green-500 text-white' 
+                  : 'bg-black/20 text-purple-200'
+              }`}>
+                {shippingLabelPrinted ? (
+                  <CheckCircle className="h-3 w-3" />
+                ) : (
+                  <Circle className="h-3 w-3" />
+                )}
+                Label
               </div>
             </div>
           </div>
         </div>
 
-        {/* Keyboard Shortcuts Indicator - Desktop only - More subtle */}
-        <div className="hidden lg:block bg-gray-50/50 border-b border-gray-200/50">
-          <div className="px-6 py-2">
-            <div className="flex items-center justify-center gap-8 text-xs text-gray-500">
-              <div className="flex items-center gap-2">
-                <kbd className="px-2 py-0.5 bg-white rounded shadow-sm border border-gray-200 font-mono text-gray-700">
-                  {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+K
-                </kbd>
-                <span>Focus Barcode</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <kbd className="px-2 py-0.5 bg-white rounded shadow-sm border border-gray-200 font-mono text-gray-700">Esc</kbd>
-                <span>Exit/Close</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content */}
+        {/* Main Content - Single Column Layout */}
         <div className="flex-1 overflow-y-auto">
-          <div className="p-4 sm:p-6 max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-              {/* Left Column - Items Verification */}
-              <Card className="shadow-sm border border-gray-200 bg-white rounded-lg">
-                <CardHeader className="bg-purple-600 text-white p-4 sm:p-5">
-                  <CardTitle className="text-lg font-semibold flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <ScanLine className="h-5 w-5" />
-                      Item Verification
-                    </span>
-                    <Badge className="bg-white text-purple-600 text-sm px-2.5 py-1">
-                      {verifiedItems.size}/{activePackingOrder.items.length}
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 sm:p-6">
-                  {/* Barcode Scanner Input */}
-                  <div className="mb-4">
-                    <div className="flex gap-3">
-                      <div className="relative flex-1">
-                        <Input
-                          ref={barcodeInputRef}
-                          type="text"
-                          placeholder="Continuous scan mode - Point scanner at item"
-                          value={barcodeInput || "🎯 Ready to scan..."}
-                          readOnly
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              // Find matching item
-                              const matchingItem = activePackingOrder.items.find(
-                                item => item.barcode === barcodeInput || item.sku === barcodeInput
-                              );
-                              if (matchingItem) {
-                                setVerifiedItems(new Set(Array.from(verifiedItems).concat(matchingItem.id)));
-                                playSound('scan');
-                              } else {
-                                playSound('error');
-                              }
-                              setBarcodeInput('');
-                              barcodeInputRef.current?.focus();
-                            }
-                          }}
-                          className="h-12 sm:h-14 text-base font-mono cursor-default shadow-sm"
-                        />
-                      </div>
-                      <Button variant="outline" size="icon" className="h-12 sm:h-14 w-12 sm:w-14">
-                        <ScanLine className="h-5 w-5" />
-                      </Button>
+          <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-4">
+            
+            {/* Sticky Barcode Scanner Card */}
+            <Card className="sticky top-0 z-10 shadow-lg border-2 border-purple-300 bg-white">
+              <CardHeader className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-3">
+                <CardTitle className="text-base flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <ScanLine className="h-4 w-4" />
+                    Barcode Scanner
+                  </span>
+                  <Badge className="bg-white text-purple-600 text-sm px-2.5 py-1">
+                    {verifiedItems.size}/{activePackingOrder.items.length} verified
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-3">
+                <div className="flex gap-3">
+                  <div className="relative flex-1">
+                    <Input
+                      ref={barcodeInputRef}
+                      type="text"
+                      placeholder="Scan barcode to verify items..."
+                      value={barcodeInput || ""}
+                      onChange={(e) => setBarcodeInput(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          // Find matching item
+                          const matchingItem = activePackingOrder.items.find(
+                            item => item.barcode === barcodeInput || item.sku === barcodeInput
+                          );
+                          if (matchingItem) {
+                            setVerifiedItems(new Set(Array.from(verifiedItems).concat(matchingItem.id)));
+                            playSound('scan');
+                          } else {
+                            playSound('error');
+                          }
+                          setBarcodeInput('');
+                          barcodeInputRef.current?.focus();
+                        }
+                      }}
+                      className="h-12 text-base font-mono"
+                    />
+                  </div>
+                  <Button variant="outline" size="icon" className="h-12 w-12">
+                    <ScanLine className="h-5 w-5" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Item Verification List - Collapsible Accordion */}
+            <Accordion type="single" collapsible defaultValue="items" className="w-full">
+              <AccordionItem value="items" className="border rounded-lg bg-white shadow-sm">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                  <div className="flex items-center justify-between w-full pr-4">
+                    <div className="flex items-center gap-2">
+                      {verifiedItems.size === activePackingOrder.items.length ? (
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                      ) : (
+                        <Circle className="h-5 w-5 text-gray-400" />
+                      )}
+                      <span className="text-base font-semibold">
+                        {verifiedItems.size === activePackingOrder.items.length ? '✓ ' : ''}
+                        Items Verified ({verifiedItems.size}/{activePackingOrder.items.length})
+                      </span>
                     </div>
                   </div>
-
-                  {/* Order Items List */}
-                  <ScrollArea className="h-[300px]">
-                    <div className="space-y-2">
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="px-4 pb-4">
+                    <ScrollArea className="h-[400px]">
+                      <div className="space-y-2">
                       {activePackingOrder.items.map((item, index) => {
                         const isVerified = verifiedItems.has(item.id);
                         return (
@@ -3474,931 +3445,348 @@ export default function PickPack() {
                       })}
                     </div>
                   </ScrollArea>
-                </CardContent>
-              </Card>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
 
-              {/* Documents to Print Section */}
-              <Card className="shadow-xl border-0 bg-white">
-                <CardHeader className="bg-gradient-to-r from-rose-600 to-pink-600 text-white">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Documents to Print
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <div className="space-y-3">
-                    {/* Document Checklist */}
-                    <div className="space-y-2">
-                      {/* Packing List */}
-                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <Checkbox 
-                            checked={printedDocuments.packingList}
-                            disabled
-                            className="cursor-default"
-                          />
-                          <div className="flex items-center gap-2">
-                            <ClipboardList className="h-4 w-4 text-green-600" />
-                            <span className="text-sm font-medium">Packing List</span>
-                          </div>
-                        </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => {
-                            window.print();
-                            setPrintedDocuments(prev => ({ ...prev, packingList: true }));
-                            playSound('success');
-                          }}
-                        >
-                          <Printer className="h-3 w-3 mr-1" />
-                          Print
-                        </Button>
-                      </div>
-
-                      {/* Invoice */}
-                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <Checkbox 
-                            checked={printedDocuments.invoice}
-                            disabled
-                            className="cursor-default"
-                          />
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-blue-600" />
-                            <span className="text-sm font-medium">Invoice</span>
-                          </div>
-                        </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => {
-                            window.open(`/api/orders/${activePackingOrder.id}/invoice.pdf`, '_blank');
-                            setPrintedDocuments(prev => ({ ...prev, invoice: true }));
-                            playSound('success');
-                          }}
-                        >
-                          <Printer className="h-3 w-3 mr-1" />
-                          Print
-                        </Button>
-                      </div>
-
-                      {/* MSDS Files */}
-                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <Checkbox 
-                            checked={printedDocuments.msds}
-                            disabled
-                            className="cursor-default"
-                          />
-                          <div className="flex items-center gap-2">
-                            <AlertCircle className="h-4 w-4 text-orange-600" />
-                            <span className="text-sm font-medium">MSDS Files</span>
-                          </div>
-                        </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => {
-                            window.open(`/api/orders/${activePackingOrder.id}/msds.pdf`, '_blank');
-                            setPrintedDocuments(prev => ({ ...prev, msds: true }));
-                            playSound('success');
-                          }}
-                        >
-                          <Printer className="h-3 w-3 mr-1" />
-                          Print
-                        </Button>
-                      </div>
-
-                      {/* CPNP Certificate */}
-                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <Checkbox 
-                            checked={printedDocuments.cpnpCertificate}
-                            disabled
-                            className="cursor-default"
-                          />
-                          <div className="flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4 text-purple-600" />
-                            <span className="text-sm font-medium">CPNP Certificate</span>
-                          </div>
-                        </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => {
-                            window.open(`/api/orders/${activePackingOrder.id}/cpnp-certificate.pdf`, '_blank');
-                            setPrintedDocuments(prev => ({ ...prev, cpnpCertificate: true }));
-                            playSound('success');
-                          }}
-                        >
-                          <Printer className="h-3 w-3 mr-1" />
-                          Print
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    {/* Print All Documents Button */}
-                    <Button 
-                      className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
-                      onClick={() => {
-                        // Print all required documents
-                        const documents = [
-                          `/api/orders/${activePackingOrder.id}/packing-list.pdf`,
-                          `/api/orders/${activePackingOrder.id}/invoice.pdf`,
-                          `/api/orders/${activePackingOrder.id}/msds.pdf`,
-                          `/api/orders/${activePackingOrder.id}/cpnp-certificate.pdf`
-                        ];
-                        
-                        documents.forEach((doc, index) => {
-                          setTimeout(() => {
-                            window.open(doc, '_blank');
-                          }, index * 500); // Stagger opening to avoid browser blocking
-                        });
-                        
-                        // Mark all documents as printed
-                        setPrintedDocuments({
-                          packingList: true,
-                          invoice: true,
-                          msds: true,
-                          cpnpCertificate: true
-                        });
-                        
-                        playSound('success');
-                        // Suppress notifications in picking/packing mode
-                      }}
-                    >
-                      <Printer className="h-4 w-4 mr-2" />
-                      Print All Documents
-                    </Button>
+          {/* Combined Carton & Weight Card */}
+          <Card className="shadow-sm border border-gray-200 bg-white">
+            <CardHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Box className="h-4 w-4" />
+                Carton & Weight
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 space-y-3">
+              {/* AI Recommendation Badge */}
+              {packingRecommendation && packingRecommendation.cartons.length > 0 && (
+                <div className="bg-gradient-to-r from-green-50 to-blue-50 p-2 rounded-lg border border-green-200">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-green-600" />
+                    <span className="text-sm text-green-700">
+                      AI Recommended: <strong>{packingRecommendation.cartons[0].boxSize.name}</strong>
+                    </span>
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Quick Reference Card - Materials Summary */}
-              {activePackingOrder.items.some(item => item.packingMaterial) && (
-                <Card className="shadow-xl border-0">
-                  <CardHeader className="bg-gradient-to-r from-orange-500 to-red-500 text-white">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Package className="h-5 w-5" />
-                      Quick Material Reference
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4">
-                    <div className="space-y-2">
-                      <p className="text-sm text-gray-600 mb-3">
-                        All required materials are shown within each item's instructions on the left.
-                      </p>
-                      {activePackingOrder.items
-                        .filter(item => item.packingMaterial)
-                        .map((item, index, arr) => {
-                          // Group by packing material to avoid duplicates
-                          const isDuplicate = arr.findIndex(i => i.packingMaterial?.id === item.packingMaterial?.id) !== index;
-                          if (isDuplicate) return null;
-                          
-                          return (
-                            <div key={item.packingMaterial!.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
-                              <CheckCircle className="h-4 w-4 text-green-500" />
-                              <span className="text-sm font-medium">{item.packingMaterial!.name}</span>
-                            </div>
-                          );
-                        })
-                      }
-                    </div>
-                  </CardContent>
-                </Card>
+                </div>
               )}
 
-              {/* Right Column - Packing Details */}
-              <div className="space-y-4">
-                {/* AI Carton Selection */}
-                <Card className="shadow-xl border-0 bg-white">
-                  <CardHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Zap className="h-4 w-4" />
-                      Carton Selection
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4">
-                    {isLoadingCartons ? (
-                      <div className="space-y-3">
-                        <Skeleton className="h-16 w-full" />
-                        <Skeleton className="h-12 w-full" />
-                        <Skeleton className="h-12 w-full" />
-                        <Skeleton className="h-12 w-full" />
-                      </div>
-                    ) : availableCartons.length > 0 ? (
-                      <div className="space-y-4">
-                        {/* AI Recommendation */}
-                        {packingRecommendation && packingRecommendation.cartons.length > 0 && (
-                          <div className="bg-gradient-to-r from-green-50 to-blue-50 p-3 rounded-lg border border-green-200">
-                            <div className="flex items-center gap-2 mb-2">
-                              <TrendingUp className="h-4 w-4 text-green-600" />
-                              <span className="font-semibold text-green-800 text-sm">AI Recommendation</span>
-                              {selectedCartons.length > 0 && selectedCartons[0].cartonId === packingRecommendation.cartons[0].boxSize.id && (
-                                <Badge className="bg-green-600 text-white text-xs">Auto-selected</Badge>
-                              )}
-                            </div>
-                            <div className="text-sm text-green-700">
-                              Optimal carton: <strong>{packingRecommendation.cartons[0].boxSize.name}</strong>
-                            </div>
-                          </div>
-                        )}
+              {/* Carton Selection - Simple Select */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Select Carton:</label>
+                <Select value={selectedCarton || ''} onValueChange={(value) => setSelectedCarton(value)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Choose carton size..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableCartons.map((carton: any) => (
+                      <SelectItem key={carton.id} value={carton.id}>
+                        {carton.name} - {carton.dimensions.length}×{carton.dimensions.width}×{carton.dimensions.height}cm (Max {carton.maxWeight}kg)
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="non-company">Non-company carton</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                        {/* Multi-Carton Selection */}
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <label className="text-sm font-medium">Cartons for Packing:</label>
-                            <Badge variant="outline" className="text-xs">
-                              {selectedCartons.length} carton{selectedCartons.length !== 1 ? 's' : ''}
-                            </Badge>
-                          </div>
-
-                          {/* Selected Cartons List */}
-                          {selectedCartons.length > 0 && (
-                            <div className="space-y-2 mb-4">
-                              {selectedCartons.map((carton, index) => (
-                                <div key={carton.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                                  <Badge variant="secondary" className="text-xs">
-                                    #{index + 1}
-                                  </Badge>
-                                  <div className="flex-1">
-                                    <div className="font-medium text-sm">
-                                      {carton.isNonCompany ? 'Non-company carton' : carton.cartonName}
-                                    </div>
-                                    {carton.weight && (
-                                      <div className="text-xs text-gray-500">Weight: {carton.weight}kg</div>
-                                    )}
-                                  </div>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => {
-                                      setSelectedCartons(prev => prev.filter(c => c.id !== carton.id));
-                                    }}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          
-                          {/* Add New Carton Section - Improved UX */}
-                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 space-y-3">
-                            <div className="text-sm font-medium text-gray-700">Add Carton:</div>
-                            
-                            {/* Search Input with Live Results */}
-                            <div className="relative">
-                              <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
-                              <Input
-                                placeholder="Type to search cartons..."
-                                value={cartonSearchFilter}
-                                onChange={(e) => {
-                                  setCartonSearchFilter(e.target.value);
-                                  setSelectedSearchIndex(0);
-                                }}
-                                onKeyDown={(e) => {
-                                  const visibleCartons = filteredCartons.slice(0, 5);
-                                  if (e.key === 'ArrowDown') {
-                                    e.preventDefault();
-                                    setSelectedSearchIndex(prev => 
-                                      Math.min(prev + 1, visibleCartons.length - 1)
-                                    );
-                                  } else if (e.key === 'ArrowUp') {
-                                    e.preventDefault();
-                                    setSelectedSearchIndex(prev => Math.max(prev - 1, 0));
-                                  } else if (e.key === 'Enter' && visibleCartons.length > 0) {
-                                    e.preventDefault();
-                                    const selectedCarton = visibleCartons[selectedSearchIndex];
-                                    if (selectedCarton) {
-                                      const newCarton = {
-                                        id: `carton-${Date.now()}`,
-                                        cartonId: selectedCarton.id,
-                                        cartonName: selectedCarton.name,
-                                        isNonCompany: false,
-                                      };
-                                      setSelectedCartons(prev => [...prev, newCarton]);
-                                      setCartonSearchFilter('');
-                                      setSelectedSearchIndex(0);
-                                      // Suppress notifications in picking/packing mode
-                                    }
-                                  } else if (e.key === 'Escape') {
-                                    setCartonSearchFilter('');
-                                    setSelectedSearchIndex(0);
-                                  }
-                                }}
-                                className="pl-10"
-                                autoComplete="off"
-                              />
-                              
-                              {/* Live Search Results */}
-                              {cartonSearchFilter && (
-                                <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto z-50">
-                                  {filteredCartons.length > 0 ? (
-                                    <>
-                                      {filteredCartons.slice(0, 5).map((carton: any, index: number) => (
-                                        <button
-                                          key={carton.id}
-                                          onClick={() => {
-                                            const newCarton = {
-                                              id: `carton-${Date.now()}`,
-                                              cartonId: carton.id,
-                                              cartonName: carton.name,
-                                              isNonCompany: false,
-                                            };
-                                            
-                                            setSelectedCartons(prev => [...prev, newCarton]);
-                                            setCartonSearchFilter('');
-                                            setSelectedSearchIndex(0);
-                                            
-                                            // Suppress notifications in picking/packing mode
-                                          }}
-                                          onMouseEnter={() => setSelectedSearchIndex(index)}
-                                          className={`w-full p-3 transition-colors text-left border-b border-gray-100 last:border-b-0 ${
-                                            index === selectedSearchIndex ? 'bg-blue-50' : 'hover:bg-gray-50'
-                                          }`}
-                                        >
-                                          <div className="flex items-center justify-between">
-                                            <div className="flex-1">
-                                              <div className="font-medium text-sm">{carton.name}</div>
-                                              <div className="text-xs text-gray-500">
-                                                {carton.dimensions.length}×{carton.dimensions.width}×{carton.dimensions.height}cm • {carton.material}
-                                              </div>
-                                            </div>
-                                            <div className="ml-3 flex flex-col items-end">
-                                              <Badge variant="secondary" className="text-xs">
-                                                Max {carton.maxWeight}kg
-                                              </Badge>
-                                              <span className="text-xs text-blue-600 mt-1">${carton.cost}</span>
-                                            </div>
-                                          </div>
-                                        </button>
-                                      ))}
-                                      {filteredCartons.length > 5 && (
-                                        <div className="p-2 text-center text-xs text-gray-500">
-                                          +{filteredCartons.length - 5} more results
-                                        </div>
-                                      )}
-                                    </>
-                                  ) : (
-                                    <div className="p-4 text-center text-sm text-gray-500">
-                                      No cartons found matching "{cartonSearchFilter}"
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Quick Add Options */}
-                            <div className="flex flex-wrap gap-2">
-                              {/* Show help text when not searching */}
-                              {!cartonSearchFilter && (
-                                <div className="text-xs text-gray-500 w-full mb-2">
-                                  💡 Quick select below or type to search all cartons
-                                </div>
-                              )}
-                              
-                              {/* Show top 3 cartons as quick buttons when not searching */}
-                              {!cartonSearchFilter && availableCartons.slice(0, 3).map((carton: any) => (
-                                <Button
-                                  key={carton.id}
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    const newCarton = {
-                                      id: `carton-${Date.now()}`,
-                                      cartonId: carton.id,
-                                      cartonName: carton.name,
-                                      isNonCompany: false,
-                                    };
-                                    
-                                    setSelectedCartons(prev => [...prev, newCarton]);
-                                    
-                                    // Suppress notifications in picking/packing mode
-                                  }}
-                                  className="text-xs"
-                                >
-                                  <Plus className="h-3 w-3 mr-1" />
-                                  {carton.name.split(' - ')[0]}
-                                </Button>
-                              ))}
-                              
-                              {/* Non-company carton option */}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  const newCarton = {
-                                    id: `carton-${Date.now()}`,
-                                    cartonId: 'non-company',
-                                    cartonName: 'Non-company carton',
-                                    isNonCompany: true,
-                                  };
-                                  
-                                  setSelectedCartons(prev => [...prev, newCarton]);
-                                  
-                                  // Suppress notifications in picking/packing mode
-                                }}
-                                className="text-xs"
-                              >
-                                <Package className="h-3 w-3 mr-1" />
-                                Non-company
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-
-
-                      </div>
-                    ) : (
-                      <div className="text-center py-4">
-                        <Zap className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                        <p className="text-sm text-gray-500">Start packing to see AI recommendations</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-
-
-                {/* Package Weight */}
-                <Card className="shadow-xl border-0 bg-white">
-                  <CardHeader className="bg-gradient-to-r from-orange-600 to-amber-600 text-white">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <BarChart3 className="h-4 w-4" />
-                      Package Weight
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4">
-                    <div className="space-y-2">
-                      <div className="flex gap-2">
-                        <Input
-                          type="number"
-                          step="0.001"
-                          placeholder="Enter weight..."
-                          value={packageWeight}
-                          onChange={(e) => {
-                            setPackageWeight(e.target.value);
-                            setIsWeightManuallyModified(true);
-                            if (e.target.value) {
-                              setPackingChecklist({...packingChecklist, weightRecorded: true});
-                            } else {
-                              setPackingChecklist({...packingChecklist, weightRecorded: false});
-                            }
-                          }}
-                          className="text-lg"
-                        />
-                        <span className="flex items-center px-3 text-sm font-medium">kg</span>
-                      </div>
-                      {calculateWeightMutation.isPending && (
-                        <div className="flex items-center gap-2 text-xs text-blue-600">
-                          <div className="animate-spin h-3 w-3 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-                          Calculating weight...
-                        </div>
-                      )}
-                      {!calculateWeightMutation.isPending && !isWeightManuallyModified && aiWeightCalculation && (
-                        <div className="text-xs text-gray-500">
-                          Weight automatically calculated by AI
-                        </div>
-                      )}
-                      {isWeightManuallyModified && (
-                        <div className="text-xs text-gray-500">
-                          Manual weight entered
-                        </div>
-                      )}
-                      {!calculateWeightMutation.isPending && !aiWeightCalculation && !isWeightManuallyModified && (
-                        <div className="text-xs text-gray-500">
-                          Weight will be calculated automatically
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Enhanced Packing Checklist */}
-                <Card className="shadow-xl border-0 bg-white">
-                  <CardHeader className="bg-gradient-to-r from-violet-600 to-purple-600 text-white">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <ClipboardList className="h-4 w-4" />
-                      Smart Packing Checklist
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4">
-                    <div className="space-y-3">
-                      {/* Items Verification - Now properly functional */}
-                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <Checkbox 
-                          checked={packingChecklist.itemsVerified || allItemsVerified}
-                          onCheckedChange={(checked) => {
-                            setPackingChecklist({...packingChecklist, itemsVerified: !!checked});
-                            // If checking, mark all items as verified
-                            if (checked && currentCarton) {
-                              const newVerifiedItems = new Set(verifiedItems);
-                              currentCarton.items.forEach(item => {
-                                newVerifiedItems.add(item.id);
-                              });
-                              setVerifiedItems(newVerifiedItems);
-                            }
-                          }}
-                          className="cursor-pointer"
-                        />
-                        <div className="flex-1 cursor-pointer" onClick={() => {
-                          const newChecked = !(packingChecklist.itemsVerified || allItemsVerified);
-                          setPackingChecklist({...packingChecklist, itemsVerified: newChecked});
-                          if (newChecked && currentCarton) {
-                            const newVerifiedItems = new Set(verifiedItems);
-                            currentCarton.items.forEach(item => {
-                              newVerifiedItems.add(item.id);
-                            });
-                            setVerifiedItems(newVerifiedItems);
-                          }
-                        }}>
-                          <span className={(packingChecklist.itemsVerified || allItemsVerified) ? 'text-green-600 font-medium' : 'font-medium'}>
-                            All items verified and placed in carton
-                          </span>
-                          {currentCarton && (
-                            <div className="text-xs text-gray-500 mt-1">
-                              {verifiedItems.size}/{currentCarton.items.length} items verified in {currentCarton.boxSize.name}
-                            </div>
-                          )}
-                        </div>
-                        {(packingChecklist.itemsVerified || allItemsVerified) && <CheckCircle className="h-4 w-4 text-green-600" />}
-                      </div>
-
-                      {/* Packing Slip */}
-                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <Checkbox 
-                          checked={packingChecklist.packingSlipIncluded}
-                          onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, packingSlipIncluded: !!checked})}
-                          className="cursor-pointer"
-                        />
-                        <div className="flex-1 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, packingSlipIncluded: !packingChecklist.packingSlipIncluded})}>
-                          <span className={packingChecklist.packingSlipIncluded ? 'text-green-600 font-medium' : 'font-medium'}>
-                            Packing slip included
-                          </span>
-                          <div className="text-xs text-gray-500 mt-1">
-                            Include order details and customer information
-                          </div>
-                        </div>
-                        {packingChecklist.packingSlipIncluded && <CheckCircle className="h-4 w-4 text-green-600" />}
-                      </div>
-
-                      {/* Invoice Included */}
-                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <Checkbox 
-                          checked={packingChecklist.invoiceIncluded || false}
-                          onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, invoiceIncluded: !!checked})}
-                          className="cursor-pointer"
-                        />
-                        <div className="flex-1 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, invoiceIncluded: !packingChecklist.invoiceIncluded})}>
-                          <span className={packingChecklist.invoiceIncluded ? 'text-green-600 font-medium' : 'font-medium'}>
-                            Invoice printed and included
-                          </span>
-                          <div className="text-xs text-gray-500 mt-1">
-                            Customer invoice with pricing details
-                          </div>
-                        </div>
-                        {packingChecklist.invoiceIncluded && <CheckCircle className="h-4 w-4 text-green-600" />}
-                      </div>
-
-                      {/* Fragile Handling */}
-                      {currentCarton?.isFragile && (
-                        <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg hover:bg-red-100 border border-red-200 transition-colors">
-                          <Checkbox 
-                            checked={packingChecklist.fragileProtected}
-                            onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, fragileProtected: !!checked})}
-                            className="cursor-pointer"
-                          />
-                          <div className="flex-1 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, fragileProtected: !packingChecklist.fragileProtected})}>
-                            <span className={packingChecklist.fragileProtected ? 'text-green-600 font-medium' : 'font-medium text-red-700'}>
-                              Fragile items properly protected
-                            </span>
-                            <div className="text-xs text-red-600 mt-1">
-                              Extra padding and fragile labels applied
-                            </div>
-                          </div>
-                          {packingChecklist.fragileProtected && <CheckCircle className="h-4 w-4 text-green-600" />}
-                        </div>
-                      )}
-
-                      {/* Promotional Materials */}
-                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <Checkbox 
-                          checked={packingChecklist.promotionalMaterials || false}
-                          onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, promotionalMaterials: !!checked})}
-                          className="cursor-pointer"
-                        />
-                        <div className="flex-1 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, promotionalMaterials: !packingChecklist.promotionalMaterials})}>
-                          <span className={packingChecklist.promotionalMaterials ? 'text-green-600 font-medium' : 'font-medium'}>
-                            Promotional materials added
-                          </span>
-                          <div className="text-xs text-gray-500 mt-1">
-                            Catalogs, samples, or discount codes
-                          </div>
-                        </div>
-                        {packingChecklist.promotionalMaterials && <CheckCircle className="h-4 w-4 text-green-600" />}
-                      </div>
-
-                      {/* Weight Recording */}
-                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <Checkbox 
-                          checked={packingChecklist.weightRecorded}
-                          onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, weightRecorded: !!checked})}
-                          className="cursor-pointer"
-                        />
-                        <div className="flex-1 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, weightRecorded: !packingChecklist.weightRecorded})}>
-                          <span className={packingChecklist.weightRecorded ? 'text-green-600 font-medium' : 'font-medium'}>
-                            Weight recorded and verified
-                          </span>
-                          <div className="text-xs text-gray-500 mt-1">
-                            {packageWeight ? `Recorded: ${packageWeight}kg` : 'Enter final weight above'}
-                          </div>
-                        </div>
-                        {packingChecklist.weightRecorded && <CheckCircle className="h-4 w-4 text-green-600" />}
-                      </div>
-
-                      {/* Box Sealing */}
-                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <Checkbox 
-                          checked={packingChecklist.boxSealed}
-                          onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, boxSealed: !!checked})}
-                          className="cursor-pointer"
-                        />
-                        <div className="flex-1 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, boxSealed: !packingChecklist.boxSealed})}>
-                          <span className={packingChecklist.boxSealed ? 'text-green-600 font-medium' : 'font-medium'}>
-                            Carton sealed and shipping label applied
-                          </span>
-                          <div className="text-xs text-gray-500 mt-1">
-                            Use quality tape and attach shipping label securely
-                          </div>
-                        </div>
-                        {packingChecklist.boxSealed && <CheckCircle className="h-4 w-4 text-green-600" />}
-                      </div>
-                    </div>
-
-                    {/* Check All Button */}
-                    <div className="mt-4 flex justify-center">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setPackingChecklist({
-                            itemsVerified: true,
-                            packingSlipIncluded: true,
-                            invoiceIncluded: true,
-                            weightRecorded: !!packageWeight,
-                            boxSealed: true,
-                            promotionalMaterials: true,
-                            fragileProtected: currentCarton?.isFragile ? true : packingChecklist.fragileProtected
-                          });
-                          // Mark all items as verified
-                          if (currentCarton) {
-                            const newVerifiedItems = new Set(verifiedItems);
-                            currentCarton.items.forEach(item => {
-                              newVerifiedItems.add(item.id);
-                            });
-                            setVerifiedItems(newVerifiedItems);
-                          }
-                        }}
-                        className="bg-green-500 hover:bg-green-600 text-white"
-                      >
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Check All Items
-                      </Button>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="mt-4 pt-3 border-t">
-                      <div className="flex justify-between text-xs text-gray-600 mb-1">
-                        <span>Checklist Progress</span>
-                        <span className="font-medium">
-                          {(() => {
-                            // Count only relevant checklist items
-                            const relevantItems = {
-                              itemsVerified: packingChecklist.itemsVerified,
-                              packingSlipIncluded: packingChecklist.packingSlipIncluded,
-                              invoiceIncluded: packingChecklist.invoiceIncluded,
-                              weightRecorded: packingChecklist.weightRecorded,
-                              boxSealed: packingChecklist.boxSealed,
-                              promotionalMaterials: packingChecklist.promotionalMaterials,
-                              // Only include fragileProtected if there are fragile items
-                              ...(currentCarton?.isFragile ? { fragileProtected: packingChecklist.fragileProtected } : {})
-                            };
-                            const completed = Object.values(relevantItems).filter(Boolean).length;
-                            const total = Object.keys(relevantItems).length;
-                            return `${completed}/${total} completed`;
-                          })()}
-                        </span>
-                      </div>
-                      <Progress 
-                        value={(() => {
-                          const relevantItems = {
-                            itemsVerified: packingChecklist.itemsVerified,
-                            packingSlipIncluded: packingChecklist.packingSlipIncluded,
-                            invoiceIncluded: packingChecklist.invoiceIncluded,
-                            weightRecorded: packingChecklist.weightRecorded,
-                            boxSealed: packingChecklist.boxSealed,
-                            promotionalMaterials: packingChecklist.promotionalMaterials,
-                            ...(currentCarton?.isFragile ? { fragileProtected: packingChecklist.fragileProtected } : {})
-                          };
-                          const completed = Object.values(relevantItems).filter(Boolean).length;
-                          const total = Object.keys(relevantItems).length;
-                          return (completed / total) * 100;
-                        })()}
-                        className="h-2 bg-gray-200"
-                      />
-                      {(() => {
-                        const relevantItems = {
-                          itemsVerified: packingChecklist.itemsVerified,
-                          packingSlipIncluded: packingChecklist.packingSlipIncluded,
-                          invoiceIncluded: packingChecklist.invoiceIncluded,
-                          weightRecorded: packingChecklist.weightRecorded,
-                          boxSealed: packingChecklist.boxSealed,
-                          promotionalMaterials: packingChecklist.promotionalMaterials,
-                          ...(currentCarton?.isFragile ? { fragileProtected: packingChecklist.fragileProtected } : {})
-                        };
-                        const completed = Object.values(relevantItems).filter(Boolean).length;
-                        const total = Object.keys(relevantItems).length;
-                        return completed === total && (
-                          <div className="mt-2 flex items-center gap-2 text-xs text-green-600 font-medium">
-                            <CheckCircle className="h-3 w-3" />
-                            All checks completed - Ready to complete packing!
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Selected Documents to Print */}
-                {activePackingOrder?.selectedDocumentIds && activePackingOrder.selectedDocumentIds.length > 0 && (
-                  <Card className="shadow-xl border-0 bg-white">
-                    <CardHeader className="bg-gradient-to-r from-amber-600 to-orange-600 text-white">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <FileText className="h-4 w-4" />
-                        Documents to Include
-                        <Badge className="bg-red-600 text-white ml-auto">
-                          {activePackingOrder.selectedDocumentIds.length} Required
-                        </Badge>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-4">
-                      <div className="space-y-2">
-                        <Alert className="border-amber-200 bg-amber-50">
-                          <AlertCircle className="h-4 w-4 text-amber-600" />
-                          <AlertDescription className="text-xs text-amber-800">
-                            Print and include these documents with the shipment
-                          </AlertDescription>
-                        </Alert>
-                        
-                        {/* Mock document display for now - will be replaced with actual data */}
-                        <div className="space-y-2">
-                          {activePackingOrder.selectedDocumentIds.map((docId) => (
-                            <div key={docId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                              <div className="flex items-center gap-3">
-                                <FileText className="h-4 w-4 text-gray-600" />
-                                <div>
-                                  <div className="text-sm font-medium">Document ID: {docId}</div>
-                                  <div className="text-xs text-gray-500">Ready to print</div>
-                                </div>
-                              </div>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-8"
-                                onClick={() => {
-                                  toast({
-                                    title: "Document Printed",
-                                    description: `Document ${docId} has been sent to printer`,
-                                  });
-                                }}
-                              >
-                                <Printer className="h-3 w-3 mr-1" />
-                                Print
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+              {/* Weight Input */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Package Weight:</label>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    step="0.001"
+                    placeholder="Enter weight..."
+                    value={packageWeight}
+                    onChange={(e) => {
+                      setPackageWeight(e.target.value);
+                      setIsWeightManuallyModified(true);
+                      if (e.target.value) {
+                        setPackingChecklist({...packingChecklist, weightRecorded: true});
+                      } else {
+                        setPackingChecklist({...packingChecklist, weightRecorded: false});
+                      }
+                    }}
+                    className="flex-1"
+                  />
+                  <span className="flex items-center px-3 text-sm font-medium">kg</span>
+                </div>
+                {calculateWeightMutation.isPending && (
+                  <div className="flex items-center gap-2 text-xs text-blue-600">
+                    <div className="animate-spin h-3 w-3 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                    Calculating weight...
+                  </div>
                 )}
+                {!calculateWeightMutation.isPending && !isWeightManuallyModified && aiWeightCalculation && (
+                  <div className="text-xs text-gray-500">
+                    Weight automatically calculated by AI
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-                {/* Shipping Label Generator */}
-                <Card className="shadow-xl border-0">
-                  <CardHeader className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Printer className="h-4 w-4" />
-                      Shipping Label
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4">
-                    <div className="space-y-3">
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <div className="text-sm font-medium mb-1">{activePackingOrder.customerName}</div>
-                        <div className="text-xs text-gray-600">{activePackingOrder.shippingAddress}</div>
-                        <div className="text-xs text-gray-600 mt-1">
-                          Method: {activePackingOrder.shippingMethod}
-                        </div>
-                      </div>
-                      
-                      <Button 
-                        className="w-full bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600"
-                        onClick={() => {
-                          setShippingLabelPrinted(true);
-                          playSound('success');
-                        }}
-                        disabled={shippingLabelPrinted}
-                      >
-                        <Printer className="h-4 w-4 mr-2" />
-                        {shippingLabelPrinted ? 'Label Printed ✓' : 'Generate Shipping Label'}
-                      </Button>
+          {/* Packing Completion Card - Combined Documents + Checklist */}
+          <Card className="shadow-sm border border-gray-200 bg-white">
+            <CardHeader className="bg-gradient-to-r from-violet-600 to-purple-600 text-white p-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ClipboardList className="h-4 w-4" />
+                Packing Completion
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 space-y-4">
+              {/* Section 1: Documents */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-gray-700">Documents:</h3>
+                <div className="space-y-1.5">
+                  {/* Packing List */}
+                  <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div className="flex items-center gap-2">
+                      <Checkbox 
+                        checked={printedDocuments.packingList}
+                        disabled
+                        className="cursor-default"
+                      />
+                      <span className="text-sm">Packing List</span>
                     </div>
-                  </CardContent>
-                </Card>
-
-
-
-                {/* Complete Packing Button - Minimal Design */}
-                <div className="w-full">
-                  {canCompletePacking ? (
-                    <div className="space-y-3">
-                      <Button 
-                        size="lg" 
-                        onClick={completePacking}
-                        className="w-full h-14 text-base font-bold bg-green-600 hover:bg-green-700 text-white shadow-lg transition-all"
-                      >
-                        <CheckCircle className="h-5 w-5 mr-2" />
-                        Complete Order - Ready for Shipping
-                      </Button>
-                    </div>
-                  ) : (
                     <Button 
-                      size="lg" 
-                      disabled={true}
-                      className="w-full h-14 text-base bg-gray-200 text-gray-500 cursor-not-allowed"
+                      variant="outline" 
+                      size="sm"
+                      className="h-7 text-xs"
                       onClick={() => {
-                        // Show detailed error message when clicked
-                        const missingChecks = [];
-                        if (!(packingChecklist.itemsVerified || allItemsVerified)) missingChecks.push('✓ Verify All Items');
-                        if (!packingChecklist.packingSlipIncluded) missingChecks.push('✓ Include Packing Slip');
-                        if (!packingChecklist.invoiceIncluded) missingChecks.push('✓ Include Invoice');
-                        if (!packingChecklist.weightRecorded) missingChecks.push('✓ Record Weight');
-                        if (!packingChecklist.boxSealed) missingChecks.push('✓ Seal Box');
-                        if (!packingChecklist.promotionalMaterials) missingChecks.push('✓ Add Promotional Materials');
-                        if (currentCarton?.isFragile && !packingChecklist.fragileProtected) missingChecks.push('✓ Protect Fragile Items');
-                        if (!shippingLabelPrinted) missingChecks.push('✓ Print Shipping Label');
-                        if (!selectedCarton) missingChecks.push('✓ Select Carton');
-                        if (!packageWeight) missingChecks.push('✓ Enter Package Weight');
-                        
-                        toast({
-                          title: "Cannot Complete Packing",
-                          description: (
-                            <div className="mt-2 space-y-1">
-                              <div className="font-medium mb-2">Please complete all required steps:</div>
-                              {missingChecks.map((check, i) => (
-                                <div key={i} className="text-sm">{check}</div>
-                              ))}
-                            </div>
-                          ),
-                          variant: "destructive",
-                          duration: 8000,
-                        });
-                        playSound('error');
+                        window.print();
+                        setPrintedDocuments(prev => ({ ...prev, packingList: true }));
+                        playSound('success');
                       }}
                     >
-                      <PackageCheck className="h-5 w-5 mr-2" />
-                      <div className="text-left flex-1">
-                        <div className="font-medium">Cannot Complete - Missing Steps</div>
-                        <div className="text-xs font-normal mt-0.5 opacity-80">
-                          {(() => {
-                            const missing = [];
-                            if (!(packingChecklist.itemsVerified || allItemsVerified)) missing.push('Items');
-                            if (!packingChecklist.packingSlipIncluded) missing.push('Packing Slip');
-                            if (!packingChecklist.invoiceIncluded) missing.push('Invoice');
-                            if (!packingChecklist.weightRecorded) missing.push('Weight Check');
-                            if (!packingChecklist.boxSealed) missing.push('Box Seal');
-                            if (!packingChecklist.promotionalMaterials) missing.push('Promo');
-                            if (currentCarton?.isFragile && !packingChecklist.fragileProtected) missing.push('Fragile');
-                            if (!shippingLabelPrinted) missing.push('Label');
-                            if (!selectedCarton) missing.push('Carton');
-                            if (!packageWeight) missing.push('Weight');
-                            
-                            // Show first 3 missing items
-                            const display = missing.slice(0, 3).join(' • ');
-                            const remaining = missing.length - 3;
-                            return display + (remaining > 0 ? ` +${remaining} more` : '');
-                          })()}
-                        </div>
-                      </div>
+                      <Printer className="h-3 w-3 mr-1" />
+                      Print
                     </Button>
+                  </div>
+
+                  {/* Invoice */}
+                  <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div className="flex items-center gap-2">
+                      <Checkbox 
+                        checked={printedDocuments.invoice}
+                        disabled
+                        className="cursor-default"
+                      />
+                      <span className="text-sm">Invoice</span>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        window.open(`/api/orders/${activePackingOrder.id}/invoice.pdf`, '_blank');
+                        setPrintedDocuments(prev => ({ ...prev, invoice: true }));
+                        playSound('success');
+                      }}
+                    >
+                      <Printer className="h-3 w-3 mr-1" />
+                      Print
+                    </Button>
+                  </div>
+
+                  {/* Print All Button */}
+                  <Button 
+                    className="w-full h-8 text-sm bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                    onClick={() => {
+                      const documents = [
+                        `/api/orders/${activePackingOrder.id}/packing-list.pdf`,
+                        `/api/orders/${activePackingOrder.id}/invoice.pdf`,
+                      ];
+                      
+                      documents.forEach((doc, index) => {
+                        setTimeout(() => {
+                          window.open(doc, '_blank');
+                        }, index * 500);
+                      });
+                      
+                      setPrintedDocuments({
+                        packingList: true,
+                        invoice: true,
+                        msds: printedDocuments.msds,
+                        cpnpCertificate: printedDocuments.cpnpCertificate
+                      });
+                      
+                      playSound('success');
+                    }}
+                  >
+                    <Printer className="h-3 w-3 mr-2" />
+                    Print All Documents
+                  </Button>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Section 2: Checklist */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-gray-700">Checklist:</h3>
+                <div className="space-y-1.5">
+                  {/* Items Verified */}
+                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, itemsVerified: !packingChecklist.itemsVerified})}>
+                    <Checkbox 
+                      checked={packingChecklist.itemsVerified || allItemsVerified}
+                      onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, itemsVerified: !!checked})}
+                    />
+                    <span className="text-sm flex-1">Items Verified</span>
+                    {(packingChecklist.itemsVerified || allItemsVerified) && <CheckCircle className="h-4 w-4 text-green-600" />}
+                  </div>
+
+                  {/* Packing Slip Included */}
+                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, packingSlipIncluded: !packingChecklist.packingSlipIncluded})}>
+                    <Checkbox 
+                      checked={packingChecklist.packingSlipIncluded}
+                      onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, packingSlipIncluded: !!checked})}
+                    />
+                    <span className="text-sm flex-1">Packing Slip Included</span>
+                    {packingChecklist.packingSlipIncluded && <CheckCircle className="h-4 w-4 text-green-600" />}
+                  </div>
+
+                  {/* Invoice Included */}
+                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, invoiceIncluded: !packingChecklist.invoiceIncluded})}>
+                    <Checkbox 
+                      checked={packingChecklist.invoiceIncluded}
+                      onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, invoiceIncluded: !!checked})}
+                    />
+                    <span className="text-sm flex-1">Invoice Included</span>
+                    {packingChecklist.invoiceIncluded && <CheckCircle className="h-4 w-4 text-green-600" />}
+                  </div>
+
+                  {/* Weight Recorded */}
+                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, weightRecorded: !packingChecklist.weightRecorded})}>
+                    <Checkbox 
+                      checked={packingChecklist.weightRecorded}
+                      onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, weightRecorded: !!checked})}
+                    />
+                    <span className="text-sm flex-1">Weight Recorded</span>
+                    {packingChecklist.weightRecorded && <CheckCircle className="h-4 w-4 text-green-600" />}
+                  </div>
+
+                  {/* Box Sealed */}
+                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, boxSealed: !packingChecklist.boxSealed})}>
+                    <Checkbox 
+                      checked={packingChecklist.boxSealed}
+                      onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, boxSealed: !!checked})}
+                    />
+                    <span className="text-sm flex-1">Box Sealed</span>
+                    {packingChecklist.boxSealed && <CheckCircle className="h-4 w-4 text-green-600" />}
+                  </div>
+
+                  {/* Promotional Materials */}
+                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, promotionalMaterials: !packingChecklist.promotionalMaterials})}>
+                    <Checkbox 
+                      checked={packingChecklist.promotionalMaterials || false}
+                      onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, promotionalMaterials: !!checked})}
+                    />
+                    <span className="text-sm flex-1">Promotional Materials</span>
+                    {packingChecklist.promotionalMaterials && <CheckCircle className="h-4 w-4 text-green-600" />}
+                  </div>
+
+                  {/* Fragile Protected (conditional) */}
+                  {needsFragileProtection && (
+                    <div className="flex items-center gap-2 p-2 bg-red-50 rounded hover:bg-red-100 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, fragileProtected: !packingChecklist.fragileProtected})}>
+                      <Checkbox 
+                        checked={packingChecklist.fragileProtected || false}
+                        onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, fragileProtected: !!checked})}
+                      />
+                      <span className="text-sm flex-1 text-red-700 font-medium">Fragile Items Protected</span>
+                      {packingChecklist.fragileProtected && <CheckCircle className="h-4 w-4 text-green-600" />}
+                    </div>
                   )}
                 </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
+
+          {/* Shipping Label Card - Compact */}
+          <Card className="shadow-sm border border-gray-200 bg-white">
+            <CardHeader className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white p-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Printer className="h-4 w-4" />
+                Shipping Label
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-3">
+              <div className="space-y-2">
+                <div className="bg-gray-50 p-2 rounded text-sm">
+                  <div className="font-medium">{activePackingOrder.customerName}</div>
+                  <div className="text-xs text-gray-600">{activePackingOrder.shippingAddress}</div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    Method: {activePackingOrder.shippingMethod}
+                  </div>
+                </div>
+                
+                <Button 
+                  className="w-full h-9 bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600"
+                  onClick={() => {
+                    setShippingLabelPrinted(true);
+                    playSound('success');
+                  }}
+                  disabled={shippingLabelPrinted}
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  {shippingLabelPrinted ? 'Label Printed ✓' : 'Generate Shipping Label'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Complete Packing Button - Large, Prominent */}
+          <div className="sticky bottom-0 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent pt-4 pb-2">
+            {canCompletePacking ? (
+              <Button 
+                size="lg" 
+                onClick={completePacking}
+                className="w-full h-14 text-base font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg transition-all"
+              >
+                <CheckCircle className="h-5 w-5 mr-2" />
+                Complete Packing - Ready for Shipping
+              </Button>
+            ) : (
+              <Button 
+                size="lg" 
+                disabled={true}
+                className="w-full h-14 text-base bg-gray-200 text-gray-500 cursor-not-allowed"
+                onClick={() => {
+                  const missingChecks = [];
+                  if (!(packingChecklist.itemsVerified || allItemsVerified)) missingChecks.push('✓ Verify All Items');
+                  if (!packingChecklist.packingSlipIncluded) missingChecks.push('✓ Include Packing Slip');
+                  if (!packingChecklist.invoiceIncluded) missingChecks.push('✓ Include Invoice');
+                  if (!packingChecklist.weightRecorded) missingChecks.push('✓ Record Weight');
+                  if (!packingChecklist.boxSealed) missingChecks.push('✓ Seal Box');
+                  if (!packingChecklist.promotionalMaterials) missingChecks.push('✓ Add Promotional Materials');
+                  if (needsFragileProtection && !packingChecklist.fragileProtected) missingChecks.push('✓ Protect Fragile Items');
+                  if (!shippingLabelPrinted) missingChecks.push('✓ Print Shipping Label');
+                  if (!selectedCarton) missingChecks.push('✓ Select Carton');
+                  if (!packageWeight) missingChecks.push('✓ Enter Package Weight');
+                  
+                  toast({
+                    title: "Cannot Complete Packing",
+                    description: (
+                      <div className="mt-2 space-y-1">
+                        <div className="font-medium mb-2">Please complete all required steps:</div>
+                        {missingChecks.map((check, i) => (
+                          <div key={i} className="text-sm">{check}</div>
+                        ))}
+                      </div>
+                    ),
+                    variant: "destructive",
+                    duration: 8000,
+                  });
+                  playSound('error');
+                }}
+              >
+                <PackageCheck className="h-5 w-5 mr-2" />
+                Complete All Steps to Finish Packing
+              </Button>
+            )}
           </div>
         </div>
+      </div>
       </div>
     );
   }
