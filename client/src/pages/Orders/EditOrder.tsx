@@ -118,7 +118,8 @@ const editOrderSchema = z.object({
 
 interface OrderItem {
   id: string;
-  productId: string;
+  productId?: string;
+  serviceId?: string;
   productName: string;
   sku: string;
   quantity: number;
@@ -524,6 +525,12 @@ export default function EditOrder() {
   const { data: allBundles } = useQuery({
     queryKey: ['/api/bundles'],
     staleTime: 5 * 60 * 1000,
+  });
+
+  // Fetch all services for real-time filtering
+  const { data: allServices } = useQuery({
+    queryKey: ['/api/services'],
+    staleTime: 5 * 60 * 1000, // 5 minutes - services don't change frequently
   });
 
   // Fetch variants for all products (map productId -> variants)
@@ -1195,6 +1202,44 @@ export default function EditOrder() {
   };
 
   const addProductToOrder = async (product: any) => {
+    // Check if this is a service
+    if (product.isService || product.itemType === 'service') {
+      // Check if service already exists in order
+      const existingItem = orderItems.find(item => item.serviceId === product.id);
+
+      if (existingItem) {
+        setOrderItems(items =>
+          items.map(item =>
+            item.serviceId === product.id
+              ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * item.price }
+              : item
+          )
+        );
+      } else {
+        const servicePrice = parseFloat(product.totalCost || '0');
+        const newItem: OrderItem = {
+          id: Math.random().toString(36).substr(2, 9),
+          serviceId: product.id,
+          productName: product.name,
+          sku: 'SERVICE',
+          quantity: 1,
+          price: servicePrice,
+          discount: 0,
+          tax: 0,
+          total: servicePrice,
+        };
+        setOrderItems(items => [...items, newItem]);
+        // Auto-focus quantity input for the newly added item
+        setTimeout(() => {
+          const quantityInput = document.querySelector(`[data-testid="input-quantity-${newItem.id}"]`) as HTMLInputElement;
+          quantityInput?.focus();
+        }, 100);
+      }
+      setProductSearch("");
+      setShowProductDropdown(false);
+      return;
+    }
+    
     // Check if product has variants (only for parent products, not already-selected variants)
     if (product.itemType !== 'variant') {
       try {
@@ -1515,7 +1560,8 @@ export default function EditOrder() {
       shippingCost: (data.shippingCost || 0).toString(),
       actualShippingCost: (data.actualShippingCost || 0).toString(),
       items: orderItems.map(item => ({
-        productId: item.productId,
+        productId: item.productId || null,
+        serviceId: item.serviceId || null,
         productName: item.productName,
         sku: item.sku,
         quantity: item.quantity,
@@ -1582,6 +1628,22 @@ export default function EditOrder() {
             bundleId: bundle.id,
           });
         }
+      });
+    }
+    
+    // Add services
+    if (Array.isArray(allServices)) {
+      allServices.forEach((service: any) => {
+        allItems.push({
+          id: service.id,
+          name: service.name,
+          sku: 'SERVICE',
+          description: service.description,
+          totalCost: service.totalCost,
+          categoryName: 'Services',
+          itemType: 'service',
+          isService: true,
+        });
       });
     }
     
