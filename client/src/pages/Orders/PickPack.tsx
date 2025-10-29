@@ -4508,11 +4508,11 @@ export default function PickPack() {
                   </CardHeader>
                   <CardContent className="p-3 lg:p-6 bg-white">
                     <div className="space-y-2 lg:space-y-6">
-                      {/* Compact Product Layout - Image + Name + Location in one view */}
-                      <div className="flex gap-2 items-start">
-                        {/* Product Image - Smaller */}
+                      {/* Product Layout - Image + Name + Location */}
+                      <div className="flex gap-3 items-start">
+                        {/* Product Image - Larger */}
                         <div className="flex-shrink-0">
-                          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-50 rounded-lg flex items-center justify-center border-2 border-gray-200">
+                          <div className="w-24 h-24 sm:w-28 sm:h-28 bg-gray-50 rounded-lg flex items-center justify-center border-2 border-gray-200">
                             {currentItem.image ? (
                               <img 
                                 src={currentItem.image} 
@@ -4520,15 +4520,15 @@ export default function PickPack() {
                                 className="w-full h-full object-contain rounded-lg p-1"
                               />
                             ) : (
-                              <ImagePlaceholder size="xs" variant="product" />
+                              <ImagePlaceholder size="sm" variant="product" />
                             )}
                           </div>
                         </div>
                         
                         {/* Product Name - Prominent */}
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 break-words leading-tight">{currentItem.productName}</h3>
-                          <div className="text-xs text-gray-500 space-y-0.5">
+                          <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 break-words leading-tight">{currentItem.productName}</h3>
+                          <div className="text-xs text-gray-500 space-y-1">
                             <div>SKU: <span className="font-mono text-gray-700">{currentItem.sku}</span></div>
                             <div>Barcode: <span className="font-mono text-gray-700">{currentItem.barcode}</span></div>
                           </div>
@@ -4536,9 +4536,9 @@ export default function PickPack() {
                       </div>
 
                       {/* Warehouse Location - High Contrast Banner */}
-                      <div className="bg-orange-100 border-3 border-orange-500 rounded-lg p-3 text-center">
+                      <div className="bg-orange-100 border-3 border-orange-500 rounded-lg p-4 text-center">
                         <p className="text-xs font-bold text-orange-800 uppercase mb-1">Location</p>
-                        <p className="text-4xl sm:text-5xl font-black text-orange-600 font-mono">{currentItem.warehouseLocation}</p>
+                        <p className="text-5xl sm:text-6xl font-black text-orange-600 font-mono">{currentItem.warehouseLocation}</p>
                       </div>
 
                       {/* Bundle Items Picker - For gel polish colors etc */}
@@ -4654,34 +4654,34 @@ export default function PickPack() {
                           )}
                         </div>
                       ) : (
-                        /* Regular Quantity Picker - Compact Design */
-                        <div className="bg-white border-2 border-gray-200 rounded-lg p-3 lg:p-6">
-                          <div className="flex items-center justify-center gap-4 lg:gap-6">
+                        /* Regular Quantity Picker - Comfortable Design */
+                        <div className="bg-white border-2 border-gray-200 rounded-lg p-4 lg:p-6">
+                          <div className="flex items-center justify-center gap-5 lg:gap-8">
                             <Button
                               size="lg"
-                              className="w-16 h-16 lg:w-20 lg:h-20 rounded-lg bg-gray-600 hover:bg-gray-700 disabled:bg-gray-200 text-white shadow-md touch-manipulation"
+                              className="w-18 h-18 lg:w-24 lg:h-24 rounded-lg bg-gray-600 hover:bg-gray-700 disabled:bg-gray-200 text-white shadow-md touch-manipulation"
                               onClick={() => updatePickedItem(currentItem.id, Math.max(0, currentItem.pickedQuantity - 1))}
                               disabled={currentItem.pickedQuantity === 0}
                             >
-                              <Minus className="h-6 lg:h-8 w-6 lg:w-8" />
+                              <Minus className="h-7 lg:h-10 w-7 lg:w-10" />
                             </Button>
                             
                             <div className="text-center">
-                              <div className="text-5xl sm:text-6xl font-black text-gray-900 tabular-nums leading-none">
+                              <div className="text-6xl sm:text-7xl font-black text-gray-900 tabular-nums leading-none">
                                 {currentItem.pickedQuantity}
                               </div>
-                              <div className="text-lg sm:text-xl text-gray-400 font-bold mt-1">
+                              <div className="text-xl sm:text-2xl text-gray-400 font-bold mt-2">
                                 of {currentItem.quantity}
                               </div>
                             </div>
                             
                             <Button
                               size="lg"
-                              className="w-16 h-16 lg:w-20 lg:h-20 rounded-lg bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 text-white shadow-md touch-manipulation"
+                              className="w-18 h-18 lg:w-24 lg:h-24 rounded-lg bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 text-white shadow-md touch-manipulation"
                               onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.quantity, currentItem.pickedQuantity + 1))}
                               disabled={currentItem.pickedQuantity >= currentItem.quantity}
                             >
-                              <Plus className="h-6 lg:h-8 w-6 lg:w-8" />
+                              <Plus className="h-7 lg:h-10 w-7 lg:w-10" />
                             </Button>
                           </div>
 
@@ -4689,10 +4689,10 @@ export default function PickPack() {
                           {currentItem.pickedQuantity < currentItem.quantity && (
                             <Button 
                               size="lg" 
-                              className="w-full mt-3 h-11 text-base font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md touch-manipulation rounded-lg"
+                              className="w-full mt-4 h-12 text-base font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md touch-manipulation rounded-lg"
                               onClick={() => updatePickedItem(currentItem.id, currentItem.quantity)}
                             >
-                              <CheckCircle2 className="h-4 w-4 mr-2" />
+                              <CheckCircle2 className="h-5 w-5 mr-2" />
                               Pick All ({currentItem.quantity})
                             </Button>
                           )}
@@ -4703,7 +4703,7 @@ export default function PickPack() {
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
-                          className="flex-1 h-10 text-sm font-semibold border-2 border-gray-300 hover:bg-gray-50 disabled:opacity-30 rounded-lg"
+                          className="flex-1 h-11 text-sm font-semibold border-2 border-gray-300 hover:bg-gray-50 disabled:opacity-30 rounded-lg"
                           onClick={() => setManualItemIndex(Math.max(0, currentItemIndex - 1))}
                           disabled={currentItemIndex === 0}
                         >
@@ -4713,7 +4713,7 @@ export default function PickPack() {
                         
                         <Button
                           variant="outline"
-                          className="flex-1 h-10 text-sm font-semibold border-2 border-gray-300 hover:bg-gray-50 disabled:opacity-30 rounded-lg"
+                          className="flex-1 h-11 text-sm font-semibold border-2 border-gray-300 hover:bg-gray-50 disabled:opacity-30 rounded-lg"
                           onClick={() => setManualItemIndex(Math.min(activePickingOrder.items.length - 1, currentItemIndex + 1))}
                           disabled={currentItemIndex === activePickingOrder.items.length - 1}
                         >
@@ -4725,25 +4725,25 @@ export default function PickPack() {
                   </CardContent>
                 </Card>
 
-                {/* Barcode Scanner - Compact Design */}
+                {/* Barcode Scanner - Comfortable Design */}
                 <Card className="shadow-md border-2 border-gray-200 overflow-hidden rounded-lg">
-                  <CardContent className="p-2 lg:p-4 bg-white">
+                  <CardContent className="p-3 lg:p-4 bg-white">
                     <div className="flex gap-2">
                       <div className="relative flex-1">
                         <Input
                           ref={barcodeInputRef}
                           placeholder="Ready to scan..."
                           value={barcodeInput || "Ready to scan..."}
-                          className="text-sm lg:text-base h-10 lg:h-12 bg-gray-50 border-2 border-gray-300 placeholder:text-gray-400 font-mono cursor-default rounded-lg"
+                          className="text-base lg:text-lg h-11 lg:h-12 bg-gray-50 border-2 border-gray-300 placeholder:text-gray-400 font-mono cursor-default rounded-lg"
                           readOnly
                         />
                       </div>
                       <Button 
                         onClick={handleBarcodeScan}
-                        className="h-10 lg:h-12 px-4 lg:px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md touch-manipulation rounded-lg"
+                        className="h-11 lg:h-12 px-5 lg:px-7 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md touch-manipulation rounded-lg"
                       >
                         <ScanLine className="h-4 w-4 lg:h-5 lg:w-5 sm:mr-2" />
-                        <span className="hidden sm:inline text-sm">Scan</span>
+                        <span className="hidden sm:inline text-base">Scan</span>
                       </Button>
                     </div>
                   </CardContent>
