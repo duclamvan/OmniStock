@@ -4312,77 +4312,62 @@ export default function PickPack() {
 
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        {/* Header - Optimized for Mobile */}
+        {/* Header - Ultra Compact for Mobile */}
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg z-20">
-          <div className="px-4 lg:px-6 py-3 lg:py-4">
-            {/* Mobile Layout - Clean and Organized */}
+          <div className="px-3 lg:px-6 py-2 lg:py-4">
+            {/* Mobile Layout - Ultra Compact */}
             <div className="lg:hidden">
-              {/* Ultra Compact Mobile Header */}
+              {/* Single Row: Exit + Order ID + Timer + Buttons */}
               <div className="flex items-center justify-between gap-2">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-10 px-3 bg-white/20 hover:bg-white/30 active:bg-white/40 text-white touch-manipulation"
+                  className="h-8 px-2 bg-white/20 hover:bg-white/30 text-white touch-manipulation"
                   onClick={() => {
                     setActivePickingOrder(null);
                     setIsTimerRunning(false);
                   }}
                 >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span className="ml-2 text-sm">Exit</span>
+                  <ArrowLeft className="h-3.5 w-3.5" />
                 </Button>
                 
-                <div className="flex-1 text-center min-w-0">
-                  <div className="text-base font-bold truncate">{activePickingOrder.orderId}</div>
-                  <Badge 
-                    className={`text-xs px-2 py-0.5 mt-1 ${
-                      activePickingOrder.priority === 'high' ? 'bg-red-500 text-white' : 
-                      activePickingOrder.priority === 'medium' ? 'bg-amber-500 text-white' : 
-                      'bg-green-500 text-white'
-                    }`}
-                  >
-                    {activePickingOrder.priority.toUpperCase()}
-                  </Badge>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-bold truncate">{activePickingOrder.orderId}</div>
+                  <div className="text-xs text-blue-100 truncate font-semibold">{activePickingOrder.customerName}</div>
                 </div>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <div className="text-right">
-                    <div className="font-mono text-base font-bold tabular-nums" data-picking-timer>{formatTimer(pickingTimer)}</div>
-                    <div className="text-xs text-blue-100">Time</div>
+                    <div className="font-mono text-sm font-bold tabular-nums" data-picking-timer>{formatTimer(pickingTimer)}</div>
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <Button
-                      size="icon"
-                      className="h-8 w-8 bg-white/20 hover:bg-white/30 active:bg-white/40 touch-manipulation"
-                      onClick={() => setIsTimerRunning(!isTimerRunning)}
-                    >
-                      {isTimerRunning ? (
-                        <PauseCircle className="h-4 w-4 text-white" />
-                      ) : (
-                        <PlayCircle className="h-4 w-4 text-white" />
-                      )}
-                    </Button>
-                    <Button
-                      size="icon"
-                      className="h-8 w-8 bg-white/20 hover:bg-white/30 active:bg-white/40 touch-manipulation"
-                      onClick={() => setAudioEnabled(!audioEnabled)}
-                    >
-                      <Volume2 className={`h-4 w-4 ${audioEnabled ? 'text-white' : 'text-white/50'}`} />
-                    </Button>
-                  </div>
+                  <Button
+                    size="icon"
+                    className="h-7 w-7 bg-white/20 hover:bg-white/30 touch-manipulation"
+                    onClick={() => setIsTimerRunning(!isTimerRunning)}
+                  >
+                    {isTimerRunning ? (
+                      <PauseCircle className="h-3.5 w-3.5 text-white" />
+                    ) : (
+                      <PlayCircle className="h-3.5 w-3.5 text-white" />
+                    )}
+                  </Button>
+                  <Button
+                    size="icon"
+                    className="h-7 w-7 bg-white/20 hover:bg-white/30 touch-manipulation"
+                    onClick={() => setAudioEnabled(!audioEnabled)}
+                  >
+                    <Volume2 className={`h-3.5 w-3.5 ${audioEnabled ? 'text-white' : 'text-white/50'}`} />
+                  </Button>
                 </div>
               </div>
               
-              {/* Compact Customer & Progress */}
-              <div className="mt-3">
-                <div className="text-center text-xs text-blue-100 mb-1.5 truncate">
-                  {activePickingOrder.customerName}
-                </div>
+              {/* Compact Progress Bar */}
+              <div className="mt-2">
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-blue-100">Progress</span>
                   <span className="font-bold text-white">{activePickingOrder.pickedItems}/{activePickingOrder.totalItems} items</span>
                 </div>
-                <div className="w-full bg-white/20 rounded-full h-2.5 overflow-hidden">
+                <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
                   <div 
                     className="h-full bg-green-400 transition-all duration-500 ease-out rounded-full"
                     style={{ width: `${progress}%` }}
@@ -4503,72 +4488,57 @@ export default function PickPack() {
         <div className="flex-1 overflow-auto">
           <div className="flex flex-col lg:flex-row min-h-full">
             {/* Left Panel - Current Item Focus */}
-            <div className="flex-1 p-3 lg:p-6">
+            <div className="flex-1 p-2 lg:p-6">
             {!allItemsPicked && currentItem ? (
               <div className="max-w-4xl mx-auto">
-                {/* Customer Name - Prominent at top */}
-                <div className="mb-3 lg:mb-4 text-center">
-                  <p className="text-sm text-gray-500 mb-1">Customer</p>
-                  <h2 className="text-xl lg:text-2xl font-bold text-gray-900">{activePickingOrder.customerName}</h2>
-                </div>
-
-                <Card className="mb-4 lg:mb-6 shadow-lg border border-gray-200 overflow-hidden rounded-xl">
-                  <CardHeader className="bg-white border-b border-gray-200 p-3 lg:p-4">
+                <Card className="mb-3 lg:mb-6 shadow-lg border border-gray-200 overflow-hidden rounded-lg">
+                  <CardHeader className="bg-white border-b border-gray-200 p-2 lg:p-4">
                     <CardTitle className="flex items-center justify-between">
-                      <span className="text-sm lg:text-base flex items-center gap-2 text-gray-700">
-                        <Package className="h-5 w-5" />
+                      <span className="text-xs lg:text-base flex items-center gap-2 text-gray-700">
+                        <Package className="h-4 w-4 lg:h-5 lg:w-5" />
                         <span className="font-semibold">Item {currentItemIndex + 1} of {activePickingOrder.items.length}</span>
                       </span>
                       {currentItem?.pickedQuantity === currentItem?.quantity && (
-                        <Badge className="bg-emerald-500 text-white text-sm px-3 py-1">
-                          <CheckCircle className="h-4 w-4 mr-1 inline" />
+                        <Badge className="bg-emerald-500 text-white text-xs px-2 py-0.5">
+                          <CheckCircle className="h-3 w-3 mr-1 inline" />
                           Picked
                         </Badge>
                       )}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="p-4 lg:p-6 bg-white">
-                    <div className="space-y-3 lg:space-y-6">
-                      {/* Mobile Optimized Compact Product Layout */}
-                      {expandedProductId === currentItem.id ? (
-                        /* Full-width expanded image */
-                        <ProductImage 
-                          item={currentItem} 
-                          isExpanded={true}
-                          onToggleExpand={() => handleImageClick(currentItem.id)}
-                        />
-                      ) : (
-                        /* Regular layout with image and details side by side */
-                        <div className="flex gap-3 lg:gap-6">
-                          {/* Product Image - Compact on mobile */}
-                          <ProductImage 
-                            item={currentItem} 
-                            isExpanded={false}
-                            onToggleExpand={() => handleImageClick(currentItem.id)}
-                          />
-                          
-                          {/* Product Details - Clean and focused */}
-                          <div className="flex-1 min-w-0 flex flex-col justify-center">
-                            {/* Product Name - Most Important */}
-                            <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-3 break-words leading-tight">{currentItem.productName}</h3>
-                            
-                            {/* Secondary Info - Smaller */}
-                            <div className="space-y-1">
-                              <div className="text-xs lg:text-sm text-gray-500">
-                                SKU: <span className="font-mono text-gray-700">{currentItem.sku}</span>
-                              </div>
-                              <div className="text-xs lg:text-sm text-gray-500">
-                                Barcode: <span className="font-mono text-gray-700">{currentItem.barcode}</span>
-                              </div>
-                            </div>
+                  <CardContent className="p-3 lg:p-6 bg-white">
+                    <div className="space-y-2 lg:space-y-6">
+                      {/* Compact Product Layout - Image + Name + Location in one view */}
+                      <div className="flex gap-2 items-start">
+                        {/* Product Image - Smaller */}
+                        <div className="flex-shrink-0">
+                          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-50 rounded-lg flex items-center justify-center border-2 border-gray-200">
+                            {currentItem.image ? (
+                              <img 
+                                src={currentItem.image} 
+                                alt={currentItem.productName}
+                                className="w-full h-full object-contain rounded-lg p-1"
+                              />
+                            ) : (
+                              <ImagePlaceholder size="xs" variant="product" />
+                            )}
                           </div>
                         </div>
-                      )}
+                        
+                        {/* Product Name - Prominent */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 break-words leading-tight">{currentItem.productName}</h3>
+                          <div className="text-xs text-gray-500 space-y-0.5">
+                            <div>SKU: <span className="font-mono text-gray-700">{currentItem.sku}</span></div>
+                            <div>Barcode: <span className="font-mono text-gray-700">{currentItem.barcode}</span></div>
+                          </div>
+                        </div>
+                      </div>
 
-                      {/* Warehouse Location - Clean and Prominent */}
-                      <div className="bg-orange-50 border-2 border-orange-400 rounded-xl p-6 lg:p-10 text-center">
-                        <p className="text-xs font-medium text-orange-700 uppercase tracking-wide mb-2">Warehouse Location</p>
-                        <p className="text-5xl sm:text-6xl lg:text-7xl font-black text-orange-600 font-mono">{currentItem.warehouseLocation}</p>
+                      {/* Warehouse Location - High Contrast Banner */}
+                      <div className="bg-orange-100 border-3 border-orange-500 rounded-lg p-3 text-center">
+                        <p className="text-xs font-bold text-orange-800 uppercase mb-1">Location</p>
+                        <p className="text-4xl sm:text-5xl font-black text-orange-600 font-mono">{currentItem.warehouseLocation}</p>
                       </div>
 
                       {/* Bundle Items Picker - For gel polish colors etc */}
@@ -4684,63 +4654,45 @@ export default function PickPack() {
                           )}
                         </div>
                       ) : (
-                        /* Regular Quantity Picker - Clean Design */
-                        <div className="bg-white border-2 border-gray-200 rounded-xl p-6 lg:p-10">
-                          {/* Quantity to Pick Indicator */}
-                          {currentItem.quantity > 1 && (
-                            <div className="mb-6 text-center">
-                              <p className="text-sm text-gray-600">
-                                Need to pick: <span className="font-bold text-gray-900 text-lg">{currentItem.quantity} items</span>
-                              </p>
-                            </div>
-                          )}
-                          
-                          <div className="flex items-center justify-center gap-6 lg:gap-10">
+                        /* Regular Quantity Picker - Compact Design */
+                        <div className="bg-white border-2 border-gray-200 rounded-lg p-3 lg:p-6">
+                          <div className="flex items-center justify-center gap-4 lg:gap-6">
                             <Button
                               size="lg"
-                              className="w-20 h-20 lg:w-28 lg:h-28 rounded-xl bg-gray-600 hover:bg-gray-700 disabled:bg-gray-200 disabled:opacity-50 text-white shadow-lg touch-manipulation"
+                              className="w-16 h-16 lg:w-20 lg:h-20 rounded-lg bg-gray-600 hover:bg-gray-700 disabled:bg-gray-200 text-white shadow-md touch-manipulation"
                               onClick={() => updatePickedItem(currentItem.id, Math.max(0, currentItem.pickedQuantity - 1))}
                               disabled={currentItem.pickedQuantity === 0}
                             >
-                              <Minus className="h-8 lg:h-12 w-8 lg:w-12" />
+                              <Minus className="h-6 lg:h-8 w-6 lg:w-8" />
                             </Button>
                             
                             <div className="text-center">
-                              <div className="text-6xl sm:text-7xl lg:text-9xl font-black text-gray-900 tabular-nums leading-none">
+                              <div className="text-5xl sm:text-6xl font-black text-gray-900 tabular-nums leading-none">
                                 {currentItem.pickedQuantity}
                               </div>
-                              <div className="text-xl sm:text-2xl lg:text-4xl text-gray-400 font-bold mt-2">
+                              <div className="text-lg sm:text-xl text-gray-400 font-bold mt-1">
                                 of {currentItem.quantity}
                               </div>
                             </div>
                             
                             <Button
                               size="lg"
-                              className="w-20 h-20 lg:w-28 lg:h-28 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 disabled:opacity-50 text-white shadow-lg touch-manipulation"
+                              className="w-16 h-16 lg:w-20 lg:h-20 rounded-lg bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 text-white shadow-md touch-manipulation"
                               onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.quantity, currentItem.pickedQuantity + 1))}
                               disabled={currentItem.pickedQuantity >= currentItem.quantity}
                             >
-                              <Plus className="h-8 lg:h-12 w-8 lg:w-12" />
+                              <Plus className="h-6 lg:h-8 w-6 lg:w-8" />
                             </Button>
                           </div>
-                          
-                          {currentItem.pickedQuantity >= currentItem.quantity && (
-                            <div className="mt-6 text-center">
-                              <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-300 rounded-lg px-4 py-2">
-                                <CheckCircle className="h-5 w-5 text-emerald-600" />
-                                <span className="text-emerald-700 font-semibold">Complete!</span>
-                              </div>
-                            </div>
-                          )}
 
                           {/* Quick Pick Button */}
                           {currentItem.pickedQuantity < currentItem.quantity && (
                             <Button 
                               size="lg" 
-                              className="w-full mt-6 lg:mt-8 h-16 lg:h-20 text-lg lg:text-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg touch-manipulation rounded-xl"
+                              className="w-full mt-3 h-11 text-base font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md touch-manipulation rounded-lg"
                               onClick={() => updatePickedItem(currentItem.id, currentItem.quantity)}
                             >
-                              <CheckCircle2 className="h-6 lg:h-8 w-6 lg:w-8 mr-3" />
+                              <CheckCircle2 className="h-4 w-4 mr-2" />
                               Pick All ({currentItem.quantity})
                             </Button>
                           )}
@@ -4748,53 +4700,50 @@ export default function PickPack() {
                       )}
                       
                       {/* Item Navigation Buttons */}
-                      <div className="flex gap-3">
+                      <div className="flex gap-2">
                         <Button
                           variant="outline"
-                          size="lg"
-                          className="flex-1 h-14 lg:h-16 text-base lg:text-lg font-semibold border-2 border-gray-300 hover:bg-gray-50 disabled:opacity-30 rounded-lg"
+                          className="flex-1 h-10 text-sm font-semibold border-2 border-gray-300 hover:bg-gray-50 disabled:opacity-30 rounded-lg"
                           onClick={() => setManualItemIndex(Math.max(0, currentItemIndex - 1))}
                           disabled={currentItemIndex === 0}
                         >
-                          <ChevronLeft className="h-5 w-5 mr-2" />
+                          <ChevronLeft className="h-4 w-4 mr-1" />
                           Previous
                         </Button>
                         
                         <Button
                           variant="outline"
-                          size="lg"
-                          className="flex-1 h-14 lg:h-16 text-base lg:text-lg font-semibold border-2 border-gray-300 hover:bg-gray-50 disabled:opacity-30 rounded-lg"
+                          className="flex-1 h-10 text-sm font-semibold border-2 border-gray-300 hover:bg-gray-50 disabled:opacity-30 rounded-lg"
                           onClick={() => setManualItemIndex(Math.min(activePickingOrder.items.length - 1, currentItemIndex + 1))}
                           disabled={currentItemIndex === activePickingOrder.items.length - 1}
                         >
                           Next
-                          <ChevronRight className="h-5 w-5 ml-2" />
+                          <ChevronRight className="h-4 w-4 ml-1" />
                         </Button>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Barcode Scanner - Clean Design */}
-                <Card className="shadow-md border-2 border-gray-200 overflow-hidden rounded-xl">
-                  <CardContent className="p-4 lg:p-6 bg-white">
-                    <div className="flex gap-3">
+                {/* Barcode Scanner - Compact Design */}
+                <Card className="shadow-md border-2 border-gray-200 overflow-hidden rounded-lg">
+                  <CardContent className="p-2 lg:p-4 bg-white">
+                    <div className="flex gap-2">
                       <div className="relative flex-1">
                         <Input
                           ref={barcodeInputRef}
                           placeholder="Ready to scan..."
                           value={barcodeInput || "Ready to scan..."}
-                          className="text-base lg:text-xl h-14 lg:h-16 bg-gray-50 border-2 border-gray-300 placeholder:text-gray-400 font-mono cursor-default rounded-lg"
+                          className="text-sm lg:text-base h-10 lg:h-12 bg-gray-50 border-2 border-gray-300 placeholder:text-gray-400 font-mono cursor-default rounded-lg"
                           readOnly
                         />
                       </div>
                       <Button 
-                        size="lg" 
                         onClick={handleBarcodeScan}
-                        className="h-14 lg:h-16 px-8 lg:px-12 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md touch-manipulation rounded-lg"
+                        className="h-10 lg:h-12 px-4 lg:px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md touch-manipulation rounded-lg"
                       >
-                        <ScanLine className="h-5 w-5 lg:h-6 lg:w-6 sm:mr-2" />
-                        <span className="hidden sm:inline text-lg">Scan</span>
+                        <ScanLine className="h-4 w-4 lg:h-5 lg:w-5 sm:mr-2" />
+                        <span className="hidden sm:inline text-sm">Scan</span>
                       </Button>
                     </div>
                   </CardContent>
