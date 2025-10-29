@@ -2137,7 +2137,7 @@ export default function PickPack() {
     return 'CZ';
   };
 
-  // Global barcode scanner listener for continuous scanning
+  // Global barcode scanner listener for continuous scanning (PICKING MODE)
   useEffect(() => {
     if (!activePickingOrder) return;
 
@@ -2183,7 +2183,50 @@ export default function PickPack() {
     };
   }, [activePickingOrder, selectedTab]);
 
-  // Process barcode input from continuous scanner
+  // Global barcode scanner listener for continuous scanning (PACKING MODE)
+  useEffect(() => {
+    if (!activePackingOrder) return;
+
+    let scanBuffer = '';
+    let scanTimeout: NodeJS.Timeout;
+
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Only process if we're in packing mode and have an active order
+      if (selectedTab !== 'packing' || !activePackingOrder) return;
+
+      // Ignore if target is an input field that's not read-only
+      if (e.target instanceof HTMLInputElement && !e.target.readOnly) return;
+
+      // Clear buffer on Enter (barcode scanners typically end with Enter)
+      if (e.key === 'Enter') {
+        if (scanBuffer.length > 0) {
+          processPackingBarcodeInput(scanBuffer);
+          scanBuffer = '';
+        }
+        clearTimeout(scanTimeout);
+        return;
+      }
+
+      // Add character to buffer
+      if (e.key.length === 1) { // Only single characters
+        scanBuffer += e.key;
+
+        // Clear buffer after timeout (in case Enter is missed)
+        clearTimeout(scanTimeout);
+        scanTimeout = setTimeout(() => {
+          scanBuffer = '';
+        }, 1000);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress);
+      clearTimeout(scanTimeout);
+    };
+  }, [activePackingOrder, selectedTab, verifiedItems]);
+
+  // Process barcode input from continuous scanner (PICKING MODE)
   const processBarcodeInput = (barcode: string) => {
     if (!activePickingOrder || !barcode.trim()) return;
 
@@ -2194,6 +2237,24 @@ export default function PickPack() {
     if (item) {
       const newQty = Math.min(item.pickedQuantity + 1, item.quantity);
       updatePickedItem(item.id, newQty);
+      playSound('scan');
+    } else {
+      playSound('error');
+    }
+
+    setBarcodeInput('');
+  };
+
+  // Process barcode input from continuous scanner (PACKING MODE)
+  const processPackingBarcodeInput = (barcode: string) => {
+    if (!activePackingOrder || !barcode.trim()) return;
+
+    const matchingItem = activePackingOrder.items.find(
+      item => item.barcode === barcode || item.sku === barcode
+    );
+
+    if (matchingItem) {
+      setVerifiedItems(new Set(Array.from(verifiedItems).concat(matchingItem.id)));
       playSound('scan');
     } else {
       playSound('error');
