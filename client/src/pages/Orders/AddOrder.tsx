@@ -118,6 +118,7 @@ interface OrderItem {
   total: number;
   landingCost?: number | null;
   image?: string | null;
+  notes?: string | null;
 }
 
 // Helper function to get country flag emoji
@@ -3093,6 +3094,15 @@ export default function AddOrder() {
                                 <span className="text-xs text-slate-500 dark:text-slate-400">
                                   {item.serviceId ? 'Service Item' : `SKU: ${item.sku}`}
                                 </span>
+                                {item.serviceId && (
+                                  <Input
+                                    placeholder="Add note (optional)"
+                                    value={item.notes || ''}
+                                    onChange={(e) => updateOrderItem(item.id, 'notes', e.target.value)}
+                                    className="text-xs h-7 mt-1 bg-purple-50 border-purple-200 text-purple-900 placeholder:text-purple-400"
+                                    data-testid={`input-notes-${item.id}`}
+                                  />
+                                )}
                                 </div>
                               </div>
                             </TableCell>
