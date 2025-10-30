@@ -3838,68 +3838,68 @@ export default function PickPack() {
                         return (
                           <div 
                             key={item.id} 
-                            className={`relative rounded border transition-all ${
+                            className={`relative p-3 rounded-lg border-2 transition-all ${
                               isVerified || (isBundle && allBundleComponentsVerified)
                                 ? 'bg-green-50 border-green-300' 
-                                : 'bg-white border-gray-200'
+                                : 'bg-gray-50 border-gray-200'
                             }`}
                           >
-                            {/* Main Item Row - Compact Table-like Layout */}
-                            <div className="flex items-center gap-2 p-2">
-                              {/* Status Badge */}
-                              <div className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] flex-shrink-0 ${
-                                isVerified || (isBundle && allBundleComponentsVerified)
-                                  ? 'bg-green-500 text-white' 
-                                  : 'bg-gray-200 text-gray-600'
-                              }`}>
-                                {(isVerified || (isBundle && allBundleComponentsVerified)) ? '✓' : index + 1}
-                              </div>
-
-                              {/* Product Image - Smaller */}
-                              <div className="w-12 h-12 rounded overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center flex-shrink-0">
-                                {item.image ? (
-                                  <img 
-                                    src={item.image} 
-                                    alt={item.productName}
-                                    className="w-full h-full object-contain"
-                                  />
-                                ) : (
-                                  <Package className="h-6 w-6 text-gray-400" />
-                                )}
-                              </div>
-
-                              {/* Product Info - Flex-1 to use available space */}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <p className="font-semibold text-gray-900 text-xs leading-tight truncate">{item.productName}</p>
-                                  {isBundle && (
-                                    <Badge variant="outline" className="bg-amber-50 border-amber-300 text-amber-800 text-[10px] px-1 py-0 h-4">
-                                      Bundle {bundleComponentsVerified}/{totalBundleComponents}
-                                    </Badge>
-                                  )}
-                                  {item.shipmentNotes && (
-                                    <Badge variant="destructive" className="text-[10px] px-1 py-0 h-4">
-                                      <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
-                                      SPECIAL
-                                    </Badge>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[11px] font-bold">
-                                    Qty: {item.quantity}
-                                  </span>
-                                  {!isBundle && item.warehouseLocation && (
-                                    <span className="text-[10px] text-gray-500 truncate">
-                                      📍 {item.warehouseLocation}
-                                    </span>
-                                  )}
-                                  {item.sku && (
-                                    <span className="text-[10px] text-gray-400 truncate">
-                                      SKU: {item.sku}
-                                    </span>
-                                  )}
+                            {item.shipmentNotes && (
+                              <div className="absolute -top-2 -right-2 z-10">
+                                <div className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  SPECIAL
                                 </div>
                               </div>
+                            )}
+
+                            <div className="flex items-center gap-3">
+                              {/* Product Image */}
+                              <div className="relative">
+                                <div className="w-16 h-16 rounded-lg overflow-hidden bg-white border-2 border-gray-200 flex items-center justify-center">
+                                  {item.image ? (
+                                    <img 
+                                      src={item.image} 
+                                      alt={item.productName}
+                                      className="w-full h-full object-contain"
+                                    />
+                                  ) : (
+                                    <Package className="h-8 w-8 text-gray-400" />
+                                  )}
+                                </div>
+                                <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shadow-md ${
+                                  isVerified || (isBundle && allBundleComponentsVerified)
+                                    ? 'bg-green-500 text-white' 
+                                    : 'bg-purple-100 text-purple-600 border-2 border-white'
+                                }`}>
+                                  {(isVerified || (isBundle && allBundleComponentsVerified)) ? <CheckCircle className="h-4 w-4" /> : index + 1}
+                                </div>
+                              </div>
+
+                              <div className="flex-1">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-semibold text-gray-900 text-sm leading-tight">{item.productName}</p>
+                                      {isBundle && (
+                                        <Badge className="bg-amber-100 text-amber-800 text-xs">
+                                          Bundle ({bundleComponentsVerified}/{totalBundleComponents})
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      {!isBundle && item.warehouseLocation && (
+                                        <span className="text-xs text-gray-500">
+                                          📍 {item.warehouseLocation}
+                                        </span>
+                                      )}
+                                      {item.sku && (
+                                        <span className="text-xs text-gray-400">
+                                          SKU: {item.sku}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
                               
                               {/* Action Buttons - Compact */}
                               <div className="flex gap-1 flex-shrink-0">
@@ -3970,6 +3970,8 @@ export default function PickPack() {
                                     <><ScanLine className="h-3 w-3 mr-1" />Verify</>
                                   )}
                                 </Button>
+                              </div>
+                            </div>
                               </div>
                             </div>
                             
