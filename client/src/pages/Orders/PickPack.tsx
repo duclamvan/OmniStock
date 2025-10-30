@@ -5203,8 +5203,56 @@ export default function PickPack() {
   // Main Dashboard View
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header with Navigation and Overview */}
+      <div className="bg-white border-b shadow-sm">
+        <div className="px-3 sm:px-6 py-4">
+          {/* Navigation Breadcrumb */}
+          <div className="flex items-center gap-2 mb-4">
+            <Link href="/" className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1" data-testid="link-home">
+              <Home className="h-4 w-4" />
+              <span className="hidden sm:inline">Home</span>
+            </Link>
+            <ChevronRight className="h-4 w-4 text-gray-400" />
+            <Link href="/orders" className="text-sm text-gray-500 hover:text-gray-700" data-testid="link-orders">Orders</Link>
+            <ChevronRight className="h-4 w-4 text-gray-400" />
+            <span className="text-sm font-semibold text-gray-900">Pick & Pack</span>
+          </div>
+
+          {/* Page Title and Brief Overview */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2">
+                <Package className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+                Pick & Pack Workflow
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">Manage order fulfillment from picking to shipping</p>
+            </div>
+
+            {/* Quick Stats Overview */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-2 text-center" data-testid="stat-pending">
+                <div className="text-lg sm:text-2xl font-bold text-orange-600">{stats.pending}</div>
+                <div className="text-xs text-orange-700">Pending</div>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-center" data-testid="stat-picking">
+                <div className="text-lg sm:text-2xl font-bold text-blue-600">{stats.picking}</div>
+                <div className="text-xs text-blue-700">Picking</div>
+              </div>
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 text-center" data-testid="stat-packing">
+                <div className="text-lg sm:text-2xl font-bold text-purple-600">{stats.packing}</div>
+                <div className="text-xs text-purple-700">Packing</div>
+              </div>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-center" data-testid="stat-ready">
+                <div className="text-lg sm:text-2xl font-bold text-green-600">{stats.ready}</div>
+                <div className="text-xs text-green-700">Ready</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Main Content - Mobile Optimized */}
-      <div className="px-3 sm:px-6 pb-6">
+      <div className="px-3 sm:px-6 pb-6 pt-4">
         <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v as any)}>
           <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
             <TabsList className="grid grid-cols-5 w-full min-w-[400px] sm:max-w-3xl bg-white border border-gray-200 p-2 gap-2 shadow-sm rounded-lg h-auto">
