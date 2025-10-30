@@ -2,11 +2,15 @@
 Davie Supply is a full-stack web application for comprehensive warehouse and order management, aiming to optimize supply chain operations. It covers the entire order lifecycle, inventory tracking, CRM, and multi-currency financial reporting. Key features include real-time Vietnamese diacritics search, customer-specific pricing, external shipping API integrations, and extensive settings management. Future ambitions include advanced warehouse mapping, a comprehensive Pick & Pack workflow, and AI-powered optimization.
 
 # Recent Changes
-**October 30, 2025**: Unified Pick & Pack Card Layouts Across All Tabs:
-- Standardized all order cards across Pending, Picking, Packing, and Ready tabs to use consistent 2x2 grid on mobile, 4-column grid on desktop
-- Unified information positioning order: Customer → Country → Items → (Shipping Method or Picked By)
-- Ensures predictable scanning pattern and better user experience when switching between different workflow stages
-- All cards now have the same visual structure, spacing, and information hierarchy
+**October 30, 2025**: Smart Order Selection & Enhanced Pick & Pack UI:
+- Implemented intelligent order selection algorithm for "Pick Next Order" and "Start Next Priority Order" buttons
+- Smart scoring considers: Priority (40%), Order Age (30%), Shipping Method (20%), and Order Size (10%)
+- Express/Urgent shipping automatically prioritized, older orders get higher urgency scores
+- Small orders (1-5 items) slightly prioritized for better workflow flow
+- Added header navigation with breadcrumb (Home > Orders > Pick & Pack)
+- Live statistics overview showing Pending/Picking/Packing/Ready counts in color-coded cards
+- Responsive stats layout: 2 columns on mobile, 4 columns on desktop
+- Unified Pick & Pack card layouts across all tabs with consistent 2x2 grid on mobile, 4-column grid on desktop
 
 # User Preferences
 Preferred communication style: Simple, everyday language.

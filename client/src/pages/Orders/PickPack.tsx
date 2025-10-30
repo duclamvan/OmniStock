@@ -2490,17 +2490,72 @@ export default function PickPack() {
     setBarcodeInput('');
   };
 
+  // Smart Order Scoring Algorithm
+  // Considers priority, age, shipping method, and order size
+  const calculateOrderScore = (order: PickPackOrder) => {
+    let score = 0;
+    
+    // 1. Priority Weight (40% of score, 0-400 points)
+    const priorityScores = { high: 400, medium: 250, low: 100 };
+    score += priorityScores[order.priority];
+    
+    // 2. Age/Urgency Weight (30% of score, 0-300 points)
+    // Older orders get higher scores - orders waiting longer should be picked first
+    const createdDate = new Date(order.createdAt);
+    // Defensive: Handle invalid dates by treating as zero age
+    const orderAge = isNaN(createdDate.getTime()) ? 0 : Date.now() - createdDate.getTime();
+    const ageInHours = orderAge / (1000 * 60 * 60);
+    // Cap at 24 hours for scoring (orders older than 24h get max points)
+    // Clamp to ensure no negative scores for future-dated orders
+    const ageScore = Math.max(0, Math.min(ageInHours / 24, 1)) * 300;
+    score += ageScore;
+    
+    // 3. Shipping Method Weight (20% of score, 0-200 points)
+    // Express/urgent shipping methods get priority
+    const shippingMethodLower = (order.shippingMethod || '').toLowerCase();
+    if (shippingMethodLower.includes('express') || shippingMethodLower.includes('urgent')) {
+      score += 200;
+    } else if (shippingMethodLower.includes('priority')) {
+      score += 150;
+    } else if (shippingMethodLower.includes('standard')) {
+      score += 100;
+    } else {
+      score += 50; // Unknown shipping methods get minimal points
+    }
+    
+    // 4. Order Size Weight (10% of score, 0-100 points)
+    // Smaller orders (1-5 items) get slightly higher scores for better flow
+    // Medium orders (6-15 items) get standard scores
+    // Large orders (16+ items) get lower scores but still positive
+    const itemCount = order.totalItems;
+    if (itemCount <= 5) {
+      score += 100; // Small orders - quick wins
+    } else if (itemCount <= 15) {
+      score += 75; // Medium orders - standard
+    } else {
+      score += 50; // Large orders - more effort
+    }
+    
+    return score;
+  };
+
   // Quick Action: Start Next Priority Order
   const startNextPriorityOrder = () => {
-    // Find the highest priority pending order (status = 'to_fulfill')
+    // Find pending orders ready to pick
     const pendingOrders = transformedOrders.filter(o => o.status === 'to_fulfill');
-    const priorityOrder = pendingOrders.sort((a, b) => {
-      const priorityWeight = { high: 3, medium: 2, low: 1 };
-      return priorityWeight[b.priority] - priorityWeight[a.priority];
-    })[0];
+    
+    // Use smart scoring to select the best order
+    const nextOrder = pendingOrders
+      .map(order => ({
+        order,
+        score: calculateOrderScore(order)
+      }))
+      .sort((a, b) => b.score - a.score)
+      .map(item => item.order)[0];
 
-    if (priorityOrder) {
-      startPicking(priorityOrder);
+    if (nextOrder) {
+      console.log('Starting next priority order:', nextOrder, 'Score:', calculateOrderScore(nextOrder));
+      startPicking(nextOrder);
     }
   };
 
@@ -4945,14 +5000,17 @@ export default function PickPack() {
                             o.status === 'to_fulfill'
                           );
                           
-                          // Sort by priority to get the highest priority order
-                          const nextOrder = pendingOrders.sort((a, b) => {
-                            const priorityWeight = { high: 3, medium: 2, low: 1 };
-                            return priorityWeight[b.priority] - priorityWeight[a.priority];
-                          })[0];
+                          // Use smart scoring to select the best next order
+                          const nextOrder = pendingOrders
+                            .map(order => ({
+                              order,
+                              score: calculateOrderScore(order)
+                            }))
+                            .sort((a, b) => b.score - a.score)
+                            .map(item => item.order)[0];
                           
                           if (nextOrder) {
-                            console.log('Starting next order:', nextOrder);
+                            console.log('Starting next order:', nextOrder, 'Score:', calculateOrderScore(nextOrder));
                             // Start picking the next order immediately
                             startPicking(nextOrder);
                             
