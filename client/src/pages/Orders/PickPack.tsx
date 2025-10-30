@@ -2807,7 +2807,8 @@ export default function PickPack() {
   };
 
   // Complete picking
-  const completePicking = async () => {
+  // setPackStatus: whether to set packStatus to 'not_started' (true when returning to queue, false when proceeding to packing)
+  const completePicking = async (setPackStatus = true) => {
     if (!activePickingOrder) return;
 
     try {
@@ -2820,11 +2821,18 @@ export default function PickPack() {
       // Only update database for real orders (not mock orders)
       if (!activePickingOrder.id.startsWith('mock-')) {
         // Update order to mark picking as completed (non-blocking)
-        apiRequest('PATCH', `/api/orders/${activePickingOrder.id}`, {
+        const updateData: any = {
           pickStatus: 'completed',
           pickEndTime: new Date().toISOString(),
           pickedBy: currentEmployee
-        }).catch(error => {
+        };
+        
+        // Only set packStatus when returning order to queue (not when proceeding to packing)
+        if (setPackStatus) {
+          updateData.packStatus = 'not_started';
+        }
+        
+        apiRequest('PATCH', `/api/orders/${activePickingOrder.id}`, updateData).catch(error => {
           console.error('Error updating order status:', error);
         });
       }
@@ -3258,7 +3266,7 @@ export default function PickPack() {
     return transformedOrders.filter(order => {
       if (status === 'pending') return order.pickStatus === 'not_started' || !order.pickStatus;
       if (status === 'picking') return order.pickStatus === 'in_progress';
-      if (status === 'packing') return order.pickStatus === 'completed' && order.packStatus === 'not_started';
+      if (status === 'packing') return order.pickStatus === 'completed' && (order.packStatus === 'not_started' || !order.packStatus);
       if (status === 'ready') return order.packStatus === 'completed';
       return false;
     });
@@ -4969,7 +4977,8 @@ export default function PickPack() {
                           startPacking(orderTopack);
                           
                           // Complete picking in background (non-blocking)
-                          completePicking().catch(console.error);
+                          // Don't set packStatus since startPacking() already sets it to 'in_progress'
+                          completePicking(false).catch(console.error);
                           
                           // Switch tab after starting packing
                           setSelectedTab('packing');
