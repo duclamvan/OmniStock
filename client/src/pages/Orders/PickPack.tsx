@@ -5257,7 +5257,7 @@ export default function PickPack() {
                                 );
                               })()}
                             </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600 mb-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600 mb-2">
                               <div className="flex items-center gap-1.5">
                                 <User className="h-4 w-4 text-gray-400" />
                                 <span className="truncate font-medium">{order.customerName}</span>
@@ -5271,8 +5271,8 @@ export default function PickPack() {
                                 <span className="font-medium">{order.totalItems} items</span>
                               </div>
                               <div className="flex items-center gap-1.5">
-                                <Truck className="h-4 w-4 text-gray-400" />
-                                <span className="truncate font-medium">{order.shippingMethod}</span>
+                                <Truck className="h-4 w-4 text-blue-500" />
+                                <span className="truncate font-medium text-blue-600">{order.shippingCarrier || 'Standard Carrier'}</span>
                               </div>
                             </div>
                             {/* Compact product list */}
@@ -5412,7 +5412,7 @@ export default function PickPack() {
                                   );
                                 })()}
                               </div>
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600 mb-3">
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600 mb-2">
                                 <div className="flex items-center gap-1.5">
                                   <User className="h-4 w-4 text-gray-400" />
                                   <span className="truncate font-medium">{order.customerName}</span>
@@ -5426,10 +5426,16 @@ export default function PickPack() {
                                   <span className="font-medium">{order.totalItems} items</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
+                                  <Truck className="h-4 w-4 text-blue-500" />
+                                  <span className="truncate font-medium text-blue-600">{order.shippingCarrier || 'Standard Carrier'}</span>
+                                </div>
+                              </div>
+                              {order.pickedBy && (
+                                <div className="flex items-center gap-1.5 text-sm mb-3">
                                   <CheckCircle className="h-4 w-4 text-green-500" />
                                   <span className="text-green-600 font-medium">Picked by {order.pickedBy}</span>
                                 </div>
-                              </div>
+                              )}
                               {/* Compact product list */}
                               {order.items && order.items.length > 0 && (
                                 <div className="pt-3 mt-3 border-t border-gray-200">
@@ -5571,7 +5577,7 @@ export default function PickPack() {
                                   );
                                 })()}
                               </div>
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600 mb-3">
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600 mb-2">
                                 <div className="flex items-center gap-1.5">
                                   <User className="h-4 w-4 text-gray-400" />
                                   <span className="truncate font-medium">{order.customerName}</span>
@@ -5585,10 +5591,16 @@ export default function PickPack() {
                                   <span className="font-medium">{order.totalItems} items</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
+                                  <Truck className="h-4 w-4 text-blue-500" />
+                                  <span className="truncate font-medium text-blue-600">{order.shippingCarrier || 'Standard Carrier'}</span>
+                                </div>
+                              </div>
+                              {order.pickedBy && (
+                                <div className="flex items-center gap-1.5 text-sm mb-3">
                                   <CheckCircle className="h-4 w-4 text-green-500" />
                                   <span className="text-green-600 font-medium">Picked by {order.pickedBy}</span>
                                 </div>
-                              </div>
+                              )}
                               {/* Compact product list */}
                               {order.items && order.items.length > 0 && (
                                 <div className="pt-3 mt-3 border-t border-gray-200">
@@ -5969,10 +5981,16 @@ export default function PickPack() {
                                             <span className="font-medium">{order.totalItems} items</span>
                                           </div>
                                           <div className="flex items-center gap-1.5">
-                                            <Truck className="h-3 w-3 text-gray-400" />
-                                            <span className="truncate font-medium">{order.shippingMethod}</span>
+                                            <Truck className="h-3 w-3 text-blue-500" />
+                                            <span className="truncate font-medium text-blue-600">{order.shippingCarrier || 'Standard Carrier'}</span>
                                           </div>
                                         </div>
+                                        {order.packedBy && (
+                                          <div className="flex items-center gap-1.5 text-xs mt-1">
+                                            <CheckCircle className="h-3 w-3 text-green-500" />
+                                            <span className="text-green-600 font-medium">Packed by {order.packedBy}</span>
+                                          </div>
+                                        )}
                                         {/* Compact product list */}
                                         {order.items && order.items.length > 0 && (
                                           <div className="mt-1.5 pt-1.5 border-t border-gray-200">
