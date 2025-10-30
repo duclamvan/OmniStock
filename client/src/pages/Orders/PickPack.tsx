@@ -4265,37 +4265,35 @@ export default function PickPack() {
         <div className="flex-1 overflow-auto">
           <div className="flex flex-col lg:flex-row min-h-full">
             {/* Left Panel - Current Item Focus */}
-            <div className="flex-1 p-2 lg:p-6">
+            <div className="flex-1">
             {!allItemsPicked && currentItem ? (
-              <div className="max-w-4xl mx-auto">
-                {/* Simplified Card Layout - Mobile-First */}
-                <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-                  {/* Minimal Header with Progress */}
-                  <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-white/20 rounded-full p-2">
-                          <Package className="h-6 w-6 text-white" />
-                        </div>
-                        <div>
-                          <p className="text-white/80 text-sm font-medium">Picking Item</p>
-                          <p className="text-white text-2xl font-black">{currentItemIndex + 1} / {activePickingOrder.items.length}</p>
-                        </div>
+              <div className="h-full flex flex-col bg-gray-50">
+                {/* Minimal Header with Progress */}
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-white/20 rounded-full p-2">
+                        <Package className="h-6 w-6 text-white" />
                       </div>
-                      {currentItem?.pickedQuantity === currentItem?.quantity && (
-                        <CheckCircle className="h-10 w-10 text-green-400 animate-pulse" />
-                      )}
+                      <div>
+                        <p className="text-white/80 text-sm font-medium">Picking Item</p>
+                        <p className="text-white text-2xl font-black">{currentItemIndex + 1} / {activePickingOrder.items.length}</p>
+                      </div>
                     </div>
-                    {/* Overall Progress Bar */}
-                    <div className="mt-3 h-2 bg-white/20 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-white transition-all duration-500"
-                        style={{ width: `${((currentItemIndex + (currentItem.pickedQuantity >= currentItem.quantity ? 1 : 0)) / activePickingOrder.items.length) * 100}%` }}
-                      />
-                    </div>
+                    {currentItem?.pickedQuantity === currentItem?.quantity && (
+                      <CheckCircle className="h-10 w-10 text-green-400 animate-pulse" />
+                    )}
                   </div>
-                  
-                  <div className="p-4 lg:p-6 space-y-4">
+                  {/* Overall Progress Bar */}
+                  <div className="mt-3 h-2 bg-white/20 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-white transition-all duration-500"
+                      style={{ width: `${((currentItemIndex + (currentItem.pickedQuantity >= currentItem.quantity ? 1 : 0)) / activePickingOrder.items.length) * 100}%` }}
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex-1 p-4 space-y-4 overflow-auto">
                       {/* Streamlined Product Display - Hero Image Layout */}
                       <div className="space-y-4">
                         {/* Hero Product Image - Always Large and Prominent */}
@@ -4570,10 +4568,9 @@ export default function PickPack() {
                         </Button>
                       </div>
                     </div>
-                  </div>
                   
-                  {/* Barcode Scanner - Streamlined Design */}
-                  <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                  {/* Barcode Scanner - Fixed to Bottom */}
+                  <div className="sticky bottom-0 bg-white border-t-2 border-gray-300">
                     <div className="p-3 lg:p-4">
                       <div className="flex gap-2">
                         <div className="relative flex-1">
