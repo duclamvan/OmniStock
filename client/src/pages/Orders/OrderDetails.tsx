@@ -1978,6 +1978,16 @@ export default function OrderDetails() {
                       <p className="font-medium text-sm">Picking Completed</p>
                       <p className="text-sm text-slate-500">
                         {new Date(order.pickEndTime).toLocaleString()}
+                        {order.pickStartTime && order.pickEndTime && (
+                          <span className="text-purple-600 font-medium ml-2">
+                            (Duration: {(() => {
+                              const duration = Math.floor((new Date(order.pickEndTime).getTime() - new Date(order.pickStartTime).getTime()) / 1000);
+                              const minutes = Math.floor(duration / 60);
+                              const seconds = duration % 60;
+                              return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                            })()})
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -2005,6 +2015,16 @@ export default function OrderDetails() {
                       <p className="font-medium text-sm">Packing Completed</p>
                       <p className="text-sm text-slate-500">
                         {new Date(order.packEndTime).toLocaleString()}
+                        {order.packStartTime && order.packEndTime && (
+                          <span className="text-indigo-600 font-medium ml-2">
+                            (Duration: {(() => {
+                              const duration = Math.floor((new Date(order.packEndTime).getTime() - new Date(order.packStartTime).getTime()) / 1000);
+                              const minutes = Math.floor(duration / 60);
+                              const seconds = duration % 60;
+                              return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                            })()})
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>

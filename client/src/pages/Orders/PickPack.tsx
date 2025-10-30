@@ -548,18 +548,21 @@ export default function PickPack() {
     }
   }, [showUndoPopup, undoTimeLeft]);
 
-  // Timer effects - completely independent of React to avoid any re-renders
+  // Timer effects - update both DOM and state for timer
   useEffect(() => {
     if (isTimerRunning) {
       // Store the start time once
       const startTime = Date.now() - (pickingTimer * 1000);
       
-      // Create a completely independent timer that only updates DOM text
+      // Update both state and DOM for timer
       const interval = setInterval(() => {
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
         const formatted = formatTimer(elapsed);
         
-        // Direct DOM manipulation without triggering any React updates
+        // Update the state so React components can use it
+        setPickingTimer(elapsed);
+        
+        // Also update DOM elements directly for performance
         const timerElements = document.querySelectorAll('[data-picking-timer]');
         timerElements.forEach(el => {
           if (el.textContent !== formatted) {
@@ -574,6 +577,7 @@ export default function PickPack() {
       // Initial update
       const initialElapsed = Math.floor((Date.now() - startTime) / 1000);
       const initialFormatted = formatTimer(initialElapsed);
+      setPickingTimer(initialElapsed); // Update state initially
       document.querySelectorAll('[data-picking-timer]').forEach(el => {
         el.textContent = initialFormatted;
       });
@@ -2668,10 +2672,11 @@ export default function PickPack() {
       
       // Update database in background (non-blocking) for real orders
       if (!order.id.startsWith('mock-')) {
-        updateOrderStatusMutation.mutateAsync({
-          orderId: order.id,
-          status: 'to_fulfill',
+        // Send pickStartTime directly via apiRequest
+        apiRequest('PATCH', `/api/orders/${order.id}`, {
+          orderStatus: 'to_fulfill',
           pickStatus: 'in_progress',
+          pickStartTime: new Date().toISOString(),
           pickedBy: currentEmployee
         }).catch(error => {
           console.error('Error updating order status:', error);
@@ -3200,6 +3205,27 @@ export default function PickPack() {
   };
 
   // Statistics
+  // Calculate average picking time from completed orders
+  const calculateAvgPickTime = () => {
+    const ordersWithPickTime = transformedOrders.filter(o => 
+      o.pickStartTime && o.pickEndTime
+    );
+    
+    if (ordersWithPickTime.length === 0) return 'N/A';
+    
+    const totalSeconds = ordersWithPickTime.reduce((sum, order) => {
+      const duration = Math.floor(
+        (new Date(order.pickEndTime).getTime() - new Date(order.pickStartTime).getTime()) / 1000
+      );
+      return sum + duration;
+    }, 0);
+    
+    const avgSeconds = Math.floor(totalSeconds / ordersWithPickTime.length);
+    const minutes = Math.floor(avgSeconds / 60);
+    const seconds = avgSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   const stats = {
     pending: getOrdersByStatus('pending').length,
     picking: getOrdersByStatus('picking').length,
@@ -3208,7 +3234,7 @@ export default function PickPack() {
     todayPicked: transformedOrders.filter(o => 
       o.pickEndTime && new Date(o.pickEndTime).toDateString() === new Date().toDateString()
     ).length,
-    avgPickTime: '15:30' // Mock average
+    avgPickTime: calculateAvgPickTime()
   };
   
   // Trigger bouncy animation when counts change
