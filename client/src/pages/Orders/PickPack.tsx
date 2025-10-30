@@ -3721,9 +3721,9 @@ export default function PickPack() {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <div className="px-2 pb-2">
-                    <ScrollArea className="h-[400px]">
-                      <div className="space-y-1.5">
+                  <div className="pb-2">
+                    <ScrollArea className="h-[400px] w-full">
+                      <div className="space-y-1.5 px-2 pr-3">
                       {activePackingOrder.items.map((item, index) => {
                         const isVerified = (verifiedItems[item.id] || 0) >= item.quantity;
                         const isBundle = item.isBundle && item.bundleItems && item.bundleItems.length > 0;
@@ -3873,7 +3873,7 @@ export default function PickPack() {
                             
                             {/* Bundle Components - Compact Expandable Section */}
                             {isBundle && isExpanded && (
-                              <div className="px-2 pb-2 pl-14 space-y-1">
+                              <div className="pb-2 pl-12 pr-2 space-y-1">
                                 {item.bundleItems?.map((bundleItem: any, idx: number) => {
                                   const componentId = `${item.id}-${bundleItem.id}`;
                                   const isComponentVerified = (verifiedItems[componentId] || 0) >= bundleItem.quantity;
@@ -3940,7 +3940,7 @@ export default function PickPack() {
                             
                             {/* Notes Section - Compact */}
                             {hasNotes && (
-                              <div className="px-2 pb-2 pl-14 space-y-1">
+                              <div className="pb-2 pl-12 pr-2 space-y-1">
                                 {item.shipmentNotes && (
                                   <div className="p-2 bg-red-50 rounded border-l-2 border-red-400">
                                     <div className="flex items-start gap-1.5">
