@@ -91,7 +91,9 @@ import {
   TrendingUp,
   ShoppingCart,
   Check,
-  Edit
+  Edit,
+  Pause,
+  XCircle
 } from "lucide-react";
 
 interface BundleItem {
@@ -435,6 +437,11 @@ export default function PickPack() {
   
   // Track orders being returned to packing (for instant UI update)
   const [ordersReturnedToPacking, setOrdersReturnedToPacking] = useState<Set<string>>(new Set());
+  
+  // Workflow management state
+  const [orderToHold, setOrderToHold] = useState<PickPackOrder | null>(null);
+  const [orderToCancel, setOrderToCancel] = useState<PickPackOrder | null>(null);
+  const [orderToSendToPending, setOrderToSendToPending] = useState<PickPackOrder | null>(null);
   
   // Track animated counters for bouncy animation
   const [animatingCounters, setAnimatingCounters] = useState<Set<string>>(new Set());
@@ -2024,6 +2031,117 @@ export default function PickPack() {
         const newSet = new Set(prev);
         newSet.delete(order.id);
         return newSet;
+      });
+    }
+  };
+
+  // Handle putting order on hold
+  const handlePutOnHold = async (order: PickPackOrder) => {
+    try {
+      await apiRequest('PATCH', `/api/orders/${order.id}`, {
+        fulfillmentStage: 'on_hold'
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      
+      toast({
+        title: 'Order On Hold',
+        description: `${order.orderId} has been put on hold`,
+      });
+      
+      setOrderToHold(null);
+    } catch (error) {
+      console.error('Error putting order on hold:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to put order on hold',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Handle canceling order
+  const handleCancelOrder = async (order: PickPackOrder) => {
+    try {
+      await apiRequest('PATCH', `/api/orders/${order.id}`, {
+        status: 'cancelled',
+        fulfillmentStage: null
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      
+      toast({
+        title: 'Order Cancelled',
+        description: `${order.orderId} has been cancelled`,
+      });
+      
+      setOrderToCancel(null);
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to cancel order',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Handle sending order back to pending
+  const handleSendToPending = async (order: PickPackOrder) => {
+    try {
+      const promises = [];
+      
+      // Reset order to pending status
+      promises.push(
+        apiRequest('PATCH', `/api/orders/${order.id}`, {
+          fulfillmentStage: null,
+          pickStatus: 'not_started',
+          packStatus: 'not_started',
+          pickStartTime: null,
+          pickEndTime: null,
+          packStartTime: null,
+          packEndTime: null,
+          pickedBy: null,
+          packedBy: null
+        })
+      );
+      
+      // Reset all item quantities if they exist
+      if (order.items && order.items.length > 0) {
+        for (const item of order.items) {
+          if (item.id) {
+            promises.push(
+              apiRequest('PATCH', `/api/orders/${order.id}/items/${item.id}`, {
+                pickedQuantity: 0,
+                packedQuantity: 0
+              })
+            );
+          }
+        }
+      }
+      
+      // Clear any saved picking progress
+      localStorage.removeItem(`pickpack-progress-${order.id}`);
+      
+      await Promise.all(promises);
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      
+      toast({
+        title: 'Success',
+        description: `${order.orderId} sent back to Pending`,
+      });
+      
+      setOrderToSendToPending(null);
+    } catch (error) {
+      console.error('Error sending order to pending:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to send order to pending',
+        variant: 'destructive'
       });
     }
   };
@@ -5115,11 +5233,21 @@ export default function PickPack() {
                                   <DropdownMenuItem 
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setModificationDialog(order);
+                                      setOrderToHold(order);
                                     }}
                                   >
-                                    <Edit className="h-3.5 w-3.5 mr-1.5" />
-                                    Edit Order
+                                    <Pause className="h-3.5 w-3.5 mr-1.5" />
+                                    Put On Hold
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOrderToCancel(order);
+                                    }}
+                                    className="text-red-600"
+                                  >
+                                    <XCircle className="h-3.5 w-3.5 mr-1.5" />
+                                    Cancel Order
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -5262,11 +5390,30 @@ export default function PickPack() {
                                   <DropdownMenuItem 
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setModificationDialog(order);
+                                      setOrderToSendToPending(order);
                                     }}
                                   >
-                                    <Edit className="h-3.5 w-3.5 mr-1.5" />
-                                    Edit Order
+                                    <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                                    Send Back to Pending
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOrderToHold(order);
+                                    }}
+                                  >
+                                    <Pause className="h-3.5 w-3.5 mr-1.5" />
+                                    Put On Hold
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOrderToCancel(order);
+                                    }}
+                                    className="text-red-600"
+                                  >
+                                    <XCircle className="h-3.5 w-3.5 mr-1.5" />
+                                    Cancel Order
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -5398,6 +5545,34 @@ export default function PickPack() {
                                   >
                                     <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
                                     Send back to Pick
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOrderToSendToPending(order);
+                                    }}
+                                  >
+                                    <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                                    Send Back to Pending
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOrderToHold(order);
+                                    }}
+                                  >
+                                    <Pause className="h-3.5 w-3.5 mr-1.5" />
+                                    Put On Hold
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOrderToCancel(order);
+                                    }}
+                                    className="text-red-600"
+                                  >
+                                    <XCircle className="h-3.5 w-3.5 mr-1.5" />
+                                    Cancel Order
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -5773,6 +5948,36 @@ export default function PickPack() {
                                             >
                                               <RotateCcw className="h-3 w-3 mr-1.5" />
                                               Return to Packing
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem 
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setOrderToSendToPending(order);
+                                              }}
+                                              className="text-xs"
+                                            >
+                                              <RotateCcw className="h-3 w-3 mr-1.5" />
+                                              Send Back to Pending
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem 
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setOrderToHold(order);
+                                              }}
+                                              className="text-xs"
+                                            >
+                                              <Pause className="h-3 w-3 mr-1.5" />
+                                              Put On Hold
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem 
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setOrderToCancel(order);
+                                              }}
+                                              className="text-red-600 text-xs"
+                                            >
+                                              <XCircle className="h-3 w-3 mr-1.5" />
+                                              Cancel Order
                                             </DropdownMenuItem>
                                           </DropdownMenuContent>
                                         </DropdownMenu>
@@ -6199,6 +6404,87 @@ export default function PickPack() {
             >
               <RotateCcw className="h-4 w-4 mr-2" />
               Reset Order
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Put On Hold Confirmation Dialog */}
+      <Dialog open={!!orderToHold} onOpenChange={() => setOrderToHold(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Put Order On Hold</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to put order {orderToHold?.orderId} on hold? The order will be paused and can be resumed later.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setOrderToHold(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-yellow-600 hover:bg-yellow-700"
+              onClick={() => orderToHold && handlePutOnHold(orderToHold)}
+            >
+              <Pause className="h-4 w-4 mr-2" />
+              Put On Hold
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Order Confirmation Dialog */}
+      <Dialog open={!!orderToCancel} onOpenChange={() => setOrderToCancel(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Order</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel order {orderToCancel?.orderId}? This action will mark the order as cancelled.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setOrderToCancel(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => orderToCancel && handleCancelOrder(orderToCancel)}
+            >
+              <XCircle className="h-4 w-4 mr-2" />
+              Cancel Order
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Back to Pending Confirmation Dialog */}
+      <Dialog open={!!orderToSendToPending} onOpenChange={() => setOrderToSendToPending(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Back to Pending</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to send order {orderToSendToPending?.orderId} back to Pending? All picking and packing progress will be reset.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setOrderToSendToPending(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={() => orderToSendToPending && handleSendToPending(orderToSendToPending)}
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Send to Pending
             </Button>
           </div>
         </DialogContent>
