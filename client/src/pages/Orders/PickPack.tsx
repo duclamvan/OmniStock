@@ -4481,101 +4481,38 @@ export default function PickPack() {
                             </div>
                           </div>
 
-                          {/* Quick Action Buttons Grid */}
-                          <div className="grid grid-cols-2 gap-3">
-                            {/* Common quantities based on order amount */}
-                            {currentItem.quantity === 1 ? (
-                              // Single item - just Pick 1 button
-                              <Button
-                                size="lg"
-                                className="col-span-2 h-20 text-2xl font-black bg-green-500 hover:bg-green-600 text-white shadow-lg rounded-xl"
-                                onClick={() => updatePickedItem(currentItem.id, 1)}
-                                disabled={currentItem.pickedQuantity >= 1}
-                              >
-                                <CheckCircle className="h-8 w-8 mr-3" />
-                                PICK 1
-                              </Button>
-                            ) : currentItem.quantity <= 5 ? (
-                              // Small quantity - show each number
-                              <>
-                                {[...Array(Math.min(currentItem.quantity, 4))].map((_, i) => (
-                                  <Button
-                                    key={i + 1}
-                                    size="lg"
-                                    className={`h-16 text-xl font-black shadow-md rounded-xl ${
-                                      currentItem.pickedQuantity === i + 1 
-                                        ? 'bg-blue-600 text-white' 
-                                        : 'bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300'
-                                    }`}
-                                    onClick={() => updatePickedItem(currentItem.id, i + 1)}
-                                  >
-                                    {i + 1}
-                                  </Button>
-                                ))}
-                                {currentItem.quantity === 5 && (
-                                  <Button
-                                    size="lg"
-                                    className={`h-16 text-xl font-black shadow-md rounded-xl ${
-                                      currentItem.pickedQuantity === 5 
-                                        ? 'bg-blue-600 text-white' 
-                                        : 'bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300'
-                                    }`}
-                                    onClick={() => updatePickedItem(currentItem.id, 5)}
-                                  >
-                                    5
-                                  </Button>
-                                )}
-                                {/* Pick All for remaining spot */}
-                                {currentItem.quantity <= 4 && (
-                                  <Button
-                                    size="lg"
-                                    className="h-16 text-lg font-black bg-green-500 hover:bg-green-600 text-white shadow-md rounded-xl"
-                                    onClick={() => updatePickedItem(currentItem.id, currentItem.quantity)}
-                                    disabled={currentItem.pickedQuantity >= currentItem.quantity}
-                                  >
-                                    ALL
-                                  </Button>
-                                )}
-                              </>
-                            ) : (
-                              // Larger quantities - show common amounts
-                              <>
-                                <Button
-                                  size="lg"
-                                  className="h-16 text-xl font-black bg-blue-500 hover:bg-blue-600 text-white shadow-md rounded-xl"
-                                  onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.pickedQuantity + 1, currentItem.quantity))}
-                                  disabled={currentItem.pickedQuantity >= currentItem.quantity}
-                                >
-                                  <Plus className="h-6 w-6 mr-2" />
-                                  Add 1
-                                </Button>
-                                <Button
-                                  size="lg"
-                                  className="h-16 text-xl font-black bg-gray-500 hover:bg-gray-600 text-white shadow-md rounded-xl"
-                                  onClick={() => updatePickedItem(currentItem.id, Math.max(currentItem.pickedQuantity - 1, 0))}
-                                  disabled={currentItem.pickedQuantity === 0}
-                                >
-                                  <Minus className="h-6 w-6 mr-2" />
-                                  Less 1
-                                </Button>
-                                <Button
-                                  size="lg"
-                                  className="h-16 text-xl font-black bg-purple-500 hover:bg-purple-600 text-white shadow-md rounded-xl"
-                                  onClick={() => updatePickedItem(currentItem.id, Math.floor(currentItem.quantity / 2))}
-                                >
-                                  Half ({Math.floor(currentItem.quantity / 2)})
-                                </Button>
-                                <Button
-                                  size="lg"
-                                  className="h-16 text-xl font-black bg-green-500 hover:bg-green-600 text-white shadow-md rounded-xl"
-                                  onClick={() => updatePickedItem(currentItem.id, currentItem.quantity)}
-                                  disabled={currentItem.pickedQuantity >= currentItem.quantity}
-                                >
-                                  <CheckCircle className="h-6 w-6 mr-2" />
-                                  ALL ({currentItem.quantity})
-                                </Button>
-                              </>
-                            )}
+                          {/* Quick Action Buttons Grid - Simplified */}
+                          <div className="grid grid-cols-3 gap-3">
+                            {/* Minus Button */}
+                            <Button
+                              size="lg"
+                              className="h-20 text-3xl font-black bg-red-500 hover:bg-red-600 text-white shadow-lg rounded-xl"
+                              onClick={() => updatePickedItem(currentItem.id, Math.max(currentItem.pickedQuantity - 1, 0))}
+                              disabled={currentItem.pickedQuantity === 0}
+                            >
+                              <Minus className="h-8 w-8" />
+                            </Button>
+                            
+                            {/* Plus Button */}
+                            <Button
+                              size="lg"
+                              className="h-20 text-3xl font-black bg-blue-500 hover:bg-blue-600 text-white shadow-lg rounded-xl"
+                              onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.pickedQuantity + 1, currentItem.quantity))}
+                              disabled={currentItem.pickedQuantity >= currentItem.quantity}
+                            >
+                              <Plus className="h-8 w-8" />
+                            </Button>
+                            
+                            {/* Pick All Button */}
+                            <Button
+                              size="lg"
+                              className="h-20 text-xl font-black bg-green-500 hover:bg-green-600 text-white shadow-lg rounded-xl"
+                              onClick={() => updatePickedItem(currentItem.id, currentItem.quantity)}
+                              disabled={currentItem.pickedQuantity >= currentItem.quantity}
+                            >
+                              <CheckCircle className="h-6 w-6" />
+                              <span className="ml-2">ALL</span>
+                            </Button>
                           </div>
 
                           {/* Reset Button if needed */}
