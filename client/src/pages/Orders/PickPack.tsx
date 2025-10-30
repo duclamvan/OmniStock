@@ -4308,7 +4308,7 @@ export default function PickPack() {
                               <img 
                                 src={currentItem.image} 
                                 alt={currentItem.productName}
-                                className="w-full h-full object-contain p-4"
+                                className="max-w-full max-h-full object-contain p-4"
                               />
                             ) : (
                               <ImagePlaceholder size="lg" variant="product" />
