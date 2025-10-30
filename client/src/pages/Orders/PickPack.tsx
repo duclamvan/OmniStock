@@ -3876,32 +3876,36 @@ export default function PickPack() {
                                 </div>
                               </div>
 
-                              <div className="flex-1">
-                                <div className="flex items-start justify-between">
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <p className="font-semibold text-gray-900 text-sm leading-tight">{item.productName}</p>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    {/* Product Name */}
+                                    <p className="font-semibold text-gray-900 text-sm leading-tight truncate">{item.productName}</p>
+                                    
+                                    {/* Badges Row */}
+                                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                                       {isBundle && (
-                                        <Badge className="bg-amber-100 text-amber-800 text-xs">
+                                        <Badge className="bg-amber-100 text-amber-800 text-xs shrink-0">
                                           Bundle ({bundleComponentsVerified}/{totalBundleComponents})
                                         </Badge>
                                       )}
-                                      {/* Packaging Requirement Badge */}
                                       {activePackingOrder?.items?.find((orderItem: any) => orderItem.id === item.id)?.product?.packagingRequirement === 'nylon_wrap' && (
-                                        <Badge className="bg-green-100 text-green-800 text-xs flex items-center gap-1">
+                                        <Badge className="bg-green-100 text-green-800 text-xs flex items-center gap-1 shrink-0">
                                           <Package className="h-3 w-3" />
-                                          Nylon Wrap Only
+                                          Nylon Wrap
                                         </Badge>
                                       )}
                                     </div>
+                                    
+                                    {/* SKU and Location */}
                                     <div className="flex items-center gap-2 mt-1">
                                       {!isBundle && item.warehouseLocation && (
-                                        <span className="text-xs text-gray-500">
+                                        <span className="text-xs text-gray-500 truncate">
                                           📍 {item.warehouseLocation}
                                         </span>
                                       )}
                                       {item.sku && (
-                                        <span className="text-xs text-gray-400">
+                                        <span className="text-xs text-gray-400 truncate">
                                           SKU: {item.sku}
                                         </span>
                                       )}
@@ -3984,7 +3988,7 @@ export default function PickPack() {
                             
                             {/* Bundle Components - Compact Expandable Section */}
                             {isBundle && isExpanded && (
-                              <div className="pb-2 pl-12 pr-2 space-y-1">
+                              <div className="mt-2 ml-2 space-y-1">
                                 {item.bundleItems?.map((bundleItem: any, idx: number) => {
                                   const componentId = `${item.id}-${bundleItem.id}`;
                                   const isComponentVerified = (verifiedItems[componentId] || 0) >= bundleItem.quantity;
@@ -3992,26 +3996,26 @@ export default function PickPack() {
                                   return (
                                     <div 
                                       key={bundleItem.id}
-                                      className={`flex items-center gap-2 p-1.5 rounded text-xs border ${
+                                      className={`flex items-center gap-2 p-2 rounded border ${
                                         isComponentVerified 
                                           ? 'bg-green-50 border-green-200' 
                                           : 'bg-amber-50 border-amber-200'
                                       }`}
                                     >
-                                      <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0 ${
+                                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
                                         isComponentVerified ? 'bg-green-500 text-white' : 'bg-amber-200 text-amber-700'
                                       }`}>
                                         {isComponentVerified ? '✓' : idx + 1}
                                       </div>
                                       <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-1.5">
-                                          <span className="font-semibold text-gray-700 truncate">{bundleItem.name}</span>
+                                        <div className="flex items-center gap-1 flex-wrap">
+                                          <span className="font-semibold text-gray-700 text-xs truncate">{bundleItem.name}</span>
                                           {bundleItem.colorNumber && (
-                                            <span className="text-gray-500 text-[10px]">#{bundleItem.colorNumber}</span>
+                                            <span className="text-gray-500 text-[10px] shrink-0">#{bundleItem.colorNumber}</span>
                                           )}
                                         </div>
-                                        <div className="flex items-center gap-2 text-[10px] text-gray-500">
-                                          <span className={isComponentVerified ? 'font-bold text-green-600' : ''}>
+                                        <div className="flex items-center gap-2 text-[10px] text-gray-500 mt-0.5">
+                                          <span className={`shrink-0 ${isComponentVerified ? 'font-bold text-green-600' : ''}`}>
                                             {verifiedItems[componentId] || 0}/{bundleItem.quantity}
                                           </span>
                                           {bundleItem.location && (
@@ -4022,7 +4026,7 @@ export default function PickPack() {
                                       <Button
                                         variant={isComponentVerified ? "default" : "outline"}
                                         size="sm"
-                                        className={`h-6 px-2 text-[10px] flex-shrink-0 ${
+                                        className={`h-7 px-2 text-[10px] shrink-0 ${
                                           isComponentVerified 
                                             ? 'bg-green-500 hover:bg-green-600 text-white' 
                                             : 'border-gray-300 text-gray-600 hover:bg-gray-50'
@@ -4051,7 +4055,7 @@ export default function PickPack() {
                             
                             {/* Notes Section - Compact */}
                             {hasNotes && (
-                              <div className="pb-2 pl-12 pr-2 space-y-1">
+                              <div className="mt-2 ml-2 space-y-1">
                                 {item.shipmentNotes && (
                                   <div className="p-2 bg-red-50 rounded border-l-2 border-red-400">
                                     <div className="flex items-start gap-1.5">
