@@ -4303,18 +4303,20 @@ export default function PickPack() {
                           className="relative bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-sm"
                           onClick={() => handleImageClick(currentItem.id)}
                         >
-                          <div className="aspect-square max-h-64 sm:max-h-80 lg:max-h-96 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 cursor-pointer">
-                            {currentItem.image ? (
-                              <img 
-                                src={currentItem.image} 
-                                alt={currentItem.productName}
-                                className="max-w-full max-h-full object-contain p-4"
-                              />
-                            ) : (
-                              <ImagePlaceholder size="lg" variant="product" />
-                            )}
+                          <div className="aspect-square max-h-64 sm:max-h-80 lg:max-h-96 relative bg-gradient-to-br from-gray-50 to-gray-100 cursor-pointer">
+                            <div className="absolute inset-0 flex items-center justify-center p-4">
+                              {currentItem.image ? (
+                                <img 
+                                  src={currentItem.image} 
+                                  alt={currentItem.productName}
+                                  className="max-w-full max-h-full object-contain"
+                                />
+                              ) : (
+                                <ImagePlaceholder size="lg" variant="product" />
+                              )}
+                            </div>
                             {/* Overlay Badge for Quick Info */}
-                            <div className="absolute top-2 right-2 bg-black/75 text-white px-3 py-1 rounded-full text-sm font-bold">
+                            <div className="absolute top-2 right-2 bg-black/75 text-white px-3 py-1 rounded-full text-sm font-bold z-10">
                               {currentItem.pickedQuantity}/{currentItem.quantity}
                             </div>
                           </div>
