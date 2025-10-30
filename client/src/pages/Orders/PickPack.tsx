@@ -4746,6 +4746,31 @@ export default function PickPack() {
                         <PlayCircle className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 mr-2 lg:mr-3" />
                         PICK NEXT ORDER
                       </Button>
+                      
+                      <Button 
+                        size="lg" 
+                        variant="outline"
+                        onClick={async () => {
+                          // Complete picking in background
+                          completePicking().catch(console.error);
+                          
+                          // Exit picking mode and return to overview
+                          exitPickingMode();
+                          
+                          // Switch to overview tab
+                          setSelectedTab('overview');
+                          
+                          // Clear header hiding
+                          sessionStorage.removeItem('pickpack-active-mode');
+                          
+                          // Refresh data
+                          queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                        }}
+                        className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold border-2 border-gray-400 text-gray-600 hover:bg-gray-50 shadow-lg"
+                      >
+                        <Home className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 mr-2 lg:mr-3" />
+                        BACK TO OVERVIEW
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
