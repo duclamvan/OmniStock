@@ -4129,8 +4129,23 @@ export default function PickPack() {
                 </div>
               </div>
               
-              {/* Compact Progress Bar */}
-              <div className="mt-2">
+              {/* Picking Item & Progress Bar */}
+              <div className="mt-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-white/20 rounded-full p-1.5">
+                      <Package className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-white/80 text-xs font-medium">Picking Item</p>
+                      <p className="text-white text-lg font-black">{currentItemIndex + 1} / {activePickingOrder.items.length}</p>
+                    </div>
+                  </div>
+                  {currentItem?.pickedQuantity === currentItem?.quantity && (
+                    <CheckCircle className="h-6 w-6 text-green-400 animate-pulse" />
+                  )}
+                </div>
+                
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-blue-100">Progress</span>
                   <span className="font-bold text-white">{activePickingOrder.pickedItems}/{activePickingOrder.totalItems} items</span>
@@ -4218,8 +4233,23 @@ export default function PickPack() {
                 </div>
               </div>
               
-              {/* Progress Bar */}
+              {/* Picking Item & Progress Bar */}
               <div className="mt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-white/20 rounded-full p-2">
+                      <Package className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-white/80 text-sm font-medium">Picking Item</p>
+                      <p className="text-white text-2xl font-black">{currentItemIndex + 1} / {activePickingOrder.items.length}</p>
+                    </div>
+                  </div>
+                  {currentItem?.pickedQuantity === currentItem?.quantity && (
+                    <CheckCircle className="h-8 w-8 text-green-400 animate-pulse" />
+                  )}
+                </div>
+                
                 <div className="flex justify-between text-sm mb-1.5">
                   <span className="text-blue-100">Progress</span>
                   <span className="font-semibold text-white">{activePickingOrder.pickedItems}/{activePickingOrder.totalItems} items</span>
@@ -4268,30 +4298,6 @@ export default function PickPack() {
             <div className="flex-1">
             {!allItemsPicked && currentItem ? (
               <div className="h-full flex flex-col bg-gray-50">
-                {/* Minimal Header with Progress */}
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-white/20 rounded-full p-2">
-                        <Package className="h-6 w-6 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-white/80 text-sm font-medium">Picking Item</p>
-                        <p className="text-white text-2xl font-black">{currentItemIndex + 1} / {activePickingOrder.items.length}</p>
-                      </div>
-                    </div>
-                    {currentItem?.pickedQuantity === currentItem?.quantity && (
-                      <CheckCircle className="h-10 w-10 text-green-400 animate-pulse" />
-                    )}
-                  </div>
-                  {/* Overall Progress Bar */}
-                  <div className="mt-3 h-2 bg-white/20 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-white transition-all duration-500"
-                      style={{ width: `${((currentItemIndex + (currentItem.pickedQuantity >= currentItem.quantity ? 1 : 0)) / activePickingOrder.items.length) * 100}%` }}
-                    />
-                  </div>
-                </div>
                 
                 <div className="flex-1 p-4 space-y-4 overflow-auto">
                       {/* Streamlined Product Display - Hero Image Layout */}
