@@ -4399,14 +4399,29 @@ export default function PickPack() {
                                     updatePickedItem(currentItem.id, allPicked ? currentItem.quantity : 0);
                                   }}
                                 >
-                                  <div className="flex items-start justify-between">
-                                    <div className="flex-1">
+                                  <div className="flex items-start gap-2">
+                                    {/* Item Image */}
+                                    <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                                      {bundleItem.image ? (
+                                        <img 
+                                          src={bundleItem.image} 
+                                          alt={bundleItem.name}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center">
+                                          <ImagePlaceholder size="sm" variant="product" />
+                                        </div>
+                                      )}
+                                    </div>
+                                    
+                                    <div className="flex-1 min-w-0">
                                       {bundleItem.colorNumber && (
                                         <div className="text-xl font-bold text-purple-700 mb-1">
                                           #{bundleItem.colorNumber}
                                         </div>
                                       )}
-                                      <div className="text-sm font-medium text-gray-800">
+                                      <div className="text-sm font-medium text-gray-800 truncate">
                                         {bundleItem.name}
                                       </div>
                                       {bundleItem.location && (
@@ -4419,7 +4434,8 @@ export default function PickPack() {
                                         Qty: {bundleItem.quantity}
                                       </div>
                                     </div>
-                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                                    
+                                    <div className={`w-6 h-6 flex-shrink-0 rounded-full border-2 flex items-center justify-center ${
                                       isPicked 
                                         ? 'bg-green-500 border-green-600' 
                                         : 'bg-white border-gray-400'
