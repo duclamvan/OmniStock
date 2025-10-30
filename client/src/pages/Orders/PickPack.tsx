@@ -3277,7 +3277,8 @@ export default function PickPack() {
     return transformedOrders.filter(order => {
       if (status === 'pending') return order.pickStatus === 'not_started' || !order.pickStatus;
       if (status === 'picking') return order.pickStatus === 'in_progress';
-      if (status === 'packing') return order.pickStatus === 'completed' && (order.packStatus === 'not_started' || !order.packStatus);
+      // Include both not_started (ready to pack) AND in_progress (abandoned/resume packing)
+      if (status === 'packing') return order.pickStatus === 'completed' && (order.packStatus === 'not_started' || !order.packStatus || order.packStatus === 'in_progress');
       if (status === 'ready') return order.packStatus === 'completed';
       return false;
     });
@@ -6026,11 +6027,15 @@ export default function PickPack() {
                               </Button>
                               <Button
                                 size="sm"
-                                className="flex-1 sm:flex-initial sm:w-full h-10 sm:h-12 text-sm bg-purple-600 hover:bg-purple-700 font-semibold"
+                                className={`flex-1 sm:flex-initial sm:w-full h-10 sm:h-12 text-sm font-semibold ${
+                                  order.packStatus === 'in_progress' 
+                                    ? 'bg-amber-600 hover:bg-amber-700' 
+                                    : 'bg-purple-600 hover:bg-purple-700'
+                                }`}
                                 onClick={() => startPacking(order)}
                               >
                                 <Box className="h-4 w-4 mr-2" />
-                                Start
+                                {order.packStatus === 'in_progress' ? 'Resume' : 'Start'}
                               </Button>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
