@@ -4744,8 +4744,19 @@ export default function PickPack() {
                         size="lg" 
                         variant="outline"
                         onClick={async () => {
-                          // Complete picking in background
-                          completePicking().catch(console.error);
+                          // Complete picking and move to packing stage
+                          try {
+                            if (!activePickingOrder.id.startsWith('mock-')) {
+                              await apiRequest('PATCH', `/api/orders/${activePickingOrder.id}`, {
+                                pickStatus: 'completed',
+                                pickEndTime: new Date().toISOString(),
+                                packStatus: 'not_started',
+                                orderStatus: 'to_fulfill'
+                              });
+                            }
+                          } catch (error) {
+                            console.error('Error completing picking:', error);
+                          }
                           
                           // Exit picking mode and return to overview
                           setActivePickingOrder(null);
