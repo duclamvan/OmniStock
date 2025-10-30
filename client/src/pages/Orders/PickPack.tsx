@@ -3721,9 +3721,9 @@ export default function PickPack() {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <div className="px-4 pb-4">
+                  <div className="px-2 pb-2">
                     <ScrollArea className="h-[400px]">
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
                       {activePackingOrder.items.map((item, index) => {
                         const isVerified = (verifiedItems[item.id] || 0) >= item.quantity;
                         const isBundle = item.isBundle && item.bundleItems && item.bundleItems.length > 0;
@@ -3731,273 +3731,235 @@ export default function PickPack() {
                         const bundleComponentsVerified = isBundle ? item.bundleItems?.filter((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity).length || 0 : 0;
                         const totalBundleComponents = isBundle ? item.bundleItems?.length || 0 : 0;
                         const allBundleComponentsVerified = isBundle && bundleComponentsVerified === totalBundleComponents;
+                        const hasNotes = item.shipmentNotes || item.packingInstructionsText || item.packingInstructionsImage;
                         
                         return (
                           <div 
                             key={item.id} 
-                            className={`relative p-3 rounded-lg border-2 transition-all ${
+                            className={`relative rounded border transition-all ${
                               isVerified || (isBundle && allBundleComponentsVerified)
                                 ? 'bg-green-50 border-green-300' 
-                                : 'bg-gray-50 border-gray-200'
+                                : 'bg-white border-gray-200'
                             }`}
                           >
-                            {/* Shipping Note Warning Banner */}
-                            {item.shipmentNotes && (
-                              <div className="absolute -top-1 -right-1 z-10">
-                                <div className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
-                                  <AlertTriangle className="h-3 w-3" />
-                                  SPECIAL
-                                </div>
+                            {/* Main Item Row - Compact Table-like Layout */}
+                            <div className="flex items-center gap-2 p-2">
+                              {/* Status Badge */}
+                              <div className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] flex-shrink-0 ${
+                                isVerified || (isBundle && allBundleComponentsVerified)
+                                  ? 'bg-green-500 text-white' 
+                                  : 'bg-gray-200 text-gray-600'
+                              }`}>
+                                {(isVerified || (isBundle && allBundleComponentsVerified)) ? '✓' : index + 1}
                               </div>
-                            )}
 
-                            <div className="flex items-center gap-3">
-                              {/* Product Image */}
-                              <div className="relative">
-                                <div className="w-16 h-16 rounded-lg overflow-hidden bg-white border-2 border-gray-200 flex items-center justify-center">
-                                  {item.image ? (
-                                    <img 
-                                      src={item.image} 
-                                      alt={item.productName}
-                                      className="w-full h-full object-contain bg-slate-50 dark:bg-slate-900"
-                                    />
-                                  ) : (
-                                    <Package className="h-8 w-8 text-gray-400" />
+                              {/* Product Image - Smaller */}
+                              <div className="w-12 h-12 rounded overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center flex-shrink-0">
+                                {item.image ? (
+                                  <img 
+                                    src={item.image} 
+                                    alt={item.productName}
+                                    className="w-full h-full object-contain"
+                                  />
+                                ) : (
+                                  <Package className="h-6 w-6 text-gray-400" />
+                                )}
+                              </div>
+
+                              {/* Product Info - Flex-1 to use available space */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <p className="font-semibold text-gray-900 text-xs leading-tight truncate">{item.productName}</p>
+                                  {isBundle && (
+                                    <Badge variant="outline" className="bg-amber-50 border-amber-300 text-amber-800 text-[10px] px-1 py-0 h-4">
+                                      Bundle {bundleComponentsVerified}/{totalBundleComponents}
+                                    </Badge>
+                                  )}
+                                  {item.shipmentNotes && (
+                                    <Badge variant="destructive" className="text-[10px] px-1 py-0 h-4">
+                                      <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
+                                      SPECIAL
+                                    </Badge>
                                   )}
                                 </div>
-                                {/* Verification Status Badge */}
-                                <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${
-                                  isVerified || (isBundle && allBundleComponentsVerified)
-                                    ? 'bg-green-500 text-white' 
-                                    : 'bg-purple-100 text-purple-600 border-2 border-white'
-                                }`}>
-                                  {(isVerified || (isBundle && allBundleComponentsVerified)) ? <CheckCircle className="h-4 w-4" /> : index + 1}
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[11px] font-bold">
+                                    Qty: {item.quantity}
+                                  </span>
+                                  {!isBundle && item.warehouseLocation && (
+                                    <span className="text-[10px] text-gray-500 truncate">
+                                      📍 {item.warehouseLocation}
+                                    </span>
+                                  )}
+                                  {item.sku && (
+                                    <span className="text-[10px] text-gray-400 truncate">
+                                      SKU: {item.sku}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
-
-                              <div className="flex-1">
-                                <div className="flex items-start justify-between">
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                      <p className="font-semibold text-gray-900 text-sm leading-tight">{item.productName}</p>
-                                      {isBundle && (
-                                        <Badge className="bg-amber-100 text-amber-800 text-xs">
-                                          Bundle ({bundleComponentsVerified}/{totalBundleComponents})
-                                        </Badge>
-                                      )}
-                                    </div>
-                                    <div className="flex items-center gap-2 mt-1">
-                                      {/* Prominent Quantity Display */}
-                                      <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md font-bold text-sm">
-                                        Qty: {item.quantity}
-                                      </div>
-                                      {!isBundle && (
-                                        <div className="text-xs text-gray-400">
-                                          {item.warehouseLocation}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
+                              
+                              {/* Action Buttons - Compact */}
+                              <div className="flex gap-1 flex-shrink-0">
+                                {isBundle && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 text-amber-600 hover:bg-amber-50"
+                                    onClick={() => {
+                                      const newExpanded = new Set(expandedBundles);
+                                      if (isExpanded) {
+                                        newExpanded.delete(item.id);
+                                      } else {
+                                        newExpanded.add(item.id);
+                                      }
+                                      setExpandedBundles(newExpanded);
+                                    }}
+                                    title={isExpanded ? "Hide bundle items" : "Show bundle items"}
+                                  >
+                                    {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                  </Button>
+                                )}
+                                <Button
+                                  variant={isVerified || (isBundle && allBundleComponentsVerified) ? "default" : "outline"}
+                                  size="sm"
+                                  className={`h-8 px-2 text-xs ${
+                                    isVerified || (isBundle && allBundleComponentsVerified)
+                                      ? 'bg-green-500 hover:bg-green-600 text-white' 
+                                      : 'border-purple-300 text-purple-600 hover:bg-purple-50'
+                                  }`}
+                                  onClick={() => {
+                                    if (isBundle) {
+                                      if (allBundleComponentsVerified) {
+                                        setVerifiedItems(prev => {
+                                          const newRecord = { ...prev };
+                                          item.bundleItems?.forEach((bi: any) => {
+                                            delete newRecord[`${item.id}-${bi.id}`];
+                                          });
+                                          return newRecord;
+                                        });
+                                      } else {
+                                        setVerifiedItems(prev => {
+                                          const newRecord = { ...prev };
+                                          item.bundleItems?.forEach((bi: any) => {
+                                            newRecord[`${item.id}-${bi.id}`] = bi.quantity;
+                                          });
+                                          return newRecord;
+                                        });
+                                        playSound('scan');
+                                      }
+                                    } else {
+                                      if (isVerified) {
+                                        setVerifiedItems(prev => {
+                                          const newRecord = { ...prev };
+                                          delete newRecord[item.id];
+                                          return newRecord;
+                                        });
+                                      } else {
+                                        setVerifiedItems(prev => ({ ...prev, [item.id]: Math.min((prev[item.id] || 0) + 1, item.quantity) }));
+                                        playSound('scan');
+                                      }
+                                    }
+                                  }}
+                                >
+                                  {isVerified || (isBundle && allBundleComponentsVerified) ? (
+                                    <><Check className="h-3 w-3 mr-1" />Done</>
+                                  ) : (
+                                    <><ScanLine className="h-3 w-3 mr-1" />Verify</>
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            {/* Bundle Components - Compact Expandable Section */}
+                            {isBundle && isExpanded && (
+                              <div className="px-2 pb-2 pl-14 space-y-1">
+                                {item.bundleItems?.map((bundleItem: any, idx: number) => {
+                                  const componentId = `${item.id}-${bundleItem.id}`;
+                                  const isComponentVerified = (verifiedItems[componentId] || 0) >= bundleItem.quantity;
                                   
-                                  {/* Expand/Collapse Button for Bundles or Verify Button for Regular Items */}
-                                  {isBundle ? (
-                                    <div className="flex gap-1">
+                                  return (
+                                    <div 
+                                      key={bundleItem.id}
+                                      className={`flex items-center gap-2 p-1.5 rounded text-xs border ${
+                                        isComponentVerified 
+                                          ? 'bg-green-50 border-green-200' 
+                                          : 'bg-amber-50 border-amber-200'
+                                      }`}
+                                    >
+                                      <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0 ${
+                                        isComponentVerified ? 'bg-green-500 text-white' : 'bg-amber-200 text-amber-700'
+                                      }`}>
+                                        {isComponentVerified ? '✓' : idx + 1}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="font-semibold text-gray-700 truncate">{bundleItem.name}</span>
+                                          {bundleItem.colorNumber && (
+                                            <span className="text-gray-500 text-[10px]">#{bundleItem.colorNumber}</span>
+                                          )}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                                          <span className={isComponentVerified ? 'font-bold text-green-600' : ''}>
+                                            {verifiedItems[componentId] || 0}/{bundleItem.quantity}
+                                          </span>
+                                          {bundleItem.location && (
+                                            <span className="text-gray-400 truncate">📍 {bundleItem.location}</span>
+                                          )}
+                                        </div>
+                                      </div>
                                       <Button
-                                        variant="outline"
+                                        variant={isComponentVerified ? "default" : "outline"}
                                         size="sm"
-                                        className="ml-2 border-amber-300 text-amber-600 hover:bg-amber-50"
-                                        onClick={() => {
-                                          const newExpanded = new Set(expandedBundles);
-                                          if (isExpanded) {
-                                            newExpanded.delete(item.id);
-                                          } else {
-                                            newExpanded.add(item.id);
-                                          }
-                                          setExpandedBundles(newExpanded);
-                                        }}
-                                      >
-                                        {isExpanded ? (
-                                          <>
-                                            <ChevronDown className="h-3 w-3 mr-1" />
-                                            Hide
-                                          </>
-                                        ) : (
-                                          <>
-                                            <ChevronRight className="h-3 w-3 mr-1" />
-                                            Show
-                                          </>
-                                        )}
-                                      </Button>
-                                      <Button
-                                        variant={allBundleComponentsVerified ? "default" : "outline"}
-                                        size="sm"
-                                        className={`${
-                                          allBundleComponentsVerified
+                                        className={`h-6 px-2 text-[10px] flex-shrink-0 ${
+                                          isComponentVerified 
                                             ? 'bg-green-500 hover:bg-green-600 text-white' 
-                                            : 'border-purple-300 text-purple-600 hover:bg-purple-50'
+                                            : 'border-gray-300 text-gray-600 hover:bg-gray-50'
                                         }`}
                                         onClick={() => {
-                                          if (allBundleComponentsVerified) {
-                                            // Reset all component counts to 0
-                                            setVerifiedItems(prev => {
-                                              const newRecord = { ...prev };
-                                              item.bundleItems?.forEach((bi: any) => {
-                                                delete newRecord[`${item.id}-${bi.id}`];
-                                              });
-                                              return newRecord;
-                                            });
-                                          } else {
-                                            // Set all components to their required quantity
-                                            setVerifiedItems(prev => {
-                                              const newRecord = { ...prev };
-                                              item.bundleItems?.forEach((bi: any) => {
-                                                newRecord[`${item.id}-${bi.id}`] = bi.quantity;
-                                              });
-                                              return newRecord;
-                                            });
-                                            playSound('scan');
-                                          }
-                                        }}
-                                      >
-                                        {allBundleComponentsVerified ? (
-                                          <>
-                                            <CheckCircle className="h-3 w-3 mr-1" />
-                                            All Done
-                                          </>
-                                        ) : (
-                                          <>
-                                            <ScanLine className="h-3 w-3 mr-1" />
-                                            Verify All
-                                          </>
-                                        )}
-                                      </Button>
-                                    </div>
-                                  ) : (
-                                    <Button
-                                      variant={isVerified ? "default" : "outline"}
-                                      size="sm"
-                                      className={`ml-2 ${
-                                        isVerified 
-                                          ? 'bg-green-500 hover:bg-green-600 text-white' 
-                                          : 'border-purple-300 text-purple-600 hover:bg-purple-50'
-                                      }`}
-                                      onClick={() => {
-                                        if (isVerified) {
                                           setVerifiedItems(prev => {
+                                            const currentCount = prev[componentId] || 0;
                                             const newRecord = { ...prev };
-                                            delete newRecord[item.id];
+                                            if (currentCount >= bundleItem.quantity) {
+                                              delete newRecord[componentId];
+                                            } else {
+                                              newRecord[componentId] = currentCount + 1;
+                                              playSound('scan');
+                                            }
                                             return newRecord;
                                           });
-                                        } else {
-                                          setVerifiedItems(prev => ({ ...prev, [item.id]: Math.min((prev[item.id] || 0) + 1, item.quantity) }));
-                                          playSound('scan');
-                                        }
-                                      }}
-                                    >
-                                      {isVerified ? (
-                                        <>
-                                          <CheckCircle className="h-3 w-3 mr-1" />
-                                          Done
-                                        </>
-                                      ) : (
-                                        <>
-                                          <ScanLine className="h-3 w-3 mr-1" />
-                                          Verify
-                                        </>
-                                      )}
-                                    </Button>
-                                  )}
-                                </div>
-                                
-                                {/* Bundle Components - Expandable Section */}
-                                {isBundle && isExpanded && (
-                                  <div className="mt-3 pl-4 border-l-2 border-amber-300 space-y-2">
-                                    {item.bundleItems?.map((bundleItem: any, idx: number) => {
-                                      const componentId = `${item.id}-${bundleItem.id}`;
-                                      const isComponentVerified = (verifiedItems[componentId] || 0) >= bundleItem.quantity;
-                                      
-                                      return (
-                                        <div 
-                                          key={bundleItem.id}
-                                          className={`flex items-center justify-between p-2 rounded border ${
-                                            isComponentVerified 
-                                              ? 'bg-green-50 border-green-200' 
-                                              : 'bg-white border-gray-200'
-                                          }`}
-                                        >
-                                          <div className="flex-1">
-                                            <div className="flex items-center gap-2">
-                                              <span className="text-xs font-semibold text-gray-700">{bundleItem.name}</span>
-                                              {bundleItem.colorNumber && (
-                                                <span className="text-xs text-gray-500">({bundleItem.colorNumber})</span>
-                                              )}
-                                            </div>
-                                            <div className="flex items-center gap-2 mt-1">
-                                              <span className="text-xs text-gray-500">
-                                                Qty: <span className={isComponentVerified ? 'font-bold text-green-600' : ''}>{verifiedItems[componentId] || 0}/{bundleItem.quantity}</span>
-                                              </span>
-                                              {bundleItem.location && (
-                                                <span className="text-xs text-gray-400">📍 {bundleItem.location}</span>
-                                              )}
-                                            </div>
-                                          </div>
-                                          <Button
-                                            variant={isComponentVerified ? "default" : "outline"}
-                                            size="sm"
-                                            className={`h-7 text-xs ${
-                                              isComponentVerified 
-                                                ? 'bg-green-500 hover:bg-green-600 text-white' 
-                                                : 'border-gray-300 text-gray-600 hover:bg-gray-50'
-                                            }`}
-                                            onClick={() => {
-                                              setVerifiedItems(prev => {
-                                                const currentCount = prev[componentId] || 0;
-                                                const newRecord = { ...prev };
-                                                if (currentCount >= bundleItem.quantity) {
-                                                  delete newRecord[componentId];
-                                                } else {
-                                                  newRecord[componentId] = currentCount + 1;
-                                                  playSound('scan');
-                                                }
-                                                return newRecord;
-                                              });
-                                            }}
-                                          >
-                                            {isComponentVerified ? (
-                                              <>
-                                                <Check className="h-3 w-3 mr-1" />
-                                                ✓
-                                              </>
-                                            ) : (
-                                              'Check'
-                                            )}
-                                          </Button>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-                                
-                                {/* Enhanced Shipping Instructions */}
+                                        }}
+                                      >
+                                        {isComponentVerified ? '✓' : 'Check'}
+                                      </Button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            
+                            {/* Notes Section - Compact */}
+                            {hasNotes && (
+                              <div className="px-2 pb-2 pl-14 space-y-1">
                                 {item.shipmentNotes && (
-                                  <div className="mt-3 p-3 bg-gradient-to-r from-red-50 to-orange-50 rounded-lg border-l-4 border-red-400">
-                                    <div className="flex items-start gap-2">
-                                      <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
-                                      <div className="flex-1">
-                                        <div className="text-xs font-semibold text-red-700 mb-1">SPECIAL HANDLING REQUIRED</div>
-                                        <div className="text-xs text-red-600 leading-relaxed">{item.shipmentNotes}</div>
+                                  <div className="p-2 bg-red-50 rounded border-l-2 border-red-400">
+                                    <div className="flex items-start gap-1.5">
+                                      <AlertTriangle className="h-3 w-3 text-red-500 mt-0.5 flex-shrink-0" />
+                                      <div className="flex-1 min-w-0">
+                                        <div className="text-[10px] font-semibold text-red-700 mb-0.5">SPECIAL HANDLING</div>
+                                        <div className="text-[11px] text-red-600 leading-snug">{item.shipmentNotes}</div>
                                         {item.packingMaterial && (
-                                          <div className="flex items-center gap-2 mt-2">
+                                          <div className="flex items-center gap-1.5 mt-1">
                                             {item.packingMaterial.imageUrl && (
                                               <img 
                                                 src={item.packingMaterial.imageUrl} 
                                                 alt={item.packingMaterial.name}
-                                                className="w-8 h-8 rounded object-contain border bg-slate-50"
+                                                className="w-6 h-6 rounded object-contain border bg-white flex-shrink-0"
                                               />
                                             )}
-                                            <div className="text-xs">
-                                              <div className="font-medium text-red-700">{item.packingMaterial.name}</div>
-                                              <div className="text-red-500">{item.packingMaterial.description}</div>
+                                            <div className="text-[10px] min-w-0">
+                                              <div className="font-medium text-red-700 truncate">{item.packingMaterial.name}</div>
+                                              <div className="text-red-500 truncate">{item.packingMaterial.description}</div>
                                             </div>
                                           </div>
                                         )}
@@ -4006,24 +3968,23 @@ export default function PickPack() {
                                   </div>
                                 )}
                                 
-                                {/* Packing Instructions Display */}
                                 {(item.packingInstructionsText || item.packingInstructionsImage) && (
-                                  <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-l-4 border-blue-400">
-                                    <div className="flex items-start gap-2">
-                                      <Package className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                                      <div className="flex-1">
-                                        <div className="text-xs font-semibold text-blue-700 mb-1">PACKING INSTRUCTIONS</div>
+                                  <div className="p-2 bg-blue-50 rounded border-l-2 border-blue-400">
+                                    <div className="flex items-start gap-1.5">
+                                      <Package className="h-3 w-3 text-blue-500 mt-0.5 flex-shrink-0" />
+                                      <div className="flex-1 min-w-0">
+                                        <div className="text-[10px] font-semibold text-blue-700 mb-0.5">PACKING INSTRUCTIONS</div>
                                         {item.packingInstructionsImage && (
-                                          <div className="mb-2">
+                                          <div className="mb-1">
                                             <img 
                                               src={item.packingInstructionsImage} 
                                               alt="Packing instructions"
-                                              className="w-full max-w-sm rounded-lg border border-blue-200"
+                                              className="w-full max-w-xs rounded border border-blue-200"
                                             />
                                           </div>
                                         )}
                                         {item.packingInstructionsText && (
-                                          <div className="text-xs text-blue-600 leading-relaxed whitespace-pre-line">
+                                          <div className="text-[11px] text-blue-600 leading-snug whitespace-pre-line">
                                             {item.packingInstructionsText}
                                           </div>
                                         )}
@@ -4032,7 +3993,7 @@ export default function PickPack() {
                                   </div>
                                 )}
                               </div>
-                            </div>
+                            )}
                           </div>
                         );
                       })}
@@ -4723,19 +4684,11 @@ export default function PickPack() {
                                   }}
                                 >
                                   <div className="flex items-start gap-2">
-                                    {/* Item Image */}
+                                    {/* Item Image - Bundle items don't have images */}
                                     <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
-                                      {bundleItem.image ? (
-                                        <img 
-                                          src={bundleItem.image} 
-                                          alt={bundleItem.name}
-                                          className="w-full h-full object-cover"
-                                        />
-                                      ) : (
-                                        <div className="w-full h-full flex items-center justify-center">
-                                          <ImagePlaceholder size="sm" variant="product" />
-                                        </div>
-                                      )}
+                                      <div className="w-full h-full flex items-center justify-center">
+                                        <Package className="h-8 w-8 text-gray-400" />
+                                      </div>
                                     </div>
                                     
                                     <div className="flex-1 min-w-0">
