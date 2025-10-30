@@ -4004,79 +4004,121 @@ export default function PickPack() {
             </AccordionItem>
           </Accordion>
 
-          {/* Combined Carton & Weight Card */}
-          <Card className="shadow-sm border border-gray-200 bg-white">
-            <CardHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-3 rounded-t-lg">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Box className="h-4 w-4" />
-                Carton & Weight
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 space-y-3">
-              {/* AI Recommendation Badge */}
-              {packingRecommendation && packingRecommendation.cartons.length > 0 && (
-                <div className="bg-gradient-to-r from-green-50 to-blue-50 p-2 rounded-lg border border-green-200">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-green-600" />
-                    <span className="text-sm text-green-700">
-                      AI Recommended: <strong>{packingRecommendation.cartons[0].boxSize.name}</strong>
-                    </span>
-                  </div>
-                </div>
-              )}
+          {/* Combined Carton & Weight Card - Visual Layout */}
+          <Card className="shadow-sm border-2 border-emerald-200 bg-gradient-to-br from-white to-emerald-50">
+            <CardContent className="p-4">
+              {(() => {
+                const selectedCartonData = availableCartons.find((c: any) => c.id === selectedCarton);
+                const isNonCompany = selectedCarton === 'non-company';
+                
+                return (
+                  <div className="space-y-4">
+                    {/* AI Recommendation Badge - Top */}
+                    {packingRecommendation && packingRecommendation.cartons.length > 0 && !selectedCarton && (
+                      <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-2 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="h-4 w-4" />
+                          <span className="text-sm font-semibold">
+                            AI Recommends: {packingRecommendation.cartons[0].boxSize.name}
+                          </span>
+                        </div>
+                      </div>
+                    )}
 
-              {/* Carton Selection - Simple Select */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Select Carton:</label>
-                <Select value={selectedCarton || ''} onValueChange={(value) => setSelectedCarton(value)}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Choose carton size..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableCartons.map((carton: any) => (
-                      <SelectItem key={carton.id} value={carton.id}>
-                        {carton.name} - {carton.dimensions.length}×{carton.dimensions.width}×{carton.dimensions.height}cm (Max {carton.maxWeight}kg)
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="non-company">Non-company carton</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                    {/* Main Visual Display */}
+                    <div className="text-center space-y-3">
+                      {/* Large Carton Icon/Image */}
+                      <div className="flex justify-center">
+                        <div className="w-32 h-32 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-2xl flex items-center justify-center border-4 border-emerald-300 shadow-lg">
+                          {selectedCartonData?.imageUrl ? (
+                            <img 
+                              src={selectedCartonData.imageUrl} 
+                              alt={selectedCartonData.name}
+                              className="w-full h-full object-contain p-2"
+                            />
+                          ) : (
+                            <Box className={`${selectedCarton ? 'h-20 w-20 text-emerald-600' : 'h-16 w-16 text-gray-400'}`} />
+                          )}
+                        </div>
+                      </div>
 
-              {/* Weight Input */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Package Weight:</label>
-                <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    step="0.001"
-                    placeholder="Enter weight..."
-                    value={packageWeight}
-                    onChange={(e) => {
-                      setPackageWeight(e.target.value);
-                      setIsWeightManuallyModified(true);
-                      if (e.target.value) {
-                        setPackingChecklist({...packingChecklist, weightRecorded: true});
-                      } else {
-                        setPackingChecklist({...packingChecklist, weightRecorded: false});
-                      }
-                    }}
-                    className="flex-1"
-                  />
-                  <span className="flex items-center px-3 text-sm font-medium">kg</span>
-                </div>
-                {calculateWeightMutation.isPending && (
-                  <div className="flex items-center gap-2 text-xs text-blue-600">
-                    <div className="animate-spin h-3 w-3 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-                    Calculating weight...
+                      {/* Carton Name - Largest */}
+                      <div>
+                        <h2 className="text-2xl font-black text-gray-900">
+                          {selectedCartonData ? selectedCartonData.name : (isNonCompany ? 'Non-Company Carton' : 'Select Carton')}
+                        </h2>
+                        {selectedCartonData && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            {selectedCartonData.dimensions.length}×{selectedCartonData.dimensions.width}×{selectedCartonData.dimensions.height}cm · Max {selectedCartonData.maxWeight}kg
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Package Weight - Subheading */}
+                      <div className="bg-white rounded-xl p-4 border-2 border-emerald-200">
+                        <div className="text-sm font-semibold text-gray-600 mb-2">Package Weight</div>
+                        <div className="flex items-center justify-center gap-2">
+                          <Input
+                            type="number"
+                            step="0.001"
+                            placeholder="0.000"
+                            value={packageWeight}
+                            onChange={(e) => {
+                              setPackageWeight(e.target.value);
+                              setIsWeightManuallyModified(true);
+                              if (e.target.value) {
+                                setPackingChecklist({...packingChecklist, weightRecorded: true});
+                              } else {
+                                setPackingChecklist({...packingChecklist, weightRecorded: false});
+                              }
+                            }}
+                            className="text-center text-3xl font-bold h-16 text-emerald-700 border-2 border-emerald-300 focus:border-emerald-500"
+                          />
+                          <span className="text-2xl font-bold text-emerald-700">kg</span>
+                        </div>
+                        {calculateWeightMutation.isPending && (
+                          <div className="flex items-center justify-center gap-2 text-xs text-blue-600 mt-2">
+                            <div className="animate-spin h-3 w-3 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                            Calculating weight...
+                          </div>
+                        )}
+                        {!calculateWeightMutation.isPending && !isWeightManuallyModified && aiWeightCalculation && (
+                          <div className="text-xs text-emerald-600 mt-2 flex items-center justify-center gap-1">
+                            <TrendingUp className="h-3 w-3" />
+                            AI calculated
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Change Carton Button */}
+                      <Select value={selectedCarton || ''} onValueChange={(value) => setSelectedCarton(value)}>
+                        <SelectTrigger className="w-full h-12 text-base border-2 border-emerald-300 hover:border-emerald-400">
+                          <SelectValue placeholder="Choose carton size..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableCartons.map((carton: any) => (
+                            <SelectItem key={carton.id} value={carton.id}>
+                              <div className="flex items-center gap-2">
+                                <Box className="h-4 w-4 text-emerald-600" />
+                                <span className="font-medium">{carton.name}</span>
+                                <span className="text-xs text-gray-500">
+                                  {carton.dimensions.length}×{carton.dimensions.width}×{carton.dimensions.height}cm
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="non-company">
+                            <div className="flex items-center gap-2">
+                              <Box className="h-4 w-4 text-gray-600" />
+                              <span className="font-medium">Non-company carton</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                )}
-                {!calculateWeightMutation.isPending && !isWeightManuallyModified && aiWeightCalculation && (
-                  <div className="text-xs text-gray-500">
-                    Weight automatically calculated by AI
-                  </div>
-                )}
-              </div>
+                );
+              })()}
             </CardContent>
           </Card>
 
