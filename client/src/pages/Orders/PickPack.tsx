@@ -344,6 +344,8 @@ export default function PickPack() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activePickingOrder, setActivePickingOrder] = useState<PickPackOrder | null>(null);
   const [activePackingOrder, setActivePackingOrder] = useState<PickPackOrder | null>(null);
+  // Track which tab the user was on when they started picking/packing
+  const [originatingTab, setOriginatingTab] = useState<'overview' | 'pending' | 'picking' | 'packing' | 'ready'>('overview');
   const [showPickingCompletionModal, setShowPickingCompletionModal] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState('');
   const [selectedBatchOrders, setSelectedBatchOrders] = useState<string[]>([]);
@@ -2715,6 +2717,9 @@ export default function PickPack() {
   // Start picking an order
   const startPicking = async (order: PickPackOrder) => {
     try {
+      // Save the current tab so we can return to it later
+      setOriginatingTab(selectedTab);
+      
       // Load saved progress from localStorage
       const savedProgress = loadPickedProgress(order.id);
       
@@ -2881,6 +2886,12 @@ export default function PickPack() {
 
   // Start packing an order
   const startPacking = async (order: PickPackOrder) => {
+    // Save the current tab so we can return to it later
+    // Only preserve the existing originatingTab if we're transitioning from active picking
+    if (!activePickingOrder) {
+      setOriginatingTab(selectedTab);
+    }
+    
     // Set the order immediately to show UI quickly
     const updatedOrder = {
       ...order,
@@ -3488,6 +3499,8 @@ export default function PickPack() {
                   setPackageWeight('');
                   setVerifiedItems({});
                   setShippingLabelPrinted(false);
+                  // Return to the tab the user was on when they started
+                  setSelectedTab(originatingTab);
                 }}
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -5062,15 +5075,15 @@ export default function PickPack() {
                             console.error('Error completing picking:', error);
                           }
                           
-                          // Exit picking mode and return to overview
+                          // Exit picking mode and return to the tab where user started
                           setActivePickingOrder(null);
                           setIsTimerRunning(false);
                           if (activePickingOrder) {
                             clearPickedProgress(activePickingOrder.id);
                           }
                           
-                          // Switch to overview tab
-                          setSelectedTab('overview');
+                          // Return to the tab the user was on when they started picking
+                          setSelectedTab(originatingTab);
                           
                           // Clear header hiding
                           sessionStorage.removeItem('pickpack-active-mode');
