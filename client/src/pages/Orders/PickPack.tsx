@@ -5282,18 +5282,6 @@ export default function PickPack() {
       {/* Header with Navigation and Overview */}
       <div className="bg-white border-b shadow-sm">
         <div className="px-3 sm:px-6 py-4">
-          {/* Navigation Breadcrumb */}
-          <div className="flex items-center gap-2 mb-4">
-            <Link href="/" className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1" data-testid="link-home">
-              <Home className="h-4 w-4" />
-              <span className="hidden sm:inline">Home</span>
-            </Link>
-            <ChevronRight className="h-4 w-4 text-gray-400" />
-            <Link href="/orders" className="text-sm text-gray-500 hover:text-gray-700" data-testid="link-orders">Orders</Link>
-            <ChevronRight className="h-4 w-4 text-gray-400" />
-            <span className="text-sm font-semibold text-gray-900">Pick & Pack</span>
-          </div>
-
           {/* Page Title and Brief Overview */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
