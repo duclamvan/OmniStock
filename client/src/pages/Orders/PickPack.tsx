@@ -3879,11 +3879,18 @@ export default function PickPack() {
                               <div className="flex-1">
                                 <div className="flex items-start justify-between">
                                   <div className="flex-1">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
                                       <p className="font-semibold text-gray-900 text-sm leading-tight">{item.productName}</p>
                                       {isBundle && (
                                         <Badge className="bg-amber-100 text-amber-800 text-xs">
                                           Bundle ({bundleComponentsVerified}/{totalBundleComponents})
+                                        </Badge>
+                                      )}
+                                      {/* Packaging Requirement Badge */}
+                                      {activePackingOrder?.items?.find((orderItem: any) => orderItem.id === item.id)?.product?.packagingRequirement === 'nylon_wrap' && (
+                                        <Badge className="bg-green-100 text-green-800 text-xs flex items-center gap-1">
+                                          <Package className="h-3 w-3" />
+                                          Nylon Wrap Only
                                         </Badge>
                                       )}
                                     </div>
@@ -4300,6 +4307,117 @@ export default function PickPack() {
                 <Plus className="h-4 w-4 mr-2" />
                 Add Another Carton
               </Button>
+
+              {/* AI Suggestions Panel */}
+              {recommendedCarton && (
+                <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-semibold text-blue-900 flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-blue-600" />
+                      AI Packing Suggestions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {/* AI Reasoning */}
+                    {recommendedCarton.reasoning && (
+                      <Alert className="bg-blue-100 border-blue-300">
+                        <Info className="h-4 w-4 text-blue-600" />
+                        <AlertDescription className="text-xs text-blue-900">
+                          {recommendedCarton.reasoning}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    {/* Items Needing Cartons */}
+                    {recommendedCarton.suggestions && recommendedCarton.suggestions.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-semibold text-gray-700 flex items-center gap-1">
+                          <Box className="h-3 w-3" />
+                          Items Needing Cartons ({recommendedCarton.cartonCount} suggested)
+                        </h4>
+                        <div className="space-y-1.5">
+                          {recommendedCarton.suggestions.map((suggestion: any, idx: number) => {
+                            const cartonInfo = availableCartons.find((c: any) => c.id === suggestion.cartonId);
+                            return (
+                              <div key={idx} className="bg-white p-2 rounded border border-blue-200 text-xs">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <div className="font-semibold text-gray-900">
+                                      Carton #{suggestion.cartonNumber}: {cartonInfo?.name || 'Unknown'}
+                                    </div>
+                                    <div className="text-gray-600 text-[10px] mt-0.5">
+                                      {suggestion.items.length} item type(s) • {suggestion.totalWeightKg.toFixed(2)} kg • {suggestion.volumeUtilization.toFixed(1)}% full
+                                    </div>
+                                  </div>
+                                  <Badge className="bg-blue-600 text-white text-[10px]">
+                                    {suggestion.volumeUtilization.toFixed(0)}%
+                                  </Badge>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Nylon Wrap Only Items */}
+                    {recommendedCarton.nylonWrapItems && recommendedCarton.nylonWrapItems.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-semibold text-gray-700 flex items-center gap-1">
+                          <Package className="h-3 w-3" />
+                          Nylon Wrap Only ({recommendedCarton.nylonWrapItems.length} item type(s))
+                        </h4>
+                        <div className="space-y-1.5">
+                          {recommendedCarton.nylonWrapItems.map((item: any, idx: number) => (
+                            <div key={idx} className="bg-green-50 p-2 rounded border border-green-200 text-xs">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="font-medium text-gray-900">{item.productName}</div>
+                                  <div className="text-gray-600 text-[10px]">
+                                    Qty: {item.quantity} • Already has outer packaging
+                                  </div>
+                                </div>
+                                <Badge className="bg-green-600 text-white text-[10px]">
+                                  No Carton
+                                </Badge>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Apply Suggestions Button */}
+                    {recommendedCarton.suggestions && recommendedCarton.suggestions.length > 0 && (
+                      <Button
+                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                        size="sm"
+                        onClick={() => {
+                          if (activePackingOrder && recommendedCarton.suggestions) {
+                            recommendedCarton.suggestions.forEach((suggestion: any) => {
+                              createCartonMutation.mutate({
+                                orderId: activePackingOrder.id,
+                                cartonNumber: suggestion.cartonNumber,
+                                cartonType: 'company',
+                                cartonId: suggestion.cartonId
+                              });
+                            });
+                            toast({
+                              title: "AI Suggestions Applied",
+                              description: `Created ${recommendedCarton.suggestions.length} carton(s) based on AI recommendations`,
+                            });
+                          }
+                        }}
+                        disabled={createCartonMutation.isPending}
+                        data-testid="apply-ai-suggestions-button"
+                      >
+                        <Zap className="h-4 w-4 mr-2" />
+                        Apply AI Suggestions
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Total Summary */}
               {cartons.length > 0 && (

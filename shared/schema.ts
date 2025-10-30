@@ -469,7 +469,9 @@ export const products = pgTable('products', {
   unitWeightKg: decimal('unit_weight_kg', { precision: 10, scale: 3 }),
   unitLengthCm: decimal('unit_length_cm', { precision: 10, scale: 2 }),
   unitWidthCm: decimal('unit_width_cm', { precision: 10, scale: 2 }),
-  unitHeightCm: decimal('unit_height_cm', { precision: 10, scale: 2 })
+  unitHeightCm: decimal('unit_height_cm', { precision: 10, scale: 2 }),
+  // Packaging requirement for intelligent carton packing
+  packagingRequirement: text('packaging_requirement').default('carton') // 'carton', 'outer_carton', 'nylon_wrap'
 });
 
 // Product Variants table

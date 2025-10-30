@@ -18,12 +18,21 @@ export interface PackingPlanCarton {
   unusedVolumeCm3: number;
 }
 
+export interface NylonWrapItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  packagingRequirement: string;
+}
+
 export interface PackingPlan {
   cartons: PackingPlanCarton[];
+  nylonWrapItems: NylonWrapItem[];
   totalCartons: number;
   totalWeightKg: number;
   avgUtilization: number;
   suggestions: string[];
+  reasoning: string;
 }
 
 interface OrderItemWithDimensions {
@@ -46,6 +55,42 @@ interface PartialCarton {
   totalVolumeCm3: number;
 }
 
+export function classifyItemsByPackaging(orderItems: any[]): {
+  cartonNeededItems: any[];
+  nylonWrapItems: NylonWrapItem[];
+} {
+  const cartonNeededItems: any[] = [];
+  const nylonWrapItems: NylonWrapItem[] = [];
+
+  for (const item of orderItems) {
+    const product = item.product;
+    if (!product) {
+      cartonNeededItems.push(item);
+      continue;
+    }
+
+    const packagingReq = product.packagingRequirement || 'carton';
+    
+    if (packagingReq === 'nylon_wrap' || packagingReq === 'outer_carton') {
+      nylonWrapItems.push({
+        productId: product.id,
+        productName: product.name || item.productName,
+        quantity: item.quantity,
+        packagingRequirement: packagingReq
+      });
+    } else {
+      cartonNeededItems.push(item);
+    }
+  }
+
+  console.log(`Classified items: ${cartonNeededItems.length} need cartons, ${nylonWrapItems.length} nylon wrap only`);
+  
+  return {
+    cartonNeededItems,
+    nylonWrapItems
+  };
+}
+
 export async function optimizeCartonPacking(
   orderItems: any[],
   packingCartons: PackingCarton[]
@@ -57,10 +102,12 @@ export async function optimizeCartonPacking(
       console.warn('No order items provided for packing');
       return {
         cartons: [],
+        nylonWrapItems: [],
         totalCartons: 0,
         totalWeightKg: 0,
         avgUtilization: 0,
-        suggestions: ['No items to pack']
+        suggestions: ['No items to pack'],
+        reasoning: 'No items to pack'
       };
     }
 
@@ -69,9 +116,24 @@ export async function optimizeCartonPacking(
       throw new Error('No packing cartons configured. Please add carton types first.');
     }
 
+    const { cartonNeededItems, nylonWrapItems } = classifyItemsByPackaging(orderItems);
+
+    if (cartonNeededItems.length === 0) {
+      console.log('All items are nylon wrap only, no cartons needed');
+      return {
+        cartons: [],
+        nylonWrapItems,
+        totalCartons: 0,
+        totalWeightKg: 0,
+        avgUtilization: 0,
+        suggestions: ['All items only need nylon wrap packaging'],
+        reasoning: `All ${nylonWrapItems.length} item type(s) have outer packaging and only need nylon wrapping. No cartons required.`
+      };
+    }
+
     const itemsWithDimensions: OrderItemWithDimensions[] = [];
 
-    for (const orderItem of orderItems) {
+    for (const orderItem of cartonNeededItems) {
       const product = orderItem.product;
       if (!product) {
         console.warn(`Order item ${orderItem.id} has no product information, skipping`);
@@ -125,10 +187,14 @@ export async function optimizeCartonPacking(
       console.warn('No valid items with dimensions found');
       return {
         cartons: [],
+        nylonWrapItems,
         totalCartons: 0,
         totalWeightKg: 0,
         avgUtilization: 0,
-        suggestions: ['No valid items with dimensions found']
+        suggestions: ['No valid items with dimensions found'],
+        reasoning: nylonWrapItems.length > 0 
+          ? `${nylonWrapItems.length} item type(s) only need nylon wrapping. No items with valid dimensions found for carton packing.`
+          : 'No valid items with dimensions found'
       };
     }
 
@@ -292,12 +358,23 @@ export async function optimizeCartonPacking(
 
     console.log(`Packing optimization complete: ${totalCartons} cartons, ${totalWeightKg.toFixed(2)}kg total, ${avgUtilization.toFixed(1)}% avg utilization`);
 
+    const cartonSummary = cartons.map((c, i) => {
+      const partial = partialCartons[i];
+      return `${c.cartonNumber}x ${partial.carton.name}`;
+    }).join(', ');
+
+    const reasoning = `Optimized packing for ${cartonNeededItems.length} item type(s) requiring cartons into ${totalCartons} carton(s): ${cartonSummary}. ` +
+      `Average utilization: ${avgUtilization.toFixed(1)}%. ` +
+      (nylonWrapItems.length > 0 ? `Additionally, ${nylonWrapItems.length} item type(s) only need nylon wrapping.` : '');
+
     return {
       cartons,
+      nylonWrapItems,
       totalCartons,
       totalWeightKg: Math.round(totalWeightKg * 100) / 100,
       avgUtilization: Math.round(avgUtilization * 100) / 100,
-      suggestions
+      suggestions,
+      reasoning
     };
 
   } catch (error) {

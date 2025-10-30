@@ -7285,17 +7285,105 @@ Return ONLY the subject line without quotes or extra formatting.`,
     }
   });
 
-  // Recommend optimal carton for an order
+  // Recommend optimal carton for an order with intelligent packaging classification
   app.get('/api/orders/:orderId/recommend-carton', async (req, res) => {
     try {
       const { orderId } = req.params;
       
-      const recommendation = await weightCalculationService.recommendOptimalCarton(orderId);
-      res.json(recommendation);
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      const orderItemsData = await storage.getOrderItems(orderId);
+      const packingCartons = await storage.getAvailablePackingCartons();
+
+      const orderItemsWithProducts = await Promise.all(
+        orderItemsData.map(async (item) => {
+          let product = null;
+          if (item.productId) {
+            product = await storage.getProductById(item.productId);
+          }
+          return {
+            ...item,
+            product
+          };
+        })
+      );
+
+      const packingPlan = await optimizeCartonPacking(orderItemsWithProducts, packingCartons);
+
+      res.json({
+        suggestions: packingPlan.cartons,
+        cartonCount: packingPlan.totalCartons,
+        nylonWrapItems: packingPlan.nylonWrapItems,
+        reasoning: packingPlan.reasoning,
+        totalWeightKg: packingPlan.totalWeightKg,
+        avgUtilization: packingPlan.avgUtilization,
+        optimizationSuggestions: packingPlan.suggestions
+      });
     } catch (error) {
       console.error('Error recommending carton:', error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : 'Failed to recommend carton' 
+      });
+    }
+  });
+
+  // Recalculate carton plan based on user-selected carton types
+  app.post('/api/orders/:orderId/recalculate-carton-plan', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { selectedCartonTypes } = req.body;
+
+      if (!selectedCartonTypes || !Array.isArray(selectedCartonTypes)) {
+        return res.status(400).json({ error: 'selectedCartonTypes array is required' });
+      }
+
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      const orderItemsData = await storage.getOrderItems(orderId);
+      const allPackingCartons = await storage.getAvailablePackingCartons();
+
+      const selectedCartons = allPackingCartons.filter(c => 
+        selectedCartonTypes.includes(c.id)
+      );
+
+      if (selectedCartons.length === 0) {
+        return res.status(400).json({ error: 'No valid carton types selected' });
+      }
+
+      const orderItemsWithProducts = await Promise.all(
+        orderItemsData.map(async (item) => {
+          let product = null;
+          if (item.productId) {
+            product = await storage.getProductById(item.productId);
+          }
+          return {
+            ...item,
+            product
+          };
+        })
+      );
+
+      const packingPlan = await optimizeCartonPacking(orderItemsWithProducts, selectedCartons);
+
+      res.json({
+        suggestions: packingPlan.cartons,
+        cartonCount: packingPlan.totalCartons,
+        nylonWrapItems: packingPlan.nylonWrapItems,
+        reasoning: packingPlan.reasoning,
+        totalWeightKg: packingPlan.totalWeightKg,
+        avgUtilization: packingPlan.avgUtilization,
+        optimizationSuggestions: packingPlan.suggestions
+      });
+    } catch (error) {
+      console.error('Error recalculating carton plan:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to recalculate carton plan' 
       });
     }
   });
