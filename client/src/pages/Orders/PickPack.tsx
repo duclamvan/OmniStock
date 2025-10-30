@@ -2708,6 +2708,15 @@ export default function PickPack() {
     // Auto-save progress to localStorage
     savePickedProgress(activePickingOrder.id, updatedItems);
 
+    // Save to database in real-time (for non-mock orders)
+    if (!activePickingOrder.id.startsWith('mock-')) {
+      apiRequest('PATCH', `/api/orders/${activePickingOrder.id}/items/${itemId}`, {
+        pickedQuantity: pickedQty
+      }).catch(error => {
+        console.error('Error saving picked quantity:', error);
+      });
+    }
+
     // Check if all items are picked
     const allPicked = updatedItems.every(item => item.pickedQuantity >= item.quantity);
     if (allPicked) {
