@@ -30,6 +30,7 @@ import {
   insertPreOrderItemSchema,
   insertTicketSchema,
   insertTicketCommentSchema,
+  insertOrderCartonSchema,
   productCostHistory,
   products,
   productLocations,
@@ -7165,6 +7166,121 @@ Return ONLY the subject line without quotes or extra formatting.`,
       console.error('Error getting available cartons:', error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : 'Failed to get available cartons' 
+      });
+    }
+  });
+
+  // Multi-Carton Packing Routes
+  
+  // Get all cartons for an order
+  app.get('/api/orders/:orderId/cartons', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const cartons = await storage.getOrderCartons(orderId);
+      res.json(cartons);
+    } catch (error) {
+      console.error('Error getting order cartons:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to get order cartons' 
+      });
+    }
+  });
+
+  // Create a new carton for an order
+  app.post('/api/orders/:orderId/cartons', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const cartonData = insertOrderCartonSchema.parse({
+        ...req.body,
+        orderId
+      });
+      
+      const carton = await storage.createOrderCarton(cartonData);
+      res.json(carton);
+    } catch (error) {
+      console.error('Error creating order carton:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to create order carton' 
+      });
+    }
+  });
+
+  // Update a carton
+  app.patch('/api/orders/:orderId/cartons/:cartonId', async (req, res) => {
+    try {
+      const { cartonId } = req.params;
+      const updatedCarton = await storage.updateOrderCarton(cartonId, req.body);
+      
+      if (!updatedCarton) {
+        return res.status(404).json({ error: 'Carton not found' });
+      }
+      
+      res.json(updatedCarton);
+    } catch (error) {
+      console.error('Error updating order carton:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to update order carton' 
+      });
+    }
+  });
+
+  // Delete a carton
+  app.delete('/api/orders/:orderId/cartons/:cartonId', async (req, res) => {
+    try {
+      const { cartonId } = req.params;
+      const success = await storage.deleteOrderCarton(cartonId);
+      
+      if (!success) {
+        return res.status(404).json({ error: 'Carton not found' });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting order carton:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to delete order carton' 
+      });
+    }
+  });
+
+  // Generate shipping label for a specific carton
+  app.post('/api/orders/:orderId/cartons/:cartonId/generate-label', async (req, res) => {
+    try {
+      const { orderId, cartonId } = req.params;
+      
+      // Get order and carton details
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+      
+      const cartons = await storage.getOrderCartons(orderId);
+      const carton = cartons.find(c => c.id === cartonId);
+      if (!carton) {
+        return res.status(404).json({ error: 'Carton not found' });
+      }
+      
+      // Mock label generation - in production, integrate with shipping provider
+      const labelUrl = `https://example.com/labels/${orderId}-${cartonId}.pdf`;
+      const trackingNumber = `TRK-${Date.now()}-${cartonId.slice(-6)}`;
+      
+      // Update carton with label info
+      const updatedCarton = await storage.updateOrderCarton(cartonId, {
+        labelUrl,
+        trackingNumber,
+        labelPrinted: true
+      });
+      
+      res.json({
+        success: true,
+        labelUrl,
+        trackingNumber,
+        carton: updatedCarton
+      });
+    } catch (error) {
+      console.error('Error generating label for carton:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to generate label for carton' 
       });
     }
   });

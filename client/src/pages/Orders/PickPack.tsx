@@ -200,6 +200,22 @@ interface PickPackOrder {
   previousPackStatus?: string;
 }
 
+interface OrderCarton {
+  id: string;
+  orderId: string;
+  cartonNumber: number;
+  cartonType: 'company' | 'non-company';
+  cartonId?: string | null;
+  weight?: string | null;
+  labelUrl?: string | null;
+  labelPrinted: boolean;
+  trackingNumber?: string | null;
+  aiWeightCalculation?: any;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Memoized Product Image Component to prevent re-renders from timer updates
 const ProductImage = memo(({ 
   item, 
@@ -408,6 +424,9 @@ export default function PickPack() {
   const [cartonSearchFilter, setCartonSearchFilter] = useState<string>('');
   const [isWeightManuallyModified, setIsWeightManuallyModified] = useState<boolean>(false);
   const [selectedSearchIndex, setSelectedSearchIndex] = useState<number>(0);
+  
+  // Multi-carton state
+  const [cartons, setCartons] = useState<OrderCarton[]>([]);
   
   // Legacy states for compatibility
   const [selectedCarton, setSelectedCarton] = useState<string>('');
@@ -786,6 +805,72 @@ export default function PickPack() {
       } else {
         console.log('No totalWeight in data:', data);
       }
+    },
+  });
+
+  // Query for order cartons
+  const { data: orderCartons = [], refetch: refetchCartons } = useQuery<OrderCarton[]>({
+    queryKey: ['/api/orders', activePackingOrder?.id, 'cartons'],
+    enabled: !!activePackingOrder?.id,
+    staleTime: 30 * 1000,
+  });
+
+  // Sync orderCartons with local cartons state
+  useEffect(() => {
+    if (orderCartons && orderCartons.length > 0) {
+      setCartons(orderCartons);
+    }
+  }, [orderCartons]);
+
+  // Create carton mutation
+  const createCartonMutation = useMutation({
+    mutationFn: async (data: { orderId: string; cartonNumber: number; cartonType: 'company' | 'non-company'; cartonId?: string }) => {
+      const response = await apiRequest('POST', `/api/orders/${data.orderId}/cartons`, data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder?.id, 'cartons'] });
+      refetchCartons();
+    },
+  });
+
+  // Update carton mutation
+  const updateCartonMutation = useMutation({
+    mutationFn: async (data: { orderId: string; cartonId: string; updates: Partial<OrderCarton> }) => {
+      const response = await apiRequest('PATCH', `/api/orders/${data.orderId}/cartons/${data.cartonId}`, data.updates);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder?.id, 'cartons'] });
+      refetchCartons();
+    },
+  });
+
+  // Delete carton mutation
+  const deleteCartonMutation = useMutation({
+    mutationFn: async (data: { orderId: string; cartonId: string }) => {
+      const response = await apiRequest('DELETE', `/api/orders/${data.orderId}/cartons/${data.cartonId}`);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder?.id, 'cartons'] });
+      refetchCartons();
+    },
+  });
+
+  // Generate label for carton mutation
+  const generateLabelMutation = useMutation({
+    mutationFn: async (data: { orderId: string; cartonId: string }) => {
+      const response = await apiRequest('POST', `/api/orders/${data.orderId}/cartons/${data.cartonId}/generate-label`, {});
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder?.id, 'cartons'] });
+      refetchCartons();
+      toast({
+        title: "Label Generated",
+        description: "Shipping label has been generated successfully",
+      });
     },
   });
 
@@ -3015,13 +3100,18 @@ export default function PickPack() {
     if (!(packingChecklist.itemsVerified || allItemsVerified)) missingChecks.push('Items Verification');
     if (!packingChecklist.packingSlipIncluded) missingChecks.push('Packing Slip');
     if (!packingChecklist.invoiceIncluded) missingChecks.push('Invoice');
-    if (!packingChecklist.weightRecorded) missingChecks.push('Weight Recording');
     if (!packingChecklist.boxSealed) missingChecks.push('Box Sealing');
     if (!packingChecklist.promotionalMaterials) missingChecks.push('Promotional Materials');
     if (needsFragileProtection && !packingChecklist.fragileProtected) missingChecks.push('Fragile Protection');
-    if (!shippingLabelPrinted) missingChecks.push('Shipping Label');
-    if (!selectedCarton) missingChecks.push('Carton Selection');
-    if (!packageWeight) missingChecks.push('Package Weight');
+    
+    // Multi-carton validation
+    if (cartons.length === 0) missingChecks.push('At least one carton');
+    const cartonsWithoutType = cartons.filter(c => !c.cartonId && c.cartonType !== 'non-company');
+    if (cartonsWithoutType.length > 0) missingChecks.push(`Carton type for ${cartonsWithoutType.length} carton(s)`);
+    const cartonsWithoutWeight = cartons.filter(c => !c.weight || parseFloat(c.weight) <= 0);
+    if (cartonsWithoutWeight.length > 0) missingChecks.push(`Weight for ${cartonsWithoutWeight.length} carton(s)`);
+    const cartonsWithoutLabel = cartons.filter(c => !c.labelPrinted);
+    if (cartonsWithoutLabel.length > 0) missingChecks.push(`Label for ${cartonsWithoutLabel.length} carton(s)`);
     
     if (missingChecks.length > 0) {
       toast({
@@ -3464,17 +3554,21 @@ export default function PickPack() {
     // Check if fragile items need protection
     const needsFragileProtection = currentCarton?.isFragile || false;
     
+    // Multi-carton validation: all cartons must have type, weight, and label
+    const allCartonsValid = cartons.length > 0 && cartons.every(carton => 
+      (carton.cartonType === 'company' ? !!carton.cartonId : carton.cartonType === 'non-company') &&
+      carton.weight && parseFloat(carton.weight) > 0 &&
+      carton.labelPrinted
+    );
+    
     // ALL required checkboxes must be checked
     const canCompletePacking = (packingChecklist.itemsVerified || allItemsVerified) && 
                               packingChecklist.packingSlipIncluded && 
                               packingChecklist.invoiceIncluded &&
-                              packingChecklist.weightRecorded &&
                               packingChecklist.boxSealed &&
                               packingChecklist.promotionalMaterials &&
                               (!needsFragileProtection || packingChecklist.fragileProtected) && // Only required if fragile
-                              cartonSelected && 
-                              packageWeight && 
-                              shippingLabelPrinted;
+                              allCartonsValid; // All cartons must be valid
     
     // Stop timer when packing is complete
     if (canCompletePacking && isPackingTimerRunning) {
@@ -4012,121 +4106,220 @@ export default function PickPack() {
             </AccordionItem>
           </Accordion>
 
-          {/* Combined Carton & Weight Card - Visual Layout */}
+          {/* Multi-Carton Packing Section */}
           <Card className="shadow-sm border-2 border-emerald-200 bg-gradient-to-br from-white to-emerald-50">
-            <CardContent className="p-4">
-              {(() => {
-                const selectedCartonData = availableCartons.find((c: any) => c.id === selectedCarton);
-                const isNonCompany = selectedCarton === 'non-company';
+            <CardHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-3">
+              <CardTitle className="text-base flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Box className="h-5 w-5" />
+                  <span>Cartons ({cartons.length})</span>
+                </div>
+                <Badge className="bg-white/20 text-white">
+                  Multi-Carton Packing
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 space-y-3">
+              {/* Carton List */}
+              {cartons.map((carton, index) => {
+                const cartonData = availableCartons.find((c: any) => c.id === carton.cartonId);
+                const isNonCompany = carton.cartonType === 'non-company';
                 
                 return (
-                  <div className="space-y-4">
-                    {/* AI Recommendation Badge - Top */}
-                    {packingRecommendation && packingRecommendation.cartons.length > 0 && !selectedCarton && (
-                      <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-2 rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <TrendingUp className="h-4 w-4" />
-                          <span className="text-sm font-semibold">
-                            AI Recommends: {packingRecommendation.cartons[0].boxSize.name}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Main Visual Display */}
-                    <div className="text-center space-y-3">
-                      {/* Large Carton Icon/Image */}
-                      <div className="flex justify-center">
-                        <div className="w-32 h-32 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-2xl flex items-center justify-center border-4 border-emerald-300 shadow-lg">
-                          {selectedCartonData?.imageUrl ? (
-                            <img 
-                              src={selectedCartonData.imageUrl} 
-                              alt={selectedCartonData.name}
-                              className="w-full h-full object-contain p-2"
-                            />
-                          ) : (
-                            <Box className={`${selectedCarton ? 'h-20 w-20 text-emerald-600' : 'h-16 w-16 text-gray-400'}`} />
-                          )}
-                        </div>
+                  <Card key={carton.id} className="border-2 border-emerald-300 bg-white" data-testid={`carton-card-${index + 1}`}>
+                    <CardContent className="p-3 space-y-3">
+                      {/* Carton Header */}
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-emerald-700 flex items-center gap-2">
+                          <Box className="h-5 w-5" />
+                          Carton #{carton.cartonNumber}
+                        </h3>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            if (activePackingOrder) {
+                              deleteCartonMutation.mutate({
+                                orderId: activePackingOrder.id,
+                                cartonId: carton.id
+                              });
+                            }
+                          }}
+                          disabled={deleteCartonMutation.isPending}
+                          data-testid={`delete-carton-${index + 1}`}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
 
-                      {/* Carton Name - Largest */}
-                      <div>
-                        <h2 className="text-2xl font-black text-gray-900">
-                          {selectedCartonData ? selectedCartonData.name : (isNonCompany ? 'Non-Company Carton' : 'Select Carton')}
-                        </h2>
-                        {selectedCartonData && (
-                          <p className="text-sm text-gray-600 mt-1">
-                            {selectedCartonData.dimensions.length}×{selectedCartonData.dimensions.width}×{selectedCartonData.dimensions.height}cm · Max {selectedCartonData.maxWeight}kg
+                      {/* Carton Type Selector */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Carton Type</label>
+                        <Select 
+                          value={carton.cartonId || 'non-company'} 
+                          onValueChange={(value) => {
+                            if (activePackingOrder) {
+                              const updates: Partial<OrderCarton> = {
+                                cartonType: value === 'non-company' ? 'non-company' : 'company',
+                                cartonId: value === 'non-company' ? null : value
+                              };
+                              updateCartonMutation.mutate({
+                                orderId: activePackingOrder.id,
+                                cartonId: carton.id,
+                                updates
+                              });
+                            }
+                          }}
+                          data-testid={`carton-selector-${index + 1}`}
+                        >
+                          <SelectTrigger className="w-full border-2 border-emerald-300">
+                            <SelectValue placeholder="Choose carton..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableCartons.map((c: any) => (
+                              <SelectItem key={c.id} value={c.id}>
+                                <div className="flex items-center gap-2">
+                                  <Box className="h-4 w-4 text-emerald-600" />
+                                  <span className="font-medium">{c.name}</span>
+                                  <span className="text-xs text-gray-500">
+                                    {c.dimensions.length}×{c.dimensions.width}×{c.dimensions.height}cm
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="non-company">
+                              <div className="flex items-center gap-2">
+                                <Box className="h-4 w-4 text-gray-600" />
+                                <span className="font-medium">Non-company carton</span>
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {cartonData && (
+                          <p className="text-xs text-gray-600">
+                            {cartonData.dimensions.length}×{cartonData.dimensions.width}×{cartonData.dimensions.height}cm · Max {cartonData.maxWeight}kg
                           </p>
                         )}
                       </div>
 
-                      {/* Package Weight - Subheading */}
-                      <div className="bg-white rounded-xl p-4 border-2 border-emerald-200">
-                        <div className="text-sm font-semibold text-gray-600 mb-2">Package Weight</div>
-                        <div className="flex items-center justify-center gap-2">
+                      {/* Weight Input */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Weight (kg)</label>
+                        <div className="flex items-center gap-2">
                           <Input
                             type="number"
                             step="0.001"
                             placeholder="0.000"
-                            value={packageWeight}
+                            value={carton.weight || ''}
                             onChange={(e) => {
-                              setPackageWeight(e.target.value);
-                              setIsWeightManuallyModified(true);
-                              if (e.target.value) {
-                                setPackingChecklist({...packingChecklist, weightRecorded: true});
-                              } else {
-                                setPackingChecklist({...packingChecklist, weightRecorded: false});
+                              if (activePackingOrder) {
+                                updateCartonMutation.mutate({
+                                  orderId: activePackingOrder.id,
+                                  cartonId: carton.id,
+                                  updates: { weight: e.target.value }
+                                });
                               }
                             }}
-                            className="text-center text-3xl font-bold h-16 text-emerald-700 border-2 border-emerald-300 focus:border-emerald-500"
+                            className="text-center text-xl font-bold text-emerald-700 border-2 border-emerald-300 focus:border-emerald-500"
+                            data-testid={`weight-input-${index + 1}`}
                           />
-                          <span className="text-2xl font-bold text-emerald-700">kg</span>
+                          <span className="text-xl font-bold text-emerald-700">kg</span>
                         </div>
-                        {calculateWeightMutation.isPending && (
-                          <div className="flex items-center justify-center gap-2 text-xs text-blue-600 mt-2">
-                            <div className="animate-spin h-3 w-3 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-                            Calculating weight...
-                          </div>
-                        )}
-                        {!calculateWeightMutation.isPending && !isWeightManuallyModified && aiWeightCalculation && (
-                          <div className="text-xs text-emerald-600 mt-2 flex items-center justify-center gap-1">
+                        {carton.aiWeightCalculation && (
+                          <div className="text-xs text-emerald-600 flex items-center gap-1">
                             <TrendingUp className="h-3 w-3" />
                             AI calculated
                           </div>
                         )}
                       </div>
 
-                      {/* Change Carton Button */}
-                      <Select value={selectedCarton || ''} onValueChange={(value) => setSelectedCarton(value)}>
-                        <SelectTrigger className="w-full h-12 text-base border-2 border-emerald-300 hover:border-emerald-400">
-                          <SelectValue placeholder="Choose carton size..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableCartons.map((carton: any) => (
-                            <SelectItem key={carton.id} value={carton.id}>
-                              <div className="flex items-center gap-2">
-                                <Box className="h-4 w-4 text-emerald-600" />
-                                <span className="font-medium">{carton.name}</span>
-                                <span className="text-xs text-gray-500">
-                                  {carton.dimensions.length}×{carton.dimensions.width}×{carton.dimensions.height}cm
-                                </span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                          <SelectItem value="non-company">
-                            <div className="flex items-center gap-2">
-                              <Box className="h-4 w-4 text-gray-600" />
-                              <span className="font-medium">Non-company carton</span>
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                      {/* Label Status & Generate Button */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {carton.labelPrinted ? (
+                            <>
+                              <CheckCircle className="h-5 w-5 text-green-600" />
+                              <span className="text-sm font-medium text-green-600">Label Printed</span>
+                            </>
+                          ) : (
+                            <>
+                              <Circle className="h-5 w-5 text-gray-400" />
+                              <span className="text-sm text-gray-600">No Label</span>
+                            </>
+                          )}
+                        </div>
+                        <Button
+                          variant={carton.labelPrinted ? "outline" : "default"}
+                          size="sm"
+                          onClick={() => {
+                            if (activePackingOrder) {
+                              generateLabelMutation.mutate({
+                                orderId: activePackingOrder.id,
+                                cartonId: carton.id
+                              });
+                            }
+                          }}
+                          disabled={generateLabelMutation.isPending}
+                          data-testid={`generate-label-${index + 1}`}
+                        >
+                          <Printer className="h-4 w-4 mr-1" />
+                          {carton.labelPrinted ? 'Regenerate' : 'Generate Label'}
+                        </Button>
+                      </div>
+
+                      {/* Tracking Number */}
+                      {carton.trackingNumber && (
+                        <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                          Tracking: <span className="font-mono font-semibold">{carton.trackingNumber}</span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                 );
-              })()}
+              })}
+
+              {/* Add Another Carton Button */}
+              <Button
+                variant="outline"
+                className="w-full border-2 border-dashed border-emerald-400 text-emerald-700 hover:bg-emerald-50"
+                onClick={() => {
+                  if (activePackingOrder) {
+                    const nextCartonNumber = cartons.length + 1;
+                    createCartonMutation.mutate({
+                      orderId: activePackingOrder.id,
+                      cartonNumber: nextCartonNumber,
+                      cartonType: 'company'
+                    });
+                  }
+                }}
+                disabled={createCartonMutation.isPending}
+                data-testid="add-carton-button"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Another Carton
+              </Button>
+
+              {/* Total Summary */}
+              {cartons.length > 0 && (
+                <div className="bg-emerald-100 p-3 rounded-lg">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-semibold text-emerald-800">Total Cartons:</span>
+                    <span className="font-bold text-emerald-900">{cartons.length}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm mt-1">
+                    <span className="font-semibold text-emerald-800">Total Weight:</span>
+                    <span className="font-bold text-emerald-900">
+                      {cartons.reduce((sum, c) => sum + (parseFloat(c.weight || '0')), 0).toFixed(3)} kg
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm mt-1">
+                    <span className="font-semibold text-emerald-800">Labels Printed:</span>
+                    <span className={`font-bold ${cartons.every(c => c.labelPrinted) ? 'text-green-600' : 'text-orange-600'}`}>
+                      {cartons.filter(c => c.labelPrinted).length} / {cartons.length}
+                    </span>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
