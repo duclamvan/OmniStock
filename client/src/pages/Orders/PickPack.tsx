@@ -4781,7 +4781,11 @@ export default function PickPack() {
                           completePicking().catch(console.error);
                           
                           // Exit picking mode and return to overview
-                          exitPickingMode();
+                          setActivePickingOrder(null);
+                          setIsTimerRunning(false);
+                          if (activePickingOrder) {
+                            clearPickedProgress(activePickingOrder.id);
+                          }
                           
                           // Switch to overview tab
                           setSelectedTab('overview');
