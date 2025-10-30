@@ -3167,10 +3167,10 @@ export default function PickPack() {
   // Filter orders by status - Updated to match backend state machine
   const getOrdersByStatus = (status: string) => {
     return transformedOrders.filter(order => {
-      if (status === 'pending') return order.status === 'to_fulfill';
-      if (status === 'picking') return order.status === 'picking';
-      if (status === 'packing') return order.status === 'packing';
-      if (status === 'ready') return order.status === 'ready_to_ship';
+      if (status === 'pending') return order.pickStatus === 'not_started' || !order.pickStatus;
+      if (status === 'picking') return order.pickStatus === 'in_progress';
+      if (status === 'packing') return order.pickStatus === 'completed' && order.packStatus === 'not_started';
+      if (status === 'ready') return order.packStatus === 'completed';
       return false;
     });
   };
