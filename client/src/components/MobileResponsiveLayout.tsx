@@ -822,8 +822,8 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile Header - Hidden on Pick & Pack page */}
-      {!location.includes('/orders/pick-pack') && (
+      {/* Mobile Header - Hidden only during active picking/packing mode */}
+      {!(location.includes('/orders/pick-pack') && sessionStorage.getItem('pickpack-active-mode') === 'true') && (
         <header className="lg:hidden sticky top-0 z-40 bg-white border-b border-gray-200">
           <div className="flex items-center justify-between px-4 py-3">
             <img src={logoPath} alt="Davie Professional" className="h-8" />
