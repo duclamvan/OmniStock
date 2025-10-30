@@ -4242,76 +4242,77 @@ export default function PickPack() {
             <div className="flex-1 p-2 lg:p-6">
             {!allItemsPicked && currentItem ? (
               <div className="max-w-4xl mx-auto">
-                <Card className="mb-3 lg:mb-6 shadow-lg border border-gray-200 overflow-hidden rounded-lg">
-                  <CardHeader className="bg-white border-b border-gray-200 p-2 lg:p-4">
-                    <CardTitle className="flex items-center justify-between">
-                      <span className="text-xs lg:text-base flex items-center gap-2 text-gray-700">
-                        <Package className="h-4 w-4 lg:h-5 lg:w-5" />
-                        <span className="font-semibold">Item {currentItemIndex + 1} of {activePickingOrder.items.length}</span>
-                      </span>
+                {/* Simplified Card Layout - Mobile-First */}
+                <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+                  {/* Minimal Header with Progress */}
+                  <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-white/20 rounded-full p-2">
+                          <Package className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-white/80 text-sm font-medium">Picking Item</p>
+                          <p className="text-white text-2xl font-black">{currentItemIndex + 1} / {activePickingOrder.items.length}</p>
+                        </div>
+                      </div>
                       {currentItem?.pickedQuantity === currentItem?.quantity && (
-                        <Badge className="bg-emerald-500 text-white text-xs px-2 py-0.5">
-                          <CheckCircle className="h-3 w-3 mr-1 inline" />
-                          Picked
-                        </Badge>
+                        <CheckCircle className="h-10 w-10 text-green-400 animate-pulse" />
                       )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-3 lg:p-6 bg-white">
-                    <div className="space-y-2 lg:space-y-6">
-                      {/* Product Layout - Image + Name + Location */}
-                      {expandedProductId === currentItem.id ? (
-                        /* Expanded Image View - Full Width */
+                    </div>
+                    {/* Overall Progress Bar */}
+                    <div className="mt-3 h-2 bg-white/20 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-white transition-all duration-500"
+                        style={{ width: `${((currentItemIndex + (currentItem.pickedQuantity >= currentItem.quantity ? 1 : 0)) / activePickingOrder.items.length) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 lg:p-6 space-y-4">
+                      {/* Streamlined Product Display - Hero Image Layout */}
+                      <div className="space-y-4">
+                        {/* Hero Product Image - Always Large and Prominent */}
                         <div 
-                          className="w-full bg-gray-50 rounded-lg border-2 border-gray-200 p-4 cursor-pointer hover:border-blue-400 transition-colors"
+                          className="relative bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-sm"
                           onClick={() => handleImageClick(currentItem.id)}
                         >
-                          {currentItem.image ? (
-                            <img 
-                              src={currentItem.image} 
-                              alt={currentItem.productName}
-                              className="w-full max-h-96 object-contain"
-                            />
-                          ) : (
-                            <ImagePlaceholder size="lg" variant="product" />
-                          )}
-                          <div className="mt-3 text-center">
-                            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">{currentItem.productName}</h3>
-                            <p className="text-xs text-gray-400 mt-1">Tap to minimize</p>
-                          </div>
-                        </div>
-                      ) : (
-                        /* Compact View - Image + Details Side by Side */
-                        <div className="flex gap-3 items-start">
-                          {/* Product Image - Clickable */}
-                          <div className="flex-shrink-0">
-                            <div 
-                              className="w-24 h-24 sm:w-28 sm:h-28 bg-gray-50 rounded-lg flex items-center justify-center border-2 border-gray-200 cursor-pointer hover:border-blue-400 transition-colors"
-                              onClick={() => handleImageClick(currentItem.id)}
-                            >
-                              {currentItem.image ? (
-                                <img 
-                                  src={currentItem.image} 
-                                  alt={currentItem.productName}
-                                  className="w-full h-full object-contain rounded-lg p-1"
-                                />
-                              ) : (
-                                <ImagePlaceholder size="sm" variant="product" />
-                              )}
-                            </div>
-                            <p className="text-center text-xs text-gray-400 mt-1">Tap to expand</p>
-                          </div>
-                          
-                          {/* Product Name - Prominent */}
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 break-words leading-tight">{currentItem.productName}</h3>
-                            <div className="text-xs text-gray-500 space-y-1">
-                              <div>SKU: <span className="font-mono text-gray-700">{currentItem.sku}</span></div>
-                              <div>Barcode: <span className="font-mono text-gray-700">{currentItem.barcode}</span></div>
+                          <div className="aspect-square max-h-64 sm:max-h-80 lg:max-h-96 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 cursor-pointer">
+                            {currentItem.image ? (
+                              <img 
+                                src={currentItem.image} 
+                                alt={currentItem.productName}
+                                className="w-full h-full object-contain p-4"
+                              />
+                            ) : (
+                              <ImagePlaceholder size="lg" variant="product" />
+                            )}
+                            {/* Overlay Badge for Quick Info */}
+                            <div className="absolute top-2 right-2 bg-black/75 text-white px-3 py-1 rounded-full text-sm font-bold">
+                              {currentItem.pickedQuantity}/{currentItem.quantity}
                             </div>
                           </div>
                         </div>
-                      )}
+                        
+                        {/* Essential Product Info - Clean and Minimal */}
+                        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">
+                            {currentItem.productName}
+                          </h2>
+                          <div className="flex gap-4 text-sm text-gray-600">
+                            <div className="flex items-center gap-1">
+                              <Hash className="h-4 w-4 text-gray-400" />
+                              <span className="font-mono">{currentItem.sku}</span>
+                            </div>
+                            {currentItem.barcode && (
+                              <div className="flex items-center gap-1">
+                                <ScanLine className="h-4 w-4 text-gray-400" />
+                                <span className="font-mono">{currentItem.barcode}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
 
                       {/* Warehouse Location - High Contrast Banner */}
                       <div className="bg-orange-100 border-3 border-orange-500 rounded-lg p-4 text-center">
@@ -4432,48 +4433,145 @@ export default function PickPack() {
                           )}
                         </div>
                       ) : (
-                        /* Regular Quantity Picker - Vertical Layout for Easy Mobile Tapping */
-                        <div className="bg-white border-2 border-gray-200 rounded-lg p-4 lg:p-6">
-                          {/* Plus Button - Top */}
-                          <Button
-                            size="lg"
-                            className="w-full h-16 lg:h-20 rounded-lg bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 text-white shadow-md touch-manipulation mb-3"
-                            onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.quantity, currentItem.pickedQuantity + 1))}
-                            disabled={currentItem.pickedQuantity >= currentItem.quantity}
-                          >
-                            <Plus className="h-8 lg:h-10 w-8 lg:w-10" />
-                          </Button>
-                          
-                          {/* Number Display - Center */}
-                          <div className="text-center py-2">
-                            <div className="text-6xl sm:text-7xl font-black text-gray-900 tabular-nums leading-none">
-                              {currentItem.pickedQuantity}
+                        /* Streamlined Quantity Picker - Quick Action Buttons */
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-200">
+                          {/* Large Visual Counter */}
+                          <div className="text-center mb-6">
+                            <div className="inline-flex items-center justify-center gap-3">
+                              <div className="text-7xl sm:text-8xl font-black text-blue-600 tabular-nums">
+                                {currentItem.pickedQuantity}
+                              </div>
+                              <div className="text-3xl sm:text-4xl font-bold text-gray-400">/</div>
+                              <div className="text-5xl sm:text-6xl font-black text-gray-700 tabular-nums">
+                                {currentItem.quantity}
+                              </div>
                             </div>
-                            <div className="text-xl sm:text-2xl text-gray-400 font-bold mt-2">
-                              of {currentItem.quantity}
+                            {/* Progress Bar */}
+                            <div className="mt-4 h-3 bg-gray-200 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-300"
+                                style={{ width: `${(currentItem.pickedQuantity / currentItem.quantity) * 100}%` }}
+                              />
                             </div>
                           </div>
-                          
-                          {/* Minus Button - Bottom */}
-                          <Button
-                            size="lg"
-                            className="w-full h-16 lg:h-20 rounded-lg bg-gray-600 hover:bg-gray-700 disabled:bg-gray-200 text-white shadow-md touch-manipulation mt-3"
-                            onClick={() => updatePickedItem(currentItem.id, Math.max(0, currentItem.pickedQuantity - 1))}
-                            disabled={currentItem.pickedQuantity === 0}
-                          >
-                            <Minus className="h-8 lg:h-10 w-8 lg:w-10" />
-                          </Button>
 
-                          {/* Quick Pick Button */}
-                          {currentItem.pickedQuantity < currentItem.quantity && (
-                            <Button 
-                              size="lg" 
-                              className="w-full mt-4 h-14 text-base font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md touch-manipulation rounded-lg"
-                              onClick={() => updatePickedItem(currentItem.id, currentItem.quantity)}
+                          {/* Quick Action Buttons Grid */}
+                          <div className="grid grid-cols-2 gap-3">
+                            {/* Common quantities based on order amount */}
+                            {currentItem.quantity === 1 ? (
+                              // Single item - just Pick 1 button
+                              <Button
+                                size="lg"
+                                className="col-span-2 h-20 text-2xl font-black bg-green-500 hover:bg-green-600 text-white shadow-lg rounded-xl"
+                                onClick={() => updatePickedItem(currentItem.id, 1)}
+                                disabled={currentItem.pickedQuantity >= 1}
+                              >
+                                <CheckCircle className="h-8 w-8 mr-3" />
+                                PICK 1
+                              </Button>
+                            ) : currentItem.quantity <= 5 ? (
+                              // Small quantity - show each number
+                              <>
+                                {[...Array(Math.min(currentItem.quantity, 4))].map((_, i) => (
+                                  <Button
+                                    key={i + 1}
+                                    size="lg"
+                                    className={`h-16 text-xl font-black shadow-md rounded-xl ${
+                                      currentItem.pickedQuantity === i + 1 
+                                        ? 'bg-blue-600 text-white' 
+                                        : 'bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300'
+                                    }`}
+                                    onClick={() => updatePickedItem(currentItem.id, i + 1)}
+                                  >
+                                    {i + 1}
+                                  </Button>
+                                ))}
+                                {currentItem.quantity === 5 && (
+                                  <Button
+                                    size="lg"
+                                    className={`h-16 text-xl font-black shadow-md rounded-xl ${
+                                      currentItem.pickedQuantity === 5 
+                                        ? 'bg-blue-600 text-white' 
+                                        : 'bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300'
+                                    }`}
+                                    onClick={() => updatePickedItem(currentItem.id, 5)}
+                                  >
+                                    5
+                                  </Button>
+                                )}
+                                {/* Pick All for remaining spot */}
+                                {currentItem.quantity <= 4 && (
+                                  <Button
+                                    size="lg"
+                                    className="h-16 text-lg font-black bg-green-500 hover:bg-green-600 text-white shadow-md rounded-xl"
+                                    onClick={() => updatePickedItem(currentItem.id, currentItem.quantity)}
+                                    disabled={currentItem.pickedQuantity >= currentItem.quantity}
+                                  >
+                                    ALL
+                                  </Button>
+                                )}
+                              </>
+                            ) : (
+                              // Larger quantities - show common amounts
+                              <>
+                                <Button
+                                  size="lg"
+                                  className="h-16 text-xl font-black bg-blue-500 hover:bg-blue-600 text-white shadow-md rounded-xl"
+                                  onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.pickedQuantity + 1, currentItem.quantity))}
+                                  disabled={currentItem.pickedQuantity >= currentItem.quantity}
+                                >
+                                  <Plus className="h-6 w-6 mr-2" />
+                                  Add 1
+                                </Button>
+                                <Button
+                                  size="lg"
+                                  className="h-16 text-xl font-black bg-gray-500 hover:bg-gray-600 text-white shadow-md rounded-xl"
+                                  onClick={() => updatePickedItem(currentItem.id, Math.max(currentItem.pickedQuantity - 1, 0))}
+                                  disabled={currentItem.pickedQuantity === 0}
+                                >
+                                  <Minus className="h-6 w-6 mr-2" />
+                                  Less 1
+                                </Button>
+                                <Button
+                                  size="lg"
+                                  className="h-16 text-xl font-black bg-purple-500 hover:bg-purple-600 text-white shadow-md rounded-xl"
+                                  onClick={() => updatePickedItem(currentItem.id, Math.floor(currentItem.quantity / 2))}
+                                >
+                                  Half ({Math.floor(currentItem.quantity / 2)})
+                                </Button>
+                                <Button
+                                  size="lg"
+                                  className="h-16 text-xl font-black bg-green-500 hover:bg-green-600 text-white shadow-md rounded-xl"
+                                  onClick={() => updatePickedItem(currentItem.id, currentItem.quantity)}
+                                  disabled={currentItem.pickedQuantity >= currentItem.quantity}
+                                >
+                                  <CheckCircle className="h-6 w-6 mr-2" />
+                                  ALL ({currentItem.quantity})
+                                </Button>
+                              </>
+                            )}
+                          </div>
+
+                          {/* Reset Button if needed */}
+                          {currentItem.pickedQuantity > 0 && (
+                            <Button
+                              variant="outline"
+                              className="w-full mt-3 h-12 text-base font-semibold border-2 border-red-300 text-red-600 hover:bg-red-50"
+                              onClick={() => updatePickedItem(currentItem.id, 0)}
                             >
-                              <CheckCircle2 className="h-5 w-5 mr-2" />
-                              Pick All ({currentItem.quantity})
+                              <RotateCcw className="h-5 w-5 mr-2" />
+                              Reset to 0
                             </Button>
+                          )}
+
+                          {/* Success State */}
+                          {currentItem.pickedQuantity >= currentItem.quantity && (
+                            <Alert className="mt-4 bg-green-50 border-2 border-green-400">
+                              <CheckCircle className="h-5 w-5 text-green-600" />
+                              <AlertDescription className="text-green-800 font-bold">
+                                ✓ Item fully picked! Ready for next.
+                              </AlertDescription>
+                            </Alert>
                           )}
                         </div>
                       )}
@@ -4507,34 +4605,33 @@ export default function PickPack() {
                         </Button>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-
-                {/* Barcode Scanner - Comfortable Design */}
-                <Card className="shadow-md border-2 border-gray-200 overflow-hidden rounded-lg">
-                  <CardContent className="p-3 lg:p-4 bg-white">
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <Input
-                          ref={barcodeInputRef}
-                          placeholder="Ready to scan..."
-                          value={barcodeInput || "Ready to scan..."}
-                          className="text-base lg:text-lg h-11 lg:h-12 bg-gray-50 border-2 border-gray-300 placeholder:text-gray-400 font-mono cursor-default rounded-lg"
-                          readOnly
-                        />
+                  </div>
+                  
+                  {/* Barcode Scanner - Streamlined Design */}
+                  <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                    <div className="p-3 lg:p-4">
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Input
+                            ref={barcodeInputRef}
+                            placeholder="Ready to scan..."
+                            value={barcodeInput}
+                            className="text-base lg:text-lg h-11 lg:h-12 bg-gray-50 border-2 border-gray-300 placeholder:text-gray-400 font-mono cursor-default rounded-lg"
+                            readOnly
+                          />
+                        </div>
+                        <Button 
+                          onClick={handleBarcodeScan}
+                          className="h-11 lg:h-12 px-5 lg:px-7 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md touch-manipulation rounded-lg"
+                        >
+                          <ScanLine className="h-4 w-4 lg:h-5 lg:w-5 sm:mr-2" />
+                          <span className="hidden sm:inline text-base">Scan</span>
+                        </Button>
                       </div>
-                      <Button 
-                        onClick={handleBarcodeScan}
-                        className="h-11 lg:h-12 px-5 lg:px-7 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md touch-manipulation rounded-lg"
-                      >
-                        <ScanLine className="h-4 w-4 lg:h-5 lg:w-5 sm:mr-2" />
-                        <span className="hidden sm:inline text-base">Scan</span>
-                      </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            ) : allItemsPicked && showPickingCompletionModal ? (
+                  </div>
+                </div>
+              ) : allItemsPicked && showPickingCompletionModal ? (
               <div className="max-w-3xl mx-auto px-3 lg:px-0">
                 <Card className="shadow-2xl border-0 overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50">
                   <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-1 lg:p-2"></div>
