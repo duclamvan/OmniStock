@@ -712,6 +712,23 @@ export const orderCartonItems = pgTable('order_carton_items', {
   createdAt: timestamp('created_at').notNull().defaultNow()
 });
 
+// Actual cartons used during packing (for multi-carton orders)
+export const orderCartons = pgTable('order_cartons', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
+  cartonNumber: integer('carton_number').notNull(), // 1, 2, 3, etc. for tracking order
+  cartonType: varchar('carton_type').notNull(), // 'company' or 'non-company'
+  cartonId: varchar('carton_id').references(() => packingCartons.id), // null if non-company
+  weight: decimal('weight', { precision: 10, scale: 3 }), // in kg
+  labelUrl: text('label_url'),
+  labelPrinted: boolean('label_printed').default(false),
+  trackingNumber: text('tracking_number'),
+  aiWeightCalculation: jsonb('ai_weight_calculation'), // Store AI calculation result
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
 // Packing Materials for warehouse management
 export const packingMaterials = pgTable('packing_materials', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
@@ -1189,6 +1206,7 @@ export const insertStockAdjustmentRequestSchema = createInsertSchema(stockAdjust
 export const insertPackingCartonSchema = createInsertSchema(packingCartons).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertOrderCartonPlanSchema = createInsertSchema(orderCartonPlans).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertOrderCartonItemSchema = createInsertSchema(orderCartonItems).omit({ id: true, createdAt: true });
+export const insertOrderCartonSchema = createInsertSchema(orderCartons).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Packing Materials schemas
 export const insertPackingMaterialSchema = createInsertSchema(packingMaterials).omit({ id: true, createdAt: true, updatedAt: true });
@@ -1343,6 +1361,8 @@ export type OrderCartonPlan = typeof orderCartonPlans.$inferSelect;
 export type InsertOrderCartonPlan = z.infer<typeof insertOrderCartonPlanSchema>;
 export type OrderCartonItem = typeof orderCartonItems.$inferSelect;
 export type InsertOrderCartonItem = z.infer<typeof insertOrderCartonItemSchema>;
+export type OrderCarton = typeof orderCartons.$inferSelect;
+export type InsertOrderCarton = z.infer<typeof insertOrderCartonSchema>;
 
 // Packing Materials types
 export type PackingMaterial = typeof packingMaterials.$inferSelect;
