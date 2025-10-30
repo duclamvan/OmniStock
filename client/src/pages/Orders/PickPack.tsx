@@ -5042,7 +5042,7 @@ export default function PickPack() {
                                 );
                               })()}
                             </div>
-                            <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 mb-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600 mb-3">
                               <div className="flex items-center gap-1.5">
                                 <User className="h-4 w-4 text-gray-400" />
                                 <span className="truncate font-medium">{order.customerName}</span>
@@ -5193,12 +5193,12 @@ export default function PickPack() {
                                   <span className="truncate font-medium">{order.customerName}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
-                                  <Package className="h-4 w-4 text-gray-400" />
-                                  <span className="font-medium">{order.totalItems} items</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
                                   <Globe className="h-4 w-4 text-gray-400" />
                                   <span className="font-semibold text-gray-900">{getOrderCountryCode(order)}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <Package className="h-4 w-4 text-gray-400" />
+                                  <span className="font-medium">{order.totalItems} items</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <CheckCircle className="h-4 w-4 text-green-500" />
