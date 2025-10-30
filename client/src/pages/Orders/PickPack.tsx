@@ -359,6 +359,7 @@ export default function PickPack() {
   const [selectedBatchItems, setSelectedBatchItems] = useState<Set<string>>(new Set());
   const [manualItemIndex, setManualItemIndex] = useState(0);
   const [modificationDialog, setModificationDialog] = useState<PickPackOrder | null>(null);
+  const [showResetOrderDialog, setShowResetOrderDialog] = useState(false);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
@@ -443,6 +444,34 @@ export default function PickPack() {
     packing: number;
     ready: number;
   }>({ pending: 0, picking: 0, packing: 0, ready: 0 });
+
+  // Helper functions for persisting picked items
+  const savePickedProgress = (orderId: string, items: OrderItem[]) => {
+    const progress = items.map(item => ({
+      id: item.id,
+      pickedQuantity: item.pickedQuantity
+    }));
+    localStorage.setItem(`pickpack-progress-${orderId}`, JSON.stringify(progress));
+  };
+
+  const loadPickedProgress = (orderId: string): Record<string, number> | null => {
+    const saved = localStorage.getItem(`pickpack-progress-${orderId}`);
+    if (!saved) return null;
+    
+    try {
+      const progress = JSON.parse(saved);
+      return progress.reduce((acc: Record<string, number>, item: { id: string; pickedQuantity: number }) => {
+        acc[item.id] = item.pickedQuantity;
+        return acc;
+      }, {});
+    } catch {
+      return null;
+    }
+  };
+
+  const clearPickedProgress = (orderId: string) => {
+    localStorage.removeItem(`pickpack-progress-${orderId}`);
+  };
 
   // Toggle section collapse state
   const toggleSectionCollapse = (sectionName: string) => {
@@ -2483,6 +2512,18 @@ export default function PickPack() {
   // Start picking an order
   const startPicking = async (order: PickPackOrder) => {
     try {
+      // Load saved progress from localStorage
+      const savedProgress = loadPickedProgress(order.id);
+      
+      // Restore picked quantities if progress exists
+      let items = order.items || [];
+      if (savedProgress) {
+        items = items.map(item => ({
+          ...item,
+          pickedQuantity: savedProgress[item.id] !== undefined ? savedProgress[item.id] : item.pickedQuantity
+        }));
+      }
+      
       // Set UI state immediately for instant feedback
       const updatedOrder = {
         ...order,
@@ -2490,7 +2531,8 @@ export default function PickPack() {
         pickStatus: 'in_progress' as const,
         pickStartTime: new Date().toISOString(),
         pickedBy: currentEmployee,
-        items: order.items || [] // Ensure items array exists
+        items: items,
+        pickedItems: items.reduce((sum, item) => sum + (item.pickedQuantity || 0), 0)
       };
       
       // Update UI immediately
@@ -2539,6 +2581,9 @@ export default function PickPack() {
     };
 
     setActivePickingOrder(updatedOrder);
+    
+    // Auto-save progress to localStorage
+    savePickedProgress(activePickingOrder.id, updatedItems);
 
     // Check if all items are picked
     const allPicked = updatedItems.every(item => item.pickedQuantity >= item.quantity);
@@ -2555,6 +2600,9 @@ export default function PickPack() {
     try {
       setIsTimerRunning(false);
       playSound('complete');
+      
+      // Clear saved progress since order is completed
+      clearPickedProgress(activePickingOrder.id);
       
       // Only update database for real orders (not mock orders)
       if (!activePickingOrder.id.startsWith('mock-')) {
@@ -2574,6 +2622,40 @@ export default function PickPack() {
     } catch (error) {
       console.error('Error completing picking:', error);
     }
+  };
+
+  // Reset order (clear all picked quantities)
+  const resetOrder = () => {
+    if (!activePickingOrder) return;
+
+    const resetItems = activePickingOrder.items.map(item => ({
+      ...item,
+      pickedQuantity: 0
+    }));
+
+    const updatedOrder = {
+      ...activePickingOrder,
+      items: resetItems,
+      pickedItems: 0
+    };
+
+    setActivePickingOrder(updatedOrder);
+    setManualItemIndex(0);
+    
+    // Clear saved progress
+    clearPickedProgress(activePickingOrder.id);
+    
+    // Reset timer
+    setPickingTimer(0);
+    setIsTimerRunning(true);
+    
+    playSound('success');
+    setShowResetOrderDialog(false);
+    
+    toast({
+      title: "Order Reset",
+      description: "All picked quantities have been cleared.",
+    });
   };
 
   // Start packing an order
@@ -3876,6 +3958,14 @@ export default function PickPack() {
                   </div>
                   <Button
                     size="icon"
+                    className="h-7 w-7 bg-red-500/80 hover:bg-red-600/90 touch-manipulation"
+                    onClick={() => setShowResetOrderDialog(true)}
+                    title="Reset Order"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5 text-white" />
+                  </Button>
+                  <Button
+                    size="icon"
                     className="h-7 w-7 bg-white/20 hover:bg-white/30 touch-manipulation"
                     onClick={() => setIsTimerRunning(!isTimerRunning)}
                   >
@@ -3925,6 +4015,15 @@ export default function PickPack() {
                   >
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Exit
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="h-10 bg-red-500/80 hover:bg-red-600/90 text-white border-red-400/50"
+                    onClick={() => setShowResetOrderDialog(true)}
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Reset Order
                   </Button>
                   <Separator orientation="vertical" className="h-6 bg-white/30" />
                   <div>
@@ -6078,7 +6177,32 @@ export default function PickPack() {
         </DialogContent>
       </Dialog>
 
-
+      {/* Reset Order Confirmation Dialog */}
+      <Dialog open={showResetOrderDialog} onOpenChange={setShowResetOrderDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Order</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to reset this order? All picked quantities will be cleared and you'll start from the beginning.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowResetOrderDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700"
+              onClick={resetOrder}
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Reset Order
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Undo Bar - Fixed at bottom */}
       {showUndoPopup && pendingShipments && (
