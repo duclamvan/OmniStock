@@ -530,9 +530,17 @@ export default function PickPack() {
     const isActiveMode = !!(activePickingOrder || activePackingOrder);
     sessionStorage.setItem('pickpack-active-mode', isActiveMode ? 'true' : 'false');
     
+    // Also add a class to the body for CSS targeting
+    if (isActiveMode) {
+      document.body.classList.add('pickpack-active-mode');
+    } else {
+      document.body.classList.remove('pickpack-active-mode');
+    }
+    
     // Cleanup when component unmounts
     return () => {
       sessionStorage.removeItem('pickpack-active-mode');
+      document.body.classList.remove('pickpack-active-mode');
     };
   }, [activePickingOrder, activePackingOrder]);
 

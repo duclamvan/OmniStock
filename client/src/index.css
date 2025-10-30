@@ -661,3 +661,16 @@ body > div[style*="z-index: 999999"] {
 .toast-3d {
   contain: layout style paint !important;
 }
+
+/* Hide navigation headers during active picking/packing mode */
+body.pickpack-active-mode header {
+  display: none !important;
+}
+
+body.pickpack-active-mode aside {
+  display: none !important;
+}
+
+body.pickpack-active-mode main {
+  margin-left: 0 !important;
+}
