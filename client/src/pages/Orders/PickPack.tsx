@@ -5478,7 +5478,7 @@ export default function PickPack() {
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <Truck className="h-4 w-4 text-blue-500" />
-                                  <span className="truncate font-medium text-blue-600">{order.shippingCarrier || 'Standard Carrier'}</span>
+                                  <span className="truncate font-medium text-blue-600">{order.shippingMethod || 'Standard'}</span>
                                 </div>
                               </div>
                               {order.pickedBy && (
@@ -5643,7 +5643,7 @@ export default function PickPack() {
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <Truck className="h-4 w-4 text-blue-500" />
-                                  <span className="truncate font-medium text-blue-600">{order.shippingCarrier || 'Standard Carrier'}</span>
+                                  <span className="truncate font-medium text-blue-600">{order.shippingMethod || 'Standard'}</span>
                                 </div>
                               </div>
                               {order.pickedBy && (
@@ -6033,7 +6033,7 @@ export default function PickPack() {
                                           </div>
                                           <div className="flex items-center gap-1.5">
                                             <Truck className="h-3 w-3 text-blue-500" />
-                                            <span className="truncate font-medium text-blue-600">{order.shippingCarrier || 'Standard Carrier'}</span>
+                                            <span className="truncate font-medium text-blue-600">{order.shippingMethod || 'Standard'}</span>
                                           </div>
                                         </div>
                                         {order.packedBy && (
