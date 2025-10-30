@@ -34,6 +34,7 @@ import {
   packingCartons,
   orderCartonPlans,
   orderCartonItems,
+  orderCartons,
   expenses,
   packingMaterials,
   packingMaterialUsage,
@@ -112,6 +113,8 @@ import {
   type InsertOrderCartonPlan,
   type OrderCartonItem,
   type InsertOrderCartonItem,
+  type OrderCarton,
+  type InsertOrderCarton,
   type PackingMaterial,
   type InsertPackingMaterial,
   type PackingMaterialUsage,
@@ -467,6 +470,13 @@ export interface IStorage {
   getOrderCartonItems(planId: string): Promise<OrderCartonItem[]>;
   createOrderCartonItem(item: InsertOrderCartonItem): Promise<OrderCartonItem>;
   deleteOrderCartonPlan(planId: string): Promise<boolean>;
+  
+  // Order Cartons (actual cartons used during packing)
+  getOrderCartons(orderId: string): Promise<OrderCarton[]>;
+  getOrderCarton(id: string): Promise<OrderCarton | undefined>;
+  createOrderCarton(carton: InsertOrderCarton): Promise<OrderCarton>;
+  updateOrderCarton(id: string, carton: Partial<InsertOrderCarton>): Promise<OrderCarton | undefined>;
+  deleteOrderCarton(id: string): Promise<boolean>;
   
   // Order Fulfillment Performance Tracking
   logFulfillmentStart(orderId: string, userId: string, activityType: 'pick' | 'pack', itemCount: number, totalQuantity: number): Promise<OrderFulfillmentLog>;
@@ -4485,6 +4495,72 @@ export class DatabaseStorage implements IStorage {
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error('Error deleting order carton plan:', error);
+      return false;
+    }
+  }
+  
+  // Order Cartons (actual cartons used during packing)
+  async getOrderCartons(orderId: string): Promise<OrderCarton[]> {
+    try {
+      return await db
+        .select()
+        .from(orderCartons)
+        .where(eq(orderCartons.orderId, orderId))
+        .orderBy(asc(orderCartons.cartonNumber));
+    } catch (error) {
+      console.error('Error fetching order cartons:', error);
+      return [];
+    }
+  }
+
+  async getOrderCarton(id: string): Promise<OrderCarton | undefined> {
+    try {
+      const [carton] = await db
+        .select()
+        .from(orderCartons)
+        .where(eq(orderCartons.id, id));
+      return carton || undefined;
+    } catch (error) {
+      console.error('Error fetching order carton:', error);
+      return undefined;
+    }
+  }
+
+  async createOrderCarton(carton: InsertOrderCarton): Promise<OrderCarton> {
+    try {
+      const [newCarton] = await db
+        .insert(orderCartons)
+        .values(carton)
+        .returning();
+      return newCarton;
+    } catch (error) {
+      console.error('Error creating order carton:', error);
+      throw error;
+    }
+  }
+
+  async updateOrderCarton(id: string, carton: Partial<InsertOrderCarton>): Promise<OrderCarton | undefined> {
+    try {
+      const [updated] = await db
+        .update(orderCartons)
+        .set({ ...carton, updatedAt: new Date() })
+        .where(eq(orderCartons.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating order carton:', error);
+      return undefined;
+    }
+  }
+
+  async deleteOrderCarton(id: string): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(orderCartons)
+        .where(eq(orderCartons.id, id));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting order carton:', error);
       return false;
     }
   }
