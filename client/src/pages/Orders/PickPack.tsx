@@ -386,7 +386,7 @@ export default function PickPack() {
   
   const [selectedBoxSize, setSelectedBoxSize] = useState<string>('');
   const [packageWeight, setPackageWeight] = useState<string>('');
-  const [verifiedItems, setVerifiedItems] = useState<Set<string>>(new Set());
+  const [verifiedItems, setVerifiedItems] = useState<Record<string, number>>({});
   const [shippingLabelPrinted, setShippingLabelPrinted] = useState<boolean>(false);
   const [expandedBundles, setExpandedBundles] = useState<Set<string>>(new Set());
   const [bundlePickedItems, setBundlePickedItems] = useState<Record<string, Set<string>>>({}); // itemId -> Set of picked bundle item ids
@@ -670,6 +670,32 @@ export default function PickPack() {
       }, 100);
     }
   }, [selectedTab, activePickingOrder, activePackingOrder]);
+
+  // Auto-update packingChecklist.itemsVerified based on verifiedItems
+  useEffect(() => {
+    if (!activePackingOrder || !packingRecommendation) return;
+    
+    const currentCarton = packingRecommendation.cartons.find(c => c.id === selectedCarton);
+    if (!currentCarton) return;
+    
+    // Calculate if all items are verified
+    const allItemsVerified = currentCarton.items.every(item => {
+      if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
+        // For bundles, check if all components have been verified the required number of times
+        return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
+      }
+      // For regular items, check if the item has been verified the required quantity
+      return (verifiedItems[item.id] || 0) >= item.quantity;
+    });
+    
+    // Only update if itemsVerified actually changed (prevent infinite loop)
+    setPackingChecklist(prev => {
+      if (prev.itemsVerified !== allItemsVerified) {
+        return { ...prev, itemsVerified: allItemsVerified };
+      }
+      return prev;
+    });
+  }, [verifiedItems, activePackingOrder?.id, selectedCarton, packingRecommendation]);
 
   // Fetch real orders from the API with items and bundle details
   // Real-time data synchronization: refetch every 5 seconds to ensure Pick & Pack always shows latest order data
@@ -2455,7 +2481,7 @@ export default function PickPack() {
     );
 
     if (matchingItem) {
-      setVerifiedItems(new Set(Array.from(verifiedItems).concat(matchingItem.id)));
+      setVerifiedItems(prev => ({ ...prev, [matchingItem.id]: Math.min((prev[matchingItem.id] || 0) + 1, matchingItem.quantity) }));
       playSound('scan');
     } else {
       playSound('error');
@@ -2836,7 +2862,7 @@ export default function PickPack() {
       msds: false,
       cpnpCertificate: false
     });
-    setVerifiedItems(new Set());
+    setVerifiedItems({});
     setUseNonCompanyCarton(false);
     setPackageWeight('');
     setShippingLabelPrinted(false);
@@ -2891,7 +2917,15 @@ export default function PickPack() {
     
     // Validate ALL checkboxes are checked
     const currentCarton = packingRecommendation?.cartons.find(c => c.id === selectedCarton);
-    const allItemsVerified = currentCarton ? currentCarton.items.every(item => verifiedItems.has(item.id)) : false;
+    // Check if all items are verified, including bundle components
+    const allItemsVerified = currentCarton ? currentCarton.items.every(item => {
+      if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
+        // For bundles, check if all components have been verified the required number of times
+        return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
+      }
+      // For regular items, check if the item has been verified the required quantity
+      return (verifiedItems[item.id] || 0) >= item.quantity;
+    }) : false;
     const needsFragileProtection = currentCarton?.isFragile || false;
     
     // Check each required checkbox
@@ -3326,7 +3360,15 @@ export default function PickPack() {
   if (activePackingOrder) {
     const progress = (activePackingOrder.packedItems / activePackingOrder.totalItems) * 100;
     const currentCarton = packingRecommendation?.cartons.find(c => c.id === selectedCarton);
-    const allItemsVerified = currentCarton ? currentCarton.items.every(item => verifiedItems.has(item.id)) : false;
+    // Check if all items are verified, including bundle components
+    const allItemsVerified = currentCarton ? currentCarton.items.every(item => {
+      if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
+        // For bundles, check if all components have been verified the required number of times
+        return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
+      }
+      // For regular items, check if the item has been verified the required quantity
+      return (verifiedItems[item.id] || 0) >= item.quantity;
+    }) : false;
     
     // Simplified packing completion check
     const documentsReady = printedDocuments.packingList || printedDocuments.invoice;
@@ -3381,7 +3423,7 @@ export default function PickPack() {
                   });
                   setSelectedBoxSize('');
                   setPackageWeight('');
-                  setVerifiedItems(new Set());
+                  setVerifiedItems({});
                   setShippingLabelPrinted(false);
                 }}
               >
@@ -3399,7 +3441,12 @@ export default function PickPack() {
                 <div className="text-right">
                   <div className="font-mono text-sm font-bold">{formatTimer(packingTimer)}</div>
                   <div className="text-[10px] text-purple-100 hidden sm:block">
-                    {verifiedItems.size}/{activePackingOrder.items.length} items
+                    {activePackingOrder.items.filter(item => {
+                      if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
+                        return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
+                      }
+                      return (verifiedItems[item.id] || 0) >= item.quantity;
+                    }).length}/{activePackingOrder.items.length} items
                   </div>
                 </div>
                 <Button
@@ -3419,11 +3466,21 @@ export default function PickPack() {
             {/* Step Indicators (compact, single row) */}
             <div className="flex items-center gap-1 mt-2 justify-center flex-wrap">
               <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                verifiedItems.size === activePackingOrder.items.length 
+                activePackingOrder.items.every(item => {
+                  if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
+                    return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
+                  }
+                  return (verifiedItems[item.id] || 0) >= item.quantity;
+                })
                   ? 'bg-green-500 text-white' 
                   : 'bg-black/20 text-purple-200'
               }`}>
-                {verifiedItems.size === activePackingOrder.items.length ? (
+                {activePackingOrder.items.every(item => {
+                  if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
+                    return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
+                  }
+                  return (verifiedItems[item.id] || 0) >= item.quantity;
+                }) ? (
                   <CheckCircle className="h-3 w-3" />
                 ) : (
                   <Circle className="h-3 w-3" />
@@ -3509,7 +3566,12 @@ export default function PickPack() {
                     Barcode Scanner
                   </span>
                   <Badge className="bg-white text-purple-600 text-sm px-2.5 py-1">
-                    {verifiedItems.size}/{activePackingOrder.items.length} verified
+                    {activePackingOrder.items.filter(item => {
+                      if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
+                        return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
+                      }
+                      return (verifiedItems[item.id] || 0) >= item.quantity;
+                    }).length}/{activePackingOrder.items.length} verified
                   </Badge>
                 </CardTitle>
               </CardHeader>
@@ -3529,7 +3591,7 @@ export default function PickPack() {
                             item => item.barcode === barcodeInput || item.sku === barcodeInput
                           );
                           if (matchingItem) {
-                            setVerifiedItems(new Set(Array.from(verifiedItems).concat(matchingItem.id)));
+                            setVerifiedItems(prev => ({ ...prev, [matchingItem.id]: Math.min((prev[matchingItem.id] || 0) + 1, matchingItem.quantity) }));
                             playSound('scan');
                           } else {
                             playSound('error');
@@ -3554,14 +3616,29 @@ export default function PickPack() {
                 <AccordionTrigger className="px-4 py-3 hover:no-underline">
                   <div className="flex items-center justify-between w-full pr-4">
                     <div className="flex items-center gap-2">
-                      {verifiedItems.size === activePackingOrder.items.length ? (
+                      {activePackingOrder.items.every(item => {
+                        if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
+                          return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
+                        }
+                        return (verifiedItems[item.id] || 0) >= item.quantity;
+                      }) ? (
                         <CheckCircle className="h-5 w-5 text-green-600" />
                       ) : (
                         <Circle className="h-5 w-5 text-gray-400" />
                       )}
                       <span className="text-base font-semibold">
-                        {verifiedItems.size === activePackingOrder.items.length ? '✓ ' : ''}
-                        Items Verified ({verifiedItems.size}/{activePackingOrder.items.length})
+                        {activePackingOrder.items.every(item => {
+                          if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
+                            return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
+                          }
+                          return (verifiedItems[item.id] || 0) >= item.quantity;
+                        }) ? '✓ ' : ''}
+                        Items Verified ({activePackingOrder.items.filter(item => {
+                          if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
+                            return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
+                          }
+                          return (verifiedItems[item.id] || 0) >= item.quantity;
+                        }).length}/{activePackingOrder.items.length})
                       </span>
                     </div>
                   </div>
@@ -3571,12 +3648,18 @@ export default function PickPack() {
                     <ScrollArea className="h-[400px]">
                       <div className="space-y-2">
                       {activePackingOrder.items.map((item, index) => {
-                        const isVerified = verifiedItems.has(item.id);
+                        const isVerified = (verifiedItems[item.id] || 0) >= item.quantity;
+                        const isBundle = item.isBundle && item.bundleItems && item.bundleItems.length > 0;
+                        const isExpanded = expandedBundles.has(item.id);
+                        const bundleComponentsVerified = isBundle ? item.bundleItems?.filter((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity).length || 0 : 0;
+                        const totalBundleComponents = isBundle ? item.bundleItems?.length || 0 : 0;
+                        const allBundleComponentsVerified = isBundle && bundleComponentsVerified === totalBundleComponents;
+                        
                         return (
                           <div 
                             key={item.id} 
                             className={`relative p-3 rounded-lg border-2 transition-all ${
-                              isVerified 
+                              isVerified || (isBundle && allBundleComponentsVerified)
                                 ? 'bg-green-50 border-green-300' 
                                 : 'bg-gray-50 border-gray-200'
                             }`}
@@ -3607,62 +3690,216 @@ export default function PickPack() {
                                 </div>
                                 {/* Verification Status Badge */}
                                 <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${
-                                  isVerified 
+                                  isVerified || (isBundle && allBundleComponentsVerified)
                                     ? 'bg-green-500 text-white' 
                                     : 'bg-purple-100 text-purple-600 border-2 border-white'
                                 }`}>
-                                  {isVerified ? <CheckCircle className="h-4 w-4" /> : index + 1}
+                                  {(isVerified || (isBundle && allBundleComponentsVerified)) ? <CheckCircle className="h-4 w-4" /> : index + 1}
                                 </div>
                               </div>
 
                               <div className="flex-1">
                                 <div className="flex items-start justify-between">
                                   <div className="flex-1">
-                                    <p className="font-semibold text-gray-900 text-sm leading-tight">{item.productName}</p>
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-semibold text-gray-900 text-sm leading-tight">{item.productName}</p>
+                                      {isBundle && (
+                                        <Badge className="bg-amber-100 text-amber-800 text-xs">
+                                          Bundle ({bundleComponentsVerified}/{totalBundleComponents})
+                                        </Badge>
+                                      )}
+                                    </div>
                                     <div className="flex items-center gap-2 mt-1">
                                       {/* Prominent Quantity Display */}
                                       <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md font-bold text-sm">
                                         Qty: {item.quantity}
                                       </div>
-                                      <div className="text-xs text-gray-400">
-                                        {item.warehouseLocation}
-                                      </div>
+                                      {!isBundle && (
+                                        <div className="text-xs text-gray-400">
+                                          {item.warehouseLocation}
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                   
-                                  {/* Verify Button */}
-                                  <Button
-                                    variant={isVerified ? "default" : "outline"}
-                                    size="sm"
-                                    className={`ml-2 ${
-                                      isVerified 
-                                        ? 'bg-green-500 hover:bg-green-600 text-white' 
-                                        : 'border-purple-300 text-purple-600 hover:bg-purple-50'
-                                    }`}
-                                    onClick={() => {
-                                      if (isVerified) {
-                                        const newSet = new Set(verifiedItems);
-                                        newSet.delete(item.id);
-                                        setVerifiedItems(newSet);
-                                      } else {
-                                        setVerifiedItems(new Set(Array.from(verifiedItems).concat(item.id)));
-                                        playSound('scan');
-                                      }
-                                    }}
-                                  >
-                                    {isVerified ? (
-                                      <>
-                                        <CheckCircle className="h-3 w-3 mr-1" />
-                                        Done
-                                      </>
-                                    ) : (
-                                      <>
-                                        <ScanLine className="h-3 w-3 mr-1" />
-                                        Verify
-                                      </>
-                                    )}
-                                  </Button>
+                                  {/* Expand/Collapse Button for Bundles or Verify Button for Regular Items */}
+                                  {isBundle ? (
+                                    <div className="flex gap-1">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="ml-2 border-amber-300 text-amber-600 hover:bg-amber-50"
+                                        onClick={() => {
+                                          const newExpanded = new Set(expandedBundles);
+                                          if (isExpanded) {
+                                            newExpanded.delete(item.id);
+                                          } else {
+                                            newExpanded.add(item.id);
+                                          }
+                                          setExpandedBundles(newExpanded);
+                                        }}
+                                      >
+                                        {isExpanded ? (
+                                          <>
+                                            <ChevronDown className="h-3 w-3 mr-1" />
+                                            Hide
+                                          </>
+                                        ) : (
+                                          <>
+                                            <ChevronRight className="h-3 w-3 mr-1" />
+                                            Show
+                                          </>
+                                        )}
+                                      </Button>
+                                      <Button
+                                        variant={allBundleComponentsVerified ? "default" : "outline"}
+                                        size="sm"
+                                        className={`${
+                                          allBundleComponentsVerified
+                                            ? 'bg-green-500 hover:bg-green-600 text-white' 
+                                            : 'border-purple-300 text-purple-600 hover:bg-purple-50'
+                                        }`}
+                                        onClick={() => {
+                                          if (allBundleComponentsVerified) {
+                                            // Reset all component counts to 0
+                                            setVerifiedItems(prev => {
+                                              const newRecord = { ...prev };
+                                              item.bundleItems?.forEach((bi: any) => {
+                                                delete newRecord[`${item.id}-${bi.id}`];
+                                              });
+                                              return newRecord;
+                                            });
+                                          } else {
+                                            // Set all components to their required quantity
+                                            setVerifiedItems(prev => {
+                                              const newRecord = { ...prev };
+                                              item.bundleItems?.forEach((bi: any) => {
+                                                newRecord[`${item.id}-${bi.id}`] = bi.quantity;
+                                              });
+                                              return newRecord;
+                                            });
+                                            playSound('scan');
+                                          }
+                                        }}
+                                      >
+                                        {allBundleComponentsVerified ? (
+                                          <>
+                                            <CheckCircle className="h-3 w-3 mr-1" />
+                                            All Done
+                                          </>
+                                        ) : (
+                                          <>
+                                            <ScanLine className="h-3 w-3 mr-1" />
+                                            Verify All
+                                          </>
+                                        )}
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <Button
+                                      variant={isVerified ? "default" : "outline"}
+                                      size="sm"
+                                      className={`ml-2 ${
+                                        isVerified 
+                                          ? 'bg-green-500 hover:bg-green-600 text-white' 
+                                          : 'border-purple-300 text-purple-600 hover:bg-purple-50'
+                                      }`}
+                                      onClick={() => {
+                                        if (isVerified) {
+                                          setVerifiedItems(prev => {
+                                            const newRecord = { ...prev };
+                                            delete newRecord[item.id];
+                                            return newRecord;
+                                          });
+                                        } else {
+                                          setVerifiedItems(prev => ({ ...prev, [item.id]: Math.min((prev[item.id] || 0) + 1, item.quantity) }));
+                                          playSound('scan');
+                                        }
+                                      }}
+                                    >
+                                      {isVerified ? (
+                                        <>
+                                          <CheckCircle className="h-3 w-3 mr-1" />
+                                          Done
+                                        </>
+                                      ) : (
+                                        <>
+                                          <ScanLine className="h-3 w-3 mr-1" />
+                                          Verify
+                                        </>
+                                      )}
+                                    </Button>
+                                  )}
                                 </div>
+                                
+                                {/* Bundle Components - Expandable Section */}
+                                {isBundle && isExpanded && (
+                                  <div className="mt-3 pl-4 border-l-2 border-amber-300 space-y-2">
+                                    {item.bundleItems?.map((bundleItem: any, idx: number) => {
+                                      const componentId = `${item.id}-${bundleItem.id}`;
+                                      const isComponentVerified = (verifiedItems[componentId] || 0) >= bundleItem.quantity;
+                                      
+                                      return (
+                                        <div 
+                                          key={bundleItem.id}
+                                          className={`flex items-center justify-between p-2 rounded border ${
+                                            isComponentVerified 
+                                              ? 'bg-green-50 border-green-200' 
+                                              : 'bg-white border-gray-200'
+                                          }`}
+                                        >
+                                          <div className="flex-1">
+                                            <div className="flex items-center gap-2">
+                                              <span className="text-xs font-semibold text-gray-700">{bundleItem.name}</span>
+                                              {bundleItem.colorNumber && (
+                                                <span className="text-xs text-gray-500">({bundleItem.colorNumber})</span>
+                                              )}
+                                            </div>
+                                            <div className="flex items-center gap-2 mt-1">
+                                              <span className="text-xs text-gray-500">
+                                                Qty: <span className={isComponentVerified ? 'font-bold text-green-600' : ''}>{verifiedItems[componentId] || 0}/{bundleItem.quantity}</span>
+                                              </span>
+                                              {bundleItem.location && (
+                                                <span className="text-xs text-gray-400">📍 {bundleItem.location}</span>
+                                              )}
+                                            </div>
+                                          </div>
+                                          <Button
+                                            variant={isComponentVerified ? "default" : "outline"}
+                                            size="sm"
+                                            className={`h-7 text-xs ${
+                                              isComponentVerified 
+                                                ? 'bg-green-500 hover:bg-green-600 text-white' 
+                                                : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                                            }`}
+                                            onClick={() => {
+                                              setVerifiedItems(prev => {
+                                                const currentCount = prev[componentId] || 0;
+                                                const newRecord = { ...prev };
+                                                if (currentCount >= bundleItem.quantity) {
+                                                  delete newRecord[componentId];
+                                                } else {
+                                                  newRecord[componentId] = currentCount + 1;
+                                                  playSound('scan');
+                                                }
+                                                return newRecord;
+                                              });
+                                            }}
+                                          >
+                                            {isComponentVerified ? (
+                                              <>
+                                                <Check className="h-3 w-3 mr-1" />
+                                                ✓
+                                              </>
+                                            ) : (
+                                              'Check'
+                                            )}
+                                          </Button>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
                                 
                                 {/* Enhanced Shipping Instructions */}
                                 {item.shipmentNotes && (
