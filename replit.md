@@ -2,15 +2,24 @@
 Davie Supply is a full-stack web application for comprehensive warehouse and order management, aiming to optimize supply chain operations. It covers the entire order lifecycle, inventory tracking, CRM, and multi-currency financial reporting. Key features include real-time Vietnamese diacritics search, customer-specific pricing, external shipping API integrations, and extensive settings management. Future ambitions include advanced warehouse mapping, a comprehensive Pick & Pack workflow, and AI-powered optimization.
 
 # Recent Changes
-**October 30, 2025**: Smart Order Selection & Enhanced Pick & Pack UI:
-- Implemented intelligent order selection algorithm for "Pick Next Order" and "Start Next Priority Order" buttons
-- Smart scoring considers: Priority (40%), Order Age (30%), Shipping Method (20%), and Order Size (10%)
-- Express/Urgent shipping automatically prioritized, older orders get higher urgency scores
-- Small orders (1-5 items) slightly prioritized for better workflow flow
-- Added header navigation with breadcrumb (Home > Orders > Pick & Pack)
-- Live statistics overview showing Pending/Picking/Packing/Ready counts in color-coded cards
-- Responsive stats layout: 2 columns on mobile, 4 columns on desktop
-- Unified Pick & Pack card layouts across all tabs with consistent 2x2 grid on mobile, 4-column grid on desktop
+**October 30, 2025**: AI-Powered Carton Suggestions & Intelligent Packaging Classification:
+- Implemented intelligent product packaging classification system with three types:
+  - `carton`: Items needing carton packaging
+  - `outer_carton`: Items with their own packaging (only need nylon wrapping)
+  - `nylon_wrap`: Items requiring only nylon wrapping
+- AI-powered carton recommendation engine that:
+  - Analyzes order items and excludes outer_carton/nylon_wrap items from carton calculations
+  - Suggests optimal carton types with count, weight, and volume utilization
+  - Provides reasoning for recommendations
+- Dynamic recalculation when user changes carton selections
+- AI Suggestions panel in packing mode showing:
+  - "Items Needing Cartons" section with suggested carton types
+  - "Nylon Wrap Only" section for items with outer packaging
+  - "Apply AI Suggestions" button to auto-create all suggested cartons
+- Visual badges on items indicating nylon-wrap-only packaging requirement
+- Smart order selection algorithm for "Pick Next Order" and "Start Next Priority Order"
+- Enhanced Pick & Pack UI with breadcrumb navigation and live statistics
+- Responsive layouts: 2 columns on mobile, 4 columns on desktop
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
