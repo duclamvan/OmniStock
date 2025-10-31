@@ -404,6 +404,7 @@ export default function PickPack() {
   const [shippingLabelPrinted, setShippingLabelPrinted] = useState<boolean>(false);
   const [expandedBundles, setExpandedBundles] = useState<Set<string>>(new Set());
   const [bundlePickedItems, setBundlePickedItems] = useState<Record<string, Set<string>>>({}); // itemId -> Set of picked bundle item ids
+  const [expandedOverviewItems, setExpandedOverviewItems] = useState<Set<string>>(new Set()); // Track expanded items in overview modal
   const [packingRecommendation, setPackingRecommendation] = useState<PackingRecommendation | null>(null);
   const [selectedCartons, setSelectedCartons] = useState<Array<{
     id: string;
@@ -5031,22 +5032,60 @@ export default function PickPack() {
                               </div>
                             </div>
                             
-                            {/* Go to Item Button */}
-                            <div className="flex-shrink-0">
+                            {/* Expand/Collapse Toggle */}
+                            <div className="flex-shrink-0 flex flex-col gap-2">
                               <Button
                                 variant="outline"
                                 size="sm"
                                 className="h-10 sm:h-12 px-3 sm:px-4"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const newExpanded = new Set(expandedOverviewItems);
+                                  if (newExpanded.has(item.id)) {
+                                    newExpanded.delete(item.id);
+                                  } else {
+                                    newExpanded.add(item.id);
+                                  }
+                                  setExpandedOverviewItems(newExpanded);
+                                }}
+                              >
+                                {expandedOverviewItems.has(item.id) ? (
+                                  <ChevronUp className="h-4 w-4" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          {/* Expandable Details Section */}
+                          {expandedOverviewItems.has(item.id) && (
+                            <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-gray-50 rounded-lg p-3">
+                                  <p className="text-xs font-semibold text-gray-500 uppercase mb-1">SKU</p>
+                                  <p className="text-sm font-mono font-bold text-gray-900">{item.sku}</p>
+                                </div>
+                                <div className="bg-orange-50 rounded-lg p-3">
+                                  <p className="text-xs font-semibold text-orange-700 uppercase mb-1">Location</p>
+                                  <p className="text-sm font-mono font-black text-orange-600">{item.warehouseLocation}</p>
+                                </div>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full h-10 text-sm font-semibold"
                                 onClick={() => {
                                   setManualItemIndex(index);
                                   setShowItemOverviewModal(false);
                                   window.scrollTo(0, 0);
                                 }}
                               >
-                                <ChevronRight className="h-4 w-4" />
+                                <ChevronRight className="h-4 w-4 mr-2" />
+                                Go to This Item
                               </Button>
                             </div>
-                          </div>
+                          )}
                         </CardContent>
                       </Card>
                     );
