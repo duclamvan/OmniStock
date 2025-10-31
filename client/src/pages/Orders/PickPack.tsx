@@ -3309,7 +3309,7 @@ export default function PickPack() {
 
   // Filter orders by status - Updated to match backend state machine
   const getOrdersByStatus = (status: string) => {
-    return transformedOrders.filter(order => {
+    const filtered = transformedOrders.filter(order => {
       if (status === 'pending') return order.pickStatus === 'not_started' || !order.pickStatus;
       if (status === 'picking') return order.pickStatus === 'in_progress';
       // Include both not_started (ready to pack) AND in_progress (abandoned/resume packing)
@@ -3317,6 +3317,21 @@ export default function PickPack() {
       if (status === 'ready') return order.packStatus === 'completed';
       return false;
     });
+    
+    // Sort packing orders by oldest to latest (packStartTime)
+    if (status === 'packing') {
+      return filtered.sort((a, b) => {
+        const timeA = a.packStartTime ? new Date(a.packStartTime).getTime() : 0;
+        const timeB = b.packStartTime ? new Date(b.packStartTime).getTime() : 0;
+        // Orders without packStartTime go to the end
+        if (!a.packStartTime && !b.packStartTime) return 0;
+        if (!a.packStartTime) return 1;
+        if (!b.packStartTime) return -1;
+        return timeA - timeB; // Oldest first
+      });
+    }
+    
+    return filtered;
   };
 
   const getPriorityColor = (priority: string) => {
