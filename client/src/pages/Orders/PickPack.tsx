@@ -208,13 +208,45 @@ interface OrderCarton {
   cartonType: 'company' | 'non-company';
   cartonId?: string | null;
   weight?: string | null;
+  payloadWeightKg?: number | null;
+  innerLengthCm?: number | null;
+  innerWidthCm?: number | null;
+  innerHeightCm?: number | null;
   labelUrl?: string | null;
   labelPrinted: boolean;
   trackingNumber?: string | null;
   aiWeightCalculation?: any;
+  aiPlanId?: string | null;
+  source?: string;
+  itemAllocations?: any;
   notes?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+interface CartonSuggestion {
+  cartonId: string;
+  cartonNumber: number;
+  items: any[];
+  totalWeightKg: number;
+  volumeUtilization: number;
+  fillingWeightKg: number;
+  unusedVolumeCm3: number;
+}
+
+interface CartonRecommendation {
+  suggestions: CartonSuggestion[];
+  cartonCount: number;
+  nylonWrapItems?: Array<{
+    productId: string;
+    productName: string;
+    quantity: number;
+    packagingRequirement: string;
+  }>;
+  reasoning: string;
+  totalWeightKg: number;
+  avgUtilization: number;
+  optimizationSuggestions: string[];
 }
 
 // Memoized Product Image Component to prevent re-renders from timer updates
@@ -780,7 +812,7 @@ export default function PickPack() {
   });
 
   // Query for carton recommendation for current order
-  const { data: recommendedCarton } = useQuery({
+  const { data: recommendedCarton } = useQuery<CartonRecommendation>({
     queryKey: ['/api/orders', activePackingOrder?.id, 'recommend-carton'],
     enabled: !!activePackingOrder?.id,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -861,73 +893,88 @@ export default function PickPack() {
     // Mark that we've started auto-applying
     setHasAutoAppliedSuggestions(true);
     
-    console.log(`Auto-applying AI suggestions: creating ${recommendedCarton.suggestions.length} carton(s)`);
+    console.log(`✅ Auto-applying AI optimization: creating ${recommendedCarton.suggestions.length} optimized carton(s) using DeepSeek AI`);
     
     // Automatically create cartons based on AI suggestions
     const createAndUpdateCartons = async () => {
       try {
         const createdCartons = [];
         
-        // Create each carton sequentially with correct numbering
+        // Create each carton with complete details from AI suggestions
         for (let i = 0; i < recommendedCarton.suggestions.length; i++) {
           const suggestion = recommendedCarton.suggestions[i];
-          const cartonNumber = i + 1; // Sequential numbering: 1, 2, 3, etc.
+          const cartonNumber = i + 1;
           
-          console.log(`Creating carton #${cartonNumber} with type ${suggestion.cartonId}`);
+          // Find the carton data for dimensions
+          const cartonData = availableCartons?.find((c: any) => c.id === suggestion.cartonId);
+          
+          console.log(`📦 Creating optimized carton #${cartonNumber}: ${cartonData?.name || suggestion.cartonId} (${suggestion.totalWeightKg?.toFixed(3)}kg, ${suggestion.volumeUtilization}% utilization)`);
           
           const result = await createCartonMutation.mutateAsync({
             orderId: activePackingOrder.id,
             cartonNumber,
             cartonType: 'company',
-            cartonId: suggestion.cartonId
+            cartonId: suggestion.cartonId,
+            weight: suggestion.totalWeightKg?.toFixed(3) || '0.000',
+            payloadWeightKg: suggestion.totalWeightKg || 0,
+            innerLengthCm: cartonData?.dimensions?.length || cartonData?.innerLengthCm,
+            innerWidthCm: cartonData?.dimensions?.width || cartonData?.innerWidthCm,
+            innerHeightCm: cartonData?.dimensions?.height || cartonData?.innerHeightCm,
+            source: 'ai',
+            aiWeightCalculation: true,
+            aiPlanId: `deepseek-${Date.now()}-${i}`,
+            itemAllocations: suggestion.items || null,
+            notes: `AI optimized: ${suggestion.volumeUtilization}% utilization`
           });
           createdCartons.push(result);
         }
         
-        // Refetch to get the latest cartons
+        // Refetch to show all created cartons with their data
         await refetchCartons();
         
-        // Update weights and dimensions for each carton
-        setTimeout(async () => {
-          for (let i = 0; i < recommendedCarton.suggestions.length; i++) {
-            const suggestion = recommendedCarton.suggestions[i];
-            if (createdCartons[i]) {
-              const updates: any = {
-                source: 'ai',
-                aiPlanId: null
-              };
-              
-              if (suggestion.totalWeightKg) {
-                updates.weight = suggestion.totalWeightKg.toFixed(3);
-                updates.payloadWeightKg = suggestion.totalWeightKg;
-                updates.aiWeightCalculation = true;
-              }
-              
-              // Get carton dimensions from availableCartons
-              if (suggestion.cartonId && availableCartons && availableCartons.length > 0) {
-                const cartonData = availableCartons.find((c: any) => c.id === suggestion.cartonId);
-                if (cartonData && cartonData.dimensions) {
-                  updates.innerLengthCm = cartonData.dimensions.length;
-                  updates.innerWidthCm = cartonData.dimensions.width;
-                  updates.innerHeightCm = cartonData.dimensions.height;
-                }
-              }
-              
-              await updateCartonMutation.mutateAsync({
-                orderId: activePackingOrder.id,
-                cartonId: createdCartons[i].id,
-                updates
-              });
-            }
-          }
-          
-          await refetchCartons();
-        }, 500);
+        // Show comprehensive success message
+        const totalWeight = recommendedCarton.suggestions.reduce((sum: number, s: any) => sum + (s.totalWeightKg || 0), 0);
+        const avgUtilization = recommendedCarton.avgUtilization || 0;
         
         toast({
-          title: "AI Cartons Created",
-          description: `Created ${recommendedCarton.suggestions.length} carton(s) based on AI optimization`,
+          title: "✅ AI Carton Optimization Complete",
+          description: (
+            <div className="space-y-1">
+              <p className="font-semibold">Created {recommendedCarton.suggestions.length} optimized carton(s)</p>
+              <p className="text-xs">• Total weight: {totalWeight.toFixed(2)}kg</p>
+              <p className="text-xs">• Average utilization: {avgUtilization.toFixed(0)}%</p>
+              <p className="text-xs">• Algorithm: DeepSeek AI with largest-carton-first strategy</p>
+              {recommendedCarton.reasoning && (
+                <p className="text-xs mt-1">{recommendedCarton.reasoning}</p>
+              )}
+            </div>
+          ),
+          className: "bg-green-50 border-green-200",
+          duration: 5000
         });
+        
+        playSound('success');
+        
+        // Show nylon wrap items if any
+        if (recommendedCarton.nylonWrapItems && recommendedCarton.nylonWrapItems.length > 0) {
+          setTimeout(() => {
+            toast({
+              title: "📋 Nylon Wrap Only Items",
+              description: (
+                <div className="space-y-1">
+                  <p>{recommendedCarton.nylonWrapItems!.length} item(s) only need nylon wrapping:</p>
+                  {recommendedCarton.nylonWrapItems!.slice(0, 3).map((item: any, idx: number) => (
+                    <p key={idx} className="text-xs">• {item.productName} x{item.quantity}</p>
+                  ))}
+                  {recommendedCarton.nylonWrapItems!.length > 3 && (
+                    <p className="text-xs">...and {recommendedCarton.nylonWrapItems!.length - 3} more</p>
+                  )}
+                </div>
+              ),
+              className: "bg-blue-50 border-blue-200"
+            });
+          }, 1000);
+        }
       } catch (error) {
         console.error('Error creating AI cartons:', error);
         toast({
@@ -943,7 +990,23 @@ export default function PickPack() {
 
   // Create carton mutation
   const createCartonMutation = useMutation({
-    mutationFn: async (data: { orderId: string; cartonNumber: number; cartonType: 'company' | 'non-company'; cartonId?: string; tempId?: string }) => {
+    mutationFn: async (data: { 
+      orderId: string; 
+      cartonNumber: number; 
+      cartonType: 'company' | 'non-company'; 
+      cartonId?: string; 
+      tempId?: string;
+      weight?: string;
+      payloadWeightKg?: number;
+      innerLengthCm?: number;
+      innerWidthCm?: number;
+      innerHeightCm?: number;
+      source?: string;
+      aiWeightCalculation?: boolean;
+      aiPlanId?: string;
+      itemAllocations?: any;
+      notes?: string;
+    }) => {
       const response = await apiRequest('POST', `/api/orders/${data.orderId}/cartons`, data);
       return await response.json();
     },
@@ -3529,9 +3592,7 @@ export default function PickPack() {
     if (order.pickStatus === 'completed' && order.packStatus === 'not_started') {
       return { label: 'Awaiting Packing', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' };
     }
-    if (order.pickStatus === 'not_started') {
-      return { label: 'Pending', color: 'bg-gray-100 text-gray-600 border-gray-200' };
-    }
+    // Removed redundant condition - already handled above
     return { label: 'Pending', color: 'bg-gray-100 text-gray-600 border-gray-200' };
   };
 
@@ -3545,6 +3606,9 @@ export default function PickPack() {
     if (ordersWithPickTime.length === 0) return 'N/A';
     
     const totalSeconds = ordersWithPickTime.reduce((sum, order) => {
+      // Type guard - we already filtered for orders with both times
+      if (!order.pickStartTime || !order.pickEndTime) return sum;
+      
       const duration = Math.floor(
         (new Date(order.pickEndTime).getTime() - new Date(order.pickStartTime).getTime()) / 1000
       );
@@ -4077,19 +4141,11 @@ export default function PickPack() {
                                         {item.sku && <span className="ml-1 text-gray-400">• {item.sku}</span>}
                                       </div>
                                     )}
-                                    {(isBundle || activePackingOrder?.items?.find((orderItem: any) => orderItem.id === item.id)?.product?.packagingRequirement === 'nylon_wrap') && (
+                                    {isBundle && (
                                       <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                                        {isBundle && (
-                                          <Badge className="bg-amber-100 text-amber-800 text-xs px-1.5 py-0.5">
-                                            Bundle ({bundleComponentsVerified}/{totalBundleComponents})
-                                          </Badge>
-                                        )}
-                                        {activePackingOrder?.items?.find((orderItem: any) => orderItem.id === item.id)?.product?.packagingRequirement === 'nylon_wrap' && (
-                                          <Badge className="bg-green-100 text-green-800 text-xs flex items-center gap-0.5 px-1.5 py-0.5">
-                                            <Package className="h-3 w-3" />
-                                            Wrap
-                                          </Badge>
-                                        )}
+                                        <Badge className="bg-amber-100 text-amber-800 text-xs px-1.5 py-0.5">
+                                          Bundle ({bundleComponentsVerified}/{totalBundleComponents})
+                                        </Badge>
                                       </div>
                                     )}
                                   </div>
@@ -4126,19 +4182,11 @@ export default function PickPack() {
                                 <p className="font-semibold text-gray-900 text-sm leading-tight truncate">{item.productName}</p>
                                 
                                 {/* Badges Row */}
-                                {(isBundle || activePackingOrder?.items?.find((orderItem: any) => orderItem.id === item.id)?.product?.packagingRequirement === 'nylon_wrap') && (
+                                {isBundle && (
                                   <div className="flex items-center gap-1 mt-1 flex-wrap">
-                                    {isBundle && (
-                                      <Badge className="bg-amber-100 text-amber-800 text-xs px-1 py-0">
-                                        Bundle ({bundleComponentsVerified}/{totalBundleComponents})
-                                      </Badge>
-                                    )}
-                                    {activePackingOrder?.items?.find((orderItem: any) => orderItem.id === item.id)?.product?.packagingRequirement === 'nylon_wrap' && (
-                                      <Badge className="bg-green-100 text-green-800 text-xs flex items-center gap-0.5 px-1 py-0">
-                                        <Package className="h-3 w-3" />
-                                        Nylon Wrap
-                                      </Badge>
-                                    )}
+                                    <Badge className="bg-amber-100 text-amber-800 text-xs px-1 py-0">
+                                      Bundle ({bundleComponentsVerified}/{totalBundleComponents})
+                                    </Badge>
                                   </div>
                                 )}
                                 
