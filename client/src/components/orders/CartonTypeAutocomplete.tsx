@@ -57,8 +57,20 @@ export function CartonTypeAutocomplete({
   });
 
   useEffect(() => {
-    setDisplayValue(value);
-  }, [value]);
+    // If value looks like a UUID (carton ID), look up the carton name
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+    
+    if (isUUID && popularCartons.length > 0) {
+      const carton = popularCartons.find(c => c.id === value);
+      if (carton) {
+        setDisplayValue(carton.name);
+      } else {
+        setDisplayValue(value);
+      }
+    } else {
+      setDisplayValue(value);
+    }
+  }, [value, popularCartons]);
 
   const mostUsed = popularCartons.slice(0, 5);
   const allCartons = popularCartons;
