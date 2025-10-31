@@ -360,6 +360,7 @@ export default function PickPack() {
   const [showPickingCompletionModal, setShowPickingCompletionModal] = useState(false);
   const [showItemOverviewModal, setShowItemOverviewModal] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState('');
+  const [overviewBarcodeInput, setOverviewBarcodeInput] = useState(''); // Barcode for overview modal
   const [selectedBatchOrders, setSelectedBatchOrders] = useState<string[]>([]);
   const [packingTimer, setPackingTimer] = useState(0);
   const [isPackingTimerRunning, setIsPackingTimerRunning] = useState(false);
@@ -377,6 +378,7 @@ export default function PickPack() {
   const [modificationDialog, setModificationDialog] = useState<PickPackOrder | null>(null);
   const [showResetOrderDialog, setShowResetOrderDialog] = useState(false);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
+  const overviewBarcodeInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
   // State for packing process
@@ -677,6 +679,15 @@ export default function PickPack() {
       }, 100);
     }
   }, [activePickingOrder?.id]);
+
+  // Auto-focus barcode input when opening item overview modal
+  useEffect(() => {
+    if (showItemOverviewModal && overviewBarcodeInputRef.current) {
+      setTimeout(() => {
+        overviewBarcodeInputRef.current?.focus();
+      }, 100);
+    }
+  }, [showItemOverviewModal]);
 
   // Auto-focus barcode input when entering packing mode
   useEffect(() => {
@@ -3308,6 +3319,24 @@ export default function PickPack() {
     barcodeInputRef.current?.focus();
   };
 
+  const handleOverviewBarcodeScan = () => {
+    if (!overviewBarcodeInput || !activePickingOrder) return;
+
+    const item = activePickingOrder.items.find(i => 
+      i.barcode === overviewBarcodeInput || i.sku === overviewBarcodeInput
+    );
+
+    if (item) {
+      // Mark item as fully picked
+      updatePickedItem(item.id, item.quantity);
+      playSound('success');
+    } else {
+      playSound('error');
+    }
+    setOverviewBarcodeInput('');
+    overviewBarcodeInputRef.current?.focus();
+  };
+
   // Filter orders by status - Updated to match backend state machine
   const getOrdersByStatus = (status: string) => {
     const filtered = transformedOrders.filter(order => {
@@ -5093,7 +5122,33 @@ export default function PickPack() {
                 </div>
               </div>
               
-              <div className="border-t p-4 bg-gray-50">
+              <div className="border-t p-4 bg-gray-50 space-y-3">
+                {/* Barcode Scanner */}
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      ref={overviewBarcodeInputRef}
+                      placeholder="Scan barcode or SKU..."
+                      value={overviewBarcodeInput}
+                      onChange={(e) => setOverviewBarcodeInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleOverviewBarcodeScan();
+                        }
+                      }}
+                      className="text-base h-11 bg-white border-2 border-gray-300 placeholder:text-gray-400 font-mono"
+                    />
+                  </div>
+                  <Button 
+                    onClick={handleOverviewBarcodeScan}
+                    className="h-11 px-5 bg-green-600 hover:bg-green-700 text-white font-bold shadow-md"
+                  >
+                    <ScanLine className="h-4 w-4 mr-2" />
+                    Scan
+                  </Button>
+                </div>
+                
+                {/* Continue Picking Button */}
                 <Button 
                   className="w-full h-12 text-base font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
                   onClick={() => setShowItemOverviewModal(false)}
