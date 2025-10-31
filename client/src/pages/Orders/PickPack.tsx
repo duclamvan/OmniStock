@@ -4218,16 +4218,66 @@ export default function PickPack() {
                 <AccordionTrigger className="px-4 py-3 hover:no-underline">
                   <div className="flex items-center justify-between w-full pr-4">
                     <div className="flex items-center gap-2">
-                      {activePackingOrder.items.every(item => {
-                        if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
-                          return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
-                        }
-                        return (verifiedItems[item.id] || 0) >= item.quantity;
-                      }) ? (
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                      ) : (
-                        <Circle className="h-5 w-5 text-gray-400" />
-                      )}
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent accordion toggle
+                          
+                          // Check if all items are verified
+                          const allVerified = activePackingOrder.items.every(item => {
+                            if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
+                              return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
+                            }
+                            return (verifiedItems[item.id] || 0) >= item.quantity;
+                          });
+                          
+                          if (allVerified) {
+                            // Unverify all items
+                            const newVerifiedItems: Record<string, number> = {};
+                            activePackingOrder.items.forEach(item => {
+                              if (item.isBundle && item.bundleItems) {
+                                item.bundleItems.forEach((bi: any) => {
+                                  newVerifiedItems[`${item.id}-${bi.id}`] = 0;
+                                });
+                              } else {
+                                newVerifiedItems[item.id] = 0;
+                              }
+                            });
+                            setVerifiedItems(newVerifiedItems);
+                          } else {
+                            // Mark all items as verified
+                            const newVerifiedItems: Record<string, number> = {};
+                            activePackingOrder.items.forEach(item => {
+                              if (item.isBundle && item.bundleItems) {
+                                item.bundleItems.forEach((bi: any) => {
+                                  newVerifiedItems[`${item.id}-${bi.id}`] = bi.quantity;
+                                });
+                              } else {
+                                newVerifiedItems[item.id] = item.quantity;
+                              }
+                            });
+                            setVerifiedItems(newVerifiedItems);
+                            playSound('success');
+                          }
+                        }}
+                        className="cursor-pointer hover:scale-110 transition-transform"
+                        title={activePackingOrder.items.every(item => {
+                          if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
+                            return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
+                          }
+                          return (verifiedItems[item.id] || 0) >= item.quantity;
+                        }) ? "Click to unverify all items" : "Click to mark all items as verified"}
+                      >
+                        {activePackingOrder.items.every(item => {
+                          if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
+                            return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
+                          }
+                          return (verifiedItems[item.id] || 0) >= item.quantity;
+                        }) ? (
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                        ) : (
+                          <Circle className="h-5 w-5 text-gray-400" />
+                        )}
+                      </div>
                       <span className="text-base font-semibold">
                         {activePackingOrder.items.every(item => {
                           if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
