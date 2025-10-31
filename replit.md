@@ -2,18 +2,28 @@
 Davie Supply is a full-stack web application for comprehensive warehouse and order management, aiming to optimize supply chain operations. It covers the entire order lifecycle, inventory tracking, CRM, and multi-currency financial reporting. Key features include real-time Vietnamese diacritics search, customer-specific pricing, external shipping API integrations, and extensive settings management. Future ambitions include advanced warehouse mapping, a comprehensive Pick & Pack workflow, and AI-powered optimization.
 
 # Recent Changes
+**October 31, 2025 (Update 3)**: Comprehensive Carton Functionality Overhaul:
+- **AI-Powered Auto-Selection**: Cartons automatically created with correct types and weights when entering packing mode
+- **Intelligent Carton Selector**: 
+  - Replaced dropdown with autocomplete text input using Command UI
+  - Shows most-used cartons first based on usage tracking
+  - Supports fuzzy search and free-text input for non-company cartons
+  - Tracks carton usage frequency for intelligent suggestions
+- **Optimistic UI**: "Add Another Carton" instantly appends cards without waiting for backend
+- **Enhanced Database Schema**:
+  - Added usage tracking (usageCount, lastUsedAt) to packing_cartons
+  - Added dimension fields (innerLengthCm, innerWidthCm, innerHeightCm, payloadWeightKg) to order_cartons
+  - Added AI metadata (aiPlanId, source, itemAllocations) for better tracking
+- **Auto-Fill Everything**: All carton fields (type, weight, dimensions) pre-populated from AI calculations
+- **Robust Error Handling**: Graceful fallbacks when AI data is missing or incomplete
+
 **October 31, 2025 (Update 2)**: AI Carton Auto-Application & Mobile UI Improvements:
-- Automated AI carton suggestions in packing mode:
-  - AI-suggested cartons are now automatically created when entering packing mode
-  - Carton types and weights are prefilled based on AI recommendations
-  - Removed manual "Apply AI Suggestions" button since it's now automatic
-  - Toast notifications confirm automatic carton creation with quantities
-- Fixed mobile layout in Items Verified section:
-  - Separate mobile-optimized layout with compact design
-  - Smaller images (40x40px) and text sizes for mobile screens
-  - Product names limited to 2 lines with proper text truncation
-  - Location and badges stacked below product info on mobile
-  - Prevents horizontal overflow on mobile devices
+- Automated AI carton suggestions in packing mode
+- Carton types and weights prefilled based on AI recommendations
+- Removed manual "Apply AI Suggestions" button since it's automatic
+- Fixed mobile layout with improved text sizes and compact design
+- Product names increased to 14px for better readability on mobile
+- Removed number badge overlay from product images on mobile
 
 **October 31, 2025**: Item Overview Modal & Product Image Integration:
 - Added comprehensive Item Overview Modal in picking mode:
