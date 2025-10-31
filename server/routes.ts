@@ -7,6 +7,7 @@ import { cacheMiddleware, invalidateCache } from "./cache";
 import multer from "multer";
 import path from "path";
 import { promises as fs } from "fs";
+import PDFDocument from "pdfkit";
 import {
   insertCategorySchema,
   insertCustomerSchema,
@@ -7350,6 +7351,175 @@ Return ONLY the subject line without quotes or extra formatting.`,
       console.error('Error generating label for carton:', error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : 'Failed to generate label for carton' 
+      });
+    }
+  });
+
+  // Generate packing list PDF
+  app.get('/api/orders/:orderId/packing-list.pdf', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      
+      // Get order details
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+      
+      // Get order items
+      const orderItems = await storage.getOrderItems(orderId);
+      
+      // Get product details for each item
+      const itemsWithProducts = await Promise.all(
+        orderItems.map(async (item) => {
+          let product = null;
+          if (item.productId) {
+            product = await storage.getProductById(item.productId);
+          }
+          return {
+            ...item,
+            productName: product?.name || item.productName || 'Unknown Product',
+            sku: product?.sku || item.sku || 'N/A'
+          };
+        })
+      );
+      
+      // Create a new PDF document
+      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+      
+      // Set response headers
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="packing-list-${order.orderId}.pdf"`);
+      
+      // Pipe the PDF directly to the response
+      doc.pipe(res);
+      
+      // Add company logo (in black/grayscale)
+      const logoPath = path.join(process.cwd(), 'attached_assets', 'logo_1754349267160.png');
+      try {
+        doc.image(logoPath, 50, 45, { width: 100, opacity: 1.0 });
+      } catch (error) {
+        console.error('Logo not found, skipping:', error);
+      }
+      
+      // Add company name
+      doc.fontSize(20)
+         .fillColor('#000000')
+         .text('DAVIE SUPPLY', 170, 50, { align: 'left' })
+         .fontSize(10)
+         .fillColor('#666666')
+         .text('Warehouse & Distribution', 170, 75);
+      
+      // Add title
+      doc.fontSize(24)
+         .fillColor('#000000')
+         .text('PACKING LIST', 50, 130, { align: 'center' });
+      
+      // Add order information
+      doc.fontSize(10)
+         .fillColor('#666666')
+         .text(`Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, 50, 170)
+         .text(`Order ID: ${order.orderId}`, 400, 170, { align: 'right' });
+      
+      // Add customer information box
+      doc.rect(50, 195, 495, 80).stroke('#CCCCCC');
+      doc.fontSize(12)
+         .fillColor('#000000')
+         .font('Helvetica-Bold')
+         .text('SHIP TO:', 60, 205);
+      
+      doc.fontSize(10)
+         .font('Helvetica')
+         .fillColor('#333333')
+         .text(order.customerName || 'N/A', 60, 225)
+         .text(order.shippingAddress || 'Address not provided', 60, 240, { width: 475 });
+      
+      if (order.shippingMethod) {
+        doc.fontSize(9)
+           .fillColor('#666666')
+           .text(`Shipping Method: ${order.shippingMethod}`, 60, 260);
+      }
+      
+      // Items table header
+      const tableTop = 300;
+      doc.fontSize(10)
+         .font('Helvetica-Bold')
+         .fillColor('#000000');
+      
+      // Draw table header background
+      doc.rect(50, tableTop, 495, 25).fill('#F0F0F0');
+      
+      // Table headers
+      doc.fillColor('#000000')
+         .text('#', 55, tableTop + 7, { width: 30 })
+         .text('SKU', 90, tableTop + 7, { width: 80 })
+         .text('Item Description', 175, tableTop + 7, { width: 250 })
+         .text('Qty', 480, tableTop + 7, { width: 60, align: 'right' });
+      
+      // Draw header border
+      doc.strokeColor('#CCCCCC')
+         .lineWidth(1)
+         .moveTo(50, tableTop + 25)
+         .lineTo(545, tableTop + 25)
+         .stroke();
+      
+      // Items
+      doc.font('Helvetica');
+      let yPosition = tableTop + 35;
+      const lineHeight = 25;
+      
+      itemsWithProducts.forEach((item, index) => {
+        // Check if we need a new page
+        if (yPosition > 700) {
+          doc.addPage();
+          yPosition = 50;
+        }
+        
+        doc.fontSize(9)
+           .fillColor('#333333')
+           .text(`${index + 1}`, 55, yPosition, { width: 30 })
+           .text(item.sku || 'N/A', 90, yPosition, { width: 80 })
+           .text(item.productName, 175, yPosition, { width: 250 })
+           .text(item.quantity.toString(), 480, yPosition, { width: 60, align: 'right' });
+        
+        // Draw row border
+        doc.strokeColor('#EEEEEE')
+           .lineWidth(0.5)
+           .moveTo(50, yPosition + lineHeight - 5)
+           .lineTo(545, yPosition + lineHeight - 5)
+           .stroke();
+        
+        yPosition += lineHeight;
+      });
+      
+      // Total items summary
+      yPosition += 20;
+      if (yPosition > 720) {
+        doc.addPage();
+        yPosition = 50;
+      }
+      
+      const totalItems = itemsWithProducts.reduce((sum, item) => sum + item.quantity, 0);
+      doc.fontSize(10)
+         .font('Helvetica-Bold')
+         .fillColor('#000000')
+         .text(`Total Items: ${totalItems}`, 400, yPosition, { align: 'right' });
+      
+      // Add footer
+      const footerY = 750;
+      doc.fontSize(8)
+         .fillColor('#999999')
+         .font('Helvetica')
+         .text('This packing list confirms the items included in this shipment.', 50, footerY, { align: 'center', width: 495 })
+         .text('Please verify all items upon receipt.', 50, footerY + 12, { align: 'center', width: 495 });
+      
+      // Finalize the PDF
+      doc.end();
+      
+    } catch (error) {
+      console.error('Error generating packing list PDF:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to generate packing list' 
       });
     }
   });

@@ -1,7 +1,18 @@
 # Overview
-Davie Supply is a full-stack web application for comprehensive warehouse and order management, aiming to optimize supply chain operations. It covers the entire order lifecycle, inventory tracking, CRM, and multi-currency financial reporting. Key features include real-time Vietnamese diacritics search, customer-specific pricing, external shipping API integrations, and extensive settings management. Future ambitions include advanced warehouse mapping, a comprehensive Pick & Pack workflow, and AI-powered optimization.
+Davie Supply is a full-stack web application for comprehensive warehouse and order management, aiming to optimize supply chain operations. It covers the entire order lifecycle, inventory tracking, CRM, and multi-currency financial reporting. Key features include real-time Vietnamese diacritics search, customer-specific pricing, external shipping API integrations, extensive settings management, and professional PDF packing list generation. Future ambitions include advanced warehouse mapping, a comprehensive Pick & Pack workflow, and AI-powered optimization.
 
 # Recent Changes
+**October 31, 2025 (Update 6)**: Professional Packing List PDF Generation:
+- **PDF Generation**: Implemented automatic packing list generation using PDFKit library
+- **Company Branding**: Includes company logo in black/grayscale at top of document
+- **Professional Layout**: Clean, structured format with:
+  - Order details (Order ID, date)
+  - Customer shipping information in bordered box
+  - Itemized table with SKU, description, and quantities
+  - Total items count
+  - Professional footer with verification instructions
+- **Multi-page Support**: Automatically adds pages for large orders
+- **Export Format**: High-quality PDF suitable for printing and archiving
 **October 31, 2025 (Update 5)**: Complete AI Carton Automation with DeepSeek:
 - **DeepSeek AI Integration**: Replaced OpenAI with DeepSeek API for all AI carton optimization
 - **100% Automated Workflow**: 
@@ -100,7 +111,7 @@ Utilizes PostgreSQL with Neon serverless driver and Drizzle ORM. The schema supp
 - **Inventory & Warehouse Management**: Full inventory tracking with variant operations, category management, location codes, barcode scanning, quantity tracking, professional column visibility, interactive 2D warehouse map with real inventory data, and rapid barcode scanning for stock additions. Includes inventory allocation warnings for over/under-allocated items.
 - **Customer Management**: Enhanced tables with order statistics, address lookup, "Pay Later," Facebook integration, AI-powered Smart Paste for address parsing, and auto-generating/editable shipping labels.
 - **Financial & Discount Management**: Advanced discount system, customer-specific pricing, multi-currency support (CZK/EUR/USD) with automatic exchange rate conversion, landing cost engine with volumetric weight and automatic cost allocation, and expense tracking.
-- **Fulfillment & Logistics**: AI-powered carton packing optimization using weight/dimension inference, best-fit algorithms, automatic shipping cost estimation, separate fulfillment sub-status tracking (`fulfillmentStage`), and performance analytics with precise time predictions. Returns management system with auto-selection and barcode scanning. Packing materials management.
+- **Fulfillment & Logistics**: AI-powered carton packing optimization using weight/dimension inference, best-fit algorithms, automatic shipping cost estimation, separate fulfillment sub-status tracking (`fulfillmentStage`), and performance analytics with precise time predictions. Returns management system with auto-selection and barcode scanning. Packing materials management. Professional packing list PDF generation with company branding.
 - **Point of Sale (POS)**: Full-featured system with thermal printer support, multi-currency, real-time cart, VAT calculation, and receipt generation.
 - **System Utilities**: Comprehensive files management, automatic lossless image compression to WebP, robust fuzzy search with diacritics normalization, generic DataTable component, reporting, and extensive settings management (6 categories).
 
