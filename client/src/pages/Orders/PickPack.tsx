@@ -439,7 +439,6 @@ export default function PickPack() {
   const [selectedBoxSize, setSelectedBoxSize] = useState<string>('');
   const [packageWeight, setPackageWeight] = useState<string>('');
   const [verifiedItems, setVerifiedItems] = useState<Record<string, number>>({});
-  const [shippingLabelPrinted, setShippingLabelPrinted] = useState<boolean>(false);
   const [expandedBundles, setExpandedBundles] = useState<Set<string>>(new Set());
   const [bundlePickedItems, setBundlePickedItems] = useState<Record<string, Set<string>>>({}); // itemId -> Set of picked bundle item ids
   const [expandedOverviewItems, setExpandedOverviewItems] = useState<Set<string>>(new Set()); // Track expanded items in overview modal
@@ -1079,21 +1078,6 @@ export default function PickPack() {
     }
   };
 
-  // Generate label for carton mutation
-  const generateLabelMutation = useMutation({
-    mutationFn: async (data: { orderId: string; cartonId: string }) => {
-      const response = await apiRequest('POST', `/api/orders/${data.orderId}/cartons/${data.cartonId}/generate-label`, {});
-      return await response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder?.id, 'cartons'] });
-      refetchCartons();
-      toast({
-        title: "Label Generated",
-        description: "Shipping label has been generated successfully",
-      });
-    },
-  });
 
   // Keyboard shortcuts for quick navigation and actions
   useEffect(() => {
@@ -3764,7 +3748,7 @@ export default function PickPack() {
     const checklistComplete = (packingChecklist.itemsVerified || allItemsVerified) && 
                              packingChecklist.packingSlipIncluded && 
                              packingChecklist.boxSealed;
-    const labelReady = shippingLabelPrinted;
+    const labelReady = true;
     
     // Check if fragile items need protection
     const needsFragileProtection = currentCarton?.isFragile || false;
@@ -3931,18 +3915,6 @@ export default function PickPack() {
               
               <ChevronRight className="h-3 w-3 text-purple-300" />
               
-              <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                shippingLabelPrinted 
-                  ? 'bg-green-500 text-white' 
-                  : 'bg-black/20 text-purple-200'
-              }`}>
-                {shippingLabelPrinted ? (
-                  <CheckCircle className="h-3 w-3" />
-                ) : (
-                  <Circle className="h-3 w-3" />
-                )}
-                Label
-              </div>
             </div>
           </div>
         </div>
@@ -4604,46 +4576,6 @@ export default function PickPack() {
                         )}
                       </div>
 
-                      {/* Label Status & Generate Button */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          {carton.labelPrinted ? (
-                            <>
-                              <CheckCircle className="h-5 w-5 text-green-600" />
-                              <span className="text-sm font-medium text-green-600">Label Printed</span>
-                            </>
-                          ) : (
-                            <>
-                              <Circle className="h-5 w-5 text-gray-400" />
-                              <span className="text-sm text-gray-600">No Label</span>
-                            </>
-                          )}
-                        </div>
-                        <Button
-                          variant={carton.labelPrinted ? "outline" : "default"}
-                          size="sm"
-                          onClick={() => {
-                            if (activePackingOrder) {
-                              generateLabelMutation.mutate({
-                                orderId: activePackingOrder.id,
-                                cartonId: carton.id
-                              });
-                            }
-                          }}
-                          disabled={generateLabelMutation.isPending}
-                          data-testid={`generate-label-${index + 1}`}
-                        >
-                          <Printer className="h-4 w-4 mr-1" />
-                          {carton.labelPrinted ? 'Regenerate' : 'Generate Label'}
-                        </Button>
-                      </div>
-
-                      {/* Tracking Number */}
-                      {carton.trackingNumber && (
-                        <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                          Tracking: <span className="font-mono font-semibold">{carton.trackingNumber}</span>
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
                 );
@@ -4709,12 +4641,6 @@ export default function PickPack() {
                     <span className="font-semibold text-emerald-800">Total Weight:</span>
                     <span className="font-bold text-emerald-900">
                       {cartons.reduce((sum, c) => sum + (parseFloat(c.weight || '0')), 0).toFixed(3)} kg
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm mt-1">
-                    <span className="font-semibold text-emerald-800">Labels Printed:</span>
-                    <span className={`font-bold ${cartons.every(c => c.labelPrinted) ? 'text-green-600' : 'text-orange-600'}`}>
-                      {cartons.filter(c => c.labelPrinted).length} / {cartons.length}
                     </span>
                   </div>
                 </div>
@@ -4899,39 +4825,6 @@ export default function PickPack() {
             </CardContent>
           </Card>
 
-          {/* Shipping Label Card - Compact */}
-          <Card className="shadow-sm border border-gray-200 bg-white">
-            <CardHeader className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white p-3 rounded-t-lg">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Printer className="h-4 w-4" />
-                Shipping Label
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3">
-              <div className="space-y-2">
-                <div className="bg-gray-50 p-2 rounded text-sm">
-                  <div className="font-medium">{activePackingOrder.customerName}</div>
-                  <div className="text-xs text-gray-600">{activePackingOrder.shippingAddress}</div>
-                  <div className="text-xs text-gray-600 mt-1">
-                    Method: {activePackingOrder.shippingMethod}
-                  </div>
-                </div>
-                
-                <Button 
-                  className="w-full h-9 bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600"
-                  onClick={() => {
-                    setShippingLabelPrinted(true);
-                    playSound('success');
-                  }}
-                  disabled={shippingLabelPrinted}
-                >
-                  <Printer className="h-4 w-4 mr-2" />
-                  {shippingLabelPrinted ? 'Label Printed ✓' : 'Generate Shipping Label'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Complete Packing Button - Large, Prominent */}
           <div className="sticky bottom-0 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent pt-4 pb-2">
             {canCompletePacking ? (
@@ -4957,7 +4850,6 @@ export default function PickPack() {
                   if (!packingChecklist.boxSealed) missingChecks.push('✓ Seal Box');
                   if (!packingChecklist.promotionalMaterials) missingChecks.push('✓ Add Promotional Materials');
                   if (needsFragileProtection && !packingChecklist.fragileProtected) missingChecks.push('✓ Protect Fragile Items');
-                  if (!shippingLabelPrinted) missingChecks.push('✓ Print Shipping Label');
                   if (!selectedCarton) missingChecks.push('✓ Select Carton');
                   if (!packageWeight) missingChecks.push('✓ Enter Package Weight');
                   
