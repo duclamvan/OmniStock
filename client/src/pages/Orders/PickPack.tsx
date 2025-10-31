@@ -385,6 +385,90 @@ const ProductImage = memo(({
   );
 });
 
+// Component to display all order files and documents
+function OrderFilesDisplay({ orderId }: { orderId: string }) {
+  const { data: orderFilesData, isLoading } = useQuery({
+    queryKey: ['/api/orders', orderId, 'files'],
+    queryFn: async () => {
+      const response = await fetch(`/api/orders/${orderId}/files`);
+      if (!response.ok) throw new Error('Failed to fetch order files');
+      return response.json();
+    }
+  });
+
+  if (isLoading) {
+    return (
+      <div className="text-sm text-gray-500 p-2">
+        Loading files...
+      </div>
+    );
+  }
+
+  const files = orderFilesData || [];
+  
+  if (files.length === 0) {
+    return (
+      <div className="text-sm text-gray-500 italic p-3 bg-gray-50 rounded-lg">
+        No files attached to this order
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      {files.map((file: any, index: number) => (
+        <div 
+          key={file.id || index}
+          className="border border-gray-200 rounded-lg p-2 bg-white hover:shadow-md transition-shadow"
+        >
+          {/* File Thumbnail */}
+          <div className="w-full aspect-square rounded-md overflow-hidden bg-gray-100 border border-gray-200 mb-2">
+            {file.mimeType?.startsWith('image/') ? (
+              <img 
+                src={file.fileUrl || file.url}
+                alt={file.fileName || file.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center">
+                <FileText className="h-8 w-8 text-gray-400 mb-1" />
+                <span className="text-[10px] text-gray-500 uppercase font-mono">
+                  {file.fileType || file.mimeType?.split('/')[1] || 'FILE'}
+                </span>
+              </div>
+            )}
+          </div>
+          
+          {/* File Info */}
+          <div className="space-y-1">
+            <h4 className="text-xs font-semibold text-gray-900 truncate" title={file.fileName || file.name}>
+              {file.fileName || file.name}
+            </h4>
+            {file.fileType && (
+              <Badge variant="outline" className="text-[10px] px-1 py-0">
+                {file.fileType}
+              </Badge>
+            )}
+          </div>
+
+          {/* Print Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full mt-2 h-7 text-xs"
+            onClick={() => {
+              window.open(file.fileUrl || file.url, '_blank');
+            }}
+          >
+            <Printer className="h-3 w-3 mr-1" />
+            Open
+          </Button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function PickPack() {
   const { toast } = useToast();
   const [selectedTab, setSelectedTab] = useState<'overview' | 'pending' | 'picking' | 'packing' | 'ready'>('overview');
@@ -4747,7 +4831,17 @@ export default function PickPack() {
 
               <Separator />
 
-              {/* Section 2: Packing Materials Required */}
+              {/* Section 2: All Order Files & Documents */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-gray-700">Order Files & Documents:</h3>
+                {activePackingOrder && (
+                  <OrderFilesDisplay orderId={activePackingOrder.id} />
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Section 3: Packing Materials Required */}
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold text-gray-700">Packing Materials:</h3>
                 {orderPackingMaterials.length > 0 ? (

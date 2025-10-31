@@ -7357,6 +7357,70 @@ Return ONLY the subject line without quotes or extra formatting.`,
   });
 
   // Get packing materials for an order
+  // Get all files and documents for an order
+  app.get('/api/orders/:orderId/files', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      
+      // Get order details to access includedDocuments
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      const allFiles: any[] = [];
+
+      // Get includedDocuments from order
+      const includedDocs = order.includedDocuments as any;
+      
+      // Add uploaded files
+      if (includedDocs?.uploadedFiles && Array.isArray(includedDocs.uploadedFiles)) {
+        includedDocs.uploadedFiles.forEach((file: any) => {
+          allFiles.push({
+            id: `uploaded-${file.name}`,
+            fileName: file.name,
+            fileUrl: file.url,
+            fileType: 'uploaded',
+            mimeType: file.mimeType || 'application/octet-stream',
+            source: 'uploaded'
+          });
+        });
+      }
+
+      // Get product files by IDs
+      if (includedDocs?.fileIds && Array.isArray(includedDocs.fileIds)) {
+        for (const fileId of includedDocs.fileIds) {
+          const fileResult = await db
+            .select()
+            .from(productFiles)
+            .where(eq(productFiles.id, fileId))
+            .limit(1);
+          
+          if (fileResult.length > 0) {
+            const file = fileResult[0];
+            allFiles.push({
+              id: file.id,
+              fileName: file.fileName,
+              fileUrl: file.fileUrl,
+              fileType: file.fileType,
+              mimeType: file.mimeType,
+              description: file.description,
+              language: file.language,
+              source: 'product'
+            });
+          }
+        }
+      }
+
+      res.json(allFiles);
+    } catch (error) {
+      console.error('Error fetching order files:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to fetch order files' 
+      });
+    }
+  });
+
   app.get('/api/orders/:orderId/packing-materials', async (req, res) => {
     try {
       const { orderId } = req.params;
