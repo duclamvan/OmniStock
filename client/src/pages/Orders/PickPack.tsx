@@ -3835,10 +3835,10 @@ export default function PickPack() {
                               </div>
                             )}
 
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 sm:gap-3">
                               {/* Product Image */}
-                              <div className="relative">
-                                <div className="w-16 h-16 rounded-lg overflow-hidden bg-white border-2 border-gray-200 flex items-center justify-center">
+                              <div className="relative flex-shrink-0">
+                                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-white border-2 border-gray-200 flex items-center justify-center">
                                   {item.image ? (
                                     <img 
                                       src={item.image} 
@@ -3846,61 +3846,62 @@ export default function PickPack() {
                                       className="w-full h-full object-contain"
                                     />
                                   ) : (
-                                    <Package className="h-8 w-8 text-gray-400" />
+                                    <Package className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
                                   )}
                                 </div>
-                                <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shadow-md ${
+                                <div className={`absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold shadow-md ${
                                   isVerified || (isBundle && allBundleComponentsVerified)
                                     ? 'bg-green-500 text-white' 
                                     : 'bg-purple-100 text-purple-600 border-2 border-white'
                                 }`}>
-                                  {(isVerified || (isBundle && allBundleComponentsVerified)) ? <CheckCircle className="h-4 w-4" /> : index + 1}
+                                  {(isVerified || (isBundle && allBundleComponentsVerified)) ? <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" /> : index + 1}
                                 </div>
                               </div>
 
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1 min-w-0">
-                                    {/* Product Name */}
-                                    <p className="font-semibold text-gray-900 text-sm leading-tight truncate">{item.productName}</p>
-                                    
-                                    {/* Badges Row */}
-                                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                                      {isBundle && (
-                                        <Badge className="bg-amber-100 text-amber-800 text-xs shrink-0">
-                                          Bundle ({bundleComponentsVerified}/{totalBundleComponents})
-                                        </Badge>
-                                      )}
-                                      {activePackingOrder?.items?.find((orderItem: any) => orderItem.id === item.id)?.product?.packagingRequirement === 'nylon_wrap' && (
-                                        <Badge className="bg-green-100 text-green-800 text-xs flex items-center gap-1 shrink-0">
-                                          <Package className="h-3 w-3" />
-                                          Nylon Wrap
-                                        </Badge>
-                                      )}
-                                    </div>
-                                    
-                                    {/* SKU and Location */}
-                                    <div className="flex items-center gap-2 mt-1">
-                                      {!isBundle && item.warehouseLocation && (
-                                        <span className="text-xs text-gray-500 truncate">
-                                          📍 {item.warehouseLocation}
-                                        </span>
-                                      )}
-                                      {item.sku && (
-                                        <span className="text-xs text-gray-400 truncate">
-                                          SKU: {item.sku}
-                                        </span>
-                                      )}
-                                    </div>
+                                {/* Product Name */}
+                                <p className="font-semibold text-gray-900 text-xs sm:text-sm leading-tight truncate">{item.productName}</p>
+                                
+                                {/* Badges Row */}
+                                {(isBundle || activePackingOrder?.items?.find((orderItem: any) => orderItem.id === item.id)?.product?.packagingRequirement === 'nylon_wrap') && (
+                                  <div className="flex items-center gap-1 mt-1 flex-wrap">
+                                    {isBundle && (
+                                      <Badge className="bg-amber-100 text-amber-800 text-[10px] sm:text-xs px-1 py-0">
+                                        Bundle ({bundleComponentsVerified}/{totalBundleComponents})
+                                      </Badge>
+                                    )}
+                                    {activePackingOrder?.items?.find((orderItem: any) => orderItem.id === item.id)?.product?.packagingRequirement === 'nylon_wrap' && (
+                                      <Badge className="bg-green-100 text-green-800 text-[10px] sm:text-xs flex items-center gap-0.5 px-1 py-0">
+                                        <Package className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                        <span className="hidden sm:inline">Nylon Wrap</span>
+                                        <span className="sm:hidden">Wrap</span>
+                                      </Badge>
+                                    )}
                                   </div>
+                                )}
+                                
+                                {/* SKU and Location - Only show on larger screens or one item */}
+                                <div className="flex items-center gap-1 sm:gap-2 mt-0.5 sm:mt-1">
+                                  {!isBundle && item.warehouseLocation && (
+                                    <span className="text-[10px] sm:text-xs text-gray-500 truncate">
+                                      📍 {item.warehouseLocation}
+                                    </span>
+                                  )}
+                                  {item.sku && (
+                                    <span className="hidden sm:inline text-xs text-gray-400 truncate">
+                                      SKU: {item.sku}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
                               
                               {/* Action Buttons - Compact */}
-                              <div className="flex gap-1 flex-shrink-0">
+                              <div className="flex gap-0.5 sm:gap-1 flex-shrink-0">
                                 {isBundle && (
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-8 w-8 p-0 text-amber-600 hover:bg-amber-50"
+                                    className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-amber-600 hover:bg-amber-50"
                                     onClick={() => {
                                       const newExpanded = new Set(expandedBundles);
                                       if (isExpanded) {
@@ -3912,13 +3913,13 @@ export default function PickPack() {
                                     }}
                                     title={isExpanded ? "Hide bundle items" : "Show bundle items"}
                                   >
-                                    {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                    {isExpanded ? <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" /> : <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />}
                                   </Button>
                                 )}
                                 <Button
                                   variant={isVerified || (isBundle && allBundleComponentsVerified) ? "default" : "outline"}
                                   size="sm"
-                                  className={`h-8 px-2 text-xs ${
+                                  className={`h-7 sm:h-8 px-1.5 sm:px-2 text-[10px] sm:text-xs ${
                                     isVerified || (isBundle && allBundleComponentsVerified)
                                       ? 'bg-green-500 hover:bg-green-600 text-white' 
                                       : 'border-purple-300 text-purple-600 hover:bg-purple-50'
@@ -3958,13 +3959,18 @@ export default function PickPack() {
                                   }}
                                 >
                                   {isVerified || (isBundle && allBundleComponentsVerified) ? (
-                                    <><Check className="h-3 w-3 mr-1" />Done</>
+                                    <>
+                                      <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3 sm:mr-0.5" />
+                                      <span className="hidden sm:inline">Done</span>
+                                    </>
                                   ) : (
-                                    <><ScanLine className="h-3 w-3 mr-1" />Verify</>
+                                    <>
+                                      <ScanLine className="h-2.5 w-2.5 sm:h-3 sm:w-3 sm:mr-0.5" />
+                                      <span className="hidden sm:inline">Verify</span>
+                                      <span className="sm:hidden">Scan</span>
+                                    </>
                                   )}
                                 </Button>
-                              </div>
-                            </div>
                               </div>
                             </div>
                             
