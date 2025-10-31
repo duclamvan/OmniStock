@@ -62,12 +62,13 @@ export const queryClient = new QueryClient({
       // Disable automatic retries for failed queries
       retry: false,
       // Enable request deduplication
-      networkMode: 'online',
+      // Use 'always' to allow queries even when offline (will use cache)
+      networkMode: 'always',
     },
     mutations: {
       retry: false,
-      // Mutations should use online mode
-      networkMode: 'online',
+      // Mutations use always mode - will queue offline via mutation callbacks
+      networkMode: 'always',
     },
   },
 });

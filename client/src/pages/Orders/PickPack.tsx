@@ -34,6 +34,7 @@ import {
 import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { offlineQueue } from "@/lib/offlineQueue";
 import { CartonTypeAutocomplete } from "@/components/orders/CartonTypeAutocomplete";
 import { 
   Dialog, 
@@ -3051,11 +3052,29 @@ export default function PickPack() {
 
     // Save to database in real-time (for non-mock orders)
     if (!activePickingOrder.id.startsWith('mock-')) {
-      apiRequest('PATCH', `/api/orders/${activePickingOrder.id}/items/${itemId}`, {
-        pickedQuantity: pickedQty
-      }).catch(error => {
-        console.error('Error saving picked quantity:', error);
-      });
+      const isOnline = offlineQueue.getOnlineStatus();
+      
+      if (isOnline) {
+        apiRequest('PATCH', `/api/orders/${activePickingOrder.id}/items/${itemId}`, {
+          pickedQuantity: pickedQty
+        }).catch(error => {
+          console.error('Error saving picked quantity:', error);
+          // Queue for offline sync if request fails
+          offlineQueue.queueMutation('pick', itemId, 'update', {
+            orderId: activePickingOrder.id,
+            itemId: itemId,
+            pickedQuantity: pickedQty
+          });
+        });
+      } else {
+        // Queue mutation for offline sync
+        offlineQueue.queueMutation('pick', itemId, 'update', {
+          orderId: activePickingOrder.id,
+          itemId: itemId,
+          pickedQuantity: pickedQty
+        });
+        playSound('success'); // Provide feedback that action was queued
+      }
     }
 
     // Check if all items are picked

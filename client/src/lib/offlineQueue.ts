@@ -10,6 +10,10 @@ class OfflineQueueManager {
   constructor() {
     window.addEventListener('online', () => this.handleOnline());
     window.addEventListener('offline', () => this.handleOffline());
+    
+    if (this.isOnline) {
+      setTimeout(() => this.syncPendingMutations(), 1000);
+    }
   }
 
   private handleOnline() {
@@ -130,21 +134,28 @@ class OfflineQueueManager {
 
     let method: 'GET' | 'POST' | 'PATCH' | 'DELETE' | 'PUT' = 'POST';
     let endpoint = '';
+    let requestBody: any = payload;
 
     switch (entityType) {
       case 'pick':
-        method = 'POST';
-        endpoint = `/api/orders/${payload.orderId}/items/${payload.itemId}/pick`;
+        method = 'PATCH';
+        endpoint = `/api/orders/${payload.orderId}/items/${payload.itemId}`;
+        const { orderId: _orderId, itemId: _itemId, ...pickBody } = payload;
+        requestBody = pickBody;
         break;
       
       case 'pack':
         method = 'PATCH';
         endpoint = `/api/orders/${payload.orderId}`;
+        const { orderId: _packOrderId, ...packBody } = payload;
+        requestBody = packBody;
         break;
       
       case 'inventory':
         method = 'POST';
         endpoint = `/api/products/${payload.productId}/adjust-stock`;
+        const { productId: _productId, ...inventoryBody } = payload;
+        requestBody = inventoryBody;
         break;
       
       case 'order':
@@ -162,12 +173,18 @@ class OfflineQueueManager {
       throw new Error(`Could not determine endpoint for mutation: ${entityType} ${operation}`);
     }
 
-    const response = await apiRequest(method, endpoint, payload);
+    const response = await apiRequest(method, endpoint, requestBody);
+    
     if (!response.ok) {
       throw new Error(`Server responded with ${response.status}`);
     }
-
-    return await response.json();
+    
+    const contentLength = response.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > 0) {
+      return await response.json();
+    }
+    
+    return;
   }
 
   async clearCompletedMutations(): Promise<void> {
@@ -182,6 +199,38 @@ class OfflineQueueManager {
       .where('status')
       .equals('pending')
       .count();
+  }
+
+  async getTotalUnsynced(): Promise<number> {
+    return await offlineDb.pendingMutations
+      .where('status')
+      .anyOf(['pending', 'failed'])
+      .count();
+  }
+
+  async getFailedMutationsCount(): Promise<number> {
+    return await offlineDb.pendingMutations
+      .where('status')
+      .equals('failed')
+      .count();
+  }
+
+  async retryFailedMutations(): Promise<void> {
+    const failedMutations = await offlineDb.pendingMutations
+      .where('status')
+      .equals('failed')
+      .toArray();
+    
+    for (const mutation of failedMutations) {
+      await offlineDb.pendingMutations.update(mutation.id, {
+        status: 'pending',
+        retryCount: 0
+      });
+    }
+    
+    if (this.isOnline) {
+      this.syncPendingMutations();
+    }
   }
 }
 
