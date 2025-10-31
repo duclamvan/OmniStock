@@ -4107,7 +4107,6 @@ export default function PickPack() {
                                             : 'border-purple-300 text-purple-600 hover:bg-purple-50'
                                         }`}
                                         onClick={(e) => {
-                                          e.preventDefault();
                                           e.stopPropagation();
                                           if (isBundle) {
                                             if (allBundleComponentsVerified) {
@@ -4249,7 +4248,6 @@ export default function PickPack() {
                                       : 'border-purple-300 text-purple-600 hover:bg-purple-50'
                                   }`}
                                   onClick={(e) => {
-                                    e.preventDefault();
                                     e.stopPropagation();
                                     if (isBundle) {
                                       if (allBundleComponentsVerified) {
@@ -4335,7 +4333,6 @@ export default function PickPack() {
                                             : 'border-gray-300 text-gray-600 hover:bg-gray-50'
                                         }`}
                                         onClick={(e) => {
-                                          e.preventDefault();
                                           e.stopPropagation();
                                           setVerifiedItems(prev => {
                                             const currentCount = prev[componentId] || 0;
