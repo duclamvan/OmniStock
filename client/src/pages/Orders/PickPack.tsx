@@ -424,14 +424,12 @@ export default function PickPack() {
     boxSealed: false,
     weightRecorded: false,
     fragileProtected: false,
-    invoiceIncluded: false,
     promotionalMaterials: false
   });
   
   // State for document printing checklist
   const [printedDocuments, setPrintedDocuments] = useState({
     packingList: false,
-    invoice: false,
     msds: false,
     cpnpCertificate: false
   });
@@ -3185,12 +3183,10 @@ export default function PickPack() {
       boxSealed: false,
       weightRecorded: false,
       fragileProtected: false,
-      invoiceIncluded: false,
       promotionalMaterials: false
     });
     setPrintedDocuments({
       packingList: false,
-      invoice: false,
       msds: false,
       cpnpCertificate: false
     });
@@ -3264,7 +3260,6 @@ export default function PickPack() {
     const missingChecks = [];
     if (!(packingChecklist.itemsVerified || allItemsVerified)) missingChecks.push('Items Verification');
     if (!packingChecklist.packingSlipIncluded) missingChecks.push('Packing Slip');
-    if (!packingChecklist.invoiceIncluded) missingChecks.push('Invoice');
     if (!packingChecklist.boxSealed) missingChecks.push('Box Sealing');
     if (!packingChecklist.promotionalMaterials) missingChecks.push('Promotional Materials');
     if (needsFragileProtection && !packingChecklist.fragileProtected) missingChecks.push('Fragile Protection');
@@ -3743,7 +3738,7 @@ export default function PickPack() {
     }) : false;
     
     // Simplified packing completion check
-    const documentsReady = printedDocuments.packingList || printedDocuments.invoice;
+    const documentsReady = printedDocuments.packingList;
     const cartonSelected = selectedCarton !== null;
     const checklistComplete = (packingChecklist.itemsVerified || allItemsVerified) && 
                              packingChecklist.packingSlipIncluded && 
@@ -3763,7 +3758,6 @@ export default function PickPack() {
     // ALL required checkboxes must be checked
     const canCompletePacking = (packingChecklist.itemsVerified || allItemsVerified) && 
                               packingChecklist.packingSlipIncluded && 
-                              packingChecklist.invoiceIncluded &&
                               packingChecklist.boxSealed &&
                               packingChecklist.promotionalMaterials &&
                               (!needsFragileProtection || packingChecklist.fragileProtected) && // Only required if fragile
@@ -3794,7 +3788,6 @@ export default function PickPack() {
                     boxSealed: false,
                     weightRecorded: false,
                     fragileProtected: false,
-                    invoiceIncluded: false,
                     promotionalMaterials: false
                   });
                   setSelectedBoxSize('');
@@ -3869,11 +3862,11 @@ export default function PickPack() {
               <ChevronRight className="h-3 w-3 text-purple-300" />
               
               <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                printedDocuments.packingList && printedDocuments.invoice
+                printedDocuments.packingList
                   ? 'bg-green-500 text-white' 
                   : 'bg-black/20 text-purple-200'
               }`}>
-                {printedDocuments.packingList && printedDocuments.invoice ? (
+                {printedDocuments.packingList ? (
                   <CheckCircle className="h-3 w-3" />
                 ) : (
                   <Circle className="h-3 w-3" />
@@ -4677,7 +4670,7 @@ export default function PickPack() {
                       size="sm"
                       className="h-7 text-xs"
                       onClick={() => {
-                        window.print();
+                        window.open(`/api/orders/${activePackingOrder.id}/packing-list.pdf`, '_blank');
                         setPrintedDocuments(prev => ({ ...prev, packingList: true }));
                         playSound('success');
                       }}
@@ -4687,59 +4680,27 @@ export default function PickPack() {
                     </Button>
                   </div>
 
-                  {/* Invoice */}
+                  {/* MSDS */}
                   <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
                     <div className="flex items-center gap-2">
                       <Checkbox 
-                        checked={printedDocuments.invoice}
-                        disabled
-                        className="cursor-default"
+                        checked={printedDocuments.msds}
+                        onCheckedChange={(checked) => setPrintedDocuments(prev => ({ ...prev, msds: !!checked }))}
                       />
-                      <span className="text-sm">Invoice</span>
+                      <span className="text-sm">MSDS</span>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="h-7 text-xs"
-                      onClick={() => {
-                        window.open(`/api/orders/${activePackingOrder.id}/invoice.pdf`, '_blank');
-                        setPrintedDocuments(prev => ({ ...prev, invoice: true }));
-                        playSound('success');
-                      }}
-                    >
-                      <Printer className="h-3 w-3 mr-1" />
-                      Print
-                    </Button>
                   </div>
 
-                  {/* Print All Button */}
-                  <Button 
-                    className="w-full h-8 text-sm bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
-                    onClick={() => {
-                      const documents = [
-                        `/api/orders/${activePackingOrder.id}/packing-list.pdf`,
-                        `/api/orders/${activePackingOrder.id}/invoice.pdf`,
-                      ];
-                      
-                      documents.forEach((doc, index) => {
-                        setTimeout(() => {
-                          window.open(doc, '_blank');
-                        }, index * 500);
-                      });
-                      
-                      setPrintedDocuments({
-                        packingList: true,
-                        invoice: true,
-                        msds: printedDocuments.msds,
-                        cpnpCertificate: printedDocuments.cpnpCertificate
-                      });
-                      
-                      playSound('success');
-                    }}
-                  >
-                    <Printer className="h-3 w-3 mr-2" />
-                    Print All Documents
-                  </Button>
+                  {/* CPNP Certificate */}
+                  <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div className="flex items-center gap-2">
+                      <Checkbox 
+                        checked={printedDocuments.cpnpCertificate}
+                        onCheckedChange={(checked) => setPrintedDocuments(prev => ({ ...prev, cpnpCertificate: !!checked }))}
+                      />
+                      <span className="text-sm">CPNP Certificate</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -4767,16 +4728,6 @@ export default function PickPack() {
                     />
                     <span className="text-sm flex-1">Packing Slip Included</span>
                     {packingChecklist.packingSlipIncluded && <CheckCircle className="h-4 w-4 text-green-600" />}
-                  </div>
-
-                  {/* Invoice Included */}
-                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, invoiceIncluded: !packingChecklist.invoiceIncluded})}>
-                    <Checkbox 
-                      checked={packingChecklist.invoiceIncluded}
-                      onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, invoiceIncluded: !!checked})}
-                    />
-                    <span className="text-sm flex-1">Invoice Included</span>
-                    {packingChecklist.invoiceIncluded && <CheckCircle className="h-4 w-4 text-green-600" />}
                   </div>
 
                   {/* Weight Recorded */}
@@ -4845,7 +4796,6 @@ export default function PickPack() {
                   const missingChecks = [];
                   if (!(packingChecklist.itemsVerified || allItemsVerified)) missingChecks.push('✓ Verify All Items');
                   if (!packingChecklist.packingSlipIncluded) missingChecks.push('✓ Include Packing Slip');
-                  if (!packingChecklist.invoiceIncluded) missingChecks.push('✓ Include Invoice');
                   if (!packingChecklist.weightRecorded) missingChecks.push('✓ Record Weight');
                   if (!packingChecklist.boxSealed) missingChecks.push('✓ Seal Box');
                   if (!packingChecklist.promotionalMaterials) missingChecks.push('✓ Add Promotional Materials');
