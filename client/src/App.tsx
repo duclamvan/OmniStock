@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 // Removed auth imports
 import { Layout } from "@/components/Layout";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
 import NotFound from "@/pages/not-found";
 // Removed Landing page import
 import Home from "@/pages/Home";
@@ -220,6 +221,7 @@ function AppContent() {
   
   return (
     <>
+      <OfflineIndicator />
       <Toaster />
       <Router />
     </>
