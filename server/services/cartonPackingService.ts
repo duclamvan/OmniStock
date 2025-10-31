@@ -201,6 +201,7 @@ export async function optimizeCartonPacking(
     itemsWithDimensions.sort((a, b) => b.volumeCm3 - a.volumeCm3);
     console.log('Items sorted by volume (largest first)');
 
+    // Sort cartons by volume DESCENDING (largest first) to prefer bigger cartons
     const sortedCartons = [...packingCartons].sort((a, b) => {
       const volA = parseFloat(a.innerLengthCm.toString()) * 
                    parseFloat(a.innerWidthCm.toString()) * 
@@ -208,77 +209,134 @@ export async function optimizeCartonPacking(
       const volB = parseFloat(b.innerLengthCm.toString()) * 
                    parseFloat(b.innerWidthCm.toString()) * 
                    parseFloat(b.innerHeightCm.toString());
-      return volA - volB;
+      return volB - volA; // DESCENDING - biggest first
     });
+    console.log(`Cartons sorted by volume (largest first): ${sortedCartons.map(c => c.name).join(', ')}`);
 
     const partialCartons: PartialCarton[] = [];
     let cartonCounter = 1;
 
-    for (const item of itemsWithDimensions) {
-      let packed = false;
+    // Calculate total volume and weight of all items
+    const totalItemsVolume = itemsWithDimensions.reduce((sum, item) => sum + (item.volumeCm3 * item.quantity), 0);
+    const totalItemsWeight = itemsWithDimensions.reduce((sum, item) => sum + (item.weightKg * item.quantity), 0);
+
+    // Try to find ONE large carton that can fit everything first
+    let canFitInOneCarton = false;
+    for (const carton of sortedCartons) {
+      const cartonVolume = parseFloat(carton.innerLengthCm.toString()) *
+                          parseFloat(carton.innerWidthCm.toString()) *
+                          parseFloat(carton.innerHeightCm.toString());
+      const maxWeight = parseFloat(carton.maxWeightKg.toString());
       
-      for (const partial of partialCartons) {
-        const cartonVolume = parseFloat(partial.carton.innerLengthCm.toString()) *
-                            parseFloat(partial.carton.innerWidthCm.toString()) *
-                            parseFloat(partial.carton.innerHeightCm.toString());
+      if (totalItemsVolume <= cartonVolume && totalItemsWeight <= maxWeight) {
+        // Everything fits in one carton!
+        console.log(`✅ All items fit in ONE ${carton.name} carton (${totalItemsVolume.toFixed(0)}cm³ of ${cartonVolume.toFixed(0)}cm³, ${totalItemsWeight.toFixed(2)}kg of ${maxWeight}kg)`);
         
-        const newTotalVolume = partial.totalVolumeCm3 + (item.volumeCm3 * item.quantity);
-        const newTotalWeight = partial.totalWeightKg + (item.weightKg * item.quantity);
-        const maxWeight = parseFloat(partial.carton.maxWeightKg.toString());
-
-        if (newTotalVolume <= cartonVolume && newTotalWeight <= maxWeight) {
-          partial.items.push({
-            productId: item.productId,
-            quantity: item.quantity,
-            weightKg: item.weightKg * item.quantity,
-            aiEstimated: item.aiEstimated
-          });
-          partial.totalWeightKg = newTotalWeight;
-          partial.totalVolumeCm3 = newTotalVolume;
-          packed = true;
-          console.log(`Packed ${item.quantity}x ${item.productId} into existing carton ${partial.cartonNumber}`);
-          break;
-        }
+        const allItems: PackingPlanItem[] = itemsWithDimensions.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          weightKg: item.weightKg * item.quantity,
+          aiEstimated: item.aiEstimated
+        }));
+        
+        partialCartons.push({
+          carton,
+          cartonNumber: 1,
+          items: allItems,
+          totalWeightKg: totalItemsWeight,
+          totalVolumeCm3: totalItemsVolume
+        });
+        
+        canFitInOneCarton = true;
+        break;
       }
+    }
 
-      if (!packed) {
-        const itemTotalVolume = item.volumeCm3 * item.quantity;
-        const itemTotalWeight = item.weightKg * item.quantity;
+    // If can't fit in one carton, use improved bin packing
+    if (!canFitInOneCarton) {
+      console.log(`Items need multiple cartons. Using optimized packing strategy.`);
+      
+      for (const item of itemsWithDimensions) {
+        let packed = false;
         
-        let suitableCarton: PackingCarton | null = null;
+        // Sort partial cartons by remaining capacity (largest remaining capacity first)
+        // This helps consolidate items into fewer cartons
+        const sortedPartials = [...partialCartons].sort((a, b) => {
+          const aVolume = parseFloat(a.carton.innerLengthCm.toString()) *
+                         parseFloat(a.carton.innerWidthCm.toString()) *
+                         parseFloat(a.carton.innerHeightCm.toString());
+          const bVolume = parseFloat(b.carton.innerLengthCm.toString()) *
+                         parseFloat(b.carton.innerWidthCm.toString()) *
+                         parseFloat(b.carton.innerHeightCm.toString());
+          const aRemaining = aVolume - a.totalVolumeCm3;
+          const bRemaining = bVolume - b.totalVolumeCm3;
+          return bRemaining - aRemaining; // Largest remaining capacity first
+        });
         
-        for (const carton of sortedCartons) {
-          const cartonVolume = parseFloat(carton.innerLengthCm.toString()) *
-                              parseFloat(carton.innerWidthCm.toString()) *
-                              parseFloat(carton.innerHeightCm.toString());
-          const maxWeight = parseFloat(carton.maxWeightKg.toString());
+        for (const partial of sortedPartials) {
+          const cartonVolume = parseFloat(partial.carton.innerLengthCm.toString()) *
+                              parseFloat(partial.carton.innerWidthCm.toString()) *
+                              parseFloat(partial.carton.innerHeightCm.toString());
           
-          if (itemTotalVolume <= cartonVolume && itemTotalWeight <= maxWeight) {
-            suitableCarton = carton;
+          const newTotalVolume = partial.totalVolumeCm3 + (item.volumeCm3 * item.quantity);
+          const newTotalWeight = partial.totalWeightKg + (item.weightKg * item.quantity);
+          const maxWeight = parseFloat(partial.carton.maxWeightKg.toString());
+
+          if (newTotalVolume <= cartonVolume && newTotalWeight <= maxWeight) {
+            partial.items.push({
+              productId: item.productId,
+              quantity: item.quantity,
+              weightKg: item.weightKg * item.quantity,
+              aiEstimated: item.aiEstimated
+            });
+            partial.totalWeightKg = newTotalWeight;
+            partial.totalVolumeCm3 = newTotalVolume;
+            packed = true;
+            console.log(`✓ Packed ${item.quantity}x ${item.productId} into existing carton ${partial.cartonNumber} (${partial.carton.name})`);
             break;
           }
         }
 
-        if (!suitableCarton) {
-          suitableCarton = sortedCartons[sortedCartons.length - 1];
-          console.warn(`Item ${item.productId} exceeds all carton capacities, using largest carton`);
-        }
+        if (!packed) {
+          const itemTotalVolume = item.volumeCm3 * item.quantity;
+          const itemTotalWeight = item.weightKg * item.quantity;
+          
+          // Find the FIRST (largest) carton that fits - we already sorted largest first
+          let suitableCarton: PackingCarton | null = null;
+          
+          for (const carton of sortedCartons) {
+            const cartonVolume = parseFloat(carton.innerLengthCm.toString()) *
+                                parseFloat(carton.innerWidthCm.toString()) *
+                                parseFloat(carton.innerHeightCm.toString());
+            const maxWeight = parseFloat(carton.maxWeightKg.toString());
+            
+            if (itemTotalVolume <= cartonVolume && itemTotalWeight <= maxWeight) {
+              suitableCarton = carton;
+              break; // Take first (largest) that fits
+            }
+          }
 
-        const newPartialCarton: PartialCarton = {
-          carton: suitableCarton,
-          cartonNumber: cartonCounter++,
-          items: [{
-            productId: item.productId,
-            quantity: item.quantity,
-            weightKg: itemTotalWeight,
-            aiEstimated: item.aiEstimated
-          }],
-          totalWeightKg: itemTotalWeight,
-          totalVolumeCm3: itemTotalVolume
-        };
-        
-        partialCartons.push(newPartialCarton);
-        console.log(`Created new carton ${newPartialCarton.cartonNumber} (${suitableCarton.name}) for ${item.quantity}x ${item.productId}`);
+          if (!suitableCarton) {
+            suitableCarton = sortedCartons[0]; // Use largest carton if item exceeds all
+            console.warn(`⚠ Item ${item.productId} exceeds all carton capacities, using largest carton (${suitableCarton.name})`);
+          }
+
+          const newPartialCarton: PartialCarton = {
+            carton: suitableCarton,
+            cartonNumber: cartonCounter++,
+            items: [{
+              productId: item.productId,
+              quantity: item.quantity,
+              weightKg: itemTotalWeight,
+              aiEstimated: item.aiEstimated
+            }],
+            totalWeightKg: itemTotalWeight,
+            totalVolumeCm3: itemTotalVolume
+          };
+          
+          partialCartons.push(newPartialCarton);
+          console.log(`📦 Created new carton ${newPartialCarton.cartonNumber} (${suitableCarton.name}) for ${item.quantity}x ${item.productId}`);
+        }
       }
     }
 
@@ -312,38 +370,19 @@ export async function optimizeCartonPacking(
 
     const suggestions: string[] = [];
     
-    const lowUtilizationCartons = cartons.filter(c => c.volumeUtilization < 70);
+    if (canFitInOneCarton) {
+      suggestions.push('✅ Optimized: All items fit efficiently in one large carton');
+    }
+    
+    const lowUtilizationCartons = cartons.filter(c => c.volumeUtilization < 60);
     if (lowUtilizationCartons.length > 0) {
-      suggestions.push(`${lowUtilizationCartons.length} carton(s) have less than 70% utilization`);
-      
-      const cartonTypeUsage = new Map<string, number>();
-      partialCartons.forEach(p => {
-        const count = cartonTypeUsage.get(p.carton.id) || 0;
-        cartonTypeUsage.set(p.carton.id, count + 1);
-      });
-      
-      if (cartonTypeUsage.size > 1) {
-        suggestions.push('Consider consolidating items into fewer carton types for better efficiency');
-      }
-      
-      for (const carton of lowUtilizationCartons) {
-        const partial = partialCartons.find(p => p.cartonNumber === carton.cartonNumber);
-        if (!partial) continue;
-        
-        const currentCartonIndex = sortedCartons.findIndex(c => c.id === partial.carton.id);
-        
-        if (currentCartonIndex > 0) {
-          const smallerCarton = sortedCartons[currentCartonIndex - 1];
-          const smallerVolume = parseFloat(smallerCarton.innerLengthCm.toString()) *
-                               parseFloat(smallerCarton.innerWidthCm.toString()) *
-                               parseFloat(smallerCarton.innerHeightCm.toString());
-          
-          if (partial.totalVolumeCm3 <= smallerVolume && 
-              partial.totalWeightKg <= parseFloat(smallerCarton.maxWeightKg.toString())) {
-            suggestions.push(`Carton ${carton.cartonNumber} (${partial.carton.name}) could fit in smaller "${smallerCarton.name}"`);
-          }
-        }
-      }
+      suggestions.push(`${lowUtilizationCartons.length} carton(s) have less than 60% utilization - using larger cartons minimizes shipping cost`);
+    }
+    
+    if (cartons.length === 1 && cartons[0].volumeUtilization >= 70) {
+      suggestions.push('✅ Excellent packing efficiency - single carton, good utilization');
+    } else if (cartons.length <= 2 && avgUtilization >= 70) {
+      suggestions.push('✅ Good packing efficiency - minimal cartons with solid utilization');
     }
 
     const overweightCartons = cartons.filter((c, i) => {
@@ -356,16 +395,19 @@ export async function optimizeCartonPacking(
       suggestions.push(`WARNING: ${overweightCartons.length} carton(s) exceed weight limit and need to be redistributed`);
     }
 
-    console.log(`Packing optimization complete: ${totalCartons} cartons, ${totalWeightKg.toFixed(2)}kg total, ${avgUtilization.toFixed(1)}% avg utilization`);
+    console.log(`✅ Packing optimization complete: ${totalCartons} carton(s), ${totalWeightKg.toFixed(2)}kg total, ${avgUtilization.toFixed(1)}% avg utilization`);
 
     const cartonSummary = cartons.map((c, i) => {
       const partial = partialCartons[i];
-      return `${c.cartonNumber}x ${partial.carton.name}`;
+      return `${partial.carton.name}`;
     }).join(', ');
 
-    const reasoning = `Optimized packing for ${cartonNeededItems.length} item type(s) requiring cartons into ${totalCartons} carton(s): ${cartonSummary}. ` +
-      `Average utilization: ${avgUtilization.toFixed(1)}%. ` +
-      (nylonWrapItems.length > 0 ? `Additionally, ${nylonWrapItems.length} item type(s) only need nylon wrapping.` : '');
+    const reasoning = canFitInOneCarton 
+      ? `✅ Optimized: All ${cartonNeededItems.length} item type(s) fit perfectly in ONE ${cartonSummary} carton (${avgUtilization.toFixed(1)}% utilization). ` +
+        (nylonWrapItems.length > 0 ? `Additionally, ${nylonWrapItems.length} item type(s) only need nylon wrapping.` : '')
+      : `Optimized packing using LARGEST CARTONS: ${cartonNeededItems.length} item type(s) packed into ${totalCartons} carton(s): ${cartonSummary}. ` +
+        `Average utilization: ${avgUtilization.toFixed(1)}%. ` +
+        (nylonWrapItems.length > 0 ? `Additionally, ${nylonWrapItems.length} item type(s) only need nylon wrapping.` : '');
 
     return {
       cartons,
