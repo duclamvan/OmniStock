@@ -4131,7 +4131,9 @@ export default function PickPack() {
                                               if (isVerified) {
                                                 setVerifiedItems(prev => ({ ...prev, [item.id]: 0 }));
                                               } else {
-                                                setVerifiedItems(prev => ({ ...prev, [item.id]: Math.min((prev[item.id] || 0) + 1, item.quantity) }));
+                                                // If quantity > 4, complete all at once. Otherwise, increment by 1
+                                                const newCount = item.quantity > 4 ? item.quantity : Math.min((verifiedItems[item.id] || 0) + 1, item.quantity);
+                                                setVerifiedItems(prev => ({ ...prev, [item.id]: newCount }));
                                                 playSound('scan');
                                               }
                                             }
@@ -4284,7 +4286,9 @@ export default function PickPack() {
                                         if (isVerified) {
                                           setVerifiedItems(prev => ({ ...prev, [item.id]: 0 }));
                                         } else {
-                                          setVerifiedItems(prev => ({ ...prev, [item.id]: Math.min((prev[item.id] || 0) + 1, item.quantity) }));
+                                          // If quantity > 4, complete all at once. Otherwise, increment by 1
+                                          const newCount = item.quantity > 4 ? item.quantity : Math.min((verifiedItems[item.id] || 0) + 1, item.quantity);
+                                          setVerifiedItems(prev => ({ ...prev, [item.id]: newCount }));
                                           playSound('scan');
                                         }
                                       }
