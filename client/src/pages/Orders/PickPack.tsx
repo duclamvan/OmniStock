@@ -968,6 +968,9 @@ export default function PickPack() {
 
   // Track if we've already auto-applied suggestions for this order
   const [hasAutoAppliedSuggestions, setHasAutoAppliedSuggestions] = useState(false);
+  
+  // Track if user has manually interacted with cartons (prevents AI auto-recalculation)
+  const [hasManuallyModifiedCartons, setHasManuallyModifiedCartons] = useState(false);
 
   // Function to recalculate cartons - this will be defined after mutations
   const recalculateCartons = useRef<(() => Promise<void>) | null>(null);
@@ -975,9 +978,10 @@ export default function PickPack() {
   // Reset auto-apply flag and trigger recalculation when active order changes (entering packing mode)
   useEffect(() => {
     setHasAutoAppliedSuggestions(false);
+    setHasManuallyModifiedCartons(false); // Reset manual modification flag for new order
     
-    // If we just entered packing mode, recalculate cartons
-    if (activePackingOrder?.id && recalculateCartons.current) {
+    // If we just entered packing mode and user hasn't manually modified cartons, recalculate
+    if (activePackingOrder?.id && recalculateCartons.current && !hasManuallyModifiedCartons) {
       // Small delay to ensure the order is fully loaded
       const timeoutId = setTimeout(() => {
         recalculateCartons.current?.();
@@ -4550,6 +4554,8 @@ export default function PickPack() {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        // Reset manual modification flag when user explicitly requests recalculation
+                        setHasManuallyModifiedCartons(false);
                         recalculateCartons.current?.();
                       }}
                       disabled={isRecalculating}
@@ -4614,6 +4620,9 @@ export default function PickPack() {
                           size="sm"
                           onClick={() => {
                             if (activePackingOrder) {
+                              // Mark as manually modified to prevent AI recalculation
+                              setHasManuallyModifiedCartons(true);
+                              
                               deleteCartonMutation.mutate({
                                 orderId: activePackingOrder.id,
                                 cartonId: carton.id
@@ -4634,6 +4643,9 @@ export default function PickPack() {
                           value={carton.cartonId || ''}
                           onValueChange={(cartonId, cartonData) => {
                             if (activePackingOrder) {
+                              // Mark as manually modified to prevent AI recalculation
+                              setHasManuallyModifiedCartons(true);
+                              
                               const updates: Partial<OrderCarton> = {
                                 cartonType: cartonId ? 'company' : 'non-company',
                                 cartonId: cartonId || null
@@ -4669,6 +4681,9 @@ export default function PickPack() {
                             value={carton.weight || ''}
                             onChange={(e) => {
                               if (activePackingOrder) {
+                                // Mark as manually modified to prevent AI recalculation
+                                setHasManuallyModifiedCartons(true);
+                                
                                 updateCartonMutation.mutate({
                                   orderId: activePackingOrder.id,
                                   cartonId: carton.id,
@@ -4705,6 +4720,9 @@ export default function PickPack() {
                 className="w-full border-2 border-dashed border-emerald-400 text-emerald-700 hover:bg-emerald-50"
                 onClick={() => {
                   if (activePackingOrder) {
+                    // Mark as manually modified to prevent AI recalculation
+                    setHasManuallyModifiedCartons(true);
+                    
                     const tempId = `temp-${nanoid()}`;
                     const nextCartonNumber = cartons.length + cartonsDraft.length + 1;
                     
