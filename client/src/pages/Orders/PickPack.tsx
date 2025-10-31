@@ -4577,6 +4577,11 @@ export default function PickPack() {
                           <div className="text-xs text-emerald-600 flex items-center gap-1">
                             <TrendingUp className="h-3 w-3" />
                             AI calculated
+                            {carton.notes && carton.notes.includes('% utilization') && (
+                              <span className="ml-1">
+                                - {carton.notes.match(/(\d+\.?\d*)% utilization/)?.[1]}% utilization
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>
