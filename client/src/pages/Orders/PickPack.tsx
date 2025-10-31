@@ -427,6 +427,9 @@ export default function PickPack() {
     promotionalMaterials: false
   });
   
+  // State for packing materials checklist
+  const [packingMaterialsApplied, setPackingMaterialsApplied] = useState<Record<string, boolean>>({});
+  
   // State for document printing checklist
   const [printedDocuments, setPrintedDocuments] = useState({
     packingList: false,
@@ -798,6 +801,20 @@ export default function PickPack() {
     staleTime: 10 * 60 * 1000, // 10 minutes (cartons rarely change)
     refetchInterval: false, // Disable interval refetch
     refetchOnWindowFocus: false,
+  });
+  
+  // Query for packing materials for the active packing order
+  const { data: orderPackingMaterials = [] } = useQuery<Array<{
+    id: string;
+    name: string;
+    imageUrl: string | null;
+    instruction: string;
+    productName: string;
+    quantity: number;
+  }>>({
+    queryKey: ['/api/orders', activePackingOrder?.id, 'packing-materials'],
+    enabled: !!activePackingOrder?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Filter cartons based on search
@@ -3193,7 +3210,6 @@ export default function PickPack() {
     setVerifiedItems({});
     setUseNonCompanyCarton(false);
     setPackageWeight('');
-    setShippingLabelPrinted(false);
     
     // Clear previous selections before auto-selecting
     setSelectedCartons([]);
@@ -3793,7 +3809,6 @@ export default function PickPack() {
                   setSelectedBoxSize('');
                   setPackageWeight('');
                   setVerifiedItems({});
-                  setShippingLabelPrinted(false);
                   // Return to the tab the user was on when they started
                   setSelectedTab(originatingTab);
                 }}
@@ -4706,72 +4721,64 @@ export default function PickPack() {
 
               <Separator />
 
-              {/* Section 2: Checklist */}
+              {/* Section 2: Packing Materials Required */}
               <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-gray-700">Checklist:</h3>
-                <div className="space-y-1.5">
-                  {/* Items Verified */}
-                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, itemsVerified: !packingChecklist.itemsVerified})}>
-                    <Checkbox 
-                      checked={packingChecklist.itemsVerified || allItemsVerified}
-                      onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, itemsVerified: !!checked})}
-                    />
-                    <span className="text-sm flex-1">Items Verified</span>
-                    {(packingChecklist.itemsVerified || allItemsVerified) && <CheckCircle className="h-4 w-4 text-green-600" />}
+                <h3 className="text-sm font-semibold text-gray-700">Packing Materials:</h3>
+                {orderPackingMaterials.length > 0 ? (
+                  <div className="space-y-3">
+                    {orderPackingMaterials.map((material) => (
+                      <div 
+                        key={material.id} 
+                        className="border border-gray-200 rounded-lg p-3 bg-white hover:bg-gray-50 cursor-pointer transition-colors"
+                        onClick={() => setPackingMaterialsApplied(prev => ({
+                          ...prev,
+                          [material.id]: !prev[material.id]
+                        }))}
+                      >
+                        <div className="flex items-start gap-3">
+                          {/* Checkbox */}
+                          <Checkbox 
+                            checked={packingMaterialsApplied[material.id] || false}
+                            onCheckedChange={(checked) => setPackingMaterialsApplied(prev => ({
+                              ...prev,
+                              [material.id]: !!checked
+                            }))}
+                            className="mt-1"
+                          />
+                          
+                          {/* Material Image */}
+                          {material.imageUrl && (
+                            <div className="flex-shrink-0 w-16 h-16 rounded-md overflow-hidden bg-gray-100 border border-gray-200">
+                              <img 
+                                src={material.imageUrl} 
+                                alt={material.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          
+                          {/* Material Info */}
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-semibold text-gray-900 mb-1">{material.name}</h4>
+                            {material.instruction && (
+                              <p className="text-xs text-gray-600 mb-1">{material.instruction}</p>
+                            )}
+                            <p className="text-xs text-gray-500">For: {material.productName}</p>
+                          </div>
+                          
+                          {/* Check Icon */}
+                          {packingMaterialsApplied[material.id] && (
+                            <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-
-                  {/* Packing Slip Included */}
-                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, packingSlipIncluded: !packingChecklist.packingSlipIncluded})}>
-                    <Checkbox 
-                      checked={packingChecklist.packingSlipIncluded}
-                      onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, packingSlipIncluded: !!checked})}
-                    />
-                    <span className="text-sm flex-1">Packing Slip Included</span>
-                    {packingChecklist.packingSlipIncluded && <CheckCircle className="h-4 w-4 text-green-600" />}
+                ) : (
+                  <div className="text-sm text-gray-500 italic p-3 bg-gray-50 rounded-lg">
+                    No packing materials specified for this order
                   </div>
-
-                  {/* Weight Recorded */}
-                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, weightRecorded: !packingChecklist.weightRecorded})}>
-                    <Checkbox 
-                      checked={packingChecklist.weightRecorded}
-                      onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, weightRecorded: !!checked})}
-                    />
-                    <span className="text-sm flex-1">Weight Recorded</span>
-                    {packingChecklist.weightRecorded && <CheckCircle className="h-4 w-4 text-green-600" />}
-                  </div>
-
-                  {/* Box Sealed */}
-                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, boxSealed: !packingChecklist.boxSealed})}>
-                    <Checkbox 
-                      checked={packingChecklist.boxSealed}
-                      onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, boxSealed: !!checked})}
-                    />
-                    <span className="text-sm flex-1">Box Sealed</span>
-                    {packingChecklist.boxSealed && <CheckCircle className="h-4 w-4 text-green-600" />}
-                  </div>
-
-                  {/* Promotional Materials */}
-                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, promotionalMaterials: !packingChecklist.promotionalMaterials})}>
-                    <Checkbox 
-                      checked={packingChecklist.promotionalMaterials || false}
-                      onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, promotionalMaterials: !!checked})}
-                    />
-                    <span className="text-sm flex-1">Promotional Materials</span>
-                    {packingChecklist.promotionalMaterials && <CheckCircle className="h-4 w-4 text-green-600" />}
-                  </div>
-
-                  {/* Fragile Protected (conditional) */}
-                  {needsFragileProtection && (
-                    <div className="flex items-center gap-2 p-2 bg-red-50 rounded hover:bg-red-100 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, fragileProtected: !packingChecklist.fragileProtected})}>
-                      <Checkbox 
-                        checked={packingChecklist.fragileProtected || false}
-                        onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, fragileProtected: !!checked})}
-                      />
-                      <span className="text-sm flex-1 text-red-700 font-medium">Fragile Items Protected</span>
-                      {packingChecklist.fragileProtected && <CheckCircle className="h-4 w-4 text-green-600" />}
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
             </CardContent>
           </Card>

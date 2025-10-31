@@ -42,6 +42,7 @@ import {
   orderItems,
   orders,
   customers,
+  packingMaterials,
 } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -7351,6 +7352,94 @@ Return ONLY the subject line without quotes or extra formatting.`,
       console.error('Error generating label for carton:', error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : 'Failed to generate label for carton' 
+      });
+    }
+  });
+
+  // Get packing materials for an order
+  app.get('/api/orders/:orderId/packing-materials', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      
+      // Get order items
+      const orderItems = await storage.getOrderItems(orderId);
+      
+      // Get product details for each item and extract packing materials
+      const packingMaterialsMap = new Map();
+      
+      for (const item of orderItems) {
+        if (item.productId) {
+          const product = await storage.getProductById(item.productId);
+          if (product) {
+            // Handle packingMaterials JSON field (array of material objects)
+            if (product.packingMaterials && Array.isArray(product.packingMaterials)) {
+              for (const material of product.packingMaterials) {
+                if (material.id && !packingMaterialsMap.has(material.id)) {
+                  packingMaterialsMap.set(material.id, {
+                    id: material.id,
+                    name: material.name || 'Unknown Material',
+                    imageUrl: material.imageUrl || product.packingInstructionsImage || null,
+                    instruction: material.instruction || product.packingInstructionsText || '',
+                    productName: product.name,
+                    quantity: item.quantity
+                  });
+                }
+              }
+            }
+            
+            // Handle single packingMaterialId reference
+            if (product.packingMaterialId) {
+              const materialId = product.packingMaterialId;
+              if (!packingMaterialsMap.has(materialId)) {
+                // Fetch material details from packing_materials table
+                try {
+                  const materialDetails = await db.select()
+                    .from(packingMaterials)
+                    .where(eq(packingMaterials.id, materialId))
+                    .limit(1);
+                  
+                  if (materialDetails.length > 0) {
+                    const mat = materialDetails[0];
+                    packingMaterialsMap.set(materialId, {
+                      id: mat.id,
+                      name: mat.name,
+                      imageUrl: mat.imageUrl || product.packingInstructionsImage || null,
+                      instruction: mat.description || product.packingInstructionsText || '',
+                      productName: product.name,
+                      quantity: item.quantity
+                    });
+                  }
+                } catch (error) {
+                  console.error('Error fetching packing material:', error);
+                }
+              }
+            }
+            
+            // Fallback: if product has packing instructions but no material ID
+            if (!product.packingMaterialId && !product.packingMaterials && 
+                (product.packingInstructionsText || product.packingInstructionsImage)) {
+              const fallbackId = `product-${product.id}`;
+              if (!packingMaterialsMap.has(fallbackId)) {
+                packingMaterialsMap.set(fallbackId, {
+                  id: fallbackId,
+                  name: 'Packing Instructions',
+                  imageUrl: product.packingInstructionsImage || null,
+                  instruction: product.packingInstructionsText || '',
+                  productName: product.name,
+                  quantity: item.quantity
+                });
+              }
+            }
+          }
+        }
+      }
+      
+      res.json(Array.from(packingMaterialsMap.values()));
+      
+    } catch (error) {
+      console.error('Error fetching packing materials:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to fetch packing materials' 
       });
     }
   });
