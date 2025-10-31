@@ -4944,6 +4944,37 @@ export default function PickPack() {
                       >
                         <CardContent className="p-3 sm:p-4">
                           <div className="flex items-center gap-3">
+                            {/* Clickable Number Badge - Toggleable */}
+                            <div 
+                              className="flex-shrink-0 cursor-pointer active:scale-95 transition-transform"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (isPicked) {
+                                  // Unpick - reset to 0
+                                  updatePickedItem(item.id, 0);
+                                } else {
+                                  // Pick fully
+                                  updatePickedItem(item.id, item.quantity);
+                                  playSound('success');
+                                }
+                              }}
+                              data-testid={`quick-pick-${item.id}`}
+                            >
+                              {isPicked ? (
+                                <div className="bg-green-500 rounded-full p-2 shadow-lg hover:bg-green-600">
+                                  <CheckCircle className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
+                                </div>
+                              ) : isPartiallyPicked ? (
+                                <div className="bg-yellow-500 rounded-full p-2 shadow-lg hover:bg-yellow-600">
+                                  <Clock className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
+                                </div>
+                              ) : (
+                                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-3 border-gray-400 flex items-center justify-center text-lg sm:text-xl font-black text-gray-700 hover:bg-blue-500 hover:text-white hover:border-blue-600 transition-all shadow-md">
+                                  {index + 1}
+                                </div>
+                              )}
+                            </div>
+                            
                             {/* Product Image */}
                             <div className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-gray-100 border-2 border-gray-200">
                               {item.image ? (
@@ -4955,33 +4986,6 @@ export default function PickPack() {
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
                                   <Package className="h-8 w-8 text-gray-300" />
-                                </div>
-                              )}
-                            </div>
-                            
-                            {/* Clickable Number Badge */}
-                            <div 
-                              className="flex-shrink-0 cursor-pointer active:scale-95 transition-transform"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (!isPicked) {
-                                  updatePickedItem(item.id, item.quantity);
-                                  playSound('success');
-                                }
-                              }}
-                              data-testid={`quick-pick-${item.id}`}
-                            >
-                              {isPicked ? (
-                                <div className="bg-green-500 rounded-full p-2 shadow-lg">
-                                  <CheckCircle className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
-                                </div>
-                              ) : isPartiallyPicked ? (
-                                <div className="bg-yellow-500 rounded-full p-2 shadow-lg hover:bg-yellow-600">
-                                  <Clock className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
-                                </div>
-                              ) : (
-                                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-3 border-gray-400 flex items-center justify-center text-lg sm:text-xl font-black text-gray-700 hover:bg-blue-500 hover:text-white hover:border-blue-600 transition-all shadow-md">
-                                  {index + 1}
                                 </div>
                               )}
                             </div>
