@@ -841,30 +841,49 @@ export default function PickPack() {
 
   // Automatically apply AI carton suggestions when they arrive
   useEffect(() => {
-    if (!activePackingOrder || !recommendedCarton || hasAutoAppliedSuggestions || cartons.length > 0) {
-      return; // Only auto-apply once per order when recommendations exist and no cartons created yet
+    if (!activePackingOrder || !recommendedCarton || hasAutoAppliedSuggestions) {
+      return;
     }
 
-    if (recommendedCarton.suggestions && recommendedCarton.suggestions.length > 0) {
-      // Mark that we've auto-applied to prevent duplicate applications
+    // Only auto-apply if we have valid suggestions
+    if (!recommendedCarton.suggestions || recommendedCarton.suggestions.length === 0) {
+      return;
+    }
+
+    // Check if order already has cartons - if so, don't auto-apply
+    if (cartons.length > 0) {
+      console.log(`Order already has ${cartons.length} cartons, skipping auto-apply`);
       setHasAutoAppliedSuggestions(true);
-      
-      // Automatically create cartons based on AI suggestions
-      const createAndUpdateCartons = async () => {
+      return;
+    }
+
+    // Mark that we've started auto-applying
+    setHasAutoAppliedSuggestions(true);
+    
+    console.log(`Auto-applying AI suggestions: creating ${recommendedCarton.suggestions.length} carton(s)`);
+    
+    // Automatically create cartons based on AI suggestions
+    const createAndUpdateCartons = async () => {
+      try {
         const createdCartons = [];
         
+        // Create each carton sequentially with correct numbering
         for (let i = 0; i < recommendedCarton.suggestions.length; i++) {
           const suggestion = recommendedCarton.suggestions[i];
+          const cartonNumber = i + 1; // Sequential numbering: 1, 2, 3, etc.
+          
+          console.log(`Creating carton #${cartonNumber} with type ${suggestion.cartonId}`);
+          
           const result = await createCartonMutation.mutateAsync({
             orderId: activePackingOrder.id,
-            cartonNumber: suggestion.cartonNumber,
+            cartonNumber,
             cartonType: 'company',
             cartonId: suggestion.cartonId
           });
           createdCartons.push(result);
         }
         
-        // After all cartons are created, update their weights
+        // Refetch to get the latest cartons
         await refetchCartons();
         
         // Update weights and dimensions for each carton
@@ -873,7 +892,8 @@ export default function PickPack() {
             const suggestion = recommendedCarton.suggestions[i];
             if (createdCartons[i]) {
               const updates: any = {
-                source: 'ai'
+                source: 'ai',
+                aiPlanId: null
               };
               
               if (suggestion.totalWeightKg) {
@@ -899,38 +919,26 @@ export default function PickPack() {
               });
             }
           }
+          
+          await refetchCartons();
         }, 500);
         
         toast({
-          title: "AI Carton Suggestions Applied",
-          description: `Automatically created ${recommendedCarton.suggestions.length} carton(s) with prefilled weights`,
+          title: "AI Cartons Created",
+          description: `Created ${recommendedCarton.suggestions.length} carton(s) based on AI optimization`,
         });
-      };
-
-      createAndUpdateCartons();
-    } else if (recommendedCarton.cartonCount && recommendedCarton.cartonCount > 0 && !hasAutoAppliedSuggestions) {
-      // Mark that we've auto-applied to prevent duplicate applications
-      setHasAutoAppliedSuggestions(true);
-      
-      // If we have a carton count but no specific suggestions, create empty cartons
-      const createEmptyCartons = async () => {
-        for (let i = 1; i <= recommendedCarton.cartonCount; i++) {
-          await createCartonMutation.mutateAsync({
-            orderId: activePackingOrder.id,
-            cartonNumber: i,
-            cartonType: 'company'
-          });
-        }
-        
+      } catch (error) {
+        console.error('Error creating AI cartons:', error);
         toast({
-          title: "Cartons Created",
-          description: `Created ${recommendedCarton.cartonCount} carton(s) for packing`,
+          title: "Error",
+          description: "Failed to create AI-suggested cartons",
+          variant: "destructive"
         });
-      };
+      }
+    };
 
-      createEmptyCartons();
-    }
-  }, [activePackingOrder?.id, recommendedCarton, hasAutoAppliedSuggestions, cartons.length]);
+    createAndUpdateCartons();
+  }, [activePackingOrder?.id, recommendedCarton, hasAutoAppliedSuggestions]);
 
   // Create carton mutation
   const createCartonMutation = useMutation({
