@@ -4459,9 +4459,6 @@ export default function PickPack() {
                         </>
                       )}
                     </Button>
-                    <Badge className="bg-white/20 text-white">
-                      Multi-Carton Packing
-                    </Badge>
                     {/* Collapse/Expand Button */}
                     <Button
                       size="sm"
