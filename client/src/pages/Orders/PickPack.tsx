@@ -5091,40 +5091,40 @@ export default function PickPack() {
         {/* Item Overview Modal */}
         {showItemOverviewModal && activePickingOrder && (
           <div 
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4"
             onClick={() => setShowItemOverviewModal(false)}
           >
             <div 
-              className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+              className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-4 sm:p-6">
+              <div className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-3 sm:p-4 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <ClipboardList className="h-5 w-5" />
-                    <h2 className="text-lg sm:text-xl font-bold">Order Items Overview</h2>
+                    <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <h2 className="text-base sm:text-lg font-bold">Order Items Overview</h2>
                   </div>
                   <Button 
                     size="sm" 
                     variant="ghost" 
-                    className="text-white hover:bg-white/20"
+                    className="text-white hover:bg-white/20 h-8 w-8 p-0"
                     onClick={() => setShowItemOverviewModal(false)}
                     data-testid="button-close-overview"
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
-                <div className="mt-2 flex items-center gap-4">
-                  <Badge className="bg-white text-blue-600 font-bold px-3 py-1">
+                <div className="mt-2 flex items-center gap-2 sm:gap-4">
+                  <Badge className="bg-white text-blue-600 font-bold px-2 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm">
                     {activePickingOrder.pickedItems}/{activePickingOrder.totalItems} Picked
                   </Badge>
-                  <div className="text-sm text-blue-100">
+                  <div className="text-xs sm:text-sm text-blue-100">
                     Order: {activePickingOrder.orderId}
                   </div>
                 </div>
               </div>
               
-              <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+              <div className="p-3 sm:p-4 overflow-y-auto flex-1">
                 <div className="space-y-3">
                   {activePickingOrder.items.map((item, index) => {
                     const isPicked = item.pickedQuantity >= item.quantity;
@@ -5292,7 +5292,7 @@ export default function PickPack() {
                 </div>
               </div>
               
-              <div className="border-t p-4 bg-gray-50 space-y-3">
+              <div className="border-t p-3 sm:p-4 bg-gray-50 space-y-2 sm:space-y-3 flex-shrink-0">
                 {/* Barcode Scanner */}
                 <div className="flex gap-2">
                   <div className="relative flex-1">
@@ -5306,21 +5306,21 @@ export default function PickPack() {
                           handleOverviewBarcodeScan();
                         }
                       }}
-                      className="text-base h-11 bg-white border-2 border-gray-300 placeholder:text-gray-400 font-mono"
+                      className="text-sm sm:text-base h-10 sm:h-11 bg-white border-2 border-gray-300 placeholder:text-gray-400 font-mono"
                     />
                   </div>
                   <Button 
                     onClick={handleOverviewBarcodeScan}
-                    className="h-11 px-5 bg-green-600 hover:bg-green-700 text-white font-bold shadow-md"
+                    className="h-10 sm:h-11 px-3 sm:px-5 bg-green-600 hover:bg-green-700 text-white font-bold shadow-md text-sm sm:text-base"
                   >
-                    <ScanLine className="h-4 w-4 mr-2" />
-                    Scan
+                    <ScanLine className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Scan</span>
                   </Button>
                 </div>
                 
                 {/* Continue Picking Button */}
                 <Button 
-                  className="w-full h-12 text-base font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                  className="w-full h-10 sm:h-12 text-sm sm:text-base font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
                   onClick={() => setShowItemOverviewModal(false)}
                   data-testid="button-close-overview-bottom"
                 >
