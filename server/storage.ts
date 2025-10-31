@@ -461,6 +461,8 @@ export interface IStorage {
   createPackingCarton(carton: InsertPackingCarton): Promise<PackingCarton>;
   updatePackingCarton(id: string, carton: Partial<InsertPackingCarton>): Promise<PackingCarton | undefined>;
   deletePackingCarton(id: string): Promise<boolean>;
+  getPopularCartons(): Promise<PackingCarton[]>;
+  incrementCartonUsage(cartonId: string): Promise<void>;
   
   // Order Carton Plans
   getOrderCartonPlan(orderId: string): Promise<OrderCartonPlan | undefined>;
@@ -4376,6 +4378,34 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error deleting packing carton:', error);
       return false;
+    }
+  }
+
+  async getPopularCartons(): Promise<PackingCarton[]> {
+    try {
+      return await db
+        .select()
+        .from(packingCartons)
+        .orderBy(desc(packingCartons.usageCount), desc(packingCartons.lastUsedAt));
+    } catch (error) {
+      console.error('Error fetching popular cartons:', error);
+      return [];
+    }
+  }
+
+  async incrementCartonUsage(cartonId: string): Promise<void> {
+    try {
+      await db
+        .update(packingCartons)
+        .set({
+          usageCount: sql`${packingCartons.usageCount} + 1`,
+          lastUsedAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(packingCartons.id, cartonId));
+    } catch (error) {
+      console.error('Error incrementing carton usage:', error);
+      throw error;
     }
   }
 

@@ -7184,6 +7184,61 @@ Return ONLY the subject line without quotes or extra formatting.`,
     }
   });
 
+  // Get popular cartons sorted by usage
+  app.get('/api/cartons/popular', async (req, res) => {
+    try {
+      const cartons = await storage.getPopularCartons();
+      
+      const cartonsWithScore = cartons.map((carton) => {
+        const usageCount = Number(carton.usageCount) || 0;
+        const lastUsedAt = carton.lastUsedAt ? new Date(carton.lastUsedAt) : null;
+        
+        let daysSinceLastUsed = 0;
+        if (lastUsedAt) {
+          const now = new Date();
+          daysSinceLastUsed = Math.floor((now.getTime() - lastUsedAt.getTime()) / (1000 * 60 * 60 * 24));
+        }
+        
+        const score = usageCount * 1000 - daysSinceLastUsed;
+        
+        return {
+          id: carton.id,
+          name: carton.name,
+          innerLengthCm: carton.innerLengthCm,
+          innerWidthCm: carton.innerWidthCm,
+          innerHeightCm: carton.innerHeightCm,
+          maxWeightKg: carton.maxWeightKg,
+          usageCount: carton.usageCount,
+          lastUsedAt: carton.lastUsedAt,
+          score
+        };
+      });
+      
+      cartonsWithScore.sort((a, b) => b.score - a.score);
+      
+      res.json(cartonsWithScore);
+    } catch (error) {
+      console.error('Error getting popular cartons:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to get popular cartons' 
+      });
+    }
+  });
+
+  // Increment carton usage count
+  app.post('/api/cartons/:cartonId/increment-usage', async (req, res) => {
+    try {
+      const { cartonId } = req.params;
+      await storage.incrementCartonUsage(cartonId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error incrementing carton usage:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to increment carton usage' 
+      });
+    }
+  });
+
   // Multi-Carton Packing Routes
   
   // Get all cartons for an order
@@ -7310,7 +7365,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       }
 
       const orderItemsData = await storage.getOrderItems(orderId);
-      const packingCartons = await storage.getAvailablePackingCartons();
+      const packingCartons = await storage.getPackingCartons();
 
       const orderItemsWithProducts = await Promise.all(
         orderItemsData.map(async (item) => {
@@ -7360,7 +7415,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       }
 
       const orderItemsData = await storage.getOrderItems(orderId);
-      const allPackingCartons = await storage.getAvailablePackingCartons();
+      const allPackingCartons = await storage.getPackingCartons();
 
       const selectedCartons = allPackingCartons.filter(c => 
         selectedCartonTypes.includes(c.id)

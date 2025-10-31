@@ -684,6 +684,8 @@ export const packingCartons = pgTable('packing_cartons', {
   carrierCode: varchar('carrier_code'),
   costCurrency: varchar('cost_currency'),
   costAmount: decimal('cost_amount', { precision: 10, scale: 2 }),
+  usageCount: integer('usage_count').notNull().default(0),
+  lastUsedAt: timestamp('last_used_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow()
 });
@@ -721,11 +723,18 @@ export const orderCartons = pgTable('order_cartons', {
   cartonNumber: integer('carton_number').notNull(), // 1, 2, 3, etc. for tracking order
   cartonType: varchar('carton_type').notNull(), // 'company' or 'non-company'
   cartonId: varchar('carton_id').references(() => packingCartons.id), // null if non-company
-  weight: decimal('weight', { precision: 10, scale: 3 }), // in kg
+  weight: decimal('weight', { precision: 10, scale: 3 }), // in kg (total weight including carton)
+  payloadWeightKg: decimal('payload_weight_kg', { precision: 10, scale: 3 }), // weight of items only (without carton)
+  innerLengthCm: decimal('inner_length_cm', { precision: 10, scale: 2 }), // dimensions of the carton used
+  innerWidthCm: decimal('inner_width_cm', { precision: 10, scale: 2 }),
+  innerHeightCm: decimal('inner_height_cm', { precision: 10, scale: 2 }),
   labelUrl: text('label_url'),
   labelPrinted: boolean('label_printed').default(false),
   trackingNumber: text('tracking_number'),
   aiWeightCalculation: jsonb('ai_weight_calculation'), // Store AI calculation result
+  aiPlanId: varchar('ai_plan_id').references(() => orderCartonPlans.id), // Reference to AI plan that created this
+  source: varchar('source').default('manual'), // 'ai' or 'manual'
+  itemAllocations: jsonb('item_allocations'), // Which items are in this carton: {orderItemId, quantity, weightKg}[]
   notes: text('notes'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow()

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, memo } from "react";
-
+import { nanoid } from "nanoid";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ import {
 import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { CartonTypeAutocomplete } from "@/components/orders/CartonTypeAutocomplete";
 import { 
   Dialog, 
   DialogContent, 
@@ -426,6 +427,7 @@ export default function PickPack() {
   
   // Multi-carton state
   const [cartons, setCartons] = useState<OrderCarton[]>([]);
+  const [cartonsDraft, setCartonsDraft] = useState<OrderCarton[]>([]);
   
   // Legacy states for compatibility
   const [selectedCarton, setSelectedCarton] = useState<string>('');
@@ -865,18 +867,35 @@ export default function PickPack() {
         // After all cartons are created, update their weights
         await refetchCartons();
         
-        // Update weights for each carton
+        // Update weights and dimensions for each carton
         setTimeout(async () => {
           for (let i = 0; i < recommendedCarton.suggestions.length; i++) {
             const suggestion = recommendedCarton.suggestions[i];
-            if (suggestion.totalWeightKg && createdCartons[i]) {
+            if (createdCartons[i]) {
+              const updates: any = {
+                source: 'ai'
+              };
+              
+              if (suggestion.totalWeightKg) {
+                updates.weight = suggestion.totalWeightKg.toFixed(3);
+                updates.payloadWeightKg = suggestion.totalWeightKg;
+                updates.aiWeightCalculation = true;
+              }
+              
+              // Get carton dimensions from availableCartons
+              if (suggestion.cartonId && availableCartons && availableCartons.length > 0) {
+                const cartonData = availableCartons.find((c: any) => c.id === suggestion.cartonId);
+                if (cartonData && cartonData.dimensions) {
+                  updates.innerLengthCm = cartonData.dimensions.length;
+                  updates.innerWidthCm = cartonData.dimensions.width;
+                  updates.innerHeightCm = cartonData.dimensions.height;
+                }
+              }
+              
               await updateCartonMutation.mutateAsync({
                 orderId: activePackingOrder.id,
                 cartonId: createdCartons[i].id,
-                updates: { 
-                  weight: suggestion.totalWeightKg.toFixed(3),
-                  aiWeightCalculation: true
-                }
+                updates
               });
             }
           }
@@ -915,13 +934,26 @@ export default function PickPack() {
 
   // Create carton mutation
   const createCartonMutation = useMutation({
-    mutationFn: async (data: { orderId: string; cartonNumber: number; cartonType: 'company' | 'non-company'; cartonId?: string }) => {
+    mutationFn: async (data: { orderId: string; cartonNumber: number; cartonType: 'company' | 'non-company'; cartonId?: string; tempId?: string }) => {
       const response = await apiRequest('POST', `/api/orders/${data.orderId}/cartons`, data);
       return await response.json();
     },
-    onSuccess: () => {
+    onSuccess: (result, variables) => {
+      if (variables.tempId) {
+        setCartonsDraft(prev => prev.filter(c => c.id !== variables.tempId));
+      }
       queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder?.id, 'cartons'] });
       refetchCartons();
+    },
+    onError: (error, variables) => {
+      if (variables.tempId) {
+        setCartonsDraft(prev => prev.filter(c => c.id !== variables.tempId));
+      }
+      toast({
+        title: "Error Creating Carton",
+        description: error instanceof Error ? error.message : "Failed to create carton",
+        variant: "destructive"
+      });
     },
   });
 
@@ -934,6 +966,14 @@ export default function PickPack() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder?.id, 'cartons'] });
       refetchCartons();
+    },
+  });
+
+  // Increment carton usage mutation
+  const incrementCartonUsageMutation = useMutation({
+    mutationFn: async (cartonId: string) => {
+      const response = await apiRequest('POST', `/api/cartons/${cartonId}/increment-usage`, {});
+      return await response.json();
     },
   });
 
@@ -4312,7 +4352,7 @@ export default function PickPack() {
               <CardTitle className="text-base flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Box className="h-5 w-5" />
-                  <span>Cartons ({cartons.length})</span>
+                  <span>Cartons ({cartons.length + cartonsDraft.length})</span>
                 </div>
                 <Badge className="bg-white/20 text-white">
                   Multi-Carton Packing
@@ -4321,12 +4361,17 @@ export default function PickPack() {
             </CardHeader>
             <CardContent className="p-4 space-y-3">
               {/* Carton List */}
-              {cartons.map((carton, index) => {
+              {[...cartons, ...cartonsDraft].map((carton, index) => {
+                const isDraft = cartonsDraft.some(d => d.id === carton.id);
                 const cartonData = availableCartons.find((c: any) => c.id === carton.cartonId);
                 const isNonCompany = carton.cartonType === 'non-company';
                 
                 return (
-                  <Card key={carton.id} className="border-2 border-emerald-300 bg-white" data-testid={`carton-card-${index + 1}`}>
+                  <Card 
+                    key={carton.id} 
+                    className={`border-2 ${isDraft ? 'border-amber-300 bg-amber-50 opacity-80' : 'border-emerald-300 bg-white'}`} 
+                    data-testid={`carton-card-${index + 1}`}
+                  >
                     <CardContent className="p-3 space-y-3">
                       {/* Carton Header */}
                       <div className="flex items-center justify-between">
@@ -4355,46 +4400,27 @@ export default function PickPack() {
                       {/* Carton Type Selector */}
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">Carton Type</label>
-                        <Select 
-                          value={carton.cartonId || 'non-company'} 
-                          onValueChange={(value) => {
+                        <CartonTypeAutocomplete
+                          value={carton.cartonId || ''}
+                          onChange={(cartonId, cartonName) => {
                             if (activePackingOrder) {
                               const updates: Partial<OrderCarton> = {
-                                cartonType: value === 'non-company' ? 'non-company' : 'company',
-                                cartonId: value === 'non-company' ? null : value
+                                cartonType: cartonId ? 'company' : 'non-company',
+                                cartonId: cartonId || null
                               };
                               updateCartonMutation.mutate({
                                 orderId: activePackingOrder.id,
                                 cartonId: carton.id,
                                 updates
                               });
+                              
+                              if (cartonId) {
+                                incrementCartonUsageMutation.mutate(cartonId);
+                              }
                             }
                           }}
                           data-testid={`carton-selector-${index + 1}`}
-                        >
-                          <SelectTrigger className="w-full border-2 border-emerald-300">
-                            <SelectValue placeholder="Choose carton..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableCartons.map((c: any) => (
-                              <SelectItem key={c.id} value={c.id}>
-                                <div className="flex items-center gap-2">
-                                  <Box className="h-4 w-4 text-emerald-600" />
-                                  <span className="font-medium">{c.name}</span>
-                                  <span className="text-xs text-gray-500">
-                                    {c.dimensions.length}×{c.dimensions.width}×{c.dimensions.height}cm
-                                  </span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                            <SelectItem value="non-company">
-                              <div className="flex items-center gap-2">
-                                <Box className="h-4 w-4 text-gray-600" />
-                                <span className="font-medium">Non-company carton</span>
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
+                        />
                         {cartonData && (
                           <p className="text-xs text-gray-600">
                             {cartonData.dimensions.length}×{cartonData.dimensions.width}×{cartonData.dimensions.height}cm · Max {cartonData.maxWeight}kg
@@ -4484,11 +4510,39 @@ export default function PickPack() {
                 className="w-full border-2 border-dashed border-emerald-400 text-emerald-700 hover:bg-emerald-50"
                 onClick={() => {
                   if (activePackingOrder) {
-                    const nextCartonNumber = cartons.length + 1;
+                    const tempId = `temp-${nanoid()}`;
+                    const nextCartonNumber = cartons.length + cartonsDraft.length + 1;
+                    
+                    const draftCarton: OrderCarton = {
+                      id: tempId,
+                      orderId: activePackingOrder.id,
+                      cartonNumber: nextCartonNumber,
+                      cartonType: 'company',
+                      cartonId: null,
+                      weight: null,
+                      payloadWeightKg: null,
+                      innerLengthCm: null,
+                      innerWidthCm: null,
+                      innerHeightCm: null,
+                      labelUrl: null,
+                      labelPrinted: false,
+                      trackingNumber: null,
+                      aiWeightCalculation: null,
+                      aiPlanId: null,
+                      source: 'manual',
+                      itemAllocations: null,
+                      notes: null,
+                      createdAt: new Date().toISOString(),
+                      updatedAt: new Date().toISOString(),
+                    };
+                    
+                    setCartonsDraft(prev => [...prev, draftCarton]);
+                    
                     createCartonMutation.mutate({
                       orderId: activePackingOrder.id,
                       cartonNumber: nextCartonNumber,
-                      cartonType: 'company'
+                      cartonType: 'company',
+                      tempId
                     });
                   }
                 }}
@@ -4528,20 +4582,23 @@ export default function PickPack() {
                         </h4>
                         <div className="space-y-1.5">
                           {recommendedCarton.suggestions.map((suggestion: any, idx: number) => {
-                            const cartonInfo = availableCartons.find((c: any) => c.id === suggestion.cartonId);
+                            const cartonInfo = availableCartons?.find((c: any) => c.id === suggestion?.cartonId);
+                            const itemCount = suggestion?.items?.length || 0;
+                            const weight = suggestion?.totalWeightKg ? suggestion.totalWeightKg.toFixed(2) : '0.00';
+                            const utilization = suggestion?.volumeUtilization ? suggestion.volumeUtilization.toFixed(1) : '0';
                             return (
                               <div key={idx} className="bg-white p-2 rounded border border-blue-200 text-xs">
                                 <div className="flex items-center justify-between">
                                   <div className="flex-1">
                                     <div className="font-semibold text-gray-900">
-                                      Carton #{suggestion.cartonNumber}: {cartonInfo?.name || 'Unknown'}
+                                      Carton #{suggestion?.cartonNumber || idx + 1}: {cartonInfo?.name || 'Unknown'}
                                     </div>
                                     <div className="text-gray-600 text-[10px] mt-0.5">
-                                      {suggestion.items.length} item type(s) • {suggestion.totalWeightKg.toFixed(2)} kg • {suggestion.volumeUtilization.toFixed(1)}% full
+                                      {itemCount} item type(s) • {weight} kg • {utilization}% full
                                     </div>
                                   </div>
                                   <Badge className="bg-blue-600 text-white text-[10px]">
-                                    {suggestion.volumeUtilization.toFixed(0)}%
+                                    {utilization}%
                                   </Badge>
                                 </div>
                               </div>
