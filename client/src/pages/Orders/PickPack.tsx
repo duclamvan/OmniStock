@@ -65,6 +65,7 @@ import {
   Building,
   ChevronRight,
   ChevronDown,
+  ChevronUp,
   Zap,
   Eye,
   FileText,
