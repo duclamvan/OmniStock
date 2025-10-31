@@ -3962,8 +3962,8 @@ export default function PickPack() {
                             {/* Mobile Layout - Stack vertically */}
                             <div className="sm:hidden">
                               <div className="flex items-start gap-2">
-                                {/* Product Image without Number Badge */}
-                                <div className="flex-shrink-0">
+                                {/* Product Image with Quantity Badge */}
+                                <div className="flex-shrink-0 relative">
                                   <div className="w-12 h-12 rounded-lg overflow-hidden bg-white border-2 border-gray-200 flex items-center justify-center">
                                     {item.image ? (
                                       <img 
@@ -3974,6 +3974,13 @@ export default function PickPack() {
                                     ) : (
                                       <Package className="h-6 w-6 text-gray-400" />
                                     )}
+                                  </div>
+                                  <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shadow-md ${
+                                    isVerified || (isBundle && allBundleComponentsVerified)
+                                      ? 'bg-green-500 text-white' 
+                                      : 'bg-black text-white'
+                                  }`}>
+                                    {(isVerified || (isBundle && allBundleComponentsVerified)) ? <CheckCircle className="h-3.5 w-3.5" /> : item.quantity}
                                   </div>
                                 </div>
                                 
@@ -4099,9 +4106,9 @@ export default function PickPack() {
                                 <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shadow-md ${
                                   isVerified || (isBundle && allBundleComponentsVerified)
                                     ? 'bg-green-500 text-white' 
-                                    : 'bg-purple-100 text-purple-600 border-2 border-white'
+                                    : 'bg-black text-white'
                                 }`}>
-                                  {(isVerified || (isBundle && allBundleComponentsVerified)) ? <CheckCircle className="h-4 w-4" /> : index + 1}
+                                  {(isVerified || (isBundle && allBundleComponentsVerified)) ? <CheckCircle className="h-4 w-4" /> : item.quantity}
                                 </div>
                               </div>
 
@@ -4402,7 +4409,7 @@ export default function PickPack() {
                         <label className="text-sm font-medium text-gray-700">Carton Type</label>
                         <CartonTypeAutocomplete
                           value={carton.cartonId || ''}
-                          onChange={(cartonId, cartonName) => {
+                          onValueChange={(cartonId, cartonData) => {
                             if (activePackingOrder) {
                               const updates: Partial<OrderCarton> = {
                                 cartonType: cartonId ? 'company' : 'non-company',
