@@ -7355,7 +7355,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
     }
   });
 
-  // Generate packing list PDF
+  // Generate professional packing list PDF
   app.get('/api/orders/:orderId/packing-list.pdf', async (req, res) => {
     try {
       const { orderId } = req.params;
@@ -7379,13 +7379,18 @@ Return ONLY the subject line without quotes or extra formatting.`,
           return {
             ...item,
             productName: product?.name || item.productName || 'Unknown Product',
-            sku: product?.sku || item.sku || 'N/A'
+            sku: product?.sku || item.sku || 'N/A',
+            weight: product?.weight || null
           };
         })
       );
       
       // Create a new PDF document
-      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+      const doc = new PDFDocument({ 
+        size: 'A4', 
+        margin: 40,
+        bufferPages: true
+      });
       
       // Set response headers
       res.setHeader('Content-Type', 'application/pdf');
@@ -7394,124 +7399,223 @@ Return ONLY the subject line without quotes or extra formatting.`,
       // Pipe the PDF directly to the response
       doc.pipe(res);
       
+      // ===== HEADER SECTION =====
       // Add company logo (in black/grayscale)
       const logoPath = path.join(process.cwd(), 'attached_assets', 'logo_1754349267160.png');
       try {
-        doc.image(logoPath, 50, 45, { width: 100, opacity: 1.0 });
+        doc.image(logoPath, 40, 40, { width: 80 });
       } catch (error) {
         console.error('Logo not found, skipping:', error);
       }
       
-      // Add company name
-      doc.fontSize(20)
-         .fillColor('#000000')
-         .text('DAVIE SUPPLY', 170, 50, { align: 'left' })
-         .fontSize(10)
-         .fillColor('#666666')
-         .text('Warehouse & Distribution', 170, 75);
-      
-      // Add title
-      doc.fontSize(24)
-         .fillColor('#000000')
-         .text('PACKING LIST', 50, 130, { align: 'center' });
-      
-      // Add order information
-      doc.fontSize(10)
-         .fillColor('#666666')
-         .text(`Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, 50, 170)
-         .text(`Order ID: ${order.orderId}`, 400, 170, { align: 'right' });
-      
-      // Add customer information box
-      doc.rect(50, 195, 495, 80).stroke('#CCCCCC');
-      doc.fontSize(12)
+      // Company information
+      doc.fontSize(18)
          .fillColor('#000000')
          .font('Helvetica-Bold')
-         .text('SHIP TO:', 60, 205);
-      
-      doc.fontSize(10)
+         .text('DAVIE SUPPLY', 135, 45)
+         .fontSize(9)
          .font('Helvetica')
-         .fillColor('#333333')
-         .text(order.customerName || 'N/A', 60, 225)
-         .text(order.shippingAddress || 'Address not provided', 60, 240, { width: 475 });
+         .fillColor('#666666')
+         .text('Professional Warehouse & Distribution', 135, 65)
+         .text('Prague, Czech Republic', 135, 77);
+      
+      // Document title
+      doc.fontSize(26)
+         .fillColor('#000000')
+         .font('Helvetica-Bold')
+         .text('PACKING LIST', 40, 115, { align: 'center' });
+      
+      // Horizontal line under title
+      doc.strokeColor('#000000')
+         .lineWidth(2)
+         .moveTo(40, 150)
+         .lineTo(555, 150)
+         .stroke();
+      
+      // ===== ORDER INFORMATION =====
+      const infoStartY = 165;
+      doc.fontSize(9)
+         .fillColor('#666666')
+         .font('Helvetica')
+         .text('Document Date:', 40, infoStartY)
+         .fillColor('#000000')
+         .font('Helvetica-Bold')
+         .text(new Date().toLocaleDateString('en-US', { 
+           year: 'numeric', 
+           month: 'long', 
+           day: 'numeric' 
+         }), 120, infoStartY);
+      
+      doc.fontSize(9)
+         .fillColor('#666666')
+         .font('Helvetica')
+         .text('Order Number:', 40, infoStartY + 15)
+         .fillColor('#000000')
+         .font('Helvetica-Bold')
+         .text(order.orderId, 120, infoStartY + 15);
       
       if (order.shippingMethod) {
         doc.fontSize(9)
            .fillColor('#666666')
-           .text(`Shipping Method: ${order.shippingMethod}`, 60, 260);
+           .font('Helvetica')
+           .text('Shipping Method:', 40, infoStartY + 30)
+           .fillColor('#000000')
+           .font('Helvetica-Bold')
+           .text(order.shippingMethod, 120, infoStartY + 30);
       }
       
-      // Items table header
-      const tableTop = 300;
+      // ===== CUSTOMER INFORMATION BOX =====
+      const customerBoxY = 220;
+      // Box background
+      doc.rect(40, customerBoxY, 515, 85)
+         .fillAndStroke('#F8F9FA', '#CCCCCC');
+      
+      // Box title
+      doc.fontSize(11)
+         .fillColor('#000000')
+         .font('Helvetica-Bold')
+         .text('SHIP TO:', 50, customerBoxY + 15);
+      
+      // Customer details
       doc.fontSize(10)
          .font('Helvetica-Bold')
-         .fillColor('#000000');
+         .fillColor('#000000')
+         .text(order.customerName || 'N/A', 50, customerBoxY + 35);
       
-      // Draw table header background
-      doc.rect(50, tableTop, 495, 25).fill('#F0F0F0');
+      doc.fontSize(9)
+         .font('Helvetica')
+         .fillColor('#333333')
+         .text(order.shippingAddress || 'Address not provided', 50, customerBoxY + 52, { 
+           width: 500,
+           lineGap: 2
+         });
       
-      // Table headers
-      doc.fillColor('#000000')
-         .text('#', 55, tableTop + 7, { width: 30 })
-         .text('SKU', 90, tableTop + 7, { width: 80 })
-         .text('Item Description', 175, tableTop + 7, { width: 250 })
-         .text('Qty', 480, tableTop + 7, { width: 60, align: 'right' });
+      // ===== ITEMS TABLE =====
+      const tableTop = 330;
       
-      // Draw header border
-      doc.strokeColor('#CCCCCC')
-         .lineWidth(1)
-         .moveTo(50, tableTop + 25)
-         .lineTo(545, tableTop + 25)
-         .stroke();
+      // Table header background
+      doc.rect(40, tableTop, 515, 28)
+         .fillAndStroke('#2C3E50', '#2C3E50');
       
-      // Items
-      doc.font('Helvetica');
-      let yPosition = tableTop + 35;
-      const lineHeight = 25;
+      // Table headers (white text on dark background)
+      doc.fontSize(10)
+         .font('Helvetica-Bold')
+         .fillColor('#FFFFFF')
+         .text('#', 45, tableTop + 9, { width: 25 })
+         .text('SKU', 75, tableTop + 9, { width: 90 })
+         .text('ITEM DESCRIPTION', 170, tableTop + 9, { width: 250 })
+         .text('WEIGHT', 425, tableTop + 9, { width: 60, align: 'right' })
+         .text('QTY', 490, tableTop + 9, { width: 60, align: 'right' });
+      
+      // Table body
+      let yPosition = tableTop + 28;
+      const rowHeight = 32;
       
       itemsWithProducts.forEach((item, index) => {
         // Check if we need a new page
-        if (yPosition > 700) {
+        if (yPosition > 720) {
           doc.addPage();
           yPosition = 50;
+          
+          // Redraw table header on new page
+          doc.rect(40, yPosition, 515, 28)
+             .fillAndStroke('#2C3E50', '#2C3E50');
+          doc.fontSize(10)
+             .font('Helvetica-Bold')
+             .fillColor('#FFFFFF')
+             .text('#', 45, yPosition + 9, { width: 25 })
+             .text('SKU', 75, yPosition + 9, { width: 90 })
+             .text('ITEM DESCRIPTION', 170, yPosition + 9, { width: 250 })
+             .text('WEIGHT', 425, yPosition + 9, { width: 60, align: 'right' })
+             .text('QTY', 490, yPosition + 9, { width: 60, align: 'right' });
+          yPosition += 28;
         }
         
+        // Alternating row colors
+        const bgColor = index % 2 === 0 ? '#FFFFFF' : '#F8F9FA';
+        doc.rect(40, yPosition, 515, rowHeight)
+           .fillAndStroke(bgColor, '#E0E0E0');
+        
+        // Row data
         doc.fontSize(9)
-           .fillColor('#333333')
-           .text(`${index + 1}`, 55, yPosition, { width: 30 })
-           .text(item.sku || 'N/A', 90, yPosition, { width: 80 })
-           .text(item.productName, 175, yPosition, { width: 250 })
-           .text(item.quantity.toString(), 480, yPosition, { width: 60, align: 'right' });
+           .fillColor('#000000')
+           .font('Helvetica')
+           .text(`${index + 1}`, 45, yPosition + 10, { width: 25 })
+           .text(item.sku || 'N/A', 75, yPosition + 10, { width: 90 })
+           .text(item.productName, 170, yPosition + 10, { width: 245, ellipsis: true });
         
-        // Draw row border
-        doc.strokeColor('#EEEEEE')
-           .lineWidth(0.5)
-           .moveTo(50, yPosition + lineHeight - 5)
-           .lineTo(545, yPosition + lineHeight - 5)
-           .stroke();
+        // Weight
+        const weightText = item.weight ? `${item.weight}kg` : '-';
+        doc.text(weightText, 425, yPosition + 10, { width: 60, align: 'right' });
         
-        yPosition += lineHeight;
+        // Quantity (bold)
+        doc.font('Helvetica-Bold')
+           .text(item.quantity.toString(), 490, yPosition + 10, { width: 60, align: 'right' });
+        
+        yPosition += rowHeight;
       });
       
-      // Total items summary
-      yPosition += 20;
-      if (yPosition > 720) {
+      // ===== SUMMARY SECTION =====
+      yPosition += 15;
+      if (yPosition > 700) {
         doc.addPage();
         yPosition = 50;
       }
       
+      // Summary box
+      doc.rect(350, yPosition, 205, 50)
+         .fillAndStroke('#F0F4F8', '#CCCCCC');
+      
       const totalItems = itemsWithProducts.reduce((sum, item) => sum + item.quantity, 0);
+      const totalWeight = itemsWithProducts.reduce((sum, item) => {
+        const weight = item.weight || 0;
+        return sum + (weight * item.quantity);
+      }, 0);
+      
+      // Total items
       doc.fontSize(10)
+         .font('Helvetica')
+         .fillColor('#666666')
+         .text('Total Items:', 360, yPosition + 12)
          .font('Helvetica-Bold')
          .fillColor('#000000')
-         .text(`Total Items: ${totalItems}`, 400, yPosition, { align: 'right' });
+         .text(totalItems.toString(), 480, yPosition + 12, { align: 'right' });
       
-      // Add footer
-      const footerY = 750;
+      // Total weight
+      doc.fontSize(10)
+         .font('Helvetica')
+         .fillColor('#666666')
+         .text('Total Weight:', 360, yPosition + 28)
+         .font('Helvetica-Bold')
+         .fillColor('#000000')
+         .text(`${totalWeight.toFixed(2)} kg`, 480, yPosition + 28, { align: 'right' });
+      
+      // ===== FOOTER =====
+      const footerY = 760;
       doc.fontSize(8)
          .fillColor('#999999')
-         .font('Helvetica')
-         .text('This packing list confirms the items included in this shipment.', 50, footerY, { align: 'center', width: 495 })
-         .text('Please verify all items upon receipt.', 50, footerY + 12, { align: 'center', width: 495 });
+         .font('Helvetica-Oblique')
+         .text('This packing list confirms the items included in this shipment.', 40, footerY, { 
+           align: 'center', 
+           width: 515 
+         })
+         .text('Please verify all items upon receipt and report any discrepancies immediately.', 40, footerY + 12, { 
+           align: 'center', 
+           width: 515 
+         });
+      
+      // Page numbers
+      const range = doc.bufferedPageRange();
+      for (let i = 0; i < range.count; i++) {
+        doc.switchToPage(i);
+        doc.fontSize(8)
+           .fillColor('#999999')
+           .font('Helvetica')
+           .text(`Page ${i + 1} of ${range.count}`, 40, 790, { 
+             align: 'center', 
+             width: 515 
+           });
+      }
       
       // Finalize the PDF
       doc.end();
