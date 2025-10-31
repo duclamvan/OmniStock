@@ -4367,9 +4367,15 @@ Important:
       const productIds = new Set<string>();
       const variantRequests = new Map<string, Set<string>>(); // productId -> variantIds
       
-      // First pass: identify bundles in use
+      // First pass: identify bundles in use AND collect product IDs from all order items
       for (const items of allOrderItemsArrays) {
         for (const item of items) {
+          // Collect product ID from every order item
+          if (item.productId) {
+            productIds.add(item.productId);
+          }
+          
+          // Check if this is a bundle
           for (const [bundleName, bundle] of Array.from(bundleMap.entries())) {
             if (item.productName && item.productName.includes(bundleName)) {
               bundleIds.add(bundle.id);
@@ -4442,6 +4448,10 @@ Important:
         const items = allOrderItemsArrays[orderIndex];
         
         const itemsWithBundleDetails = items.map(item => {
+          // Get product image from products map
+          const product = item.productId ? productsMap.get(item.productId) : null;
+          const imageUrl = product?.imageUrl || null;
+          
           // Check if this product is a bundle (using pre-fetched bundle map)
           let matchedBundle = null;
           for (const [bundleName, bundle] of Array.from(bundleMap.entries())) {
@@ -4482,12 +4492,16 @@ Important:
             
             return {
               ...item,
+              image: imageUrl,
               isBundle: true,
               bundleItems: bundleItemsWithDetails
             };
           }
           
-          return item;
+          return {
+            ...item,
+            image: imageUrl
+          };
         });
         
         return {
