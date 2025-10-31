@@ -829,6 +829,90 @@ export default function PickPack() {
     }
   }, [orderCartons]);
 
+  // Track if we've already auto-applied suggestions for this order
+  const [hasAutoAppliedSuggestions, setHasAutoAppliedSuggestions] = useState(false);
+
+  // Reset auto-apply flag when active order changes
+  useEffect(() => {
+    setHasAutoAppliedSuggestions(false);
+  }, [activePackingOrder?.id]);
+
+  // Automatically apply AI carton suggestions when they arrive
+  useEffect(() => {
+    if (!activePackingOrder || !recommendedCarton || hasAutoAppliedSuggestions || cartons.length > 0) {
+      return; // Only auto-apply once per order when recommendations exist and no cartons created yet
+    }
+
+    if (recommendedCarton.suggestions && recommendedCarton.suggestions.length > 0) {
+      // Mark that we've auto-applied to prevent duplicate applications
+      setHasAutoAppliedSuggestions(true);
+      
+      // Automatically create cartons based on AI suggestions
+      const createAndUpdateCartons = async () => {
+        const createdCartons = [];
+        
+        for (let i = 0; i < recommendedCarton.suggestions.length; i++) {
+          const suggestion = recommendedCarton.suggestions[i];
+          const result = await createCartonMutation.mutateAsync({
+            orderId: activePackingOrder.id,
+            cartonNumber: suggestion.cartonNumber,
+            cartonType: 'company',
+            cartonId: suggestion.cartonId
+          });
+          createdCartons.push(result);
+        }
+        
+        // After all cartons are created, update their weights
+        await refetchCartons();
+        
+        // Update weights for each carton
+        setTimeout(async () => {
+          for (let i = 0; i < recommendedCarton.suggestions.length; i++) {
+            const suggestion = recommendedCarton.suggestions[i];
+            if (suggestion.totalWeightKg && createdCartons[i]) {
+              await updateCartonMutation.mutateAsync({
+                orderId: activePackingOrder.id,
+                cartonId: createdCartons[i].id,
+                updates: { 
+                  weight: suggestion.totalWeightKg.toFixed(3),
+                  aiWeightCalculation: true
+                }
+              });
+            }
+          }
+        }, 500);
+        
+        toast({
+          title: "AI Carton Suggestions Applied",
+          description: `Automatically created ${recommendedCarton.suggestions.length} carton(s) with prefilled weights`,
+        });
+      };
+
+      createAndUpdateCartons();
+    } else if (recommendedCarton.cartonCount && recommendedCarton.cartonCount > 0 && !hasAutoAppliedSuggestions) {
+      // Mark that we've auto-applied to prevent duplicate applications
+      setHasAutoAppliedSuggestions(true);
+      
+      // If we have a carton count but no specific suggestions, create empty cartons
+      const createEmptyCartons = async () => {
+        for (let i = 1; i <= recommendedCarton.cartonCount; i++) {
+          await createCartonMutation.mutateAsync({
+            orderId: activePackingOrder.id,
+            cartonNumber: i,
+            cartonType: 'company'
+          });
+        }
+        
+        toast({
+          title: "Cartons Created",
+          description: `Created ${recommendedCarton.cartonCount} carton(s) for packing`,
+        });
+      };
+
+      createEmptyCartons();
+    }
+  }, [activePackingOrder?.id, recommendedCarton, hasAutoAppliedSuggestions, cartons.length]);
+
   // Create carton mutation
   const createCartonMutation = useMutation({
     mutationFn: async (data: { orderId: string; cartonNumber: number; cartonType: 'company' | 'non-company'; cartonId?: string }) => {
@@ -4501,8 +4585,8 @@ export default function PickPack() {
                       </div>
                     )}
 
-                    {/* Apply Suggestions Button */}
-                    {recommendedCarton.suggestions && recommendedCarton.suggestions.length > 0 && (
+                    {/* Apply Suggestions Button - Now hidden since we auto-apply */}
+                    {false && recommendedCarton.suggestions && recommendedCarton.suggestions.length > 0 && (
                       <Button
                         className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
                         size="sm"
