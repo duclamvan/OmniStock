@@ -462,7 +462,6 @@ export default function PickPack() {
   // Workflow management state
   const [orderToHold, setOrderToHold] = useState<PickPackOrder | null>(null);
   const [orderToCancel, setOrderToCancel] = useState<PickPackOrder | null>(null);
-  const [orderToSendToPending, setOrderToSendToPending] = useState<PickPackOrder | null>(null);
   
   // Track animated counters for bouncy animation
   const [animatingCounters, setAnimatingCounters] = useState<Set<string>>(new Set());
@@ -2208,64 +2207,6 @@ export default function PickPack() {
       toast({
         title: 'Error',
         description: 'Failed to cancel order',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  // Handle sending order back to pending
-  const handleSendToPending = async (order: PickPackOrder) => {
-    try {
-      const promises = [];
-      
-      // Reset order to pending status
-      promises.push(
-        apiRequest('PATCH', `/api/orders/${order.id}`, {
-          fulfillmentStage: null,
-          pickStatus: 'not_started',
-          packStatus: 'not_started',
-          pickStartTime: null,
-          pickEndTime: null,
-          packStartTime: null,
-          packEndTime: null,
-          pickedBy: null,
-          packedBy: null
-        })
-      );
-      
-      // Reset all item quantities if they exist
-      if (order.items && order.items.length > 0) {
-        for (const item of order.items) {
-          if (item.id) {
-            promises.push(
-              apiRequest('PATCH', `/api/orders/${order.id}/items/${item.id}`, {
-                pickedQuantity: 0,
-                packedQuantity: 0
-              })
-            );
-          }
-        }
-      }
-      
-      // Clear any saved picking progress
-      localStorage.removeItem(`pickpack-progress-${order.id}`);
-      
-      await Promise.all(promises);
-      
-      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
-      
-      toast({
-        title: 'Success',
-        description: `${order.orderId} sent back to Pending`,
-      });
-      
-      setOrderToSendToPending(null);
-    } catch (error) {
-      console.error('Error sending order to pending:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to send order to pending',
         variant: 'destructive'
       });
     }
@@ -6200,15 +6141,6 @@ export default function PickPack() {
                                   <DropdownMenuItem 
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setOrderToSendToPending(order);
-                                    }}
-                                  >
-                                    <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
-                                    Send Back to Pending
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
                                       setOrderToHold(order);
                                     }}
                                   >
@@ -6365,15 +6297,6 @@ export default function PickPack() {
                                   >
                                     <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
                                     Send back to Pick
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setOrderToSendToPending(order);
-                                    }}
-                                  >
-                                    <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
-                                    Send Back to Pending
                                   </DropdownMenuItem>
                                   <DropdownMenuItem 
                                     onClick={(e) => {
@@ -6774,16 +6697,6 @@ export default function PickPack() {
                                             >
                                               <RotateCcw className="h-3 w-3 mr-1.5" />
                                               Return to Packing
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem 
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setOrderToSendToPending(order);
-                                              }}
-                                              className="text-xs"
-                                            >
-                                              <RotateCcw className="h-3 w-3 mr-1.5" />
-                                              Send Back to Pending
                                             </DropdownMenuItem>
                                             <DropdownMenuItem 
                                               onClick={(e) => {
@@ -7284,33 +7197,6 @@ export default function PickPack() {
             >
               <XCircle className="h-4 w-4 mr-2" />
               Cancel Order
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Send Back to Pending Confirmation Dialog */}
-      <Dialog open={!!orderToSendToPending} onOpenChange={() => setOrderToSendToPending(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Send Back to Pending</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to send order {orderToSendToPending?.orderId} back to Pending? All picking and packing progress will be reset.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-3 mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setOrderToSendToPending(null)}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="bg-blue-600 hover:bg-blue-700"
-              onClick={() => orderToSendToPending && handleSendToPending(orderToSendToPending)}
-            >
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Send to Pending
             </Button>
           </div>
         </DialogContent>
