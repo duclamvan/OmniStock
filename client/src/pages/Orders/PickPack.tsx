@@ -3922,9 +3922,9 @@ export default function PickPack() {
                             {/* Mobile Layout - Stack vertically */}
                             <div className="sm:hidden">
                               <div className="flex items-start gap-2">
-                                {/* Product Image with Number Badge */}
-                                <div className="relative flex-shrink-0">
-                                  <div className="w-10 h-10 rounded-lg overflow-hidden bg-white border-2 border-gray-200 flex items-center justify-center">
+                                {/* Product Image without Number Badge */}
+                                <div className="flex-shrink-0">
+                                  <div className="w-12 h-12 rounded-lg overflow-hidden bg-white border-2 border-gray-200 flex items-center justify-center">
                                     {item.image ? (
                                       <img 
                                         src={item.image} 
@@ -3932,15 +3932,8 @@ export default function PickPack() {
                                         className="w-full h-full object-contain"
                                       />
                                     ) : (
-                                      <Package className="h-5 w-5 text-gray-400" />
+                                      <Package className="h-6 w-6 text-gray-400" />
                                     )}
-                                  </div>
-                                  <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold shadow-md ${
-                                    isVerified || (isBundle && allBundleComponentsVerified)
-                                      ? 'bg-green-500 text-white' 
-                                      : 'bg-purple-100 text-purple-600 border border-white'
-                                  }`}>
-                                    {(isVerified || (isBundle && allBundleComponentsVerified)) ? '✓' : index + 1}
                                   </div>
                                 </div>
                                 
@@ -3948,14 +3941,14 @@ export default function PickPack() {
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-start justify-between gap-1">
                                     <div className="flex-1 min-w-0 pr-1">
-                                      <p className="font-semibold text-gray-900 text-[11px] leading-tight line-clamp-2">{item.productName}</p>
+                                      <p className="font-semibold text-gray-900 text-sm leading-tight line-clamp-2">{item.productName}</p>
                                     </div>
                                     <div className="flex gap-0.5 flex-shrink-0">
                                       {isBundle && (
                                         <Button
                                           variant="ghost"
                                           size="sm"
-                                          className="h-6 w-6 p-0 text-amber-600 hover:bg-amber-50"
+                                          className="h-7 w-7 p-0 text-amber-600 hover:bg-amber-50"
                                           onClick={() => {
                                             const newExpanded = new Set(expandedBundles);
                                             if (isExpanded) {
@@ -3966,13 +3959,13 @@ export default function PickPack() {
                                             setExpandedBundles(newExpanded);
                                           }}
                                         >
-                                          {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                                          {isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
                                         </Button>
                                       )}
                                       <Button
                                         variant={isVerified || (isBundle && allBundleComponentsVerified) ? "default" : "outline"}
                                         size="sm"
-                                        className={`h-6 px-1.5 text-[9px] ${
+                                        className={`h-7 px-2 text-xs ${
                                           isVerified || (isBundle && allBundleComponentsVerified)
                                             ? 'bg-green-500 hover:bg-green-600 text-white' 
                                             : 'border-purple-300 text-purple-600 hover:bg-purple-50'
@@ -4012,9 +4005,9 @@ export default function PickPack() {
                                         }}
                                       >
                                         {isVerified || (isBundle && allBundleComponentsVerified) ? (
-                                          <><Check className="h-2.5 w-2.5" /></>
+                                          <><Check className="h-3 w-3" /></>
                                         ) : (
-                                          <><ScanLine className="h-2.5 w-2.5 mr-0.5" />Scan</>
+                                          <><ScanLine className="h-3 w-3 mr-1" />Scan</>
                                         )}
                                       </Button>
                                     </div>
@@ -4023,7 +4016,7 @@ export default function PickPack() {
                                   {/* Location and Badges - Below on mobile */}
                                   <div className="mt-1">
                                     {!isBundle && item.warehouseLocation && (
-                                      <div className="text-[9px] text-gray-500">
+                                      <div className="text-xs text-gray-500">
                                         📍 {item.warehouseLocation}
                                         {item.sku && <span className="ml-1 text-gray-400">• {item.sku}</span>}
                                       </div>
@@ -4031,13 +4024,13 @@ export default function PickPack() {
                                     {(isBundle || activePackingOrder?.items?.find((orderItem: any) => orderItem.id === item.id)?.product?.packagingRequirement === 'nylon_wrap') && (
                                       <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                                         {isBundle && (
-                                          <Badge className="bg-amber-100 text-amber-800 text-[9px] px-1 py-0">
+                                          <Badge className="bg-amber-100 text-amber-800 text-xs px-1.5 py-0.5">
                                             Bundle ({bundleComponentsVerified}/{totalBundleComponents})
                                           </Badge>
                                         )}
                                         {activePackingOrder?.items?.find((orderItem: any) => orderItem.id === item.id)?.product?.packagingRequirement === 'nylon_wrap' && (
-                                          <Badge className="bg-green-100 text-green-800 text-[9px] flex items-center gap-0.5 px-1 py-0">
-                                            <Package className="h-2 w-2" />
+                                          <Badge className="bg-green-100 text-green-800 text-xs flex items-center gap-0.5 px-1.5 py-0.5">
+                                            <Package className="h-3 w-3" />
                                             Wrap
                                           </Badge>
                                         )}
