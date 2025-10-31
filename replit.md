@@ -2,6 +2,17 @@
 Davie Supply is a full-stack web application for comprehensive warehouse and order management, aiming to optimize supply chain operations. It covers the entire order lifecycle, inventory tracking, CRM, and multi-currency financial reporting. Key features include real-time Vietnamese diacritics search, customer-specific pricing, external shipping API integrations, extensive settings management, and professional PDF packing list generation. Future ambitions include advanced warehouse mapping, a comprehensive Pick & Pack workflow, and AI-powered optimization.
 
 # Recent Changes
+**October 31, 2025 (Update 7)**: Offline-First PWA Implementation:
+- **Complete Offline Functionality**: Full PWA architecture for uninterrupted warehouse operations during internet outages
+- **Service Worker**: Asset caching, API response caching, and background sync capabilities
+- **IndexedDB Storage**: Dexie-powered local database for cached orders, products, and pending mutations
+- **Offline Queue Manager**: Automatic mutation queuing with versioning, timestamps, and intelligent retry logic
+- **Auto-Sync on Load**: Pending offline changes automatically sync when app reloads online
+- **Visual Feedback**: OfflineIndicator component shows online/offline status, pending sync count, and failed mutations with retry button
+- **Pick & Pack Integration**: Item scanning works offline, changes queued and synced when connection restored
+- **PWA Manifest**: Full progressive web app support for mobile installation
+- **Known Technical Debt**: Carton dimension fields have type inconsistency (frontend strings vs backend numbers) - working but should be aligned end-to-end for better maintainability
+
 **October 31, 2025 (Update 6)**: Professional Packing List PDF Generation:
 - **PDF Generation**: Implemented automatic packing list generation using PDFKit library
 - **Company Branding**: Includes company logo in black/grayscale at top of document

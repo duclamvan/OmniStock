@@ -931,10 +931,10 @@ export default function PickPack() {
             cartonType: 'company',
             cartonId: suggestion.cartonId,
             weight: suggestion.totalWeightKg?.toFixed(3) || '0.000',
-            payloadWeightKg: suggestion.totalWeightKg || 0,
-            innerLengthCm: cartonData?.dimensions?.length || cartonData?.innerLengthCm || 0,
-            innerWidthCm: cartonData?.dimensions?.width || cartonData?.innerWidthCm || 0,
-            innerHeightCm: cartonData?.dimensions?.height || cartonData?.innerHeightCm || 0,
+            payloadWeightKg: String(suggestion.totalWeightKg || 0),
+            innerLengthCm: String(cartonData?.dimensions?.length || cartonData?.innerLengthCm || 0),
+            innerWidthCm: String(cartonData?.dimensions?.width || cartonData?.innerWidthCm || 0),
+            innerHeightCm: String(cartonData?.dimensions?.height || cartonData?.innerHeightCm || 0),
             source: 'ai',
             aiWeightCalculation: true,
             aiPlanId: `deepseek-${Date.now()}-${i}`,
@@ -969,10 +969,10 @@ export default function PickPack() {
       cartonId?: string; 
       tempId?: string;
       weight?: string;
-      payloadWeightKg?: number;
-      innerLengthCm?: number;
-      innerWidthCm?: number;
-      innerHeightCm?: number;
+      payloadWeightKg?: string;
+      innerLengthCm?: string;
+      innerWidthCm?: string;
+      innerHeightCm?: string;
       source?: string;
       aiWeightCalculation?: boolean;
       aiPlanId?: string;
