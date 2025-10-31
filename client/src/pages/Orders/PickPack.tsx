@@ -42,7 +42,6 @@ import {
   DialogDescription 
 } from "@/components/ui/dialog";
 import { Link } from "wouter";
-import { ImagePlaceholder } from "@/components/ImagePlaceholder";
 import { 
   Package, 
   Printer, 
@@ -258,9 +257,7 @@ const ProductImage = memo(({
               style={{ pointerEvents: 'none' }}
             />
           ) : (
-            <div style={{ pointerEvents: 'none' }}>
-              <ImagePlaceholder size="lg" variant="product" data-testid="placeholder-item-image-expanded" />
-            </div>
+            <Package className="h-32 w-32 text-gray-300" style={{ pointerEvents: 'none' }} />
           )}
         </div>
         
@@ -342,9 +339,7 @@ const ProductImage = memo(({
             style={{ pointerEvents: 'none' }}
           />
         ) : (
-          <div style={{ pointerEvents: 'none' }}>
-            <ImagePlaceholder size="xs" variant="product" data-testid="placeholder-item-image-compact" />
-          </div>
+          <Package className="h-10 w-10 lg:h-16 lg:w-16 text-gray-300" style={{ pointerEvents: 'none' }} />
         )}
       </div>
       <div className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center font-bold text-xs lg:text-base shadow-lg" style={{ pointerEvents: 'none' }}>
@@ -4899,18 +4894,16 @@ export default function PickPack() {
                           className="relative bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-sm"
                           onClick={() => handleImageClick(currentItem.id)}
                         >
-                          <div className="aspect-square max-h-64 sm:max-h-80 lg:max-h-96 relative bg-gradient-to-br from-gray-50 to-gray-100 cursor-pointer">
-                            <div className="absolute inset-0 flex items-center justify-center p-4">
-                              {currentItem.image ? (
-                                <img 
-                                  src={currentItem.image} 
-                                  alt={currentItem.productName}
-                                  className="max-w-full max-h-full object-contain"
-                                />
-                              ) : (
-                                <ImagePlaceholder size="lg" variant="product" />
-                              )}
-                            </div>
+                          <div className="aspect-square max-h-64 sm:max-h-80 lg:max-h-96 relative bg-gradient-to-br from-gray-50 to-gray-100 cursor-pointer flex items-center justify-center">
+                            {currentItem.image ? (
+                              <img 
+                                src={currentItem.image} 
+                                alt={currentItem.productName}
+                                className="max-w-full max-h-full object-contain p-4"
+                              />
+                            ) : (
+                              <Package className="h-24 w-24 sm:h-32 sm:w-32 text-gray-300" />
+                            )}
                             {/* Overlay Badge for Quick Info */}
                             <div className="absolute top-2 right-2 bg-black/75 text-white px-3 py-1 rounded-full text-sm font-bold z-10">
                               {currentItem.pickedQuantity}/{currentItem.quantity}
