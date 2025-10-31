@@ -4079,69 +4079,82 @@ export default function PickPack() {
                                     <div className="flex-1 min-w-0 pr-1">
                                       <p className="font-semibold text-gray-900 text-sm leading-tight line-clamp-2">{item.productName}</p>
                                     </div>
-                                    <div className="flex gap-0.5 flex-shrink-0">
-                                      {isBundle && (
+                                    <div className="flex gap-0.5 flex-shrink-0 flex-col items-end">
+                                      <div className="flex gap-0.5">
+                                        {isBundle && (
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 w-7 p-0 text-amber-600 hover:bg-amber-50"
+                                            onClick={() => {
+                                              const newExpanded = new Set(expandedBundles);
+                                              if (isExpanded) {
+                                                newExpanded.delete(item.id);
+                                              } else {
+                                                newExpanded.add(item.id);
+                                              }
+                                              setExpandedBundles(newExpanded);
+                                            }}
+                                          >
+                                            {isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                                          </Button>
+                                        )}
                                         <Button
-                                          variant="ghost"
+                                          variant={isVerified || (isBundle && allBundleComponentsVerified) ? "default" : "outline"}
                                           size="sm"
-                                          className="h-7 w-7 p-0 text-amber-600 hover:bg-amber-50"
+                                          className={`h-7 px-2 text-xs font-bold ${
+                                            isVerified || (isBundle && allBundleComponentsVerified)
+                                              ? 'bg-green-500 hover:bg-green-600 text-white' 
+                                              : 'border-purple-300 text-purple-600 hover:bg-purple-50'
+                                          }`}
                                           onClick={() => {
-                                            const newExpanded = new Set(expandedBundles);
-                                            if (isExpanded) {
-                                              newExpanded.delete(item.id);
+                                            if (isBundle) {
+                                              if (allBundleComponentsVerified) {
+                                                setVerifiedItems(prev => {
+                                                  const newRecord = { ...prev };
+                                                  item.bundleItems?.forEach((bi: any) => {
+                                                    newRecord[`${item.id}-${bi.id}`] = 0;
+                                                  });
+                                                  return newRecord;
+                                                });
+                                              } else {
+                                                setVerifiedItems(prev => {
+                                                  const newRecord = { ...prev };
+                                                  item.bundleItems?.forEach((bi: any) => {
+                                                    newRecord[`${item.id}-${bi.id}`] = bi.quantity;
+                                                  });
+                                                  return newRecord;
+                                                });
+                                                playSound('scan');
+                                              }
                                             } else {
-                                              newExpanded.add(item.id);
+                                              if (isVerified) {
+                                                setVerifiedItems(prev => ({ ...prev, [item.id]: 0 }));
+                                              } else {
+                                                setVerifiedItems(prev => ({ ...prev, [item.id]: Math.min((prev[item.id] || 0) + 1, item.quantity) }));
+                                                playSound('scan');
+                                              }
                                             }
-                                            setExpandedBundles(newExpanded);
                                           }}
                                         >
-                                          {isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                                          {isVerified || (isBundle && allBundleComponentsVerified) ? (
+                                            <><Check className="h-3 w-3 mr-1" />Done</>
+                                          ) : (
+                                            <><ScanLine className="h-3 w-3 mr-1" />{verifiedItems[item.id] || 0}/{item.quantity}</>
+                                          )}
                                         </Button>
+                                      </div>
+                                      {/* Progress bar for non-bundle items */}
+                                      {!isBundle && !isVerified && item.quantity > 1 && (
+                                        <div className="w-full mt-0.5">
+                                          <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
+                                            <div 
+                                              className="h-full bg-purple-500 transition-all duration-300"
+                                              style={{ width: `${((verifiedItems[item.id] || 0) / item.quantity) * 100}%` }}
+                                            />
+                                          </div>
+                                        </div>
                                       )}
-                                      <Button
-                                        variant={isVerified || (isBundle && allBundleComponentsVerified) ? "default" : "outline"}
-                                        size="sm"
-                                        className={`h-7 px-2 text-xs ${
-                                          isVerified || (isBundle && allBundleComponentsVerified)
-                                            ? 'bg-green-500 hover:bg-green-600 text-white' 
-                                            : 'border-purple-300 text-purple-600 hover:bg-purple-50'
-                                        }`}
-                                        onClick={() => {
-                                          if (isBundle) {
-                                            if (allBundleComponentsVerified) {
-                                              setVerifiedItems(prev => {
-                                                const newRecord = { ...prev };
-                                                item.bundleItems?.forEach((bi: any) => {
-                                                  newRecord[`${item.id}-${bi.id}`] = 0;
-                                                });
-                                                return newRecord;
-                                              });
-                                            } else {
-                                              setVerifiedItems(prev => {
-                                                const newRecord = { ...prev };
-                                                item.bundleItems?.forEach((bi: any) => {
-                                                  newRecord[`${item.id}-${bi.id}`] = bi.quantity;
-                                                });
-                                                return newRecord;
-                                              });
-                                              playSound('scan');
-                                            }
-                                          } else {
-                                            if (isVerified) {
-                                              setVerifiedItems(prev => ({ ...prev, [item.id]: 0 }));
-                                            } else {
-                                              setVerifiedItems(prev => ({ ...prev, [item.id]: Math.min((prev[item.id] || 0) + 1, item.quantity) }));
-                                              playSound('scan');
-                                            }
-                                          }
-                                        }}
-                                      >
-                                        {isVerified || (isBundle && allBundleComponentsVerified) ? (
-                                          <><Check className="h-3 w-3" /></>
-                                        ) : (
-                                          <><ScanLine className="h-3 w-3 mr-1" />Scan</>
-                                        )}
-                                      </Button>
                                     </div>
                                   </div>
                                   
@@ -4218,70 +4231,83 @@ export default function PickPack() {
                               </div>
                               
                               {/* Action Buttons */}
-                              <div className="flex gap-1 flex-shrink-0">
-                                {isBundle && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 w-8 p-0 text-amber-600 hover:bg-amber-50"
-                                    onClick={() => {
-                                      const newExpanded = new Set(expandedBundles);
-                                      if (isExpanded) {
-                                        newExpanded.delete(item.id);
-                                      } else {
-                                        newExpanded.add(item.id);
-                                      }
-                                      setExpandedBundles(newExpanded);
-                                    }}
-                                    title={isExpanded ? "Hide bundle items" : "Show bundle items"}
-                                  >
-                                    {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                                  </Button>
-                                )}
-                                <Button
-                                  variant={isVerified || (isBundle && allBundleComponentsVerified) ? "default" : "outline"}
-                                  size="sm"
-                                  className={`h-8 px-2 text-xs ${
-                                    isVerified || (isBundle && allBundleComponentsVerified)
-                                      ? 'bg-green-500 hover:bg-green-600 text-white' 
-                                      : 'border-purple-300 text-purple-600 hover:bg-purple-50'
-                                  }`}
-                                  onClick={() => {
-                                    if (isBundle) {
-                                      if (allBundleComponentsVerified) {
-                                        setVerifiedItems(prev => {
-                                          const newRecord = { ...prev };
-                                          item.bundleItems?.forEach((bi: any) => {
-                                            newRecord[`${item.id}-${bi.id}`] = 0;
-                                          });
-                                          return newRecord;
-                                        });
-                                      } else {
-                                        setVerifiedItems(prev => {
-                                          const newRecord = { ...prev };
-                                          item.bundleItems?.forEach((bi: any) => {
-                                            newRecord[`${item.id}-${bi.id}`] = bi.quantity;
-                                          });
-                                          return newRecord;
-                                        });
-                                        playSound('scan');
-                                      }
-                                    } else {
-                                      if (isVerified) {
-                                        setVerifiedItems(prev => ({ ...prev, [item.id]: 0 }));
-                                      } else {
-                                        setVerifiedItems(prev => ({ ...prev, [item.id]: Math.min((prev[item.id] || 0) + 1, item.quantity) }));
-                                        playSound('scan');
-                                      }
-                                    }
-                                  }}
-                                >
-                                  {isVerified || (isBundle && allBundleComponentsVerified) ? (
-                                    <><Check className="h-3 w-3 mr-0.5" />Done</>
-                                  ) : (
-                                    <><ScanLine className="h-3 w-3 mr-0.5" />Verify</>
+                              <div className="flex gap-2 flex-shrink-0 flex-col items-end">
+                                <div className="flex gap-1">
+                                  {isBundle && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0 text-amber-600 hover:bg-amber-50"
+                                      onClick={() => {
+                                        const newExpanded = new Set(expandedBundles);
+                                        if (isExpanded) {
+                                          newExpanded.delete(item.id);
+                                        } else {
+                                          newExpanded.add(item.id);
+                                        }
+                                        setExpandedBundles(newExpanded);
+                                      }}
+                                      title={isExpanded ? "Hide bundle items" : "Show bundle items"}
+                                    >
+                                      {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                    </Button>
                                   )}
-                                </Button>
+                                  <Button
+                                    variant={isVerified || (isBundle && allBundleComponentsVerified) ? "default" : "outline"}
+                                    size="sm"
+                                    className={`h-8 px-3 text-sm font-bold ${
+                                      isVerified || (isBundle && allBundleComponentsVerified)
+                                        ? 'bg-green-500 hover:bg-green-600 text-white' 
+                                        : 'border-purple-300 text-purple-600 hover:bg-purple-50'
+                                    }`}
+                                    onClick={() => {
+                                      if (isBundle) {
+                                        if (allBundleComponentsVerified) {
+                                          setVerifiedItems(prev => {
+                                            const newRecord = { ...prev };
+                                            item.bundleItems?.forEach((bi: any) => {
+                                              newRecord[`${item.id}-${bi.id}`] = 0;
+                                            });
+                                            return newRecord;
+                                          });
+                                        } else {
+                                          setVerifiedItems(prev => {
+                                            const newRecord = { ...prev };
+                                            item.bundleItems?.forEach((bi: any) => {
+                                              newRecord[`${item.id}-${bi.id}`] = bi.quantity;
+                                            });
+                                            return newRecord;
+                                          });
+                                          playSound('scan');
+                                        }
+                                      } else {
+                                        if (isVerified) {
+                                          setVerifiedItems(prev => ({ ...prev, [item.id]: 0 }));
+                                        } else {
+                                          setVerifiedItems(prev => ({ ...prev, [item.id]: Math.min((prev[item.id] || 0) + 1, item.quantity) }));
+                                          playSound('scan');
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    {isVerified || (isBundle && allBundleComponentsVerified) ? (
+                                      <><Check className="h-4 w-4 mr-1" />Complete</>
+                                    ) : (
+                                      <><ScanLine className="h-4 w-4 mr-1" />{verifiedItems[item.id] || 0}/{item.quantity}</>
+                                    )}
+                                  </Button>
+                                </div>
+                                {/* Progress bar for non-bundle items */}
+                                {!isBundle && !isVerified && item.quantity > 1 && (
+                                  <div className="w-24 mt-1">
+                                    <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                      <div 
+                                        className="h-full bg-purple-500 transition-all duration-300"
+                                        style={{ width: `${((verifiedItems[item.id] || 0) / item.quantity) * 100}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </div>
                             
