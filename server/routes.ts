@@ -7501,12 +7501,11 @@ Return ONLY the subject line without quotes or extra formatting.`,
       doc.fontSize(18)
          .fillColor('#000000')
          .font('Helvetica-Bold')
-         .text('DAVIE SUPPLY', 135, 45)
+         .text('Davie Lam s.r.o.', 135, 45)
          .fontSize(9)
          .font('Helvetica')
          .fillColor('#666666')
-         .text('Professional Warehouse & Distribution', 135, 65)
-         .text('Prague, Czech Republic', 135, 77);
+         .text('ID: CZ17587816', 135, 65);
       
       // Document title
       doc.fontSize(26)
