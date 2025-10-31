@@ -94,7 +94,8 @@ import {
   Check,
   Edit,
   Pause,
-  XCircle
+  XCircle,
+  RefreshCw
 } from "lucide-react";
 
 interface BundleItem {
@@ -461,6 +462,8 @@ export default function PickPack() {
   // Multi-carton state
   const [cartons, setCartons] = useState<OrderCarton[]>([]);
   const [cartonsDraft, setCartonsDraft] = useState<OrderCarton[]>([]);
+  const [isCartonSectionCollapsed, setIsCartonSectionCollapsed] = useState(false);
+  const [isRecalculating, setIsRecalculating] = useState(false);
   
   // Legacy states for compatibility
   const [selectedCarton, setSelectedCarton] = useState<string>('');
@@ -867,9 +870,22 @@ export default function PickPack() {
   // Track if we've already auto-applied suggestions for this order
   const [hasAutoAppliedSuggestions, setHasAutoAppliedSuggestions] = useState(false);
 
-  // Reset auto-apply flag when active order changes
+  // Function to recalculate cartons - this will be defined after mutations
+  const recalculateCartons = useRef<(() => Promise<void>) | null>(null);
+
+  // Reset auto-apply flag and trigger recalculation when active order changes (entering packing mode)
   useEffect(() => {
     setHasAutoAppliedSuggestions(false);
+    
+    // If we just entered packing mode, recalculate cartons
+    if (activePackingOrder?.id && recalculateCartons.current) {
+      // Small delay to ensure the order is fully loaded
+      const timeoutId = setTimeout(() => {
+        recalculateCartons.current?.();
+      }, 500);
+      
+      return () => clearTimeout(timeoutId);
+    }
   }, [activePackingOrder?.id]);
 
   // Automatically apply AI carton suggestions when they arrive
@@ -1060,6 +1076,58 @@ export default function PickPack() {
       refetchCartons();
     },
   });
+
+  // Define the actual recalculate function after mutations are available
+  recalculateCartons.current = async () => {
+    if (!activePackingOrder) return;
+    
+    console.log('🔄 Recalculating cartons for order', activePackingOrder.id);
+    setIsRecalculating(true);
+    
+    try {
+      // Delete all existing cartons
+      if (cartons.length > 0) {
+        console.log(`Deleting ${cartons.length} existing carton(s)`);
+        for (const carton of cartons) {
+          await deleteCartonMutation.mutateAsync({
+            orderId: activePackingOrder.id,
+            cartonId: carton.id
+          });
+        }
+      }
+      
+      // Clear local state
+      setCartons([]);
+      setCartonsDraft([]);
+      
+      // Reset the auto-apply flag so new suggestions will be applied
+      setHasAutoAppliedSuggestions(false);
+      
+      // Force refetch the AI recommendations
+      await queryClient.invalidateQueries({ 
+        queryKey: ['/api/orders', activePackingOrder.id, 'recommend-carton'] 
+      });
+      await queryClient.refetchQueries({ 
+        queryKey: ['/api/orders', activePackingOrder.id, 'recommend-carton'] 
+      });
+      
+      toast({
+        title: "🔄 Recalculating Cartons",
+        description: "AI is optimizing carton selection based on current items...",
+        className: "bg-blue-50 border-blue-200"
+      });
+      
+    } catch (error) {
+      console.error('Error recalculating cartons:', error);
+      toast({
+        title: "Error",
+        description: "Failed to recalculate cartons",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
 
   // Generate label for carton mutation
   const generateLabelMutation = useMutation({
@@ -4413,17 +4481,64 @@ export default function PickPack() {
           {/* Multi-Carton Packing Section */}
           <Card className="shadow-sm border-2 border-emerald-200 bg-gradient-to-br from-white to-emerald-50">
             <CardHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-3">
-              <CardTitle className="text-base flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Box className="h-5 w-5" />
-                  <span>Cartons ({cartons.length + cartonsDraft.length})</span>
+              <CardTitle className="text-base">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Box className="h-5 w-5" />
+                    <span>Cartons ({cartons.length + cartonsDraft.length})</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {/* Recalculate Button */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 bg-white/10 border-white/30 text-white hover:bg-white/20"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        recalculateCartons.current?.();
+                      }}
+                      disabled={isRecalculating}
+                      title="Recalculate cartons based on current items"
+                    >
+                      {isRecalculating ? (
+                        <>
+                          <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                          Recalculating...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="h-3 w-3 mr-1" />
+                          Recalculate AI
+                        </>
+                      )}
+                    </Button>
+                    <Badge className="bg-white/20 text-white">
+                      Multi-Carton Packing
+                    </Badge>
+                    {/* Collapse/Expand Button */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0 text-white hover:bg-white/20"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsCartonSectionCollapsed(!isCartonSectionCollapsed);
+                      }}
+                    >
+                      {isCartonSectionCollapsed ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronUp className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
-                <Badge className="bg-white/20 text-white">
-                  Multi-Carton Packing
-                </Badge>
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 space-y-3">
+            {!isCartonSectionCollapsed && (
+              <CardContent className="p-4 space-y-3">
               {/* Carton List */}
               {[...cartons, ...cartonsDraft].map((carton, index) => {
                 const isDraft = cartonsDraft.some(d => d.id === carton.id);
@@ -4638,7 +4753,8 @@ export default function PickPack() {
                   </div>
                 </div>
               )}
-            </CardContent>
+              </CardContent>
+            )}
           </Card>
 
           {/* Packing Completion Card - Combined Documents + Checklist */}
