@@ -4106,8 +4106,7 @@ export default function PickPack() {
                                             ? 'bg-green-500 hover:bg-green-600 text-white' 
                                             : 'border-purple-300 text-purple-600 hover:bg-purple-50'
                                         }`}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
+                                        onClick={() => {
                                           if (isBundle) {
                                             if (allBundleComponentsVerified) {
                                               setVerifiedItems(prev => {
@@ -4247,8 +4246,7 @@ export default function PickPack() {
                                       ? 'bg-green-500 hover:bg-green-600 text-white' 
                                       : 'border-purple-300 text-purple-600 hover:bg-purple-50'
                                   }`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
+                                  onClick={() => {
                                     if (isBundle) {
                                       if (allBundleComponentsVerified) {
                                         setVerifiedItems(prev => {
@@ -4332,8 +4330,7 @@ export default function PickPack() {
                                             ? 'bg-green-500 hover:bg-green-600 text-white' 
                                             : 'border-gray-300 text-gray-600 hover:bg-gray-50'
                                         }`}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
+                                        onClick={() => {
                                           setVerifiedItems(prev => {
                                             const currentCount = prev[componentId] || 0;
                                             const newRecord = { ...prev };
