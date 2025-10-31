@@ -4894,16 +4894,18 @@ export default function PickPack() {
                           className="relative bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-sm"
                           onClick={() => handleImageClick(currentItem.id)}
                         >
-                          <div className="aspect-square max-h-64 sm:max-h-80 lg:max-h-96 relative bg-gradient-to-br from-gray-50 to-gray-100 cursor-pointer flex items-center justify-center">
-                            {currentItem.image ? (
-                              <img 
-                                src={currentItem.image} 
-                                alt={currentItem.productName}
-                                className="max-w-full max-h-full object-contain p-4"
-                              />
-                            ) : (
-                              <Package className="h-24 w-24 sm:h-32 sm:w-32 text-gray-300" />
-                            )}
+                          <div className="aspect-square max-h-64 sm:max-h-80 lg:max-h-96 bg-gradient-to-br from-gray-50 to-gray-100 cursor-pointer p-4">
+                            <div className="w-full h-full flex items-center justify-center">
+                              {currentItem.image ? (
+                                <img 
+                                  src={currentItem.image} 
+                                  alt={currentItem.productName}
+                                  className="max-w-full max-h-full w-auto h-auto object-contain"
+                                />
+                              ) : (
+                                <Package className="h-24 w-24 sm:h-32 sm:w-32 text-gray-300" />
+                              )}
+                            </div>
                             {/* Overlay Badge for Quick Info */}
                             <div className="absolute top-2 right-2 bg-black/75 text-white px-3 py-1 rounded-full text-sm font-bold z-10">
                               {currentItem.pickedQuantity}/{currentItem.quantity}
