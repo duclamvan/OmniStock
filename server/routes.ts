@@ -5076,7 +5076,7 @@ Important:
 
   app.post('/api/orders', async (req: any, res) => {
     try {
-      const { items, ...orderData } = req.body;
+      const { items, selectedDocumentIds, ...orderData } = req.body;
       
       // Get orderType from request body, default to 'ord'
       const orderType = orderData.orderType || 'ord';
@@ -5084,8 +5084,20 @@ Important:
       // Generate order ID with the specified order type
       const orderId = await storage.generateOrderId(orderType);
       
+      // Process selectedDocumentIds and merge into includedDocuments
+      let finalOrderData = { ...orderData };
+      if (selectedDocumentIds !== undefined) {
+        const currentIncludedDocs = orderData.includedDocuments || {};
+        finalOrderData.includedDocuments = {
+          ...currentIncludedDocs,
+          fileIds: selectedDocumentIds || [],
+          uploadedFiles: currentIncludedDocs.uploadedFiles || []
+        };
+        console.log('Merged selectedDocumentIds into includedDocuments:', finalOrderData.includedDocuments);
+      }
+      
       const data = insertOrderSchema.parse({
-        ...orderData,
+        ...finalOrderData,
         orderId,
         orderType,
         billerId: req.user?.id || null,
@@ -5149,9 +5161,24 @@ Important:
   app.patch('/api/orders/:id', async (req: any, res) => {
     try {
       console.log('PATCH /api/orders/:id - Received body:', req.body);
-      const { items, ...orderUpdates } = req.body;
+      const { items, selectedDocumentIds, ...orderUpdates } = req.body;
       
       const updates = { ...orderUpdates };
+      
+      // Process selectedDocumentIds and merge into includedDocuments
+      if (selectedDocumentIds !== undefined) {
+        // Get current includedDocuments or initialize
+        const currentIncludedDocs = updates.includedDocuments || {};
+        
+        // Merge selectedDocumentIds into fileIds array
+        updates.includedDocuments = {
+          ...currentIncludedDocs,
+          fileIds: selectedDocumentIds || [],
+          uploadedFiles: currentIncludedDocs.uploadedFiles || []
+        };
+        
+        console.log('Merged selectedDocumentIds into includedDocuments:', updates.includedDocuments);
+      }
       
       // Convert all date fields from strings to Date objects
       const dateFields = ['pickStartTime', 'pickEndTime', 'packStartTime', 'packEndTime', 'shippedAt', 'createdAt', 'updatedAt'];
