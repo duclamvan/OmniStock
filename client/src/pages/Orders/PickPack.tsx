@@ -4925,7 +4925,7 @@ export default function PickPack() {
               </div>
               
               <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {activePickingOrder.items.map((item, index) => {
                     const isPicked = item.pickedQuantity >= item.quantity;
                     const isPartiallyPicked = item.pickedQuantity > 0 && item.pickedQuantity < item.quantity;
@@ -4934,71 +4934,88 @@ export default function PickPack() {
                     return (
                       <Card 
                         key={item.id} 
-                        className={`cursor-pointer transition-all transform hover:scale-[1.02] ${
+                        className={`transition-all ${
                           isPicked ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-400 shadow-md' : 
                           isPartiallyPicked ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-400 shadow-md' :
-                          isCurrent ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-500 shadow-xl' : 
-                          'bg-white hover:shadow-lg border-2 border-gray-200'
+                          isCurrent ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-500 shadow-lg' : 
+                          'bg-white hover:shadow-md border-2 border-gray-200'
                         }`}
-                        onClick={() => {
-                          setManualItemIndex(index);
-                          setShowItemOverviewModal(false);
-                          window.scrollTo(0, 0);
-                        }}
                         data-testid={`item-overview-${item.id}`}
                       >
                         <CardContent className="p-3 sm:p-4">
                           <div className="flex items-center gap-3">
-                            <div className="flex-shrink-0">
+                            {/* Product Image */}
+                            <div className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-gray-100 border-2 border-gray-200">
+                              {item.image ? (
+                                <img 
+                                  src={item.image} 
+                                  alt={item.productName}
+                                  className="w-full h-full object-contain p-1"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Package className="h-8 w-8 text-gray-300" />
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Clickable Number Badge */}
+                            <div 
+                              className="flex-shrink-0 cursor-pointer active:scale-95 transition-transform"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (!isPicked) {
+                                  updatePickedItem(item.id, item.quantity);
+                                  playSound('success');
+                                }
+                              }}
+                              data-testid={`quick-pick-${item.id}`}
+                            >
                               {isPicked ? (
-                                <div className="bg-green-500 rounded-full p-2">
-                                  <CheckCircle className="h-6 w-6 text-white" />
+                                <div className="bg-green-500 rounded-full p-2 shadow-lg">
+                                  <CheckCircle className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
                                 </div>
                               ) : isPartiallyPicked ? (
-                                <div className="bg-yellow-500 rounded-full p-2">
-                                  <Clock className="h-6 w-6 text-white" />
+                                <div className="bg-yellow-500 rounded-full p-2 shadow-lg hover:bg-yellow-600">
+                                  <Clock className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
                                 </div>
                               ) : (
-                                <div className="w-10 h-10 rounded-full border-3 border-gray-300 flex items-center justify-center text-sm font-bold text-gray-600">
+                                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-3 border-gray-400 flex items-center justify-center text-lg sm:text-xl font-black text-gray-700 hover:bg-blue-500 hover:text-white hover:border-blue-600 transition-all shadow-md">
                                   {index + 1}
                                 </div>
                               )}
                             </div>
                             
+                            {/* Product Info */}
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1 min-w-0">
-                                  <p className={`font-bold text-sm sm:text-base truncate ${
-                                    isPicked ? 'text-green-700' : 
-                                    isPartiallyPicked ? 'text-yellow-700' :
-                                    isCurrent ? 'text-blue-700' : 'text-gray-800'
-                                  }`}>
-                                    {item.productName}
-                                  </p>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <p className="text-xs text-gray-500">SKU: {item.sku}</p>
-                                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-orange-100 text-orange-700">
-                                      📍 {item.warehouseLocation}
-                                    </span>
-                                  </div>
+                              <p className={`font-bold text-sm sm:text-base leading-tight ${
+                                isPicked ? 'text-green-700' : 
+                                isPartiallyPicked ? 'text-yellow-700' :
+                                isCurrent ? 'text-blue-700' : 'text-gray-900'
+                              }`}>
+                                {item.productName}
+                              </p>
+                              
+                              {/* Quantity Display */}
+                              <div className="flex items-center gap-2 mt-2">
+                                <div className={`text-xl sm:text-2xl font-black ${
+                                  isPicked ? 'text-green-600' : 
+                                  isPartiallyPicked ? 'text-yellow-600' :
+                                  'text-gray-600'
+                                }`}>
+                                  {item.pickedQuantity}/{item.quantity}
                                 </div>
-                                
-                                <div className="flex-shrink-0 text-right">
-                                  <div className={`text-lg sm:text-xl font-black ${
-                                    isPicked ? 'text-green-600' : 
-                                    isPartiallyPicked ? 'text-yellow-600' :
-                                    'text-gray-600'
-                                  }`}>
-                                    {item.pickedQuantity}/{item.quantity}
-                                  </div>
-                                  <div className="text-xs text-gray-500">
-                                    {isPicked ? 'Complete' : isPartiallyPicked ? 'In Progress' : 'Not Started'}
-                                  </div>
-                                </div>
+                                <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                                  isPicked ? 'bg-green-100 text-green-700' :
+                                  isPartiallyPicked ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-gray-100 text-gray-600'
+                                }`}>
+                                  {isPicked ? 'Complete' : isPartiallyPicked ? 'In Progress' : 'Not Started'}
+                                </span>
                               </div>
                               
                               {/* Progress Bar */}
-                              <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+                              <div className="mt-2 h-2.5 bg-gray-200 rounded-full overflow-hidden">
                                 <div 
                                   className={`h-full transition-all duration-300 ${
                                     isPicked ? 'bg-green-500' : 
@@ -5008,6 +5025,22 @@ export default function PickPack() {
                                   style={{ width: `${(item.pickedQuantity / item.quantity) * 100}%` }}
                                 />
                               </div>
+                            </div>
+                            
+                            {/* Go to Item Button */}
+                            <div className="flex-shrink-0">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-10 sm:h-12 px-3 sm:px-4"
+                                onClick={() => {
+                                  setManualItemIndex(index);
+                                  setShowItemOverviewModal(false);
+                                  window.scrollTo(0, 0);
+                                }}
+                              >
+                                <ChevronRight className="h-4 w-4" />
+                              </Button>
                             </div>
                           </div>
                         </CardContent>
