@@ -385,6 +385,146 @@ const ProductImage = memo(({
   );
 });
 
+// CartonCard component with local state for responsive weight input
+const CartonCard = memo(({ 
+  carton, 
+  index, 
+  isDraft, 
+  cartonData, 
+  activePackingOrder, 
+  setHasManuallyModifiedCartons,
+  deleteCartonMutation,
+  updateCartonMutation,
+  incrementCartonUsageMutation
+}: any) => {
+  // Local state for weight input to make it responsive
+  const [localWeight, setLocalWeight] = useState(carton.weight || '');
+  
+  // Sync local state when carton weight changes from external updates
+  useEffect(() => {
+    setLocalWeight(carton.weight || '');
+  }, [carton.weight]);
+  
+  // Save weight to backend
+  const saveWeight = (value: string) => {
+    if (activePackingOrder && value !== carton.weight) {
+      setHasManuallyModifiedCartons(true);
+      updateCartonMutation.mutate({
+        orderId: activePackingOrder.id,
+        cartonId: carton.id,
+        updates: { weight: value }
+      });
+    }
+  };
+  
+  return (
+    <Card 
+      className={`border-2 ${isDraft ? 'border-amber-300 bg-amber-50 opacity-80' : 'border-emerald-300 bg-white'}`} 
+      data-testid={`carton-card-${index + 1}`}
+    >
+      <CardContent className="p-3 space-y-3">
+        {/* Carton Header */}
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-bold text-emerald-700 flex items-center gap-2">
+            <Box className="h-5 w-5" />
+            Carton #{carton.cartonNumber}
+          </h3>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => {
+              if (activePackingOrder) {
+                setHasManuallyModifiedCartons(true);
+                deleteCartonMutation.mutate({
+                  orderId: activePackingOrder.id,
+                  cartonId: carton.id
+                });
+              }
+            }}
+            disabled={deleteCartonMutation.isPending}
+            data-testid={`delete-carton-${index + 1}`}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Carton Type Selector */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">Carton Type</label>
+          <CartonTypeAutocomplete
+            value={carton.cartonId || ''}
+            onValueChange={(cartonId, cartonDataParam) => {
+              if (activePackingOrder) {
+                setHasManuallyModifiedCartons(true);
+                const updates: Partial<OrderCarton> = {
+                  cartonType: cartonId ? 'company' : 'non-company',
+                  cartonId: cartonId || null
+                };
+                updateCartonMutation.mutate({
+                  orderId: activePackingOrder.id,
+                  cartonId: carton.id,
+                  updates
+                });
+                if (cartonId) {
+                  incrementCartonUsageMutation.mutate(cartonId);
+                }
+              }
+            }}
+            data-testid={`carton-selector-${index + 1}`}
+          />
+          {cartonData && (
+            <p className="text-xs text-gray-600">
+              {cartonData.dimensions.length}×{cartonData.dimensions.width}×{cartonData.dimensions.height}cm · Max {cartonData.maxWeight}kg
+            </p>
+          )}
+        </div>
+
+        {/* Weight Input with Local State */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">Weight (kg)</label>
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              step="0.001"
+              placeholder="0.000"
+              value={localWeight}
+              onChange={(e) => {
+                // Update local state immediately for responsive typing
+                setLocalWeight(e.target.value);
+              }}
+              onBlur={(e) => {
+                // Save to backend when user finishes typing
+                saveWeight(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                // Save on Enter key
+                if (e.key === 'Enter') {
+                  saveWeight(localWeight);
+                  e.currentTarget.blur();
+                }
+              }}
+              className="text-center text-xl font-bold text-emerald-700 border-2 border-emerald-300 focus:border-emerald-500"
+              data-testid={`weight-input-${index + 1}`}
+            />
+            <span className="text-xl font-bold text-emerald-700">kg</span>
+          </div>
+          {carton.aiWeightCalculation && (
+            <div className="text-xs text-emerald-600 flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" />
+              AI calculated
+              {carton.notes && carton.notes.includes('% utilization') && (
+                <span className="ml-1">
+                  - {carton.notes.match(/(\d+\.?\d*)% utilization/)?.[1]}% utilization
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+});
+
 // Component to display all order files and documents
 function OrderFilesDisplay({ orderId }: { orderId: string }) {
   const { data: orderFilesData, isLoading } = useQuery({
@@ -4603,114 +4743,18 @@ export default function PickPack() {
                 const isNonCompany = carton.cartonType === 'non-company';
                 
                 return (
-                  <Card 
-                    key={carton.id} 
-                    className={`border-2 ${isDraft ? 'border-amber-300 bg-amber-50 opacity-80' : 'border-emerald-300 bg-white'}`} 
-                    data-testid={`carton-card-${index + 1}`}
-                  >
-                    <CardContent className="p-3 space-y-3">
-                      {/* Carton Header */}
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-emerald-700 flex items-center gap-2">
-                          <Box className="h-5 w-5" />
-                          Carton #{carton.cartonNumber}
-                        </h3>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => {
-                            if (activePackingOrder) {
-                              // Mark as manually modified to prevent AI recalculation
-                              setHasManuallyModifiedCartons(true);
-                              
-                              deleteCartonMutation.mutate({
-                                orderId: activePackingOrder.id,
-                                cartonId: carton.id
-                              });
-                            }
-                          }}
-                          disabled={deleteCartonMutation.isPending}
-                          data-testid={`delete-carton-${index + 1}`}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-
-                      {/* Carton Type Selector */}
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Carton Type</label>
-                        <CartonTypeAutocomplete
-                          value={carton.cartonId || ''}
-                          onValueChange={(cartonId, cartonData) => {
-                            if (activePackingOrder) {
-                              // Mark as manually modified to prevent AI recalculation
-                              setHasManuallyModifiedCartons(true);
-                              
-                              const updates: Partial<OrderCarton> = {
-                                cartonType: cartonId ? 'company' : 'non-company',
-                                cartonId: cartonId || null
-                              };
-                              updateCartonMutation.mutate({
-                                orderId: activePackingOrder.id,
-                                cartonId: carton.id,
-                                updates
-                              });
-                              
-                              if (cartonId) {
-                                incrementCartonUsageMutation.mutate(cartonId);
-                              }
-                            }
-                          }}
-                          data-testid={`carton-selector-${index + 1}`}
-                        />
-                        {cartonData && (
-                          <p className="text-xs text-gray-600">
-                            {cartonData.dimensions.length}×{cartonData.dimensions.width}×{cartonData.dimensions.height}cm · Max {cartonData.maxWeight}kg
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Weight Input */}
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Weight (kg)</label>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            step="0.001"
-                            placeholder="0.000"
-                            value={carton.weight || ''}
-                            onChange={(e) => {
-                              if (activePackingOrder) {
-                                // Mark as manually modified to prevent AI recalculation
-                                setHasManuallyModifiedCartons(true);
-                                
-                                updateCartonMutation.mutate({
-                                  orderId: activePackingOrder.id,
-                                  cartonId: carton.id,
-                                  updates: { weight: e.target.value }
-                                });
-                              }
-                            }}
-                            className="text-center text-xl font-bold text-emerald-700 border-2 border-emerald-300 focus:border-emerald-500"
-                            data-testid={`weight-input-${index + 1}`}
-                          />
-                          <span className="text-xl font-bold text-emerald-700">kg</span>
-                        </div>
-                        {carton.aiWeightCalculation && (
-                          <div className="text-xs text-emerald-600 flex items-center gap-1">
-                            <TrendingUp className="h-3 w-3" />
-                            AI calculated
-                            {carton.notes && carton.notes.includes('% utilization') && (
-                              <span className="ml-1">
-                                - {carton.notes.match(/(\d+\.?\d*)% utilization/)?.[1]}% utilization
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                    </CardContent>
-                  </Card>
+                  <CartonCard
+                    key={carton.id}
+                    carton={carton}
+                    index={index}
+                    isDraft={isDraft}
+                    cartonData={cartonData}
+                    activePackingOrder={activePackingOrder}
+                    setHasManuallyModifiedCartons={setHasManuallyModifiedCartons}
+                    deleteCartonMutation={deleteCartonMutation}
+                    updateCartonMutation={updateCartonMutation}
+                    incrementCartonUsageMutation={incrementCartonUsageMutation}
+                  />
                 );
               })}
 
