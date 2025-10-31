@@ -924,18 +924,16 @@ export default function PickPack() {
           // Find the carton data for dimensions
           const cartonData = availableCartons?.find((c: any) => c.id === suggestion.cartonId);
           
-          console.log(`📦 Creating optimized carton #${cartonNumber}: ${cartonData?.name || suggestion.cartonId} (${suggestion.totalWeightKg?.toFixed(3)}kg, ${suggestion.volumeUtilization}% utilization)`);
-          
           const result = await createCartonMutation.mutateAsync({
             orderId: activePackingOrder.id,
             cartonNumber,
             cartonType: 'company',
             cartonId: suggestion.cartonId,
             weight: suggestion.totalWeightKg?.toFixed(3) || '0.000',
-            payloadWeightKg: String(suggestion.totalWeightKg || 0),
-            innerLengthCm: String(cartonData?.dimensions?.length || cartonData?.innerLengthCm || 0),
-            innerWidthCm: String(cartonData?.dimensions?.width || cartonData?.innerWidthCm || 0),
-            innerHeightCm: String(cartonData?.dimensions?.height || cartonData?.innerHeightCm || 0),
+            payloadWeightKg: suggestion.totalWeightKg || 0,
+            innerLengthCm: cartonData?.dimensions?.length || cartonData?.innerLengthCm || 0,
+            innerWidthCm: cartonData?.dimensions?.width || cartonData?.innerWidthCm || 0,
+            innerHeightCm: cartonData?.dimensions?.height || cartonData?.innerHeightCm || 0,
             source: 'ai',
             aiWeightCalculation: true,
             aiPlanId: `deepseek-${Date.now()}-${i}`,
@@ -947,50 +945,7 @@ export default function PickPack() {
         
         // Refetch to show all created cartons with their data
         await refetchCartons();
-        
-        // Show comprehensive success message
-        const totalWeight = recommendedCarton.suggestions.reduce((sum: number, s: any) => sum + (s.totalWeightKg || 0), 0);
-        const avgUtilization = recommendedCarton.avgUtilization || 0;
-        
-        toast({
-          title: "✅ AI Carton Optimization Complete",
-          description: (
-            <div className="space-y-1">
-              <p className="font-semibold">Created {recommendedCarton.suggestions.length} optimized carton(s)</p>
-              <p className="text-xs">• Total weight: {totalWeight.toFixed(2)}kg</p>
-              <p className="text-xs">• Average utilization: {avgUtilization.toFixed(0)}%</p>
-              <p className="text-xs">• Algorithm: DeepSeek AI with largest-carton-first strategy</p>
-              {recommendedCarton.reasoning && (
-                <p className="text-xs mt-1">{recommendedCarton.reasoning}</p>
-              )}
-            </div>
-          ),
-          className: "bg-green-50 border-green-200",
-          duration: 5000
-        });
-        
         playSound('success');
-        
-        // Show nylon wrap items if any
-        if (recommendedCarton.nylonWrapItems && recommendedCarton.nylonWrapItems.length > 0) {
-          setTimeout(() => {
-            toast({
-              title: "📋 Nylon Wrap Only Items",
-              description: (
-                <div className="space-y-1">
-                  <p>{recommendedCarton.nylonWrapItems!.length} item(s) only need nylon wrapping:</p>
-                  {recommendedCarton.nylonWrapItems!.slice(0, 3).map((item: any, idx: number) => (
-                    <p key={idx} className="text-xs">• {item.productName} x{item.quantity}</p>
-                  ))}
-                  {recommendedCarton.nylonWrapItems!.length > 3 && (
-                    <p className="text-xs">...and {recommendedCarton.nylonWrapItems!.length - 3} more</p>
-                  )}
-                </div>
-              ),
-              className: "bg-blue-50 border-blue-200"
-            });
-          }, 1000);
-        }
       } catch (error) {
         console.error('Error creating AI cartons:', error);
         toast({
@@ -1109,12 +1064,6 @@ export default function PickPack() {
       });
       await queryClient.refetchQueries({ 
         queryKey: ['/api/orders', activePackingOrder.id, 'recommend-carton'] 
-      });
-      
-      toast({
-        title: "🔄 Recalculating Cartons",
-        description: "AI is optimizing carton selection based on current items...",
-        className: "bg-blue-50 border-blue-200"
       });
       
     } catch (error) {
@@ -4158,13 +4107,15 @@ export default function PickPack() {
                                             ? 'bg-green-500 hover:bg-green-600 text-white' 
                                             : 'border-purple-300 text-purple-600 hover:bg-purple-50'
                                         }`}
-                                        onClick={() => {
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
                                           if (isBundle) {
                                             if (allBundleComponentsVerified) {
                                               setVerifiedItems(prev => {
                                                 const newRecord = { ...prev };
                                                 item.bundleItems?.forEach((bi: any) => {
-                                                  delete newRecord[`${item.id}-${bi.id}`];
+                                                  newRecord[`${item.id}-${bi.id}`] = 0;
                                                 });
                                                 return newRecord;
                                               });
@@ -4180,11 +4131,7 @@ export default function PickPack() {
                                             }
                                           } else {
                                             if (isVerified) {
-                                              setVerifiedItems(prev => {
-                                                const newRecord = { ...prev };
-                                                delete newRecord[item.id];
-                                                return newRecord;
-                                              });
+                                              setVerifiedItems(prev => ({ ...prev, [item.id]: 0 }));
                                             } else {
                                               setVerifiedItems(prev => ({ ...prev, [item.id]: Math.min((prev[item.id] || 0) + 1, item.quantity) }));
                                               playSound('scan');
@@ -4302,13 +4249,15 @@ export default function PickPack() {
                                       ? 'bg-green-500 hover:bg-green-600 text-white' 
                                       : 'border-purple-300 text-purple-600 hover:bg-purple-50'
                                   }`}
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
                                     if (isBundle) {
                                       if (allBundleComponentsVerified) {
                                         setVerifiedItems(prev => {
                                           const newRecord = { ...prev };
                                           item.bundleItems?.forEach((bi: any) => {
-                                            delete newRecord[`${item.id}-${bi.id}`];
+                                            newRecord[`${item.id}-${bi.id}`] = 0;
                                           });
                                           return newRecord;
                                         });
@@ -4324,11 +4273,7 @@ export default function PickPack() {
                                       }
                                     } else {
                                       if (isVerified) {
-                                        setVerifiedItems(prev => {
-                                          const newRecord = { ...prev };
-                                          delete newRecord[item.id];
-                                          return newRecord;
-                                        });
+                                        setVerifiedItems(prev => ({ ...prev, [item.id]: 0 }));
                                       } else {
                                         setVerifiedItems(prev => ({ ...prev, [item.id]: Math.min((prev[item.id] || 0) + 1, item.quantity) }));
                                         playSound('scan');
@@ -4390,12 +4335,14 @@ export default function PickPack() {
                                             ? 'bg-green-500 hover:bg-green-600 text-white' 
                                             : 'border-gray-300 text-gray-600 hover:bg-gray-50'
                                         }`}
-                                        onClick={() => {
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
                                           setVerifiedItems(prev => {
                                             const currentCount = prev[componentId] || 0;
                                             const newRecord = { ...prev };
                                             if (currentCount >= bundleItem.quantity) {
-                                              delete newRecord[componentId];
+                                              newRecord[componentId] = 0;
                                             } else {
                                               newRecord[componentId] = currentCount + 1;
                                               playSound('scan');
