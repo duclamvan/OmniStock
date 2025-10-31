@@ -358,6 +358,7 @@ export default function PickPack() {
   // Track which tab the user was on when they started picking/packing
   const [originatingTab, setOriginatingTab] = useState<'overview' | 'pending' | 'picking' | 'packing' | 'ready'>('overview');
   const [showPickingCompletionModal, setShowPickingCompletionModal] = useState(false);
+  const [showItemOverviewModal, setShowItemOverviewModal] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState('');
   const [selectedBatchOrders, setSelectedBatchOrders] = useState<string[]>([]);
   const [packingTimer, setPackingTimer] = useState(0);
@@ -4878,6 +4879,142 @@ export default function PickPack() {
           </div>
         </div>
 
+        {/* Item Overview Modal */}
+        {showItemOverviewModal && activePickingOrder && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-4 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ClipboardList className="h-5 w-5" />
+                    <h2 className="text-lg sm:text-xl font-bold">Order Items Overview</h2>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="text-white hover:bg-white/20"
+                    onClick={() => setShowItemOverviewModal(false)}
+                    data-testid="button-close-overview"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="mt-2 flex items-center gap-4">
+                  <Badge className="bg-white text-blue-600 font-bold px-3 py-1">
+                    {activePickingOrder.pickedItems}/{activePickingOrder.totalItems} Picked
+                  </Badge>
+                  <div className="text-sm text-blue-100">
+                    Order: {activePickingOrder.orderId}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                <div className="space-y-2">
+                  {activePickingOrder.items.map((item, index) => {
+                    const isPicked = item.pickedQuantity >= item.quantity;
+                    const isPartiallyPicked = item.pickedQuantity > 0 && item.pickedQuantity < item.quantity;
+                    const isCurrent = currentItem?.id === item.id;
+                    
+                    return (
+                      <Card 
+                        key={item.id} 
+                        className={`cursor-pointer transition-all transform hover:scale-[1.02] ${
+                          isPicked ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-400 shadow-md' : 
+                          isPartiallyPicked ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-400 shadow-md' :
+                          isCurrent ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-500 shadow-xl' : 
+                          'bg-white hover:shadow-lg border-2 border-gray-200'
+                        }`}
+                        onClick={() => {
+                          setManualItemIndex(index);
+                          setShowItemOverviewModal(false);
+                          window.scrollTo(0, 0);
+                        }}
+                        data-testid={`item-overview-${item.id}`}
+                      >
+                        <CardContent className="p-3 sm:p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex-shrink-0">
+                              {isPicked ? (
+                                <div className="bg-green-500 rounded-full p-2">
+                                  <CheckCircle className="h-6 w-6 text-white" />
+                                </div>
+                              ) : isPartiallyPicked ? (
+                                <div className="bg-yellow-500 rounded-full p-2">
+                                  <Clock className="h-6 w-6 text-white" />
+                                </div>
+                              ) : (
+                                <div className="w-10 h-10 rounded-full border-3 border-gray-300 flex items-center justify-center text-sm font-bold text-gray-600">
+                                  {index + 1}
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <p className={`font-bold text-sm sm:text-base truncate ${
+                                    isPicked ? 'text-green-700' : 
+                                    isPartiallyPicked ? 'text-yellow-700' :
+                                    isCurrent ? 'text-blue-700' : 'text-gray-800'
+                                  }`}>
+                                    {item.productName}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <p className="text-xs text-gray-500">SKU: {item.sku}</p>
+                                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-orange-100 text-orange-700">
+                                      📍 {item.warehouseLocation}
+                                    </span>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex-shrink-0 text-right">
+                                  <div className={`text-lg sm:text-xl font-black ${
+                                    isPicked ? 'text-green-600' : 
+                                    isPartiallyPicked ? 'text-yellow-600' :
+                                    'text-gray-600'
+                                  }`}>
+                                    {item.pickedQuantity}/{item.quantity}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {isPicked ? 'Complete' : isPartiallyPicked ? 'In Progress' : 'Not Started'}
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Progress Bar */}
+                              <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full transition-all duration-300 ${
+                                    isPicked ? 'bg-green-500' : 
+                                    isPartiallyPicked ? 'bg-yellow-500' : 
+                                    'bg-blue-500'
+                                  }`}
+                                  style={{ width: `${(item.pickedQuantity / item.quantity) * 100}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              <div className="border-t p-4 bg-gray-50">
+                <Button 
+                  className="w-full h-12 text-base font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                  onClick={() => setShowItemOverviewModal(false)}
+                  data-testid="button-close-overview-bottom"
+                >
+                  Continue Picking
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Main Content - Scrollable container */}
         <div className="flex-1 overflow-auto">
           <div className="flex flex-col lg:flex-row min-h-full">
@@ -5141,31 +5278,44 @@ export default function PickPack() {
                       )}
                       
                       {/* Item Navigation Buttons */}
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          className="flex-1 h-11 text-sm font-semibold border-2 border-gray-300 hover:bg-gray-50 disabled:opacity-30 rounded-lg"
-                          onClick={() => {
-                            window.scrollTo(0, 0);
-                            setManualItemIndex(Math.max(0, currentItemIndex - 1));
-                          }}
-                          disabled={currentItemIndex === 0}
-                        >
-                          <ChevronLeft className="h-4 w-4 mr-1" />
-                          Previous
-                        </Button>
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            className="flex-1 h-11 text-sm font-semibold border-2 border-gray-300 hover:bg-gray-50 disabled:opacity-30 rounded-lg"
+                            onClick={() => {
+                              window.scrollTo(0, 0);
+                              setManualItemIndex(Math.max(0, currentItemIndex - 1));
+                            }}
+                            disabled={currentItemIndex === 0}
+                          >
+                            <ChevronLeft className="h-4 w-4 mr-1" />
+                            Previous
+                          </Button>
+                          
+                          <Button
+                            variant="outline"
+                            className="flex-1 h-11 text-sm font-semibold border-2 border-gray-300 hover:bg-gray-50 disabled:opacity-30 rounded-lg"
+                            onClick={() => {
+                              window.scrollTo(0, 0);
+                              setManualItemIndex(Math.min(activePickingOrder.items.length - 1, currentItemIndex + 1));
+                            }}
+                            disabled={currentItemIndex === activePickingOrder.items.length - 1}
+                          >
+                            Next
+                            <ChevronRight className="h-4 w-4 ml-1" />
+                          </Button>
+                        </div>
                         
+                        {/* View All Items Button */}
                         <Button
                           variant="outline"
-                          className="flex-1 h-11 text-sm font-semibold border-2 border-gray-300 hover:bg-gray-50 disabled:opacity-30 rounded-lg"
-                          onClick={() => {
-                            window.scrollTo(0, 0);
-                            setManualItemIndex(Math.min(activePickingOrder.items.length - 1, currentItemIndex + 1));
-                          }}
-                          disabled={currentItemIndex === activePickingOrder.items.length - 1}
+                          className="w-full h-11 text-sm font-semibold border-2 border-blue-300 text-blue-600 hover:bg-blue-50 rounded-lg"
+                          onClick={() => setShowItemOverviewModal(true)}
+                          data-testid="button-view-all-items"
                         >
-                          Next
-                          <ChevronRight className="h-4 w-4 ml-1" />
+                          <ClipboardList className="h-4 w-4 mr-2" />
+                          View All Items ({activePickingOrder.pickedItems}/{activePickingOrder.totalItems})
                         </Button>
                       </div>
                     </div>
