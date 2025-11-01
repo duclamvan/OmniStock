@@ -1763,6 +1763,7 @@ export default function EditOrder() {
             itemType: 'bundle',
             bundleId: bundle.id,
             availableStock: bundle.availableStock ?? 0,
+            image: bundle.imageUrl || null, // Add bundle image
           });
         }
       });

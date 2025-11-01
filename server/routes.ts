@@ -5127,6 +5127,7 @@ Important:
       // Enhance order items with landing costs and images
       if (order.items && order.items.length > 0) {
         const itemsWithEnhancements = await Promise.all(order.items.map(async (item) => {
+          // Handle products
           if (item.productId) {
             const [productData] = await db
               .select()
@@ -5141,6 +5142,22 @@ Important:
               image: item.image || productData?.imageUrl || null
             };
           }
+          
+          // Handle bundles
+          if (item.bundleId) {
+            const [bundleData] = await db
+              .select()
+              .from(productBundles)
+              .where(eq(productBundles.id, item.bundleId))
+              .limit(1);
+            
+            return {
+              ...item,
+              // If order item doesn't have image, populate from bundle
+              image: item.image || bundleData?.imageUrl || null
+            };
+          }
+          
           return item;
         }));
         
