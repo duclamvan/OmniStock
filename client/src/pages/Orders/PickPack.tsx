@@ -1355,18 +1355,29 @@ export default function PickPack() {
 
   // Automatically apply AI carton suggestions when they arrive
   useEffect(() => {
+    console.log('🔍 Auto-apply effect triggered:', {
+      hasOrder: !!activePackingOrder,
+      hasRecommendation: !!recommendedCarton,
+      hasAutoApplied: hasAutoAppliedSuggestions,
+      isCreating: isCreatingCartons,
+      isRecalc: isRecalculating,
+      hasManualMods: hasManuallyModifiedCartons,
+      cartonsCount: cartons.length
+    });
+
     if (!activePackingOrder || !recommendedCarton || hasAutoAppliedSuggestions) {
       return;
     }
 
     // Don't auto-apply if we're already creating cartons or recalculating
     if (isCreatingCartons || isRecalculating) {
+      console.log('⏸️ Skipping auto-apply: operation in progress');
       return;
     }
     
     // Don't auto-apply if user has manually modified cartons
     if (hasManuallyModifiedCartons) {
-      console.log('User has manually modified cartons, skipping auto-apply');
+      console.log('⏸️ User has manually modified cartons, skipping auto-apply');
       return;
     }
 
@@ -1377,7 +1388,7 @@ export default function PickPack() {
 
     // Check if order already has cartons - if so, don't auto-apply
     if (cartons.length > 0) {
-      console.log(`Order already has ${cartons.length} cartons, skipping auto-apply`);
+      console.log(`⏸️ Order already has ${cartons.length} cartons, skipping auto-apply`);
       setHasAutoAppliedSuggestions(true);
       return;
     }
@@ -1401,6 +1412,8 @@ export default function PickPack() {
           // Find the carton data for dimensions
           const cartonData = availableCartons?.find((c: any) => c.id === suggestion.cartonId);
           
+          console.log(`Creating carton ${cartonNumber}/${recommendedCarton.suggestions.length}`);
+          
           const result = await createCartonMutation.mutateAsync({
             orderId: activePackingOrder.id,
             cartonNumber,
@@ -1416,16 +1429,20 @@ export default function PickPack() {
             aiPlanId: `deepseek-${Date.now()}-${i}`,
             itemAllocations: suggestion.items || null,
             volumeUtilization: String(suggestion.volumeUtilization || 0),
-            notes: `AI optimized: ${suggestion.volumeUtilization}% utilization`
+            notes: `AI optimized: ${suggestion.volumeUtilization}% utilization`,
+            skipRefetch: true
           });
           createdCartons.push(result);
         }
         
-        // Refetch to show all created cartons with their data
+        console.log(`✅ All ${createdCartons.length} cartons created successfully`);
+        
+        // Single refetch after all cartons are created
+        queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
         await refetchCartons();
         playSound('success');
       } catch (error) {
-        console.error('Error creating AI cartons:', error);
+        console.error('❌ Error creating AI cartons:', error);
         toast({
           title: "Error",
           description: "Failed to create AI-suggested cartons",
@@ -1437,7 +1454,7 @@ export default function PickPack() {
     };
 
     createAndUpdateCartons();
-  }, [activePackingOrder?.id, recommendedCarton, hasAutoAppliedSuggestions, isCreatingCartons, isRecalculating, cartons.length]);
+  }, [activePackingOrder?.id, recommendedCarton]);
 
   // Create carton mutation
   const createCartonMutation = useMutation({
@@ -1458,6 +1475,7 @@ export default function PickPack() {
       itemAllocations?: any;
       volumeUtilization?: string;
       notes?: string;
+      skipRefetch?: boolean;
     }) => {
       const response = await apiRequest('POST', `/api/orders/${data.orderId}/cartons`, data);
       return await response.json();
@@ -1466,8 +1484,12 @@ export default function PickPack() {
       if (variables.tempId) {
         setCartonsDraft(prev => prev.filter(c => c.id !== variables.tempId));
       }
-      queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder?.id, 'cartons'] });
-      refetchCartons();
+      
+      // Only refetch if not part of batch creation (skipRefetch flag)
+      if (!variables.skipRefetch) {
+        queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder?.id, 'cartons'] });
+        refetchCartons();
+      }
     },
     onError: (error, variables) => {
       if (variables.tempId) {
