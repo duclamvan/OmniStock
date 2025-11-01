@@ -5298,6 +5298,7 @@ Important:
             serviceId: item.serviceId || null,
             bundleId: item.bundleId || null,
             variantId: item.variantId || null,
+            variantName: item.variantName || null,
             productName: item.productName,
             sku: item.sku,
             quantity: item.quantity,
@@ -5308,6 +5309,8 @@ Important:
             discount: String(item.discount || 0),
             tax: String(item.tax || 0),
             total: String(item.total || 0),
+            landingCost: item.landingCost ? String(item.landingCost) : null,
+            notes: item.notes || null,
           });
         }
       }
