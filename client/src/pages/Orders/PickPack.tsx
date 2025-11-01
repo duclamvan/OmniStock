@@ -6709,7 +6709,7 @@ export default function PickPack() {
                       )}
                       
                       {/* Item Navigation Buttons */}
-                      <div className="space-y-2">
+                      <div className="space-y-6">
                         <div className="flex gap-2">
                           <Button
                             variant="outline"
