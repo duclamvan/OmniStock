@@ -6434,7 +6434,7 @@ export default function PickPack() {
                         <p 
                           className="font-black text-orange-600 font-mono"
                           style={{
-                            fontSize: 'min(4.5vw, 2.5rem)',
+                            fontSize: 'min(7vw, 3rem)',
                             lineHeight: '1.3',
                             width: '100%',
                             display: 'block',
