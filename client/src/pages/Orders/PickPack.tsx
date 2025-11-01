@@ -4806,7 +4806,7 @@ export default function PickPack() {
                         const bundleComponentsVerified = isBundle ? item.bundleItems?.filter((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity).length || 0 : 0;
                         const totalBundleComponents = isBundle ? item.bundleItems?.length || 0 : 0;
                         const allBundleComponentsVerified = isBundle && bundleComponentsVerified === totalBundleComponents;
-                        const hasNotes = item.shipmentNotes || item.packingInstructionsText || item.packingInstructionsImage;
+                        const hasNotes = item.notes || item.shipmentNotes || item.packingInstructionsText || item.packingInstructionsImage;
                         
                         return (
                           <div 
@@ -4817,11 +4817,11 @@ export default function PickPack() {
                                 : 'bg-gray-50 border-gray-200'
                             }`}
                           >
-                            {item.shipmentNotes && (
+                            {(item.notes || item.shipmentNotes) && (
                               <div className="absolute -top-2 -right-2 z-10">
-                                <div className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
+                                <div className={`${item.shipmentNotes ? 'bg-red-500' : 'bg-amber-500'} text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg`}>
                                   <AlertTriangle className="h-3 w-3" />
-                                  SPECIAL
+                                  {item.shipmentNotes ? 'SPECIAL' : 'NOTE'}
                                 </div>
                               </div>
                             )}
@@ -5163,6 +5163,18 @@ export default function PickPack() {
                             {/* Notes Section - Compact */}
                             {hasNotes && (
                               <div className="mt-2 ml-2 space-y-1">
+                                {item.notes && (
+                                  <div className="p-2 bg-amber-50 rounded border-l-2 border-amber-400">
+                                    <div className="flex items-start gap-1.5">
+                                      <AlertTriangle className="h-3 w-3 text-amber-500 mt-0.5 flex-shrink-0" />
+                                      <div className="flex-1 min-w-0">
+                                        <div className="text-[10px] font-semibold text-amber-700 mb-0.5">SHIPPING NOTES</div>
+                                        <div className="text-[11px] text-amber-600 leading-snug whitespace-pre-wrap">{item.notes}</div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                                
                                 {item.shipmentNotes && (
                                   <div className="p-2 bg-red-50 rounded border-l-2 border-red-400">
                                     <div className="flex items-start gap-1.5">

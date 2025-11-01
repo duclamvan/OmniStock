@@ -3346,7 +3346,7 @@ export default function EditOrder() {
                                       data-testid={`button-toggle-note-${item.id}`}
                                     >
                                       <StickyNote className="h-3 w-3 mr-1.5" />
-                                      {expandedNotes.has(item.id) ? 'Hide' : 'Show'} Pick & Pack Instructions
+                                      {expandedNotes.has(item.id) ? 'Hide' : 'Show'} Shipping Notes
                                       <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${expandedNotes.has(item.id) ? 'rotate-180' : ''}`} />
                                     </Button>
                                   </CollapsibleTrigger>
@@ -3355,7 +3355,7 @@ export default function EditOrder() {
                                       <div className="flex items-start gap-2">
                                         <StickyNote className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                                         <div className="flex-1">
-                                          <p className="text-xs font-semibold text-amber-900 dark:text-amber-100 mb-1">Pick & Pack Instructions:</p>
+                                          <p className="text-xs font-semibold text-amber-900 dark:text-amber-100 mb-1">Shipping Notes:</p>
                                           <p className="text-sm text-amber-800 dark:text-amber-200 whitespace-pre-wrap">{item.notes}</p>
                                         </div>
                                       </div>
@@ -4615,23 +4615,23 @@ export default function EditOrder() {
       }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-lg font-semibold">Pick & Pack Instructions</DialogTitle>
+            <DialogTitle className="text-lg font-semibold">Shipping Notes</DialogTitle>
             <DialogDescription className="text-sm">
-              Add special instructions or notes for this item during the pick and pack process
+              Add shipping notes or special instructions for this item
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="note-text" className="text-sm">Instructions</Label>
+              <Label htmlFor="note-text" className="text-sm">Shipping Notes</Label>
               <Textarea
                 id="note-text"
                 value={editingNoteText}
                 onChange={(e) => setEditingNoteText(e.target.value)}
-                placeholder="e.g., Handle with care, fragile item..."
+                placeholder="e.g., Handle with care, fragile item, special packaging required..."
                 className="mt-1 min-h-[120px]"
                 data-testid="textarea-item-note"
               />
-              <p className="text-xs text-slate-500 mt-1">These instructions will be visible during the pick & pack workflow</p>
+              <p className="text-xs text-slate-500 mt-1">These notes will be visible during the pick & pack workflow</p>
             </div>
           </div>
           <DialogFooter>
