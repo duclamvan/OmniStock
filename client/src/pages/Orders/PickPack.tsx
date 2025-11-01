@@ -6307,16 +6307,10 @@ export default function PickPack() {
                           
                           {/* Expandable Details Section */}
                           {expandedOverviewItems.has(item.id) && (
-                            <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="bg-gray-50 rounded-lg p-3">
-                                  <p className="text-xs font-semibold text-gray-500 uppercase mb-1">SKU</p>
-                                  <p className="text-sm font-mono font-bold text-gray-900">{item.sku}</p>
-                                </div>
-                                <div className="bg-orange-50 rounded-lg p-3">
-                                  <p className="text-xs font-semibold text-orange-700 uppercase mb-1">Location</p>
-                                  <p className="text-sm font-mono font-black text-orange-600">{item.warehouseLocation}</p>
-                                </div>
+                            <div className="mt-3 pt-3 border-t border-gray-200 space-y-3">
+                              <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border-2 border-orange-300 shadow-sm">
+                                <p className="text-xs font-bold text-orange-800 uppercase mb-2 tracking-wider">Warehouse Location</p>
+                                <p className="text-2xl font-mono font-black text-orange-600 break-all">{item.warehouseLocation}</p>
                               </div>
                               <Button
                                 variant="outline"
