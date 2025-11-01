@@ -631,11 +631,13 @@ const CartonCard = memo(({
 function ProductDocumentsSelector({ 
   orderItems,
   printedFiles,
-  onFilePrinted
+  onFilePrinted,
+  selectedDocumentIds
 }: {
   orderItems: any[];
   printedFiles: Set<string>;
   onFilePrinted: (fileId: string) => void;
+  selectedDocumentIds?: string[];
 }) {
   const productIds = useMemo(
     () => Array.from(new Set(orderItems.map((item: any) => item.productId))).filter(Boolean),
@@ -649,8 +651,18 @@ function ProductDocumentsSelector({
 
   const productFiles = useMemo(() => {
     const productIdSet = new Set(productIds);
-    return allFilesRaw.filter(file => productIdSet.has(file.productId) && file.isActive);
-  }, [allFilesRaw, productIds]);
+    const selectedIdSet = selectedDocumentIds ? new Set(selectedDocumentIds) : null;
+    
+    // Filter by product ID and active status
+    let files = allFilesRaw.filter(file => productIdSet.has(file.productId) && file.isActive);
+    
+    // If selectedDocumentIds is provided, only show documents that were selected for this order
+    if (selectedIdSet && selectedIdSet.size > 0) {
+      files = files.filter(file => selectedIdSet.has(file.id));
+    }
+    
+    return files;
+  }, [allFilesRaw, productIds, selectedDocumentIds]);
 
   const handlePrint = (fileId: string, fileUrl: string) => {
     window.open(fileUrl, '_blank');
@@ -5496,6 +5508,7 @@ export default function PickPack() {
                     orderItems={activePackingOrder.items}
                     printedFiles={printedProductFiles}
                     onFilePrinted={(fileId) => setPrintedProductFiles(prev => new Set([...Array.from(prev), fileId]))}
+                    selectedDocumentIds={activePackingOrder.selectedDocumentIds}
                   />
                 )}
 
