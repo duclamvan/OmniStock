@@ -4450,6 +4450,9 @@ Important:
       
       // OPTIMIZATION 7: Assemble response using lookup maps (O(1) access)
       const ordersWithItems = orders.map((order, orderIndex) => {
+        console.log('📦 Order ID:', order.id);
+        console.log('📦 Order selectedDocumentIds from storage:', order.selectedDocumentIds);
+        
         const items = allOrderItemsArrays[orderIndex];
         
         const itemsWithBundleDetails = items.map(item => {

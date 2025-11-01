@@ -650,23 +650,44 @@ function ProductDocumentsSelector({
   });
 
   const productFiles = useMemo(() => {
+    console.log('📄 ProductDocumentsSelector - selectedDocumentIds:', selectedDocumentIds);
+    console.log('📄 ProductDocumentsSelector - allFilesRaw:', allFilesRaw);
+    console.log('📄 ProductDocumentsSelector - productIds:', productIds);
+    
     // If no documents were selected for this order, show nothing
     if (!selectedDocumentIds || selectedDocumentIds.length === 0) {
+      console.log('📄 No selectedDocumentIds - returning empty array');
       return [];
     }
     
     const productIdSet = new Set(productIds);
     const selectedIdSet = new Set(selectedDocumentIds);
     
+    console.log('📄 productIdSet:', Array.from(productIdSet));
+    console.log('📄 selectedIdSet:', Array.from(selectedIdSet));
+    
     // Only show files that are:
     // 1. For products in this order
     // 2. Active
     // 3. Specifically selected for this order (in selectedDocumentIds)
-    return allFilesRaw.filter(file => 
-      productIdSet.has(file.productId) && 
-      file.isActive && 
-      selectedIdSet.has(file.id)
-    );
+    const filtered = allFilesRaw.filter(file => {
+      const matchesProductId = productIdSet.has(file.productId);
+      const isActive = file.isActive;
+      const isSelected = selectedIdSet.has(file.id);
+      
+      console.log(`📄 File ${file.id} (${file.fileName}):`, {
+        matchesProductId,
+        isActive,
+        isSelected,
+        willInclude: matchesProductId && isActive && isSelected
+      });
+      
+      return matchesProductId && isActive && isSelected;
+    });
+    
+    console.log('📄 Filtered files:', filtered);
+    
+    return filtered;
   }, [allFilesRaw, productIds, selectedDocumentIds]);
 
   const handlePrint = (fileId: string, fileUrl: string) => {
@@ -5508,14 +5529,20 @@ export default function PickPack() {
                 </div>
 
                 {/* Product Documents */}
-                {activePackingOrder && (
-                  <ProductDocumentsSelector
-                    orderItems={activePackingOrder.items}
-                    printedFiles={printedProductFiles}
-                    onFilePrinted={(fileId) => setPrintedProductFiles(prev => new Set([...Array.from(prev), fileId]))}
-                    selectedDocumentIds={activePackingOrder.selectedDocumentIds}
-                  />
-                )}
+                {activePackingOrder && (() => {
+                  console.log('🔍 Active Packing Order:', activePackingOrder);
+                  console.log('🔍 selectedDocumentIds from order:', activePackingOrder.selectedDocumentIds);
+                  console.log('🔍 Order items:', activePackingOrder.items);
+                  
+                  return (
+                    <ProductDocumentsSelector
+                      orderItems={activePackingOrder.items}
+                      printedFiles={printedProductFiles}
+                      onFilePrinted={(fileId) => setPrintedProductFiles(prev => new Set([...Array.from(prev), fileId]))}
+                      selectedDocumentIds={activePackingOrder.selectedDocumentIds}
+                    />
+                  );
+                })()}
 
                 {/* Order Files & Documents from Database */}
                 {activePackingOrder && (
