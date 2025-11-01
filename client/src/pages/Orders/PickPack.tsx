@@ -683,6 +683,7 @@ export default function PickPack() {
   const [expandedBundles, setExpandedBundles] = useState<Set<string>>(new Set());
   const [bundlePickedItems, setBundlePickedItems] = useState<Record<string, Set<string>>>({}); // itemId -> Set of picked bundle item ids
   const [expandedOverviewItems, setExpandedOverviewItems] = useState<Set<string>>(new Set()); // Track expanded items in overview modal
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [packingRecommendation, setPackingRecommendation] = useState<PackingRecommendation | null>(null);
   const [selectedCartons, setSelectedCartons] = useState<Array<{
     id: string;
@@ -4226,59 +4227,6 @@ export default function PickPack() {
         <div className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-4">
             
-            {/* Sticky Barcode Scanner Card */}
-            <Card className="sticky top-0 z-10 shadow-lg border-2 border-purple-300 bg-white">
-              <CardHeader className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-3 rounded-t-lg">
-                <CardTitle className="text-base flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <ScanLine className="h-4 w-4" />
-                    Barcode Scanner
-                  </span>
-                  <Badge className="bg-white text-purple-600 text-sm px-2.5 py-1">
-                    {activePackingOrder.items.filter(item => {
-                      if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
-                        return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
-                      }
-                      return (verifiedItems[item.id] || 0) >= item.quantity;
-                    }).length}/{activePackingOrder.items.length} verified
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-3">
-                <div className="flex gap-3">
-                  <div className="relative flex-1">
-                    <Input
-                      ref={barcodeInputRef}
-                      type="text"
-                      placeholder="Scan barcode to verify items..."
-                      value={barcodeInput || ""}
-                      onChange={(e) => setBarcodeInput(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          // Find matching item
-                          const matchingItem = activePackingOrder.items.find(
-                            item => item.barcode === barcodeInput || item.sku === barcodeInput
-                          );
-                          if (matchingItem) {
-                            setVerifiedItems(prev => ({ ...prev, [matchingItem.id]: Math.min((prev[matchingItem.id] || 0) + 1, matchingItem.quantity) }));
-                            playSound('scan');
-                          } else {
-                            playSound('error');
-                          }
-                          setBarcodeInput('');
-                          barcodeInputRef.current?.focus();
-                        }
-                      }}
-                      className="h-12 text-base font-mono"
-                    />
-                  </div>
-                  <Button variant="outline" size="icon" className="h-12 w-12">
-                    <ScanLine className="h-5 w-5" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Item Verification List - Collapsible Accordion */}
             <Accordion type="single" collapsible defaultValue="items" className="w-full">
               <AccordionItem value="items" className="border rounded-lg bg-white shadow-sm">
@@ -4360,9 +4308,61 @@ export default function PickPack() {
                         }).length}/{activePackingOrder.items.length})
                       </span>
                     </div>
+                    {/* Barcode Scanner Toggle Icon */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`h-8 w-8 p-0 ${showBarcodeScanner ? 'text-purple-600 bg-purple-100' : 'text-gray-400'}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowBarcodeScanner(!showBarcodeScanner);
+                        if (!showBarcodeScanner) {
+                          setTimeout(() => barcodeInputRef.current?.focus(), 100);
+                        }
+                      }}
+                      title={showBarcodeScanner ? "Hide barcode scanner" : "Show barcode scanner"}
+                    >
+                      <ScanLine className="h-4 w-4" />
+                    </Button>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
+                  {/* Barcode Scanner Input - Collapsible */}
+                  {showBarcodeScanner && (
+                    <div className="px-4 pt-3 pb-2 border-b border-gray-200 bg-purple-50">
+                      <div className="flex gap-3">
+                        <div className="relative flex-1">
+                          <Input
+                            ref={barcodeInputRef}
+                            type="text"
+                            placeholder="Scan barcode to verify items..."
+                            value={barcodeInput || ""}
+                            onChange={(e) => setBarcodeInput(e.target.value)}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                // Find matching item
+                                const matchingItem = activePackingOrder.items.find(
+                                  item => item.barcode === barcodeInput || item.sku === barcodeInput
+                                );
+                                if (matchingItem) {
+                                  setVerifiedItems(prev => ({ ...prev, [matchingItem.id]: Math.min((prev[matchingItem.id] || 0) + 1, matchingItem.quantity) }));
+                                  playSound('scan');
+                                } else {
+                                  playSound('error');
+                                }
+                                setBarcodeInput('');
+                                barcodeInputRef.current?.focus();
+                              }
+                            }}
+                            className="h-10 text-sm font-mono"
+                          />
+                        </div>
+                        <Button variant="outline" size="icon" className="h-10 w-10">
+                          <ScanLine className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                   <div className="pb-2">
                     <ScrollArea className="h-[400px] w-full">
                       <div className="space-y-1.5 px-2 pr-3">
