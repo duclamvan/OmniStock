@@ -563,7 +563,7 @@ function OrderFilesDisplay({ orderId }: { orderId: string }) {
 
   if (isLoading) {
     return (
-      <div className="text-sm text-gray-500 p-2 text-center">
+      <div className="text-sm text-gray-500 p-2 text-center" data-testid="loading-order-files">
         Loading files...
       </div>
     );
@@ -572,7 +572,14 @@ function OrderFilesDisplay({ orderId }: { orderId: string }) {
   const files = orderFilesData || [];
   
   if (files.length === 0) {
-    return null;
+    return (
+      <div className="mt-3">
+        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Order Files</div>
+        <div className="text-sm text-gray-500 italic p-3 bg-gray-50 rounded-lg border border-gray-200" data-testid="no-order-files">
+          No files attached to this order
+        </div>
+      </div>
+    );
   }
 
   return (
