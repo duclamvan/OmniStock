@@ -251,6 +251,7 @@ export default function EditOrder() {
   const [, setLocation] = useLocation();
   const [showTaxInvoice, setShowTaxInvoice] = useState(false);
   const [showDiscount, setShowDiscount] = useState(false);
+  const [roundingAdjustment, setRoundingAdjustment] = useState(0);
   const { toast } = useToast();
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [productSearch, setProductSearch] = useState("");
@@ -3607,15 +3608,25 @@ export default function EditOrder() {
                         const roundedTotal = Math.ceil(currentTotal);
                         const difference = roundedTotal - currentTotal;
                         
-                        // Add the difference to shipping cost to round up the total
-                        const currentShipping = form.watch('shippingCost') || 0;
-                        const newShipping = currentShipping + difference;
-                        form.setValue('shippingCost', parseFloat(newShipping.toFixed(2)));
-                        
-                        toast({
-                          title: "Total Rounded Up",
-                          description: `Grand total rounded from ${formatCurrency(currentTotal, form.watch('currency'))} to ${formatCurrency(roundedTotal, form.watch('currency'))}`,
-                        });
+                        if (difference > 0) {
+                          // Add the difference to shipping cost to round up the total
+                          const currentShipping = form.watch('shippingCost') || 0;
+                          const newShipping = currentShipping + difference;
+                          form.setValue('shippingCost', parseFloat(newShipping.toFixed(2)));
+                          
+                          // Store the rounding adjustment
+                          setRoundingAdjustment(parseFloat(difference.toFixed(2)));
+                          
+                          toast({
+                            title: "Total Rounded Up",
+                            description: `Grand total rounded from ${formatCurrency(currentTotal, form.watch('currency'))} to ${formatCurrency(roundedTotal, form.watch('currency'))}`,
+                          });
+                        } else {
+                          toast({
+                            title: "Already Rounded",
+                            description: "The total is already a whole number",
+                          });
+                        }
                       }}
                       className="whitespace-nowrap border-blue-300 hover:bg-blue-100 text-blue-700 dark:border-blue-700 dark:hover:bg-blue-900 dark:text-blue-300"
                       data-testid="button-round-up"
@@ -4193,6 +4204,15 @@ export default function EditOrder() {
                             )}
                           </span>
                         </div>
+                        
+                        {roundingAdjustment > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-600 dark:text-slate-400">Zaokrouhlení</span>
+                            <span className="font-medium text-blue-600 dark:text-blue-500">
+                              +{formatCurrency(roundingAdjustment, form.watch('currency'))}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Grand Total */}
@@ -4335,6 +4355,15 @@ export default function EditOrder() {
                     )}
                   </span>
                 </div>
+                
+                {roundingAdjustment > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-600 dark:text-slate-400">Zaokrouhlení</span>
+                    <span className="font-medium text-blue-600 dark:text-blue-500">
+                      +{formatCurrency(roundingAdjustment, form.watch('currency'))}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Grand Total */}
