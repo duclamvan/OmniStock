@@ -889,6 +889,9 @@ export default function PickPack() {
   const [isCartonSectionCollapsed, setIsCartonSectionCollapsed] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
   
+  // Shipping labels state
+  const [shippingLabels, setShippingLabels] = useState<Array<{ id: string; labelNumber: number }>>([]);
+  
   // Legacy states for compatibility
   const [selectedCarton, setSelectedCarton] = useState<string>('');
   const [useNonCompanyCarton, setUseNonCompanyCarton] = useState<boolean>(false);
@@ -1304,6 +1307,23 @@ export default function PickPack() {
       setCartons(orderCartons);
     }
   }, [orderCartons]);
+
+  // Auto-populate shipping labels based on carton count
+  useEffect(() => {
+    if (cartons.length > 0) {
+      // Only update if count is different to avoid unnecessary re-renders
+      if (shippingLabels.length !== cartons.length) {
+        const labels = Array.from({ length: cartons.length }, (_, i) => ({
+          id: `label-${Date.now()}-${i}`,
+          labelNumber: i + 1
+        }));
+        setShippingLabels(labels);
+      }
+    } else if (shippingLabels.length > 0) {
+      // Clear labels if no cartons
+      setShippingLabels([]);
+    }
+  }, [cartons.length]);
 
   // Track if we've already auto-applied suggestions for this order
   const [hasAutoAppliedSuggestions, setHasAutoAppliedSuggestions] = useState(false);
