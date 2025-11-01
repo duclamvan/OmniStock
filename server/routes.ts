@@ -5158,6 +5158,23 @@ Important:
             };
           }
           
+          // Handle bundles with missing bundleId (legacy orders) - lookup by name
+          if (!item.productId && !item.serviceId && item.productName) {
+            const [bundleData] = await db
+              .select()
+              .from(productBundles)
+              .where(eq(productBundles.name, item.productName))
+              .limit(1);
+            
+            if (bundleData) {
+              return {
+                ...item,
+                bundleId: bundleData.id, // Populate missing bundleId
+                image: item.image || bundleData.imageUrl || null
+              };
+            }
+          }
+          
           return item;
         }));
         
