@@ -892,6 +892,7 @@ export default function AddOrder() {
       // Invalidate all order-related caches for real-time updates across the app
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] }); // Real-time Pick & Pack sync
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack/predictions'] }); // Update predictions
       queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       
       // Set the order ID so packing optimization can be run

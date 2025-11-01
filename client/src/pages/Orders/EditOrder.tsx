@@ -1179,7 +1179,17 @@ export default function EditOrder() {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders', id] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] }); // Real-time Pick & Pack sync
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack/predictions'] }); // Update predictions
       queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      
+      // Also invalidate product files cache if documents were updated
+      if (orderItems.length > 0) {
+        orderItems.forEach(item => {
+          if (item.productId) {
+            queryClient.invalidateQueries({ queryKey: ['/api/products', item.productId, 'files'] });
+          }
+        });
+      }
       
       toast({
         title: "Success",
