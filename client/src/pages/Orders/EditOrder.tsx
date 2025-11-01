@@ -3542,7 +3542,10 @@ export default function EditOrder() {
                   </div>
 
                   <div>
-                    <Label htmlFor="dobirkaCurrency">Dobírka Currency</Label>
+                    <Label htmlFor="dobirkaCurrency" className="flex items-center gap-2">
+                      <span className="w-4 h-4"></span>
+                      Dobírka Currency
+                    </Label>
                     <Select 
                       value={form.watch('dobirkaCurrency') || 'CZK'}
                       onValueChange={(value) => form.setValue('dobirkaCurrency', value as any)}
