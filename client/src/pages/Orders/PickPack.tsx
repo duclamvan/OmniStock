@@ -922,7 +922,19 @@ export default function PickPack() {
   const [verifiedItems, setVerifiedItems] = useState<Record<string, number>>({});
   const [expandedBundles, setExpandedBundles] = useState<Set<string>>(new Set());
   const [bundlePickedItems, setBundlePickedItems] = useState<Record<string, Set<string>>>({}); // itemId -> Set of picked bundle item ids
-  const [expandedOverviewItems, setExpandedOverviewItems] = useState<Set<string>>(new Set()); // Track expanded items in overview modal
+  const [expandedOverviewItems, setExpandedOverviewItems] = useState<Set<string>>(() => {
+    // Load expanded items state from localStorage on mount
+    try {
+      const saved = localStorage.getItem('pickpack-expanded-overview-items');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return new Set(parsed);
+      }
+    } catch (error) {
+      console.error('Failed to load expanded overview items from localStorage:', error);
+    }
+    return new Set();
+  });
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [packingRecommendation, setPackingRecommendation] = useState<PackingRecommendation | null>(null);
   const [selectedCartons, setSelectedCartons] = useState<Array<{
@@ -1072,6 +1084,15 @@ export default function PickPack() {
       }
     }
   }, [manualItemIndex, activePickingOrder, preferExpandedImages]);
+
+  // Save expanded overview items state to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('pickpack-expanded-overview-items', JSON.stringify(Array.from(expandedOverviewItems)));
+    } catch (error) {
+      console.error('Failed to save expanded overview items to localStorage:', error);
+    }
+  }, [expandedOverviewItems]);
 
   // Packing optimization wrapper function
   const runPackingOptimization = () => {
