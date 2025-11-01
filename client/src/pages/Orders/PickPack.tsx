@@ -1616,7 +1616,12 @@ export default function PickPack() {
       // Reset the auto-apply flag so new suggestions will be applied
       setHasAutoAppliedSuggestions(false);
       
+      // Reset flags BEFORE refetching so auto-apply effect can run
+      setIsRecalculating(false);
+      setIsCreatingCartons(false);
+      
       // Force refetch the AI recommendations
+      // This will trigger the auto-apply effect since we reset the flags above
       await queryClient.invalidateQueries({ 
         queryKey: ['/api/orders', activePackingOrder.id, 'recommend-carton'] 
       });
@@ -1631,7 +1636,7 @@ export default function PickPack() {
         description: "Failed to recalculate cartons",
         variant: "destructive"
       });
-    } finally {
+      // Reset flags on error too
       setIsRecalculating(false);
       setIsCreatingCartons(false);
     }
