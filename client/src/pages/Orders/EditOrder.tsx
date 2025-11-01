@@ -551,13 +551,22 @@ export default function EditOrder() {
   const { data: existingOrder, isLoading: isLoadingOrder, refetch: refetchOrder } = useQuery({
     queryKey: ['/api/orders', id],
     queryFn: async () => {
-      const response = await fetch(`/api/orders/${id}`);
+      const response = await fetch(`/api/orders/${id}`, {
+        cache: 'no-store', // Disable HTTP cache
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch order');
       }
       return response.json();
     },
     enabled: !!id,
+    staleTime: 0, // Data is immediately stale
+    gcTime: 0, // Don't keep in cache after unmount
     refetchOnMount: 'always', // Always fetch fresh data when page loads
     refetchOnWindowFocus: true, // Refetch when user returns to the tab
   });
