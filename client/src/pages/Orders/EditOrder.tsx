@@ -1037,25 +1037,22 @@ export default function EditOrder() {
     form.setValue('shippingCost', calculatedCost); // Also set shipping cost for display
   }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency, form]);
 
-  // Auto-fill dobírka amount and sync currency when PPL + COD is selected
+  // Auto-sync dobírka amount and currency when PPL + COD is selected
   const watchedPaymentMethod = form.watch('paymentMethod');
-  const watchedDobirkaAmount = form.watch('dobirkaAmount');
   
   useEffect(() => {
     // Only autofill if PPL shipping and COD payment are selected
     if (watchedShippingMethod === 'PPL' && watchedPaymentMethod === 'COD') {
-      // Auto-fill dobírka amount if empty or zero
-      if (!watchedDobirkaAmount || watchedDobirkaAmount === 0) {
-        const grandTotal = calculateGrandTotal();
-        form.setValue('dobirkaAmount', parseFloat(grandTotal.toFixed(2)));
-      }
+      // Always sync dobírka amount to match grand total
+      const grandTotal = calculateGrandTotal();
+      form.setValue('dobirkaAmount', parseFloat(grandTotal.toFixed(2)));
       
       // Always sync currency to match order currency (only if it's a supported COD currency)
       if (watchedCurrency === 'CZK' || watchedCurrency === 'EUR' || watchedCurrency === 'USD') {
         form.setValue('dobirkaCurrency', watchedCurrency);
       }
     }
-  }, [watchedShippingMethod, watchedPaymentMethod, watchedCurrency, watchedDobirkaAmount, form]);
+  }, [watchedShippingMethod, watchedPaymentMethod, watchedCurrency, form, orderItems, form.watch('shippingCost'), form.watch('discountValue'), form.watch('discountType'), form.watch('taxRate'), showTaxInvoice]);
 
   // Auto-fill currency from customer preference (only when creating new orders)
   // Note: This is intentionally NOT in EditOrder - we preserve the order's saved currency
