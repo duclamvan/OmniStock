@@ -6429,15 +6429,16 @@ export default function PickPack() {
                       </div>
 
                       {/* Warehouse Location - High Contrast Banner */}
-                      <div className="bg-orange-100 border-4 border-orange-500 rounded-lg p-6 text-center shadow-lg">
+                      <div className="bg-orange-100 border-4 border-orange-500 rounded-lg p-6 text-center shadow-lg overflow-hidden">
                         <p className="text-xs font-bold text-orange-800 uppercase mb-2 tracking-wider">Warehouse Location</p>
                         <p 
-                          className="font-black text-orange-600 font-mono whitespace-nowrap"
+                          className="font-black text-orange-600 font-mono break-all"
                           style={{
-                            fontSize: 'clamp(2rem, 10vw, 4rem)',
-                            lineHeight: '1.1',
+                            fontSize: 'clamp(1.75rem, 6vw, 4rem)',
+                            lineHeight: '1.2',
                             width: '100%',
-                            display: 'block'
+                            display: 'block',
+                            wordBreak: 'break-all'
                           }}
                         >
                           {currentItem.warehouseLocation}
