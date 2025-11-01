@@ -63,7 +63,13 @@ import {
   MessageCircle,
   Ticket,
   Plus,
-  ChevronRight
+  ChevronRight,
+  Shield,
+  Award,
+  FileImage,
+  Book,
+  File,
+  Upload
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import { cn } from "@/lib/utils";
@@ -206,6 +212,19 @@ export default function OrderDetails() {
   const { data: tickets = [] } = useQuery<any[]>({
     queryKey: [`/api/tickets?orderId=${id}`],
     enabled: !!id && !!order,
+  });
+
+  // Fetch product files for selected document IDs
+  const { data: productFiles = [] } = useQuery<any[]>({
+    queryKey: ['/api/product-files'],
+    enabled: !!order && !!order.selectedDocumentIds && order.selectedDocumentIds.length > 0,
+    select: (allFiles) => {
+      if (!order?.selectedDocumentIds) return [];
+      // Filter to only show files that were selected for this order
+      return allFiles.filter((file: any) => 
+        order.selectedDocumentIds.includes(file.id)
+      );
+    },
   });
 
   // Prevent OrderDetails from rendering on pick-pack page
@@ -1466,6 +1485,118 @@ export default function OrderDetails() {
               )}
             </CardContent>
           </Card>
+
+          {/* Files Sent Card */}
+          {((productFiles && productFiles.length > 0) || (order.includedDocuments?.uploadedFiles && order.includedDocuments.uploadedFiles.length > 0)) && (
+            <Card data-testid="card-files-sent">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <FileText className="h-4 w-4" />
+                  Files Sent
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Product Documents */}
+                {productFiles && productFiles.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                      <Package className="h-4 w-4" />
+                      Product Documents ({productFiles.length})
+                    </h4>
+                    <div className="grid grid-cols-1 gap-2">
+                      {productFiles.map((file: any) => {
+                        const fileTypeIcons: Record<string, any> = {
+                          sds: Shield,
+                          cpnp: Award,
+                          flyer: FileImage,
+                          certificate: Award,
+                          manual: Book,
+                          other: File,
+                        };
+                        const Icon = fileTypeIcons[file.fileType] || FileText;
+                        const languageFlags: Record<string, string> = {
+                          en: '🇬🇧', de: '🇩🇪', cs: '🇨🇿', fr: '🇫🇷', it: '🇮🇹',
+                          es: '🇪🇸', pl: '🇵🇱', sk: '🇸🇰', hu: '🇭🇺', ro: '🇷🇴',
+                          bg: '🇧🇬', hr: '🇭🇷', sl: '🇸🇮', sr: '🇷🇸', ru: '🇷🇺',
+                          uk: '🇺🇦', zh: '🇨🇳', vn: '🇻🇳',
+                        };
+                        const flag = file.language ? (languageFlags[file.language] || '🌐') : '🌐';
+
+                        return (
+                          <div
+                            key={file.id}
+                            className="flex items-center gap-3 p-3 bg-teal-50 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-700 rounded-md"
+                            data-testid={`file-sent-${file.id}`}
+                          >
+                            <Icon className="h-4 w-4 text-teal-600 dark:text-teal-400 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-teal-900 dark:text-teal-100 truncate">
+                                {file.description || file.fileName}
+                              </p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                {file.language && (
+                                  <span className="text-xs text-teal-700 dark:text-teal-300">
+                                    {flag} {file.language.toUpperCase()}
+                                  </span>
+                                )}
+                                <Badge variant="outline" className="text-xs h-5 px-1.5 bg-white dark:bg-slate-800">
+                                  {file.fileType}
+                                </Badge>
+                              </div>
+                            </div>
+                            {file.fileUrl && (
+                              <a
+                                href={file.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="shrink-0"
+                              >
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                              </a>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Uploaded Files */}
+                {order.includedDocuments?.uploadedFiles && order.includedDocuments.uploadedFiles.length > 0 && (
+                  <div className="space-y-2">
+                    {productFiles && productFiles.length > 0 && <Separator />}
+                    <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                      <Upload className="h-4 w-4" />
+                      Uploaded Files ({order.includedDocuments.uploadedFiles.length})
+                    </h4>
+                    <div className="grid grid-cols-1 gap-2">
+                      {order.includedDocuments.uploadedFiles.map((file: any, index: number) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-700 rounded-md"
+                          data-testid={`uploaded-file-${index}`}
+                        >
+                          <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-blue-900 dark:text-blue-100 truncate">
+                              {file.name}
+                            </p>
+                            {file.size && (
+                              <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
+                                {(file.size / 1024).toFixed(2)} KB
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Pick & Pack Activity Logs */}
           {pickPackLogs && pickPackLogs.length > 0 && (
