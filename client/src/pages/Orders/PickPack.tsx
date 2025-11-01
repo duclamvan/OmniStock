@@ -5213,22 +5213,34 @@ export default function PickPack() {
                 <h3 className="text-sm font-semibold text-gray-700">Documents:</h3>
                 <div className="space-y-2">
                   {/* Packing List - Always Shown */}
-                  <div className="flex items-center gap-3 p-2.5 bg-white border border-gray-200 rounded-lg hover:border-violet-300 transition-colors">
+                  <div className={`flex items-center gap-3 p-2.5 rounded-lg border transition-colors ${
+                    printedDocuments.packingList
+                      ? 'bg-green-50 border-green-300'
+                      : 'bg-white border-gray-200 hover:border-violet-300'
+                  }`}>
                     {/* Thumbnail */}
-                    <div className="flex-shrink-0 w-12 h-12 rounded-md overflow-hidden bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200 flex items-center justify-center">
-                      <FileText className="h-6 w-6 text-violet-600" />
+                    <div className={`flex-shrink-0 w-12 h-12 rounded-md overflow-hidden bg-gradient-to-br border flex items-center justify-center ${
+                      printedDocuments.packingList
+                        ? 'from-green-50 to-emerald-50 border-green-300'
+                        : 'from-violet-50 to-purple-50 border-violet-200'
+                    }`}>
+                      <FileText className={`h-6 w-6 ${printedDocuments.packingList ? 'text-green-600' : 'text-violet-600'}`} />
                     </div>
                     
                     {/* Document Name */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">Packing List</p>
+                      <p className={`text-sm font-medium ${printedDocuments.packingList ? 'text-green-900' : 'text-gray-900'}`}>Packing List</p>
                     </div>
 
                     {/* Print Button */}
                     <Button 
-                      variant="outline" 
+                      variant={printedDocuments.packingList ? "default" : "outline"}
                       size="sm"
-                      className="h-8 text-xs flex-shrink-0 hover:bg-violet-50 hover:text-violet-700 hover:border-violet-300"
+                      className={`h-8 text-xs flex-shrink-0 ${
+                        printedDocuments.packingList
+                          ? 'bg-green-600 hover:bg-green-700 text-white'
+                          : 'hover:bg-violet-50 hover:text-violet-700 hover:border-violet-300'
+                      }`}
                       onClick={() => {
                         window.open(`/api/orders/${activePackingOrder.id}/packing-list.pdf`, '_blank');
                         setPrintedDocuments(prev => ({ ...prev, packingList: true }));
@@ -5236,8 +5248,17 @@ export default function PickPack() {
                       }}
                       data-testid="button-print-packing-list"
                     >
-                      <Printer className="h-3.5 w-3.5 mr-1.5" />
-                      Print
+                      {printedDocuments.packingList ? (
+                        <>
+                          <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                          Printed
+                        </>
+                      ) : (
+                        <>
+                          <Printer className="h-3.5 w-3.5 mr-1.5" />
+                          Print
+                        </>
+                      )}
                     </Button>
                   </div>
 
