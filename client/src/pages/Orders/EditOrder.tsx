@@ -547,9 +547,9 @@ export default function EditOrder() {
     },
   });
 
-  // Fetch existing order data ONCE on mount - completely isolated from PickPack cache invalidations
-  const { data: existingOrder, isLoading: isLoadingOrder } = useQuery({
-    queryKey: ['EDIT_ORDER_ISOLATED', id], // Unique key that PickPack won't invalidate
+  // Fetch existing order data - force fresh fetch on every mount
+  const { data: existingOrder, isLoading: isLoadingOrder, dataUpdatedAt } = useQuery({
+    queryKey: ['EDIT_ORDER_ISOLATED', id], // Stable key
     queryFn: async () => {
       console.log('🔵 EditOrder: Loading fresh data from database');
       const response = await fetch(`/api/orders/${id}`, {
@@ -564,16 +564,16 @@ export default function EditOrder() {
         throw new Error('Failed to fetch order');
       }
       const data = await response.json();
-      console.log('✅ EditOrder: Loaded data, currency =', data.currency);
+      console.log('✅ EditOrder: Loaded data, currency =', data.currency, 'shippingCost =', data.shippingCost);
       return data;
     },
     enabled: !!id,
-    staleTime: Infinity, // Never refetch automatically
-    gcTime: Infinity, // Keep in cache forever (until page unmount)
-    refetchOnMount: false, // NEVER refetch
-    refetchOnWindowFocus: false, // NEVER refetch  
-    refetchOnReconnect: false, // NEVER refetch
-    refetchInterval: false, // NEVER poll
+    staleTime: 0, // Always consider stale
+    gcTime: 0, // Don't cache at all - always fetch fresh
+    refetchOnMount: 'always', // Always refetch when component mounts
+    refetchOnWindowFocus: false, // Don't refetch on window focus  
+    refetchOnReconnect: false, // Don't refetch on reconnect
+    refetchInterval: false, // Don't poll
   });
 
   // Fetch all products for real-time filtering
@@ -733,18 +733,9 @@ export default function EditOrder() {
       setShowDiscount(true);
     }
   }, [
-    // Track ALL fields that should trigger form reset
-    existingOrder?.id,
-    existingOrder?.currency,
-    existingOrder?.shippingCost,
-    existingOrder?.actualShippingCost,
-    existingOrder?.shippingMethod,
-    existingOrder?.paymentMethod,
-    existingOrder?.dobirkaAmount,
-    existingOrder?.dobirkaCurrency,
-    existingOrder?.notes,
-    existingOrder?.discountValue,
-    existingOrder?.taxRate,
+    // Track dataUpdatedAt to force re-run when fresh data arrives
+    dataUpdatedAt,
+    existingOrder,
   ]);
 
   // Pre-fill order items when order loads
