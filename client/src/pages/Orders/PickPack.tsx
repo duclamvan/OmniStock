@@ -579,14 +579,14 @@ function OrderFilesDisplay({ orderId }: { orderId: string }) {
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+    <div className="space-y-1.5">
       {files.map((file: any, index: number) => (
         <div 
           key={file.id || index}
-          className="border border-gray-200 rounded-lg p-2 bg-white hover:shadow-md transition-shadow"
+          className="flex items-center gap-2 p-2 bg-gray-50 rounded"
         >
           {/* File Thumbnail */}
-          <div className="w-full aspect-square rounded-md overflow-hidden bg-gray-100 border border-gray-200 mb-2">
+          <div className="flex-shrink-0 w-10 h-10 rounded overflow-hidden bg-gray-200 border border-gray-300">
             {file.mimeType?.startsWith('image/') ? (
               <img 
                 src={file.fileUrl || file.url}
@@ -594,38 +594,30 @@ function OrderFilesDisplay({ orderId }: { orderId: string }) {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center">
-                <FileText className="h-8 w-8 text-gray-400 mb-1" />
-                <span className="text-[10px] text-gray-500 uppercase font-mono">
-                  {file.fileType || file.mimeType?.split('/')[1] || 'FILE'}
-                </span>
+              <div className="w-full h-full flex items-center justify-center">
+                <FileText className="h-5 w-5 text-gray-500" />
               </div>
             )}
           </div>
           
-          {/* File Info */}
-          <div className="space-y-1">
-            <h4 className="text-xs font-semibold text-gray-900 truncate" title={file.fileName || file.name}>
+          {/* File Name */}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-gray-900 truncate" title={file.fileName || file.name}>
               {file.fileName || file.name}
-            </h4>
-            {file.fileType && (
-              <Badge variant="outline" className="text-[10px] px-1 py-0">
-                {file.fileType}
-              </Badge>
-            )}
+            </p>
           </div>
 
           {/* Print Button */}
           <Button
             variant="outline"
             size="sm"
-            className="w-full mt-2 h-7 text-xs"
+            className="h-7 text-xs flex-shrink-0"
             onClick={() => {
               window.open(file.fileUrl || file.url, '_blank');
             }}
           >
             <Printer className="h-3 w-3 mr-1" />
-            Open
+            Print
           </Button>
         </div>
       ))}
