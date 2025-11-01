@@ -829,8 +829,16 @@ export default function EditOrder() {
   }, [savedPackingPlan]);
 
   // Auto-update currency based on shipping address country
+  // BUT ONLY if we're NOT editing an existing order with a saved currency
   useEffect(() => {
     if (!selectedShippingAddress) return;
+    
+    // 🔒 CRITICAL FIX: Don't overwrite saved currency from database
+    // Only auto-set currency for new orders (no existingOrder.currency)
+    if (existingOrder?.currency) {
+      console.log('⏭️ Skipping auto-currency - order has saved currency:', existingOrder.currency);
+      return; // Existing order already has a saved currency, don't touch it!
+    }
     
     const country = selectedShippingAddress.country?.toLowerCase() || '';
     const city = selectedShippingAddress.city?.toLowerCase() || '';
@@ -852,8 +860,9 @@ export default function EditOrder() {
     }
     // Other countries → EUR (default)
     
+    console.log('✅ Auto-setting currency for new order:', newCurrency);
     form.setValue('currency', newCurrency);
-  }, [selectedShippingAddress]); // Removed form from dependencies
+  }, [selectedShippingAddress, existingOrder?.currency]); // Added existingOrder.currency to dependencies
 
   // Watch discount value changes
   const discountValue = form.watch('discountValue');
