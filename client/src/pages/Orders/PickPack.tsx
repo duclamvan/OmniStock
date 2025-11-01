@@ -5307,6 +5307,7 @@ export default function PickPack() {
                               ...prev,
                               [material.id]: !!checked
                             }))}
+                            onClick={(e) => e.stopPropagation()}
                             className="mt-1"
                           />
                           
