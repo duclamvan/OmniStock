@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, Fragment } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
@@ -24,6 +24,7 @@ import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import OrderDocumentSelector from "@/components/OrderDocumentSelector";
 import { ShippingAddressModal } from "@/components/ShippingAddressModal";
 import { 
@@ -64,7 +65,8 @@ import {
   Star,
   Award,
   Clock,
-  Settings
+  Settings,
+  MoreVertical
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import { AICartonPackingPanel } from "@/components/orders/AICartonPackingPanel";
@@ -299,6 +301,11 @@ export default function AddOrder() {
 
   // Order ID state
   const [orderId, setOrderId] = useState<string | null>(null);
+
+  // Shipping notes state
+  const [editingNoteItemId, setEditingNoteItemId] = useState<string | null>(null);
+  const [editingNoteText, setEditingNoteText] = useState("");
+  const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
 
   // Packing optimization hook
   const { 
@@ -3054,8 +3061,8 @@ export default function AddOrder() {
                       </TableHeader>
                       <TableBody>
                         {orderItems.map((item, index) => (
+                          <Fragment key={item.id}>
                           <TableRow 
-                            key={item.id}
                             className={index % 2 === 0 ? 'bg-white dark:bg-slate-950' : 'bg-slate-50/50 dark:bg-slate-900/30'}
                             data-testid={`order-item-${item.id}`}
                           >
@@ -3236,18 +3243,60 @@ export default function AddOrder() {
                               {formatCurrency(item.total, form.watch('currency'))}
                             </TableCell>
                             <TableCell className="text-center">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeOrderItem(item.id)}
-                                className="h-9 w-9 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
-                                data-testid={`button-remove-${item.id}`}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              <div className="flex items-center justify-center gap-1">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-9 w-9 p-0 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                      data-testid={`button-item-menu-${item.id}`}
+                                    >
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setEditingNoteItemId(item.id);
+                                        setEditingNoteText(item.notes || "");
+                                      }}
+                                      data-testid={`menu-item-edit-note-${item.id}`}
+                                    >
+                                      <Pencil className="h-4 w-4 mr-2" />
+                                      {item.notes ? 'Edit Shipping Notes' : 'Add Shipping Notes'}
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeOrderItem(item.id)}
+                                  className="h-9 w-9 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
+                                  data-testid={`button-remove-${item.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
+                          {/* Shipping Notes Row */}
+                          {item.notes && (
+                            <TableRow className={index % 2 === 0 ? 'bg-white dark:bg-slate-950' : 'bg-slate-50/50 dark:bg-slate-900/30'}>
+                              <TableCell colSpan={showVatColumn && showDiscountColumn ? 7 : showVatColumn || showDiscountColumn ? 6 : 5} className="py-2 px-3">
+                                <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3">
+                                  <Package className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-semibold text-amber-800 dark:text-amber-300 mb-1">Shipping Notes</p>
+                                    <p className="text-sm text-amber-900 dark:text-amber-200">{item.notes}</p>
+                                  </div>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                          </Fragment>
                         ))}
                       </TableBody>
                     </Table>
@@ -4290,6 +4339,86 @@ export default function AddOrder() {
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Selected Variants
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Item Note Editor Dialog */}
+        <Dialog open={editingNoteItemId !== null} onOpenChange={(open) => {
+          if (!open) {
+            setEditingNoteItemId(null);
+            setEditingNoteText("");
+          }
+        }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold">Shipping Notes</DialogTitle>
+              <DialogDescription className="text-sm">
+                Add shipping notes or special instructions for this item
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="note-text" className="text-sm">Shipping Notes</Label>
+                <Textarea
+                  id="note-text"
+                  value={editingNoteText}
+                  onChange={(e) => setEditingNoteText(e.target.value)}
+                  placeholder="Type your own note or select a predefined one below..."
+                  className="mt-1 min-h-[120px]"
+                  data-testid="textarea-item-note"
+                />
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Quick templates:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      "Handle with care - fragile item",
+                      "Keep upright during transport",
+                      "Double box required",
+                      "Pack with extra bubble wrap",
+                      "Separate from other items",
+                      "Do not stack",
+                      "Temperature sensitive - keep cool",
+                      "Pack with anti-static materials"
+                    ].map((template) => (
+                      <button
+                        key={template}
+                        type="button"
+                        onClick={() => setEditingNoteText(template)}
+                        className="px-3 py-1.5 text-xs bg-slate-100 hover:bg-blue-100 dark:bg-slate-800 dark:hover:bg-blue-900 text-slate-700 dark:text-slate-300 rounded-full border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
+                      >
+                        {template}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setEditingNoteItemId(null);
+                  setEditingNoteText("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  if (editingNoteItemId) {
+                    updateOrderItem(editingNoteItemId, 'notes', editingNoteText || null);
+                    setEditingNoteItemId(null);
+                    setEditingNoteText("");
+                  }
+                }}
+                data-testid="button-save-note"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Save Note
               </Button>
             </DialogFooter>
           </DialogContent>
