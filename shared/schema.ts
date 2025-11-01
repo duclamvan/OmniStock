@@ -735,6 +735,7 @@ export const orderCartons = pgTable('order_cartons', {
   aiPlanId: varchar('ai_plan_id').references(() => orderCartonPlans.id), // Reference to AI plan that created this
   source: varchar('source').default('manual'), // 'ai' or 'manual'
   itemAllocations: jsonb('item_allocations'), // Which items are in this carton: {orderItemId, quantity, weightKg}[]
+  volumeUtilization: decimal('volume_utilization', { precision: 5, scale: 2 }), // Volume utilization percentage (0-100)
   notes: text('notes'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow()

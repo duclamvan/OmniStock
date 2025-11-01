@@ -512,9 +512,9 @@ const CartonCard = memo(({
             <div className="text-xs text-emerald-600 flex items-center gap-1">
               <TrendingUp className="h-3 w-3" />
               AI calculated
-              {carton.notes && carton.notes.includes('% utilization') && (
+              {carton.volumeUtilization && (
                 <span className="ml-1">
-                  - {carton.notes.match(/(\d+\.?\d*)% utilization/)?.[1]}% utilization
+                  - {parseFloat(carton.volumeUtilization).toFixed(1)}% utilization
                 </span>
               )}
             </div>
@@ -1181,6 +1181,7 @@ export default function PickPack() {
             aiWeightCalculation: true,
             aiPlanId: `deepseek-${Date.now()}-${i}`,
             itemAllocations: suggestion.items || null,
+            volumeUtilization: String(suggestion.volumeUtilization || 0),
             notes: `AI optimized: ${suggestion.volumeUtilization}% utilization`
           });
           createdCartons.push(result);
@@ -1219,6 +1220,7 @@ export default function PickPack() {
       aiWeightCalculation?: boolean;
       aiPlanId?: string;
       itemAllocations?: any;
+      volumeUtilization?: string;
       notes?: string;
     }) => {
       const response = await apiRequest('POST', `/api/orders/${data.orderId}/cartons`, data);
