@@ -646,7 +646,9 @@ export const orderItems = pgTable('order_items', {
   pickEndTime: timestamp('pick_end_time'),
   packStartTime: timestamp('pack_start_time'),
   packEndTime: timestamp('pack_end_time'),
-  notes: text('notes')
+  notes: text('notes'),
+  landingCost: decimal('landing_cost', { precision: 10, scale: 4 }),
+  variantName: varchar('variant_name')
 });
 
 // Product warehouse locations table
