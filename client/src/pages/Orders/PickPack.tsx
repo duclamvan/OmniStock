@@ -1362,7 +1362,8 @@ export default function PickPack() {
       isCreating: isCreatingCartons,
       isRecalc: isRecalculating,
       hasManualMods: hasManuallyModifiedCartons,
-      cartonsCount: cartons.length
+      orderCartonsCount: orderCartons.length,
+      localCartonsCount: cartons.length
     });
 
     if (!activePackingOrder || !recommendedCarton || hasAutoAppliedSuggestions) {
@@ -1386,9 +1387,10 @@ export default function PickPack() {
       return;
     }
 
-    // Check if order already has cartons - if so, don't auto-apply
-    if (cartons.length > 0) {
-      console.log(`⏸️ Order already has ${cartons.length} cartons, skipping auto-apply`);
+    // Check if order already has cartons in DATABASE - if so, don't auto-apply
+    // Use orderCartons from query, not local state, to avoid race conditions
+    if (orderCartons.length > 0) {
+      console.log(`⏸️ Order already has ${orderCartons.length} cartons in database, skipping auto-apply`);
       setHasAutoAppliedSuggestions(true);
       return;
     }
@@ -1454,7 +1456,7 @@ export default function PickPack() {
     };
 
     createAndUpdateCartons();
-  }, [activePackingOrder?.id, recommendedCarton]);
+  }, [activePackingOrder?.id, recommendedCarton, orderCartons]);
 
   // Create carton mutation
   const createCartonMutation = useMutation({
@@ -1599,9 +1601,9 @@ export default function PickPack() {
     
     try {
       // Delete all existing cartons
-      if (cartons.length > 0) {
-        console.log(`Deleting ${cartons.length} existing carton(s)`);
-        for (const carton of cartons) {
+      if (orderCartons.length > 0) {
+        console.log(`Deleting ${orderCartons.length} existing carton(s)`);
+        for (const carton of orderCartons) {
           await deleteCartonMutation.mutateAsync({
             orderId: activePackingOrder.id,
             cartonId: carton.id
@@ -1613,15 +1615,19 @@ export default function PickPack() {
       setCartons([]);
       setCartonsDraft([]);
       
-      // Reset the auto-apply flag so new suggestions will be applied
-      setHasAutoAppliedSuggestions(false);
+      // Wait for cartons to be deleted from database
+      await queryClient.invalidateQueries({ 
+        queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] 
+      });
+      await refetchCartons();
       
-      // Reset flags BEFORE refetching so auto-apply effect can run
+      // NOW reset the auto-apply flag and other flags
+      setHasAutoAppliedSuggestions(false);
       setIsRecalculating(false);
       setIsCreatingCartons(false);
       
       // Force refetch the AI recommendations
-      // This will trigger the auto-apply effect since we reset the flags above
+      // This will trigger the auto-apply effect since we reset the flags above and cartons are deleted
       await queryClient.invalidateQueries({ 
         queryKey: ['/api/orders', activePackingOrder.id, 'recommend-carton'] 
       });
