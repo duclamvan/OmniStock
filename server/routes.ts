@@ -4643,7 +4643,7 @@ Important:
   // Complete packing an order
   app.post('/api/orders/:id/pack/complete', async (req: any, res) => {
     try {
-      const { cartons, packageWeight, printedDocuments, packingChecklist, packingMaterialsApplied } = req.body;
+      const { cartons, packageWeight, printedDocuments, packingChecklist, packingMaterialsApplied, selectedDocumentIds } = req.body;
       
       // Handle mock orders
       if (req.params.id.startsWith('mock-')) {
@@ -4659,13 +4659,32 @@ Important:
       }
       
       // Update order with weight and complete packing
-      const updateData = {
+      const updateData: any = {
         packStatus: 'completed',
         packEndTime: new Date(),
         orderStatus: 'ready_to_ship', // Update status to ready_to_ship
         finalWeight: parseFloat(packageWeight) || 0,
         cartonUsed: cartons?.length > 0 ? cartons.map((c: any) => c.cartonName).join(', ') : ''
       };
+      
+      // Update includedDocuments with selected product document IDs (merge with existing)
+      if (selectedDocumentIds && Array.isArray(selectedDocumentIds)) {
+        try {
+          const order = await storage.getOrderById(req.params.id);
+          const currentIncludedDocs = (order?.includedDocuments || {}) as any;
+          
+          updateData.includedDocuments = {
+            ...currentIncludedDocs,
+            fileIds: selectedDocumentIds
+          };
+        } catch (error) {
+          console.error('Error merging includedDocuments:', error);
+          // Fallback to just setting fileIds if merge fails
+          updateData.includedDocuments = {
+            fileIds: selectedDocumentIds
+          };
+        }
+      }
       
       await storage.updateOrder(req.params.id, updateData);
       
@@ -4995,7 +5014,8 @@ Important:
         packageWeight,
         printedDocuments,
         packingChecklist,
-        multiCartonOptimization
+        multiCartonOptimization,
+        selectedDocumentIds
       } = req.body;
       
       // Store packing details
@@ -5008,6 +5028,28 @@ Important:
         multiCartonEnabled: multiCartonOptimization,
         createdAt: new Date()
       };
+      
+      // Update order's includedDocuments with selected product documents
+      if (selectedDocumentIds && Array.isArray(selectedDocumentIds)) {
+        try {
+          // Get current order to merge with existing includedDocuments
+          const order = await storage.getOrderById(req.params.id);
+          const currentIncludedDocs = (order?.includedDocuments || {}) as any;
+          
+          // Merge selected document IDs while preserving other fields
+          const updatedIncludedDocs = {
+            ...currentIncludedDocs,
+            fileIds: selectedDocumentIds
+          };
+          
+          await storage.updateOrder(req.params.id, {
+            includedDocuments: updatedIncludedDocs
+          });
+        } catch (error) {
+          console.error('Error updating includedDocuments:', error);
+          // Don't fail the whole request if this fails
+        }
+      }
       
       // Log packing details activity
       await storage.createPickPackLog({

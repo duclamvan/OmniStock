@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, memo } from "react";
+import { useState, useEffect, useRef, memo, useMemo, useCallback } from "react";
 import { nanoid } from "nanoid";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -96,7 +96,11 @@ import {
   Edit,
   Pause,
   XCircle,
-  RefreshCw
+  RefreshCw,
+  Shield,
+  Award,
+  FileImage,
+  Book
 } from "lucide-react";
 
 interface BundleItem {
@@ -172,6 +176,13 @@ interface OrderItem {
   packingInstructionsImage?: string | null;
 }
 
+interface IncludedDocuments {
+  fileIds?: string[];
+  invoicePrint?: boolean;
+  custom?: boolean;
+  uploadedFiles?: Array<{ name: string; url: string }>;
+}
+
 interface PickPackOrder {
   id: string;
   orderId: string;
@@ -196,6 +207,7 @@ interface PickPackOrder {
   notes?: string;
   selectedDocumentIds?: string[];
   currency?: string;
+  includedDocuments?: IncludedDocuments | null;
   // Modification tracking
   modifiedAfterPacking?: boolean;
   modificationNotes?: string;
@@ -550,6 +562,119 @@ const CartonCard = memo(({
   );
 });
 
+// Component to display product documents with checkboxes
+function ProductDocumentsSelector({ 
+  orderItems, 
+  selectedDocumentIds, 
+  onSelectionChange 
+}: {
+  orderItems: any[];
+  selectedDocumentIds: string[];
+  onSelectionChange: (ids: string[]) => void;
+}) {
+  const productIds = useMemo(
+    () => Array.from(new Set(orderItems.map((item: any) => item.productId))).filter(Boolean),
+    [orderItems]
+  );
+
+  const { data: allFilesRaw = [], isLoading } = useQuery<any[]>({
+    queryKey: ['/api/product-files'],
+    enabled: productIds.length > 0,
+  });
+
+  const productFiles = useMemo(() => {
+    const productIdSet = new Set(productIds);
+    return allFilesRaw.filter(file => productIdSet.has(file.productId) && file.isActive);
+  }, [allFilesRaw, productIds]);
+
+  const handleToggle = useCallback((fileId: string) => {
+    onSelectionChange(
+      selectedDocumentIds.includes(fileId)
+        ? selectedDocumentIds.filter(id => id !== fileId)
+        : [...selectedDocumentIds, fileId]
+    );
+  }, [selectedDocumentIds, onSelectionChange]);
+
+  if (isLoading) {
+    return (
+      <div className="text-sm text-gray-500 p-2 text-center" data-testid="loading-product-docs">
+        Loading documents...
+      </div>
+    );
+  }
+
+  if (productFiles.length === 0) {
+    return null;
+  }
+
+  const FILE_TYPE_ICONS: Record<string, any> = {
+    sds: Shield,
+    cpnp: Award,
+    flyer: FileImage,
+    certificate: Award,
+    manual: Book,
+    other: FileText,
+  };
+
+  const LANGUAGE_FLAGS: Record<string, string> = {
+    en: '🇬🇧',
+    de: '🇩🇪',
+    cs: '🇨🇿',
+    fr: '🇫🇷',
+    vn: '🇻🇳',
+  };
+
+  return (
+    <div className="space-y-2 mt-3">
+      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Product Documents</div>
+      {productFiles.map((file: any) => {
+        const Icon = FILE_TYPE_ICONS[file.fileType] || FileText;
+        const flag = file.language ? (LANGUAGE_FLAGS[file.language] || '🌐') : '';
+        const isSelected = selectedDocumentIds.includes(file.id);
+        
+        return (
+          <div
+            key={file.id}
+            className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors ${
+              isSelected
+                ? 'bg-teal-50 border-teal-300'
+                : 'bg-white border-gray-200 hover:border-teal-200'
+            }`}
+            onClick={() => handleToggle(file.id)}
+            data-testid={`product-doc-${file.id}`}
+          >
+            {/* Checkbox */}
+            <div onClick={(e) => e.stopPropagation()}>
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={() => handleToggle(file.id)}
+                data-testid={`checkbox-product-doc-${file.id}`}
+              />
+            </div>
+            
+            {/* Icon */}
+            <div className="flex-shrink-0 w-12 h-12 rounded-md overflow-hidden bg-gradient-to-br from-teal-50 to-cyan-50 border border-teal-200 flex items-center justify-center">
+              <Icon className={`h-6 w-6 ${isSelected ? 'text-teal-600' : 'text-teal-500'}`} />
+            </div>
+            
+            {/* Document Info */}
+            <div className="flex-1 min-w-0">
+              <p className={`text-sm font-medium truncate ${isSelected ? 'text-teal-900' : 'text-gray-900'}`}>
+                {file.description || file.fileName}
+              </p>
+              {flag && (
+                <p className="text-xs text-gray-500">
+                  {flag} {file.language?.toUpperCase()}
+                </p>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // Component to display all order files and documents
 function OrderFilesDisplay({ orderId }: { orderId: string }) {
   const { data: orderFilesData, isLoading } = useQuery({
@@ -678,10 +803,11 @@ export default function PickPack() {
   
   // State for document printing checklist
   const [printedDocuments, setPrintedDocuments] = useState({
-    packingList: false,
-    msds: false,
-    cpnpCertificate: false
+    packingList: false
   });
+  
+  // State for selected product documents
+  const [selectedProductDocuments, setSelectedProductDocuments] = useState<string[]>([]);
   
   const [selectedBoxSize, setSelectedBoxSize] = useState<string>('');
   const [packageWeight, setPackageWeight] = useState<string>('');
@@ -3504,10 +3630,12 @@ export default function PickPack() {
       promotionalMaterials: false
     });
     setPrintedDocuments({
-      packingList: false,
-      msds: false,
-      cpnpCertificate: false
+      packingList: false
     });
+    
+    // Load selected product documents from order if available
+    const fileIds = order.includedDocuments?.fileIds;
+    setSelectedProductDocuments(Array.isArray(fileIds) ? fileIds : []);
     setVerifiedItems({});
     setUseNonCompanyCarton(false);
     setPackageWeight('');
@@ -3548,6 +3676,7 @@ export default function PickPack() {
       printedDocuments: typeof printedDocuments;
       packingChecklist: typeof packingChecklist;
       multiCartonOptimization: boolean;
+      selectedDocumentIds?: string[];
     }) => {
       return apiRequest('POST', `/api/orders/${data.orderId}/packing-details`, data);
     },
@@ -3611,7 +3740,8 @@ export default function PickPack() {
           packageWeight: packageWeight,
           printedDocuments: printedDocuments,
           packingChecklist: packingChecklist,
-          multiCartonOptimization: enableMultiCartonOptimization
+          multiCartonOptimization: enableMultiCartonOptimization,
+          selectedDocumentIds: selectedProductDocuments
         });
 
         // Log packing completion activity
@@ -3627,7 +3757,8 @@ export default function PickPack() {
           packageWeight: packageWeight,
           printedDocuments: printedDocuments,
           packingChecklist: packingChecklist,
-          packingMaterialsApplied: packingMaterialsApplied
+          packingMaterialsApplied: packingMaterialsApplied,
+          selectedDocumentIds: selectedProductDocuments
         });
 
         // Update order status to "ready_to_ship" when packing is complete
@@ -4995,36 +5126,16 @@ export default function PickPack() {
                     </Button>
                   </div>
 
-                  {/* MSDS */}
-                  <div className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg">
-                    <div className="flex-shrink-0 w-12 h-12 rounded-md overflow-hidden bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 flex items-center justify-center">
-                      <FileText className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div className="flex-1 min-w-0 flex items-center gap-2">
-                      <Checkbox 
-                        checked={printedDocuments.msds}
-                        onCheckedChange={(checked) => setPrintedDocuments(prev => ({ ...prev, msds: !!checked }))}
-                        data-testid="checkbox-msds"
-                      />
-                      <span className="text-sm font-medium text-gray-700">MSDS</span>
-                    </div>
-                  </div>
-
-                  {/* CPNP Certificate */}
-                  <div className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg">
-                    <div className="flex-shrink-0 w-12 h-12 rounded-md overflow-hidden bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200 flex items-center justify-center">
-                      <FileText className="h-6 w-6 text-amber-600" />
-                    </div>
-                    <div className="flex-1 min-w-0 flex items-center gap-2">
-                      <Checkbox 
-                        checked={printedDocuments.cpnpCertificate}
-                        onCheckedChange={(checked) => setPrintedDocuments(prev => ({ ...prev, cpnpCertificate: !!checked }))}
-                        data-testid="checkbox-cpnp"
-                      />
-                      <span className="text-sm font-medium text-gray-700">CPNP Certificate</span>
-                    </div>
-                  </div>
                 </div>
+
+                {/* Product Documents - Selectable with checkboxes */}
+                {activePackingOrder && (
+                  <ProductDocumentsSelector
+                    orderItems={activePackingOrder.items}
+                    selectedDocumentIds={selectedProductDocuments}
+                    onSelectionChange={setSelectedProductDocuments}
+                  />
+                )}
 
                 {/* Order Files & Documents from Database */}
                 {activePackingOrder && (
