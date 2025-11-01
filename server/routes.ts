@@ -43,6 +43,8 @@ import {
   orders,
   customers,
   packingMaterials,
+  customerShippingAddresses,
+  productFiles,
 } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -7447,6 +7449,231 @@ Return ONLY the subject line without quotes or extra formatting.`,
       console.error('Error generating label for carton:', error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : 'Failed to generate label for carton' 
+      });
+    }
+  });
+
+  // PPL Shipping Label API endpoints
+  
+  // Create PPL shipping labels for an order
+  app.post('/api/orders/:orderId/ppl/create-labels', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { createPPLShipment, getPPLBatchStatus, getPPLLabel } = await import('./services/pplService');
+      
+      // Get order details
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      // Get shipping address
+      let shippingAddress = null;
+      if (order.shippingAddressId) {
+        const addressResult = await db
+          .select()
+          .from(customerShippingAddresses)
+          .where(eq(customerShippingAddresses.id, order.shippingAddressId))
+          .limit(1);
+        
+        if (addressResult.length > 0) {
+          shippingAddress = addressResult[0];
+        }
+      }
+
+      if (!shippingAddress) {
+        return res.status(400).json({ error: 'No shipping address found for this order' });
+      }
+
+      // Get cartons for the order
+      const cartons = await storage.getOrderCartons(orderId);
+      if (cartons.length === 0) {
+        return res.status(400).json({ error: 'No cartons found for this order' });
+      }
+
+      // Prepare PPL shipment data
+      const shipments = cartons.map((carton, index) => ({
+        referenceId: `${order.orderId}-${carton.cartonNumber}`,
+        productType: 'PPL', // Default product type - can be customized
+        note: order.notes || undefined,
+        recipient: {
+          country: shippingAddress.country,
+          zipCode: shippingAddress.zipCode,
+          name: `${shippingAddress.firstName} ${shippingAddress.lastName}`,
+          name2: shippingAddress.company || undefined,
+          street: `${shippingAddress.street} ${shippingAddress.streetNumber || ''}`.trim(),
+          city: shippingAddress.city,
+          contact: `${shippingAddress.firstName} ${shippingAddress.lastName}`,
+          phone: shippingAddress.tel || undefined,
+          email: shippingAddress.email || undefined
+        },
+        weighedShipmentInfo: carton.weight ? {
+          weight: parseFloat(carton.weight)
+        } : undefined,
+        externalNumbers: [
+          {
+            code: 'CUST',
+            externalNumber: order.orderId
+          }
+        ]
+      }));
+
+      // Create PPL shipment
+      const { batchId, location } = await createPPLShipment({
+        shipments,
+        labelSettings: {
+          format: 'Pdf',
+          dpi: 203
+        }
+      });
+
+      // Wait for batch processing to complete
+      let attempts = 0;
+      const maxAttempts = 10;
+      let batchStatus;
+
+      while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+        batchStatus = await getPPLBatchStatus(batchId);
+        
+        if (batchStatus.status === 'Finished' || batchStatus.status === 'Error') {
+          break;
+        }
+        attempts++;
+      }
+
+      if (batchStatus?.status !== 'Finished') {
+        return res.status(500).json({ 
+          error: 'PPL batch processing did not complete in time',
+          batchId,
+          status: batchStatus?.status
+        });
+      }
+
+      // Get shipment numbers
+      const shipmentNumbers = batchStatus.shipmentResults
+        ?.filter(r => r.shipmentNumber)
+        .map(r => r.shipmentNumber) || [];
+
+      if (shipmentNumbers.length === 0) {
+        return res.status(500).json({ 
+          error: 'No shipment numbers generated',
+          batchStatus
+        });
+      }
+
+      // Get the label
+      const label = await getPPLLabel(batchId, 'pdf');
+
+      // Update order with PPL data
+      await storage.updateOrder(orderId, {
+        pplBatchId: batchId,
+        pplShipmentNumbers: shipmentNumbers as any,
+        pplLabelData: {
+          batchId,
+          shipmentNumbers,
+          labelBase64: label.labelContent,
+          format: label.format,
+          createdAt: new Date().toISOString()
+        } as any,
+        pplStatus: 'created'
+      });
+
+      res.json({
+        success: true,
+        batchId,
+        shipmentNumbers,
+        labelBase64: label.labelContent,
+        format: label.format
+      });
+
+    } catch (error: any) {
+      console.error('Error creating PPL labels:', error);
+      res.status(500).json({ 
+        error: error.message || 'Failed to create PPL labels'
+      });
+    }
+  });
+
+  // Cancel PPL shipping labels for an order
+  app.post('/api/orders/:orderId/ppl/cancel-labels', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { cancelPPLShipment } = await import('./services/pplService');
+      
+      // Get order details
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      if (!order.pplShipmentNumbers || order.pplShipmentNumbers.length === 0) {
+        return res.status(400).json({ error: 'No PPL shipments found for this order' });
+      }
+
+      // Cancel all shipments
+      const cancelResults = [];
+      for (const shipmentNumber of order.pplShipmentNumbers) {
+        try {
+          await cancelPPLShipment(shipmentNumber);
+          cancelResults.push({ shipmentNumber, success: true });
+        } catch (error: any) {
+          cancelResults.push({ 
+            shipmentNumber, 
+            success: false, 
+            error: error.message 
+          });
+        }
+      }
+
+      // Update order status
+      await storage.updateOrder(orderId, {
+        pplStatus: 'cancelled'
+      });
+
+      res.json({
+        success: true,
+        cancelResults
+      });
+
+    } catch (error: any) {
+      console.error('Error cancelling PPL labels:', error);
+      res.status(500).json({ 
+        error: error.message || 'Failed to cancel PPL labels'
+      });
+    }
+  });
+
+  // Get PPL label for an order (retrieve existing label)
+  app.get('/api/orders/:orderId/ppl/label', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      
+      // Get order details
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      if (!order.pplLabelData) {
+        return res.status(404).json({ error: 'No PPL label found for this order' });
+      }
+
+      const labelData = order.pplLabelData as any;
+
+      res.json({
+        success: true,
+        batchId: labelData.batchId,
+        shipmentNumbers: labelData.shipmentNumbers,
+        labelBase64: labelData.labelBase64,
+        format: labelData.format,
+        createdAt: labelData.createdAt
+      });
+
+    } catch (error: any) {
+      console.error('Error retrieving PPL label:', error);
+      res.status(500).json({ 
+        error: error.message || 'Failed to retrieve PPL label'
       });
     }
   });
