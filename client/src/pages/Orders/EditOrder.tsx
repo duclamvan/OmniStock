@@ -691,12 +691,12 @@ export default function EditOrder() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Pre-fill form data when order loads - simplified, runs when order data changes
+  // Pre-fill form data when order loads - runs when specific fields change
   useEffect(() => {
     if (!existingOrder) return;
     const order = existingOrder as any;
 
-    console.log('✅ Loading fresh order data into form, currency:', order.currency, 'shippingCost:', order.shippingCost);
+    console.log('✅ Loading fresh order data into form, currency:', order.currency, 'shippingCost:', order.shippingCost, 'paymentMethod:', order.paymentMethod);
 
     // Reset form with fresh database data
     form.reset({
@@ -732,7 +732,20 @@ export default function EditOrder() {
     if (order.discountValue > 0) {
       setShowDiscount(true);
     }
-  }, [existingOrder]); // Run whenever ANY part of existingOrder changes!
+  }, [
+    // Track ALL fields that should trigger form reset
+    existingOrder?.id,
+    existingOrder?.currency,
+    existingOrder?.shippingCost,
+    existingOrder?.actualShippingCost,
+    existingOrder?.shippingMethod,
+    existingOrder?.paymentMethod,
+    existingOrder?.dobirkaAmount,
+    existingOrder?.dobirkaCurrency,
+    existingOrder?.notes,
+    existingOrder?.discountValue,
+    existingOrder?.taxRate,
+  ]);
 
   // Pre-fill order items when order loads
   useEffect(() => {
