@@ -163,6 +163,33 @@ export function CartonTypeAutocomplete({
                 </div>
               ) : (
                 <>
+                  {/* Non-Company Carton Option - Always Visible */}
+                  <CommandGroup data-testid="group-non-company">
+                    <CommandItem
+                      value="non-company"
+                      onSelect={() => {
+                        setDisplayValue("Non-Company Carton");
+                        onValueChange("", undefined);
+                        setOpen(false);
+                        setSearchValue("");
+                      }}
+                      data-testid="item-carton-non-company"
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          displayValue === "Non-Company Carton" || !displayValue ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <div className="flex items-center gap-2">
+                        <Package className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium text-gray-600">Non-Company Carton</span>
+                      </div>
+                    </CommandItem>
+                  </CommandGroup>
+                  
+                  {(filteredMostUsed.length > 0 || filteredAllCartons.length > 0) && <CommandSeparator />}
+                  
                   {filteredMostUsed.length === 0 && filteredAllCartons.length === 0 ? (
                     <CommandEmpty data-testid="text-no-results">
                       {allowFreeText ? (
