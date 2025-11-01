@@ -97,12 +97,27 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+
+// Quick note templates for autofill
+const QUICK_NOTE_TEMPLATES = [
+  "Handle with care - fragile item",
+  "Keep upright during transport",
+  "Pack with anti-static materials",
+  "Double box required",
+  "Separate from other items",
+  "Do not stack",
+  "Temperature sensitive - keep cool",
+  "Requires signature on delivery",
+];
 
 const editOrderSchema = z.object({
   customerId: z.string().optional(),
@@ -3165,13 +3180,29 @@ export default function EditOrder() {
                                   {item.serviceId ? 'Service Item' : `SKU: ${item.sku}`}
                                 </span>
                                 {item.serviceId && (
-                                  <Input
-                                    placeholder="Add note (optional)"
-                                    value={item.notes || ''}
-                                    onChange={(e) => updateOrderItem(item.id, 'notes', e.target.value)}
-                                    className="text-xs h-7 mt-1 bg-purple-50 border-purple-200 text-purple-900 placeholder:text-purple-400"
-                                    data-testid={`input-notes-${item.id}`}
-                                  />
+                                  <div className="mt-1 space-y-1">
+                                    <Input
+                                      placeholder="Add note (optional)"
+                                      value={item.notes || ''}
+                                      onChange={(e) => updateOrderItem(item.id, 'notes', e.target.value)}
+                                      className="text-xs h-7 bg-purple-50 border-purple-200 text-purple-900 placeholder:text-purple-400"
+                                      data-testid={`input-notes-${item.id}`}
+                                    />
+                                    <div className="flex flex-wrap gap-1">
+                                      {QUICK_NOTE_TEMPLATES.slice(0, 3).map((template, idx) => (
+                                        <Button
+                                          key={idx}
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          className="h-5 px-1.5 text-[10px] bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700"
+                                          onClick={() => updateOrderItem(item.id, 'notes', template)}
+                                        >
+                                          {template.split(' - ')[0]}
+                                        </Button>
+                                      ))}
+                                    </div>
+                                  </div>
                                 )}
                                 </div>
                               </div>
@@ -3319,6 +3350,26 @@ export default function EditOrder() {
                                       <StickyNote className="h-4 w-4 mr-2" />
                                       {item.notes ? 'Edit Note' : 'Add Note'}
                                     </DropdownMenuItem>
+                                    <DropdownMenuSub>
+                                      <DropdownMenuSubTrigger>
+                                        <Package className="h-4 w-4 mr-2" />
+                                        Quick Fill Note
+                                      </DropdownMenuSubTrigger>
+                                      <DropdownMenuSubContent>
+                                        {QUICK_NOTE_TEMPLATES.map((template, idx) => (
+                                          <DropdownMenuItem
+                                            key={idx}
+                                            onClick={() => {
+                                              updateOrderItem(item.id, 'notes', template);
+                                              setExpandedNotes(new Set(expandedNotes).add(item.id));
+                                            }}
+                                            className="text-xs"
+                                          >
+                                            {template}
+                                          </DropdownMenuItem>
+                                        ))}
+                                      </DropdownMenuSubContent>
+                                    </DropdownMenuSub>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
                                 <Button
