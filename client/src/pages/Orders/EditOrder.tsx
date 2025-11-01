@@ -1594,6 +1594,8 @@ export default function EditOrder() {
         variantId: item.variantId || null,
         variantName: item.variantName || null,
         bundleId: item.bundleId || null,
+        landingCost: item.landingCost || null,
+        notes: item.notes || null,
       })),
       includedDocuments: {
         uploadedFiles: uploadedFiles.map(f => ({ name: f.name, size: f.size })),
