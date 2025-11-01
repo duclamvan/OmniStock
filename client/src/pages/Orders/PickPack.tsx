@@ -395,7 +395,8 @@ const CartonCard = memo(({
   setHasManuallyModifiedCartons,
   deleteCartonMutation,
   updateCartonMutation,
-  incrementCartonUsageMutation
+  incrementCartonUsageMutation,
+  calculateVolumeUtilization
 }: any) => {
   // Local state for weight input to make it responsive
   const [localWeight, setLocalWeight] = useState(carton.weight || '');
@@ -460,6 +461,28 @@ const CartonCard = memo(({
                   cartonType: cartonId ? 'company' : 'non-company',
                   cartonId: cartonId || null
                 };
+                
+                // Calculate volume utilization if we have carton data and item allocations
+                if (cartonDataParam && carton.itemAllocations) {
+                  const newCartonData = {
+                    innerLengthCm: cartonDataParam.innerLengthCm?.toString() || cartonDataParam.dimensions?.length?.toString(),
+                    innerWidthCm: cartonDataParam.innerWidthCm?.toString() || cartonDataParam.dimensions?.width?.toString(),
+                    innerHeightCm: cartonDataParam.innerHeightCm?.toString() || cartonDataParam.dimensions?.height?.toString()
+                  };
+                  
+                  if (newCartonData.innerLengthCm && newCartonData.innerWidthCm && newCartonData.innerHeightCm) {
+                    const utilization = calculateVolumeUtilization(
+                      carton,
+                      newCartonData,
+                      activePackingOrder.items
+                    );
+                    
+                    if (utilization !== null) {
+                      (updates as any).volumeUtilization = utilization.toString();
+                    }
+                  }
+                }
+                
                 updateCartonMutation.mutate({
                   orderId: activePackingOrder.id,
                   cartonId: carton.id,
@@ -1244,6 +1267,54 @@ export default function PickPack() {
       });
     },
   });
+
+  // Utility function to calculate volume utilization from stored item data
+  const calculateVolumeUtilization = (
+    carton: OrderCarton,
+    newCartonData: { innerLengthCm: string; innerWidthCm: string; innerHeightCm: string } | null,
+    orderItems: any[]
+  ): number | null => {
+    if (!newCartonData || !carton.itemAllocations) return null;
+    
+    try {
+      const itemAllocations = typeof carton.itemAllocations === 'string' 
+        ? JSON.parse(carton.itemAllocations) 
+        : carton.itemAllocations;
+      
+      if (!Array.isArray(itemAllocations) || itemAllocations.length === 0) return null;
+      
+      // Calculate total volume of items in this carton
+      let totalItemsVolume = 0;
+      
+      for (const allocation of itemAllocations) {
+        const orderItem = orderItems.find((oi: any) => oi.productId === allocation.productId);
+        if (!orderItem) continue;
+        
+        // Get dimensions from order item (AI would have stored these)
+        const length = orderItem.lengthCm || orderItem.product?.lengthCm || 10; // fallback
+        const width = orderItem.widthCm || orderItem.product?.widthCm || 10;
+        const height = orderItem.heightCm || orderItem.product?.heightCm || 10;
+        
+        const itemVolume = parseFloat(length) * parseFloat(width) * parseFloat(height);
+        totalItemsVolume += itemVolume * allocation.quantity;
+      }
+      
+      // Calculate new carton volume
+      const cartonVolume = 
+        parseFloat(newCartonData.innerLengthCm) *
+        parseFloat(newCartonData.innerWidthCm) *
+        parseFloat(newCartonData.innerHeightCm);
+      
+      if (cartonVolume === 0) return null;
+      
+      // Calculate utilization percentage
+      const utilization = (totalItemsVolume / cartonVolume) * 100;
+      return Math.round(utilization * 100) / 100; // Round to 2 decimal places
+    } catch (error) {
+      console.error('Error calculating volume utilization:', error);
+      return null;
+    }
+  };
 
   // Update carton mutation
   const updateCartonMutation = useMutation({
@@ -4807,6 +4878,7 @@ export default function PickPack() {
                     deleteCartonMutation={deleteCartonMutation}
                     updateCartonMutation={updateCartonMutation}
                     incrementCartonUsageMutation={incrementCartonUsageMutation}
+                    calculateVolumeUtilization={calculateVolumeUtilization}
                   />
                 );
               })}
