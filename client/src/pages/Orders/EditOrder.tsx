@@ -112,6 +112,9 @@ const editOrderSchema = z.object({
   country: z.string().optional(),
   shippingCost: z.coerce.number().min(0).default(0),
   actualShippingCost: z.coerce.number().min(0).default(0),
+  // Dobírka (Cash on Delivery) fields
+  dobirkaAmount: z.coerce.number().min(0).optional().nullable(),
+  dobirkaCurrency: z.enum(['CZK', 'EUR', 'USD']).optional().nullable(),
   notes: z.string().optional(),
   orderLocation: z.string().optional(),
 });
@@ -1560,6 +1563,8 @@ export default function EditOrder() {
       taxRate: (showTaxInvoice ? (data.taxRate || 0) : 0).toString(),
       shippingCost: (data.shippingCost || 0).toString(),
       actualShippingCost: (data.actualShippingCost || 0).toString(),
+      dobirkaAmount: data.dobirkaAmount && data.dobirkaAmount > 0 ? data.dobirkaAmount.toString() : null,
+      dobirkaCurrency: data.dobirkaAmount && data.dobirkaAmount > 0 ? (data.dobirkaCurrency || 'CZK') : null,
       items: orderItems.map(item => ({
         productId: item.productId || null,
         serviceId: item.serviceId || null,
@@ -3710,6 +3715,44 @@ export default function EditOrder() {
                   step="0.01"
                   {...form.register('actualShippingCost', { valueAsNumber: true })}
                 />
+              </div>
+            </div>
+
+            <Separator className="my-4" />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div>
+                <Label htmlFor="dobirkaAmount" className="flex items-center gap-2">
+                  <Banknote className="w-4 h-4" />
+                  Dobírka Amount (COD)
+                </Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  {...form.register('dobirkaAmount', { valueAsNumber: true })}
+                  data-testid="input-dobirka-amount"
+                />
+                <p className="text-xs text-gray-500 mt-1">Cash on delivery amount (optional)</p>
+              </div>
+
+              <div>
+                <Label htmlFor="dobirkaCurrency">Dobírka Currency</Label>
+                <Select 
+                  value={form.watch('dobirkaCurrency') || 'CZK'}
+                  onValueChange={(value) => form.setValue('dobirkaCurrency', value as any)}
+                >
+                  <SelectTrigger data-testid="select-dobirka-currency">
+                    <SelectValue placeholder="Select currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CZK">CZK</SelectItem>
+                    <SelectItem value="EUR">EUR</SelectItem>
+                    <SelectItem value="USD">USD</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 mt-1">Currency for cash on delivery</p>
               </div>
             </div>
 

@@ -7109,126 +7109,196 @@ Return ONLY the subject line without quotes or extra formatting.`,
     }
   });
 
-  // Sendcloud API routes
-  const { sendcloudService } = await import('./services/sendcloud');
+  // PPL Shipping API routes
+  const { createPPLShipment, getPPLBatchStatus, getPPLLabel } = await import('./services/pplService');
 
-  // Test Sendcloud connection
+  // Test PPL connection
   app.get('/api/shipping/test-connection', async (req, res) => {
     try {
-      const result = await sendcloudService.testConnection();
-      res.json(result);
+      const { getPPLAccessToken } = await import('./services/pplService');
+      const token = await getPPLAccessToken();
+      res.json({ 
+        connected: true, 
+        provider: 'PPL',
+        message: 'Successfully authenticated with PPL API'
+      });
     } catch (error) {
-      console.error('Sendcloud connection test failed:', error);
+      console.error('PPL connection test failed:', error);
       res.status(500).json({ 
         connected: false, 
+        provider: 'PPL',
         error: error instanceof Error ? error.message : 'Unknown error' 
       });
     }
   });
 
-  // Get available shipping methods
-  app.get('/api/shipping/methods', async (req, res) => {
-    try {
-      const methods = await sendcloudService.getShippingMethods();
-      res.json(methods);
-    } catch (error) {
-      console.error('Failed to fetch shipping methods:', error);
-      res.status(500).json({ error: 'Failed to fetch shipping methods' });
-    }
-  });
-
-  // Create shipping label for order
+  // Create PPL shipping label for order
   app.post('/api/shipping/create-label', async (req, res) => {
     try {
-      const orderData = req.body;
+      const { orderId, dobirkaAmount, dobirkaCurrency } = req.body;
       
-      // Validate required fields
-      if (!orderData.orderNumber || !orderData.customerName || !orderData.shippingAddress) {
-        return res.status(400).json({ error: 'Missing required order data' });
+      if (!orderId) {
+        return res.status(400).json({ error: 'Order ID is required' });
       }
 
-      const result = await sendcloudService.createShippingLabel(orderData);
-      res.json(result);
+      // Get order details
+      const order = await storage.getOrder(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      // Get shipping address
+      let shippingAddress;
+      if (order.shippingAddressId) {
+        const addresses = await db
+          .select()
+          .from(customerShippingAddresses)
+          .where(eq(customerShippingAddresses.id, order.shippingAddressId))
+          .limit(1);
+        shippingAddress = addresses[0];
+      }
+
+      if (!shippingAddress) {
+        return res.status(400).json({ error: 'No shipping address found for order' });
+      }
+
+      // Get customer details
+      let customer;
+      if (order.customerId) {
+        const customerResult = await db
+          .select()
+          .from(customers)
+          .where(eq(customers.id, order.customerId))
+          .limit(1);
+        customer = customerResult[0];
+      }
+
+      // Build PPL shipment
+      const pplShipment = {
+        referenceId: order.orderId,
+        productType: 'PPL Parcel CZ Business',
+        note: order.notes || undefined,
+        recipient: {
+          country: shippingAddress.country || 'CZ',
+          zipCode: shippingAddress.postalCode || '',
+          name: shippingAddress.name || customer?.name || 'Unknown',
+          street: shippingAddress.address || '',
+          city: shippingAddress.city || '',
+          phone: shippingAddress.phone || customer?.phone || undefined,
+          email: customer?.email || undefined
+        },
+        weighedShipmentInfo: order.finalWeight ? {
+          weight: parseFloat(order.finalWeight.toString())
+        } : undefined,
+        cashOnDelivery: (dobirkaAmount && parseFloat(dobirkaAmount) > 0) ? {
+          codCurrency: dobirkaCurrency || 'CZK',
+          codPrice: parseFloat(dobirkaAmount),
+          codVarSymbol: order.orderId
+        } : undefined
+      };
+
+      // Create shipment
+      const { batchId } = await createPPLShipment({
+        shipments: [pplShipment],
+        labelSettings: {
+          format: 'Pdf'
+        }
+      });
+
+      // Poll for batch status
+      let attempts = 0;
+      const maxAttempts = 30;
+      let batchStatus;
+      
+      while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        batchStatus = await getPPLBatchStatus(batchId);
+        
+        if (batchStatus.status === 'Finished' || batchStatus.status === 'Error') {
+          break;
+        }
+        attempts++;
+      }
+
+      if (batchStatus?.status !== 'Finished') {
+        throw new Error('Shipment creation timed out or failed');
+      }
+
+      // Get shipment numbers
+      const shipmentNumbers = batchStatus.shipmentResults
+        ?.filter(r => r.shipmentNumber)
+        .map(r => r.shipmentNumber) || [];
+
+      // Get label PDF
+      const label = await getPPLLabel(batchId, 'pdf');
+
+      // Update order with PPL info
+      await db
+        .update(orders)
+        .set({
+          pplBatchId: batchId,
+          pplShipmentNumbers: shipmentNumbers,
+          pplLabelData: {
+            batchId,
+            shipmentNumbers,
+            labelUrl: `data:application/pdf;base64,${label.labelContent}`,
+            createdAt: new Date().toISOString()
+          },
+          pplStatus: 'created',
+          trackingNumber: shipmentNumbers[0] || null,
+          dobirkaAmount: dobirkaAmount ? dobirkaAmount.toString() : null,
+          dobirkaCurrency: dobirkaCurrency || null
+        })
+        .where(eq(orders.id, orderId));
+
+      res.json({
+        success: true,
+        batchId,
+        shipmentNumbers,
+        labelPdf: label.labelContent,
+        trackingNumber: shipmentNumbers[0]
+      });
     } catch (error) {
-      console.error('Failed to create shipping label:', error);
+      console.error('Failed to create PPL label:', error);
       res.status(500).json({ 
-        error: error instanceof Error ? error.message : 'Failed to create shipping label' 
+        error: error instanceof Error ? error.message : 'Failed to create PPL label' 
       });
     }
   });
 
-  // Get tracking information
-  app.get('/api/shipping/tracking/:parcelId', async (req, res) => {
+  // Get PPL batch status
+  app.get('/api/shipping/ppl/batch/:batchId', async (req, res) => {
     try {
-      const parcelId = parseInt(req.params.parcelId);
-      if (isNaN(parcelId)) {
-        return res.status(400).json({ error: 'Invalid parcel ID' });
-      }
-
-      const tracking = await sendcloudService.getTracking(parcelId);
-      res.json(tracking);
+      const { batchId } = req.params;
+      const status = await getPPLBatchStatus(batchId);
+      res.json(status);
     } catch (error) {
-      console.error('Failed to get tracking info:', error);
+      console.error('Failed to get PPL batch status:', error);
       res.status(500).json({ 
-        error: error instanceof Error ? error.message : 'Failed to get tracking info' 
+        error: error instanceof Error ? error.message : 'Failed to get batch status' 
       });
     }
   });
 
-  // Get service points (pickup locations)
-  app.get('/api/shipping/service-points', async (req, res) => {
+  // Get PPL label
+  app.get('/api/shipping/ppl/label/:batchId', async (req, res) => {
     try {
-      const { country, postalCode, carrier } = req.query;
+      const { batchId } = req.params;
+      const format = (req.query.format as 'pdf' | 'zpl') || 'pdf';
+      const label = await getPPLLabel(batchId, format);
       
-      if (!country || !postalCode) {
-        return res.status(400).json({ error: 'Country and postal code are required' });
+      if (format === 'pdf') {
+        const pdfBuffer = Buffer.from(label.labelContent, 'base64');
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="label-${batchId}.pdf"`);
+        res.send(pdfBuffer);
+      } else {
+        res.json(label);
       }
-
-      const servicePoints = await sendcloudService.getServicePoints(
-        country as string, 
-        postalCode as string, 
-        carrier as string
-      );
-      res.json(servicePoints);
     } catch (error) {
-      console.error('Failed to fetch service points:', error);
-      res.status(500).json({ error: 'Failed to fetch service points' });
-    }
-  });
-
-  // Cancel parcel
-  app.post('/api/shipping/cancel/:parcelId', async (req, res) => {
-    try {
-      const parcelId = parseInt(req.params.parcelId);
-      if (isNaN(parcelId)) {
-        return res.status(400).json({ error: 'Invalid parcel ID' });
-      }
-
-      const success = await sendcloudService.cancelParcel(parcelId);
-      res.json({ success });
-    } catch (error) {
-      console.error('Failed to cancel parcel:', error);
+      console.error('Failed to get PPL label:', error);
       res.status(500).json({ 
-        error: error instanceof Error ? error.message : 'Failed to cancel parcel' 
-      });
-    }
-  });
-
-  // Create test parcel
-  app.post('/api/shipping/create-test-parcel', async (req, res) => {
-    try {
-      const address = req.body;
-      
-      if (!address.name || !address.address || !address.city || !address.postal_code || !address.country) {
-        return res.status(400).json({ error: 'Missing required address fields' });
-      }
-
-      const result = await sendcloudService.createTestParcel(address);
-      res.json(result);
-    } catch (error) {
-      console.error('Failed to create test parcel:', error);
-      res.status(500).json({ 
-        error: error instanceof Error ? error.message : 'Failed to create test parcel' 
+        error: error instanceof Error ? error.message : 'Failed to get label' 
       });
     }
   });

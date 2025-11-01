@@ -110,13 +110,13 @@ export default function ShippingManagement() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6" data-testid="shipping-management">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Shipping Management</h1>
-          <p className="text-muted-foreground">Manage shipping labels and track parcels with Sendcloud</p>
+          <h1 className="text-3xl font-bold" data-testid="title-shipping">Shipping Management</h1>
+          <p className="text-muted-foreground">Manage shipping labels and track parcels with PPL</p>
         </div>
-        <Button>
+        <Button data-testid="button-settings">
           <Settings className="w-4 h-4 mr-2" />
           Settings
         </Button>
@@ -124,9 +124,8 @@ export default function ShippingManagement() {
 
       <Tabs defaultValue="connection" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="connection">Connection</TabsTrigger>
-          <TabsTrigger value="methods">Shipping Methods</TabsTrigger>
-          <TabsTrigger value="test">Test Features</TabsTrigger>
+          <TabsTrigger value="connection" data-testid="tab-connection">Connection</TabsTrigger>
+          <TabsTrigger value="info" data-testid="tab-info">PPL Information</TabsTrigger>
         </TabsList>
 
         <TabsContent value="connection" className="space-y-6">
@@ -134,21 +133,21 @@ export default function ShippingManagement() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Settings className="w-5 h-5" />
-                Sendcloud Connection Status
+                PPL Connection Status
               </CardTitle>
               <CardDescription>
-                Check your Sendcloud API connection and configuration
+                Check your PPL API connection and configuration
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {isTestingConnection ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2" data-testid="status-testing">
                   <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                   <span>Testing connection...</span>
                 </div>
               ) : connectionStatus ? (
                 <div className="space-y-4">
-                  <Alert className={connectionStatus.connected ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
+                  <Alert className={connectionStatus.connected ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'} data-testid="status-alert">
                     <div className="flex items-center gap-2">
                       {connectionStatus.connected ? (
                         <CheckCircle className="w-4 h-4 text-green-600" />
@@ -156,18 +155,18 @@ export default function ShippingManagement() {
                         <XCircle className="w-4 h-4 text-red-600" />
                       )}
                       <AlertDescription className={connectionStatus.connected ? 'text-green-800' : 'text-red-800'}>
-                        {connectionStatus.connected ? 'Successfully connected to Sendcloud API' : 'Failed to connect to Sendcloud API'}
+                        {connectionStatus.connected ? 'Successfully connected to PPL API' : 'Failed to connect to PPL API'}
                       </AlertDescription>
                     </div>
                   </Alert>
 
-                  {connectionStatus.connected && connectionStatus.user && (
+                  {connectionStatus.connected && (
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <h4 className="font-medium mb-2">Account Information</h4>
+                      <h4 className="font-medium mb-2">Connection Information</h4>
                       <div className="space-y-1 text-sm">
-                        <p><strong>Company:</strong> {connectionStatus.user.company || 'N/A'}</p>
-                        <p><strong>Email:</strong> {connectionStatus.user.email || 'N/A'}</p>
-                        <p><strong>Country:</strong> {connectionStatus.user.country || 'N/A'}</p>
+                        <p><strong>Provider:</strong> {connectionStatus.provider || 'PPL'}</p>
+                        <p><strong>Status:</strong> Active</p>
+                        <p><strong>Message:</strong> {connectionStatus.message}</p>
                       </div>
                     </div>
                   )}
@@ -176,6 +175,7 @@ export default function ShippingManagement() {
                     <div className="bg-red-50 p-4 rounded-lg border border-red-200">
                       <h4 className="font-medium text-red-800 mb-2">Error Details</h4>
                       <p className="text-sm text-red-600">{connectionStatus.error}</p>
+                      <p className="text-sm text-red-600 mt-2">Please check that PPL_CLIENT_ID and PPL_CLIENT_SECRET environment variables are set.</p>
                     </div>
                   )}
                 </div>
@@ -183,7 +183,7 @@ export default function ShippingManagement() {
                 <Alert>
                   <AlertCircle className="w-4 h-4" />
                   <AlertDescription>
-                    Connection status unknown. Check your API credentials in environment variables.
+                    Connection status unknown. Check your API credentials in environment variables (PPL_CLIENT_ID, PPL_CLIENT_SECRET).
                   </AlertDescription>
                 </Alert>
               )}
@@ -192,6 +192,7 @@ export default function ShippingManagement() {
                 <Button 
                   onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/shipping/test-connection'] })}
                   variant="outline"
+                  data-testid="button-test-connection"
                 >
                   Test Connection Again
                 </Button>
@@ -200,196 +201,69 @@ export default function ShippingManagement() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="methods" className="space-y-6">
+        <TabsContent value="info" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Truck className="w-5 h-5" />
-                Available Shipping Methods
+                PPL Shipping Information
               </CardTitle>
               <CardDescription>
-                Shipping options available through your Sendcloud account
+                Information about PPL shipping integration
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              {!connectionStatus?.connected ? (
-                <Alert>
-                  <AlertCircle className="w-4 h-4" />
-                  <AlertDescription>
-                    Please establish a connection to Sendcloud to view shipping methods.
-                  </AlertDescription>
-                </Alert>
-              ) : isLoadingMethods ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                  <span>Loading shipping methods...</span>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium mb-2">Supported Features</h4>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                    <li>Shipping label generation (PDF format)</li>
+                    <li>Batch shipment creation</li>
+                    <li>Dobírka (Cash on Delivery) support</li>
+                    <li>Tracking number assignment</li>
+                    <li>Automated label printing</li>
+                  </ul>
                 </div>
-              ) : shippingMethods.length === 0 ? (
-                <Alert>
-                  <AlertCircle className="w-4 h-4" />
-                  <AlertDescription>
-                    No shipping methods found. Please check your Sendcloud account configuration.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {shippingMethods.map((method: ShippingMethod) => (
-                    <Card key={method.id} className="relative">
-                      <CardContent className="p-4">
-                        <div className="space-y-3">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <h4 className="font-medium">{method.name}</h4>
-                              <p className="text-sm text-muted-foreground">{method.carrier}</p>
-                            </div>
-                            <Badge variant="secondary">
-                              {formatPrice(method.price, method.currency)}
-                            </Badge>
-                          </div>
 
-                          <div className="space-y-1 text-xs text-muted-foreground">
-                            <p>Weight: {method.min_weight}kg - {method.max_weight}kg</p>
-                            <p>Countries: {method.countries.length} available</p>
-                            {method.service_point_input !== 'none' && (
-                              <div className="flex items-center gap-1">
-                                <MapPin className="w-3 h-3" />
-                                <span>Service point {method.service_point_input}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                <Separator />
+
+                <div>
+                  <h4 className="font-medium mb-2">Product Types</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="bg-gray-50 p-3 rounded">
+                      <p className="font-medium">PPL Parcel CZ Business</p>
+                      <p className="text-muted-foreground">Standard domestic Czech Republic shipments</p>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
 
-        <TabsContent value="test" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TestTube className="w-5 h-5" />
-                Test Shipping Features
-              </CardTitle>
-              <CardDescription>
-                Create test parcels and labels to verify your integration
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {!connectionStatus?.connected ? (
-                <Alert>
-                  <AlertCircle className="w-4 h-4" />
-                  <AlertDescription>
-                    Please establish a connection to Sendcloud to test features.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <div className="space-y-6">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-4">
-                      <Label htmlFor="test-name">Customer Name</Label>
-                      <Input
-                        id="test-name"
-                        value={testAddress.name}
-                        onChange={(e) => setTestAddress({ ...testAddress, name: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-4">
-                      <Label htmlFor="test-email">Email</Label>
-                      <Input
-                        id="test-email"
-                        type="email"
-                        value={testAddress.email}
-                        onChange={(e) => setTestAddress({ ...testAddress, email: e.target.value })}
-                      />
-                    </div>
-                  </div>
+                <Separator />
 
-                  <div className="space-y-4">
-                    <Label htmlFor="test-address">Address</Label>
-                    <Input
-                      id="test-address"
-                      value={testAddress.address}
-                      onChange={(e) => setTestAddress({ ...testAddress, address: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <div className="space-y-4">
-                      <Label htmlFor="test-city">City</Label>
-                      <Input
-                        id="test-city"
-                        value={testAddress.city}
-                        onChange={(e) => setTestAddress({ ...testAddress, city: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-4">
-                      <Label htmlFor="test-postal">Postal Code</Label>
-                      <Input
-                        id="test-postal"
-                        value={testAddress.postal_code}
-                        onChange={(e) => setTestAddress({ ...testAddress, postal_code: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-4">
-                      <Label htmlFor="test-country">Country</Label>
-                      <Select 
-                        value={testAddress.country}
-                        onValueChange={(value) => setTestAddress({ ...testAddress, country: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="NL">Netherlands</SelectItem>
-                          <SelectItem value="DE">Germany</SelectItem>
-                          <SelectItem value="BE">Belgium</SelectItem>
-                          <SelectItem value="FR">France</SelectItem>
-                          <SelectItem value="CZ">Czech Republic</SelectItem>
-                          <SelectItem value="AT">Austria</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <Label htmlFor="test-phone">Phone (optional)</Label>
-                    <Input
-                      id="test-phone"
-                      value={testAddress.telephone}
-                      onChange={(e) => setTestAddress({ ...testAddress, telephone: e.target.value })}
-                    />
-                  </div>
-
-                  <Separator />
-
-                  <div className="flex gap-4">
-                    <Button
-                      onClick={handleCreateTestParcel}
-                      disabled={createTestParcelMutation.isPending}
-                      className="flex items-center gap-2"
-                    >
-                      {createTestParcelMutation.isPending ? (
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <TestTube className="w-4 h-4" />
-                      )}
-                      Create Test Parcel
-                    </Button>
-                  </div>
-
-                  <Alert>
-                    <AlertCircle className="w-4 h-4" />
-                    <AlertDescription>
-                      <strong>Note:</strong> Test parcels use the "Unstamped letter" method which is free for testing. 
-                      No actual shipping charges will be incurred.
-                    </AlertDescription>
-                  </Alert>
+                <div>
+                  <h4 className="font-medium mb-2">Dobírka (Cash on Delivery)</h4>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    PPL supports cash on delivery (dobírka) for shipments. You can specify:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                    <li>COD amount in CZK, EUR, or other currencies</li>
+                    <li>Variable symbol for payment tracking</li>
+                    <li>Automatic order ID association</li>
+                  </ul>
                 </div>
-              )}
+
+                <Separator />
+
+                <div>
+                  <h4 className="font-medium mb-2">How to Use</h4>
+                  <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
+                    <li>Create or edit an order in the Orders section</li>
+                    <li>Add dobírka amount and currency if needed</li>
+                    <li>Go to Order Details and click "Create PPL Label"</li>
+                    <li>The label will be generated and stored with the order</li>
+                    <li>Download and print the label for shipping</li>
+                  </ol>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

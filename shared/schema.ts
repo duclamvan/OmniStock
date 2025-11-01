@@ -596,7 +596,10 @@ export const orders = pgTable('orders', {
   pplBatchId: text('ppl_batch_id'),
   pplShipmentNumbers: text('ppl_shipment_numbers').array(), // Array of PPL shipment tracking numbers
   pplLabelData: jsonb('ppl_label_data'), // Stores label info: {batchId, shipmentNumbers, labelUrl, createdAt}
-  pplStatus: varchar('ppl_status') // 'pending', 'created', 'cancelled', 'error'
+  pplStatus: varchar('ppl_status'), // 'pending', 'created', 'cancelled', 'error'
+  // Dobírka (Cash on Delivery) fields
+  dobirkaAmount: decimal('dobirka_amount', { precision: 10, scale: 2 }),
+  dobirkaCurrency: varchar('dobirka_currency')
 });
 
 // Product Files table for document management

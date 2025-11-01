@@ -1,20 +1,21 @@
 import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Package, 
-  Truck, 
   ExternalLink,
   Download,
   AlertCircle,
   CheckCircle,
-  Loader2
+  Loader2,
+  Banknote
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -34,52 +35,27 @@ interface ShippingLabelProps {
     }>;
     total?: string;
     weight?: number;
+    dobirkaAmount?: string | null;
+    dobirkaCurrency?: string | null;
   };
   onLabelCreated?: (labelData: any) => void;
-}
-
-interface ShippingMethod {
-  id: number;
-  name: string;
-  carrier: string;
-  price: number;
-  currency: string;
-  max_weight: number;
 }
 
 export function ShippingLabel({ order, onLabelCreated }: ShippingLabelProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedMethodId, setSelectedMethodId] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dobirkaAmount, setDobirkaAmount] = useState(order.dobirkaAmount || '');
+  const [dobirkaCurrency, setDobirkaCurrency] = useState(order.dobirkaCurrency || 'CZK');
 
-  // Parse shipping address
-  const parseAddress = (addressString: string) => {
-    const parts = addressString.split(',').map(p => p.trim());
-    return {
-      line1: parts[0] || '',
-      line2: parts[1] || '',
-      city: parts[parts.length - 2] || '',
-      country: 'NL' // Default to Netherlands
-    };
-  };
-
-  const address = parseAddress(order.shippingAddress);
-
-  // Get shipping methods
-  const { data: shippingMethods = [], isLoading: isLoadingMethods } = useQuery({
-    queryKey: ['/api/shipping/methods'],
-    enabled: isDialogOpen
-  });
-
-  // Create shipping label mutation
+  // Create shipping label mutation for PPL
   const createLabelMutation = useMutation({
     mutationFn: (data: any) => 
       apiRequest('POST', '/api/shipping/create-label', data),
     onSuccess: (data) => {
       toast({
-        title: "Shipping Label Created",
-        description: `Label created successfully. Tracking: ${data.parcel?.tracking_number || 'N/A'}`
+        title: "PPL Label Created",
+        description: `Label created successfully. Tracking: ${data.trackingNumber || 'N/A'}`
       });
       setIsDialogOpen(false);
       onLabelCreated?.(data);
@@ -87,7 +63,7 @@ export function ShippingLabel({ order, onLabelCreated }: ShippingLabelProps) {
     },
     onError: (error: any) => {
       toast({
-        title: "Failed to Create Label",
+        title: "Failed to Create PPL Label",
         description: error.message || "Unknown error occurred",
         variant: "destructive"
       });
@@ -95,54 +71,28 @@ export function ShippingLabel({ order, onLabelCreated }: ShippingLabelProps) {
   });
 
   const handleCreateLabel = () => {
-    if (!selectedMethodId) {
-      toast({
-        title: "Shipping Method Required",
-        description: "Please select a shipping method",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const orderData = {
-      orderNumber: order.orderId,
-      customerName: order.customerName,
-      customerEmail: order.customerEmail,
-      shippingAddress: {
-        line1: address.line1,
-        line2: address.line2,
-        city: address.city,
-        postalCode: '1012AB', // Default postal code
-        country: address.country
-      },
-      items: order.items.map(item => ({
-        name: item.productName,
-        sku: item.sku,
-        quantity: item.quantity,
-        weight: 0.2, // Default weight
-        value: parseFloat(item.price?.toString() || '10')
-      })),
-      shippingMethodId: selectedMethodId,
-      weight: order.weight || 0.5,
-      value: parseFloat(order.total || '0')
+    const labelData = {
+      orderId: order.id,
+      dobirkaAmount: dobirkaAmount && parseFloat(dobirkaAmount) > 0 ? dobirkaAmount : null,
+      dobirkaCurrency: dobirkaAmount && parseFloat(dobirkaAmount) > 0 ? dobirkaCurrency : null
     };
 
-    createLabelMutation.mutate(orderData);
+    createLabelMutation.mutate(labelData);
   };
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="flex items-center gap-2">
+        <Button variant="outline" className="flex items-center gap-2" data-testid="button-create-label">
           <Package className="w-4 h-4" />
-          Create Shipping Label
+          Create PPL Label
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Create Shipping Label</DialogTitle>
+          <DialogTitle>Create PPL Shipping Label</DialogTitle>
           <DialogDescription>
-            Generate a shipping label for order {order.orderId}
+            Generate a PPL shipping label for order {order.orderId}
           </DialogDescription>
         </DialogHeader>
 
@@ -167,55 +117,59 @@ export function ShippingLabel({ order, onLabelCreated }: ShippingLabelProps) {
                   <span className="font-medium">Items:</span> {order.items.length}
                 </div>
                 <div>
-                  <span className="font-medium">Total:</span> ${order.total || '0.00'}
+                  <span className="font-medium">Weight:</span> {order.weight ? `${order.weight} kg` : 'Not set'}
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Shipping Methods */}
+          {/* Dobírka (Cash on Delivery) */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Select Shipping Method</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Banknote className="w-5 h-5" />
+                Dobírka (Cash on Delivery)
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {isLoadingMethods ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Loading shipping methods...</span>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="dobirka-amount" data-testid="label-dobirka-amount">
+                    COD Amount (optional)
+                  </Label>
+                  <Input
+                    id="dobirka-amount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={dobirkaAmount}
+                    onChange={(e) => setDobirkaAmount(e.target.value)}
+                    data-testid="input-dobirka-amount"
+                  />
                 </div>
-              ) : shippingMethods.length === 0 ? (
-                <Alert>
-                  <AlertCircle className="w-4 h-4" />
-                  <AlertDescription>
-                    No shipping methods available. Please check your Sendcloud configuration.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <Select 
-                  value={selectedMethodId?.toString()} 
-                  onValueChange={(value) => setSelectedMethodId(parseInt(value))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose shipping method..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {shippingMethods.map((method: ShippingMethod) => (
-                      <SelectItem key={method.id} value={method.id.toString()}>
-                        <div className="flex items-center justify-between w-full">
-                          <span>{method.name} ({method.carrier})</span>
-                          <Badge variant="secondary" className="ml-2">
-                            {new Intl.NumberFormat('en-US', {
-                              style: 'currency',
-                              currency: method.currency || 'EUR'
-                            }).format(method.price)}
-                          </Badge>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+                <div className="space-y-2">
+                  <Label htmlFor="dobirka-currency" data-testid="label-dobirka-currency">
+                    Currency
+                  </Label>
+                  <Select value={dobirkaCurrency} onValueChange={setDobirkaCurrency}>
+                    <SelectTrigger id="dobirka-currency" data-testid="select-dobirka-currency">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CZK">CZK</SelectItem>
+                      <SelectItem value="EUR">EUR</SelectItem>
+                      <SelectItem value="USD">USD</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Alert>
+                <AlertCircle className="w-4 h-4" />
+                <AlertDescription>
+                  If you specify a COD amount, the carrier will collect this amount from the recipient upon delivery.
+                </AlertDescription>
+              </Alert>
             </CardContent>
           </Card>
 
@@ -224,20 +178,27 @@ export function ShippingLabel({ order, onLabelCreated }: ShippingLabelProps) {
             <Button 
               variant="outline" 
               onClick={() => setIsDialogOpen(false)}
+              data-testid="button-cancel"
             >
               Cancel
             </Button>
             <Button 
               onClick={handleCreateLabel}
-              disabled={!selectedMethodId || createLabelMutation.isPending}
+              disabled={createLabelMutation.isPending}
               className="flex items-center gap-2"
+              data-testid="button-create-ppl-label"
             >
               {createLabelMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Creating...
+                </>
               ) : (
-                <Package className="w-4 h-4" />
+                <>
+                  <Package className="w-4 h-4" />
+                  Create PPL Label
+                </>
               )}
-              Create Label
             </Button>
           </div>
         </div>
