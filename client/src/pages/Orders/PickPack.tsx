@@ -676,7 +676,7 @@ function ProductDocumentsSelector({
               className="h-8 text-xs flex-shrink-0 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300"
               onClick={(e) => {
                 e.stopPropagation();
-                window.open(file.fileUrl, '_blank');
+                window.open(file.fileUrl || file.url, '_blank');
               }}
               data-testid={`button-print-product-doc-${file.id}`}
             >
