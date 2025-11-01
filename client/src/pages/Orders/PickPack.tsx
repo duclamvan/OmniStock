@@ -564,12 +564,14 @@ const CartonCard = memo(({
 
 // Component to display product documents
 function ProductDocumentsSelector({ 
-  orderItems
+  orderItems,
+  printedFiles,
+  onFilePrinted
 }: {
   orderItems: any[];
+  printedFiles: Set<string>;
+  onFilePrinted: (fileId: string) => void;
 }) {
-  const [printedFiles, setPrintedFiles] = useState<Set<string>>(new Set());
-
   const productIds = useMemo(
     () => Array.from(new Set(orderItems.map((item: any) => item.productId))).filter(Boolean),
     [orderItems]
@@ -587,7 +589,7 @@ function ProductDocumentsSelector({
 
   const handlePrint = (fileId: string, fileUrl: string) => {
     window.open(fileUrl, '_blank');
-    setPrintedFiles(prev => new Set([...Array.from(prev), fileId]));
+    onFilePrinted(fileId);
   };
 
   if (isLoading) {
@@ -688,9 +690,15 @@ function ProductDocumentsSelector({
 }
 
 // Component to display all order files and documents
-function OrderFilesDisplay({ orderId }: { orderId: string }) {
-  const [printedFiles, setPrintedFiles] = useState<Set<string>>(new Set());
-
+function OrderFilesDisplay({ 
+  orderId,
+  printedFiles,
+  onFilePrinted
+}: { 
+  orderId: string;
+  printedFiles: Set<string>;
+  onFilePrinted: (fileId: string) => void;
+}) {
   const { data: orderFilesData, isLoading } = useQuery({
     queryKey: ['/api/orders', orderId, 'files'],
     queryFn: async () => {
@@ -702,7 +710,7 @@ function OrderFilesDisplay({ orderId }: { orderId: string }) {
 
   const handlePrint = (fileId: string, fileUrl: string) => {
     window.open(fileUrl, '_blank');
-    setPrintedFiles(prev => new Set([...Array.from(prev), fileId]));
+    onFilePrinted(fileId);
   };
 
   if (isLoading) {
@@ -846,6 +854,10 @@ export default function PickPack() {
   const [printedDocuments, setPrintedDocuments] = useState({
     packingList: false
   });
+  
+  // State for tracking printed files
+  const [printedProductFiles, setPrintedProductFiles] = useState<Set<string>>(new Set());
+  const [printedOrderFiles, setPrintedOrderFiles] = useState<Set<string>>(new Set());
   
   const [selectedBoxSize, setSelectedBoxSize] = useState<string>('');
   const [packageWeight, setPackageWeight] = useState<string>('');
@@ -3670,6 +3682,8 @@ export default function PickPack() {
     setPrintedDocuments({
       packingList: false
     });
+    setPrintedProductFiles(new Set());
+    setPrintedOrderFiles(new Set());
     
     setVerifiedItems({});
     setUseNonCompanyCarton(false);
@@ -5165,12 +5179,18 @@ export default function PickPack() {
                 {activePackingOrder && (
                   <ProductDocumentsSelector
                     orderItems={activePackingOrder.items}
+                    printedFiles={printedProductFiles}
+                    onFilePrinted={(fileId) => setPrintedProductFiles(prev => new Set([...Array.from(prev), fileId]))}
                   />
                 )}
 
                 {/* Order Files & Documents from Database */}
                 {activePackingOrder && (
-                  <OrderFilesDisplay orderId={activePackingOrder.id} />
+                  <OrderFilesDisplay 
+                    orderId={activePackingOrder.id}
+                    printedFiles={printedOrderFiles}
+                    onFilePrinted={(fileId) => setPrintedOrderFiles(prev => new Set([...Array.from(prev), fileId]))}
+                  />
                 )}
               </div>
 
