@@ -591,7 +591,12 @@ export const orders = pgTable('orders', {
   // Fulfillment stage tracking (Option 1: Separate sub-status field)
   fulfillmentStage: varchar('fulfillment_stage'), // null (pending), 'picking', 'packing', 'ready'
   pickingStartedAt: timestamp('picking_started_at'),
-  packingStartedAt: timestamp('packing_started_at')
+  packingStartedAt: timestamp('packing_started_at'),
+  // PPL shipping integration
+  pplBatchId: text('ppl_batch_id'),
+  pplShipmentNumbers: text('ppl_shipment_numbers').array(), // Array of PPL shipment tracking numbers
+  pplLabelData: jsonb('ppl_label_data'), // Stores label info: {batchId, shipmentNumbers, labelUrl, createdAt}
+  pplStatus: varchar('ppl_status') // 'pending', 'created', 'cancelled', 'error'
 });
 
 // Product Files table for document management
