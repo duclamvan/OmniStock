@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, Fragment } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import { useForm } from "react-hook-form";
@@ -60,7 +60,9 @@ import {
   Settings,
   Clock,
   Pencil,
-  Star
+  Star,
+  MoreVertical,
+  StickyNote
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import { AICartonPackingPanel } from "@/components/orders/AICartonPackingPanel";
@@ -90,6 +92,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 const editOrderSchema = z.object({
   customerId: z.string().optional(),
@@ -309,6 +322,11 @@ export default function EditOrder() {
   const [quickCustomerName, setQuickCustomerName] = useState("");
   const [quickCustomerPhone, setQuickCustomerPhone] = useState("");
   const [quickCustomerSocialApp, setQuickCustomerSocialApp] = useState<'viber' | 'whatsapp' | 'zalo' | 'email'>('whatsapp');
+  
+  // Item notes state
+  const [editingNoteItemId, setEditingNoteItemId] = useState<string | null>(null);
+  const [editingNoteText, setEditingNoteText] = useState("");
+  const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
 
   // Packing optimization hook
   const { 
@@ -3088,8 +3106,8 @@ export default function EditOrder() {
                       </TableHeader>
                       <TableBody>
                         {orderItems.map((item, index) => (
+                          <Fragment key={item.id}>
                           <TableRow 
-                            key={item.id}
                             className={index % 2 === 0 ? 'bg-white dark:bg-slate-950' : 'bg-slate-50/50 dark:bg-slate-900/30'}
                             data-testid={`order-item-${item.id}`}
                           >
@@ -3265,18 +3283,89 @@ export default function EditOrder() {
                               {formatCurrency(item.total, form.watch('currency'))}
                             </TableCell>
                             <TableCell className="text-center">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeOrderItem(item.id)}
-                                className="h-9 w-9 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
-                                data-testid={`button-remove-${item.id}`}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              <div className="flex items-center justify-center gap-1">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-9 w-9 p-0 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                      data-testid={`button-more-${item.id}`}
+                                    >
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setEditingNoteItemId(item.id);
+                                        setEditingNoteText(item.notes || "");
+                                      }}
+                                      data-testid={`menu-item-note-${item.id}`}
+                                    >
+                                      <StickyNote className="h-4 w-4 mr-2" />
+                                      {item.notes ? 'Edit Note' : 'Add Note'}
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeOrderItem(item.id)}
+                                  className="h-9 w-9 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
+                                  data-testid={`button-remove-${item.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
+                          {item.notes && (
+                            <TableRow className={index % 2 === 0 ? 'bg-white dark:bg-slate-950' : 'bg-slate-50/50 dark:bg-slate-900/30'}>
+                              <TableCell colSpan={6 + (showDiscountColumn ? 1 : 0) + (showVatColumn ? 1 : 0)}>
+                                <Collapsible
+                                  open={expandedNotes.has(item.id)}
+                                  onOpenChange={(open) => {
+                                    const newExpanded = new Set(expandedNotes);
+                                    if (open) {
+                                      newExpanded.add(item.id);
+                                    } else {
+                                      newExpanded.delete(item.id);
+                                    }
+                                    setExpandedNotes(newExpanded);
+                                  }}
+                                >
+                                  <CollapsibleTrigger asChild>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="w-full justify-start text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                                      data-testid={`button-toggle-note-${item.id}`}
+                                    >
+                                      <StickyNote className="h-3 w-3 mr-1.5" />
+                                      {expandedNotes.has(item.id) ? 'Hide' : 'Show'} Pick & Pack Instructions
+                                      <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${expandedNotes.has(item.id) ? 'rotate-180' : ''}`} />
+                                    </Button>
+                                  </CollapsibleTrigger>
+                                  <CollapsibleContent className="pt-2">
+                                    <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3">
+                                      <div className="flex items-start gap-2">
+                                        <StickyNote className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                                        <div className="flex-1">
+                                          <p className="text-xs font-semibold text-amber-900 dark:text-amber-100 mb-1">Pick & Pack Instructions:</p>
+                                          <p className="text-sm text-amber-800 dark:text-amber-200 whitespace-pre-wrap">{item.notes}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </CollapsibleContent>
+                                </Collapsible>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                          </Fragment>
                         ))}
                       </TableBody>
                     </Table>
@@ -4512,6 +4601,67 @@ export default function EditOrder() {
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Selected Variants
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Item Note Editor Dialog */}
+      <Dialog open={editingNoteItemId !== null} onOpenChange={(open) => {
+        if (!open) {
+          setEditingNoteItemId(null);
+          setEditingNoteText("");
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold">Pick & Pack Instructions</DialogTitle>
+            <DialogDescription className="text-sm">
+              Add special instructions or notes for this item during the pick and pack process
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="note-text" className="text-sm">Instructions</Label>
+              <Textarea
+                id="note-text"
+                value={editingNoteText}
+                onChange={(e) => setEditingNoteText(e.target.value)}
+                placeholder="e.g., Handle with care, fragile item..."
+                className="mt-1 min-h-[120px]"
+                data-testid="textarea-item-note"
+              />
+              <p className="text-xs text-slate-500 mt-1">These instructions will be visible during the pick & pack workflow</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setEditingNoteItemId(null);
+                setEditingNoteText("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                if (editingNoteItemId) {
+                  updateOrderItem(editingNoteItemId, 'notes', editingNoteText || null);
+                  // Auto-expand the note after saving
+                  if (editingNoteText) {
+                    setExpandedNotes(new Set(expandedNotes).add(editingNoteItemId));
+                  }
+                  setEditingNoteItemId(null);
+                  setEditingNoteText("");
+                }
+              }}
+              data-testid="button-save-note"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              Save Note
             </Button>
           </DialogFooter>
         </DialogContent>
