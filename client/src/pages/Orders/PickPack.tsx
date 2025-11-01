@@ -650,18 +650,23 @@ function ProductDocumentsSelector({
   });
 
   const productFiles = useMemo(() => {
-    const productIdSet = new Set(productIds);
-    const selectedIdSet = selectedDocumentIds ? new Set(selectedDocumentIds) : null;
-    
-    // Filter by product ID and active status
-    let files = allFilesRaw.filter(file => productIdSet.has(file.productId) && file.isActive);
-    
-    // If selectedDocumentIds is provided, only show documents that were selected for this order
-    if (selectedIdSet && selectedIdSet.size > 0) {
-      files = files.filter(file => selectedIdSet.has(file.id));
+    // If no documents were selected for this order, show nothing
+    if (!selectedDocumentIds || selectedDocumentIds.length === 0) {
+      return [];
     }
     
-    return files;
+    const productIdSet = new Set(productIds);
+    const selectedIdSet = new Set(selectedDocumentIds);
+    
+    // Only show files that are:
+    // 1. For products in this order
+    // 2. Active
+    // 3. Specifically selected for this order (in selectedDocumentIds)
+    return allFilesRaw.filter(file => 
+      productIdSet.has(file.productId) && 
+      file.isActive && 
+      selectedIdSet.has(file.id)
+    );
   }, [allFilesRaw, productIds, selectedDocumentIds]);
 
   const handlePrint = (fileId: string, fileUrl: string) => {
