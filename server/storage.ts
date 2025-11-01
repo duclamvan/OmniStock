@@ -1499,6 +1499,7 @@ export class DatabaseStorage implements IStorage {
       
       return {
         ...productData.product,
+        image: productData.product.imageUrl, // Map imageUrl to image for frontend compatibility
         supplier: productData.supplier ? {
           id: productData.supplier.id,
           name: productData.supplier.name,
