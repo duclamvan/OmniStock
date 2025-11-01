@@ -1037,6 +1037,25 @@ export default function EditOrder() {
     form.setValue('shippingCost', calculatedCost); // Also set shipping cost for display
   }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency, form]);
 
+  // Auto-fill dobírka amount with grand total when PPL + COD is selected
+  const watchedPaymentMethod = form.watch('paymentMethod');
+  const watchedDobirkaAmount = form.watch('dobirkaAmount');
+  
+  useEffect(() => {
+    // Only autofill if PPL shipping and COD payment are selected
+    if (watchedShippingMethod === 'PPL' && watchedPaymentMethod === 'COD') {
+      // Only set if dobírka amount is empty or zero
+      if (!watchedDobirkaAmount || watchedDobirkaAmount === 0) {
+        const grandTotal = calculateGrandTotal();
+        form.setValue('dobirkaAmount', parseFloat(grandTotal.toFixed(2)));
+        // Also set currency to match order currency (only if it's a supported COD currency)
+        if (watchedCurrency === 'CZK' || watchedCurrency === 'EUR' || watchedCurrency === 'USD') {
+          form.setValue('dobirkaCurrency', watchedCurrency);
+        }
+      }
+    }
+  }, [watchedShippingMethod, watchedPaymentMethod, watchedCurrency, watchedDobirkaAmount, form]);
+
   // Auto-fill currency from customer preference (only when creating new orders)
   // Note: This is intentionally NOT in EditOrder - we preserve the order's saved currency
   // when editing existing orders, even if the customer changes.
