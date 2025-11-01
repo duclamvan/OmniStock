@@ -543,6 +543,7 @@ export default function EditOrder() {
       taxRate: 0,
       shippingCost: 0,
       actualShippingCost: 0,
+      adjustment: 0,
       orderLocation: '',
     },
   });
@@ -1627,8 +1628,10 @@ export default function EditOrder() {
     const shippingValue = form.watch('shippingCost');
     const discountValue = form.watch('discountValue');
     const discountType = form.watch('discountType');
+    const adjustmentValue = form.watch('adjustment');
     const shipping = typeof shippingValue === 'string' ? parseFloat(shippingValue || '0') : (shippingValue || 0);
     const discountAmount = typeof discountValue === 'string' ? parseFloat(discountValue || '0') : (discountValue || 0);
+    const adjustment = typeof adjustmentValue === 'string' ? parseFloat(adjustmentValue || '0') : (adjustmentValue || 0);
 
     // Calculate actual discount based on type
     let actualDiscount = 0;
@@ -1638,7 +1641,7 @@ export default function EditOrder() {
       actualDiscount = discountAmount;
     }
 
-    return subtotal + tax + shipping - actualDiscount;
+    return subtotal + tax + shipping + adjustment - actualDiscount;
   };
 
   const onSubmit = (data: z.infer<typeof editOrderSchema>) => {
@@ -1691,6 +1694,7 @@ export default function EditOrder() {
       taxRate: (showTaxInvoice ? (data.taxRate || 0) : 0).toString(),
       shippingCost: (data.shippingCost || 0).toString(),
       actualShippingCost: (data.actualShippingCost || 0).toString(),
+      adjustment: (data.adjustment || 0).toString(),
       dobirkaAmount: data.dobirkaAmount && data.dobirkaAmount > 0 ? data.dobirkaAmount.toString() : null,
       dobirkaCurrency: data.dobirkaAmount && data.dobirkaAmount > 0 ? (data.dobirkaCurrency || 'CZK') : null,
       items: orderItems.map(item => ({
@@ -3713,7 +3717,7 @@ export default function EditOrder() {
 
             <Separator className="my-4" />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div>
                 <Label htmlFor="shippingCost" className="text-sm">Shipping Cost</Label>
                 <Input
@@ -3763,6 +3767,18 @@ export default function EditOrder() {
               </div>
 
               <div>
+                <Label htmlFor="adjustment" className="text-sm">Adjustment</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  {...form.register('adjustment', { valueAsNumber: true })}
+                  className="mt-1"
+                  data-testid="input-adjustment"
+                />
+                <p className="text-xs text-gray-500 mt-1">Rounding or other adjustments</p>
+              </div>
+
+              <div className="hidden">
                 <Label htmlFor="actualShippingCost" className="text-sm">Actual Shipping Cost</Label>
                 <Input
                   type="number"
@@ -3860,17 +3876,12 @@ export default function EditOrder() {
                         const difference = roundedTotal - currentTotal;
                         
                         if (difference > 0) {
-                          // Add the difference to shipping cost to round up the total
-                          const currentShipping = parseFloat(form.watch('shippingCost')) || 0;
-                          const newShipping = currentShipping + difference;
-                          form.setValue('shippingCost', parseFloat(newShipping.toFixed(2)));
-                          
-                          // Store the rounding adjustment
-                          setRoundingAdjustment(parseFloat(difference.toFixed(2)));
+                          // Add the difference to adjustment field instead of shipping cost
+                          form.setValue('adjustment', parseFloat(difference.toFixed(2)));
                           
                           toast({
                             title: "Total Rounded Up",
-                            description: `Grand total rounded from ${formatCurrency(currentTotal, form.watch('currency'))} to ${formatCurrency(roundedTotal, form.watch('currency'))}`,
+                            description: `Grand total rounded from ${formatCurrency(currentTotal, form.watch('currency'))} to ${formatCurrency(roundedTotal, form.watch('currency'))}. Adjustment: ${formatCurrency(difference, form.watch('currency'))}`,
                           });
                         } else {
                           toast({

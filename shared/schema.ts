@@ -564,6 +564,7 @@ export const orders = pgTable('orders', {
   paymentMethod: varchar('payment_method'),
   shippingCost: decimal('shipping_cost').default('0'),
   actualShippingCost: decimal('actual_shipping_cost').default('0'),
+  adjustment: decimal('adjustment').default('0'),
   grandTotal: decimal('grand_total').notNull(),
   notes: text('notes'),
   attachmentUrl: varchar('attachment_url'),
