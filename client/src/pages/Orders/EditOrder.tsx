@@ -810,20 +810,41 @@ export default function EditOrder() {
     }
   }, [existingOrder?.shippingAddressId, shippingAddresses]);
 
-  // Pre-fill selected documents when order loads
+  // Pre-fill selected documents when order loads (ONLY ONCE on initial load)
+  const documentsInitialized = useRef(false);
   useEffect(() => {
-    if (!existingOrder) return;
+    if (!existingOrder) {
+      documentsInitialized.current = false;
+      return;
+    }
+    
+    // Only initialize once per order, don't overwrite on subsequent refetches
+    if (documentsInitialized.current && existingOrder.id === documentsInitialized.current) {
+      return;
+    }
+    
     const order = existingOrder as any;
     
     if (order.selectedDocumentIds && Array.isArray(order.selectedDocumentIds)) {
       console.log('✅ Loading selected document IDs:', order.selectedDocumentIds.length);
       setSelectedDocumentIds(order.selectedDocumentIds);
+      documentsInitialized.current = order.id; // Mark as initialized for this order
     }
-  }, [dataUpdatedAt, existingOrder]); // Track dataUpdatedAt to reload when fresh data arrives
+  }, [existingOrder?.id]); // Only run when order ID changes (initial load or different order)
 
-  // Pre-fill uploaded files when order loads
+  // Pre-fill uploaded files when order loads (ONLY ONCE on initial load)
+  const filesInitialized = useRef(false);
   useEffect(() => {
-    if (!existingOrder) return;
+    if (!existingOrder) {
+      filesInitialized.current = false;
+      return;
+    }
+    
+    // Only initialize once per order, don't overwrite on subsequent refetches
+    if (filesInitialized.current && existingOrder.id === filesInitialized.current) {
+      return;
+    }
+    
     const order = existingOrder as any;
     
     if (order.includedDocuments?.uploadedFiles && Array.isArray(order.includedDocuments.uploadedFiles)) {
@@ -835,8 +856,9 @@ export default function EditOrder() {
         return new File([blob], fileData.name, { type: 'application/octet-stream' });
       });
       setUploadedFiles(files);
+      filesInitialized.current = order.id; // Mark as initialized for this order
     }
-  }, [dataUpdatedAt, existingOrder]); // Track dataUpdatedAt to reload when fresh data arrives
+  }, [existingOrder?.id]); // Only run when order ID changes (initial load or different order)
 
   // Pre-fill packing plan when order loads
   useEffect(() => {
