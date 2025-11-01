@@ -5206,6 +5206,7 @@ Important:
             discount: String(item.discount || 0),
             tax: String(item.tax || 0),
             total: String(item.total || price),
+            image: item.image || null,
           };
           console.log('Creating order item:', JSON.stringify(orderItem));
           try {
@@ -5311,6 +5312,7 @@ Important:
             total: String(item.total || 0),
             landingCost: item.landingCost ? String(item.landingCost) : null,
             notes: item.notes || null,
+            image: item.image || null,
           });
         }
       }
