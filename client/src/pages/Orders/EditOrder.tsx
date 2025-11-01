@@ -3579,6 +3579,56 @@ export default function EditOrder() {
               />
             </div>
 
+            <Separator className="my-4" />
+
+            {/* Grand Total Section */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-4 rounded-lg border-2 border-blue-200 dark:border-blue-800">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <Label htmlFor="grandTotal" className="text-sm font-semibold flex items-center gap-2 text-blue-900 dark:text-blue-100">
+                    <Calculator className="w-4 h-4" />
+                    Grand Total
+                  </Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input
+                      id="grandTotal"
+                      type="text"
+                      value={`${formatCurrency(calculateGrandTotal(), form.watch('currency'))}`}
+                      readOnly
+                      className="font-bold text-lg bg-white dark:bg-slate-900 border-blue-300 dark:border-blue-700"
+                      data-testid="input-grand-total"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const currentTotal = calculateGrandTotal();
+                        const roundedTotal = Math.ceil(currentTotal);
+                        const difference = roundedTotal - currentTotal;
+                        
+                        // Add the difference to shipping cost to round up the total
+                        const currentShipping = form.watch('shippingCost') || 0;
+                        const newShipping = currentShipping + difference;
+                        form.setValue('shippingCost', parseFloat(newShipping.toFixed(2)));
+                        
+                        toast({
+                          title: "Total Rounded Up",
+                          description: `Grand total rounded from ${formatCurrency(currentTotal, form.watch('currency'))} to ${formatCurrency(roundedTotal, form.watch('currency'))}`,
+                        });
+                      }}
+                      className="whitespace-nowrap border-blue-300 hover:bg-blue-100 text-blue-700 dark:border-blue-700 dark:hover:bg-blue-900 dark:text-blue-300"
+                      data-testid="button-round-up"
+                    >
+                      <TrendingUp className="w-4 h-4 mr-1" />
+                      Round Up
+                    </Button>
+                  </div>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">Final amount including all items, shipping, discounts, and taxes</p>
+                </div>
+              </div>
+            </div>
+
             {/* Tax Invoice Toggle Button */}
             <div className="pt-4 border-t">
               <Button
