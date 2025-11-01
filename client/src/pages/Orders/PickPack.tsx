@@ -6432,10 +6432,12 @@ export default function PickPack() {
                       <div className="bg-orange-100 border-3 border-orange-500 rounded-lg p-4 text-center">
                         <p className="text-xs font-bold text-orange-800 uppercase mb-1 tracking-wider">Warehouse Location</p>
                         <p 
-                          className="font-black text-orange-600 font-mono whitespace-nowrap overflow-hidden px-2"
+                          className="font-black text-orange-600 font-mono whitespace-nowrap px-2"
                           style={{
-                            fontSize: 'clamp(1.5rem, 8vw, 3.5rem)',
-                            lineHeight: '1.2'
+                            fontSize: 'clamp(1.25rem, 5vw, 3.5rem)',
+                            lineHeight: '1.2',
+                            maxWidth: '100%',
+                            display: 'inline-block'
                           }}
                         >
                           {currentItem.warehouseLocation}
