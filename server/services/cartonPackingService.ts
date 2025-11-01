@@ -201,7 +201,7 @@ export async function optimizeCartonPacking(
     itemsWithDimensions.sort((a, b) => b.volumeCm3 - a.volumeCm3);
     console.log('Items sorted by volume (largest first)');
 
-    // Sort cartons by volume DESCENDING (largest first) to prefer bigger cartons
+    // Sort cartons by volume ASCENDING (smallest first) to maximize utilization
     const sortedCartons = [...packingCartons].sort((a, b) => {
       const volA = parseFloat(a.innerLengthCm.toString()) * 
                    parseFloat(a.innerWidthCm.toString()) * 
@@ -209,9 +209,9 @@ export async function optimizeCartonPacking(
       const volB = parseFloat(b.innerLengthCm.toString()) * 
                    parseFloat(b.innerWidthCm.toString()) * 
                    parseFloat(b.innerHeightCm.toString());
-      return volB - volA; // DESCENDING - biggest first
+      return volA - volB; // ASCENDING - smallest first for maximum utilization
     });
-    console.log(`Cartons sorted by volume (largest first): ${sortedCartons.map(c => c.name).join(', ')}`);
+    console.log(`Cartons sorted by volume (smallest first for max utilization): ${sortedCartons.map(c => c.name).join(', ')}`);
 
     const partialCartons: PartialCarton[] = [];
     let cartonCounter = 1;
@@ -220,7 +220,7 @@ export async function optimizeCartonPacking(
     const totalItemsVolume = itemsWithDimensions.reduce((sum, item) => sum + (item.volumeCm3 * item.quantity), 0);
     const totalItemsWeight = itemsWithDimensions.reduce((sum, item) => sum + (item.weightKg * item.quantity), 0);
 
-    // Try to find ONE large carton that can fit everything first
+    // Try to find the SMALLEST carton that can fit everything (maximum utilization)
     let canFitInOneCarton = false;
     for (const carton of sortedCartons) {
       const cartonVolume = parseFloat(carton.innerLengthCm.toString()) *
@@ -301,7 +301,7 @@ export async function optimizeCartonPacking(
           const itemTotalVolume = item.volumeCm3 * item.quantity;
           const itemTotalWeight = item.weightKg * item.quantity;
           
-          // Find the FIRST (largest) carton that fits - we already sorted largest first
+          // Find the SMALLEST carton that fits (maximum utilization)
           let suitableCarton: PackingCarton | null = null;
           
           for (const carton of sortedCartons) {
@@ -312,12 +312,12 @@ export async function optimizeCartonPacking(
             
             if (itemTotalVolume <= cartonVolume && itemTotalWeight <= maxWeight) {
               suitableCarton = carton;
-              break; // Take first (largest) that fits
+              break; // Take first (smallest) that fits for maximum utilization
             }
           }
 
           if (!suitableCarton) {
-            suitableCarton = sortedCartons[0]; // Use largest carton if item exceeds all
+            suitableCarton = sortedCartons[sortedCartons.length - 1]; // Use largest carton if item exceeds all
             console.warn(`⚠ Item ${item.productId} exceeds all carton capacities, using largest carton (${suitableCarton.name})`);
           }
 
@@ -371,18 +371,18 @@ export async function optimizeCartonPacking(
     const suggestions: string[] = [];
     
     if (canFitInOneCarton) {
-      suggestions.push('✅ Optimized: All items fit efficiently in one large carton');
+      suggestions.push('✅ Optimized: All items fit efficiently in one compact carton');
     }
     
     const lowUtilizationCartons = cartons.filter(c => c.volumeUtilization < 60);
     if (lowUtilizationCartons.length > 0) {
-      suggestions.push(`${lowUtilizationCartons.length} carton(s) have less than 60% utilization - using larger cartons minimizes shipping cost`);
+      suggestions.push(`${lowUtilizationCartons.length} carton(s) have less than 60% utilization - consider using smaller cartons to maximize efficiency`);
     }
     
     if (cartons.length === 1 && cartons[0].volumeUtilization >= 70) {
-      suggestions.push('✅ Excellent packing efficiency - single carton, good utilization');
+      suggestions.push('✅ Excellent packing efficiency - single carton, high utilization');
     } else if (cartons.length <= 2 && avgUtilization >= 70) {
-      suggestions.push('✅ Good packing efficiency - minimal cartons with solid utilization');
+      suggestions.push('✅ Good packing efficiency - minimal cartons with high utilization');
     }
 
     const overweightCartons = cartons.filter((c, i) => {
@@ -403,9 +403,9 @@ export async function optimizeCartonPacking(
     }).join(', ');
 
     const reasoning = canFitInOneCarton 
-      ? `✅ Optimized: All ${cartonNeededItems.length} item type(s) fit perfectly in ONE ${cartonSummary} carton (${avgUtilization.toFixed(1)}% utilization). ` +
+      ? `✅ Optimized: All ${cartonNeededItems.length} item type(s) fit perfectly in ONE ${cartonSummary} carton (${avgUtilization.toFixed(1)}% utilization) - using the smallest carton for maximum efficiency. ` +
         (nylonWrapItems.length > 0 ? `Additionally, ${nylonWrapItems.length} item type(s) only need nylon wrapping.` : '')
-      : `Optimized packing using LARGEST CARTONS: ${cartonNeededItems.length} item type(s) packed into ${totalCartons} carton(s): ${cartonSummary}. ` +
+      : `Optimized packing using SMALLEST SUITABLE CARTONS: ${cartonNeededItems.length} item type(s) packed into ${totalCartons} carton(s): ${cartonSummary}. ` +
         `Average utilization: ${avgUtilization.toFixed(1)}%. ` +
         (nylonWrapItems.length > 0 ? `Additionally, ${nylonWrapItems.length} item type(s) only need nylon wrapping.` : '');
 
