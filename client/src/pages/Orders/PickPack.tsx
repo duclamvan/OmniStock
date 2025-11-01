@@ -269,6 +269,57 @@ interface CartonRecommendation {
   optimizationSuggestions: string[];
 }
 
+// Helper function to format shipping address (handles both string and object formats)
+const formatShippingAddress = (address: any): string => {
+  if (!address) return '';
+  
+  // If it's already a string (legacy format), return it as-is
+  if (typeof address === 'string') {
+    return address;
+  }
+  
+  // If it's an object, format it
+  const parts: string[] = [];
+  
+  // Name line
+  const nameParts = [address.firstName, address.lastName].filter(Boolean);
+  if (nameParts.length > 0) {
+    parts.push(nameParts.join(' '));
+  }
+  
+  // Company line (if present)
+  if (address.company) {
+    parts.push(address.company);
+  }
+  
+  // Street line
+  const streetParts = [address.street, address.streetNumber].filter(Boolean);
+  if (streetParts.length > 0) {
+    parts.push(streetParts.join(' '));
+  }
+  
+  // City, ZIP, Country line
+  const cityLineParts = [address.zipCode, address.city].filter(Boolean);
+  if (cityLineParts.length > 0) {
+    parts.push(cityLineParts.join(' '));
+  }
+  
+  if (address.country) {
+    parts.push(address.country);
+  }
+  
+  // Contact info (optional)
+  if (address.tel) {
+    parts.push(`Tel: ${address.tel}`);
+  }
+  
+  if (address.email) {
+    parts.push(`Email: ${address.email}`);
+  }
+  
+  return parts.join('\n');
+};
+
 // Memoized Product Image Component to prevent re-renders from timer updates
 const ProductImage = memo(({ 
   item, 
@@ -5438,17 +5489,20 @@ export default function PickPack() {
                   <MapPin className="h-4 w-4 text-purple-600" />
                   <span>Shipping Address</span>
                 </div>
-                {activePackingOrder.shippingAddress ? (
-                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <p className="text-sm text-gray-900 whitespace-pre-line" data-testid="text-shipping-address">
-                      {activePackingOrder.shippingAddress}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                    <p className="text-sm text-gray-500 italic">No shipping address provided</p>
-                  </div>
-                )}
+                {(() => {
+                  const formattedAddress = formatShippingAddress(activePackingOrder.shippingAddress);
+                  return formattedAddress ? (
+                    <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                      <p className="text-sm text-gray-900 whitespace-pre-line" data-testid="text-shipping-address">
+                        {formattedAddress}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                      <p className="text-sm text-gray-500 italic">No shipping address provided</p>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Shipment Type */}

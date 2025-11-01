@@ -1093,9 +1093,11 @@ export class DatabaseStorage implements IStorage {
         .select({
           order: orders,
           customer: customers,
+          shippingAddress: customerShippingAddresses,
         })
         .from(orders)
-        .leftJoin(customers, eq(orders.customerId, customers.id));
+        .leftJoin(customers, eq(orders.customerId, customers.id))
+        .leftJoin(customerShippingAddresses, eq(orders.shippingAddressId, customerShippingAddresses.id));
 
       // Always get all orders in the pick/pack workflow
       // Status mapping happens in getPickPackStatus for both new and old orders
@@ -1108,10 +1110,12 @@ export class DatabaseStorage implements IStorage {
 
       const results = await query.orderBy(desc(orders.createdAt));
 
-      // Map results to include customer name and format status for frontend
+      // Map results to include customer name, shipping address, and format status for frontend
       return results.map((row: any) => ({
         ...row.order,
         customerName: row.customer?.name || 'Unknown Customer',
+        // Use joined address object if available, otherwise fall back to legacy string address
+        shippingAddress: row.shippingAddress ?? row.order.shippingAddress,
         // Map database status to frontend status based on pick/pack status
         status: this.getPickPackStatus(row.order),
       }));
