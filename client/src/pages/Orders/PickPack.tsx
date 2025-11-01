@@ -563,7 +563,7 @@ function OrderFilesDisplay({ orderId }: { orderId: string }) {
 
   if (isLoading) {
     return (
-      <div className="text-sm text-gray-500 p-2">
+      <div className="text-sm text-gray-500 p-2 text-center">
         Loading files...
       </div>
     );
@@ -572,22 +572,19 @@ function OrderFilesDisplay({ orderId }: { orderId: string }) {
   const files = orderFilesData || [];
   
   if (files.length === 0) {
-    return (
-      <div className="text-sm text-gray-500 italic p-3 bg-gray-50 rounded-lg">
-        No files attached to this order
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2 mt-3">
+      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Order Files</div>
       {files.map((file: any, index: number) => (
         <div 
           key={file.id || index}
-          className="flex items-center gap-2 p-2 bg-gray-50 rounded"
+          className="flex items-center gap-3 p-2.5 bg-white border border-gray-200 rounded-lg hover:border-emerald-300 transition-colors"
         >
           {/* File Thumbnail */}
-          <div className="flex-shrink-0 w-10 h-10 rounded overflow-hidden bg-gray-200 border border-gray-300">
+          <div className="flex-shrink-0 w-12 h-12 rounded-md overflow-hidden bg-gray-100 border border-gray-200">
             {file.mimeType?.startsWith('image/') ? (
               <img 
                 src={file.fileUrl || file.url}
@@ -595,8 +592,8 @@ function OrderFilesDisplay({ orderId }: { orderId: string }) {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <FileText className="h-5 w-5 text-gray-500" />
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+                <FileText className="h-6 w-6 text-gray-500" />
               </div>
             )}
           </div>
@@ -612,12 +609,13 @@ function OrderFilesDisplay({ orderId }: { orderId: string }) {
           <Button
             variant="outline"
             size="sm"
-            className="h-7 text-xs flex-shrink-0"
+            className="h-8 text-xs flex-shrink-0 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300"
             onClick={() => {
               window.open(file.fileUrl || file.url, '_blank');
             }}
+            data-testid={`button-print-file-${index}`}
           >
-            <Printer className="h-3 w-3 mr-1" />
+            <Printer className="h-3.5 w-3.5 mr-1.5" />
             Print
           </Button>
         </div>
@@ -4957,64 +4955,71 @@ export default function PickPack() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-3 space-y-4">
-              {/* Section 1: Documents */}
+              {/* Documents & Files - Unified Section */}
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold text-gray-700">Documents:</h3>
-                <div className="space-y-1.5">
-                  {/* Packing List */}
-                  <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                    <div className="flex items-center gap-2">
-                      <Checkbox 
-                        checked={printedDocuments.packingList}
-                        disabled
-                        className="cursor-default"
-                      />
-                      <span className="text-sm">Packing List</span>
+                <div className="space-y-2">
+                  {/* Packing List - Always Shown */}
+                  <div className="flex items-center gap-3 p-2.5 bg-white border border-gray-200 rounded-lg hover:border-violet-300 transition-colors">
+                    {/* Thumbnail */}
+                    <div className="flex-shrink-0 w-12 h-12 rounded-md overflow-hidden bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200 flex items-center justify-center">
+                      <FileText className="h-6 w-6 text-violet-600" />
                     </div>
+                    
+                    {/* Document Name */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900">Packing List</p>
+                    </div>
+
+                    {/* Print Button */}
                     <Button 
                       variant="outline" 
                       size="sm"
-                      className="h-7 text-xs"
+                      className="h-8 text-xs flex-shrink-0 hover:bg-violet-50 hover:text-violet-700 hover:border-violet-300"
                       onClick={() => {
                         window.open(`/api/orders/${activePackingOrder.id}/packing-list.pdf`, '_blank');
                         setPrintedDocuments(prev => ({ ...prev, packingList: true }));
                         playSound('success');
                       }}
+                      data-testid="button-print-packing-list"
                     >
-                      <Printer className="h-3 w-3 mr-1" />
+                      <Printer className="h-3.5 w-3.5 mr-1.5" />
                       Print
                     </Button>
                   </div>
 
                   {/* MSDS */}
-                  <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-md overflow-hidden bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 flex items-center justify-center">
+                      <FileText className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div className="flex-1 min-w-0 flex items-center gap-2">
                       <Checkbox 
                         checked={printedDocuments.msds}
                         onCheckedChange={(checked) => setPrintedDocuments(prev => ({ ...prev, msds: !!checked }))}
+                        data-testid="checkbox-msds"
                       />
-                      <span className="text-sm">MSDS</span>
+                      <span className="text-sm font-medium text-gray-700">MSDS</span>
                     </div>
                   </div>
 
                   {/* CPNP Certificate */}
-                  <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-md overflow-hidden bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200 flex items-center justify-center">
+                      <FileText className="h-6 w-6 text-amber-600" />
+                    </div>
+                    <div className="flex-1 min-w-0 flex items-center gap-2">
                       <Checkbox 
                         checked={printedDocuments.cpnpCertificate}
                         onCheckedChange={(checked) => setPrintedDocuments(prev => ({ ...prev, cpnpCertificate: !!checked }))}
+                        data-testid="checkbox-cpnp"
                       />
-                      <span className="text-sm">CPNP Certificate</span>
+                      <span className="text-sm font-medium text-gray-700">CPNP Certificate</span>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <Separator />
-
-              {/* Section 2: All Order Files & Documents */}
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-gray-700">Order Files & Documents:</h3>
+                {/* Order Files & Documents from Database */}
                 {activePackingOrder && (
                   <OrderFilesDisplay orderId={activePackingOrder.id} />
                 )}
