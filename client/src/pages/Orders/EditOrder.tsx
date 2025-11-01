@@ -3463,7 +3463,7 @@ export default function EditOrder() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label htmlFor="shippingCost">Shipping Cost</Label>
+                <Label htmlFor="shippingCost" className="text-sm">Shipping Cost</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -3475,6 +3475,7 @@ export default function EditOrder() {
                       submitButtonRef.current?.click();
                     }
                   }}
+                  className="mt-1"
                   data-testid="input-shipping-cost"
                 />
                 {/* Quick shipping cost buttons */}
@@ -3510,11 +3511,12 @@ export default function EditOrder() {
               </div>
 
               <div>
-                <Label htmlFor="actualShippingCost">Actual Shipping Cost</Label>
+                <Label htmlFor="actualShippingCost" className="text-sm">Actual Shipping Cost</Label>
                 <Input
                   type="number"
                   step="0.01"
                   {...form.register('actualShippingCost', { valueAsNumber: true })}
+                  className="mt-1"
                 />
               </div>
             </div>
@@ -3526,7 +3528,7 @@ export default function EditOrder() {
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="dobirkaAmount" className="flex items-center gap-2">
+                    <Label htmlFor="dobirkaAmount" className="text-sm flex items-center gap-2">
                       <Banknote className="w-4 h-4" />
                       Dobírka Amount (COD)
                     </Label>
@@ -3536,13 +3538,14 @@ export default function EditOrder() {
                       min="0"
                       placeholder="0.00"
                       {...form.register('dobirkaAmount', { valueAsNumber: true })}
+                      className="mt-1"
                       data-testid="input-dobirka-amount"
                     />
                     <p className="text-xs text-gray-500 mt-1">Cash on delivery amount (optional)</p>
                   </div>
 
                   <div>
-                    <Label htmlFor="dobirkaCurrency" className="flex items-center gap-2">
+                    <Label htmlFor="dobirkaCurrency" className="text-sm flex items-center gap-2">
                       <span className="w-4 h-4"></span>
                       Dobírka Currency
                     </Label>
@@ -3550,7 +3553,7 @@ export default function EditOrder() {
                       value={form.watch('dobirkaCurrency') || 'CZK'}
                       onValueChange={(value) => form.setValue('dobirkaCurrency', value as any)}
                     >
-                      <SelectTrigger data-testid="select-dobirka-currency">
+                      <SelectTrigger className="mt-1" data-testid="select-dobirka-currency">
                         <SelectValue placeholder="Select currency" />
                       </SelectTrigger>
                       <SelectContent>
@@ -3568,10 +3571,11 @@ export default function EditOrder() {
             )}
 
             <div>
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes" className="text-sm">Notes</Label>
               <Textarea
                 {...form.register('notes')}
                 placeholder="Additional order notes..."
+                className="mt-1"
               />
             </div>
 
