@@ -7617,6 +7617,52 @@ Return ONLY the subject line without quotes or extra formatting.`,
       // Get order items
       const orderItems = await storage.getOrderItems(orderId);
       
+      // Get shipping address
+      let formattedAddress = 'Address not provided';
+      if (order.shippingAddressId) {
+        try {
+          const shippingAddress = await storage.getCustomerShippingAddress(order.shippingAddressId);
+          if (shippingAddress) {
+            // Format address as multi-line string
+            const addressLines = [];
+            
+            // Company name if exists
+            if (shippingAddress.company) {
+              addressLines.push(shippingAddress.company);
+            }
+            
+            // Full name
+            const fullName = `${shippingAddress.firstName} ${shippingAddress.lastName}`.trim();
+            if (fullName) {
+              addressLines.push(fullName);
+            }
+            
+            // Street address
+            const street = shippingAddress.streetNumber 
+              ? `${shippingAddress.street} ${shippingAddress.streetNumber}`
+              : shippingAddress.street;
+            addressLines.push(street);
+            
+            // City, ZIP, Country
+            const cityLine = `${shippingAddress.zipCode} ${shippingAddress.city}`;
+            addressLines.push(cityLine);
+            addressLines.push(shippingAddress.country);
+            
+            // Contact info
+            if (shippingAddress.tel) {
+              addressLines.push(`Tel: ${shippingAddress.tel}`);
+            }
+            if (shippingAddress.email) {
+              addressLines.push(`Email: ${shippingAddress.email}`);
+            }
+            
+            formattedAddress = addressLines.join('\n');
+          }
+        } catch (error) {
+          console.error('Error fetching shipping address:', error);
+        }
+      }
+      
       // Get product details for each item
       const itemsWithProducts = await Promise.all(
         orderItems.map(async (item) => {
@@ -7732,7 +7778,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       doc.fontSize(9)
          .font('Helvetica')
          .fillColor('#333333')
-         .text(order.shippingAddress || 'Address not provided', 50, customerBoxY + 52, { 
+         .text(formattedAddress, 50, customerBoxY + 52, { 
            width: 500,
            lineGap: 2
          });
