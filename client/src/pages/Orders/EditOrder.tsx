@@ -3833,7 +3833,7 @@ export default function EditOrder() {
                         
                         if (difference > 0) {
                           // Add the difference to shipping cost to round up the total
-                          const currentShipping = form.watch('shippingCost') || 0;
+                          const currentShipping = parseFloat(form.watch('shippingCost')) || 0;
                           const newShipping = currentShipping + difference;
                           form.setValue('shippingCost', parseFloat(newShipping.toFixed(2)));
                           
