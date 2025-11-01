@@ -753,6 +753,8 @@ export default function EditOrder() {
     const order = existingOrder as any;
     if (!order.items) return;
 
+    console.log('✅ Loading order items:', order.items.length);
+
     const items: OrderItem[] = order.items.map((item: any) => ({
       id: item.id || `item-${Date.now()}-${Math.random()}`,
       productId: item.productId,
@@ -773,12 +775,14 @@ export default function EditOrder() {
     }));
 
     setOrderItems(items);
-  }, [existingOrder?.id]); // Only update when order ID changes
+  }, [existingOrder?.id, existingOrder?.items?.length]); // Re-run when ID or items change
 
   // Pre-fill customer when order loads
   useEffect(() => {
     if (!existingOrder || !allCustomers) return;
     const order = existingOrder as any;
+
+    console.log('✅ Loading customer:', order.customerId);
 
     if (order.customerId) {
       const customer = Array.isArray(allCustomers) 
@@ -788,9 +792,12 @@ export default function EditOrder() {
       if (customer) {
         setSelectedCustomer(customer);
         setCustomerSearch(customer.name);
+        console.log('✅ Customer loaded:', customer.name);
+      } else {
+        console.log('❌ Customer not found in allCustomers');
       }
     }
-  }, [existingOrder?.customerId, allCustomers]);
+  }, [existingOrder?.id, existingOrder?.customerId, allCustomers]); // Added existingOrder?.id
 
   // Pre-fill shipping address when order loads
   useEffect(() => {
