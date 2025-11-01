@@ -34,6 +34,7 @@ import {
   insertOrderCartonSchema,
   productCostHistory,
   products,
+  productBundles,
   productLocations,
   purchaseItems,
   importPurchases,
