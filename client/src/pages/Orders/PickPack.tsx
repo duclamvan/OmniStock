@@ -1310,6 +1310,9 @@ export default function PickPack() {
   
   // Track if user has manually interacted with cartons (prevents AI auto-recalculation)
   const [hasManuallyModifiedCartons, setHasManuallyModifiedCartons] = useState(false);
+  
+  // Prevent concurrent carton creation operations
+  const [isCreatingCartons, setIsCreatingCartons] = useState(false);
 
   // Function to recalculate cartons - this will be defined after mutations
   const recalculateCartons = useRef<(() => Promise<void>) | null>(null);
@@ -1336,6 +1339,17 @@ export default function PickPack() {
       return;
     }
 
+    // Don't auto-apply if we're already creating cartons or recalculating
+    if (isCreatingCartons || isRecalculating) {
+      return;
+    }
+    
+    // Don't auto-apply if user has manually modified cartons
+    if (hasManuallyModifiedCartons) {
+      console.log('User has manually modified cartons, skipping auto-apply');
+      return;
+    }
+
     // Only auto-apply if we have valid suggestions
     if (!recommendedCarton.suggestions || recommendedCarton.suggestions.length === 0) {
       return;
@@ -1348,8 +1362,9 @@ export default function PickPack() {
       return;
     }
 
-    // Mark that we've started auto-applying
+    // Mark that we've started auto-applying and prevent concurrent operations
     setHasAutoAppliedSuggestions(true);
+    setIsCreatingCartons(true);
     
     console.log(`✅ Auto-applying AI optimization: creating ${recommendedCarton.suggestions.length} optimized carton(s) using DeepSeek AI`);
     
@@ -1396,11 +1411,13 @@ export default function PickPack() {
           description: "Failed to create AI-suggested cartons",
           variant: "destructive"
         });
+      } finally {
+        setIsCreatingCartons(false);
       }
     };
 
     createAndUpdateCartons();
-  }, [activePackingOrder?.id, recommendedCarton, hasAutoAppliedSuggestions]);
+  }, [activePackingOrder?.id, recommendedCarton, hasAutoAppliedSuggestions, isCreatingCartons, isRecalculating, cartons.length]);
 
   // Create carton mutation
   const createCartonMutation = useMutation({
@@ -1528,8 +1545,15 @@ export default function PickPack() {
   recalculateCartons.current = async () => {
     if (!activePackingOrder) return;
     
+    // Prevent concurrent operations
+    if (isCreatingCartons || isRecalculating) {
+      console.log('⏸️ Skipping recalculation - operation already in progress');
+      return;
+    }
+    
     console.log('🔄 Recalculating cartons for order', activePackingOrder.id);
     setIsRecalculating(true);
+    setIsCreatingCartons(true);
     
     try {
       // Delete all existing cartons
@@ -1567,6 +1591,7 @@ export default function PickPack() {
       });
     } finally {
       setIsRecalculating(false);
+      setIsCreatingCartons(false);
     }
   };
 
