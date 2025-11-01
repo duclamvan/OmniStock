@@ -4643,7 +4643,7 @@ Important:
   // Complete packing an order
   app.post('/api/orders/:id/pack/complete', async (req: any, res) => {
     try {
-      const { cartons, packageWeight, printedDocuments, packingChecklist } = req.body;
+      const { cartons, packageWeight, printedDocuments, packingChecklist, packingMaterialsApplied } = req.body;
       
       // Handle mock orders
       if (req.params.id.startsWith('mock-')) {
@@ -4668,6 +4668,32 @@ Important:
       };
       
       await storage.updateOrder(req.params.id, updateData);
+      
+      // Process packing materials - decrease stock and create usage records
+      if (packingMaterialsApplied && typeof packingMaterialsApplied === 'object') {
+        const appliedMaterialIds = Object.keys(packingMaterialsApplied).filter(
+          (materialId) => packingMaterialsApplied[materialId] === true
+        );
+        
+        for (const materialId of appliedMaterialIds) {
+          try {
+            // Decrease stock quantity by 1 for each applied material
+            await storage.decreasePackingMaterialStock(materialId, 1);
+            
+            // Create usage record
+            await storage.createPackingMaterialUsage({
+              orderId: req.params.id,
+              materialId: materialId,
+              quantity: 1,
+              notes: 'Applied during packing completion'
+            });
+          } catch (stockError) {
+            console.error(`Error updating stock for material ${materialId}:`, stockError);
+            // Continue with other materials even if one fails
+          }
+        }
+      }
+      
       const order = await storage.getOrderById(req.params.id);
       
       if (order) {

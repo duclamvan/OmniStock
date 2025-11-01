@@ -3555,7 +3555,8 @@ export default function PickPack() {
           cartons: selectedCartons,
           packageWeight: packageWeight,
           printedDocuments: printedDocuments,
-          packingChecklist: packingChecklist
+          packingChecklist: packingChecklist,
+          packingMaterialsApplied: packingMaterialsApplied
         });
 
         // Update order status to "ready_to_ship" when packing is complete

@@ -435,6 +435,7 @@ export interface IStorage {
   createPackingMaterial(material: any): Promise<PackingMaterial>;
   updatePackingMaterial(id: string, material: any): Promise<PackingMaterial | undefined>;
   deletePackingMaterial(id: string): Promise<boolean>;
+  decreasePackingMaterialStock(materialId: string, quantity: number): Promise<void>;
   
   // Packing Material Usage
   getPackingMaterialUsage(orderId: string): Promise<PackingMaterialUsage[]>;
@@ -4175,6 +4176,34 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error deleting packing material:', error);
       return false;
+    }
+  }
+
+  async decreasePackingMaterialStock(materialId: string, quantity: number): Promise<void> {
+    try {
+      const [material] = await db
+        .select()
+        .from(packingMaterials)
+        .where(eq(packingMaterials.id, materialId));
+      
+      if (!material) {
+        throw new Error(`Packing material with ID ${materialId} not found`);
+      }
+      
+      const newStockQuantity = Math.max(0, material.stockQuantity - quantity);
+      
+      await db
+        .update(packingMaterials)
+        .set({ 
+          stockQuantity: newStockQuantity,
+          updatedAt: new Date()
+        })
+        .where(eq(packingMaterials.id, materialId));
+      
+      console.log(`Decreased stock for material ${materialId}: ${material.stockQuantity} → ${newStockQuantity}`);
+    } catch (error) {
+      console.error('Error decreasing packing material stock:', error);
+      throw error;
     }
   }
 
