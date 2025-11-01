@@ -547,12 +547,12 @@ export default function EditOrder() {
     },
   });
 
-  // Fetch existing order data
-  const { data: existingOrder, isLoading: isLoadingOrder, refetch: refetchOrder } = useQuery({
+  // Fetch existing order data ONCE on mount - no automatic refetching
+  const { data: existingOrder, isLoading: isLoadingOrder } = useQuery({
     queryKey: ['/api/orders', id],
     queryFn: async () => {
       const response = await fetch(`/api/orders/${id}`, {
-        cache: 'no-store', // Disable HTTP cache
+        cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
@@ -565,10 +565,11 @@ export default function EditOrder() {
       return response.json();
     },
     enabled: !!id,
-    staleTime: 0, // Data is immediately stale
-    gcTime: 0, // Don't keep in cache after unmount
-    refetchOnMount: 'always', // Always fetch fresh data when page loads
-    refetchOnWindowFocus: true, // Refetch when user returns to the tab
+    staleTime: Infinity, // Never refetch automatically
+    gcTime: 0,
+    refetchOnMount: false, // Only load once
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    refetchOnReconnect: false, // Don't refetch on reconnect
   });
 
   // Fetch all products for real-time filtering
@@ -686,17 +687,14 @@ export default function EditOrder() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Track if form has been initially loaded
-  const [formInitialized, setFormInitialized] = useState(false);
-
-  // Pre-fill form data when order loads
+  // Pre-fill form data when order loads - simplified, only runs when order data changes
   useEffect(() => {
-    if (!existingOrder || formInitialized) return;
+    if (!existingOrder) return;
     const order = existingOrder as any;
 
-    console.log('🔄 Initial form load with order data, currency:', order.currency);
+    console.log('✅ Loading fresh order data into form, currency:', order.currency);
 
-    // Set form values
+    // Reset form with fresh database data
     form.reset({
       customerId: order.customerId,
       orderType: order.orderType || 'ord',
@@ -730,10 +728,7 @@ export default function EditOrder() {
     if (order.discountValue > 0) {
       setShowDiscount(true);
     }
-    
-    // Mark form as initialized to prevent re-running
-    setFormInitialized(true);
-  }, [existingOrder, formInitialized]);
+  }, [existingOrder?.currency, existingOrder?.id]); // Only update when currency or ID changes
 
   // Pre-fill order items when order loads
   useEffect(() => {
@@ -761,7 +756,7 @@ export default function EditOrder() {
     }));
 
     setOrderItems(items);
-  }, [existingOrder]);
+  }, [existingOrder?.id]); // Only update when order ID changes
 
   // Pre-fill customer when order loads
   useEffect(() => {
@@ -778,7 +773,7 @@ export default function EditOrder() {
         setCustomerSearch(customer.name);
       }
     }
-  }, [existingOrder, allCustomers]);
+  }, [existingOrder?.customerId, allCustomers]);
 
   // Pre-fill shipping address when order loads
   useEffect(() => {
@@ -798,7 +793,7 @@ export default function EditOrder() {
     else if (shippingAddresses.length === 1) {
       setSelectedShippingAddress(shippingAddresses[0]);
     }
-  }, [existingOrder, shippingAddresses]);
+  }, [existingOrder?.shippingAddressId, shippingAddresses]);
 
   // Pre-fill selected documents when order loads
   useEffect(() => {
@@ -810,7 +805,7 @@ export default function EditOrder() {
     }
 
     // Note: Document management simplified to file upload only
-  }, [existingOrder]);
+  }, [existingOrder?.id]);
 
   // Pre-fill packing plan when order loads
   useEffect(() => {
