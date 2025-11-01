@@ -1110,11 +1110,19 @@ export default function EditOrder() {
   }, [selectedCurrency, allProducts]);
 
   // Auto-calculate shipping cost when shipping method or customer country changes
+  // BUT ONLY for NEW orders - don't overwrite saved shipping costs
   const watchedShippingMethod = form.watch('shippingMethod');
   const watchedCurrency = form.watch('currency');
 
   useEffect(() => {
     if (!watchedShippingMethod || !selectedCustomer?.country) return;
+    
+    // 🔒 CRITICAL FIX: Don't overwrite saved shipping cost from database
+    // Only auto-calculate for new orders (no existingOrder.shippingCost)
+    if (existingOrder?.shippingCost !== undefined && existingOrder?.shippingCost !== null) {
+      console.log('⏭️ Skipping auto-shipping cost - order has saved value:', existingOrder.shippingCost);
+      return; // Existing order already has a saved shipping cost, don't touch it!
+    }
 
     const calculatedCost = calculateShippingCost(
       watchedShippingMethod,
@@ -1122,16 +1130,26 @@ export default function EditOrder() {
       watchedCurrency
     );
 
+    console.log('✅ Auto-calculating shipping cost for new order:', calculatedCost);
     form.setValue('actualShippingCost', calculatedCost);
     form.setValue('shippingCost', calculatedCost); // Also set shipping cost for display
-  }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency]); // Removed form from dependencies
+  }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency, existingOrder?.shippingCost]); // Added existingOrder.shippingCost
 
   // Auto-sync dobírka amount and currency when PPL + COD is selected
+  // BUT ONLY for NEW orders - don't overwrite saved dobírka values
   const watchedPaymentMethod = form.watch('paymentMethod');
   
   useEffect(() => {
     // Only autofill if PPL shipping and COD payment are selected
     if (watchedShippingMethod === 'PPL' && watchedPaymentMethod === 'COD') {
+      // 🔒 CRITICAL FIX: Don't overwrite saved dobírka from database
+      // Only auto-sync for new orders (no existingOrder.dobirkaAmount)
+      if (existingOrder?.dobirkaAmount !== undefined && existingOrder?.dobirkaAmount !== null) {
+        console.log('⏭️ Skipping auto-dobírka sync - order has saved value:', existingOrder.dobirkaAmount);
+        return; // Existing order already has saved dobírka, don't touch it!
+      }
+      
+      console.log('✅ Auto-syncing dobírka for new order');
       // Always sync dobírka amount to match grand total
       const grandTotal = calculateGrandTotal();
       form.setValue('dobirkaAmount', parseFloat(grandTotal.toFixed(2)));
@@ -1141,7 +1159,7 @@ export default function EditOrder() {
         form.setValue('dobirkaCurrency', watchedCurrency);
       }
     }
-  }, [watchedShippingMethod, watchedPaymentMethod, watchedCurrency, orderItems, showTaxInvoice]); // Simplified dependencies
+  }, [watchedShippingMethod, watchedPaymentMethod, watchedCurrency, orderItems, showTaxInvoice, existingOrder?.dobirkaAmount]); // Added existingOrder.dobirkaAmount
 
   // Auto-fill currency from customer preference (only when creating new orders)
   // Note: This is intentionally NOT in EditOrder - we preserve the order's saved currency
