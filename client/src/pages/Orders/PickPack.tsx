@@ -6432,16 +6432,25 @@ export default function PickPack() {
                       <div className="bg-orange-100 border-4 border-orange-500 rounded-lg p-6 text-center shadow-lg overflow-hidden">
                         <p className="text-xs font-bold text-orange-800 uppercase mb-2 tracking-wider">Warehouse Location</p>
                         <p 
-                          className="font-black text-orange-600 font-mono break-all"
+                          className="font-black text-orange-600 font-mono"
                           style={{
-                            fontSize: 'clamp(1.75rem, 6vw, 4rem)',
-                            lineHeight: '1.2',
+                            fontSize: 'min(4.5vw, 2.5rem)',
+                            lineHeight: '1.3',
                             width: '100%',
                             display: 'block',
-                            wordBreak: 'break-all'
+                            whiteSpace: 'nowrap',
+                            overflowWrap: 'normal',
+                            wordBreak: 'keep-all',
+                            hyphens: 'manual'
                           }}
                         >
-                          {currentItem.warehouseLocation}
+                          {(currentItem.warehouseLocation || '').split('-').map((part, i, arr) => (
+                            <span key={i}>
+                              {part}
+                              {i < arr.length - 1 && <wbr />}
+                              {i < arr.length - 1 && '-'}
+                            </span>
+                          ))}
                         </p>
                       </div>
 
