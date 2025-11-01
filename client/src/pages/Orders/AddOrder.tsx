@@ -323,6 +323,14 @@ export default function AddOrder() {
   const [showVatColumn, setShowVatColumn] = useState(false);
   const [showDiscountColumn, setShowDiscountColumn] = useState(false);
 
+  // Auto-enable discount column if any item has a discount
+  useEffect(() => {
+    const hasDiscounts = orderItems.some(item => item.discount > 0);
+    if (hasDiscounts && !showDiscountColumn) {
+      setShowDiscountColumn(true);
+    }
+  }, [orderItems, showDiscountColumn]);
+
   // Fetch real addresses from geocoding API
   const fetchRealAddresses = async (query: string): Promise<any[]> => {
     try {
