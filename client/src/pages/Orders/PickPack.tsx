@@ -213,6 +213,11 @@ interface PickPackOrder {
   modificationNotes?: string;
   lastModifiedAt?: string;
   previousPackStatus?: string;
+  // PPL shipping integration
+  pplBatchId?: string;
+  pplShipmentNumbers?: string[];
+  pplLabelData?: any;
+  pplStatus?: string;
 }
 
 interface OrderCarton {
@@ -1583,6 +1588,65 @@ export default function PickPack() {
       queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder?.id, 'cartons'] });
       refetchCartons();
     },
+  });
+
+  // PPL Label mutations
+  const createPPLLabelsMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const response = await apiRequest('POST', `/api/orders/${orderId}/ppl/create-labels`, {});
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "PPL Labels Created",
+        description: `Created ${data.shipmentNumbers.length} shipping label(s)`,
+      });
+
+      // Download the PDF label
+      const labelBlob = new Blob(
+        [Uint8Array.from(atob(data.labelBase64), c => c.charCodeAt(0))],
+        { type: 'application/pdf' }
+      );
+      const url = URL.createObjectURL(labelBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `PPL-Labels-${activePackingOrder?.orderId}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      // Refetch order to get updated PPL data
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+    },
+    onError: (error: any) => {
+      console.error('Error creating PPL labels:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create PPL labels",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const cancelPPLLabelsMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const response = await apiRequest('POST', `/api/orders/${orderId}/ppl/cancel-labels`, {});
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "PPL Labels Cancelled",
+        description: "Shipping labels have been cancelled",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+    },
+    onError: (error: any) => {
+      console.error('Error cancelling PPL labels:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to cancel PPL labels",
+        variant: "destructive"
+      });
+    }
   });
 
   // Define the actual recalculate function after mutations are available
@@ -5427,7 +5491,120 @@ export default function PickPack() {
             </CardContent>
           </Card>
 
-          {/* Shipping Labels Section */}
+          {/* PPL Shipping Labels Section */}
+          {activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') && (
+            <Card className="shadow-sm border border-orange-200 bg-white">
+              <CardHeader className="bg-gradient-to-r from-orange-600 to-red-600 text-white p-3 rounded-t-lg">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Truck className="h-4 w-4" />
+                  PPL Shipping Labels
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-3">
+                {/* Generate PPL Labels Button */}
+                {activePackingOrder.pplStatus !== 'created' ? (
+                  <Button
+                    variant="default"
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold"
+                    onClick={() => createPPLLabelsMutation.mutate(activePackingOrder.id)}
+                    disabled={createPPLLabelsMutation.isPending || cartons.length === 0}
+                    data-testid="button-generate-ppl-labels"
+                  >
+                    {createPPLLabelsMutation.isPending ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Plus className="h-4 w-4 mr-2" />
+                    )}
+                    {createPPLLabelsMutation.isPending ? 'Creating Labels...' : 'Generate PPL Labels'}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="destructive"
+                    className="w-full"
+                    onClick={() => {
+                      if (confirm('Are you sure you want to cancel PPL labels? This action cannot be undone.')) {
+                        cancelPPLLabelsMutation.mutate(activePackingOrder.id);
+                      }
+                    }}
+                    disabled={cancelPPLLabelsMutation.isPending}
+                    data-testid="button-cancel-ppl-labels"
+                  >
+                    {cancelPPLLabelsMutation.isPending ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <X className="h-4 w-4 mr-2" />
+                    )}
+                    {cancelPPLLabelsMutation.isPending ? 'Cancelling...' : 'Cancel PPL Labels'}
+                  </Button>
+                )}
+
+                {/* Display PPL shipment numbers if they exist */}
+                {activePackingOrder.pplShipmentNumbers && activePackingOrder.pplShipmentNumbers.length > 0 && (
+                  <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
+                    <h4 className="text-sm font-semibold text-orange-900 mb-2">PPL Tracking Numbers:</h4>
+                    <div className="space-y-1">
+                      {activePackingOrder.pplShipmentNumbers.map((trackingNum: string, index: number) => (
+                        <div key={index} className="flex items-center justify-between text-sm">
+                          <span className="font-mono text-orange-800">{trackingNum}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-xs"
+                            onClick={() => {
+                              navigator.clipboard.writeText(trackingNum);
+                              toast({ title: "Copied to clipboard" });
+                            }}
+                          >
+                            Copy
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Download existing label button */}
+                {activePackingOrder.pplLabelData && (
+                  <Button
+                    variant="outline"
+                    className="w-full border-orange-300 text-orange-700 hover:bg-orange-50"
+                    onClick={async () => {
+                      try {
+                        const response = await apiRequest('GET', `/api/orders/${activePackingOrder.id}/ppl/label`, {});
+                        const data = await response.json();
+
+                        if (data.success) {
+                          const labelBlob = new Blob(
+                            [Uint8Array.from(atob(data.labelBase64), c => c.charCodeAt(0))],
+                            { type: 'application/pdf' }
+                          );
+                          const url = URL.createObjectURL(labelBlob);
+                          const link = document.createElement('a');
+                          link.href = url;
+                          link.download = `PPL-Labels-${activePackingOrder.orderId}.pdf`;
+                          link.click();
+                          URL.revokeObjectURL(url);
+                        }
+                      } catch (error: any) {
+                        console.error('Error downloading PPL label:', error);
+                        toast({
+                          title: "Error",
+                          description: "Failed to download label",
+                          variant: "destructive"
+                        });
+                      }
+                    }}
+                    data-testid="button-download-ppl-label"
+                  >
+                    <Printer className="h-4 w-4 mr-2" />
+                    Download PPL Labels
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Regular Shipping Labels Section */}
           <Card className="shadow-sm border border-gray-200 bg-white">
             <CardHeader className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white p-3 rounded-t-lg">
               <CardTitle className="text-base flex items-center gap-2">
