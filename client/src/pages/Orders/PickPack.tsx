@@ -5205,10 +5205,10 @@ export default function PickPack() {
                                 {item.notes && (
                                   <div className="p-2 bg-amber-50 rounded border-l-2 border-amber-400">
                                     <div className="flex items-start gap-1.5">
-                                      <AlertTriangle className="h-3 w-3 text-amber-500 mt-0.5 flex-shrink-0" />
+                                      <AlertTriangle className="h-3.5 w-3.5 text-amber-500 mt-0.5 flex-shrink-0" />
                                       <div className="flex-1 min-w-0">
-                                        <div className="text-[10px] font-semibold text-amber-700 mb-0.5">SHIPPING NOTES</div>
-                                        <div className="text-[11px] text-amber-600 leading-snug whitespace-pre-wrap">{item.notes}</div>
+                                        <div className="text-xs font-semibold text-amber-700 mb-0.5">SHIPPING NOTES</div>
+                                        <div className="text-sm text-amber-600 leading-snug whitespace-pre-wrap">{item.notes}</div>
                                       </div>
                                     </div>
                                   </div>
@@ -5217,10 +5217,10 @@ export default function PickPack() {
                                 {item.shipmentNotes && (
                                   <div className="p-2 bg-red-50 rounded border-l-2 border-red-400">
                                     <div className="flex items-start gap-1.5">
-                                      <AlertTriangle className="h-3 w-3 text-red-500 mt-0.5 flex-shrink-0" />
+                                      <AlertTriangle className="h-3.5 w-3.5 text-red-500 mt-0.5 flex-shrink-0" />
                                       <div className="flex-1 min-w-0">
-                                        <div className="text-[10px] font-semibold text-red-700 mb-0.5">SPECIAL HANDLING</div>
-                                        <div className="text-[11px] text-red-600 leading-snug">{item.shipmentNotes}</div>
+                                        <div className="text-xs font-semibold text-red-700 mb-0.5">SPECIAL HANDLING</div>
+                                        <div className="text-sm text-red-600 leading-snug">{item.shipmentNotes}</div>
                                         {item.packingMaterial && (
                                           <div className="flex items-center gap-1.5 mt-1">
                                             {item.packingMaterial.imageUrl && (
@@ -5230,7 +5230,7 @@ export default function PickPack() {
                                                 className="w-6 h-6 rounded object-contain border bg-white flex-shrink-0"
                                               />
                                             )}
-                                            <div className="text-[10px] min-w-0">
+                                            <div className="text-xs min-w-0">
                                               <div className="font-medium text-red-700 truncate">{item.packingMaterial.name}</div>
                                               <div className="text-red-500 truncate">{item.packingMaterial.description}</div>
                                             </div>
@@ -5244,9 +5244,9 @@ export default function PickPack() {
                                 {(item.packingInstructionsText || item.packingInstructionsImage) && (
                                   <div className="p-2 bg-blue-50 rounded border-l-2 border-blue-400">
                                     <div className="flex items-start gap-1.5">
-                                      <Package className="h-3 w-3 text-blue-500 mt-0.5 flex-shrink-0" />
+                                      <Package className="h-3.5 w-3.5 text-blue-500 mt-0.5 flex-shrink-0" />
                                       <div className="flex-1 min-w-0">
-                                        <div className="text-[10px] font-semibold text-blue-700 mb-0.5">PACKING INSTRUCTIONS</div>
+                                        <div className="text-xs font-semibold text-blue-700 mb-0.5">PACKING INSTRUCTIONS</div>
                                         {item.packingInstructionsImage && (
                                           <div className="mb-1">
                                             <img 
@@ -5257,7 +5257,7 @@ export default function PickPack() {
                                           </div>
                                         )}
                                         {item.packingInstructionsText && (
-                                          <div className="text-[11px] text-blue-600 leading-snug whitespace-pre-line">
+                                          <div className="text-sm text-blue-600 leading-snug whitespace-pre-line">
                                             {item.packingInstructionsText}
                                           </div>
                                         )}
