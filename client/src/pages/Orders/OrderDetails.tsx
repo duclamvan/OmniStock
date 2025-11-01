@@ -1263,7 +1263,20 @@ export default function OrderDetails() {
                   {order.shippingCost > 0 && (
                     <>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-700 font-medium">Shipping ({order.shippingMethod})</span>
+                        <span className="text-slate-700 font-medium">
+                          Shipping ({(() => {
+                            // Show country-specific COD labels
+                            if (order.paymentMethod === 'COD') {
+                              const country = order.shippingAddress?.country?.toLowerCase();
+                              if (country === 'czech republic' || country === 'czechia' || country === 'česká republika') {
+                                return 'PPL - Dobírka';
+                              } else if (country === 'germany' || country === 'deutschland') {
+                                return 'DHL - Nachnahme';
+                              }
+                            }
+                            return order.shippingMethod;
+                          })()})
+                        </span>
                         <span className="font-semibold text-slate-900">{formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</span>
                       </div>
                       {order.actualShippingCost > 0 && order.actualShippingCost !== order.shippingCost && (
