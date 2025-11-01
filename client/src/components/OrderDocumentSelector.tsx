@@ -51,6 +51,7 @@ interface OrderDocumentSelectorProps {
   selectedDocumentIds: string[];
   onDocumentSelectionChange: (ids: string[]) => void;
   customerId?: string;
+  existingOrderId?: string; // Flag to prevent auto-selection on existing orders
 }
 
 const FILE_TYPE_ICONS: Record<string, typeof FileText> = {
@@ -88,6 +89,7 @@ export default function OrderDocumentSelector({
   selectedDocumentIds,
   onDocumentSelectionChange,
   customerId,
+  existingOrderId,
 }: OrderDocumentSelectorProps) {
   // Memoize unique product IDs to prevent query refetches
   // Sort to ensure stable array order for queryKey comparison

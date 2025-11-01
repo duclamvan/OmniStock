@@ -816,10 +816,26 @@ export default function EditOrder() {
     const order = existingOrder as any;
     
     if (order.selectedDocumentIds && Array.isArray(order.selectedDocumentIds)) {
+      console.log('✅ Loading selected document IDs:', order.selectedDocumentIds.length);
       setSelectedDocumentIds(order.selectedDocumentIds);
     }
+  }, [existingOrder?.id]);
 
-    // Note: Document management simplified to file upload only
+  // Pre-fill uploaded files when order loads
+  useEffect(() => {
+    if (!existingOrder) return;
+    const order = existingOrder as any;
+    
+    if (order.includedDocuments?.uploadedFiles && Array.isArray(order.includedDocuments.uploadedFiles)) {
+      console.log('✅ Loading uploaded files:', order.includedDocuments.uploadedFiles.length);
+      // Convert the saved file metadata back to File objects
+      const files = order.includedDocuments.uploadedFiles.map((fileData: any) => {
+        // Create a mock File object from saved metadata
+        const blob = new Blob([], { type: 'application/octet-stream' });
+        return new File([blob], fileData.name, { type: 'application/octet-stream' });
+      });
+      setUploadedFiles(files);
+    }
   }, [existingOrder?.id]);
 
   // Pre-fill packing plan when order loads
@@ -3511,6 +3527,7 @@ export default function EditOrder() {
           selectedDocumentIds={selectedDocumentIds}
           onDocumentSelectionChange={setSelectedDocumentIds}
           customerId={selectedCustomer?.id}
+          existingOrderId={existingOrder?.id}
         />
 
         {/* AI Carton Packing Optimization Panel */}
@@ -4110,54 +4127,7 @@ export default function EditOrder() {
                   </div>
                 )}
 
-                {/* Selected Product Files */}
-                {selectedDocumentIds.length > 0 && productFilesData && Object.keys(productFilesData).length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-                      <Package className="h-4 w-4" />
-                      Selected Product Files
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {orderItems.map((item) => {
-                        const files = productFilesData[item.productId] || [];
-                        if (files.length === 0) return null;
-                        
-                        // Only show files that were selected
-                        const selectedFiles = files.filter((file: any) => selectedDocumentIds.includes(file.id));
-                        if (selectedFiles.length === 0) return null;
-                        
-                        return selectedFiles.map((file: any) => (
-                          <div
-                            key={file.id}
-                            className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-white dark:bg-slate-900/20 hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
-                            data-testid={`product-file-${file.id}`}
-                          >
-                            <div className="flex items-start gap-3">
-                              <div className="mt-0.5 flex-shrink-0">
-                                <FileText className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
-                                  {file.fileName}
-                                </p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                                  {item.productName}
-                                </p>
-                                {file.category && (
-                                  <Badge variant="outline" className="text-xs mt-2">
-                                    {file.category}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        ));
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {uploadedFiles.length === 0 && selectedDocumentIds.length === 0 && (
+                {uploadedFiles.length === 0 && (
                   <div className="text-center py-8 bg-slate-50 dark:bg-slate-900/20 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700">
                     <FileText className="mx-auto h-12 w-12 mb-3 text-slate-400 dark:text-slate-600" />
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-300">No files yet</p>
