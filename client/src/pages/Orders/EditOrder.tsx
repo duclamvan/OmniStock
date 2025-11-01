@@ -142,6 +142,7 @@ const editOrderSchema = z.object({
   country: z.string().optional(),
   shippingCost: z.coerce.number().min(0).default(0),
   actualShippingCost: z.coerce.number().min(0).default(0),
+  adjustment: z.coerce.number().default(0),
   // Dobírka (Cash on Delivery) fields
   dobirkaAmount: z.coerce.number().min(0).optional().nullable(),
   dobirkaCurrency: z.enum(['CZK', 'EUR', 'USD']).optional().nullable(),
@@ -1183,11 +1184,12 @@ export default function EditOrder() {
   }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency, existingOrder?.shippingCost]); // Added existingOrder.shippingCost
 
   // Auto-sync dobírka amount and currency when PPL + COD is selected
-  // Recalculates on EVERY change (currency, items, shipping, discounts, taxes)
+  // Recalculates on EVERY change (currency, items, shipping, discounts, taxes, adjustment)
   const watchedPaymentMethod = form.watch('paymentMethod');
   const watchedDiscountValue = form.watch('discountValue');
   const watchedShippingCost = form.watch('shippingCost');
   const watchedTaxRate = form.watch('taxRate');
+  const watchedAdjustment = form.watch('adjustment');
   
   useEffect(() => {
     // Only auto-sync if PPL shipping and COD payment are selected
@@ -1210,8 +1212,9 @@ export default function EditOrder() {
     showTaxInvoice,
     watchedDiscountValue,
     watchedShippingCost,
-    watchedTaxRate
-  ]); // Recalculates on any value change
+    watchedTaxRate,
+    watchedAdjustment
+  ]); // Recalculates on any value change including adjustment
 
   // Auto-fill currency from customer preference (only when creating new orders)
   // Note: This is intentionally NOT in EditOrder - we preserve the order's saved currency

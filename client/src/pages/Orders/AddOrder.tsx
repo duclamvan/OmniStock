@@ -786,7 +786,13 @@ export default function AddOrder() {
   }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency, form]);
 
   // Auto-sync dobírka amount and currency when PPL + COD is selected
+  // Recalculates on EVERY change (currency, items, shipping, discounts, taxes, adjustment)
   const watchedPaymentMethod = form.watch('paymentMethod');
+  const watchedDiscountValue = form.watch('discountValue');
+  const watchedDiscountType = form.watch('discountType');
+  const watchedShippingCostValue = form.watch('shippingCost');
+  const watchedTaxRate = form.watch('taxRate');
+  const watchedAdjustment = form.watch('adjustment');
   
   useEffect(() => {
     // Only autofill if PPL shipping and COD payment are selected
@@ -800,7 +806,18 @@ export default function AddOrder() {
         form.setValue('dobirkaCurrency', watchedCurrency);
       }
     }
-  }, [watchedShippingMethod, watchedPaymentMethod, watchedCurrency, form, orderItems, form.watch('shippingCost'), form.watch('discountValue'), form.watch('discountType'), form.watch('taxRate'), showTaxInvoice]);
+  }, [
+    watchedShippingMethod, 
+    watchedPaymentMethod, 
+    watchedCurrency, 
+    orderItems, 
+    showTaxInvoice,
+    watchedDiscountValue,
+    watchedDiscountType,
+    watchedShippingCostValue,
+    watchedTaxRate,
+    watchedAdjustment
+  ]); // Recalculates on any value change including adjustment
 
   // Auto-fill currency from customer preference
   useEffect(() => {
