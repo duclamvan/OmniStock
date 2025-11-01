@@ -221,6 +221,7 @@ interface OrderCarton {
   aiPlanId?: string | null;
   source?: string;
   itemAllocations?: any;
+  volumeUtilization?: string | null;
   notes?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -478,7 +479,7 @@ const CartonCard = memo(({
                     );
                     
                     if (utilization !== null) {
-                      (updates as any).volumeUtilization = utilization.toString();
+                      updates.volumeUtilization = utilization.toString();
                     }
                   }
                 }

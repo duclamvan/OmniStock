@@ -2,6 +2,16 @@
 Davie Supply is a full-stack web application for comprehensive warehouse and order management, aiming to optimize supply chain operations. It covers the entire order lifecycle, inventory tracking, CRM, and multi-currency financial reporting. Key features include real-time Vietnamese diacritics search, customer-specific pricing, external shipping API integrations, extensive settings management, and professional PDF packing list generation. Future ambitions include advanced warehouse mapping, a comprehensive Pick & Pack workflow, and AI-powered optimization.
 
 # Recent Changes
+**November 1, 2025**: Smart Volume Utilization Recalculation:
+- **Intelligent Utilization Updates**: When users manually change carton type, volume utilization automatically recalculates without calling AI
+  - Uses stored item allocation data from AI's first optimization run
+  - Retrieves product dimensions from order items
+  - Calculates new utilization percentage based on new carton's internal dimensions
+  - Only triggers on carton type changes (not weight changes)
+  - Provides instant feedback on space efficiency of manual carton selections
+- **Frontend Implementation**: `calculateVolumeUtilization()` utility function performs client-side calculations using stored AI data
+- **Performance Optimization**: No additional AI API calls needed for recalculations
+
 **October 31, 2025 (Update 9)**: Dynamic Packing Materials Checklist:
 - **Product-Specific Packing Materials**: Replaced static checklist with dynamic packing materials from product inventory
   - Automatically fetches packing materials for all items in the order
