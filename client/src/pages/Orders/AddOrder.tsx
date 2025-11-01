@@ -102,6 +102,7 @@ const addOrderSchema = z.object({
   country: z.string().optional(),
   shippingCost: z.coerce.number().min(0).default(0),
   actualShippingCost: z.coerce.number().min(0).default(0),
+  adjustment: z.coerce.number().default(0),
   // Dobírka (Cash on Delivery) fields
   dobirkaAmount: z.coerce.number().min(0).optional().nullable(),
   dobirkaCurrency: z.enum(['CZK', 'EUR', 'USD']).optional().nullable(),
@@ -507,6 +508,7 @@ export default function AddOrder() {
       taxRate: 0,
       shippingCost: 0,
       actualShippingCost: 0,
+      adjustment: 0,
       orderLocation: '',
     },
   });
@@ -1300,8 +1302,10 @@ export default function AddOrder() {
     const shippingValue = form.watch('shippingCost');
     const discountValue = form.watch('discountValue');
     const discountType = form.watch('discountType');
+    const adjustmentValue = form.watch('adjustment');
     const shipping = typeof shippingValue === 'string' ? parseFloat(shippingValue || '0') : (shippingValue || 0);
     const discountAmount = typeof discountValue === 'string' ? parseFloat(discountValue || '0') : (discountValue || 0);
+    const adjustment = typeof adjustmentValue === 'string' ? parseFloat(adjustmentValue || '0') : (adjustmentValue || 0);
 
     // Calculate actual discount based on type
     let actualDiscount = 0;
@@ -1311,7 +1315,7 @@ export default function AddOrder() {
       actualDiscount = discountAmount;
     }
 
-    return subtotal + tax + shipping - actualDiscount;
+    return subtotal + tax + shipping + adjustment - actualDiscount;
   };
 
   const onSubmit = (data: z.infer<typeof addOrderSchema>) => {
@@ -1335,6 +1339,7 @@ export default function AddOrder() {
       taxRate: (showTaxInvoice ? (data.taxRate || 0) : 0).toString(),
       shippingCost: (data.shippingCost || 0).toString(),
       actualShippingCost: (data.actualShippingCost || 0).toString(),
+      adjustment: (data.adjustment || 0).toString(),
       dobirkaAmount: data.dobirkaAmount && data.dobirkaAmount > 0 ? data.dobirkaAmount.toString() : null,
       dobirkaCurrency: data.dobirkaAmount && data.dobirkaAmount > 0 ? (data.dobirkaCurrency || 'CZK') : null,
       items: orderItems.map(item => ({
@@ -3459,9 +3464,9 @@ export default function AddOrder() {
 
             <Separator className="my-4" />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div>
-                <Label htmlFor="shippingCost">Shipping Cost</Label>
+                <Label htmlFor="shippingCost" className="text-sm">Shipping Cost</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -3473,6 +3478,7 @@ export default function AddOrder() {
                       submitButtonRef.current?.click();
                     }
                   }}
+                  className="mt-1"
                   data-testid="input-shipping-cost"
                 />
                 {/* Quick shipping cost buttons */}
@@ -3508,11 +3514,24 @@ export default function AddOrder() {
               </div>
 
               <div>
-                <Label htmlFor="actualShippingCost">Actual Shipping Cost</Label>
+                <Label htmlFor="adjustment" className="text-sm">Adjustment</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  {...form.register('adjustment', { valueAsNumber: true })}
+                  className="mt-1"
+                  data-testid="input-adjustment"
+                />
+                <p className="text-xs text-gray-500 mt-1">Rounding or other adjustments</p>
+              </div>
+
+              <div className="hidden">
+                <Label htmlFor="actualShippingCost" className="text-sm">Actual Shipping Cost</Label>
                 <Input
                   type="number"
                   step="0.01"
                   {...form.register('actualShippingCost', { valueAsNumber: true })}
+                  className="mt-1"
                 />
               </div>
             </div>
@@ -4096,11 +4115,76 @@ export default function AddOrder() {
                         </span>
                       </div>
                     </div>
-                    <div className="border-t pt-3">
-                      <div className="flex justify-between">
-                        <span className="text-lg font-semibold">Grand Total:</span>
-                        <span className="text-lg font-bold text-blue-600">{formatCurrency(calculateGrandTotal(), form.watch('currency'))}</span>
+                    <div className="border-t pt-3 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-semibold">Grand Total:</span>
+                        <div className="flex items-center gap-1">
+                          <Input
+                            id="grandTotal"
+                            type="number"
+                            step="0.01"
+                            placeholder="Click to enter"
+                            defaultValue={calculateGrandTotal().toFixed(2)}
+                            onChange={(e) => {
+                              const desiredTotal = parseFloat(e.target.value);
+                              if (!isNaN(desiredTotal) && desiredTotal > 0) {
+                                const subtotal = calculateSubtotal();
+                                const tax = showTaxInvoice ? calculateTax() : 0;
+                                const shippingValue = form.watch('shippingCost');
+                                const shipping = typeof shippingValue === 'string' ? parseFloat(shippingValue || '0') : (shippingValue || 0);
+                                const adjustmentValue = form.watch('adjustment');
+                                const adjustment = typeof adjustmentValue === 'string' ? parseFloat(adjustmentValue || '0') : (adjustmentValue || 0);
+                                
+                                const neededDiscount = subtotal + tax + shipping + adjustment - desiredTotal;
+                                
+                                form.setValue('discountType', 'flat');
+                                form.setValue('discountValue', Math.max(0, parseFloat(neededDiscount.toFixed(2))));
+                                
+                                toast({
+                                  title: "Total Adjusted",
+                                  description: `Discount set to ${formatCurrency(Math.max(0, neededDiscount), form.watch('currency'))}`,
+                                });
+                              }
+                            }}
+                            className="w-32 h-8 text-sm font-bold text-blue-600 text-right"
+                            data-testid="input-grand-total"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const currentTotal = calculateGrandTotal();
+                              const roundedTotal = Math.ceil(currentTotal);
+                              const difference = roundedTotal - currentTotal;
+                              
+                              if (difference > 0) {
+                                form.setValue('adjustment', parseFloat(difference.toFixed(2)));
+                                
+                                const grandTotalInput = document.getElementById('grandTotal') as HTMLInputElement;
+                                if (grandTotalInput) {
+                                  grandTotalInput.value = roundedTotal.toFixed(2);
+                                }
+                                
+                                toast({
+                                  title: "Total Rounded Up",
+                                  description: `Adjustment: ${formatCurrency(difference, form.watch('currency'))}`,
+                                });
+                              } else {
+                                toast({
+                                  title: "Already Rounded",
+                                  description: "Total is already a whole number",
+                                });
+                              }
+                            }}
+                            className="h-8 px-2"
+                            data-testid="button-round-up"
+                          >
+                            <TrendingUp className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </div>
+                      <p className="text-xs text-gray-500">Click to edit or Round Up</p>
                     </div>
 
                     <div className="pt-3 space-y-2">
@@ -4211,9 +4295,74 @@ export default function AddOrder() {
                 </div>
               </div>
               <Separator />
-              <div className="flex justify-between">
-                <span className="text-lg font-semibold">Total:</span>
-                <span className="text-lg font-bold text-blue-600">{formatCurrency(calculateGrandTotal(), form.watch('currency'))}</span>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold">Grand Total:</span>
+                  <div className="flex items-center gap-1">
+                    <Input
+                      id="grandTotalMobile"
+                      type="number"
+                      step="0.01"
+                      placeholder="Click to enter"
+                      defaultValue={calculateGrandTotal().toFixed(2)}
+                      onChange={(e) => {
+                        const desiredTotal = parseFloat(e.target.value);
+                        if (!isNaN(desiredTotal) && desiredTotal > 0) {
+                          const subtotal = calculateSubtotal();
+                          const tax = showTaxInvoice ? calculateTax() : 0;
+                          const shippingValue = form.watch('shippingCost');
+                          const shipping = typeof shippingValue === 'string' ? parseFloat(shippingValue || '0') : (shippingValue || 0);
+                          const adjustmentValue = form.watch('adjustment');
+                          const adjustment = typeof adjustmentValue === 'string' ? parseFloat(adjustmentValue || '0') : (adjustmentValue || 0);
+                          
+                          const neededDiscount = subtotal + tax + shipping + adjustment - desiredTotal;
+                          
+                          form.setValue('discountType', 'flat');
+                          form.setValue('discountValue', Math.max(0, parseFloat(neededDiscount.toFixed(2))));
+                          
+                          toast({
+                            title: "Total Adjusted",
+                            description: `Discount set to ${formatCurrency(Math.max(0, neededDiscount), form.watch('currency'))}`,
+                          });
+                        }
+                      }}
+                      className="w-32 h-8 text-sm font-bold text-blue-600 text-right"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const currentTotal = calculateGrandTotal();
+                        const roundedTotal = Math.ceil(currentTotal);
+                        const difference = roundedTotal - currentTotal;
+                        
+                        if (difference > 0) {
+                          form.setValue('adjustment', parseFloat(difference.toFixed(2)));
+                          
+                          const grandTotalInput = document.getElementById('grandTotalMobile') as HTMLInputElement;
+                          if (grandTotalInput) {
+                            grandTotalInput.value = roundedTotal.toFixed(2);
+                          }
+                          
+                          toast({
+                            title: "Total Rounded Up",
+                            description: `Adjustment: ${formatCurrency(difference, form.watch('currency'))}`,
+                          });
+                        } else {
+                          toast({
+                            title: "Already Rounded",
+                            description: "Total is already a whole number",
+                          });
+                        }
+                      }}
+                      className="h-8 px-2"
+                    >
+                      <TrendingUp className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500">Click to edit or Round Up</p>
               </div>
 
               <div className="pt-3 space-y-2">
