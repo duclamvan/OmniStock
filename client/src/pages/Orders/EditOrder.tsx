@@ -729,6 +729,7 @@ export default function EditOrder() {
       country: order.country,
       shippingCost: order.shippingCost || 0,
       actualShippingCost: order.actualShippingCost || 0,
+      adjustment: order.adjustment || 0,
       dobirkaAmount: order.dobirkaAmount,
       dobirkaCurrency: order.dobirkaCurrency,
       notes: order.notes,

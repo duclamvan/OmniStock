@@ -463,6 +463,16 @@ export default function OrderDetails() {
                   <span class="price-value">${formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</span>
                 </div>
               ` : ''}
+              ${order.adjustment && order.adjustment !== 0 ? `
+                <div class="price-row">
+                  <span class="price-label" style="color: ${order.adjustment > 0 ? '#1e40af' : '#c2410c'};">
+                    Adjustment
+                  </span>
+                  <span class="price-value" style="color: ${order.adjustment > 0 ? '#1e40af' : '#c2410c'};">
+                    ${order.adjustment > 0 ? '+' : ''}${formatCurrency(order.adjustment || 0, order.currency || 'EUR')}
+                  </span>
+                </div>
+              ` : ''}
               <div class="price-separator"></div>
               <div class="total-row">
                 <span class="total-label">Grand Total</span>
@@ -1292,6 +1302,23 @@ export default function OrderDetails() {
                         <span className="font-semibold text-slate-900">{formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</span>
                       </div>
                     </>
+                  )}
+                  
+                  {order.adjustment && order.adjustment !== 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className={cn(
+                        "font-medium",
+                        order.adjustment > 0 ? "text-blue-700" : "text-orange-700"
+                      )}>
+                        Adjustment
+                      </span>
+                      <span className={cn(
+                        "font-semibold",
+                        order.adjustment > 0 ? "text-blue-700" : "text-orange-700"
+                      )}>
+                        {order.adjustment > 0 ? '+' : ''}{formatCurrency(order.adjustment || 0, order.currency || 'EUR')}
+                      </span>
+                    </div>
                   )}
                   
                   <div className="border-t-2 border-slate-300 my-3"></div>
