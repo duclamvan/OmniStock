@@ -3993,19 +3993,23 @@ export default function EditOrder() {
                   </div>
                 )}
 
-                {/* Product Files */}
-                {orderItems.length > 0 && productFilesData && Object.keys(productFilesData).length > 0 && (
+                {/* Selected Product Files */}
+                {selectedDocumentIds.length > 0 && productFilesData && Object.keys(productFilesData).length > 0 && (
                   <div>
                     <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
                       <Package className="h-4 w-4" />
-                      Product Files
+                      Selected Product Files
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {orderItems.map((item) => {
                         const files = productFilesData[item.productId] || [];
                         if (files.length === 0) return null;
                         
-                        return files.map((file: any) => (
+                        // Only show files that were selected
+                        const selectedFiles = files.filter((file: any) => selectedDocumentIds.includes(file.id));
+                        if (selectedFiles.length === 0) return null;
+                        
+                        return selectedFiles.map((file: any) => (
                           <div
                             key={file.id}
                             className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-white dark:bg-slate-900/20 hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
@@ -4036,7 +4040,7 @@ export default function EditOrder() {
                   </div>
                 )}
 
-                {uploadedFiles.length === 0 && (!productFilesData || Object.keys(productFilesData).length === 0) && (
+                {uploadedFiles.length === 0 && selectedDocumentIds.length === 0 && (
                   <div className="text-center py-8 bg-slate-50 dark:bg-slate-900/20 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700">
                     <FileText className="mx-auto h-12 w-12 mb-3 text-slate-400 dark:text-slate-600" />
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-300">No files yet</p>
