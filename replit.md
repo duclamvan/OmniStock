@@ -37,7 +37,10 @@ Utilizes PostgreSQL with Neon serverless driver and Drizzle ORM. The schema supp
 - **DeepSeek AI**: For AI address parsing, ticket subject generation, professional shipment name generation, and carton packing optimization.
 - **OpenAI API**: Used for AI-powered product weight and dimension inference in carton packing optimization.
 
-## Other APIs
+## Shipping & Logistics APIs
+- **PPL CZ CPL API**: Automated shipping label generation for PPL courier service, using OAuth2 authentication. Supports creating, canceling, and retrieving shipping labels with tracking numbers.
 - **OpenStreetMap Nominatim API**: For address geocoding and auto-correction.
+
+## Other APIs
 - **Fawaz Ahmed's free currency API**: For real-time exchange rates.
 - **Facebook Graph API**: For fetching customer profile pictures and names.

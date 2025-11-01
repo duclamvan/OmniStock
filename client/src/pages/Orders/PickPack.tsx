@@ -3129,7 +3129,26 @@ export default function PickPack() {
   const getOrderCountryCode = (order: PickPackOrder): string => {
     // Extract country code from order data
     const orderId = order.orderId?.toLowerCase() || '';
-    const address = order.shippingAddress?.toLowerCase() || '';
+    
+    // Handle shipping address - can be string (legacy) or object (database)
+    let address = '';
+    if (typeof order.shippingAddress === 'string') {
+      address = order.shippingAddress.toLowerCase();
+    } else if (order.shippingAddress && typeof order.shippingAddress === 'object') {
+      // If it's an object with a country field, use that directly
+      const countryField = (order.shippingAddress as any).country;
+      if (countryField) {
+        // Try to match the country name to a code
+        const countryLower = countryField.toLowerCase();
+        // Check if it's already a 2-letter code
+        if (countryLower.length === 2) {
+          return countryLower.toUpperCase();
+        }
+        // Otherwise, build the address string for parsing below
+        address = countryLower;
+      }
+    }
+    
     const notes = order.notes?.toLowerCase() || '';
     
     // Check order ID prefixes first (most reliable)
