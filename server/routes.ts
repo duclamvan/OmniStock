@@ -5243,19 +5243,11 @@ Important:
       
       const updates = { ...orderUpdates };
       
-      // Process selectedDocumentIds and merge into includedDocuments
+      // Process selectedDocumentIds - save to dedicated column
       if (selectedDocumentIds !== undefined) {
-        // Get current includedDocuments or initialize
-        const currentIncludedDocs = updates.includedDocuments || {};
-        
-        // Merge selectedDocumentIds into fileIds array
-        updates.includedDocuments = {
-          ...currentIncludedDocs,
-          fileIds: selectedDocumentIds || [],
-          uploadedFiles: currentIncludedDocs.uploadedFiles || []
-        };
-        
-        console.log('Merged selectedDocumentIds into includedDocuments:', updates.includedDocuments);
+        // Save to the selectedDocumentIds column directly
+        updates.selectedDocumentIds = selectedDocumentIds || [];
+        console.log('✅ Saving selectedDocumentIds to database:', updates.selectedDocumentIds);
       }
       
       // Convert all date fields from strings to Date objects
