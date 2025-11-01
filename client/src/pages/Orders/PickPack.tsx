@@ -6430,8 +6430,8 @@ export default function PickPack() {
 
                       {/* Warehouse Location - High Contrast Banner */}
                       <div className="bg-orange-100 border-3 border-orange-500 rounded-lg p-4 text-center">
-                        <p className="text-xs font-bold text-orange-800 uppercase mb-1">Location</p>
-                        <p className="text-5xl sm:text-6xl font-black text-orange-600 font-mono">{currentItem.warehouseLocation}</p>
+                        <p className="text-xs font-bold text-orange-800 uppercase mb-1 tracking-wider">Warehouse Location</p>
+                        <p className="text-3xl sm:text-4xl lg:text-5xl font-black text-orange-600 font-mono break-all px-2">{currentItem.warehouseLocation}</p>
                       </div>
 
                       {/* Bundle Items Picker - For gel polish colors etc */}
