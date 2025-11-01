@@ -686,12 +686,15 @@ export default function EditOrder() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Track if form has been initially loaded
+  const [formInitialized, setFormInitialized] = useState(false);
+
   // Pre-fill form data when order loads
   useEffect(() => {
-    if (!existingOrder) return;
+    if (!existingOrder || formInitialized) return;
     const order = existingOrder as any;
 
-    console.log('🔄 Resetting form with order data, currency:', order.currency);
+    console.log('🔄 Initial form load with order data, currency:', order.currency);
 
     // Set form values
     form.reset({
@@ -727,7 +730,10 @@ export default function EditOrder() {
     if (order.discountValue > 0) {
       setShowDiscount(true);
     }
-  }, [existingOrder]);
+    
+    // Mark form as initialized to prevent re-running
+    setFormInitialized(true);
+  }, [existingOrder, formInitialized]);
 
   // Pre-fill order items when order loads
   useEffect(() => {
@@ -848,15 +854,17 @@ export default function EditOrder() {
     // Other countries → EUR (default)
     
     form.setValue('currency', newCurrency);
-  }, [selectedShippingAddress, form]);
+  }, [selectedShippingAddress]); // Removed form from dependencies
 
+  // Watch discount value changes
+  const discountValue = form.watch('discountValue');
+  
   // Auto-show discount section when discount value > 0
   useEffect(() => {
-    const discountValue = form.watch('discountValue');
     if (discountValue > 0 && !showDiscount) {
       setShowDiscount(true);
     }
-  }, [form.watch('discountValue'), showDiscount]);
+  }, [discountValue, showDiscount]);
 
   // Get unique product IDs from cart items
   const uniqueProductIds = useMemo(() => {
@@ -1097,7 +1105,7 @@ export default function EditOrder() {
 
     form.setValue('actualShippingCost', calculatedCost);
     form.setValue('shippingCost', calculatedCost); // Also set shipping cost for display
-  }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency, form]);
+  }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency]); // Removed form from dependencies
 
   // Auto-sync dobírka amount and currency when PPL + COD is selected
   const watchedPaymentMethod = form.watch('paymentMethod');
@@ -1114,7 +1122,7 @@ export default function EditOrder() {
         form.setValue('dobirkaCurrency', watchedCurrency);
       }
     }
-  }, [watchedShippingMethod, watchedPaymentMethod, watchedCurrency, form, orderItems, form.watch('shippingCost'), form.watch('discountValue'), form.watch('discountType'), form.watch('taxRate'), showTaxInvoice]);
+  }, [watchedShippingMethod, watchedPaymentMethod, watchedCurrency, orderItems, showTaxInvoice]); // Simplified dependencies
 
   // Auto-fill currency from customer preference (only when creating new orders)
   // Note: This is intentionally NOT in EditOrder - we preserve the order's saved currency
@@ -1210,21 +1218,21 @@ export default function EditOrder() {
       const updatedOrder = await response.json();
       return updatedOrder;
     },
-    onSuccess: (updatedOrder) => {
+    onSuccess: async (updatedOrder) => {
       // Invalidate all order-related caches for real-time updates across the app
-      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/orders', id] });
-      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] }); // Real-time Pick & Pack sync
-      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack/predictions'] }); // Update predictions
-      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/orders', id] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] }); // Real-time Pick & Pack sync
+      await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack/predictions'] }); // Update predictions
+      await queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       
       // Also invalidate product files cache if documents were updated
       if (orderItems.length > 0) {
-        orderItems.forEach(item => {
+        await Promise.all(orderItems.map(item => {
           if (item.productId) {
-            queryClient.invalidateQueries({ queryKey: ['/api/products', item.productId, 'files'] });
+            return queryClient.invalidateQueries({ queryKey: ['/api/products', item.productId, 'files'] });
           }
-        });
+        }));
       }
       
       toast({
@@ -1232,8 +1240,8 @@ export default function EditOrder() {
         description: "Order updated successfully",
       });
 
-      // Navigate to order details page
-      setLocation(`/orders/${id}`);
+      // Force a full page reload to ensure fresh data
+      window.location.href = `/orders/${id}`;
     },
     onError: (error) => {
       console.error("Order update error:", error);
