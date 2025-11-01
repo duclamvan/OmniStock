@@ -650,8 +650,13 @@ function ProductDocumentsSelector({
   });
 
   const productFiles = useMemo(() => {
+    console.log('📄 ProductDocumentsSelector received selectedDocumentIds:', selectedDocumentIds);
+    console.log('📄 All raw files:', allFilesRaw.length);
+    console.log('📄 Product IDs:', productIds);
+    
     // If no documents were selected for this order, show nothing
     if (!selectedDocumentIds || selectedDocumentIds.length === 0) {
+      console.log('📄 No selectedDocumentIds - showing nothing');
       return [];
     }
     
@@ -662,11 +667,15 @@ function ProductDocumentsSelector({
     // 1. For products in this order
     // 2. Active
     // 3. Specifically selected for this order (in selectedDocumentIds)
-    return allFilesRaw.filter(file => 
+    const filtered = allFilesRaw.filter(file => 
       productIdSet.has(file.productId) && 
       file.isActive && 
       selectedIdSet.has(file.id)
     );
+    
+    console.log('📄 Filtered to', filtered.length, 'documents');
+    
+    return filtered;
   }, [allFilesRaw, productIds, selectedDocumentIds]);
 
   const handlePrint = (fileId: string, fileUrl: string) => {
