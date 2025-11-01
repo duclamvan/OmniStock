@@ -668,6 +668,21 @@ function ProductDocumentsSelector({
                 </p>
               )}
             </div>
+
+            {/* Print Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs flex-shrink-0 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300"
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(file.fileUrl, '_blank');
+              }}
+              data-testid={`button-print-product-doc-${file.id}`}
+            >
+              <Printer className="h-3.5 w-3.5 mr-1.5" />
+              Print
+            </Button>
           </div>
         );
       })}
