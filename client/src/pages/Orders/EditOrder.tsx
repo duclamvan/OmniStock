@@ -691,6 +691,8 @@ export default function EditOrder() {
     if (!existingOrder) return;
     const order = existingOrder as any;
 
+    console.log('🔄 Resetting form with order data, currency:', order.currency);
+
     // Set form values
     form.reset({
       customerId: order.customerId,
@@ -725,7 +727,7 @@ export default function EditOrder() {
     if (order.discountValue > 0) {
       setShowDiscount(true);
     }
-  }, [existingOrder, form]);
+  }, [existingOrder]);
 
   // Pre-fill order items when order loads
   useEffect(() => {

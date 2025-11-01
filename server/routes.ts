@@ -5111,6 +5111,14 @@ Important:
 
   app.get('/api/orders/:id', async (req, res) => {
     try {
+      // Prevent all caching for order details to ensure fresh data
+      res.set({
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Surrogate-Control': 'no-store'
+      });
+      
       const order = await storage.getOrderById(req.params.id);
       if (!order) {
         return res.status(404).json({ message: "Order not found" });
