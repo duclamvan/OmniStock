@@ -4124,7 +4124,7 @@ export default function AddOrder() {
                             type="number"
                             step="0.01"
                             placeholder="Click to enter"
-                            defaultValue={calculateGrandTotal().toFixed(2)}
+                            value={calculateGrandTotal().toFixed(2)}
                             onChange={(e) => {
                               const desiredTotal = parseFloat(e.target.value);
                               if (!isNaN(desiredTotal) && desiredTotal > 0) {
@@ -4304,7 +4304,7 @@ export default function AddOrder() {
                       type="number"
                       step="0.01"
                       placeholder="Click to enter"
-                      defaultValue={calculateGrandTotal().toFixed(2)}
+                      value={calculateGrandTotal().toFixed(2)}
                       onChange={(e) => {
                         const desiredTotal = parseFloat(e.target.value);
                         if (!isNaN(desiredTotal) && desiredTotal > 0) {

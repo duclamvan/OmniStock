@@ -3863,7 +3863,7 @@ export default function EditOrder() {
                       type="number"
                       step="0.01"
                       placeholder="Click to enter desired total"
-                      defaultValue={calculateGrandTotal().toFixed(2)}
+                      value={calculateGrandTotal().toFixed(2)}
                       onChange={(e) => {
                         const desiredTotal = parseFloat(e.target.value);
                         if (!isNaN(desiredTotal) && desiredTotal > 0) {

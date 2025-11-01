@@ -1091,12 +1091,24 @@ export default function OrderDetails() {
                           {/* Price and Actions */}
                           <div className="flex items-start gap-2">
                             <div className="text-right">
-                              <p className="font-bold text-base text-slate-900">
-                                {formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}
-                              </p>
-                              {item.discount > 0 && (
-                                <p className="text-xs text-green-600 mt-0.5">
-                                  -{formatCurrency(item.discount || 0, order.currency || 'EUR')} discount
+                              {item.discount > 0 ? (
+                                <>
+                                  {/* Original price (strikethrough) */}
+                                  <p className="text-xs text-slate-400 line-through">
+                                    {formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}
+                                  </p>
+                                  {/* Discount amount */}
+                                  <p className="text-xs text-green-600 -mt-0.5">
+                                    -{formatCurrency(item.discount || 0, order.currency || 'EUR')} off
+                                  </p>
+                                  {/* Final price after discount */}
+                                  <p className="font-bold text-base text-slate-900 mt-0.5">
+                                    {formatCurrency(((item.unitPrice || item.price || 0) * item.quantity) - (item.discount || 0), order.currency || 'EUR')}
+                                  </p>
+                                </>
+                              ) : (
+                                <p className="font-bold text-base text-slate-900">
+                                  {formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}
                                 </p>
                               )}
                             </div>
