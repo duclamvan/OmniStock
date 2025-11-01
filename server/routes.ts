@@ -7759,8 +7759,8 @@ Return ONLY the subject line without quotes or extra formatting.`,
       
       // ===== CUSTOMER INFORMATION BOX =====
       const customerBoxY = 220;
-      // Box background
-      doc.rect(40, customerBoxY, 515, 85)
+      // Box background - increased height to accommodate address
+      doc.rect(40, customerBoxY, 515, 120)
          .fillAndStroke('#F8F9FA', '#CCCCCC');
       
       // Box title
@@ -7769,22 +7769,17 @@ Return ONLY the subject line without quotes or extra formatting.`,
          .font('Helvetica-Bold')
          .text('SHIP TO:', 50, customerBoxY + 15);
       
-      // Customer details
-      doc.fontSize(10)
-         .font('Helvetica-Bold')
-         .fillColor('#000000')
-         .text(order.customerName || 'N/A', 50, customerBoxY + 35);
-      
+      // Address details (no separate customer name line - it's in the formatted address)
       doc.fontSize(9)
          .font('Helvetica')
          .fillColor('#333333')
-         .text(formattedAddress, 50, customerBoxY + 52, { 
+         .text(formattedAddress, 50, customerBoxY + 35, { 
            width: 500,
-           lineGap: 2
+           lineGap: 3
          });
       
       // ===== ITEMS TABLE =====
-      const tableTop = 330;
+      const tableTop = 355;
       
       // Table header background
       doc.rect(40, tableTop, 515, 28)
