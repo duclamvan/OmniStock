@@ -69,6 +69,8 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronUp,
+  ChevronsDown,
+  ChevronsUp,
   Zap,
   Eye,
   FileText,
@@ -6162,13 +6164,43 @@ export default function PickPack() {
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
-                <div className="mt-2 flex items-center gap-2 sm:gap-4">
-                  <Badge className="bg-white text-blue-600 font-bold px-2 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm">
-                    {activePickingOrder.pickedItems}/{activePickingOrder.totalItems} Picked
-                  </Badge>
-                  <div className="text-xs sm:text-sm text-blue-100">
-                    Order: {activePickingOrder.orderId}
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 sm:gap-4">
+                    <Badge className="bg-white text-blue-600 font-bold px-2 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm">
+                      {activePickingOrder.pickedItems}/{activePickingOrder.totalItems} Picked
+                    </Badge>
+                    <div className="text-xs sm:text-sm text-blue-100">
+                      Order: {activePickingOrder.orderId}
+                    </div>
                   </div>
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    className="text-white hover:bg-white/20 h-8 px-2 sm:px-3 text-xs sm:text-sm font-semibold"
+                    onClick={() => {
+                      const allItemIds = activePickingOrder.items.map(item => item.id);
+                      if (expandedOverviewItems.size === allItemIds.length) {
+                        // Collapse all
+                        setExpandedOverviewItems(new Set());
+                      } else {
+                        // Expand all
+                        setExpandedOverviewItems(new Set(allItemIds));
+                      }
+                    }}
+                    data-testid="button-toggle-expand-all"
+                  >
+                    {expandedOverviewItems.size === activePickingOrder.items.length ? (
+                      <>
+                        <ChevronsUp className="h-4 w-4 mr-1" />
+                        <span className="hidden sm:inline">Collapse All</span>
+                      </>
+                    ) : (
+                      <>
+                        <ChevronsDown className="h-4 w-4 mr-1" />
+                        <span className="hidden sm:inline">Expand All</span>
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
               
