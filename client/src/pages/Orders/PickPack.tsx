@@ -104,7 +104,8 @@ import {
   Shield,
   Award,
   FileImage,
-  Book
+  Book,
+  Wrench
 } from "lucide-react";
 
 interface BundleItem {
@@ -365,6 +366,8 @@ const ProductImage = memo(({
               className="w-full h-full object-contain rounded-lg p-4"
               style={{ pointerEvents: 'none' }}
             />
+          ) : item.serviceId ? (
+            <Wrench className="h-32 w-32 text-purple-300" style={{ pointerEvents: 'none' }} />
           ) : (
             <Package className="h-32 w-32 text-gray-300" style={{ pointerEvents: 'none' }} />
           )}
@@ -447,6 +450,8 @@ const ProductImage = memo(({
             className="w-full h-full object-contain rounded-lg p-1 lg:p-2"
             style={{ pointerEvents: 'none' }}
           />
+        ) : item.serviceId ? (
+          <Wrench className="h-10 w-10 lg:h-16 lg:w-16 text-purple-300" style={{ pointerEvents: 'none' }} />
         ) : (
           <Package className="h-10 w-10 lg:h-16 lg:w-16 text-gray-300" style={{ pointerEvents: 'none' }} />
         )}
@@ -1916,13 +1921,7 @@ export default function PickPack() {
     return `BAR${sku}${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
   };
 
-  // Mock product image generator for demo
-  const generateMockImage = (productName: string) => {
-    // Generate a placeholder image URL based on product name
-    // In a real app, this would come from your database
-    const seed = productName.toLowerCase().replace(/\s+/g, '-');
-    return `https://picsum.photos/seed/${seed}/400/400`;
-  };
+  // No mock images in production - items without images show default icons
 
   // Available box sizes for AI-powered selection with code names and visual representations
   const availableBoxSizes: BoxSize[] = [
@@ -2494,7 +2493,7 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'A-15-2',
           barcode: 'BAR123456789',
-          image: generateMockImage('gel-polish-set'),
+          image: null,
           isBundle: true,
           dimensions: { length: 15, width: 12, height: 8, weight: 0.180 },
           bundleItems: [
@@ -2522,7 +2521,7 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'B-10-1',
           barcode: 'BAR987654321',
-          image: generateMockImage('uv-lamp'),
+          image: null,
           dimensions: { length: 25, width: 20, height: 12, weight: 0.850 },
           isFragile: true
         }
@@ -2554,7 +2553,7 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'C-05-3',
           barcode: 'BAR456789123',
-          image: generateMockImage('brush-set'),
+          image: null,
           isBundle: true,
           bundleItems: [
             { id: 'br1', name: 'Ultra Fine Detail', quantity: 1, picked: false, location: 'C-05-3-A' },
@@ -2594,7 +2593,7 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'D-20-5',
           barcode: 'BAR111222333',
-          image: generateMockImage('neon-polish'),
+          image: null,
           isBundle: true,
           bundleItems: [
             { id: 'ne1', name: 'Electric Pink', colorNumber: '201', quantity: 1, picked: false, location: 'D-20-5-1' },
@@ -2615,7 +2614,7 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'E-08-2',
           barcode: 'BAR444555666',
-          image: generateMockImage('base-top-coat')
+          image: null
         }
       ],
       totalItems: 3,
@@ -2647,7 +2646,7 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'A-15-1',
           barcode: 'BAR123MULTI1',
-          image: generateMockImage('gel-polish-mega-kit'),
+          image: null,
           dimensions: { length: 45, width: 35, height: 20, weight: 4.200 },
           isBundle: true
         },
@@ -2661,7 +2660,7 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'B-10-1',
           barcode: 'BAR456MULTI2',
-          image: generateMockImage('uv-lamp-professional'),
+          image: null,
           dimensions: { length: 38, width: 28, height: 22, weight: 2.100 },
           isFragile: true
         },
@@ -2675,7 +2674,7 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'E-03-2',
           barcode: 'BAR789MULTI3',
-          image: generateMockImage('glass-bottles-bulk'),
+          image: null,
           dimensions: { length: 32, width: 24, height: 18, weight: 3.600 },
           isFragile: true
         },
@@ -2689,7 +2688,7 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'F-08-4',
           barcode: 'BAR321MULTI4',
-          image: generateMockImage('nail-files-bulk'),
+          image: null,
           dimensions: { length: 30, width: 25, height: 12, weight: 1.800 }
         },
         {
@@ -2702,7 +2701,7 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'G-12-3',
           barcode: 'BAR654MULTI5',
-          image: generateMockImage('acetone-bulk'),
+          image: null,
           dimensions: { length: 28, width: 20, height: 25, weight: 3.200 },
           isFragile: true
         },
@@ -2716,7 +2715,7 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'H-05-1',
           barcode: 'BAR987MULTI6',
-          image: generateMockImage('towels-commercial'),
+          image: null,
           dimensions: { length: 35, width: 25, height: 30, weight: 2.400 }
         }
       ],
@@ -2751,7 +2750,7 @@ export default function PickPack() {
           packedQuantity: 1,
           warehouseLocation: 'H-18-6',
           barcode: 'BAR333444555',
-          image: generateMockImage('cuticle-oil')
+          image: null
         }
       ],
       totalItems: 1,
@@ -2803,7 +2802,7 @@ export default function PickPack() {
           packedQuantity: item.packedQuantity || 0,
           warehouseLocation: warehouseLocation,
           barcode: item.barcode || generateMockBarcode(item.sku),
-          image: item.image || generateMockImage(item.productName),
+          image: item.image || null, // No mock images - use default icons based on type
           isBundle: item.isBundle || false,
           bundleItems: item.bundleItems || undefined,
           dimensions: item.dimensions,
@@ -6429,6 +6428,8 @@ export default function PickPack() {
                                   alt={currentItem.productName}
                                   className="max-w-full max-h-full w-auto h-auto object-contain"
                                 />
+                              ) : currentItem.serviceId ? (
+                                <Wrench className="h-24 w-24 sm:h-32 sm:w-32 text-purple-300" />
                               ) : (
                                 <Package className="h-24 w-24 sm:h-32 sm:w-32 text-gray-300" />
                               )}
