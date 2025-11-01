@@ -562,15 +562,11 @@ const CartonCard = memo(({
   );
 });
 
-// Component to display product documents with checkboxes
+// Component to display product documents
 function ProductDocumentsSelector({ 
-  orderItems, 
-  selectedDocumentIds, 
-  onSelectionChange 
+  orderItems
 }: {
   orderItems: any[];
-  selectedDocumentIds: string[];
-  onSelectionChange: (ids: string[]) => void;
 }) {
   const productIds = useMemo(
     () => Array.from(new Set(orderItems.map((item: any) => item.productId))).filter(Boolean),
@@ -586,14 +582,6 @@ function ProductDocumentsSelector({
     const productIdSet = new Set(productIds);
     return allFilesRaw.filter(file => productIdSet.has(file.productId) && file.isActive);
   }, [allFilesRaw, productIds]);
-
-  const handleToggle = useCallback((fileId: string) => {
-    onSelectionChange(
-      selectedDocumentIds.includes(fileId)
-        ? selectedDocumentIds.filter(id => id !== fileId)
-        : [...selectedDocumentIds, fileId]
-    );
-  }, [selectedDocumentIds, onSelectionChange]);
 
   if (isLoading) {
     return (
@@ -630,36 +618,21 @@ function ProductDocumentsSelector({
       {productFiles.map((file: any) => {
         const Icon = FILE_TYPE_ICONS[file.fileType] || FileText;
         const flag = file.language ? (LANGUAGE_FLAGS[file.language] || '🌐') : '';
-        const isSelected = selectedDocumentIds.includes(file.id);
         
         return (
           <div
             key={file.id}
-            className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors ${
-              isSelected
-                ? 'bg-teal-50 border-teal-300'
-                : 'bg-white border-gray-200 hover:border-teal-200'
-            }`}
-            onClick={() => handleToggle(file.id)}
+            className="flex items-center gap-3 p-2.5 rounded-lg border transition-colors bg-white border-gray-200 hover:border-teal-200"
             data-testid={`product-doc-${file.id}`}
           >
-            {/* Checkbox */}
-            <div onClick={(e) => e.stopPropagation()}>
-              <Checkbox
-                checked={isSelected}
-                onCheckedChange={() => handleToggle(file.id)}
-                data-testid={`checkbox-product-doc-${file.id}`}
-              />
-            </div>
-            
             {/* Icon */}
             <div className="flex-shrink-0 w-12 h-12 rounded-md overflow-hidden bg-gradient-to-br from-teal-50 to-cyan-50 border border-teal-200 flex items-center justify-center">
-              <Icon className={`h-6 w-6 ${isSelected ? 'text-teal-600' : 'text-teal-500'}`} />
+              <Icon className="h-6 w-6 text-teal-500" />
             </div>
             
             {/* Document Info */}
             <div className="flex-1 min-w-0">
-              <p className={`text-sm font-medium truncate ${isSelected ? 'text-teal-900' : 'text-gray-900'}`}>
+              <p className="text-sm font-medium truncate text-gray-900">
                 {file.description || file.fileName}
               </p>
               {flag && (
@@ -674,8 +647,7 @@ function ProductDocumentsSelector({
               variant="outline"
               size="sm"
               className="h-8 text-xs flex-shrink-0 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300"
-              onClick={(e) => {
-                e.stopPropagation();
+              onClick={() => {
                 window.open(file.fileUrl || file.url, '_blank');
               }}
               data-testid={`button-print-product-doc-${file.id}`}
@@ -820,9 +792,6 @@ export default function PickPack() {
   const [printedDocuments, setPrintedDocuments] = useState({
     packingList: false
   });
-  
-  // State for selected product documents
-  const [selectedProductDocuments, setSelectedProductDocuments] = useState<string[]>([]);
   
   const [selectedBoxSize, setSelectedBoxSize] = useState<string>('');
   const [packageWeight, setPackageWeight] = useState<string>('');
@@ -3648,9 +3617,6 @@ export default function PickPack() {
       packingList: false
     });
     
-    // Load selected product documents from order if available
-    const fileIds = order.includedDocuments?.fileIds;
-    setSelectedProductDocuments(Array.isArray(fileIds) ? fileIds : []);
     setVerifiedItems({});
     setUseNonCompanyCarton(false);
     setPackageWeight('');
@@ -3755,8 +3721,7 @@ export default function PickPack() {
           packageWeight: packageWeight,
           printedDocuments: printedDocuments,
           packingChecklist: packingChecklist,
-          multiCartonOptimization: enableMultiCartonOptimization,
-          selectedDocumentIds: selectedProductDocuments
+          multiCartonOptimization: enableMultiCartonOptimization
         });
 
         // Log packing completion activity
@@ -3772,8 +3737,7 @@ export default function PickPack() {
           packageWeight: packageWeight,
           printedDocuments: printedDocuments,
           packingChecklist: packingChecklist,
-          packingMaterialsApplied: packingMaterialsApplied,
-          selectedDocumentIds: selectedProductDocuments
+          packingMaterialsApplied: packingMaterialsApplied
         });
 
         // Update order status to "ready_to_ship" when packing is complete
@@ -5143,12 +5107,10 @@ export default function PickPack() {
 
                 </div>
 
-                {/* Product Documents - Selectable with checkboxes */}
+                {/* Product Documents */}
                 {activePackingOrder && (
                   <ProductDocumentsSelector
                     orderItems={activePackingOrder.items}
-                    selectedDocumentIds={selectedProductDocuments}
-                    onSelectionChange={setSelectedProductDocuments}
                   />
                 )}
 
