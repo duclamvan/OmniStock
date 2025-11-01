@@ -1015,11 +1015,13 @@ export class DatabaseStorage implements IStorage {
 
   async updateOrder(id: string, orderUpdates: any): Promise<Order | undefined> {
     try {
+      console.log('Storage.updateOrder - Received updates for order', id, ':', orderUpdates);
       const [updated] = await db
         .update(orders)
         .set({ ...orderUpdates, updatedAt: new Date() })
         .where(eq(orders.id, id))
         .returning();
+      console.log('Storage.updateOrder - Result currency:', updated?.currency);
       return updated || undefined;
     } catch (error) {
       console.error('Error updating order:', error);
