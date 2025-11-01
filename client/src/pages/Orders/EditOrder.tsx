@@ -3559,6 +3559,41 @@ export default function EditOrder() {
             <CardDescription className="text-xs sm:text-sm mt-1">Configure pricing and notes</CardDescription>
           </CardHeader>
           <CardContent className="p-3 space-y-3">
+            {/* Shipping & Payment Methods */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div>
+                <Label htmlFor="shippingMethod" className="text-sm">Shipping Method</Label>
+                <Select value={form.watch('shippingMethod')} onValueChange={(value) => form.setValue('shippingMethod', value as any)}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select shipping" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="GLS">GLS</SelectItem>
+                    <SelectItem value="PPL">PPL</SelectItem>
+                    <SelectItem value="DHL">DHL</SelectItem>
+                    <SelectItem value="DPD">DPD</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="paymentMethod" className="text-sm">Payment Method</Label>
+                <Select value={form.watch('paymentMethod')} onValueChange={(value) => form.setValue('paymentMethod', value as any)}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select payment" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                    <SelectItem value="PayPal">PayPal</SelectItem>
+                    <SelectItem value="COD">COD</SelectItem>
+                    <SelectItem value="Cash">Cash</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Separator className="my-4" />
+
             {/* Discount Toggle Button */}
             <div>
               <Button
@@ -4252,36 +4287,6 @@ export default function EditOrder() {
                             </SelectContent>
                           </Select>
                         </div>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="shippingMethod" className="text-xs">Shipping Method</Label>
-                        <Select value={form.watch('shippingMethod')} onValueChange={(value) => form.setValue('shippingMethod', value as any)}>
-                          <SelectTrigger className="mt-1 h-9">
-                            <SelectValue placeholder="Select shipping" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="GLS">GLS</SelectItem>
-                            <SelectItem value="PPL">PPL</SelectItem>
-                            <SelectItem value="DHL">DHL</SelectItem>
-                            <SelectItem value="DPD">DPD</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="paymentMethod" className="text-xs">Payment Method</Label>
-                        <Select value={form.watch('paymentMethod')} onValueChange={(value) => form.setValue('paymentMethod', value as any)}>
-                          <SelectTrigger className="mt-1 h-9">
-                            <SelectValue placeholder="Select payment" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                            <SelectItem value="PayPal">PayPal</SelectItem>
-                            <SelectItem value="COD">COD</SelectItem>
-                            <SelectItem value="Cash">Cash</SelectItem>
-                          </SelectContent>
-                        </Select>
                       </div>
                     </CardContent>
                   </Card>
