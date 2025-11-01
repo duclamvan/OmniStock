@@ -36,6 +36,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { offlineQueue } from "@/lib/offlineQueue";
 import { CartonTypeAutocomplete } from "@/components/orders/CartonTypeAutocomplete";
+import { usePackingOptimization } from "@/hooks/usePackingOptimization";
+import { AICartonPackingPanel } from "@/components/orders/AICartonPackingPanel";
 import { 
   Dialog, 
   DialogContent, 
@@ -979,6 +981,14 @@ export default function PickPack() {
   // Track orders being returned to packing (for instant UI update)
   const [ordersReturnedToPacking, setOrdersReturnedToPacking] = useState<Set<string>>(new Set());
   
+  // Packing optimization hook
+  const { 
+    packingPlan, 
+    setPackingPlan, 
+    runPackingOptimization: runOptimization,
+    isLoading: isPackingOptimizationLoading 
+  } = usePackingOptimization();
+  
   // Workflow management state
   const [orderToHold, setOrderToHold] = useState<PickPackOrder | null>(null);
   const [orderToCancel, setOrderToCancel] = useState<PickPackOrder | null>(null);
@@ -1062,6 +1072,32 @@ export default function PickPack() {
       }
     }
   }, [manualItemIndex, activePickingOrder, preferExpandedImages]);
+
+  // Packing optimization wrapper function
+  const runPackingOptimization = () => {
+    if (!activePackingOrder || !activePackingOrder.items || activePackingOrder.items.length === 0) {
+      toast({
+        title: "Error",
+        description: "No items to pack in the current order",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const items = activePackingOrder.items.map(item => ({
+      productId: item.productId || '',
+      productName: item.productName,
+      sku: item.sku,
+      quantity: item.quantity,
+      price: item.price || 0
+    }));
+
+    // Use the shipping country from the active packing order
+    const shippingCountry = activePackingOrder.shippingCountry || 'CZ';
+
+    // Call the shared optimization function
+    runOptimization(items, shippingCountry);
+  };
 
   // Track active picking/packing mode for header visibility
   useEffect(() => {
@@ -5189,6 +5225,17 @@ export default function PickPack() {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
+
+          {/* AI Carton Packing Optimization Panel */}
+          {activePackingOrder && activePackingOrder.items && activePackingOrder.items.length > 0 && (
+            <AICartonPackingPanel
+              packingPlan={packingPlan}
+              onRunOptimization={runPackingOptimization}
+              isLoading={isPackingOptimizationLoading}
+              currency={activePackingOrder.currency || 'CZK'}
+              orderItems={activePackingOrder.items}
+            />
+          )}
 
           {/* Multi-Carton Packing Section */}
           <Card className="shadow-sm border-2 border-emerald-200 bg-gradient-to-br from-white to-emerald-50">

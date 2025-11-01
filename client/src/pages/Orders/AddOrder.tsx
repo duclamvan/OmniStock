@@ -67,6 +67,8 @@ import {
   Settings
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
+import { AICartonPackingPanel } from "@/components/orders/AICartonPackingPanel";
+import { usePackingOptimization } from "@/hooks/usePackingOptimization";
 import {
   Accordion,
   AccordionContent,
@@ -295,9 +297,16 @@ export default function AddOrder() {
   const [quickCustomerPhone, setQuickCustomerPhone] = useState("");
   const [quickCustomerSocialApp, setQuickCustomerSocialApp] = useState<'viber' | 'whatsapp' | 'zalo' | 'email'>('whatsapp');
 
-  // Packing optimization state
+  // Order ID state
   const [orderId, setOrderId] = useState<string | null>(null);
-  const [packingPlan, setPackingPlan] = useState<any>(null);
+
+  // Packing optimization hook
+  const { 
+    packingPlan, 
+    setPackingPlan, 
+    runPackingOptimization: runOptimization,
+    isLoading: isPackingOptimizationLoading 
+  } = usePackingOptimization();
 
   // File upload state
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -903,144 +912,7 @@ export default function AddOrder() {
     },
   });
 
-  // Packing optimization mutation
-  const packingOptimizationMutation = useMutation({
-    mutationFn: async () => {
-      if (orderItems.length === 0) {
-        throw new Error('Please add items to the order first');
-      }
-      
-      const items = orderItems.map(item => ({
-        productId: item.productId,
-        serviceId: item.serviceId,
-        productName: item.productName,
-        sku: item.sku,
-        quantity: item.quantity,
-        price: item.price
-      }));
-      
-      // Get shipping country code from customer with comprehensive mapping
-      let shippingCountry = 'CZ'; // Fallback if no customer country provided
-      if (selectedCustomer?.country) {
-        const countryInput = selectedCustomer.country.trim();
-        const country = countryInput.toLowerCase();
-        
-        // Comprehensive country name to ISO code mapping
-        const countryMap: Record<string, string> = {
-          // Czech variants
-          'czechia': 'CZ', 'czech republic': 'CZ', 'česko': 'CZ', 'česká republika': 'CZ', 'cz': 'CZ',
-          // Germany variants
-          'germany': 'DE', 'deutschland': 'DE', 'německo': 'DE', 'de': 'DE',
-          // Austria variants
-          'austria': 'AT', 'österreich': 'AT', 'rakousko': 'AT', 'at': 'AT',
-          // Slovakia variants
-          'slovakia': 'SK', 'slovensko': 'SK', 'slovak republic': 'SK', 'sk': 'SK',
-          // Poland variants
-          'poland': 'PL', 'polska': 'PL', 'polsko': 'PL', 'pl': 'PL',
-          // Hungary variants
-          'hungary': 'HU', 'magyarország': 'HU', 'maďarsko': 'HU', 'hu': 'HU',
-          // Other European countries
-          'france': 'FR', 'francie': 'FR', 'fr': 'FR',
-          'italy': 'IT', 'itálie': 'IT', 'italia': 'IT', 'it': 'IT',
-          'spain': 'ES', 'españa': 'ES', 'španělsko': 'ES', 'es': 'ES',
-          'netherlands': 'NL', 'holland': 'NL', 'nizozemsko': 'NL', 'nl': 'NL',
-          'belgium': 'BE', 'belgië': 'BE', 'belgique': 'BE', 'belgie': 'BE', 'be': 'BE',
-          'switzerland': 'CH', 'schweiz': 'CH', 'suisse': 'CH', 'švýcarsko': 'CH', 'ch': 'CH',
-          'romania': 'RO', 'românia': 'RO', 'rumunsko': 'RO', 'ro': 'RO',
-          'bulgaria': 'BG', 'българия': 'BG', 'bulharsko': 'BG', 'bg': 'BG',
-          'denmark': 'DK', 'danmark': 'DK', 'dánsko': 'DK', 'dk': 'DK',
-          'sweden': 'SE', 'sverige': 'SE', 'švédsko': 'SE', 'se': 'SE',
-          'norway': 'NO', 'norge': 'NO', 'norsko': 'NO', 'no': 'NO',
-          'finland': 'FI', 'suomi': 'FI', 'finsko': 'FI', 'fi': 'FI',
-          'portugal': 'PT', 'portugalsko': 'PT', 'pt': 'PT',
-          'greece': 'GR', 'hellas': 'GR', 'řecko': 'GR', 'gr': 'GR',
-          'ireland': 'IE', 'éire': 'IE', 'irsko': 'IE', 'ie': 'IE',
-          'croatia': 'HR', 'hrvatska': 'HR', 'chorvatsko': 'HR', 'hr': 'HR',
-          'slovenia': 'SI', 'slovenija': 'SI', 'slovinsko': 'SI', 'si': 'SI',
-          'lithuania': 'LT', 'lietuva': 'LT', 'litva': 'LT', 'lt': 'LT',
-          'latvia': 'LV', 'latvija': 'LV', 'lotyšsko': 'LV', 'lv': 'LV',
-          'estonia': 'EE', 'eesti': 'EE', 'estonsko': 'EE', 'ee': 'EE',
-          'luxembourg': 'LU', 'lëtzebuerg': 'LU', 'lucembursko': 'LU', 'lu': 'LU',
-          'malta': 'MT', 'malte': 'MT', 'mt': 'MT',
-          'cyprus': 'CY', 'κύπρος': 'CY', 'kypr': 'CY', 'cy': 'CY',
-          // Other regions
-          'united states': 'US', 'usa': 'US', 'america': 'US', 'spojené státy': 'US', 'us': 'US',
-          'united kingdom': 'GB', 'uk': 'GB', 'great britain': 'GB', 'velká británie': 'GB', 'gb': 'GB',
-          'canada': 'CA', 'kanada': 'CA', 'ca': 'CA',
-          'australia': 'AU', 'austrálie': 'AU', 'au': 'AU',
-          'new zealand': 'NZ', 'nový zéland': 'NZ', 'nz': 'NZ',
-          'mexico': 'MX', 'mexiko': 'MX', 'mx': 'MX',
-          'brazil': 'BR', 'brasil': 'BR', 'brazílie': 'BR', 'br': 'BR',
-          'argentina': 'AR', 'ar': 'AR',
-          'china': 'CN', 'čína': 'CN', 'cn': 'CN',
-          'vietnam': 'VN', 'viet nam': 'VN', 'việt nam': 'VN', 'vn': 'VN',
-          'japan': 'JP', '日本': 'JP', 'japonsko': 'JP', 'jp': 'JP',
-          'south korea': 'KR', 'korea': 'KR', '한국': 'KR', 'jižní korea': 'KR', 'kr': 'KR',
-          'india': 'IN', 'indie': 'IN', 'in': 'IN',
-          'singapore': 'SG', 'singapur': 'SG', 'sg': 'SG',
-          'thailand': 'TH', 'thajsko': 'TH', 'th': 'TH',
-          'malaysia': 'MY', 'malajsie': 'MY', 'my': 'MY',
-          'indonesia': 'ID', 'indonésie': 'ID', 'id': 'ID',
-          'philippines': 'PH', 'filipíny': 'PH', 'ph': 'PH',
-          'south africa': 'ZA', 'jižní afrika': 'ZA', 'za': 'ZA',
-          'israel': 'IL', 'izrael': 'IL', 'il': 'IL',
-          'turkey': 'TR', 'turecko': 'TR', 'tr': 'TR',
-          'uae': 'AE', 'united arab emirates': 'AE', 'ae': 'AE',
-          'oman': 'OM', 'om': 'OM',
-          'qatar': 'QA', 'katar': 'QA', 'qa': 'QA',
-          'kuwait': 'KW', 'kuvajt': 'KW', 'kw': 'KW',
-          'saudi arabia': 'SA', 'saúdská arábie': 'SA', 'sa': 'SA',
-        };
-        
-        // Try exact match (handles ISO codes and all mapped country names)
-        if (countryMap[country]) {
-          shippingCountry = countryMap[country];
-        } else {
-          // No match found - preserve the customer's original country value
-          // If it looks like an ISO code (2 letters), use it uppercased
-          if (countryInput.length === 2) {
-            shippingCountry = countryInput.toUpperCase();
-            console.log(`Packing optimization: Using customer country as ISO code: "${shippingCountry}"`);
-          } else {
-            // For longer unmapped values, send original to backend for validation
-            shippingCountry = countryInput;
-            console.warn(`Packing optimization: Unmapped customer country "${countryInput}", sending to backend as-is for validation`);
-          }
-        }
-        
-        console.log(`Packing optimization: Mapped customer country "${selectedCustomer.country}" to ISO code "${shippingCountry}"`);
-      } else {
-        console.log(`Packing optimization: No customer country set, using default "${shippingCountry}"`);
-      }
-      
-      const response = await apiRequest('POST', '/api/packing/optimize', {
-        items,
-        shippingCountry
-      });
-      return response.json();
-    },
-    onSuccess: (data) => {
-      setPackingPlan(data);
-      
-      if (data.estimatedShippingCost !== undefined && data.estimatedShippingCost !== null) {
-        form.setValue('shippingCost', data.estimatedShippingCost);
-        form.setValue('actualShippingCost', data.estimatedShippingCost);
-      }
-      
-      toast({
-        title: "Success",
-        description: `Packing plan optimized successfully${data.estimatedShippingCost ? ` - Suggested shipping: ${formatCurrency(data.estimatedShippingCost, form.watch('currency'))}` : ''}`,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to optimize packing",
-        variant: "destructive",
-      });
-    },
-  });
-
+  // Packing optimization wrapper function with country mapping and auto-fill
   const runPackingOptimization = () => {
     if (orderItems.length === 0) {
       toast({
@@ -1050,8 +922,120 @@ export default function AddOrder() {
       });
       return;
     }
-    packingOptimizationMutation.mutate();
+
+    const items = orderItems.map(item => ({
+      productId: item.productId || '',
+      productName: item.productName,
+      sku: item.sku,
+      quantity: item.quantity,
+      price: item.price
+    }));
+
+    // Get shipping country code from customer with comprehensive mapping
+    let shippingCountry = 'CZ'; // Fallback if no customer country provided
+    if (selectedCustomer?.country) {
+      const countryInput = selectedCustomer.country.trim();
+      const country = countryInput.toLowerCase();
+      
+      // Comprehensive country name to ISO code mapping
+      const countryMap: Record<string, string> = {
+        // Czech variants
+        'czechia': 'CZ', 'czech republic': 'CZ', 'česko': 'CZ', 'česká republika': 'CZ', 'cz': 'CZ',
+        // Germany variants
+        'germany': 'DE', 'deutschland': 'DE', 'německo': 'DE', 'de': 'DE',
+        // Austria variants
+        'austria': 'AT', 'österreich': 'AT', 'rakousko': 'AT', 'at': 'AT',
+        // Slovakia variants
+        'slovakia': 'SK', 'slovensko': 'SK', 'slovak republic': 'SK', 'sk': 'SK',
+        // Poland variants
+        'poland': 'PL', 'polska': 'PL', 'polsko': 'PL', 'pl': 'PL',
+        // Hungary variants
+        'hungary': 'HU', 'magyarország': 'HU', 'maďarsko': 'HU', 'hu': 'HU',
+        // Other European countries
+        'france': 'FR', 'francie': 'FR', 'fr': 'FR',
+        'italy': 'IT', 'itálie': 'IT', 'italia': 'IT', 'it': 'IT',
+        'spain': 'ES', 'españa': 'ES', 'španělsko': 'ES', 'es': 'ES',
+        'netherlands': 'NL', 'holland': 'NL', 'nizozemsko': 'NL', 'nl': 'NL',
+        'belgium': 'BE', 'belgië': 'BE', 'belgique': 'BE', 'belgie': 'BE', 'be': 'BE',
+        'switzerland': 'CH', 'schweiz': 'CH', 'suisse': 'CH', 'švýcarsko': 'CH', 'ch': 'CH',
+        'romania': 'RO', 'românia': 'RO', 'rumunsko': 'RO', 'ro': 'RO',
+        'bulgaria': 'BG', 'българия': 'BG', 'bulharsko': 'BG', 'bg': 'BG',
+        'denmark': 'DK', 'danmark': 'DK', 'dánsko': 'DK', 'dk': 'DK',
+        'sweden': 'SE', 'sverige': 'SE', 'švédsko': 'SE', 'se': 'SE',
+        'norway': 'NO', 'norge': 'NO', 'norsko': 'NO', 'no': 'NO',
+        'finland': 'FI', 'suomi': 'FI', 'finsko': 'FI', 'fi': 'FI',
+        'portugal': 'PT', 'portugalsko': 'PT', 'pt': 'PT',
+        'greece': 'GR', 'hellas': 'GR', 'řecko': 'GR', 'gr': 'GR',
+        'ireland': 'IE', 'éire': 'IE', 'irsko': 'IE', 'ie': 'IE',
+        'croatia': 'HR', 'hrvatska': 'HR', 'chorvatsko': 'HR', 'hr': 'HR',
+        'slovenia': 'SI', 'slovenija': 'SI', 'slovinsko': 'SI', 'si': 'SI',
+        'lithuania': 'LT', 'lietuva': 'LT', 'litva': 'LT', 'lt': 'LT',
+        'latvia': 'LV', 'latvija': 'LV', 'lotyšsko': 'LV', 'lv': 'LV',
+        'estonia': 'EE', 'eesti': 'EE', 'estonsko': 'EE', 'ee': 'EE',
+        'luxembourg': 'LU', 'lëtzebuerg': 'LU', 'lucembursko': 'LU', 'lu': 'LU',
+        'malta': 'MT', 'malte': 'MT', 'mt': 'MT',
+        'cyprus': 'CY', 'κύπρος': 'CY', 'kypr': 'CY', 'cy': 'CY',
+        // Other regions
+        'united states': 'US', 'usa': 'US', 'america': 'US', 'spojené státy': 'US', 'us': 'US',
+        'united kingdom': 'GB', 'uk': 'GB', 'great britain': 'GB', 'velká británie': 'GB', 'gb': 'GB',
+        'canada': 'CA', 'kanada': 'CA', 'ca': 'CA',
+        'australia': 'AU', 'austrálie': 'AU', 'au': 'AU',
+        'new zealand': 'NZ', 'nový zéland': 'NZ', 'nz': 'NZ',
+        'mexico': 'MX', 'mexiko': 'MX', 'mx': 'MX',
+        'brazil': 'BR', 'brasil': 'BR', 'brazílie': 'BR', 'br': 'BR',
+        'argentina': 'AR', 'ar': 'AR',
+        'china': 'CN', 'čína': 'CN', 'cn': 'CN',
+        'vietnam': 'VN', 'viet nam': 'VN', 'việt nam': 'VN', 'vn': 'VN',
+        'japan': 'JP', '日本': 'JP', 'japonsko': 'JP', 'jp': 'JP',
+        'south korea': 'KR', 'korea': 'KR', '한국': 'KR', 'jižní korea': 'KR', 'kr': 'KR',
+        'india': 'IN', 'indie': 'IN', 'in': 'IN',
+        'singapore': 'SG', 'singapur': 'SG', 'sg': 'SG',
+        'thailand': 'TH', 'thajsko': 'TH', 'th': 'TH',
+        'malaysia': 'MY', 'malajsie': 'MY', 'my': 'MY',
+        'indonesia': 'ID', 'indonésie': 'ID', 'id': 'ID',
+        'philippines': 'PH', 'filipíny': 'PH', 'ph': 'PH',
+        'south africa': 'ZA', 'jižní afrika': 'ZA', 'za': 'ZA',
+        'israel': 'IL', 'izrael': 'IL', 'il': 'IL',
+        'turkey': 'TR', 'turecko': 'TR', 'tr': 'TR',
+        'uae': 'AE', 'united arab emirates': 'AE', 'ae': 'AE',
+        'oman': 'OM', 'om': 'OM',
+        'qatar': 'QA', 'katar': 'QA', 'qa': 'QA',
+        'kuwait': 'KW', 'kuvajt': 'KW', 'kw': 'KW',
+        'saudi arabia': 'SA', 'saúdská arábie': 'SA', 'sa': 'SA',
+      };
+      
+      // Try exact match (handles ISO codes and all mapped country names)
+      if (countryMap[country]) {
+        shippingCountry = countryMap[country];
+      } else {
+        // No match found - preserve the customer's original country value
+        // If it looks like an ISO code (2 letters), use it uppercased
+        if (countryInput.length === 2) {
+          shippingCountry = countryInput.toUpperCase();
+          console.log(`Packing optimization: Using customer country as ISO code: "${shippingCountry}"`);
+        } else {
+          // For longer unmapped values, send original to backend for validation
+          shippingCountry = countryInput;
+          console.warn(`Packing optimization: Unmapped customer country "${countryInput}", sending to backend as-is for validation`);
+        }
+      }
+      
+      console.log(`Packing optimization: Mapped customer country "${selectedCustomer.country}" to ISO code "${shippingCountry}"`);
+    } else {
+      console.log(`Packing optimization: No customer country set, using default "${shippingCountry}"`);
+    }
+
+    // Call the shared optimization function
+    runOptimization(items, shippingCountry);
   };
+
+  // Auto-fill shipping costs when packing plan updates
+  useEffect(() => {
+    if (packingPlan?.estimatedShippingCost !== undefined && packingPlan?.estimatedShippingCost !== null) {
+      form.setValue('shippingCost', packingPlan.estimatedShippingCost);
+      form.setValue('actualShippingCost', packingPlan.estimatedShippingCost);
+    }
+  }, [packingPlan, form]);
 
   const addProductToOrder = async (product: any) => {
     // Check if this is a service
@@ -3733,247 +3717,13 @@ export default function AddOrder() {
         />
 
         {/* AI Carton Packing Optimization Panel */}
-        {orderItems.length > 0 && (
-          <Card className="shadow-sm border-2 border-blue-100 dark:border-blue-900">
-            <CardHeader className="p-3 border-b bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1 flex-1">
-                  <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                    <Box className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    AI Carton Packing Optimization
-                  </CardTitle>
-                  <CardDescription className="text-xs sm:text-sm">
-                    Automatically calculate optimal carton sizes and shipping costs using AI
-                  </CardDescription>
-                </div>
-                <Button
-                  type="button"
-                  onClick={runPackingOptimization}
-                  disabled={packingOptimizationMutation.isPending}
-                  data-testid="button-run-packing-optimization"
-                  className="shrink-0 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                  size="lg"
-                >
-                  {packingOptimizationMutation.isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Calculating...
-                    </>
-                  ) : (
-                    <>
-                      <Package className="h-4 w-4 mr-2" />
-                      Run Optimization
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardHeader>
-
-            {packingPlan && (
-              <CardContent className="p-3 space-y-3">
-                {/* Summary Cards */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                  {/* Total Cartons */}
-                  <div className="bg-blue-50 dark:bg-blue-950 p-3 sm:p-4 rounded-lg">
-                    <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-1">
-                      <Box className="h-4 w-4" />
-                      <span className="text-xs font-medium">Total Cartons</span>
-                    </div>
-                    <p className="text-xl sm:text-2xl font-bold text-blue-900 dark:text-blue-100" data-testid="text-total-cartons">
-                      {packingPlan.totalCartons || 0}
-                    </p>
-                  </div>
-
-                  {/* Total Weight */}
-                  <div className="bg-purple-50 dark:bg-purple-950 p-3 sm:p-4 rounded-lg">
-                    <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 mb-1">
-                      <Weight className="h-4 w-4" />
-                      <span className="text-xs font-medium">Total Weight</span>
-                    </div>
-                    <p className="text-xl sm:text-2xl font-bold text-purple-900 dark:text-purple-100" data-testid="text-total-weight">
-                      {packingPlan.totalWeight ? `${packingPlan.totalWeight.toFixed(2)} kg` : '0 kg'}
-                    </p>
-                  </div>
-
-                  {/* Avg Utilization */}
-                  <div className={`p-3 sm:p-4 rounded-lg ${
-                    (packingPlan.avgUtilization || 0) > 80 
-                      ? 'bg-green-50 dark:bg-green-950' 
-                      : (packingPlan.avgUtilization || 0) > 70 
-                      ? 'bg-yellow-50 dark:bg-yellow-950' 
-                      : 'bg-red-50 dark:bg-red-950'
-                  }`}>
-                    <div className={`flex items-center gap-2 mb-1 ${
-                      (packingPlan.avgUtilization || 0) > 80 
-                        ? 'text-green-600 dark:text-green-400' 
-                        : (packingPlan.avgUtilization || 0) > 70 
-                        ? 'text-yellow-600 dark:text-yellow-400' 
-                        : 'text-red-600 dark:text-red-400'
-                    }`}>
-                      <Package className="h-4 w-4" />
-                      <span className="text-xs font-medium">Avg Utilization</span>
-                    </div>
-                    <p className={`text-xl sm:text-2xl font-bold ${
-                      (packingPlan.avgUtilization || 0) > 80 
-                        ? 'text-green-900 dark:text-green-100' 
-                        : (packingPlan.avgUtilization || 0) > 70 
-                        ? 'text-yellow-900 dark:text-yellow-100' 
-                        : 'text-red-900 dark:text-red-100'
-                    }`} data-testid="text-avg-utilization">
-                      {packingPlan.avgUtilization ? `${packingPlan.avgUtilization.toFixed(1)}%` : '0%'}
-                    </p>
-                  </div>
-
-                  {/* Est. Shipping Cost */}
-                  <div className="bg-indigo-50 dark:bg-indigo-950 p-3 sm:p-4 rounded-lg">
-                    <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 mb-1">
-                      <Truck className="h-4 w-4" />
-                      <span className="text-xs font-medium">Est. Shipping</span>
-                    </div>
-                    <p className="text-xl sm:text-2xl font-bold text-indigo-900 dark:text-indigo-100" data-testid="text-shipping-cost">
-                      {packingPlan.estimatedShippingCost 
-                        ? formatCurrency(packingPlan.estimatedShippingCost, form.watch('currency'))
-                        : formatCurrency(0, form.watch('currency'))
-                      }
-                    </p>
-                  </div>
-                </div>
-
-                {/* Suggestions */}
-                {packingPlan.suggestions && packingPlan.suggestions.length > 0 && (
-                  <div className="space-y-2">
-                    {packingPlan.suggestions.map((suggestion: string, index: number) => (
-                      <Alert key={index} className="bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
-                        <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                        <AlertDescription className="text-amber-800 dark:text-amber-200">
-                          {suggestion}
-                        </AlertDescription>
-                      </Alert>
-                    ))}
-                  </div>
-                )}
-
-                {/* Detailed Carton Breakdown */}
-                {packingPlan.cartons && packingPlan.cartons.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-gray-700">
-                      <Box className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                      <h4 className="font-semibold text-base text-gray-900 dark:text-gray-100">
-                        Carton Breakdown
-                      </h4>
-                      <Badge variant="secondary" className="ml-auto">
-                        {packingPlan.cartons.length} {packingPlan.cartons.length === 1 ? 'Carton' : 'Cartons'}
-                      </Badge>
-                    </div>
-                    <Accordion type="single" collapsible className="w-full space-y-2">
-                      {packingPlan.cartons.map((carton: any, index: number) => (
-                        <AccordionItem 
-                          key={index} 
-                          value={`carton-${index}`}
-                          data-testid={`accordion-carton-${index + 1}`}
-                          className="border rounded-lg px-4 bg-white dark:bg-gray-900"
-                        >
-                          <AccordionTrigger className="hover:no-underline py-4">
-                            <div className="flex items-center justify-between w-full pr-4">
-                              <div className="flex flex-col items-start gap-1">
-                                <div className="flex items-center gap-2">
-                                  <Box className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                  <span className="font-semibold text-sm sm:text-base">
-                                    Carton #{index + 1}: {carton.cartonName || 'Standard Box'}
-                                  </span>
-                                </div>
-                                {carton.dimensions && (
-                                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-6">
-                                    {carton.dimensions} cm
-                                  </span>
-                                )}
-                              </div>
-                              <Badge 
-                                variant="outline" 
-                                className={`shrink-0 ${
-                                  (carton.utilization || 0) > 80 
-                                    ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' 
-                                    : (carton.utilization || 0) > 70 
-                                    ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700' 
-                                    : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-300 dark:border-red-700'
-                                }`}
-                              >
-                                {carton.utilization ? `${carton.utilization.toFixed(1)}%` : '0%'}
-                              </Badge>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent>
-                            <div className="space-y-3 pt-2 pb-3 px-4">
-                              {/* Carton Stats */}
-                              <div className="grid grid-cols-2 gap-3 text-sm">
-                                <div className="flex items-center gap-2">
-                                  <Weight className="h-3 w-3 text-gray-500" />
-                                  <span className="text-gray-600 dark:text-gray-400">Total Weight:</span>
-                                  <span className="font-medium">{carton.weight ? `${carton.weight.toFixed(2)} kg` : 'N/A'}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Package className="h-3 w-3 text-gray-500" />
-                                  <span className="text-gray-600 dark:text-gray-400">Items:</span>
-                                  <span className="font-medium">{carton.items?.length || 0}</span>
-                                </div>
-                                {carton.fillingWeight !== undefined && carton.fillingWeight > 0 && (
-                                  <>
-                                    <div className="flex items-center gap-2">
-                                      <Box className="h-3 w-3 text-amber-500" />
-                                      <span className="text-gray-600 dark:text-gray-400">Filling:</span>
-                                      <span className="font-medium text-amber-600 dark:text-amber-400">
-                                        {carton.fillingWeight.toFixed(3)} kg
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <Package className="h-3 w-3 text-gray-500" />
-                                      <span className="text-gray-600 dark:text-gray-400">Empty Space:</span>
-                                      <span className="font-medium">{carton.unusedVolume ? `${carton.unusedVolume.toLocaleString()} cm³` : 'N/A'}</span>
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-
-                              {/* Items in Carton */}
-                              {carton.items && carton.items.length > 0 && (
-                                <div className="space-y-2">
-                                  <h5 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-                                    Items in Carton
-                                  </h5>
-                                  <div className="space-y-1">
-                                    {carton.items.map((item: any, itemIndex: number) => (
-                                      <div 
-                                        key={itemIndex}
-                                        className="flex items-center justify-between text-sm bg-gray-50 dark:bg-gray-800 p-2 rounded"
-                                      >
-                                        <div className="flex items-center gap-2">
-                                          <span className="font-medium">{item.productName || item.name}</span>
-                                          {item.isEstimated && (
-                                            <Badge variant="secondary" className="text-xs">
-                                              AI Estimated
-                                            </Badge>
-                                          )}
-                                        </div>
-                                        <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
-                                          <span>Qty: {item.quantity}</span>
-                                          {item.weight && <span>Weight: {item.weight.toFixed(2)} kg</span>}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      ))}
-                    </Accordion>
-                  </div>
-                )}
-              </CardContent>
-            )}
-          </Card>
-        )}
+        <AICartonPackingPanel
+          packingPlan={packingPlan}
+          onRunOptimization={runPackingOptimization}
+          isLoading={isPackingOptimizationLoading}
+          currency={form.watch('currency')}
+          orderItems={orderItems}
+        />
 
         {/* Files Section */}
         {orderItems.length > 0 && (
