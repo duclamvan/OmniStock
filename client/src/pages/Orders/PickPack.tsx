@@ -466,9 +466,9 @@ const CartonCard = memo(({
                 // Calculate volume utilization if we have carton data and item allocations
                 if (cartonDataParam && carton.itemAllocations) {
                   const newCartonData = {
-                    innerLengthCm: cartonDataParam.innerLengthCm?.toString() || cartonDataParam.dimensions?.length?.toString(),
-                    innerWidthCm: cartonDataParam.innerWidthCm?.toString() || cartonDataParam.dimensions?.width?.toString(),
-                    innerHeightCm: cartonDataParam.innerHeightCm?.toString() || cartonDataParam.dimensions?.height?.toString()
+                    innerLengthCm: cartonDataParam.innerLengthCm?.toString(),
+                    innerWidthCm: cartonDataParam.innerWidthCm?.toString(),
+                    innerHeightCm: cartonDataParam.innerHeightCm?.toString()
                   };
                   
                   if (newCartonData.innerLengthCm && newCartonData.innerWidthCm && newCartonData.innerHeightCm) {
@@ -480,6 +480,7 @@ const CartonCard = memo(({
                     
                     if (utilization !== null) {
                       updates.volumeUtilization = utilization.toString();
+                      console.log('✅ Volume utilization recalculated:', utilization.toFixed(1) + '%', 'for carton:', cartonDataParam.name);
                     }
                   }
                 }

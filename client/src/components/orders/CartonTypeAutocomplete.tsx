@@ -105,7 +105,7 @@ export function CartonTypeAutocomplete({
     const selectedCarton = allCartons.find((c) => c.id === cartonId);
     if (selectedCarton) {
       setDisplayValue(selectedCarton.name);
-      onValueChange(selectedCarton.name, selectedCarton);
+      onValueChange(selectedCarton.id, selectedCarton);
       setOpen(false);
       setSearchValue("");
     }
