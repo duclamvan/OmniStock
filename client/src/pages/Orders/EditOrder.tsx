@@ -548,7 +548,7 @@ export default function EditOrder() {
   });
 
   // Fetch existing order data
-  const { data: existingOrder, isLoading: isLoadingOrder } = useQuery({
+  const { data: existingOrder, isLoading: isLoadingOrder, refetch: refetchOrder } = useQuery({
     queryKey: ['/api/orders', id],
     queryFn: async () => {
       const response = await fetch(`/api/orders/${id}`);
@@ -558,6 +558,8 @@ export default function EditOrder() {
       return response.json();
     },
     enabled: !!id,
+    refetchOnMount: 'always', // Always fetch fresh data when page loads
+    refetchOnWindowFocus: true, // Refetch when user returns to the tab
   });
 
   // Fetch all products for real-time filtering
@@ -701,6 +703,8 @@ export default function EditOrder() {
       country: order.country,
       shippingCost: order.shippingCost || 0,
       actualShippingCost: order.actualShippingCost || 0,
+      dobirkaAmount: order.dobirkaAmount,
+      dobirkaCurrency: order.dobirkaCurrency,
       notes: order.notes,
       orderLocation: order.orderLocation,
     });
@@ -723,6 +727,8 @@ export default function EditOrder() {
     const items: OrderItem[] = order.items.map((item: any) => ({
       id: item.id || `item-${Date.now()}-${Math.random()}`,
       productId: item.productId,
+      serviceId: item.serviceId,
+      bundleId: item.bundleId,
       productName: item.productName,
       sku: item.sku,
       quantity: item.quantity,
@@ -731,6 +737,10 @@ export default function EditOrder() {
       tax: parseFloat(item.tax || 0),
       total: parseFloat(item.total || 0),
       landingCost: item.landingCost,
+      variantId: item.variantId,
+      variantName: item.variantName,
+      image: item.image,
+      notes: item.notes,
     }));
 
     setOrderItems(items);
