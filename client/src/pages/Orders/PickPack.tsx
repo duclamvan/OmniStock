@@ -5359,6 +5359,74 @@ export default function PickPack() {
             </CardContent>
           </Card>
 
+          {/* Shipping Information Section */}
+          <Card className="shadow-sm border border-gray-200 bg-white">
+            <CardHeader className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-3 rounded-t-lg">
+              <CardTitle className="text-base flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Shipping Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 space-y-4">
+              {/* Shipping Address */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <MapPin className="h-4 w-4 text-purple-600" />
+                  <span>Shipping Address</span>
+                </div>
+                {activePackingOrder.shippingAddress ? (
+                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                    <p className="text-sm text-gray-900 whitespace-pre-line" data-testid="text-shipping-address">
+                      {activePackingOrder.shippingAddress}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <p className="text-sm text-gray-500 italic">No shipping address provided</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Shipment Type */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <Truck className="h-4 w-4 text-purple-600" />
+                  <span>Shipment Type</span>
+                </div>
+                {activePackingOrder.shippingMethod ? (
+                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                    <p className="text-sm font-medium text-gray-900" data-testid="text-shipment-type">
+                      {activePackingOrder.shippingMethod}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <p className="text-sm text-gray-500 italic">No shipment type specified</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Shipment Notes */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <FileText className="h-4 w-4 text-purple-600" />
+                  <span>Shipment Notes</span>
+                </div>
+                {activePackingOrder.notes ? (
+                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                    <p className="text-sm text-gray-900 whitespace-pre-line" data-testid="text-shipment-notes">
+                      {activePackingOrder.notes}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <p className="text-sm text-gray-500 italic">No shipment notes</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Shipping Labels Section */}
           <Card className="shadow-sm border border-gray-200 bg-white">
             <CardHeader className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white p-3 rounded-t-lg">
