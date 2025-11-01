@@ -1279,14 +1279,6 @@ export default function OrderDetails() {
                         </span>
                         <span className="font-semibold text-slate-900">{formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</span>
                       </div>
-                      {order.actualShippingCost > 0 && order.actualShippingCost !== order.shippingCost && (
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-slate-500">Actual Shipping Cost</span>
-                          <span className="text-slate-500">
-                            {formatCurrency(order.actualShippingCost || 0, order.currency || 'EUR')}
-                          </span>
-                        </div>
-                      )}
                     </>
                   )}
                   
