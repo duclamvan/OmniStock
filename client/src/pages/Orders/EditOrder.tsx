@@ -4641,11 +4641,34 @@ export default function EditOrder() {
                 id="note-text"
                 value={editingNoteText}
                 onChange={(e) => setEditingNoteText(e.target.value)}
-                placeholder="e.g., Handle with care, fragile item, special packaging required..."
+                placeholder="Type your own note or select a predefined one below..."
                 className="mt-1 min-h-[120px]"
                 data-testid="textarea-item-note"
               />
-              <p className="text-xs text-slate-500 mt-1">These notes will be visible during the pick & pack workflow</p>
+              <div className="mt-3">
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Quick templates:</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    "Handle with care - fragile item",
+                    "Keep upright during transport",
+                    "Double box required",
+                    "Pack with extra bubble wrap",
+                    "Separate from other items",
+                    "Do not stack",
+                    "Temperature sensitive - keep cool",
+                    "Pack with anti-static materials"
+                  ].map((template) => (
+                    <button
+                      key={template}
+                      type="button"
+                      onClick={() => setEditingNoteText(template)}
+                      className="px-3 py-1.5 text-xs bg-slate-100 hover:bg-blue-100 dark:bg-slate-800 dark:hover:bg-blue-900 text-slate-700 dark:text-slate-300 rounded-full border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
+                    >
+                      {template}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>
