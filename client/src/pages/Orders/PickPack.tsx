@@ -568,6 +568,8 @@ function ProductDocumentsSelector({
 }: {
   orderItems: any[];
 }) {
+  const [printedFiles, setPrintedFiles] = useState<Set<string>>(new Set());
+
   const productIds = useMemo(
     () => Array.from(new Set(orderItems.map((item: any) => item.productId))).filter(Boolean),
     [orderItems]
@@ -582,6 +584,11 @@ function ProductDocumentsSelector({
     const productIdSet = new Set(productIds);
     return allFilesRaw.filter(file => productIdSet.has(file.productId) && file.isActive);
   }, [allFilesRaw, productIds]);
+
+  const handlePrint = (fileId: string, fileUrl: string) => {
+    window.open(fileUrl, '_blank');
+    setPrintedFiles(prev => new Set([...Array.from(prev), fileId]));
+  };
 
   if (isLoading) {
     return (
@@ -618,21 +625,28 @@ function ProductDocumentsSelector({
       {productFiles.map((file: any) => {
         const Icon = FILE_TYPE_ICONS[file.fileType] || FileText;
         const flag = file.language ? (LANGUAGE_FLAGS[file.language] || '🌐') : '';
+        const isPrinted = printedFiles.has(file.id);
         
         return (
           <div
             key={file.id}
-            className="flex items-center gap-3 p-2.5 rounded-lg border transition-colors bg-white border-gray-200 hover:border-teal-200"
+            className={`flex items-center gap-3 p-2.5 rounded-lg border transition-colors ${
+              isPrinted
+                ? 'bg-green-50 border-green-300'
+                : 'bg-white border-gray-200 hover:border-teal-200'
+            }`}
             data-testid={`product-doc-${file.id}`}
           >
             {/* Icon */}
-            <div className="flex-shrink-0 w-12 h-12 rounded-md overflow-hidden bg-gradient-to-br from-teal-50 to-cyan-50 border border-teal-200 flex items-center justify-center">
-              <Icon className="h-6 w-6 text-teal-500" />
+            <div className={`flex-shrink-0 w-12 h-12 rounded-md overflow-hidden bg-gradient-to-br ${
+              isPrinted ? 'from-green-50 to-emerald-50 border-green-300' : 'from-teal-50 to-cyan-50 border-teal-200'
+            } border flex items-center justify-center`}>
+              <Icon className={`h-6 w-6 ${isPrinted ? 'text-green-600' : 'text-teal-500'}`} />
             </div>
             
             {/* Document Info */}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate text-gray-900">
+              <p className={`text-sm font-medium truncate ${isPrinted ? 'text-green-900' : 'text-gray-900'}`}>
                 {file.description || file.fileName}
               </p>
               {flag && (
@@ -644,16 +658,27 @@ function ProductDocumentsSelector({
 
             {/* Print Button */}
             <Button
-              variant="outline"
+              variant={isPrinted ? "default" : "outline"}
               size="sm"
-              className="h-8 text-xs flex-shrink-0 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300"
-              onClick={() => {
-                window.open(file.fileUrl || file.url, '_blank');
-              }}
+              className={`h-8 text-xs flex-shrink-0 ${
+                isPrinted
+                  ? 'bg-green-600 hover:bg-green-700 text-white'
+                  : 'hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300'
+              }`}
+              onClick={() => handlePrint(file.id, file.fileUrl || file.url)}
               data-testid={`button-print-product-doc-${file.id}`}
             >
-              <Printer className="h-3.5 w-3.5 mr-1.5" />
-              Print
+              {isPrinted ? (
+                <>
+                  <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                  Printed
+                </>
+              ) : (
+                <>
+                  <Printer className="h-3.5 w-3.5 mr-1.5" />
+                  Print
+                </>
+              )}
             </Button>
           </div>
         );
@@ -664,6 +689,8 @@ function ProductDocumentsSelector({
 
 // Component to display all order files and documents
 function OrderFilesDisplay({ orderId }: { orderId: string }) {
+  const [printedFiles, setPrintedFiles] = useState<Set<string>>(new Set());
+
   const { data: orderFilesData, isLoading } = useQuery({
     queryKey: ['/api/orders', orderId, 'files'],
     queryFn: async () => {
@@ -672,6 +699,11 @@ function OrderFilesDisplay({ orderId }: { orderId: string }) {
       return response.json();
     }
   });
+
+  const handlePrint = (fileId: string, fileUrl: string) => {
+    window.open(fileUrl, '_blank');
+    setPrintedFiles(prev => new Set([...Array.from(prev), fileId]));
+  };
 
   if (isLoading) {
     return (
@@ -697,48 +729,70 @@ function OrderFilesDisplay({ orderId }: { orderId: string }) {
   return (
     <div className="space-y-2 mt-3">
       <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Order Files</div>
-      {files.map((file: any, index: number) => (
-        <div 
-          key={file.id || index}
-          className="flex items-center gap-3 p-2.5 bg-white border border-gray-200 rounded-lg hover:border-emerald-300 transition-colors"
-        >
-          {/* File Thumbnail */}
-          <div className="flex-shrink-0 w-12 h-12 rounded-md overflow-hidden bg-gray-100 border border-gray-200">
-            {file.mimeType?.startsWith('image/') ? (
-              <img 
-                src={file.fileUrl || file.url}
-                alt={file.fileName || file.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-                <FileText className="h-6 w-6 text-gray-500" />
-              </div>
-            )}
-          </div>
-          
-          {/* File Name */}
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate" title={file.fileName || file.name}>
-              {file.fileName || file.name}
-            </p>
-          </div>
-
-          {/* Print Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 text-xs flex-shrink-0 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300"
-            onClick={() => {
-              window.open(file.fileUrl || file.url, '_blank');
-            }}
-            data-testid={`button-print-file-${index}`}
+      {files.map((file: any, index: number) => {
+        const fileId = file.id || `file-${index}`;
+        const isPrinted = printedFiles.has(fileId);
+        
+        return (
+          <div 
+            key={fileId}
+            className={`flex items-center gap-3 p-2.5 rounded-lg border transition-colors ${
+              isPrinted
+                ? 'bg-green-50 border-green-300'
+                : 'bg-white border-gray-200 hover:border-emerald-300'
+            }`}
           >
-            <Printer className="h-3.5 w-3.5 mr-1.5" />
-            Print
-          </Button>
-        </div>
-      ))}
+            {/* File Thumbnail */}
+            <div className={`flex-shrink-0 w-12 h-12 rounded-md overflow-hidden border ${
+              isPrinted ? 'bg-green-100 border-green-300' : 'bg-gray-100 border-gray-200'
+            }`}>
+              {file.mimeType?.startsWith('image/') ? (
+                <img 
+                  src={file.fileUrl || file.url}
+                  alt={file.fileName || file.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+                  <FileText className={`h-6 w-6 ${isPrinted ? 'text-green-600' : 'text-gray-500'}`} />
+                </div>
+              )}
+            </div>
+            
+            {/* File Name */}
+            <div className="flex-1 min-w-0">
+              <p className={`text-sm font-medium truncate ${isPrinted ? 'text-green-900' : 'text-gray-900'}`} title={file.fileName || file.name}>
+                {file.fileName || file.name}
+              </p>
+            </div>
+
+            {/* Print Button */}
+            <Button
+              variant={isPrinted ? "default" : "outline"}
+              size="sm"
+              className={`h-8 text-xs flex-shrink-0 ${
+                isPrinted
+                  ? 'bg-green-600 hover:bg-green-700 text-white'
+                  : 'hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300'
+              }`}
+              onClick={() => handlePrint(fileId, file.fileUrl || file.url)}
+              data-testid={`button-print-file-${index}`}
+            >
+              {isPrinted ? (
+                <>
+                  <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                  Printed
+                </>
+              ) : (
+                <>
+                  <Printer className="h-3.5 w-3.5 mr-1.5" />
+                  Print
+                </>
+              )}
+            </Button>
+          </div>
+        );
+      })}
     </div>
   );
 }
