@@ -5124,11 +5124,11 @@ Important:
         return res.status(404).json({ message: "Order not found" });
       }
       
-      // Enhance order items with landing costs
+      // Enhance order items with landing costs and images
       if (order.items && order.items.length > 0) {
-        const itemsWithLandingCosts = await Promise.all(order.items.map(async (item) => {
+        const itemsWithEnhancements = await Promise.all(order.items.map(async (item) => {
           if (item.productId) {
-            const [productWithCost] = await db
+            const [productData] = await db
               .select()
               .from(products)
               .where(eq(products.id, item.productId))
@@ -5136,13 +5136,15 @@ Important:
             
             return {
               ...item,
-              landingCost: productWithCost?.latestLandingCost || null
+              landingCost: productData?.latestLandingCost || null,
+              // If order item doesn't have image, populate from product
+              image: item.image || productData?.imageUrl || null
             };
           }
           return item;
         }));
         
-        order.items = itemsWithLandingCosts;
+        order.items = itemsWithEnhancements;
       }
       
       res.json(order);
