@@ -547,10 +547,11 @@ export default function EditOrder() {
     },
   });
 
-  // Fetch existing order data ONCE on mount - no automatic refetching
+  // Fetch existing order data ONCE on mount - completely isolated from PickPack cache invalidations
   const { data: existingOrder, isLoading: isLoadingOrder } = useQuery({
-    queryKey: ['/api/orders', id],
+    queryKey: ['EDIT_ORDER_ISOLATED', id], // Unique key that PickPack won't invalidate
     queryFn: async () => {
+      console.log('🔵 EditOrder: Loading fresh data from database');
       const response = await fetch(`/api/orders/${id}`, {
         cache: 'no-store',
         headers: {
@@ -562,14 +563,17 @@ export default function EditOrder() {
       if (!response.ok) {
         throw new Error('Failed to fetch order');
       }
-      return response.json();
+      const data = await response.json();
+      console.log('✅ EditOrder: Loaded data, currency =', data.currency);
+      return data;
     },
     enabled: !!id,
     staleTime: Infinity, // Never refetch automatically
-    gcTime: 0,
-    refetchOnMount: false, // Only load once
-    refetchOnWindowFocus: false, // Don't refetch on window focus
-    refetchOnReconnect: false, // Don't refetch on reconnect
+    gcTime: Infinity, // Keep in cache forever (until page unmount)
+    refetchOnMount: false, // NEVER refetch
+    refetchOnWindowFocus: false, // NEVER refetch  
+    refetchOnReconnect: false, // NEVER refetch
+    refetchInterval: false, // NEVER poll
   });
 
   // Fetch all products for real-time filtering
@@ -1214,28 +1218,16 @@ export default function EditOrder() {
       return updatedOrder;
     },
     onSuccess: async (updatedOrder) => {
-      // Invalidate all order-related caches for real-time updates across the app
-      await queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
-      await queryClient.invalidateQueries({ queryKey: ['/api/orders', id] });
-      await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] }); // Real-time Pick & Pack sync
-      await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack/predictions'] }); // Update predictions
-      await queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      console.log('✅ Order saved successfully, reloading page with fresh data');
       
-      // Also invalidate product files cache if documents were updated
-      if (orderItems.length > 0) {
-        await Promise.all(orderItems.map(item => {
-          if (item.productId) {
-            return queryClient.invalidateQueries({ queryKey: ['/api/products', item.productId, 'files'] });
-          }
-        }));
-      }
-      
+      // Show success message
       toast({
         title: "Success",
         description: "Order updated successfully",
       });
 
-      // Force a full page reload to ensure fresh data
+      // Force a full page reload to bypass all caching
+      // This ensures EditOrder loads completely fresh data from the database
       window.location.href = `/orders/${id}`;
     },
     onError: (error) => {
