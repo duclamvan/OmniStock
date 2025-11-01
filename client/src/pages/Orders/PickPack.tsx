@@ -6444,6 +6444,27 @@ export default function PickPack() {
                         </p>
                       </div>
 
+                      {/* Shipping Notes - Important Picking Instructions */}
+                      {currentItem.notes && (
+                        <div className="bg-amber-50 border-3 border-amber-500 rounded-lg p-4 shadow-lg">
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 mt-0.5">
+                              <div className="bg-amber-500 rounded-full p-2">
+                                <AlertCircle className="h-5 w-5 text-white" />
+                              </div>
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-sm font-bold text-amber-900 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                🟡 Shipping Notes
+                              </h3>
+                              <p className="text-base lg:text-lg font-semibold text-amber-900 leading-relaxed whitespace-pre-wrap">
+                                {currentItem.notes}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Bundle Items Picker - For gel polish colors etc */}
                       {currentItem.isBundle && currentItem.bundleItems && currentItem.bundleItems.length > 0 ? (
                         <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl lg:rounded-2xl p-4 lg:p-8 border-3 border-purple-400 shadow-xl">
