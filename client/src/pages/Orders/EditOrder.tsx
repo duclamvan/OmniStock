@@ -819,7 +819,7 @@ export default function EditOrder() {
       console.log('✅ Loading selected document IDs:', order.selectedDocumentIds.length);
       setSelectedDocumentIds(order.selectedDocumentIds);
     }
-  }, [existingOrder?.id]);
+  }, [dataUpdatedAt, existingOrder]); // Track dataUpdatedAt to reload when fresh data arrives
 
   // Pre-fill uploaded files when order loads
   useEffect(() => {
@@ -836,7 +836,7 @@ export default function EditOrder() {
       });
       setUploadedFiles(files);
     }
-  }, [existingOrder?.id]);
+  }, [dataUpdatedAt, existingOrder]); // Track dataUpdatedAt to reload when fresh data arrives
 
   // Pre-fill packing plan when order loads
   useEffect(() => {
