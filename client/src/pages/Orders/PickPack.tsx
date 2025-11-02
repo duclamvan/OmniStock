@@ -652,10 +652,19 @@ function ProductDocumentsSelector({
     // In packing mode, only show documents that need to be sent with the shipment
     // These are typically regulatory documents like CPNP, certificates, etc.
     const packingRelevantFileTypes = ['cpnp', 'certificate', 'sds', 'other'];
+    
+    // Helper function to check if a file is a PIF (Product Information File)
+    const isPIF = (file: any) => {
+      const fileName = (file.fileName || '').toLowerCase();
+      const description = (file.description || '').toLowerCase();
+      return fileName.includes('pif') || description.includes('pif');
+    };
+    
     return allFilesRaw.filter(file => 
       productIdSet.has(file.productId) && 
       file.isActive && 
-      packingRelevantFileTypes.includes(file.fileType)
+      packingRelevantFileTypes.includes(file.fileType) &&
+      !isPIF(file) // Exclude PIF files from packing mode
     );
   }, [allFilesRaw, productIds]);
 
