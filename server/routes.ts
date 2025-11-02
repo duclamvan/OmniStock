@@ -141,6 +141,10 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Serve static files from uploads directory
+  const express = await import('express');
+  app.use('/uploads', express.default.static('uploads'));
+  
   // Auth middleware (disabled for testing)
   // await setupAuth(app);
 

@@ -354,8 +354,8 @@ export default function EditOrder() {
 
   // Fetch order files from database
   const { data: orderFiles = [] } = useQuery<any[]>({
-    queryKey: ['/api/orders', orderId, 'files'],
-    enabled: !!orderId,
+    queryKey: ['/api/orders', id, 'files'],
+    enabled: !!id,
   });
 
   // Column visibility toggles
@@ -843,34 +843,6 @@ export default function EditOrder() {
       console.log('✅ Loading selected document IDs:', order.selectedDocumentIds.length);
       setSelectedDocumentIds(order.selectedDocumentIds);
       documentsInitialized.current = order.id; // Mark as initialized for this order
-    }
-  }, [existingOrder?.id]); // Only run when order ID changes (initial load or different order)
-
-  // Pre-fill uploaded files when order loads (ONLY ONCE on initial load)
-  const filesInitialized = useRef(false);
-  useEffect(() => {
-    if (!existingOrder) {
-      filesInitialized.current = false;
-      return;
-    }
-    
-    // Only initialize once per order, don't overwrite on subsequent refetches
-    if (filesInitialized.current && existingOrder.id === filesInitialized.current) {
-      return;
-    }
-    
-    const order = existingOrder as any;
-    
-    if (order.includedDocuments?.uploadedFiles && Array.isArray(order.includedDocuments.uploadedFiles)) {
-      console.log('✅ Loading uploaded files:', order.includedDocuments.uploadedFiles.length);
-      // Convert the saved file metadata back to File objects
-      const files = order.includedDocuments.uploadedFiles.map((fileData: any) => {
-        // Create a mock File object from saved metadata
-        const blob = new Blob([], { type: 'application/octet-stream' });
-        return new File([blob], fileData.name, { type: 'application/octet-stream' });
-      });
-      setUploadedFiles(files);
-      filesInitialized.current = order.id; // Mark as initialized for this order
     }
   }, [existingOrder?.id]); // Only run when order ID changes (initial load or different order)
 
@@ -1608,7 +1580,7 @@ export default function EditOrder() {
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files || files.length === 0 || !orderId) return;
+    if (!files || files.length === 0 || !id) return;
 
     const fileArray = Array.from(files);
     
@@ -1618,7 +1590,7 @@ export default function EditOrder() {
         const formData = new FormData();
         formData.append('file', file);
         
-        const response = await fetch(`/api/orders/${orderId}/files`, {
+        const response = await fetch(`/api/orders/${id}/files`, {
           method: 'POST',
           body: formData,
         });
@@ -1633,7 +1605,7 @@ export default function EditOrder() {
       await Promise.all(uploadPromises);
       
       // Refetch order files to update the list
-      queryClient.invalidateQueries({ queryKey: ['/api/orders', orderId, 'files'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders', id, 'files'] });
       
       toast({
         title: "Success",
@@ -1652,12 +1624,31 @@ export default function EditOrder() {
     }
   };
 
-  const removeUploadedFile = (index: number) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
-    toast({
-      title: "File removed",
-      description: "File has been removed from the upload list",
-    });
+  const removeUploadedFile = async (fileId: string) => {
+    try {
+      const response = await fetch(`/api/order-files/${fileId}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete file');
+      }
+      
+      // Refetch order files to update the list
+      queryClient.invalidateQueries({ queryKey: ['/api/orders', id, 'files'] });
+      
+      toast({
+        title: "File removed",
+        description: "File has been removed successfully",
+      });
+    } catch (error: any) {
+      console.error('Error deleting file:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete file",
+        variant: "destructive"
+      });
+    }
   };
 
   const calculateSubtotal = () => {
@@ -1762,9 +1753,6 @@ export default function EditOrder() {
         landingCost: item.landingCost || null,
         notes: item.notes || null,
       })),
-      includedDocuments: {
-        uploadedFiles: uploadedFiles.map(f => ({ name: f.name, size: f.size })),
-      },
       selectedDocumentIds: selectedDocumentIds.length > 0 ? selectedDocumentIds : undefined
     };
 
@@ -4203,18 +4191,18 @@ export default function EditOrder() {
               {/* Files List Section */}
               <div className="space-y-4">
                 {/* Uploaded Files */}
-                {uploadedFiles.length > 0 && (
+                {orderFiles.length > 0 && (
                   <div>
                     <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
                       <Upload className="h-4 w-4" />
-                      Uploaded Files ({uploadedFiles.length})
+                      Uploaded Files ({orderFiles.length})
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {uploadedFiles.map((file, index) => (
+                      {orderFiles.map((file: any) => (
                         <div
-                          key={index}
+                          key={file.id}
                           className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-white dark:bg-slate-900/20 hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
-                          data-testid={`uploaded-file-${index}`}
+                          data-testid={`uploaded-file-${file.id}`}
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -4222,11 +4210,16 @@ export default function EditOrder() {
                                 <FileText className="h-5 w-5 text-blue-600" />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
-                                  {file.name}
-                                </p>
+                                <a
+                                  href={file.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-blue-600 truncate block"
+                                >
+                                  {file.fileName}
+                                </a>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                  {(file.size / 1024).toFixed(2)} KB
+                                  {file.fileSize ? (file.fileSize / 1024).toFixed(2) : '0.00'} KB
                                 </p>
                               </div>
                             </div>
@@ -4234,9 +4227,9 @@ export default function EditOrder() {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              onClick={() => removeUploadedFile(index)}
+                              onClick={() => removeUploadedFile(file.id)}
                               className="h-8 w-8 p-0 flex-shrink-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
-                              data-testid={`button-remove-uploaded-${index}`}
+                              data-testid={`button-remove-uploaded-${file.id}`}
                             >
                               <X className="h-4 w-4" />
                             </Button>
@@ -4247,7 +4240,7 @@ export default function EditOrder() {
                   </div>
                 )}
 
-                {uploadedFiles.length === 0 && (
+                {orderFiles.length === 0 && (
                   <div className="text-center py-8 bg-slate-50 dark:bg-slate-900/20 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700">
                     <FileText className="mx-auto h-12 w-12 mb-3 text-slate-400 dark:text-slate-600" />
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-300">No files yet</p>
