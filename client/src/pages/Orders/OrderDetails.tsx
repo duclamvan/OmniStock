@@ -2127,74 +2127,42 @@ export default function OrderDetails() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5"></div>
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">Order Created</p>
-                    <p className="text-sm text-slate-500">
-                      {new Date(order.createdAt).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-                
-                {order.paymentStatus === 'paid' && order.updatedAt && (
+                {/* Order Tracking via API - shown only when shipped */}
+                {order.shippedAt && order.trackingNumber && (
                   <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mt-1.5"></div>
+                    <div className="w-2 h-2 bg-sky-500 rounded-full mt-1.5"></div>
                     <div className="flex-1">
-                      <p className="font-medium text-sm">Payment Received</p>
+                      <p className="font-medium text-sm">Tracking Information</p>
+                      <p className="text-sm text-slate-500 italic">
+                        Tracking updates via API (not yet implemented)
+                      </p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Tracking #{order.trackingNumber}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {order.shippedAt && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full mt-1.5"></div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">Order Shipped</p>
                       <p className="text-sm text-slate-500">
-                        {new Date(order.updatedAt).toLocaleString()}
+                        {new Date(order.shippedAt).toLocaleString()}
                       </p>
                     </div>
                   </div>
                 )}
                 
-                {/* Picking Started */}
-                {order.pickStartTime && (
+                {/* Ready to Ship */}
+                {order.orderStatus === 'ready_to_ship' && !order.shippedAt && (
                   <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5"></div>
+                    <div className="w-2 h-2 bg-teal-500 rounded-full mt-1.5"></div>
                     <div className="flex-1">
-                      <p className="font-medium text-sm">Picking Started</p>
+                      <p className="font-medium text-sm">Ready to Ship</p>
                       <p className="text-sm text-slate-500">
-                        {new Date(order.pickStartTime).toLocaleString()}
-                        {order.pickedBy && ` by ${order.pickedBy}`}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Picking Completed */}
-                {order.pickEndTime && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5"></div>
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">Picking Completed</p>
-                      <p className="text-sm text-slate-500">
-                        {new Date(order.pickEndTime).toLocaleString()}
-                        {order.pickStartTime && order.pickEndTime && (
-                          <span className="text-purple-600 font-medium ml-2">
-                            (Duration: {(() => {
-                              const duration = Math.floor((new Date(order.pickEndTime).getTime() - new Date(order.pickStartTime).getTime()) / 1000);
-                              const minutes = Math.floor(duration / 60);
-                              const seconds = duration % 60;
-                              return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                            })()})
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Packing Started */}
-                {order.packStartTime && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-indigo-500 rounded-full mt-1.5"></div>
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">Packing Started</p>
-                      <p className="text-sm text-slate-500">
-                        {new Date(order.packStartTime).toLocaleString()}
-                        {order.packedBy && ` by ${order.packedBy}`}
+                        {order.packEndTime ? new Date(order.packEndTime).toLocaleString() : 'Awaiting shipment'}
                       </p>
                     </div>
                   </div>
@@ -2223,46 +2191,78 @@ export default function OrderDetails() {
                   </div>
                 )}
                 
-                {/* Ready to Ship */}
-                {order.orderStatus === 'ready_to_ship' && !order.shippedAt && (
+                {/* Packing Started */}
+                {order.packStartTime && (
                   <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-teal-500 rounded-full mt-1.5"></div>
+                    <div className="w-2 h-2 bg-indigo-500 rounded-full mt-1.5"></div>
                     <div className="flex-1">
-                      <p className="font-medium text-sm">Ready to Ship</p>
+                      <p className="font-medium text-sm">Packing Started</p>
                       <p className="text-sm text-slate-500">
-                        {order.packEndTime ? new Date(order.packEndTime).toLocaleString() : 'Awaiting shipment'}
+                        {new Date(order.packStartTime).toLocaleString()}
+                        {order.packedBy && ` by ${order.packedBy}`}
                       </p>
                     </div>
                   </div>
                 )}
                 
-                {order.shippedAt && (
+                {/* Picking Completed */}
+                {order.pickEndTime && (
                   <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full mt-1.5"></div>
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5"></div>
                     <div className="flex-1">
-                      <p className="font-medium text-sm">Order Shipped</p>
+                      <p className="font-medium text-sm">Picking Completed</p>
                       <p className="text-sm text-slate-500">
-                        {new Date(order.shippedAt).toLocaleString()}
+                        {new Date(order.pickEndTime).toLocaleString()}
+                        {order.pickStartTime && order.pickEndTime && (
+                          <span className="text-purple-600 font-medium ml-2">
+                            (Duration: {(() => {
+                              const duration = Math.floor((new Date(order.pickEndTime).getTime() - new Date(order.pickStartTime).getTime()) / 1000);
+                              const minutes = Math.floor(duration / 60);
+                              const seconds = duration % 60;
+                              return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                            })()})
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
                 )}
-
-                {/* Order Tracking via API - shown only when shipped */}
-                {order.shippedAt && order.trackingNumber && (
+                
+                {/* Picking Started */}
+                {order.pickStartTime && (
                   <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-sky-500 rounded-full mt-1.5"></div>
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5"></div>
                     <div className="flex-1">
-                      <p className="font-medium text-sm">Tracking Information</p>
-                      <p className="text-sm text-slate-500 italic">
-                        Tracking updates via API (not yet implemented)
-                      </p>
-                      <p className="text-xs text-slate-400 mt-1">
-                        Tracking #{order.trackingNumber}
+                      <p className="font-medium text-sm">Picking Started</p>
+                      <p className="text-sm text-slate-500">
+                        {new Date(order.pickStartTime).toLocaleString()}
+                        {order.pickedBy && ` by ${order.pickedBy}`}
                       </p>
                     </div>
                   </div>
                 )}
+                
+                {order.paymentStatus === 'paid' && order.updatedAt && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-1.5"></div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">Payment Received</p>
+                      <p className="text-sm text-slate-500">
+                        {new Date(order.updatedAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5"></div>
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">Order Created</p>
+                    <p className="text-sm text-slate-500">
+                      {new Date(order.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
