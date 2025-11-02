@@ -1114,9 +1114,6 @@ export class DatabaseStorage implements IStorage {
 
       // Map results to include customer name, shipping address, and format status for frontend
       return results.map((row: any) => {
-        console.log('🔍 Row order selectedDocumentIds:', row.order.selectedDocumentIds);
-        console.log('🔍 Full row.order:', JSON.stringify(row.order).substring(0, 500));
-        
         return {
           ...row.order,
           customerName: row.customer?.name || 'Unknown Customer',
