@@ -1474,6 +1474,9 @@ export default function PickPack() {
   
   // Prevent concurrent carton creation operations
   const [isCreatingCartons, setIsCreatingCartons] = useState(false);
+  
+  // Ref-based lock to prevent parallel effect executions (synchronous check)
+  const isAutoApplyingRef = useRef(false);
 
   // Function to recalculate cartons - this will be defined after mutations
   const recalculateCartons = useRef<(() => Promise<void>) | null>(null);
@@ -1482,6 +1485,7 @@ export default function PickPack() {
   useEffect(() => {
     setHasAutoAppliedSuggestions(false);
     setHasManuallyModifiedCartons(false); // Reset manual modification flag for new order
+    isAutoApplyingRef.current = false; // Reset ref lock for new order
     
     // If we just entered packing mode and user hasn't manually modified cartons, recalculate
     if (activePackingOrder?.id && recalculateCartons.current && !hasManuallyModifiedCartons) {
@@ -1496,16 +1500,10 @@ export default function PickPack() {
 
   // Automatically apply AI carton suggestions when they arrive
   useEffect(() => {
-    console.log('🔍 Auto-apply effect triggered:', {
-      hasOrder: !!activePackingOrder,
-      hasRecommendation: !!recommendedCarton,
-      hasAutoApplied: hasAutoAppliedSuggestions,
-      isCreating: isCreatingCartons,
-      isRecalc: isRecalculating,
-      hasManualMods: hasManuallyModifiedCartons,
-      orderCartonsCount: orderCartons.length,
-      localCartonsCount: cartons.length
-    });
+    // CRITICAL: Check ref-based lock first (synchronous, prevents parallel executions)
+    if (isAutoApplyingRef.current) {
+      return;
+    }
 
     if (!activePackingOrder || !recommendedCarton || hasAutoAppliedSuggestions) {
       return;
@@ -1513,13 +1511,11 @@ export default function PickPack() {
 
     // Don't auto-apply if we're already creating cartons or recalculating
     if (isCreatingCartons || isRecalculating) {
-      console.log('⏸️ Skipping auto-apply: operation in progress');
       return;
     }
     
     // Don't auto-apply if user has manually modified cartons
     if (hasManuallyModifiedCartons) {
-      console.log('⏸️ User has manually modified cartons, skipping auto-apply');
       return;
     }
 
@@ -1531,7 +1527,6 @@ export default function PickPack() {
     // Check if order already has cartons in DATABASE - if so, don't auto-apply
     // Use orderCartons from query, not local state, to avoid race conditions
     if (orderCartons.length > 0) {
-      console.log(`⏸️ Order already has ${orderCartons.length} cartons in database, skipping auto-apply`);
       setHasAutoAppliedSuggestions(true);
       return;
     }
@@ -1539,8 +1534,7 @@ export default function PickPack() {
     // Mark that we've started auto-applying and prevent concurrent operations
     setHasAutoAppliedSuggestions(true);
     setIsCreatingCartons(true);
-    
-    console.log(`✅ Auto-applying AI optimization: creating ${recommendedCarton.suggestions.length} optimized carton(s) using DeepSeek AI`);
+    isAutoApplyingRef.current = true; // Set ref lock immediately
     
     // Automatically create cartons based on AI suggestions
     const createAndUpdateCartons = async () => {
@@ -1554,8 +1548,6 @@ export default function PickPack() {
           
           // Find the carton data for dimensions
           const cartonData = availableCartons?.find((c: any) => c.id === suggestion.cartonId);
-          
-          console.log(`Creating carton ${cartonNumber}/${recommendedCarton.suggestions.length}`);
           
           const result = await createCartonMutation.mutateAsync({
             orderId: activePackingOrder.id,
@@ -1578,14 +1570,12 @@ export default function PickPack() {
           createdCartons.push(result);
         }
         
-        console.log(`✅ All ${createdCartons.length} cartons created successfully`);
-        
         // Single refetch after all cartons are created
         queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
         await refetchCartons();
         playSound('success');
       } catch (error) {
-        console.error('❌ Error creating AI cartons:', error);
+        console.error('Error creating AI cartons:', error);
         toast({
           title: "Error",
           description: "Failed to create AI-suggested cartons",
@@ -1593,11 +1583,12 @@ export default function PickPack() {
         });
       } finally {
         setIsCreatingCartons(false);
+        isAutoApplyingRef.current = false; // Release ref lock
       }
     };
 
     createAndUpdateCartons();
-  }, [activePackingOrder?.id, recommendedCarton, orderCartons]);
+  }, [activePackingOrder?.id, recommendedCarton]);
 
   // Create carton mutation
   const createCartonMutation = useMutation({
