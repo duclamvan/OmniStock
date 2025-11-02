@@ -649,7 +649,14 @@ function ProductDocumentsSelector({
 
   const productFiles = useMemo(() => {
     const productIdSet = new Set(productIds);
-    return allFilesRaw.filter(file => productIdSet.has(file.productId) && file.isActive);
+    // In packing mode, only show documents that need to be sent with the shipment
+    // These are typically regulatory documents like CPNP, certificates, etc.
+    const packingRelevantFileTypes = ['cpnp', 'certificate', 'sds', 'other'];
+    return allFilesRaw.filter(file => 
+      productIdSet.has(file.productId) && 
+      file.isActive && 
+      packingRelevantFileTypes.includes(file.fileType)
+    );
   }, [allFilesRaw, productIds]);
 
   const handlePrint = (fileId: string, fileUrl: string) => {
@@ -688,8 +695,14 @@ function ProductDocumentsSelector({
 
   return (
     <div className="space-y-2 mt-3">
-      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Product Documents</div>
-      {productFiles.map((file: any) => {
+      <div className="border border-blue-200 rounded-lg p-3 bg-blue-50/50">
+        <div className="flex items-center gap-2 mb-2">
+          <FileText className="h-4 w-4 text-blue-600" />
+          <div className="text-sm font-semibold text-blue-900">Files Sent</div>
+        </div>
+        <div className="text-xs font-medium text-blue-700 mb-2">Product Documents ({productFiles.length})</div>
+        <div className="space-y-1.5">
+          {productFiles.map((file: any) => {
         const Icon = FILE_TYPE_ICONS[file.fileType] || FileText;
         const flag = file.language ? (LANGUAGE_FLAGS[file.language] || '🌐') : '';
         const isPrinted = printedFiles.has(file.id);
@@ -750,6 +763,8 @@ function ProductDocumentsSelector({
           </div>
         );
       })}
+        </div>
+      </div>
     </div>
   );
 }
