@@ -7917,6 +7917,9 @@ Return ONLY the subject line without quotes or extra formatting.`,
         });
       });
 
+      // Get includedDocuments from order
+      const includedDocs = order.includedDocuments as any;
+
       // Get product files by IDs
       if (includedDocs?.fileIds && Array.isArray(includedDocs.fileIds)) {
         for (const fileId of includedDocs.fileIds) {
