@@ -1593,7 +1593,8 @@ export default function PickPack() {
     };
 
     createAndUpdateCartons();
-  }, [activePackingOrder?.id, recommendedCarton, orderCartons.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activePackingOrder?.id, recommendedCarton]);
 
   // Create carton mutation
   const createCartonMutation = useMutation({
