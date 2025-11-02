@@ -142,6 +142,16 @@ export function AICartonPackingPanel({
             </div>
           </div>
 
+          {/* Optimization Status Message */}
+          {packingPlan.message && (
+            <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+              <AlertCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <AlertDescription className="text-green-800 dark:text-green-200">
+                {packingPlan.message}
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Suggestions */}
           {packingPlan.suggestions && packingPlan.suggestions.length > 0 && (
             <div className="space-y-2">
@@ -156,109 +166,42 @@ export function AICartonPackingPanel({
             </div>
           )}
 
-          {/* Detailed Carton Breakdown */}
+          {/* Carton Breakdown - Simple Summary */}
           {packingPlan.cartons && packingPlan.cartons.length > 0 && (
             <div className="space-y-2">
               <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
                 <Box className="h-4 w-4" />
                 Carton Breakdown
               </h4>
-              <Accordion type="single" collapsible className="w-full">
+              <div className="space-y-1">
                 {packingPlan.cartons.map((carton: any, index: number) => (
-                  <AccordionItem 
-                    key={index} 
-                    value={`carton-${index}`}
-                    data-testid={`accordion-carton-${index + 1}`}
+                  <div 
+                    key={index}
+                    className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded border"
+                    data-testid={`carton-summary-${index + 1}`}
                   >
-                    <AccordionTrigger className="hover:no-underline">
-                      <div className="flex items-center justify-between w-full pr-4">
-                        <div className="flex items-center gap-2">
-                          <Box className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                          <span className="font-medium">
-                            Carton #{index + 1}: {carton.cartonName || 'Standard Box'}
-                            {carton.dimensions && ` (${carton.dimensions})`}
-                          </span>
-                        </div>
-                        <Badge 
-                          variant="outline" 
-                          className={
-                            (carton.utilization || 0) > 80 
-                              ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' 
-                              : (carton.utilization || 0) > 70 
-                              ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700' 
-                              : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-300 dark:border-red-700'
-                          }
-                        >
-                          {carton.utilization ? `${carton.utilization.toFixed(1)}%` : '0%'} utilized
-                        </Badge>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-3 pt-2 pb-3 px-4">
-                        {/* Carton Stats */}
-                        <div className="grid grid-cols-2 gap-3 text-sm">
-                          <div className="flex items-center gap-2">
-                            <Weight className="h-3 w-3 text-gray-500" />
-                            <span className="text-gray-600 dark:text-gray-400">Total Weight:</span>
-                            <span className="font-medium">{carton.weight ? `${carton.weight.toFixed(2)} kg` : 'N/A'}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Package className="h-3 w-3 text-gray-500" />
-                            <span className="text-gray-600 dark:text-gray-400">Items:</span>
-                            <span className="font-medium">{carton.items?.length || 0}</span>
-                          </div>
-                          {carton.fillingWeight !== undefined && carton.fillingWeight > 0 && (
-                            <>
-                              <div className="flex items-center gap-2">
-                                <Box className="h-3 w-3 text-amber-500" />
-                                <span className="text-gray-600 dark:text-gray-400">Filling:</span>
-                                <span className="font-medium text-amber-600 dark:text-amber-400">
-                                  {carton.fillingWeight.toFixed(3)} kg
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Package className="h-3 w-3 text-gray-500" />
-                                <span className="text-gray-600 dark:text-gray-400">Empty Space:</span>
-                                <span className="font-medium">{carton.unusedVolume ? `${carton.unusedVolume.toLocaleString()} cm³` : 'N/A'}</span>
-                              </div>
-                            </>
-                          )}
-                        </div>
-
-                        {/* Items in Carton */}
-                        {carton.items && carton.items.length > 0 && (
-                          <div className="space-y-2">
-                            <h5 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-                              Items in Carton
-                            </h5>
-                            <div className="space-y-1">
-                              {carton.items.map((item: any, itemIndex: number) => (
-                                <div 
-                                  key={itemIndex}
-                                  className="flex items-center justify-between text-sm bg-gray-50 dark:bg-gray-800 p-2 rounded"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-medium">{item.productName || item.name}</span>
-                                    {item.isEstimated && (
-                                      <Badge variant="secondary" className="text-xs">
-                                        AI Estimated
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
-                                    <span>Qty: {item.quantity}</span>
-                                    {item.weight && <span>Weight: {item.weight.toFixed(2)} kg</span>}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
+                    <div className="flex items-center gap-2">
+                      <Box className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <span className="font-medium text-sm">
+                        Carton #{index + 1}: {carton.cartonName || 'Standard Box'}
+                        {carton.dimensions && ` (${carton.dimensions})`}
+                      </span>
+                    </div>
+                    <Badge 
+                      variant="outline" 
+                      className={
+                        (carton.utilization || 0) > 80 
+                          ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' 
+                          : (carton.utilization || 0) > 70 
+                          ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700' 
+                          : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-300 dark:border-red-700'
+                      }
+                    >
+                      {carton.utilization ? `${carton.utilization.toFixed(1)}%` : '0%'} utilized
+                    </Badge>
+                  </div>
                 ))}
-              </Accordion>
+              </div>
             </div>
           )}
         </CardContent>
