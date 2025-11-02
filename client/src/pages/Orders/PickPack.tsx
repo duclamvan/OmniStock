@@ -631,13 +631,11 @@ const CartonCard = memo(({
 function ProductDocumentsSelector({ 
   orderItems,
   printedFiles,
-  onFilePrinted,
-  selectedDocumentIds
+  onFilePrinted
 }: {
   orderItems: any[];
   printedFiles: Set<string>;
   onFilePrinted: (fileId: string) => void;
-  selectedDocumentIds?: string[];
 }) {
   const productIds = useMemo(
     () => Array.from(new Set(orderItems.map((item: any) => item.productId))).filter(Boolean),
@@ -650,28 +648,9 @@ function ProductDocumentsSelector({
   });
 
   const productFiles = useMemo(() => {
-    // If no documents were selected for this order, show nothing
-    if (!selectedDocumentIds || selectedDocumentIds.length === 0) {
-      return [];
-    }
-    
     const productIdSet = new Set(productIds);
-    const selectedIdSet = new Set(selectedDocumentIds);
-    
-    // Only show files that are:
-    // 1. For products in this order
-    // 2. Active
-    // 3. Specifically selected for this order (in selectedDocumentIds)
-    const filtered = allFilesRaw.filter(file => {
-      const matchesProductId = productIdSet.has(file.productId);
-      const isActive = file.isActive;
-      const isSelected = selectedIdSet.has(file.id);
-      
-      return matchesProductId && isActive && isSelected;
-    });
-    
-    return filtered;
-  }, [allFilesRaw, productIds, selectedDocumentIds]);
+    return allFilesRaw.filter(file => productIdSet.has(file.productId) && file.isActive);
+  }, [allFilesRaw, productIds]);
 
   const handlePrint = (fileId: string, fileUrl: string) => {
     window.open(fileUrl, '_blank');
@@ -1474,9 +1453,6 @@ export default function PickPack() {
   
   // Prevent concurrent carton creation operations
   const [isCreatingCartons, setIsCreatingCartons] = useState(false);
-  
-  // Ref-based lock to prevent parallel effect executions (synchronous check)
-  const isAutoApplyingRef = useRef(false);
 
   // Function to recalculate cartons - this will be defined after mutations
   const recalculateCartons = useRef<(() => Promise<void>) | null>(null);
@@ -1485,7 +1461,6 @@ export default function PickPack() {
   useEffect(() => {
     setHasAutoAppliedSuggestions(false);
     setHasManuallyModifiedCartons(false); // Reset manual modification flag for new order
-    isAutoApplyingRef.current = false; // Reset ref lock for new order
     
     // If we just entered packing mode and user hasn't manually modified cartons, recalculate
     if (activePackingOrder?.id && recalculateCartons.current && !hasManuallyModifiedCartons) {
@@ -1500,10 +1475,16 @@ export default function PickPack() {
 
   // Automatically apply AI carton suggestions when they arrive
   useEffect(() => {
-    // CRITICAL: Check ref-based lock first (synchronous, prevents parallel executions)
-    if (isAutoApplyingRef.current) {
-      return;
-    }
+    console.log('🔍 Auto-apply effect triggered:', {
+      hasOrder: !!activePackingOrder,
+      hasRecommendation: !!recommendedCarton,
+      hasAutoApplied: hasAutoAppliedSuggestions,
+      isCreating: isCreatingCartons,
+      isRecalc: isRecalculating,
+      hasManualMods: hasManuallyModifiedCartons,
+      orderCartonsCount: orderCartons.length,
+      localCartonsCount: cartons.length
+    });
 
     if (!activePackingOrder || !recommendedCarton || hasAutoAppliedSuggestions) {
       return;
@@ -1511,11 +1492,13 @@ export default function PickPack() {
 
     // Don't auto-apply if we're already creating cartons or recalculating
     if (isCreatingCartons || isRecalculating) {
+      console.log('⏸️ Skipping auto-apply: operation in progress');
       return;
     }
     
     // Don't auto-apply if user has manually modified cartons
     if (hasManuallyModifiedCartons) {
+      console.log('⏸️ User has manually modified cartons, skipping auto-apply');
       return;
     }
 
@@ -1527,6 +1510,7 @@ export default function PickPack() {
     // Check if order already has cartons in DATABASE - if so, don't auto-apply
     // Use orderCartons from query, not local state, to avoid race conditions
     if (orderCartons.length > 0) {
+      console.log(`⏸️ Order already has ${orderCartons.length} cartons in database, skipping auto-apply`);
       setHasAutoAppliedSuggestions(true);
       return;
     }
@@ -1534,7 +1518,8 @@ export default function PickPack() {
     // Mark that we've started auto-applying and prevent concurrent operations
     setHasAutoAppliedSuggestions(true);
     setIsCreatingCartons(true);
-    isAutoApplyingRef.current = true; // Set ref lock immediately
+    
+    console.log(`✅ Auto-applying AI optimization: creating ${recommendedCarton.suggestions.length} optimized carton(s) using DeepSeek AI`);
     
     // Automatically create cartons based on AI suggestions
     const createAndUpdateCartons = async () => {
@@ -1548,6 +1533,8 @@ export default function PickPack() {
           
           // Find the carton data for dimensions
           const cartonData = availableCartons?.find((c: any) => c.id === suggestion.cartonId);
+          
+          console.log(`Creating carton ${cartonNumber}/${recommendedCarton.suggestions.length}`);
           
           const result = await createCartonMutation.mutateAsync({
             orderId: activePackingOrder.id,
@@ -1570,12 +1557,14 @@ export default function PickPack() {
           createdCartons.push(result);
         }
         
+        console.log(`✅ All ${createdCartons.length} cartons created successfully`);
+        
         // Single refetch after all cartons are created
         queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
         await refetchCartons();
         playSound('success');
       } catch (error) {
-        console.error('Error creating AI cartons:', error);
+        console.error('❌ Error creating AI cartons:', error);
         toast({
           title: "Error",
           description: "Failed to create AI-suggested cartons",
@@ -1583,12 +1572,11 @@ export default function PickPack() {
         });
       } finally {
         setIsCreatingCartons(false);
-        isAutoApplyingRef.current = false; // Release ref lock
       }
     };
 
     createAndUpdateCartons();
-  }, [activePackingOrder?.id, recommendedCarton]);
+  }, [activePackingOrder?.id, recommendedCarton, orderCartons]);
 
   // Create carton mutation
   const createCartonMutation = useMutation({
@@ -3930,9 +3918,7 @@ export default function PickPack() {
       status: 'to_fulfill' as const,
       packStatus: 'in_progress' as const,
       packStartTime: new Date().toISOString(),
-      packedBy: currentEmployee,
-      // Explicitly preserve selectedDocumentIds
-      selectedDocumentIds: order.selectedDocumentIds || []
+      packedBy: currentEmployee
     };
     setActivePackingOrder(updatedOrder);
     setPackingTimer(0);
@@ -5202,10 +5188,10 @@ export default function PickPack() {
                                 {item.notes && (
                                   <div className="p-2 bg-amber-50 rounded border-l-2 border-amber-400">
                                     <div className="flex items-start gap-1.5">
-                                      <AlertTriangle className="h-3.5 w-3.5 text-amber-500 mt-0.5 flex-shrink-0" />
+                                      <AlertTriangle className="h-3 w-3 text-amber-500 mt-0.5 flex-shrink-0" />
                                       <div className="flex-1 min-w-0">
-                                        <div className="text-xs font-semibold text-amber-700 mb-0.5">SHIPPING NOTES</div>
-                                        <div className="text-sm text-amber-600 leading-snug whitespace-pre-wrap">{item.notes}</div>
+                                        <div className="text-[10px] font-semibold text-amber-700 mb-0.5">SHIPPING NOTES</div>
+                                        <div className="text-[11px] text-amber-600 leading-snug whitespace-pre-wrap">{item.notes}</div>
                                       </div>
                                     </div>
                                   </div>
@@ -5214,10 +5200,10 @@ export default function PickPack() {
                                 {item.shipmentNotes && (
                                   <div className="p-2 bg-red-50 rounded border-l-2 border-red-400">
                                     <div className="flex items-start gap-1.5">
-                                      <AlertTriangle className="h-3.5 w-3.5 text-red-500 mt-0.5 flex-shrink-0" />
+                                      <AlertTriangle className="h-3 w-3 text-red-500 mt-0.5 flex-shrink-0" />
                                       <div className="flex-1 min-w-0">
-                                        <div className="text-xs font-semibold text-red-700 mb-0.5">SPECIAL HANDLING</div>
-                                        <div className="text-sm text-red-600 leading-snug">{item.shipmentNotes}</div>
+                                        <div className="text-[10px] font-semibold text-red-700 mb-0.5">SPECIAL HANDLING</div>
+                                        <div className="text-[11px] text-red-600 leading-snug">{item.shipmentNotes}</div>
                                         {item.packingMaterial && (
                                           <div className="flex items-center gap-1.5 mt-1">
                                             {item.packingMaterial.imageUrl && (
@@ -5227,7 +5213,7 @@ export default function PickPack() {
                                                 className="w-6 h-6 rounded object-contain border bg-white flex-shrink-0"
                                               />
                                             )}
-                                            <div className="text-xs min-w-0">
+                                            <div className="text-[10px] min-w-0">
                                               <div className="font-medium text-red-700 truncate">{item.packingMaterial.name}</div>
                                               <div className="text-red-500 truncate">{item.packingMaterial.description}</div>
                                             </div>
@@ -5241,9 +5227,9 @@ export default function PickPack() {
                                 {(item.packingInstructionsText || item.packingInstructionsImage) && (
                                   <div className="p-2 bg-blue-50 rounded border-l-2 border-blue-400">
                                     <div className="flex items-start gap-1.5">
-                                      <Package className="h-3.5 w-3.5 text-blue-500 mt-0.5 flex-shrink-0" />
+                                      <Package className="h-3 w-3 text-blue-500 mt-0.5 flex-shrink-0" />
                                       <div className="flex-1 min-w-0">
-                                        <div className="text-xs font-semibold text-blue-700 mb-0.5">PACKING INSTRUCTIONS</div>
+                                        <div className="text-[10px] font-semibold text-blue-700 mb-0.5">PACKING INSTRUCTIONS</div>
                                         {item.packingInstructionsImage && (
                                           <div className="mb-1">
                                             <img 
@@ -5254,7 +5240,7 @@ export default function PickPack() {
                                           </div>
                                         )}
                                         {item.packingInstructionsText && (
-                                          <div className="text-sm text-blue-600 leading-snug whitespace-pre-line">
+                                          <div className="text-[11px] text-blue-600 leading-snug whitespace-pre-line">
                                             {item.packingInstructionsText}
                                           </div>
                                         )}
@@ -5510,7 +5496,6 @@ export default function PickPack() {
                     orderItems={activePackingOrder.items}
                     printedFiles={printedProductFiles}
                     onFilePrinted={(fileId) => setPrintedProductFiles(prev => new Set([...Array.from(prev), fileId]))}
-                    selectedDocumentIds={activePackingOrder.selectedDocumentIds}
                   />
                 )}
 

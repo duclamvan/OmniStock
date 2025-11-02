@@ -4512,8 +4512,7 @@ Important:
         return {
           ...order,
           // Keep the status already mapped by getPickPackStatus in storage layer
-          items: itemsWithBundleDetails,
-          selectedDocumentIds: order.selectedDocumentIds || []
+          items: itemsWithBundleDetails
         };
       });
       
