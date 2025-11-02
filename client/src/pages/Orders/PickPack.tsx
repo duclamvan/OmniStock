@@ -1593,7 +1593,7 @@ export default function PickPack() {
     };
 
     createAndUpdateCartons();
-  }, [activePackingOrder?.id, recommendedCarton, orderCartons]);
+  }, [activePackingOrder?.id, recommendedCarton, orderCartons.length]);
 
   // Create carton mutation
   const createCartonMutation = useMutation({
