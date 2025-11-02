@@ -620,6 +620,19 @@ export const productFiles = pgTable('product_files', {
   tags: text('tags').array()
 });
 
+// Order Files table for uploaded order documents
+export const orderFiles = pgTable('order_files', {
+  id: text('id').primaryKey(),
+  orderId: text('order_id').references(() => orders.id, { onDelete: 'cascade' }),
+  fileName: text('file_name').notNull(),
+  fileUrl: text('file_url').notNull(),
+  fileSize: integer('file_size'),
+  mimeType: text('mime_type'),
+  uploadedBy: text('uploaded_by'),
+  uploadedAt: timestamp('uploaded_at').notNull(),
+  isActive: boolean('is_active').default(true)
+});
+
 export const orderItems = pgTable('order_items', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
   orderId: varchar('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
@@ -1203,6 +1216,7 @@ export const insertProductTieredPricingSchema = createInsertSchema(productTiered
 export const insertProductBundleSchema = createInsertSchema(productBundles).omit({ id: true, bundleId: true, createdAt: true, updatedAt: true });
 export const insertBundleItemSchema = createInsertSchema(bundleItems).omit({ id: true, createdAt: true });
 export const insertProductFileSchema = createInsertSchema(productFiles).omit({ id: true, uploadedAt: true });
+export const insertOrderFileSchema = createInsertSchema(orderFiles).omit({ id: true, uploadedAt: true });
 export const insertDailySequenceSchema = createInsertSchema(dailySequences).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true });
 export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: true });
@@ -1305,6 +1319,8 @@ export type BundleItem = typeof bundleItems.$inferSelect;
 export type InsertBundleItem = z.infer<typeof insertBundleItemSchema>;
 export type ProductFile = typeof productFiles.$inferSelect;
 export type InsertProductFile = z.infer<typeof insertProductFileSchema>;
+export type OrderFile = typeof orderFiles.$inferSelect;
+export type InsertOrderFile = z.infer<typeof insertOrderFileSchema>;
 export type DailySequence = typeof dailySequences.$inferSelect;
 export type InsertDailySequence = z.infer<typeof insertDailySequenceSchema>;
 export type Order = typeof orders.$inferSelect;

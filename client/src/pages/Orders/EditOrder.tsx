@@ -352,8 +352,11 @@ export default function EditOrder() {
     isLoading: isPackingOptimizationLoading 
   } = usePackingOptimization();
 
-  // File upload state
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  // Fetch order files from database
+  const { data: orderFiles = [] } = useQuery<any[]>({
+    queryKey: ['/api/orders', orderId, 'files'],
+    enabled: !!orderId,
+  });
 
   // Column visibility toggles
   const [showVatColumn, setShowVatColumn] = useState(false);
@@ -1603,14 +1606,48 @@ export default function EditOrder() {
     setOrderItems(items => items.filter(item => item.id !== id));
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (files) {
-      const newFiles = Array.from(files);
-      setUploadedFiles(prev => [...prev, ...newFiles]);
+    if (!files || files.length === 0 || !orderId) return;
+
+    const fileArray = Array.from(files);
+    
+    try {
+      // Upload each file to the server
+      const uploadPromises = fileArray.map(async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await fetch(`/api/orders/${orderId}/files`, {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to upload ${file.name}`);
+        }
+        
+        return response.json();
+      });
+      
+      await Promise.all(uploadPromises);
+      
+      // Refetch order files to update the list
+      queryClient.invalidateQueries({ queryKey: ['/api/orders', orderId, 'files'] });
+      
       toast({
         title: "Success",
-        description: `${newFiles.length} file(s) uploaded successfully`,
+        description: `${fileArray.length} file(s) uploaded successfully`,
+      });
+      
+      // Clear the input
+      event.target.value = '';
+    } catch (error: any) {
+      console.error('Error uploading files:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to upload files",
+        variant: "destructive"
       });
     }
   };

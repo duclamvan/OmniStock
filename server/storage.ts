@@ -14,6 +14,7 @@ import {
   products,
   productVariants,
   productFiles,
+  orderFiles,
   productLocations,
   stockAdjustmentRequests,
   productTieredPricing,
@@ -73,6 +74,8 @@ import {
   type InsertProductVariant,
   type ProductFile,
   type InsertProductFile,
+  type OrderFile,
+  type InsertOrderFile,
   type ProductLocation,
   type InsertProductLocation,
   type StockAdjustmentRequest,
@@ -256,6 +259,12 @@ export interface IStorage {
   createProductFile(file: InsertProductFile): Promise<ProductFile>;
   updateProductFile(id: string, data: Partial<InsertProductFile>): Promise<ProductFile | undefined>;
   deleteProductFile(id: string): Promise<boolean>;
+  
+  // Order Files
+  getOrderFiles(orderId: string): Promise<OrderFile[]>;
+  getOrderFile(id: string): Promise<OrderFile | undefined>;
+  createOrderFile(file: InsertOrderFile): Promise<OrderFile>;
+  deleteOrderFile(id: string): Promise<boolean>;
   
   // Product Tiered Pricing
   getProductTieredPricing(productId: string): Promise<ProductTieredPricing[]>;
@@ -1779,6 +1788,59 @@ export class DatabaseStorage implements IStorage {
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error('Error deleting product file:', error);
+      return false;
+    }
+  }
+
+  // Order Files
+  async getOrderFiles(orderId: string): Promise<OrderFile[]> {
+    try {
+      const files = await db
+        .select()
+        .from(orderFiles)
+        .where(eq(orderFiles.orderId, orderId))
+        .orderBy(orderFiles.uploadedAt);
+      return files;
+    } catch (error) {
+      console.error('Error fetching order files:', error);
+      return [];
+    }
+  }
+
+  async getOrderFile(id: string): Promise<OrderFile | undefined> {
+    try {
+      const [file] = await db
+        .select()
+        .from(orderFiles)
+        .where(eq(orderFiles.id, id));
+      return file || undefined;
+    } catch (error) {
+      console.error('Error fetching order file:', error);
+      return undefined;
+    }
+  }
+
+  async createOrderFile(file: InsertOrderFile): Promise<OrderFile> {
+    try {
+      const [newFile] = await db
+        .insert(orderFiles)
+        .values(file)
+        .returning();
+      return newFile;
+    } catch (error) {
+      console.error('Error creating order file:', error);
+      throw error;
+    }
+  }
+
+  async deleteOrderFile(id: string): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(orderFiles)
+        .where(eq(orderFiles.id, id));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting order file:', error);
       return false;
     }
   }

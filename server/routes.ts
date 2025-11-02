@@ -2207,6 +2207,100 @@ Important:
     }
   });
 
+  // Order Files endpoints
+  const orderFileUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = /pdf|doc|docx|jpg|jpeg|png|xlsx|xls|zip/;
+      const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+      
+      if (extname) {
+        return cb(null, true);
+      } else {
+        cb(new Error('Only PDF, DOC, DOCX, JPG, PNG, XLSX, and ZIP files are allowed'));
+      }
+    }
+  });
+
+  app.post('/api/orders/:orderId/files', orderFileUpload.single('file'), async (req: any, res) => {
+    try {
+      const orderId = req.params.orderId;
+      
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      
+      // Ensure upload directory exists
+      const uploadDir = 'uploads/order-files';
+      await fs.mkdir(uploadDir, { recursive: true });
+      
+      // Generate unique filename
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(req.file.originalname);
+      const filename = uniqueSuffix + ext;
+      const filepath = path.join(uploadDir, filename);
+      
+      // Save the file
+      await fs.writeFile(filepath, req.file.buffer);
+      
+      // Generate file URL (accessible via /uploads/order-files/filename)
+      const fileUrl = `/uploads/order-files/${filename}`;
+      
+      // Create database record
+      const fileData = {
+        id: nanoid(),
+        orderId,
+        fileName: req.file.originalname,
+        fileUrl: fileUrl,
+        fileSize: req.file.size,
+        mimeType: req.file.mimetype,
+        uploadedBy: (req.user as any)?.id || null,
+        uploadedAt: new Date(),
+        isActive: true
+      };
+      
+      const newFile = await storage.createOrderFile(fileData);
+      
+      res.json(newFile);
+    } catch (error) {
+      console.error("Error uploading order file:", error);
+      res.status(500).json({ message: "Failed to upload order file" });
+    }
+  });
+
+  app.delete('/api/order-files/:fileId', async (req, res) => {
+    try {
+      const file = await storage.getOrderFile(req.params.fileId);
+      
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      
+      // Delete physical file
+      const filename = file.fileUrl.split('/').pop();
+      const filepath = path.join('uploads/order-files', filename!);
+      
+      try {
+        await fs.unlink(filepath);
+      } catch (error) {
+        console.error("Error deleting physical file:", error);
+      }
+      
+      // Delete database record
+      const deleted = await storage.deleteOrderFile(req.params.fileId);
+      
+      if (!deleted) {
+        return res.status(500).json({ message: "Failed to delete file" });
+      }
+      
+      res.json({ message: "File deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting order file:", error);
+      res.status(500).json({ message: "Failed to delete order file" });
+    }
+  });
+
   app.get('/api/products/:id/tiered-pricing', async (req, res) => {
     try {
       const pricing = await storage.getProductTieredPricing(req.params.id);
@@ -7804,22 +7898,20 @@ Return ONLY the subject line without quotes or extra formatting.`,
 
       const allFiles: any[] = [];
 
-      // Get includedDocuments from order
-      const includedDocs = order.includedDocuments as any;
-      
-      // Add uploaded files
-      if (includedDocs?.uploadedFiles && Array.isArray(includedDocs.uploadedFiles)) {
-        includedDocs.uploadedFiles.forEach((file: any) => {
-          allFiles.push({
-            id: `uploaded-${file.name}`,
-            fileName: file.name,
-            fileUrl: file.url,
-            fileType: 'uploaded',
-            mimeType: file.mimeType || 'application/octet-stream',
-            source: 'uploaded'
-          });
+      // Get uploaded files from orderFiles table
+      const uploadedFiles = await storage.getOrderFiles(orderId);
+      uploadedFiles.forEach((file) => {
+        allFiles.push({
+          id: file.id,
+          fileName: file.fileName,
+          fileUrl: file.fileUrl,
+          fileType: 'uploaded',
+          fileSize: file.fileSize,
+          mimeType: file.mimeType || 'application/octet-stream',
+          uploadedAt: file.uploadedAt,
+          source: 'uploaded'
         });
-      }
+      });
 
       // Get product files by IDs
       if (includedDocs?.fileIds && Array.isArray(includedDocs.fileIds)) {
