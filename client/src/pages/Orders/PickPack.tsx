@@ -649,22 +649,15 @@ function ProductDocumentsSelector({
 
   const productFiles = useMemo(() => {
     const productIdSet = new Set(productIds);
-    // In packing mode, only show documents that need to be sent with the shipment
-    // These are typically regulatory documents like CPNP, certificates, etc.
-    const packingRelevantFileTypes = ['cpnp', 'certificate', 'sds', 'other'];
-    
-    // Helper function to check if a file is a PIF (Product Information File)
-    const isPIF = (file: any) => {
-      const fileName = (file.fileName || '').toLowerCase();
-      const description = (file.description || '').toLowerCase();
-      return fileName.includes('pif') || description.includes('pif');
-    };
+    // In packing mode, only show documents that need to be physically sent with the shipment
+    // SDS (Safety Data Sheets) and quality certificates are typically sent to customers
+    // CPNP certificates and PIFs are internal documents not sent with shipments
+    const packingRelevantFileTypes = ['certificate', 'sds'];
     
     return allFilesRaw.filter(file => 
       productIdSet.has(file.productId) && 
       file.isActive && 
-      packingRelevantFileTypes.includes(file.fileType) &&
-      !isPIF(file) // Exclude PIF files from packing mode
+      packingRelevantFileTypes.includes(file.fileType)
     );
   }, [allFilesRaw, productIds]);
 
