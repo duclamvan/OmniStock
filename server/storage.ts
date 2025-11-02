@@ -1121,6 +1121,8 @@ export class DatabaseStorage implements IStorage {
           shippingAddress: row.shippingAddress ?? row.order.shippingAddress,
           // Map database status to frontend status based on pick/pack status
           status: this.getPickPackStatus(row.order),
+          // Explicitly preserve selectedDocumentIds to ensure it's included in the response
+          selectedDocumentIds: row.order.selectedDocumentIds,
         };
       });
     } catch (error) {
