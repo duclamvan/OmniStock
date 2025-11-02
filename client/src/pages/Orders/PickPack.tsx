@@ -3951,11 +3951,6 @@ export default function PickPack() {
     }
     
     // Set the order immediately to show UI quickly
-    console.log('🏁 Starting packing for order:', order.id);
-    console.log('🏁 Order object:', order);
-    console.log('🏁 Order selectedDocumentIds:', order.selectedDocumentIds);
-    console.log('🏁 Order keys:', Object.keys(order));
-    
     const updatedOrder = {
       ...order,
       status: 'to_fulfill' as const,
@@ -3963,9 +3958,6 @@ export default function PickPack() {
       packStartTime: new Date().toISOString(),
       packedBy: currentEmployee
     };
-    
-    console.log('🏁 updatedOrder selectedDocumentIds:', updatedOrder.selectedDocumentIds);
-    
     setActivePackingOrder(updatedOrder);
     setPackingTimer(0);
     setIsPackingTimerRunning(true);

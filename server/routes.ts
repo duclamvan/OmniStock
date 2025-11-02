@@ -4509,26 +4509,14 @@ Important:
           };
         });
         
-        const finalOrder = {
+        return {
           ...order,
           // Keep the status already mapped by getPickPackStatus in storage layer
           items: itemsWithBundleDetails,
           selectedDocumentIds: order.selectedDocumentIds || []
         };
-        
-        // Log final order for debugging
-        if (order.id === '3c44845c-17f8-4e97-8306-00803ad29806') {
-          console.log('📤 Final order for 3c44845c:', {
-            id: finalOrder.id,
-            selectedDocumentIds: finalOrder.selectedDocumentIds,
-            hasSelectedDocuments: !!finalOrder.selectedDocumentIds
-          });
-        }
-        
-        return finalOrder;
       });
       
-      console.log('📤 Sending response with', ordersWithItems.length, 'orders');
       res.json(ordersWithItems);
     } catch (error) {
       console.error("Error fetching pick-pack orders:", error);

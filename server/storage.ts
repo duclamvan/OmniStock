@@ -906,7 +906,9 @@ export class DatabaseStorage implements IStorage {
         ...result.order, 
         customer: result.customer || undefined,
         shippingAddress: result.shippingAddress || undefined,
-        items 
+        items,
+        // Explicitly preserve selectedDocumentIds to ensure it's included in the response
+        selectedDocumentIds: result.order.selectedDocumentIds,
       } as any;
     }
     
