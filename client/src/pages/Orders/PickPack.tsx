@@ -37,7 +37,6 @@ import { useToast } from "@/hooks/use-toast";
 import { offlineQueue } from "@/lib/offlineQueue";
 import { CartonTypeAutocomplete } from "@/components/orders/CartonTypeAutocomplete";
 import { usePackingOptimization } from "@/hooks/usePackingOptimization";
-import { AICartonPackingPanel } from "@/components/orders/AICartonPackingPanel";
 import { 
   Dialog, 
   DialogContent, 
@@ -5286,17 +5285,6 @@ export default function PickPack() {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
-
-          {/* AI Carton Packing Optimization Panel */}
-          {activePackingOrder && activePackingOrder.items && activePackingOrder.items.length > 0 && (
-            <AICartonPackingPanel
-              packingPlan={packingPlan}
-              onRunOptimization={runPackingOptimization}
-              isLoading={isPackingOptimizationLoading}
-              currency={activePackingOrder.currency || 'CZK'}
-              orderItems={activePackingOrder.items}
-            />
-          )}
 
           {/* Multi-Carton Packing Section */}
           <Card className="shadow-sm border-2 border-emerald-200 bg-gradient-to-br from-white to-emerald-50">
