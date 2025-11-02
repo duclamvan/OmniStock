@@ -627,6 +627,16 @@ const CartonCard = memo(({
   );
 });
 
+// Utility function to open PDF and trigger print dialog immediately
+const openPDFAndPrint = (url: string) => {
+  const printWindow = window.open(url, '_blank');
+  if (printWindow) {
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+  }
+};
+
 // Component to display product documents
 function ProductDocumentsSelector({ 
   orderItems,
@@ -662,7 +672,7 @@ function ProductDocumentsSelector({
   }, [allFilesRaw, productIds]);
 
   const handlePrint = (fileId: string, fileUrl: string) => {
-    window.open(fileUrl, '_blank');
+    openPDFAndPrint(fileUrl);
     onFilePrinted(fileId);
   };
 
@@ -791,7 +801,7 @@ function OrderFilesDisplay({
   });
 
   const handlePrint = (fileId: string, fileUrl: string) => {
-    window.open(fileUrl, '_blank');
+    openPDFAndPrint(fileUrl);
     onFilePrinted(fileId);
   };
 
@@ -5485,7 +5495,7 @@ export default function PickPack() {
                           : 'hover:bg-violet-50 hover:text-violet-700 hover:border-violet-300'
                       }`}
                       onClick={() => {
-                        window.open(`/api/orders/${activePackingOrder.id}/packing-list.pdf`, '_blank');
+                        openPDFAndPrint(`/api/orders/${activePackingOrder.id}/packing-list.pdf`);
                         setPrintedDocuments(prev => ({ ...prev, packingList: true }));
                         playSound('success');
                       }}
