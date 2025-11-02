@@ -227,6 +227,12 @@ export default function OrderDetails() {
     },
   });
 
+  // Fetch uploaded order files from database
+  const { data: orderFiles = [] } = useQuery<any[]>({
+    queryKey: [`/api/orders/${id}/files`],
+    enabled: !!id && !!order,
+  });
+
   // Prevent OrderDetails from rendering on pick-pack page
   if (location === '/orders/pick-pack') {
     return null;
@@ -1531,7 +1537,7 @@ export default function OrderDetails() {
           </Card>
 
           {/* Files Sent Card */}
-          {((productFiles && productFiles.length > 0) || (order.includedDocuments?.uploadedFiles && order.includedDocuments.uploadedFiles.length > 0)) && (
+          {((productFiles && productFiles.length > 0) || (orderFiles && orderFiles.length > 0)) && (
             <Card data-testid="card-files-sent">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
@@ -1608,31 +1614,43 @@ export default function OrderDetails() {
                 )}
 
                 {/* Uploaded Files */}
-                {order.includedDocuments?.uploadedFiles && order.includedDocuments.uploadedFiles.length > 0 && (
+                {orderFiles && orderFiles.length > 0 && (
                   <div className="space-y-2">
                     {productFiles && productFiles.length > 0 && <Separator />}
                     <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2">
                       <Upload className="h-4 w-4" />
-                      Uploaded Files ({order.includedDocuments.uploadedFiles.length})
+                      Uploaded Files ({orderFiles.length})
                     </h4>
                     <div className="grid grid-cols-1 gap-2">
-                      {order.includedDocuments.uploadedFiles.map((file: any, index: number) => (
+                      {orderFiles.map((file: any) => (
                         <div
-                          key={index}
+                          key={file.id}
                           className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-700 rounded-md"
-                          data-testid={`uploaded-file-${index}`}
+                          data-testid={`uploaded-file-${file.id}`}
                         >
                           <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-blue-900 dark:text-blue-100 truncate">
-                              {file.name}
+                              {file.fileName}
                             </p>
-                            {file.size && (
+                            {file.fileSize && (
                               <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
-                                {(file.size / 1024).toFixed(2)} KB
+                                {(file.fileSize / 1024).toFixed(2)} KB
                               </p>
                             )}
                           </div>
+                          {file.fileUrl && (
+                            <a
+                              href={file.fileUrl}
+                              download={file.fileName}
+                              className="shrink-0"
+                              data-testid={`button-download-${file.id}`}
+                            >
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </a>
+                          )}
                         </div>
                       ))}
                     </div>
