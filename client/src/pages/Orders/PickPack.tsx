@@ -1630,11 +1630,21 @@ export default function PickPack() {
     },
     onSuccess: (result, variables) => {
       if (variables.tempId) {
+        // Remove draft and update cache directly instead of refetching
         setCartonsDraft(prev => prev.filter(c => c.id !== variables.tempId));
+        
+        // Update the query cache with the new carton data
+        queryClient.setQueryData(
+          ['/api/orders', activePackingOrder?.id, 'cartons'],
+          (old: any) => {
+            if (!old) return [result];
+            return [...old, result];
+          }
+        );
       }
       
-      // Only refetch if not part of batch creation (skipRefetch flag)
-      if (!variables.skipRefetch) {
+      // Only refetch if not part of batch creation (skipRefetch flag) and no tempId (not manual add)
+      if (!variables.skipRefetch && !variables.tempId) {
         queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder?.id, 'cartons'] });
         refetchCartons();
       }
