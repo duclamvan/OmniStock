@@ -629,31 +629,14 @@ const CartonCard = memo(({
 
 // Component to display product documents
 function ProductDocumentsSelector({ 
-  orderId,
   orderItems,
   printedFiles,
   onFilePrinted
 }: {
-  orderId: string;
   orderItems: any[];
   printedFiles: Set<string>;
   onFilePrinted: (fileId: string) => void;
 }) {
-  // Fetch selected documents for this order
-  const { data: orderData, isLoadingOrder } = useQuery({
-    queryKey: ['/api/orders', orderId],
-    enabled: !!orderId,
-    queryFn: async () => {
-      const response = await fetch(`/api/orders/${orderId}`);
-      if (!response.ok) throw new Error('Failed to fetch order');
-      return response.json();
-    }
-  });
-
-  const selectedDocumentIds = useMemo(() => {
-    return orderData?.selectedDocumentIds || [];
-  }, [orderData]);
-
   const productIds = useMemo(
     () => Array.from(new Set(orderItems.map((item: any) => item.productId))).filter(Boolean),
     [orderItems]
@@ -661,35 +644,23 @@ function ProductDocumentsSelector({
 
   const { data: allFilesRaw = [], isLoading } = useQuery<any[]>({
     queryKey: ['/api/product-files'],
-    enabled: productIds.length > 0 && selectedDocumentIds.length > 0,
+    enabled: productIds.length > 0,
   });
 
   const productFiles = useMemo(() => {
-    if (selectedDocumentIds.length === 0) return [];
-    const selectedIdSet = new Set(selectedDocumentIds);
-    return allFilesRaw.filter(file => selectedIdSet.has(file.id));
-  }, [allFilesRaw, selectedDocumentIds]);
+    const productIdSet = new Set(productIds);
+    return allFilesRaw.filter(file => productIdSet.has(file.productId) && file.isActive);
+  }, [allFilesRaw, productIds]);
 
   const handlePrint = (fileId: string, fileUrl: string) => {
     window.open(fileUrl, '_blank');
     onFilePrinted(fileId);
   };
 
-  if (isLoading || isLoadingOrder) {
+  if (isLoading) {
     return (
       <div className="text-sm text-gray-500 p-2 text-center" data-testid="loading-product-docs">
         Loading documents...
-      </div>
-    );
-  }
-
-  if (selectedDocumentIds.length === 0) {
-    return (
-      <div className="space-y-2 mt-3">
-        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Product Documents</div>
-        <div className="text-sm text-gray-500 italic p-3 bg-gray-50 rounded-lg border border-gray-200" data-testid="no-selected-docs">
-          No product documents selected for this order
-        </div>
       </div>
     );
   }
@@ -5522,7 +5493,6 @@ export default function PickPack() {
                 {/* Product Documents */}
                 {activePackingOrder && (
                   <ProductDocumentsSelector
-                    orderId={activePackingOrder.orderId}
                     orderItems={activePackingOrder.items}
                     printedFiles={printedProductFiles}
                     onFilePrinted={(fileId) => setPrintedProductFiles(prev => new Set([...Array.from(prev), fileId]))}

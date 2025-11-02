@@ -5199,20 +5199,16 @@ Important:
       // Generate order ID with the specified order type
       const orderId = await storage.generateOrderId(orderType);
       
-      // Process selectedDocumentIds - save to dedicated column
+      // Process selectedDocumentIds and merge into includedDocuments
       let finalOrderData = { ...orderData };
       if (selectedDocumentIds !== undefined) {
-        // Save to the selectedDocumentIds column directly
-        finalOrderData.selectedDocumentIds = selectedDocumentIds || [];
-        console.log('✅ Saving selectedDocumentIds to database:', finalOrderData.selectedDocumentIds);
-        
-        // Also merge into includedDocuments for backward compatibility
         const currentIncludedDocs = orderData.includedDocuments || {};
         finalOrderData.includedDocuments = {
           ...currentIncludedDocs,
           fileIds: selectedDocumentIds || [],
           uploadedFiles: currentIncludedDocs.uploadedFiles || []
         };
+        console.log('Merged selectedDocumentIds into includedDocuments:', finalOrderData.includedDocuments);
       }
       
       const data = insertOrderSchema.parse({
