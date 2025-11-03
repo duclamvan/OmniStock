@@ -2876,7 +2876,10 @@ export default function PickPack() {
       currency: order.currency || '$',
       subtotal: order.subtotal,
       grandTotal: order.grandTotal,
-      paymentStatus: order.paymentStatus
+      paymentStatus: order.paymentStatus,
+      // Include dobírka/COD information
+      dobirkaAmount: order.dobirkaAmount,
+      dobirkaCurrency: order.dobirkaCurrency
     }))
   )];
   
