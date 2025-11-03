@@ -5896,7 +5896,7 @@ export default function PickPack() {
                               onClick={async () => {
                                 try {
                                   console.log('🖨️ Fetching PPL label for order:', activePackingOrder.id);
-                                  const response = await apiRequest('GET', `/api/orders/${activePackingOrder.id}/ppl/label`, {});
+                                  const response = await fetch(`/api/orders/${activePackingOrder.id}/ppl/label`);
                                   console.log('📥 Response status:', response.status);
                                   
                                   const data = await response.json();
