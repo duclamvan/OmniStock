@@ -6080,8 +6080,16 @@ export default function PickPack() {
                         try {
                           console.log('🔧 Adding shipment - Current cartons:', cartons.length);
                           
+                          // Calculate next carton number (highest carton number + 1)
+                          const nextCartonNumber = cartons.length > 0
+                            ? Math.max(...cartons.map(c => c.cartonNumber || 0)) + 1
+                            : 1;
+                          
+                          console.log('📦 Next carton number:', nextCartonNumber);
+                          
                           // Create a new non-company carton in the database
                           const response = await apiRequest('POST', `/api/orders/${activePackingOrder.id}/cartons`, {
+                            cartonNumber: nextCartonNumber,
                             cartonType: 'non-company',
                             source: 'manual_ppl_shipment'
                           });
@@ -6099,7 +6107,7 @@ export default function PickPack() {
                             
                             toast({
                               title: "Shipment Added",
-                              description: `New shipment added. You now have ${cartons.length + 1} shipment(s).`,
+                              description: `New shipment #${nextCartonNumber} added for this order. You now have ${cartons.length + 1} shipment(s).`,
                             });
                           } else {
                             const errorData = await response.json();
