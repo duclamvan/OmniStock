@@ -104,7 +104,8 @@ import {
   Award,
   FileImage,
   Book,
-  Wrench
+  Wrench,
+  DollarSign
 } from "lucide-react";
 
 interface BundleItem {
@@ -5652,6 +5653,31 @@ export default function PickPack() {
                   </div>
                 )}
               </div>
+
+              {/* COD / Dobírka / Nachnahme */}
+              {activePackingOrder.dobirkaAmount && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <DollarSign className="h-4 w-4 text-orange-600" />
+                    <span>Cash on Delivery</span>
+                  </div>
+                  <div className="p-3 bg-orange-50 border-2 border-orange-300 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-orange-900">
+                        {(() => {
+                          const currency = activePackingOrder.dobirkaCurrency?.toUpperCase();
+                          if (currency === 'CZK') return 'Dobírka';
+                          if (currency === 'EUR') return 'Nachnahme';
+                          return 'COD';
+                        })()}
+                      </span>
+                      <span className="text-lg font-bold text-orange-900" data-testid="text-cod-amount">
+                        {Number(activePackingOrder.dobirkaAmount).toFixed(2)} {activePackingOrder.dobirkaCurrency?.toUpperCase() || 'CZK'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Shipment Notes */}
               <div className="space-y-2">
