@@ -8385,8 +8385,8 @@ export default function PickPack() {
                 Shipping Address
               </h3>
               <div className="text-xs sm:text-sm space-y-2">
-                <p className="font-medium text-gray-900 break-words">
-                  {previewOrder?.shippingAddress || 'No address provided'}
+                <p className="font-medium text-gray-900 break-words whitespace-pre-line">
+                  {formatShippingAddress(previewOrder?.shippingAddress) || 'No address provided'}
                 </p>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 mt-2">
                   <div className="flex items-center gap-1">
