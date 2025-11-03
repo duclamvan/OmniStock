@@ -8038,6 +8038,83 @@ Return ONLY the subject line without quotes or extra formatting.`,
     }
   });
 
+  // Retry PPL label retrieval using existing batchId
+  app.post('/api/orders/:orderId/ppl/retry-label', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { getPPLLabel, getPPLBatchStatus } = await import('./services/pplService');
+      
+      // Get order details
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      if (!order.pplBatchId) {
+        return res.status(400).json({ error: 'No PPL batch ID found for this order. Please create a new shipment.' });
+      }
+
+      const batchId = order.pplBatchId;
+
+      // Try to get batch status first to check if shipment is ready
+      let shipmentNumbers: string[] = [];
+      try {
+        const batchStatus = await getPPLBatchStatus(batchId);
+        if (batchStatus.status === 'Finished' && batchStatus.shipmentResults) {
+          shipmentNumbers = batchStatus.shipmentResults
+            .filter(r => r.shipmentNumber)
+            .map(r => r.shipmentNumber!);
+        }
+      } catch (statusError) {
+        console.log('Could not get batch status, attempting label retrieval anyway:', statusError);
+      }
+
+      // Try to retrieve the label with required parameters
+      const label = await getPPLLabel(batchId, 'pdf', { offset: 0, limit: 100 });
+
+      // Update order with PPL data
+      await storage.updateOrder(orderId, {
+        pplShipmentNumbers: shipmentNumbers.length > 0 ? shipmentNumbers as any : order.pplShipmentNumbers,
+        pplLabelData: {
+          batchId,
+          shipmentNumbers,
+          labelBase64: label.labelContent,
+          format: label.format,
+          createdAt: new Date().toISOString()
+        } as any,
+        pplStatus: 'created'
+      });
+
+      res.json({
+        success: true,
+        batchId,
+        shipmentNumbers,
+        labelBase64: label.labelContent,
+        format: label.format
+      });
+
+    } catch (error: any) {
+      console.error('Error retrying PPL label retrieval:', error);
+      
+      const errorResponse: any = { 
+        error: error.message || 'Failed to retrieve PPL label',
+        type: error.constructor.name
+      };
+      
+      if (error.details) {
+        errorResponse.details = {
+          status: error.details.status,
+          data: error.details.data,
+          batchId: error.details.batchId
+        };
+      }
+      
+      errorResponse.hint = 'The shipment may still be processing. Please wait a few moments and try again.';
+      
+      res.status(500).json(errorResponse);
+    }
+  });
+
   // Get packing materials for an order
   // Get all files and documents for an order
   app.get('/api/orders/:orderId/files', async (req, res) => {

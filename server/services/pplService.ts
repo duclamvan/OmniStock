@@ -245,14 +245,29 @@ export async function getPPLBatchStatus(batchId: string): Promise<PPLBatchStatus
 
 /**
  * Get PPL label (PDF)
+ * @param batchId - The batch ID from shipment creation
+ * @param format - Label format (pdf or zpl)
+ * @param options - Additional options like offset and limit for pagination
  */
-export async function getPPLLabel(batchId: string, format: 'pdf' | 'zpl' = 'pdf'): Promise<PPLLabel> {
+export async function getPPLLabel(
+  batchId: string, 
+  format: 'pdf' | 'zpl' = 'pdf',
+  options?: { offset?: number; limit?: number }
+): Promise<PPLLabel> {
   const token = await getPPLAccessToken();
+  
+  // Default pagination params (PPL requires these)
+  const offset = options?.offset ?? 0;
+  const limit = options?.limit ?? 100;
   
   try {
     const response = await axios.get(
       `${PPL_BASE_URL}/shipment/batch/${batchId}/label`,
       {
+        params: {
+          offset,
+          limit
+        },
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': format === 'pdf' ? 'application/pdf' : 'application/zpl'
@@ -269,8 +284,17 @@ export async function getPPLLabel(batchId: string, format: 'pdf' | 'zpl' = 'pdf'
       format: format === 'pdf' ? 'application/pdf' : 'application/zpl'
     };
   } catch (error: any) {
-    console.error('Failed to get PPL label:', error.response?.data || error.message);
-    throw new Error('Failed to retrieve PPL label');
+    const errorDetails = {
+      message: error.message,
+      data: error.response?.data ? Buffer.from(error.response.data).toString('utf-8') : null,
+      status: error.response?.status,
+      batchId
+    };
+    console.error('Failed to get PPL label:', errorDetails);
+    
+    const err = new Error('Failed to retrieve PPL label') as any;
+    err.details = errorDetails;
+    throw err;
   }
 }
 

@@ -1852,6 +1852,66 @@ export default function PickPack() {
     }
   });
 
+  const retryPPLLabelMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const response = await apiRequest('POST', `/api/orders/${orderId}/ppl/retry-label`, {});
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "PPL Label Retrieved",
+        description: `Successfully downloaded label for batch ${data.batchId}`,
+      });
+
+      // Download the PDF label
+      const labelBlob = new Blob(
+        [Uint8Array.from(atob(data.labelBase64), c => c.charCodeAt(0))],
+        { type: 'application/pdf' }
+      );
+      const url = URL.createObjectURL(labelBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `PPL-Labels-${activePackingOrder?.orderId}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      // Refetch order to get updated PPL data
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+    },
+    onError: (error: any) => {
+      console.error('Error retrying PPL label:', error);
+      console.error('Error details:', {
+        message: error.message,
+        hint: error.hint,
+        details: error.details,
+        fullResponse: error.fullResponse
+      });
+      
+      let errorMessage = error.message || "Failed to retrieve PPL label";
+      
+      if (error.hint) {
+        errorMessage += `\n\n💡 ${error.hint}`;
+      }
+      
+      if (error.details) {
+        const details = error.details;
+        if (details.batchId) {
+          errorMessage += `\n\nBatch ID: ${details.batchId}`;
+        }
+        if (details.status) {
+          errorMessage += `\nStatus: ${details.status}`;
+        }
+      }
+      
+      toast({
+        title: "Label Retrieval Failed",
+        description: errorMessage,
+        variant: "destructive",
+        duration: 10000,
+      });
+    }
+  });
+
   // Define the actual recalculate function after mutations are available
   recalculateCartons.current = async () => {
     if (!activePackingOrder) return;
@@ -5756,20 +5816,40 @@ export default function PickPack() {
                 <>
                   {/* Generate/Cancel PPL Labels Button */}
                   {activePackingOrder.pplStatus !== 'created' ? (
-                    <Button
-                      variant="default"
-                      className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold"
-                      onClick={() => createPPLLabelsMutation.mutate(activePackingOrder.id)}
-                      disabled={createPPLLabelsMutation.isPending || cartons.length === 0}
-                      data-testid="button-generate-ppl-labels"
-                    >
-                      {createPPLLabelsMutation.isPending ? (
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Plus className="h-4 w-4 mr-2" />
+                    <>
+                      <Button
+                        variant="default"
+                        className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold"
+                        onClick={() => createPPLLabelsMutation.mutate(activePackingOrder.id)}
+                        disabled={createPPLLabelsMutation.isPending || cartons.length === 0}
+                        data-testid="button-generate-ppl-labels"
+                      >
+                        {createPPLLabelsMutation.isPending ? (
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Plus className="h-4 w-4 mr-2" />
+                        )}
+                        {createPPLLabelsMutation.isPending ? 'Creating Labels...' : 'Generate PPL Labels'}
+                      </Button>
+                      
+                      {/* Retry button if batchId exists but label failed */}
+                      {activePackingOrder.pplBatchId && !activePackingOrder.pplLabelData && (
+                        <Button
+                          variant="outline"
+                          className="w-full border-orange-300 text-orange-700 hover:bg-orange-50"
+                          onClick={() => retryPPLLabelMutation.mutate(activePackingOrder.id)}
+                          disabled={retryPPLLabelMutation.isPending}
+                          data-testid="button-retry-ppl-label"
+                        >
+                          {retryPPLLabelMutation.isPending ? (
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4 mr-2" />
+                          )}
+                          {retryPPLLabelMutation.isPending ? 'Retrieving...' : 'Retry Label Download'}
+                        </Button>
                       )}
-                      {createPPLLabelsMutation.isPending ? 'Creating Labels...' : 'Generate PPL Labels'}
-                    </Button>
+                    </>
                   ) : (
                     <Button
                       variant="destructive"
