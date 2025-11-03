@@ -5833,22 +5833,49 @@ export default function PickPack() {
                     </>
                   ) : (
                     <Button
-                      variant="destructive"
-                      className="w-full"
-                      onClick={() => {
-                        if (confirm('Are you sure you want to cancel PPL labels? This action cannot be undone.')) {
-                          cancelPPLLabelsMutation.mutate(activePackingOrder.id);
+                      variant="default"
+                      className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold"
+                      onClick={async () => {
+                        try {
+                          console.log('🖨️ Fetching PPL labels for printing...');
+                          const response = await fetch(`/api/orders/${activePackingOrder.id}/ppl/label`);
+                          const data = await response.json();
+
+                          if (data.success && data.labelBase64) {
+                            const labelBlob = new Blob(
+                              [Uint8Array.from(atob(data.labelBase64), c => c.charCodeAt(0))],
+                              { type: 'application/pdf' }
+                            );
+                            const url = URL.createObjectURL(labelBlob);
+                            
+                            const printWindow = window.open(url, '_blank');
+                            if (printWindow) {
+                              printWindow.onload = () => {
+                                printWindow.print();
+                              };
+                            } else {
+                              toast({
+                                title: "Popup Blocked",
+                                description: "Please allow popups to print labels",
+                                variant: "destructive"
+                              });
+                            }
+                            
+                            setTimeout(() => URL.revokeObjectURL(url), 1000);
+                          }
+                        } catch (error: any) {
+                          console.error('Error printing labels:', error);
+                          toast({
+                            title: "Error",
+                            description: "Failed to print labels",
+                            variant: "destructive"
+                          });
                         }
                       }}
-                      disabled={cancelPPLLabelsMutation.isPending}
-                      data-testid="button-cancel-ppl-labels"
+                      data-testid="button-print-all-ppl-labels"
                     >
-                      {cancelPPLLabelsMutation.isPending ? (
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <X className="h-4 w-4 mr-2" />
-                      )}
-                      {cancelPPLLabelsMutation.isPending ? 'Cancelling...' : 'Cancel PPL Labels'}
+                      <Printer className="h-4 w-4 mr-2" />
+                      Print All Labels
                     </Button>
                   )}
 
@@ -5970,6 +5997,44 @@ export default function PickPack() {
                         ));
                       })()}
                     </div>
+                  )}
+
+                  {/* Add Shipment Button - Creates new non-company carton */}
+                  {activePackingOrder.pplLabelData && (
+                    <Button
+                      variant="outline"
+                      className="w-full border-2 border-dashed border-orange-400 text-orange-700 hover:bg-orange-50 hover:border-orange-300"
+                      onClick={async () => {
+                        try {
+                          // Create a new non-company carton in the database
+                          const response = await apiRequest('POST', `/api/orders/${activePackingOrder.id}/cartons`, {
+                            cartonType: 'non-company',
+                            source: 'manual_ppl_shipment'
+                          });
+                          
+                          if (response.ok) {
+                            // Refetch cartons to update the UI
+                            queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
+                            
+                            toast({
+                              title: "Shipment Added",
+                              description: "New shipment added. AI packing will sync automatically.",
+                            });
+                          }
+                        } catch (error) {
+                          console.error('Error adding shipment:', error);
+                          toast({
+                            title: "Error",
+                            description: "Failed to add shipment",
+                            variant: "destructive"
+                          });
+                        }
+                      }}
+                      data-testid="button-add-ppl-shipment"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add More Shipment
+                    </Button>
                   )}
                 </>
               )}
