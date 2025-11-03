@@ -4876,7 +4876,7 @@ export default function PickPack() {
                             }`}
                           >
                             {(item.notes || item.shipmentNotes) && (
-                              <div className="absolute -top-2 -right-2 z-10">
+                              <div className="absolute -top-2 -right-2 z-50">
                                 <div className={`${item.shipmentNotes ? 'bg-red-500' : 'bg-amber-500'} text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg`}>
                                   <AlertTriangle className="h-3 w-3" />
                                   {item.shipmentNotes ? 'SPECIAL' : 'NOTE'}
