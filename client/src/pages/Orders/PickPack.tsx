@@ -5655,7 +5655,7 @@ export default function PickPack() {
               </div>
 
               {/* COD / Dobírka / Nachnahme */}
-              {activePackingOrder.dobirkaAmount && (
+              {activePackingOrder.dobirkaAmount && Number(activePackingOrder.dobirkaAmount) > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                     <DollarSign className="h-4 w-4 text-orange-600" />
@@ -5665,14 +5665,14 @@ export default function PickPack() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-bold text-orange-900">
                         {(() => {
-                          const currency = activePackingOrder.dobirkaCurrency?.toUpperCase();
+                          const currency = (activePackingOrder.dobirkaCurrency || 'CZK').toUpperCase();
                           if (currency === 'CZK') return 'Dobírka';
                           if (currency === 'EUR') return 'Nachnahme';
                           return 'COD';
                         })()}
                       </span>
                       <span className="text-lg font-bold text-orange-900" data-testid="text-cod-amount">
-                        {Number(activePackingOrder.dobirkaAmount).toFixed(2)} {activePackingOrder.dobirkaCurrency?.toUpperCase() || 'CZK'}
+                        {formatCurrency(Number(activePackingOrder.dobirkaAmount), activePackingOrder.dobirkaCurrency || 'CZK')}
                       </span>
                     </div>
                   </div>
