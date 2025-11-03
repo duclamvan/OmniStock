@@ -7760,10 +7760,21 @@ Return ONLY the subject line without quotes or extra formatting.`,
         email: 'info@daviesupply.cz'
       };
 
-      // Determine product type based on destination country
-      // Use PPL Parcel CZ Business for Czech domestic shipments
+      // Determine product type based on destination country and COD status
+      // Valid PPL product codes:
+      // BUSD = Business Delivery with Cash on Delivery (Czech domestic)
+      // BUSS = Business Standard (Czech domestic, no COD)
+      // COND = Connect Delivery with CoD (International)
       const recipientCountryCode = getCountryCode(shippingAddress.country);
-      const productType = recipientCountryCode === 'CZ' ? 'PPL Parcel CZ Business' : 'PPL Parcel Connect';
+      let productType: string;
+      
+      if (recipientCountryCode === 'CZ') {
+        // Czech domestic shipment
+        productType = hasCOD ? 'BUSD' : 'BUSS';
+      } else {
+        // International shipment
+        productType = hasCOD ? 'COND' : 'BUSS';
+      }
 
       // Prepare PPL shipment data
       const shipments = cartons.map((carton, index) => ({
