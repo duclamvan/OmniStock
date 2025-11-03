@@ -5683,216 +5683,218 @@ export default function PickPack() {
             </CardContent>
           </Card>
 
-          {/* PPL Shipping Labels Section */}
-          {activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') && (
-            <Card className="shadow-sm border border-orange-200 bg-white">
-              <CardHeader className="bg-gradient-to-r from-orange-600 to-red-600 text-white p-3 rounded-t-lg">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Truck className="h-4 w-4" />
-                  PPL Shipping Labels
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 space-y-3">
-                {/* Generate PPL Labels Button */}
-                {activePackingOrder.pplStatus !== 'created' ? (
-                  <Button
-                    variant="default"
-                    className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold"
-                    onClick={() => createPPLLabelsMutation.mutate(activePackingOrder.id)}
-                    disabled={createPPLLabelsMutation.isPending || cartons.length === 0}
-                    data-testid="button-generate-ppl-labels"
-                  >
-                    {createPPLLabelsMutation.isPending ? (
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Plus className="h-4 w-4 mr-2" />
-                    )}
-                    {createPPLLabelsMutation.isPending ? 'Creating Labels...' : 'Generate PPL Labels'}
-                  </Button>
-                ) : (
-                  <Button
-                    variant="destructive"
-                    className="w-full"
-                    onClick={() => {
-                      if (confirm('Are you sure you want to cancel PPL labels? This action cannot be undone.')) {
-                        cancelPPLLabelsMutation.mutate(activePackingOrder.id);
-                      }
-                    }}
-                    disabled={cancelPPLLabelsMutation.isPending}
-                    data-testid="button-cancel-ppl-labels"
-                  >
-                    {cancelPPLLabelsMutation.isPending ? (
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <X className="h-4 w-4 mr-2" />
-                    )}
-                    {cancelPPLLabelsMutation.isPending ? 'Cancelling...' : 'Cancel PPL Labels'}
-                  </Button>
-                )}
-
-                {/* Display PPL shipment numbers if they exist */}
-                {activePackingOrder.pplShipmentNumbers && activePackingOrder.pplShipmentNumbers.length > 0 && (
-                  <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
-                    <h4 className="text-sm font-semibold text-orange-900 mb-2">PPL Tracking Numbers:</h4>
-                    <div className="space-y-1">
-                      {activePackingOrder.pplShipmentNumbers.map((trackingNum: string, index: number) => (
-                        <div key={index} className="flex items-center justify-between text-sm">
-                          <span className="font-mono text-orange-800">{trackingNum}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 text-xs"
-                            onClick={() => {
-                              navigator.clipboard.writeText(trackingNum);
-                              toast({ title: "Copied to clipboard" });
-                            }}
-                          >
-                            Copy
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Print PPL Labels button */}
-                {activePackingOrder.pplLabelData && (
-                  <Button
-                    variant="outline"
-                    className="w-full border-orange-300 text-orange-700 hover:bg-orange-50"
-                    onClick={async () => {
-                      try {
-                        const response = await apiRequest('GET', `/api/orders/${activePackingOrder.id}/ppl/label`, {});
-                        const data = await response.json();
-
-                        if (data.success) {
-                          const labelBlob = new Blob(
-                            [Uint8Array.from(atob(data.labelBase64), c => c.charCodeAt(0))],
-                            { type: 'application/pdf' }
-                          );
-                          const url = URL.createObjectURL(labelBlob);
-                          
-                          // Open in new window and trigger print
-                          const printWindow = window.open(url, '_blank');
-                          if (printWindow) {
-                            printWindow.onload = () => {
-                              printWindow.print();
-                            };
-                          }
-                          
-                          // Clean up the blob URL after a delay
-                          setTimeout(() => URL.revokeObjectURL(url), 1000);
-                        }
-                      } catch (error: any) {
-                        console.error('Error printing PPL label:', error);
-                        toast({
-                          title: "Error",
-                          description: "Failed to print label",
-                          variant: "destructive"
-                        });
-                      }
-                    }}
-                    data-testid="button-download-ppl-label"
-                  >
-                    <Printer className="h-4 w-4 mr-2" />
-                    Print PPL Labels
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Regular Shipping Labels Section */}
-          <Card className="shadow-sm border border-gray-200 bg-white">
-            <CardHeader className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white p-3 rounded-t-lg">
+          {/* Unified Shipping Labels Section */}
+          <Card className={`shadow-sm bg-white ${
+            activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') 
+              ? 'border border-orange-200' 
+              : 'border border-blue-200'
+          }`}>
+            <CardHeader className={`text-white p-3 rounded-t-lg ${
+              activePackingOrder.shippingMethod?.toUpperCase().includes('PPL')
+                ? 'bg-gradient-to-r from-orange-600 to-red-600'
+                : 'bg-gradient-to-r from-blue-600 to-cyan-600'
+            }`}>
               <CardTitle className="text-base flex items-center gap-2">
                 <Truck className="h-4 w-4" />
                 Shipping Labels
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-3">
-              {/* Labels Display */}
-              {shippingLabels.length > 0 ? (
-                <div className="space-y-2">
-                  {shippingLabels.map((label) => (
-                    <div 
-                      key={label.id}
-                      className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-300 rounded-lg"
-                      data-testid={`shipping-label-${label.labelNumber}`}
+              {/* PPL-Specific Actions */}
+              {activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') && (
+                <>
+                  {/* Generate/Cancel PPL Labels Button */}
+                  {activePackingOrder.pplStatus !== 'created' ? (
+                    <Button
+                      variant="default"
+                      className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold"
+                      onClick={() => createPPLLabelsMutation.mutate(activePackingOrder.id)}
+                      disabled={createPPLLabelsMutation.isPending || cartons.length === 0}
+                      data-testid="button-generate-ppl-labels"
                     >
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">{label.labelNumber}</span>
+                      {createPPLLabelsMutation.isPending ? (
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Plus className="h-4 w-4 mr-2" />
+                      )}
+                      {createPPLLabelsMutation.isPending ? 'Creating Labels...' : 'Generate PPL Labels'}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="destructive"
+                      className="w-full"
+                      onClick={() => {
+                        if (confirm('Are you sure you want to cancel PPL labels? This action cannot be undone.')) {
+                          cancelPPLLabelsMutation.mutate(activePackingOrder.id);
+                        }
+                      }}
+                      disabled={cancelPPLLabelsMutation.isPending}
+                      data-testid="button-cancel-ppl-labels"
+                    >
+                      {cancelPPLLabelsMutation.isPending ? (
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <X className="h-4 w-4 mr-2" />
+                      )}
+                      {cancelPPLLabelsMutation.isPending ? 'Cancelling...' : 'Cancel PPL Labels'}
+                    </Button>
+                  )}
+
+                  {/* PPL Tracking Numbers */}
+                  {activePackingOrder.pplShipmentNumbers && activePackingOrder.pplShipmentNumbers.length > 0 && (
+                    <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
+                      <h4 className="text-sm font-semibold text-orange-900 mb-2">PPL Tracking Numbers:</h4>
+                      <div className="space-y-1">
+                        {activePackingOrder.pplShipmentNumbers.map((trackingNum: string, index: number) => (
+                          <div key={index} className="flex items-center justify-between text-sm">
+                            <span className="font-mono text-orange-800">{trackingNum}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 text-xs"
+                              onClick={() => {
+                                navigator.clipboard.writeText(trackingNum);
+                                toast({ title: "Copied to clipboard" });
+                              }}
+                            >
+                              Copy
+                            </Button>
+                          </div>
+                        ))}
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold text-gray-900">Shipping Label #{label.labelNumber}</p>
-                        <p className="text-xs text-gray-600">For Carton #{label.labelNumber}</p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 text-xs flex-shrink-0 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300"
-                        onClick={() => {
-                          // Future: Open label printing/generation dialog
-                          window.print();
-                        }}
-                        data-testid={`button-print-label-${label.labelNumber}`}
-                      >
-                        <Printer className="h-3.5 w-3.5 mr-1.5" />
-                        Print
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
-                        onClick={() => {
-                          setShippingLabels(prev => prev.filter(l => l.id !== label.id));
-                        }}
-                        data-testid={`button-remove-label-${label.labelNumber}`}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-sm text-gray-500 italic p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  No shipping labels. Add cartons to auto-generate labels, or add manually.
-                </div>
+                  )}
+
+                  {/* Print PPL Labels */}
+                  {activePackingOrder.pplLabelData && (
+                    <Button
+                      variant="outline"
+                      className="w-full border-orange-300 text-orange-700 hover:bg-orange-50"
+                      onClick={async () => {
+                        try {
+                          const response = await apiRequest('GET', `/api/orders/${activePackingOrder.id}/ppl/label`, {});
+                          const data = await response.json();
+
+                          if (data.success) {
+                            const labelBlob = new Blob(
+                              [Uint8Array.from(atob(data.labelBase64), c => c.charCodeAt(0))],
+                              { type: 'application/pdf' }
+                            );
+                            const url = URL.createObjectURL(labelBlob);
+                            
+                            const printWindow = window.open(url, '_blank');
+                            if (printWindow) {
+                              printWindow.onload = () => {
+                                printWindow.print();
+                              };
+                            }
+                            
+                            setTimeout(() => URL.revokeObjectURL(url), 1000);
+                          }
+                        } catch (error: any) {
+                          console.error('Error printing PPL label:', error);
+                          toast({
+                            title: "Error",
+                            description: "Failed to print label",
+                            variant: "destructive"
+                          });
+                        }
+                      }}
+                      data-testid="button-download-ppl-label"
+                    >
+                      <Printer className="h-4 w-4 mr-2" />
+                      Print PPL Labels
+                    </Button>
+                  )}
+                </>
               )}
 
-              {/* Add Label Button */}
-              <Button
-                variant="outline"
-                className="w-full border-2 border-dashed border-blue-400 text-blue-700 hover:bg-blue-50 hover:border-blue-300 dark:hover:border-blue-700"
-                onClick={() => {
-                  const nextNumber = shippingLabels.length + 1;
-                  setShippingLabels(prev => [
-                    ...prev,
-                    { id: `label-${Date.now()}`, labelNumber: nextNumber }
-                  ]);
-                }}
-                data-testid="add-shipping-label-button"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Shipping Label
-              </Button>
-
-              {/* Summary */}
-              {shippingLabels.length > 0 && (
-                <div className="bg-blue-100 p-3 rounded-lg">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-semibold text-blue-800">Total Labels:</span>
-                    <span className="font-bold text-blue-900">{shippingLabels.length}</span>
-                  </div>
-                  {cartons.length > 0 && shippingLabels.length !== cartons.length && (
-                    <Alert className="mt-2 bg-amber-50 border-amber-300">
-                      <AlertCircle className="h-4 w-4 text-amber-600" />
-                      <AlertDescription className="text-xs text-amber-800">
-                        Label count ({shippingLabels.length}) differs from carton count ({cartons.length})
-                      </AlertDescription>
-                    </Alert>
+              {/* Regular Shipping Labels (for non-PPL shipments) */}
+              {!activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') && (
+                <>
+                  {/* Labels Display */}
+                  {shippingLabels.length > 0 ? (
+                    <div className="space-y-2">
+                      {shippingLabels.map((label) => (
+                        <div 
+                          key={label.id}
+                          className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-300 rounded-lg"
+                          data-testid={`shipping-label-${label.labelNumber}`}
+                        >
+                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
+                            <span className="text-white font-bold text-sm">{label.labelNumber}</span>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-gray-900">Shipping Label #{label.labelNumber}</p>
+                            <p className="text-xs text-gray-600">For Carton #{label.labelNumber}</p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-xs flex-shrink-0 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300"
+                            onClick={() => {
+                              window.print();
+                            }}
+                            data-testid={`button-print-label-${label.labelNumber}`}
+                          >
+                            <Printer className="h-3.5 w-3.5 mr-1.5" />
+                            Print
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                            onClick={() => {
+                              setShippingLabels(prev => prev.filter(l => l.id !== label.id));
+                            }}
+                            data-testid={`button-remove-label-${label.labelNumber}`}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-500 italic p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      No shipping labels. Add cartons to auto-generate labels, or add manually.
+                    </div>
                   )}
-                </div>
+
+                  {/* Add Label Button */}
+                  <Button
+                    variant="outline"
+                    className="w-full border-2 border-dashed border-blue-400 text-blue-700 hover:bg-blue-50 hover:border-blue-300"
+                    onClick={() => {
+                      const nextNumber = shippingLabels.length + 1;
+                      setShippingLabels(prev => [
+                        ...prev,
+                        { id: `label-${Date.now()}`, labelNumber: nextNumber }
+                      ]);
+                    }}
+                    data-testid="add-shipping-label-button"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Shipping Label
+                  </Button>
+
+                  {/* Summary */}
+                  {shippingLabels.length > 0 && (
+                    <div className="bg-blue-100 p-3 rounded-lg">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-semibold text-blue-800">Total Labels:</span>
+                        <span className="font-bold text-blue-900">{shippingLabels.length}</span>
+                      </div>
+                      {cartons.length > 0 && shippingLabels.length !== cartons.length && (
+                        <Alert className="mt-2 bg-amber-50 border-amber-300">
+                          <AlertCircle className="h-4 w-4 text-amber-600" />
+                          <AlertDescription className="text-xs text-amber-800">
+                            Label count ({shippingLabels.length}) differs from carton count ({cartons.length})
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
