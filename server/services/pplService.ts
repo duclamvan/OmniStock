@@ -127,7 +127,7 @@ export interface PPLShipment {
   cashOnDelivery?: {
     codCurrency: string;
     codPrice: number;
-    codVarSymbol?: string;
+    codVarSym?: string;
   };
 }
 

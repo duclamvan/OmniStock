@@ -7725,21 +7725,47 @@ Return ONLY the subject line without quotes or extra formatting.`,
       
       const contactName = `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || recipientName;
 
+      // Map country name to ISO 2-letter code
+      const getCountryCode = (country: string): string => {
+        const countryUpper = country.toUpperCase();
+        if (countryUpper === 'CZECH REPUBLIC' || countryUpper === 'CZECHIA' || countryUpper === 'CZ') return 'CZ';
+        if (countryUpper === 'SLOVAKIA' || countryUpper === 'SK') return 'SK';
+        if (countryUpper === 'GERMANY' || countryUpper === 'DE') return 'DE';
+        if (countryUpper === 'AUSTRIA' || countryUpper === 'AT') return 'AT';
+        if (countryUpper === 'POLAND' || countryUpper === 'PL') return 'PL';
+        if (countryUpper === 'HUNGARY' || countryUpper === 'HU') return 'HU';
+        // If it's already a 2-letter code, return it
+        if (countryUpper.length === 2) return countryUpper;
+        return 'CZ'; // Default to CZ
+      };
+
       // Prepare dobírka (COD) information if present
       const hasCOD = order.dobirkaAmount && parseFloat(order.dobirkaAmount.toString()) > 0;
       const codInfo = hasCOD ? {
         codCurrency: order.dobirkaCurrency || 'CZK',
         codPrice: parseFloat(order.dobirkaAmount.toString()),
-        codVarSymbol: order.orderId
+        codVarSym: order.orderId // Changed from codVarSymbol to codVarSym
       } : undefined;
+
+      // Default sender information (warehouse/company)
+      const sender = {
+        country: 'CZ',
+        zipCode: '35002',
+        name: 'Davie Supply',
+        street: 'Dragonská 2545/9A',
+        city: 'Cheb',
+        phone: '+420776887045',
+        email: 'info@daviesupply.cz'
+      };
 
       // Prepare PPL shipment data
       const shipments = cartons.map((carton, index) => ({
         referenceId: `${order.orderId}-${carton.cartonNumber}`,
-        productType: 'PPL',
+        productType: 'PPL Parcel CZ Private',
         note: order.notes || undefined,
+        sender,
         recipient: {
-          country: shippingAddress.country.toUpperCase(),
+          country: getCountryCode(shippingAddress.country),
           zipCode: shippingAddress.zipCode.replace(/\s+/g, ''),
           name: recipientName,
           name2: shippingAddress.company ? contactName : undefined,
