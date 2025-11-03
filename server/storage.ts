@@ -1129,6 +1129,9 @@ export class DatabaseStorage implements IStorage {
         shippingAddress: row.shippingAddress ?? row.order.shippingAddress,
         // Map database status to frontend status based on pick/pack status
         status: this.getPickPackStatus(row.order),
+        // Explicitly include dobírka fields for COD orders
+        dobirkaAmount: row.order.dobirkaAmount,
+        dobirkaCurrency: row.order.dobirkaCurrency,
       }));
     } catch (error) {
       console.error('Error fetching pick/pack orders:', error);
