@@ -1752,20 +1752,8 @@ export default function PickPack() {
     onSuccess: (data) => {
       toast({
         title: "PPL Labels Created",
-        description: `Created ${data.shipmentNumbers.length} shipping label(s)`,
+        description: `Created ${data.shipmentNumbers?.length || 'shipping'} label(s)`,
       });
-
-      // Download the PDF label
-      const labelBlob = new Blob(
-        [Uint8Array.from(atob(data.labelBase64), c => c.charCodeAt(0))],
-        { type: 'application/pdf' }
-      );
-      const url = URL.createObjectURL(labelBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `PPL-Labels-${activePackingOrder?.orderId}.pdf`;
-      link.click();
-      URL.revokeObjectURL(url);
 
       // Refetch order to get updated PPL data
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
@@ -1860,20 +1848,8 @@ export default function PickPack() {
     onSuccess: (data) => {
       toast({
         title: "PPL Label Retrieved",
-        description: `Successfully downloaded label for batch ${data.batchId}`,
+        description: `Successfully retrieved label for batch ${data.batchId}`,
       });
-
-      // Download the PDF label
-      const labelBlob = new Blob(
-        [Uint8Array.from(atob(data.labelBase64), c => c.charCodeAt(0))],
-        { type: 'application/pdf' }
-      );
-      const url = URL.createObjectURL(labelBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `PPL-Labels-${activePackingOrder?.orderId}.pdf`;
-      link.click();
-      URL.revokeObjectURL(url);
 
       // Refetch order to get updated PPL data
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
@@ -5871,15 +5847,66 @@ export default function PickPack() {
                     </Button>
                   )}
 
-                  {/* PPL Tracking Numbers */}
-                  {activePackingOrder.pplShipmentNumbers && activePackingOrder.pplShipmentNumbers.length > 0 && (
-                    <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-sm font-semibold text-orange-900">PPL Tracking Numbers:</h4>
+                  {/* PPL Shipment Cards */}
+                  {activePackingOrder.pplLabelData && (
+                    <div className="space-y-2">
+                      {/* Shipment card with print button */}
+                      <div 
+                        className="flex items-center gap-3 p-3 bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300 rounded-lg"
+                        data-testid="ppl-shipment-card"
+                      >
+                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orange-600 flex items-center justify-center">
+                          <span className="text-white font-bold text-sm">1</span>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-gray-900">PPL Shipment #1</p>
+                          {activePackingOrder.pplShipmentNumbers && activePackingOrder.pplShipmentNumbers.length > 0 && (
+                            <p className="text-xs text-gray-600 font-mono">{activePackingOrder.pplShipmentNumbers[0]}</p>
+                          )}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs flex-shrink-0 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300"
+                          onClick={async () => {
+                            try {
+                              const response = await apiRequest('GET', `/api/orders/${activePackingOrder.id}/ppl/label`, {});
+                              const data = await response.json();
+
+                              if (data.success) {
+                                const labelBlob = new Blob(
+                                  [Uint8Array.from(atob(data.labelBase64), c => c.charCodeAt(0))],
+                                  { type: 'application/pdf' }
+                                );
+                                const url = URL.createObjectURL(labelBlob);
+                                
+                                const printWindow = window.open(url, '_blank');
+                                if (printWindow) {
+                                  printWindow.onload = () => {
+                                    printWindow.print();
+                                  };
+                                }
+                                
+                                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                              }
+                            } catch (error: any) {
+                              console.error('Error printing PPL label:', error);
+                              toast({
+                                title: "Error",
+                                description: "Failed to print label",
+                                variant: "destructive"
+                              });
+                            }
+                          }}
+                          data-testid="button-print-ppl-label"
+                        >
+                          <Printer className="h-3.5 w-3.5 mr-1.5" />
+                          Print
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-6 text-xs text-gray-600 hover:text-red-600 hover:bg-red-50"
+                          className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
                           onClick={() => {
                             if (confirm('Remove PPL label data from this order? This will not cancel the shipments with PPL.')) {
                               deletePPLLabelsMutation.mutate(activePackingOrder.id);
@@ -5888,71 +5915,10 @@ export default function PickPack() {
                           disabled={deletePPLLabelsMutation.isPending}
                           data-testid="button-remove-ppl-data"
                         >
-                          <Trash2 className="h-3 w-3 mr-1" />
-                          Remove Data
+                          <X className="h-4 w-4" />
                         </Button>
                       </div>
-                      <div className="space-y-1">
-                        {activePackingOrder.pplShipmentNumbers.map((trackingNum: string, index: number) => (
-                          <div key={index} className="flex items-center justify-between text-sm">
-                            <span className="font-mono text-orange-800">{trackingNum}</span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 text-xs"
-                              onClick={() => {
-                                navigator.clipboard.writeText(trackingNum);
-                                toast({ title: "Copied to clipboard" });
-                              }}
-                            >
-                              Copy
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
                     </div>
-                  )}
-
-                  {/* Print PPL Labels */}
-                  {activePackingOrder.pplLabelData && (
-                    <Button
-                      variant="outline"
-                      className="w-full border-orange-300 text-orange-700 hover:bg-orange-50"
-                      onClick={async () => {
-                        try {
-                          const response = await apiRequest('GET', `/api/orders/${activePackingOrder.id}/ppl/label`, {});
-                          const data = await response.json();
-
-                          if (data.success) {
-                            const labelBlob = new Blob(
-                              [Uint8Array.from(atob(data.labelBase64), c => c.charCodeAt(0))],
-                              { type: 'application/pdf' }
-                            );
-                            const url = URL.createObjectURL(labelBlob);
-                            
-                            const printWindow = window.open(url, '_blank');
-                            if (printWindow) {
-                              printWindow.onload = () => {
-                                printWindow.print();
-                              };
-                            }
-                            
-                            setTimeout(() => URL.revokeObjectURL(url), 1000);
-                          }
-                        } catch (error: any) {
-                          console.error('Error printing PPL label:', error);
-                          toast({
-                            title: "Error",
-                            description: "Failed to print label",
-                            variant: "destructive"
-                          });
-                        }
-                      }}
-                      data-testid="button-download-ppl-label"
-                    >
-                      <Printer className="h-4 w-4 mr-2" />
-                      Print PPL Labels
-                    </Button>
                   )}
                 </>
               )}
