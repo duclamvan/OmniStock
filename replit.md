@@ -38,7 +38,7 @@ Utilizes PostgreSQL with Neon serverless driver and Drizzle ORM. The schema supp
 - **OpenAI API**: Used for AI-powered product weight and dimension inference in carton packing optimization.
 
 ## Shipping & Logistics APIs
-- **PPL CZ CPL API**: Automated shipping label generation for PPL courier service, using OAuth2 authentication. Supports creating, canceling, and retrieving shipping labels with tracking numbers. Includes full dobírka (cash on delivery) support with configurable COD amount and currency (CZK/EUR/USD).
+- **PPL CZ CPL API**: Automated shipping label generation for PPL courier service, using OAuth2 authentication. Supports creating, canceling (both all shipments and individual packages), and retrieving shipping labels with tracking numbers. Includes full dobírka (cash on delivery) support with configurable COD amount and currency (CZK/EUR/USD). Individual shipment cancellation tracks cancelled packages separately, allowing partial order cancellation with automatic UI updates.
 - **OpenStreetMap Nominatim API**: For address geocoding and auto-correction.
 
 ## Other APIs
