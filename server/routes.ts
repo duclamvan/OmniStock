@@ -7827,6 +7827,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
         
         try {
           batchStatus = await getPPLBatchStatus(batchId);
+          console.log(`Batch status (attempt ${attempts + 1}):`, JSON.stringify(batchStatus, null, 2));
           
           if (batchStatus.status === 'Finished' || batchStatus.status === 'Error') {
             break;
@@ -7850,6 +7851,8 @@ Return ONLY the subject line without quotes or extra formatting.`,
       const shipmentNumbers = batchStatus?.shipmentResults
         ?.filter(r => r.shipmentNumber)
         .map(r => r.shipmentNumber) || [];
+      
+      console.log(`Extracted ${shipmentNumbers.length} shipment numbers:`, shipmentNumbers);
 
       // Try to get the label even if we don't have shipment numbers yet
       let label;
