@@ -5954,7 +5954,8 @@ export default function PickPack() {
                                     // Format: <Country>-PPL-DOB/> #x
                                     const labelData = activePackingOrder.pplLabelData as any;
                                     const country = labelData?.recipientCountry || 'CZ';
-                                    const hasCOD = labelData?.hasCOD || false;
+                                    // Check both pplLabelData.hasCOD (new labels) and order.dobirkaAmount (fallback for old labels)
+                                    const hasCOD = labelData?.hasCOD || (activePackingOrder.dobirkaAmount && parseFloat(activePackingOrder.dobirkaAmount.toString()) > 0);
                                     const codSuffix = hasCOD ? '-DOB' : '';
                                     return `${country}-PPL${codSuffix} #${index + 1}`;
                                   })()}
