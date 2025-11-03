@@ -1757,6 +1757,7 @@ export default function PickPack() {
 
       // Refetch order to get updated PPL data
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
     },
     onError: (error: any) => {
       console.error('Error creating PPL labels:', error);
