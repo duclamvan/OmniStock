@@ -60,7 +60,9 @@ export function CartonTypeAutocomplete({
     // If value looks like a UUID (carton ID), look up the carton name
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
     
-    if (isUUID && popularCartons.length > 0) {
+    if (value === "non-company") {
+      setDisplayValue("Non-Company Carton");
+    } else if (isUUID && popularCartons.length > 0) {
       const carton = popularCartons.find(c => c.id === value);
       if (carton) {
         setDisplayValue(carton.name);
@@ -169,7 +171,7 @@ export function CartonTypeAutocomplete({
                       value="non-company"
                       onSelect={() => {
                         setDisplayValue("Non-Company Carton");
-                        onValueChange("", undefined);
+                        onValueChange("non-company", undefined);
                         setOpen(false);
                         setSearchValue("");
                       }}
@@ -178,7 +180,7 @@ export function CartonTypeAutocomplete({
                       <Check
                         className={cn(
                           "mr-2 h-4 w-4",
-                          displayValue === "Non-Company Carton" || !displayValue ? "opacity-100" : "opacity-0"
+                          value === "non-company" || displayValue === "Non-Company Carton" ? "opacity-100" : "opacity-0"
                         )}
                       />
                       <div className="flex items-center gap-2">
