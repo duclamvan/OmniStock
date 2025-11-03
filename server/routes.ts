@@ -7740,11 +7740,13 @@ Return ONLY the subject line without quotes or extra formatting.`,
       };
 
       // Prepare dobírka (COD) information if present
+      // Extract numeric part from order ID for variable symbol (max 10 digits)
+      const numericOrderId = order.orderId.replace(/\D/g, '').slice(0, 10);
       const hasCOD = order.dobirkaAmount && parseFloat(order.dobirkaAmount.toString()) > 0;
       const codInfo = hasCOD ? {
         codCurrency: order.dobirkaCurrency || 'CZK',
         codPrice: parseFloat(order.dobirkaAmount.toString()),
-        codVarSym: order.orderId // Changed from codVarSymbol to codVarSym
+        codVarSym: numericOrderId || '1234567890' // Use numeric order ID or fallback
       } : undefined;
 
       // Default sender information (warehouse/company)
@@ -7758,10 +7760,15 @@ Return ONLY the subject line without quotes or extra formatting.`,
         email: 'info@daviesupply.cz'
       };
 
+      // Determine product type based on destination country
+      // PPL Product codes: 2 = Domestic (CZ), 8 = International
+      const recipientCountryCode = getCountryCode(shippingAddress.country);
+      const productType = recipientCountryCode === 'CZ' ? '2' : '8';
+
       // Prepare PPL shipment data
       const shipments = cartons.map((carton, index) => ({
         referenceId: `${order.orderId}-${carton.cartonNumber}`,
-        productType: 'PPL Parcel CZ Private',
+        productType,
         note: order.notes || undefined,
         sender,
         recipient: {
