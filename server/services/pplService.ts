@@ -148,7 +148,10 @@ export interface PPLShipment {
 export interface PPLLabelSettings {
   format?: 'Zpl' | 'Pdf' | 'Jpeg' | 'Png' | 'Svg';
   dpi?: number;
-  labelSize?: 'A4' | 'A5' | 'A6'; // A6 = 105x148mm, A5 = 148x210mm, A4 = 210x297mm
+  completeLabelSettings?: {
+    isCompleteLabelRequested?: boolean;
+    pageSize?: 'Default' | 'A4'; // Default = thermal label size (127x110mm domestic, 150x100mm intl), A4 = 4 labels per A4
+  };
 }
 
 export interface PPLCreateShipmentRequest {

@@ -7342,7 +7342,10 @@ Return ONLY the subject line without quotes or extra formatting.`,
         labelSettings: {
           format: 'Pdf',
           dpi: 203,
-          labelSize: 'A6' // 105x148mm label format
+          completeLabelSettings: {
+            isCompleteLabelRequested: true,
+            pageSize: 'Default' // Thermal label format (127x110mm for CZ domestic)
+          }
         }
       });
 
@@ -7811,7 +7814,10 @@ Return ONLY the subject line without quotes or extra formatting.`,
         labelSettings: {
           format: 'Pdf',
           dpi: 203,
-          labelSize: 'A6' // 105x148mm label format
+          completeLabelSettings: {
+            isCompleteLabelRequested: true,
+            pageSize: 'Default' // Thermal label format (127x110mm for CZ domestic, 150x100mm for international)
+          }
         }
       });
 
