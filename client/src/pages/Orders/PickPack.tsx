@@ -2966,7 +2966,12 @@ export default function PickPack() {
       paymentStatus: order.paymentStatus,
       // Include dobírka/COD information
       dobirkaAmount: order.dobirkaAmount,
-      dobirkaCurrency: order.dobirkaCurrency
+      dobirkaCurrency: order.dobirkaCurrency,
+      // Include PPL shipping integration fields
+      pplBatchId: order.pplBatchId,
+      pplShipmentNumbers: order.pplShipmentNumbers,
+      pplLabelData: order.pplLabelData,
+      pplStatus: order.pplStatus
     }))
   )];
   
