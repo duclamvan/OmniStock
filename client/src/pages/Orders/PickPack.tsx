@@ -5612,58 +5612,44 @@ export default function PickPack() {
                 Shipping Information
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 space-y-4">
+            <CardContent className="p-4 space-y-3">
               {/* Shipping Address */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                  <MapPin className="h-4 w-4 text-purple-600" />
-                  <span>Shipping Address</span>
-                </div>
-                {(() => {
-                  const formattedAddress = formatShippingAddress(activePackingOrder.shippingAddress);
-                  return formattedAddress ? (
-                    <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                      <p className="text-sm text-gray-900 whitespace-pre-line" data-testid="text-shipping-address">
-                        {formattedAddress}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                      <p className="text-sm text-gray-500 italic">No shipping address provided</p>
-                    </div>
-                  );
-                })()}
-              </div>
-
-              {/* Shipment Type */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                  <Truck className="h-4 w-4 text-purple-600" />
-                  <span>Shipment Type</span>
-                </div>
-                {activePackingOrder.shippingMethod ? (
+              {(() => {
+                const formattedAddress = formatShippingAddress(activePackingOrder.shippingAddress);
+                return formattedAddress ? (
                   <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <p className="text-sm font-medium text-gray-900" data-testid="text-shipment-type">
+                    <div className="flex items-center gap-2 mb-2">
+                      <MapPin className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                      <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Shipping Address</span>
+                    </div>
+                    <p className="text-sm text-gray-900 whitespace-pre-line pl-6" data-testid="text-shipping-address">
+                      {formattedAddress}
+                    </p>
+                  </div>
+                ) : null;
+              })()}
+
+              {/* Shipment Details Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Shipment Type */}
+                {activePackingOrder.shippingMethod && (
+                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Truck className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                      <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Shipment Type</span>
+                    </div>
+                    <p className="text-sm font-medium text-gray-900 pl-6" data-testid="text-shipment-type">
                       {activePackingOrder.shippingMethod}
                     </p>
                   </div>
-                ) : (
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                    <p className="text-sm text-gray-500 italic">No shipment type specified</p>
-                  </div>
                 )}
-              </div>
 
-              {/* COD / Dobírka / Nachnahme */}
-              {activePackingOrder.dobirkaAmount && Number(activePackingOrder.dobirkaAmount) > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                    <DollarSign className="h-4 w-4 text-orange-600" />
-                    <span>Cash on Delivery</span>
-                  </div>
-                  <div className="p-3 bg-orange-50 border-2 border-orange-300 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-bold text-orange-900">
+                {/* COD / Dobírka / Nachnahme */}
+                {activePackingOrder.dobirkaAmount && Number(activePackingOrder.dobirkaAmount) > 0 && (
+                  <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <DollarSign className="h-4 w-4 text-orange-600 flex-shrink-0" />
+                      <span className="text-xs font-semibold text-orange-900 uppercase tracking-wide">
                         {(() => {
                           const currency = (activePackingOrder.dobirkaCurrency || 'CZK').toUpperCase();
                           if (currency === 'CZK') return 'Dobírka';
@@ -5671,32 +5657,26 @@ export default function PickPack() {
                           return 'COD';
                         })()}
                       </span>
-                      <span className="text-lg font-bold text-orange-900" data-testid="text-cod-amount">
-                        {formatCurrency(Number(activePackingOrder.dobirkaAmount), activePackingOrder.dobirkaCurrency || 'CZK')}
-                      </span>
                     </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Shipment Notes */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                  <FileText className="h-4 w-4 text-purple-600" />
-                  <span>Shipment Notes</span>
-                </div>
-                {activePackingOrder.notes ? (
-                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <p className="text-sm text-gray-900 whitespace-pre-line" data-testid="text-shipment-notes">
-                      {activePackingOrder.notes}
+                    <p className="text-sm font-bold text-orange-900 pl-6" data-testid="text-cod-amount">
+                      {formatCurrency(Number(activePackingOrder.dobirkaAmount), activePackingOrder.dobirkaCurrency || 'CZK')}
                     </p>
-                  </div>
-                ) : (
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                    <p className="text-sm text-gray-500 italic">No shipment notes</p>
                   </div>
                 )}
               </div>
+
+              {/* Shipment Notes */}
+              {activePackingOrder.notes && (
+                <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                    <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Shipment Notes</span>
+                  </div>
+                  <p className="text-sm text-gray-900 whitespace-pre-line pl-6" data-testid="text-shipment-notes">
+                    {activePackingOrder.notes}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
