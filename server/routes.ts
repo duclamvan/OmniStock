@@ -7317,7 +7317,6 @@ Return ONLY the subject line without quotes or extra formatting.`,
       const pplShipment = {
         referenceId: order.orderId,
         productType: 'PPL Parcel CZ Business',
-        note: order.notes || undefined,
         recipient: {
           country: shippingAddress.country || 'CZ',
           zipCode: shippingAddress.postalCode || '',
@@ -7341,7 +7340,9 @@ Return ONLY the subject line without quotes or extra formatting.`,
       const { batchId } = await createPPLShipment({
         shipments: [pplShipment],
         labelSettings: {
-          format: 'Pdf'
+          format: 'Pdf',
+          dpi: 203,
+          labelSize: 'A6' // 105x148mm label format
         }
       });
 
@@ -7780,7 +7781,6 @@ Return ONLY the subject line without quotes or extra formatting.`,
       const shipments = cartons.map((carton, index) => ({
         referenceId: `${order.orderId}-${carton.cartonNumber}`,
         productType,
-        note: order.notes || undefined,
         sender,
         recipient: {
           country: getCountryCode(shippingAddress.country),
@@ -7810,7 +7810,8 @@ Return ONLY the subject line without quotes or extra formatting.`,
         shipments,
         labelSettings: {
           format: 'Pdf',
-          dpi: 203
+          dpi: 203,
+          labelSize: 'A6' // 105x148mm label format
         }
       });
 

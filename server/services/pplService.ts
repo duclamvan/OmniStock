@@ -148,6 +148,7 @@ export interface PPLShipment {
 export interface PPLLabelSettings {
   format?: 'Zpl' | 'Pdf' | 'Jpeg' | 'Png' | 'Svg';
   dpi?: number;
+  labelSize?: 'A4' | 'A5' | 'A6'; // A6 = 105x148mm, A5 = 148x210mm, A4 = 210x297mm
 }
 
 export interface PPLCreateShipmentRequest {
