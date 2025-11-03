@@ -4889,7 +4889,7 @@ export default function PickPack() {
                               <div className="flex items-start gap-2">
                                 {/* Item Number */}
                                 <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold mt-3">
-                                  {index + 1}
+                                  {index + 1}x
                                 </div>
                                 
                                 {/* Product Image with Quantity Badge */}
@@ -5025,7 +5025,7 @@ export default function PickPack() {
                             <div className="hidden sm:flex items-center gap-3">
                               {/* Item Number */}
                               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold">
-                                {index + 1}
+                                {index + 1}x
                               </div>
                               
                               {/* Product Image */}
