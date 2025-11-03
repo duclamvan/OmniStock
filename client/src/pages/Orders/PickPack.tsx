@@ -6027,6 +6027,8 @@ export default function PickPack() {
                       className="w-full border-2 border-dashed border-orange-400 text-orange-700 hover:bg-orange-50 hover:border-orange-300"
                       onClick={async () => {
                         try {
+                          console.log('🔧 Adding shipment - Current cartons:', cartons.length);
+                          
                           // Create a new non-company carton in the database
                           const response = await apiRequest('POST', `/api/orders/${activePackingOrder.id}/cartons`, {
                             cartonType: 'non-company',
@@ -6034,19 +6036,29 @@ export default function PickPack() {
                           });
                           
                           if (response.ok) {
-                            // Refetch cartons to update the UI
-                            queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
+                            const result = await response.json();
+                            console.log('✅ Carton created:', result);
+                            
+                            // Refetch cartons and order data to update the UI
+                            await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
+                            await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                            
+                            // Force a refetch to ensure UI updates
+                            await refetchCartons();
                             
                             toast({
                               title: "Shipment Added",
-                              description: "New shipment added. AI packing will sync automatically.",
+                              description: `New shipment added. You now have ${cartons.length + 1} shipment(s).`,
                             });
+                          } else {
+                            const errorData = await response.json();
+                            throw new Error(errorData.error || 'Failed to add shipment');
                           }
-                        } catch (error) {
-                          console.error('Error adding shipment:', error);
+                        } catch (error: any) {
+                          console.error('❌ Error adding shipment:', error);
                           toast({
                             title: "Error",
-                            description: "Failed to add shipment",
+                            description: error.message || "Failed to add shipment",
                             variant: "destructive"
                           });
                         }
