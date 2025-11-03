@@ -5847,77 +5847,81 @@ export default function PickPack() {
                     </Button>
                   )}
 
-                  {/* PPL Shipment Cards */}
-                  {activePackingOrder.pplLabelData && (
+                  {/* PPL Shipment Cards - One per carton */}
+                  {activePackingOrder.pplLabelData && cartons.length > 0 && (
                     <div className="space-y-2">
-                      {/* Shipment card with print button */}
-                      <div 
-                        className="flex items-center gap-3 p-3 bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300 rounded-lg"
-                        data-testid="ppl-shipment-card"
-                      >
-                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orange-600 flex items-center justify-center">
-                          <span className="text-white font-bold text-sm">1</span>
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold text-gray-900">PPL Shipment #1</p>
-                          {activePackingOrder.pplShipmentNumbers && activePackingOrder.pplShipmentNumbers.length > 0 && (
-                            <p className="text-xs text-gray-600 font-mono">{activePackingOrder.pplShipmentNumbers[0]}</p>
+                      {cartons.map((carton, index) => (
+                        <div 
+                          key={carton.id}
+                          className="flex items-center gap-3 p-3 bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300 rounded-lg"
+                          data-testid={`ppl-shipment-card-${index + 1}`}
+                        >
+                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orange-600 flex items-center justify-center">
+                            <span className="text-white font-bold text-sm">{index + 1}</span>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-gray-900">PPL Shipment #{index + 1}</p>
+                            {activePackingOrder.pplShipmentNumbers && activePackingOrder.pplShipmentNumbers.length > index && (
+                              <p className="text-xs text-gray-600 font-mono">{activePackingOrder.pplShipmentNumbers[index]}</p>
+                            )}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-xs flex-shrink-0 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300"
+                            onClick={async () => {
+                              try {
+                                const response = await apiRequest('GET', `/api/orders/${activePackingOrder.id}/ppl/label`, {});
+                                const data = await response.json();
+
+                                if (data.success) {
+                                  const labelBlob = new Blob(
+                                    [Uint8Array.from(atob(data.labelBase64), c => c.charCodeAt(0))],
+                                    { type: 'application/pdf' }
+                                  );
+                                  const url = URL.createObjectURL(labelBlob);
+                                  
+                                  const printWindow = window.open(url, '_blank');
+                                  if (printWindow) {
+                                    printWindow.onload = () => {
+                                      printWindow.print();
+                                    };
+                                  }
+                                  
+                                  setTimeout(() => URL.revokeObjectURL(url), 1000);
+                                }
+                              } catch (error: any) {
+                                console.error('Error printing PPL label:', error);
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to print label",
+                                  variant: "destructive"
+                                });
+                              }
+                            }}
+                            data-testid={`button-print-ppl-label-${index + 1}`}
+                          >
+                            <Printer className="h-3.5 w-3.5 mr-1.5" />
+                            Print
+                          </Button>
+                          {index === 0 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                              onClick={() => {
+                                if (confirm('Remove PPL label data from this order? This will not cancel the shipments with PPL.')) {
+                                  deletePPLLabelsMutation.mutate(activePackingOrder.id);
+                                }
+                              }}
+                              disabled={deletePPLLabelsMutation.isPending}
+                              data-testid="button-remove-ppl-data"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
                           )}
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 text-xs flex-shrink-0 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300"
-                          onClick={async () => {
-                            try {
-                              const response = await apiRequest('GET', `/api/orders/${activePackingOrder.id}/ppl/label`, {});
-                              const data = await response.json();
-
-                              if (data.success) {
-                                const labelBlob = new Blob(
-                                  [Uint8Array.from(atob(data.labelBase64), c => c.charCodeAt(0))],
-                                  { type: 'application/pdf' }
-                                );
-                                const url = URL.createObjectURL(labelBlob);
-                                
-                                const printWindow = window.open(url, '_blank');
-                                if (printWindow) {
-                                  printWindow.onload = () => {
-                                    printWindow.print();
-                                  };
-                                }
-                                
-                                setTimeout(() => URL.revokeObjectURL(url), 1000);
-                              }
-                            } catch (error: any) {
-                              console.error('Error printing PPL label:', error);
-                              toast({
-                                title: "Error",
-                                description: "Failed to print label",
-                                variant: "destructive"
-                              });
-                            }
-                          }}
-                          data-testid="button-print-ppl-label"
-                        >
-                          <Printer className="h-3.5 w-3.5 mr-1.5" />
-                          Print
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
-                          onClick={() => {
-                            if (confirm('Remove PPL label data from this order? This will not cancel the shipments with PPL.')) {
-                              deletePPLLabelsMutation.mutate(activePackingOrder.id);
-                            }
-                          }}
-                          disabled={deletePPLLabelsMutation.isPending}
-                          data-testid="button-remove-ppl-data"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      ))}
                     </div>
                   )}
                 </>
