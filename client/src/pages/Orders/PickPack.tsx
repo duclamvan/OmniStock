@@ -5983,12 +5983,12 @@ export default function PickPack() {
                                 size="sm"
                                 className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
                                 onClick={() => {
-                                  if (confirm('Remove PPL label data from this order? This will not cancel the shipments with PPL.')) {
-                                    deletePPLLabelsMutation.mutate(activePackingOrder.id);
+                                  if (confirm('Cancel all PPL shipments? This will cancel the shipments with PPL and cannot be undone.')) {
+                                    cancelPPLLabelsMutation.mutate(activePackingOrder.id);
                                   }
                                 }}
-                                disabled={deletePPLLabelsMutation.isPending}
-                                data-testid="button-remove-ppl-data"
+                                disabled={cancelPPLLabelsMutation.isPending}
+                                data-testid="button-cancel-ppl-shipments"
                               >
                                 <X className="h-4 w-4" />
                               </Button>
