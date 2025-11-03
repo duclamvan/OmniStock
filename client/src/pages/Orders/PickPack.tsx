@@ -1853,10 +1853,20 @@ export default function PickPack() {
       return await response.json();
     },
     onSuccess: (data) => {
-      toast({
-        title: "Shipment Cancelled",
-        description: `Shipment ${data.shipmentNumber} has been cancelled with PPL`,
-      });
+      // Show appropriate message based on whether PPL API cancellation succeeded
+      if (data.pplCancelSuccess) {
+        toast({
+          title: "Shipment Cancelled",
+          description: `Shipment ${data.shipmentNumber} has been cancelled with PPL`,
+        });
+      } else {
+        toast({
+          title: "Shipment Cancelled Locally",
+          description: data.warning || "Shipment marked as cancelled in your system. Note: PPL API cancellation failed - the shipment may still be active in PPL's system.",
+          variant: "default",
+          duration: 8000,
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
     },

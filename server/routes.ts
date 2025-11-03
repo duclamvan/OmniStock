@@ -8012,10 +8012,22 @@ Return ONLY the subject line without quotes or extra formatting.`,
         return res.status(400).json({ error: 'Shipment already cancelled' });
       }
 
-      // Cancel the shipment via PPL API
-      await cancelPPLShipment(shipmentNumber);
+      // Try to cancel the shipment via PPL API
+      // If it fails (e.g., test mode, already shipped), we still mark it as cancelled locally
+      let pplCancelSuccess = true;
+      let pplCancelError = null;
+      
+      try {
+        await cancelPPLShipment(shipmentNumber);
+        console.log(`✅ Successfully cancelled PPL shipment ${shipmentNumber} via API`);
+      } catch (pplError: any) {
+        pplCancelSuccess = false;
+        pplCancelError = pplError.message;
+        console.warn(`⚠️ PPL API cancellation failed for ${shipmentNumber}, marking as cancelled locally only:`, pplError.message);
+        // Continue to mark as cancelled in our database even if PPL API fails
+      }
 
-      // Add to cancelled shipments array
+      // Add to cancelled shipments array (local cancellation always succeeds)
       const cancelledShipments = [...(order.pplCancelledShipments || []), shipmentNumber];
       
       // Check if all shipments are now cancelled
@@ -8031,7 +8043,9 @@ Return ONLY the subject line without quotes or extra formatting.`,
         success: true,
         shipmentNumber,
         cancelledShipments,
-        allCancelled
+        allCancelled,
+        pplCancelSuccess,
+        warning: !pplCancelSuccess ? 'Shipment marked as cancelled locally. PPL API cancellation failed - the shipment may still be active in PPL system.' : undefined
       });
 
     } catch (error: any) {
