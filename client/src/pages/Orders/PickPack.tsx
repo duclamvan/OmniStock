@@ -951,6 +951,7 @@ export default function PickPack() {
   // State for tracking printed files
   const [printedProductFiles, setPrintedProductFiles] = useState<Set<string>>(new Set());
   const [printedOrderFiles, setPrintedOrderFiles] = useState<Set<string>>(new Set());
+  const [printedPPLLabels, setPrintedPPLLabels] = useState<Set<number>>(new Set()); // Track printed PPL label indices
   
   const [selectedBoxSize, setSelectedBoxSize] = useState<string>('');
   const [packageWeight, setPackageWeight] = useState<string>('');
@@ -5966,7 +5967,11 @@ export default function PickPack() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-8 text-xs flex-shrink-0 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300"
+                              className={`h-8 text-xs flex-shrink-0 ${
+                                printedPPLLabels.has(index)
+                                  ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+                                  : 'hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300'
+                              }`}
                               disabled={isCancelled}
                               onClick={async () => {
                                 try {
@@ -5994,6 +5999,8 @@ export default function PickPack() {
                                         console.log('🖨️ Triggering print dialog...');
                                         printWindow.print();
                                       };
+                                      // Mark as printed
+                                      setPrintedPPLLabels(prev => new Set(prev).add(index));
                                     } else {
                                       toast({
                                         title: "Popup Blocked",
@@ -6022,8 +6029,17 @@ export default function PickPack() {
                               }}
                               data-testid={`button-print-ppl-label-${index + 1}`}
                             >
-                              <Printer className="h-3.5 w-3.5 mr-1.5" />
-                              Print
+                              {printedPPLLabels.has(index) ? (
+                                <>
+                                  <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                                  Printed
+                                </>
+                              ) : (
+                                <>
+                                  <Printer className="h-3.5 w-3.5 mr-1.5" />
+                                  Print
+                                </>
+                              )}
                             </Button>
                             {index === 0 && !isCancelled && (
                               <Button
