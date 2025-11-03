@@ -4869,7 +4869,7 @@ export default function PickPack() {
                         return (
                           <div 
                             key={item.id} 
-                            className={`relative p-2 sm:p-3 rounded-lg border-2 transition-all overflow-hidden ${
+                            className={`relative p-2 sm:p-3 rounded-lg border-2 transition-all ${
                               isVerified || (isBundle && allBundleComponentsVerified)
                                 ? 'bg-green-50 border-green-300' 
                                 : 'bg-gray-50 border-gray-200'
