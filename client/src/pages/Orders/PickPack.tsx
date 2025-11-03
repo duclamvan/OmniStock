@@ -4888,7 +4888,7 @@ export default function PickPack() {
                             <div className="sm:hidden">
                               <div className="flex items-start gap-2">
                                 {/* Item Number */}
-                                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold mt-3">
+                                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-black text-white flex items-center justify-center text-xs font-bold mt-3">
                                   {index + 1}
                                 </div>
                                 
@@ -4905,10 +4905,10 @@ export default function PickPack() {
                                       <Package className="h-6 w-6 text-gray-400" />
                                     )}
                                   </div>
-                                  <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shadow-md ${
+                                  <div className={`absolute -bottom-1 -right-1 min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center text-[10px] font-bold shadow-md ${
                                     isVerified || (isBundle && allBundleComponentsVerified)
                                       ? 'bg-green-500 text-white' 
-                                      : 'bg-black text-white'
+                                      : 'bg-blue-500 text-white'
                                   }`}>
                                     {(isVerified || (isBundle && allBundleComponentsVerified)) ? <CheckCircle className="h-3.5 w-3.5" /> : `${item.quantity}×`}
                                   </div>
@@ -5024,7 +5024,7 @@ export default function PickPack() {
                             {/* Desktop Layout - Keep existing */}
                             <div className="hidden sm:flex items-center gap-3">
                               {/* Item Number */}
-                              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold">
+                              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-bold">
                                 {index + 1}
                               </div>
                               
@@ -5041,10 +5041,10 @@ export default function PickPack() {
                                     <Package className="h-8 w-8 text-gray-400" />
                                   )}
                                 </div>
-                                <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shadow-md ${
+                                <div className={`absolute -bottom-1 -right-1 min-w-[24px] h-6 px-1.5 rounded-full flex items-center justify-center text-[11px] font-bold shadow-md ${
                                   isVerified || (isBundle && allBundleComponentsVerified)
                                     ? 'bg-green-500 text-white' 
-                                    : 'bg-black text-white'
+                                    : 'bg-blue-500 text-white'
                                 }`}>
                                   {(isVerified || (isBundle && allBundleComponentsVerified)) ? <CheckCircle className="h-4 w-4" /> : `${item.quantity}×`}
                                 </div>
