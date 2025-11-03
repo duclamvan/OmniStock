@@ -1807,6 +1807,7 @@ export default function PickPack() {
         description: "Shipping labels have been cancelled with PPL",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
     },
     onError: (error: any) => {
       console.error('Error cancelling PPL labels:', error);
