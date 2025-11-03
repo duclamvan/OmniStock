@@ -5851,10 +5851,23 @@ export default function PickPack() {
                   {activePackingOrder.pplLabelData && (
                     <div className="space-y-2">
                       {(() => {
+                        // Debug logging
+                        console.log('PPL Label Data:', {
+                          hasLabelData: !!activePackingOrder.pplLabelData,
+                          shipmentNumbers: activePackingOrder.pplShipmentNumbers,
+                          cartonsLength: cartons.length,
+                          batchId: activePackingOrder.pplBatchId
+                        });
+                        
                         // Determine how many shipment cards to show
+                        // Always show at least 1 card if label data exists
                         const shipmentCount = cartons.length > 0 
                           ? cartons.length 
-                          : (activePackingOrder.pplShipmentNumbers?.length || 1);
+                          : (activePackingOrder.pplShipmentNumbers?.length > 0 
+                              ? activePackingOrder.pplShipmentNumbers.length 
+                              : 1);
+                        
+                        console.log('Will display', shipmentCount, 'shipment cards');
                         
                         return Array.from({ length: shipmentCount }, (_, index) => (
                           <div 
