@@ -1356,6 +1356,32 @@ export default function PickPack() {
     refetchOnMount: true, // Always refetch when component mounts
   });
   
+  // Sync activePackingOrder with latest data from query
+  // This ensures UI updates automatically when PPL labels are created/cancelled
+  useEffect(() => {
+    if (activePackingOrder && allOrders.length > 0) {
+      const updatedOrder = allOrders.find(o => o.id === activePackingOrder.id);
+      if (updatedOrder) {
+        // Check if PPL data has changed
+        const pplDataChanged = 
+          updatedOrder.pplLabelData !== activePackingOrder.pplLabelData ||
+          updatedOrder.pplStatus !== activePackingOrder.pplStatus ||
+          JSON.stringify(updatedOrder.pplShipmentNumbers) !== JSON.stringify(activePackingOrder.pplShipmentNumbers);
+        
+        if (pplDataChanged) {
+          console.log('🔄 Updating activePackingOrder with fresh PPL data:', {
+            oldStatus: activePackingOrder.pplStatus,
+            newStatus: updatedOrder.pplStatus,
+            oldShipments: activePackingOrder.pplShipmentNumbers,
+            newShipments: updatedOrder.pplShipmentNumbers,
+            hasLabelData: !!updatedOrder.pplLabelData
+          });
+          setActivePackingOrder(updatedOrder);
+        }
+      }
+    }
+  }, [allOrders, activePackingOrder?.id]);
+  
   // Fetch pick/pack performance predictions for current user
   const { data: predictions } = useQuery<{
     pickingTimePerOrder: number;
