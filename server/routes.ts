@@ -7816,7 +7816,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
 
       // Wait for batch processing to complete with retry logic
       let attempts = 0;
-      const maxAttempts = 15;
+      const maxAttempts = 5; // Reduced from 15 to 5 for faster response
       let batchStatus;
       let lastError;
 
