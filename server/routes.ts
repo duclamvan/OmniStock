@@ -7887,6 +7887,9 @@ Return ONLY the subject line without quotes or extra formatting.`,
           shipmentNumbers,
           labelBase64: label.labelContent,
           format: label.format,
+          productType,
+          recipientCountry: recipientCountryCode,
+          hasCOD,
           createdAt: new Date().toISOString()
         } as any,
         pplStatus: 'created'

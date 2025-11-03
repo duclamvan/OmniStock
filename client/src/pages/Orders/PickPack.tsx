@@ -5950,7 +5950,15 @@ export default function PickPack() {
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
                                 <p className={`text-sm font-semibold ${isCancelled ? 'text-gray-600 line-through' : 'text-gray-900'}`}>
-                                  PPL Shipment #{index + 1}
+                                  {(() => {
+                                    // Format: <Country>-<ShipmentType>-<Dobirka/> #x
+                                    const labelData = activePackingOrder.pplLabelData as any;
+                                    const country = labelData?.recipientCountry || 'CZ';
+                                    const productType = labelData?.productType || 'BUSS';
+                                    const hasCOD = labelData?.hasCOD || false;
+                                    const codSuffix = hasCOD ? '-Dobírka' : '';
+                                    return `${country}-${productType}${codSuffix} #${index + 1}`;
+                                  })()}
                                 </p>
                                 {isCancelled && (
                                   <Badge variant="destructive" className="text-xs px-2 py-0">
