@@ -5901,25 +5901,45 @@ export default function PickPack() {
                         
                         console.log('Will display', shipmentCount, 'shipment cards');
                         
+                        const isCancelled = activePackingOrder.pplStatus === 'cancelled';
+                        
                         return Array.from({ length: shipmentCount }, (_, index) => (
                           <div 
                             key={cartons[index]?.id || `shipment-${index}`}
-                            className="flex items-center gap-3 p-3 bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300 rounded-lg"
+                            className={`flex items-center gap-3 p-3 rounded-lg ${
+                              isCancelled
+                                ? 'bg-gradient-to-r from-gray-100 to-gray-200 border-2 border-gray-400 opacity-75'
+                                : 'bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300'
+                            }`}
                             data-testid={`ppl-shipment-card-${index + 1}`}
                           >
-                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orange-600 flex items-center justify-center">
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
+                              isCancelled ? 'bg-gray-500' : 'bg-orange-600'
+                            }`}>
                               <span className="text-white font-bold text-sm">{index + 1}</span>
                             </div>
                             <div className="flex-1">
-                              <p className="text-sm font-semibold text-gray-900">PPL Shipment #{index + 1}</p>
+                              <div className="flex items-center gap-2">
+                                <p className={`text-sm font-semibold ${isCancelled ? 'text-gray-600 line-through' : 'text-gray-900'}`}>
+                                  PPL Shipment #{index + 1}
+                                </p>
+                                {isCancelled && (
+                                  <Badge variant="destructive" className="text-xs px-2 py-0">
+                                    CANCELLED
+                                  </Badge>
+                                )}
+                              </div>
                               {activePackingOrder.pplShipmentNumbers && activePackingOrder.pplShipmentNumbers.length > index && (
-                                <p className="text-xs text-gray-600 font-mono">{activePackingOrder.pplShipmentNumbers[index]}</p>
+                                <p className={`text-xs font-mono ${isCancelled ? 'text-gray-500 line-through' : 'text-gray-600'}`}>
+                                  {activePackingOrder.pplShipmentNumbers[index]}
+                                </p>
                               )}
                             </div>
                             <Button
                               variant="outline"
                               size="sm"
                               className="h-8 text-xs flex-shrink-0 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300"
+                              disabled={isCancelled}
                               onClick={async () => {
                                 try {
                                   console.log('🖨️ Fetching PPL label for order:', activePackingOrder.id);
@@ -5977,7 +5997,7 @@ export default function PickPack() {
                               <Printer className="h-3.5 w-3.5 mr-1.5" />
                               Print
                             </Button>
-                            {index === 0 && (
+                            {index === 0 && !isCancelled && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -6000,7 +6020,7 @@ export default function PickPack() {
                   )}
 
                   {/* Add Shipment Button - Creates new non-company carton */}
-                  {activePackingOrder.pplLabelData && (
+                  {activePackingOrder.pplLabelData && activePackingOrder.pplStatus !== 'cancelled' && (
                     <Button
                       variant="outline"
                       className="w-full border-2 border-dashed border-orange-400 text-orange-700 hover:bg-orange-50 hover:border-orange-300"
