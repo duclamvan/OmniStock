@@ -5947,9 +5947,9 @@ export default function PickPack() {
                             }`}>
                               <span className="text-white font-bold text-sm">{index + 1}</span>
                             </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <p className={`text-sm font-semibold ${isCancelled ? 'text-gray-600 line-through' : 'text-gray-900'}`}>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <p className={`text-sm font-semibold truncate ${isCancelled ? 'text-gray-600 line-through' : 'text-gray-900'}`}>
                                   {(() => {
                                     // Format: <Country>-PPL-DOB/> #x
                                     const labelData = activePackingOrder.pplLabelData as any;
@@ -5961,13 +5961,13 @@ export default function PickPack() {
                                   })()}
                                 </p>
                                 {isCancelled && (
-                                  <Badge variant="destructive" className="text-xs px-2 py-0">
+                                  <Badge variant="destructive" className="text-xs px-2 py-0 flex-shrink-0">
                                     CANCELLED
                                   </Badge>
                                 )}
                               </div>
                               {activePackingOrder.pplShipmentNumbers && activePackingOrder.pplShipmentNumbers.length > index && (
-                                <p className={`text-xs font-mono ${isCancelled ? 'text-gray-500 line-through' : 'text-gray-600'}`}>
+                                <p className={`text-xs font-mono truncate ${isCancelled ? 'text-gray-500 line-through' : 'text-gray-600'}`}>
                                   {activePackingOrder.pplShipmentNumbers[index]}
                                 </p>
                               )}
