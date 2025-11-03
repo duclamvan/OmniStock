@@ -1847,6 +1847,29 @@ export default function PickPack() {
     }
   });
 
+  const cancelIndividualPPLShipmentMutation = useMutation({
+    mutationFn: async ({ orderId, shipmentNumber }: { orderId: string; shipmentNumber: string }) => {
+      const response = await apiRequest('POST', `/api/orders/${orderId}/ppl/cancel-shipment/${shipmentNumber}`, {});
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Shipment Cancelled",
+        description: `Shipment ${data.shipmentNumber} has been cancelled with PPL`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+    },
+    onError: (error: any) => {
+      console.error('Error cancelling PPL shipment:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to cancel shipment",
+        variant: "destructive"
+      });
+    }
+  });
+
   const deletePPLLabelsMutation = useMutation({
     mutationFn: async (orderId: string) => {
       const response = await apiRequest('DELETE', `/api/orders/${orderId}/ppl/labels`, {});
@@ -5930,26 +5953,34 @@ export default function PickPack() {
                         
                         console.log('Will display', shipmentCount, 'shipment cards');
                         
-                        const isCancelled = activePackingOrder.pplStatus === 'cancelled';
+                        // Check if entire order is cancelled OR if all shipments are individually cancelled
+                        const allCancelled = activePackingOrder.pplStatus === 'cancelled';
                         
-                        return Array.from({ length: shipmentCount }, (_, index) => (
+                        return Array.from({ length: shipmentCount }, (_, index) => {
+                          // Get shipment number for this card
+                          const shipmentNumber = activePackingOrder.pplShipmentNumbers?.[index];
+                          // Check if this specific shipment is cancelled
+                          const isThisShipmentCancelled = allCancelled || 
+                            (shipmentNumber && activePackingOrder.pplCancelledShipments?.includes(shipmentNumber));
+                          
+                          return (
                           <div 
                             key={cartons[index]?.id || `shipment-${index}`}
                             className={`flex items-center gap-3 p-3 rounded-lg ${
-                              isCancelled
+                              isThisShipmentCancelled
                                 ? 'bg-gradient-to-r from-gray-100 to-gray-200 border-2 border-gray-400 opacity-75'
                                 : 'bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300'
                             }`}
                             data-testid={`ppl-shipment-card-${index + 1}`}
                           >
                             <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-                              isCancelled ? 'bg-gray-500' : 'bg-orange-600'
+                              isThisShipmentCancelled ? 'bg-gray-500' : 'bg-orange-600'
                             }`}>
                               <span className="text-white font-bold text-sm">{index + 1}</span>
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 min-w-0">
-                                <p className={`text-sm font-semibold truncate ${isCancelled ? 'text-gray-600 line-through' : 'text-gray-900'}`}>
+                                <p className={`text-sm font-semibold truncate ${isThisShipmentCancelled ? 'text-gray-600 line-through' : 'text-gray-900'}`}>
                                   {(() => {
                                     // Format: <Country>-PPL-DOB/> #x
                                     const labelData = activePackingOrder.pplLabelData as any;
@@ -5960,15 +5991,15 @@ export default function PickPack() {
                                     return `${country}-PPL${codSuffix} #${index + 1}`;
                                   })()}
                                 </p>
-                                {isCancelled && (
+                                {isThisShipmentCancelled && (
                                   <Badge variant="destructive" className="text-xs px-2 py-0 flex-shrink-0">
                                     CANCELLED
                                   </Badge>
                                 )}
                               </div>
-                              {activePackingOrder.pplShipmentNumbers && activePackingOrder.pplShipmentNumbers.length > index && (
-                                <p className={`text-xs font-mono truncate ${isCancelled ? 'text-gray-500 line-through' : 'text-gray-600'}`}>
-                                  {activePackingOrder.pplShipmentNumbers[index]}
+                              {shipmentNumber && (
+                                <p className={`text-xs font-mono truncate ${isThisShipmentCancelled ? 'text-gray-500 line-through' : 'text-gray-600'}`}>
+                                  {shipmentNumber}
                                 </p>
                               )}
                             </div>
@@ -5980,7 +6011,7 @@ export default function PickPack() {
                                   ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
                                   : 'hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300'
                               }`}
-                              disabled={isCancelled}
+                              disabled={isThisShipmentCancelled}
                               onClick={async () => {
                                 try {
                                   console.log('🖨️ Fetching PPL label for order:', activePackingOrder.id);
@@ -6049,24 +6080,28 @@ export default function PickPack() {
                                 </>
                               )}
                             </Button>
-                            {index === 0 && !isCancelled && (
+                            {!isThisShipmentCancelled && shipmentNumber && (
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700 flex-shrink-0"
                                 onClick={() => {
-                                  if (confirm('Cancel all PPL shipments? This will cancel the shipments with PPL and cannot be undone.')) {
-                                    cancelPPLLabelsMutation.mutate(activePackingOrder.id);
+                                  if (confirm(`Cancel shipment ${shipmentNumber}? This will cancel this specific shipment with PPL and cannot be undone.`)) {
+                                    cancelIndividualPPLShipmentMutation.mutate({
+                                      orderId: activePackingOrder.id,
+                                      shipmentNumber
+                                    });
                                   }
                                 }}
-                                disabled={cancelPPLLabelsMutation.isPending}
-                                data-testid="button-cancel-ppl-shipments"
+                                disabled={cancelIndividualPPLShipmentMutation.isPending}
+                                data-testid={`button-cancel-ppl-shipment-${index + 1}`}
                               >
                                 <X className="h-4 w-4" />
                               </Button>
                             )}
                           </div>
-                        ));
+                          );
+                        });
                       })()}
                     </div>
                   )}

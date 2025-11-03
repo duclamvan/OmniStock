@@ -7991,6 +7991,57 @@ Return ONLY the subject line without quotes or extra formatting.`,
     }
   });
 
+  // Cancel individual PPL shipment by shipment number
+  app.post('/api/orders/:orderId/ppl/cancel-shipment/:shipmentNumber', async (req, res) => {
+    try {
+      const { orderId, shipmentNumber } = req.params;
+      const { cancelPPLShipment } = await import('./services/pplService');
+      
+      // Get order details
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      if (!order.pplShipmentNumbers || !order.pplShipmentNumbers.includes(shipmentNumber)) {
+        return res.status(400).json({ error: 'Shipment number not found in order' });
+      }
+
+      // Check if already cancelled
+      if (order.pplCancelledShipments && order.pplCancelledShipments.includes(shipmentNumber)) {
+        return res.status(400).json({ error: 'Shipment already cancelled' });
+      }
+
+      // Cancel the shipment via PPL API
+      await cancelPPLShipment(shipmentNumber);
+
+      // Add to cancelled shipments array
+      const cancelledShipments = [...(order.pplCancelledShipments || []), shipmentNumber];
+      
+      // Check if all shipments are now cancelled
+      const allCancelled = order.pplShipmentNumbers.every(num => cancelledShipments.includes(num));
+
+      // Update order
+      await storage.updateOrder(orderId, {
+        pplCancelledShipments: cancelledShipments,
+        ...(allCancelled && { pplStatus: 'cancelled' })
+      });
+
+      res.json({
+        success: true,
+        shipmentNumber,
+        cancelledShipments,
+        allCancelled
+      });
+
+    } catch (error: any) {
+      console.error('Error cancelling PPL shipment:', error);
+      res.status(500).json({ 
+        error: error.message || 'Failed to cancel PPL shipment'
+      });
+    }
+  });
+
   // Delete PPL shipping labels for an order (without cancelling with PPL API)
   app.delete('/api/orders/:orderId/ppl/labels', async (req, res) => {
     try {

@@ -598,6 +598,7 @@ export const orders = pgTable('orders', {
   pplShipmentNumbers: text('ppl_shipment_numbers').array(), // Array of PPL shipment tracking numbers
   pplLabelData: jsonb('ppl_label_data'), // Stores label info: {batchId, shipmentNumbers, labelUrl, createdAt}
   pplStatus: varchar('ppl_status'), // 'pending', 'created', 'cancelled', 'error'
+  pplCancelledShipments: text('ppl_cancelled_shipments').array(), // Array of cancelled shipment numbers for individual tracking
   // Dobírka (Cash on Delivery) fields
   dobirkaAmount: decimal('dobirka_amount', { precision: 10, scale: 2 }),
   dobirkaCurrency: varchar('dobirka_currency')
