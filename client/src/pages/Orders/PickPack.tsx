@@ -5742,7 +5742,7 @@ export default function PickPack() {
                   </div>
                 )}
 
-                {/* Download existing label button */}
+                {/* Print PPL Labels button */}
                 {activePackingOrder.pplLabelData && (
                   <Button
                     variant="outline"
@@ -5758,17 +5758,23 @@ export default function PickPack() {
                             { type: 'application/pdf' }
                           );
                           const url = URL.createObjectURL(labelBlob);
-                          const link = document.createElement('a');
-                          link.href = url;
-                          link.download = `PPL-Labels-${activePackingOrder.orderId}.pdf`;
-                          link.click();
-                          URL.revokeObjectURL(url);
+                          
+                          // Open in new window and trigger print
+                          const printWindow = window.open(url, '_blank');
+                          if (printWindow) {
+                            printWindow.onload = () => {
+                              printWindow.print();
+                            };
+                          }
+                          
+                          // Clean up the blob URL after a delay
+                          setTimeout(() => URL.revokeObjectURL(url), 1000);
                         }
                       } catch (error: any) {
-                        console.error('Error downloading PPL label:', error);
+                        console.error('Error printing PPL label:', error);
                         toast({
                           title: "Error",
-                          description: "Failed to download label",
+                          description: "Failed to print label",
                           variant: "destructive"
                         });
                       }
@@ -5776,7 +5782,7 @@ export default function PickPack() {
                     data-testid="button-download-ppl-label"
                   >
                     <Printer className="h-4 w-4 mr-2" />
-                    Download PPL Labels
+                    Print PPL Labels
                   </Button>
                 )}
               </CardContent>
