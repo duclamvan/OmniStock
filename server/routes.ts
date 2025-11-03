@@ -7814,43 +7814,56 @@ Return ONLY the subject line without quotes or extra formatting.`,
         }
       });
 
-      // Wait for batch processing to complete
+      // Wait for batch processing to complete with retry logic
       let attempts = 0;
-      const maxAttempts = 10;
+      const maxAttempts = 15;
       let batchStatus;
+      let lastError;
 
       while (attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
-        batchStatus = await getPPLBatchStatus(batchId);
+        // Increase wait time with each attempt (exponential backoff)
+        const waitTime = Math.min(1000 * Math.pow(1.5, attempts), 5000);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
         
-        if (batchStatus.status === 'Finished' || batchStatus.status === 'Error') {
-          break;
+        try {
+          batchStatus = await getPPLBatchStatus(batchId);
+          
+          if (batchStatus.status === 'Finished' || batchStatus.status === 'Error') {
+            break;
+          }
+        } catch (error: any) {
+          lastError = error;
+          console.log(`Batch status check attempt ${attempts + 1} failed:`, error.message);
+          // Continue trying even if status check fails (PPL might be processing)
         }
+        
         attempts++;
       }
 
-      if (batchStatus?.status !== 'Finished') {
-        return res.status(500).json({ 
-          error: 'PPL batch processing did not complete in time',
-          batchId,
-          status: batchStatus?.status
-        });
+      // If we couldn't get status after all attempts, but batch was created, try to get the label anyway
+      if (!batchStatus || batchStatus.status !== 'Finished') {
+        console.warn('Could not confirm batch finished status, attempting to retrieve label anyway');
+        // Don't return error yet, try to get the label
       }
 
-      // Get shipment numbers
-      const shipmentNumbers = batchStatus.shipmentResults
+      // Get shipment numbers if available
+      const shipmentNumbers = batchStatus?.shipmentResults
         ?.filter(r => r.shipmentNumber)
         .map(r => r.shipmentNumber) || [];
 
-      if (shipmentNumbers.length === 0) {
+      // Try to get the label even if we don't have shipment numbers yet
+      let label;
+      try {
+        label = await getPPLLabel(batchId, 'pdf');
+      } catch (labelError: any) {
+        console.error('Failed to retrieve PPL label:', labelError.message);
         return res.status(500).json({ 
-          error: 'No shipment numbers generated',
-          batchStatus
+          error: 'PPL shipment created but label retrieval failed. The shipment may still be processing. Please try again in a few moments.',
+          batchId,
+          statusError: lastError?.message,
+          labelError: labelError.message
         });
       }
-
-      // Get the label
-      const label = await getPPLLabel(batchId, 'pdf');
 
       // Update order with PPL data
       await storage.updateOrder(orderId, {
