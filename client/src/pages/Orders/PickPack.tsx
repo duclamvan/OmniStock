@@ -5895,30 +5895,52 @@ export default function PickPack() {
                               className="h-8 text-xs flex-shrink-0 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300"
                               onClick={async () => {
                                 try {
+                                  console.log('🖨️ Fetching PPL label for order:', activePackingOrder.id);
                                   const response = await apiRequest('GET', `/api/orders/${activePackingOrder.id}/ppl/label`, {});
+                                  console.log('📥 Response status:', response.status);
+                                  
                                   const data = await response.json();
+                                  console.log('📦 Response data:', { success: data.success, hasLabel: !!data.labelBase64, format: data.format });
 
-                                  if (data.success) {
+                                  if (data.success && data.labelBase64) {
+                                    console.log('✅ Creating PDF blob from base64...');
                                     const labelBlob = new Blob(
                                       [Uint8Array.from(atob(data.labelBase64), c => c.charCodeAt(0))],
                                       { type: 'application/pdf' }
                                     );
                                     const url = URL.createObjectURL(labelBlob);
+                                    console.log('🔗 Blob URL created:', url);
                                     
                                     const printWindow = window.open(url, '_blank');
+                                    console.log('🪟 Window opened:', !!printWindow);
+                                    
                                     if (printWindow) {
                                       printWindow.onload = () => {
+                                        console.log('🖨️ Triggering print dialog...');
                                         printWindow.print();
                                       };
+                                    } else {
+                                      toast({
+                                        title: "Popup Blocked",
+                                        description: "Please allow popups for this site to print labels",
+                                        variant: "destructive"
+                                      });
                                     }
                                     
                                     setTimeout(() => URL.revokeObjectURL(url), 1000);
+                                  } else {
+                                    console.error('❌ Invalid response:', data);
+                                    toast({
+                                      title: "Error",
+                                      description: data.error || "Label data not available",
+                                      variant: "destructive"
+                                    });
                                   }
                                 } catch (error: any) {
-                                  console.error('Error printing PPL label:', error);
+                                  console.error('❌ Error printing PPL label:', error);
                                   toast({
                                     title: "Error",
-                                    description: "Failed to print label",
+                                    description: error.message || "Failed to print label",
                                     variant: "destructive"
                                   });
                                 }
