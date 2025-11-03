@@ -105,7 +105,8 @@ import {
   FileImage,
   Book,
   Wrench,
-  DollarSign
+  DollarSign,
+  Trash2
 } from "lucide-react";
 
 interface BundleItem {
@@ -1787,7 +1788,7 @@ export default function PickPack() {
     onSuccess: () => {
       toast({
         title: "PPL Labels Cancelled",
-        description: "Shipping labels have been cancelled",
+        description: "Shipping labels have been cancelled with PPL",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
     },
@@ -1796,6 +1797,28 @@ export default function PickPack() {
       toast({
         title: "Error",
         description: error.message || "Failed to cancel PPL labels",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const deletePPLLabelsMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const response = await apiRequest('DELETE', `/api/orders/${orderId}/ppl/labels`, {});
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "PPL Labels Removed",
+        description: "Label data has been removed from the order",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+    },
+    onError: (error: any) => {
+      console.error('Error deleting PPL labels:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete PPL labels",
         variant: "destructive"
       });
     }
@@ -5743,7 +5766,24 @@ export default function PickPack() {
                   {/* PPL Tracking Numbers */}
                   {activePackingOrder.pplShipmentNumbers && activePackingOrder.pplShipmentNumbers.length > 0 && (
                     <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
-                      <h4 className="text-sm font-semibold text-orange-900 mb-2">PPL Tracking Numbers:</h4>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-semibold text-orange-900">PPL Tracking Numbers:</h4>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 text-xs text-gray-600 hover:text-red-600 hover:bg-red-50"
+                          onClick={() => {
+                            if (confirm('Remove PPL label data from this order? This will not cancel the shipments with PPL.')) {
+                              deletePPLLabelsMutation.mutate(activePackingOrder.id);
+                            }
+                          }}
+                          disabled={deletePPLLabelsMutation.isPending}
+                          data-testid="button-remove-ppl-data"
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          Remove Data
+                        </Button>
+                      </div>
                       <div className="space-y-1">
                         {activePackingOrder.pplShipmentNumbers.map((trackingNum: string, index: number) => (
                           <div key={index} className="flex items-center justify-between text-sm">
