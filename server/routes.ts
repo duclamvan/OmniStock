@@ -7695,31 +7695,64 @@ Return ONLY the subject line without quotes or extra formatting.`,
         return res.status(400).json({ error: 'No shipping address found for this order' });
       }
 
+      // Validate required shipping address fields
+      const requiredFields = ['country', 'zipCode', 'city', 'street'];
+      const missingFields = requiredFields.filter(field => !shippingAddress[field]);
+      
+      if (missingFields.length > 0) {
+        return res.status(400).json({ 
+          error: `Shipping address is incomplete. Missing required fields: ${missingFields.join(', ')}` 
+        });
+      }
+
+      // Validate name
+      if (!shippingAddress.firstName && !shippingAddress.lastName && !shippingAddress.company) {
+        return res.status(400).json({ 
+          error: 'Shipping address must have either a name (first/last name) or company name' 
+        });
+      }
+
       // Get cartons for the order
       const cartons = await storage.getOrderCartons(orderId);
       if (cartons.length === 0) {
-        return res.status(400).json({ error: 'No cartons found for this order' });
+        return res.status(400).json({ error: 'No cartons found for this order. Please create cartons before generating PPL labels.' });
       }
+
+      // Prepare recipient name
+      const recipientName = shippingAddress.company 
+        ? shippingAddress.company
+        : `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim();
+      
+      const contactName = `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || recipientName;
+
+      // Prepare dobírka (COD) information if present
+      const hasCOD = order.dobirkaAmount && parseFloat(order.dobirkaAmount.toString()) > 0;
+      const codInfo = hasCOD ? {
+        codCurrency: order.dobirkaCurrency || 'CZK',
+        codPrice: parseFloat(order.dobirkaAmount.toString()),
+        codVarSymbol: order.orderId
+      } : undefined;
 
       // Prepare PPL shipment data
       const shipments = cartons.map((carton, index) => ({
         referenceId: `${order.orderId}-${carton.cartonNumber}`,
-        productType: 'PPL', // Default product type - can be customized
+        productType: 'PPL',
         note: order.notes || undefined,
         recipient: {
-          country: shippingAddress.country,
-          zipCode: shippingAddress.zipCode,
-          name: `${shippingAddress.firstName} ${shippingAddress.lastName}`,
-          name2: shippingAddress.company || undefined,
+          country: shippingAddress.country.toUpperCase(),
+          zipCode: shippingAddress.zipCode.replace(/\s+/g, ''),
+          name: recipientName,
+          name2: shippingAddress.company ? contactName : undefined,
           street: `${shippingAddress.street} ${shippingAddress.streetNumber || ''}`.trim(),
           city: shippingAddress.city,
-          contact: `${shippingAddress.firstName} ${shippingAddress.lastName}`,
+          contact: contactName,
           phone: shippingAddress.tel || undefined,
           email: shippingAddress.email || undefined
         },
         weighedShipmentInfo: carton.weight ? {
           weight: parseFloat(carton.weight)
         } : undefined,
+        cashOnDelivery: codInfo,
         externalNumbers: [
           {
             code: 'CUST',
@@ -7836,9 +7869,12 @@ Return ONLY the subject line without quotes or extra formatting.`,
         }
       }
 
-      // Update order status
+      // Update order status and clear PPL data
       await storage.updateOrder(orderId, {
-        pplStatus: 'cancelled'
+        pplStatus: 'cancelled',
+        pplBatchId: null,
+        pplShipmentNumbers: null,
+        pplLabelData: null
       });
 
       res.json({
@@ -7850,6 +7886,42 @@ Return ONLY the subject line without quotes or extra formatting.`,
       console.error('Error cancelling PPL labels:', error);
       res.status(500).json({ 
         error: error.message || 'Failed to cancel PPL labels'
+      });
+    }
+  });
+
+  // Delete PPL shipping labels for an order (without cancelling with PPL API)
+  app.delete('/api/orders/:orderId/ppl/labels', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      
+      // Get order details
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      if (!order.pplBatchId && !order.pplShipmentNumbers) {
+        return res.status(400).json({ error: 'No PPL labels found for this order' });
+      }
+
+      // Clear all PPL data from the order
+      await storage.updateOrder(orderId, {
+        pplStatus: null,
+        pplBatchId: null,
+        pplShipmentNumbers: null,
+        pplLabelData: null
+      });
+
+      res.json({
+        success: true,
+        message: 'PPL label data removed from order'
+      });
+
+    } catch (error: any) {
+      console.error('Error deleting PPL labels:', error);
+      res.status(500).json({ 
+        error: error.message || 'Failed to delete PPL labels'
       });
     }
   });
