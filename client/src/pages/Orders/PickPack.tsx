@@ -4999,14 +4999,14 @@ export default function PickPack() {
                                   {/* Location and Badges - Below on mobile */}
                                   <div className="mt-1">
                                     {!isBundle && item.warehouseLocation && (
-                                      <div className="text-xs text-gray-500">
+                                      <div className="text-sm text-gray-600 font-medium">
                                         📍 {item.warehouseLocation}
-                                        {item.sku && <span className="ml-1 text-gray-400">• {item.sku}</span>}
+                                        {item.sku && <span className="ml-1 text-gray-500">• {item.sku}</span>}
                                       </div>
                                     )}
                                     {isBundle && (
                                       <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                                        <Badge className="bg-amber-100 text-amber-800 text-xs px-1.5 py-0.5">
+                                        <Badge className="bg-amber-100 text-amber-800 text-sm px-2 py-0.5">
                                           Bundle ({bundleComponentsVerified}/{totalBundleComponents})
                                         </Badge>
                                       </div>
@@ -5174,12 +5174,12 @@ export default function PickPack() {
                                       </div>
                                       <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-1 flex-wrap">
-                                          <span className="font-semibold text-gray-700 text-xs truncate">{bundleItem.name}</span>
+                                          <span className="font-semibold text-gray-700 text-sm truncate">{bundleItem.name}</span>
                                           {bundleItem.colorNumber && (
-                                            <span className="text-gray-500 text-[10px] shrink-0">#{bundleItem.colorNumber}</span>
+                                            <span className="text-gray-500 text-xs shrink-0">#{bundleItem.colorNumber}</span>
                                           )}
                                         </div>
-                                        <div className="flex items-center gap-2 text-[10px] text-gray-500 mt-0.5">
+                                        <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
                                           <span className={`shrink-0 ${isComponentVerified ? 'font-bold text-green-600' : ''}`}>
                                             {verifiedItems[componentId] || 0}/{bundleItem.quantity}
                                           </span>
@@ -5191,7 +5191,7 @@ export default function PickPack() {
                                       <Button
                                         variant={isComponentVerified ? "default" : "outline"}
                                         size="sm"
-                                        className={`h-7 px-2 text-[10px] shrink-0 ${
+                                        className={`h-7 px-2 text-xs shrink-0 ${
                                           isComponentVerified 
                                             ? 'bg-green-500 hover:bg-green-600 text-white' 
                                             : 'border-gray-300 text-gray-600 hover:bg-gray-50'
@@ -5249,7 +5249,7 @@ export default function PickPack() {
                                                 className="w-6 h-6 rounded object-contain border bg-white flex-shrink-0"
                                               />
                                             )}
-                                            <div className="text-[10px] min-w-0">
+                                            <div className="text-xs min-w-0">
                                               <div className="font-medium text-red-700 truncate">{item.packingMaterial.name}</div>
                                               <div className="text-red-500 truncate">{item.packingMaterial.description}</div>
                                             </div>
