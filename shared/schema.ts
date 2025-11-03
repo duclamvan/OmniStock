@@ -1394,6 +1394,31 @@ export const insertOrderFulfillmentLogSchema = createInsertSchema(orderFulfillme
   createdAt: true
 });
 
+// PPL Shipment History - Permanent record of all shipping labels (active and cancelled)
+export const pplShipmentHistory = pgTable('ppl_shipment_history', {
+  id: serial('id').primaryKey(),
+  orderId: varchar('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
+  shipmentNumber: text('shipment_number').notNull(), // PPL tracking number
+  batchId: text('batch_id'), // PPL batch ID
+  cartonNumber: integer('carton_number').notNull(), // Which carton/package this is for
+  status: varchar('status').notNull().default('active'), // 'active' or 'cancelled'
+  customerName: text('customer_name'),
+  recipientCountry: varchar('recipient_country').default('CZ'),
+  hasCOD: boolean('has_cod').default(false), // Cash on delivery
+  codAmount: decimal('cod_amount', { precision: 10, scale: 2 }),
+  codCurrency: varchar('cod_currency'),
+  labelBase64: text('label_base64'), // Store the PDF label data
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  cancelledAt: timestamp('cancelled_at'), // null if still active
+  cancelledBy: varchar('cancelled_by'), // Who cancelled it
+  notes: text('notes')
+});
+
+export const insertPPLShipmentHistorySchema = createInsertSchema(pplShipmentHistory).omit({
+  id: true,
+  createdAt: true
+});
+
 // AI-powered carton packing types
 export type PackingCarton = typeof packingCartons.$inferSelect;
 export type InsertPackingCarton = z.infer<typeof insertPackingCartonSchema>;
@@ -1446,3 +1471,7 @@ export type InsertTicketComment = z.infer<typeof insertTicketCommentSchema>;
 // Order Fulfillment Performance types
 export type OrderFulfillmentLog = typeof orderFulfillmentLogs.$inferSelect;
 export type InsertOrderFulfillmentLog = z.infer<typeof insertOrderFulfillmentLogSchema>;
+
+// PPL Shipment History types
+export type PPLShipmentHistory = typeof pplShipmentHistory.$inferSelect;
+export type InsertPPLShipmentHistory = z.infer<typeof insertPPLShipmentHistorySchema>;
