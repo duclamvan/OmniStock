@@ -60,8 +60,22 @@ export async function getPPLAccessToken(): Promise<string> {
 
     return access_token;
   } catch (error: any) {
-    console.error('Failed to get PPL access token:', error.response?.data || error.message);
-    throw new Error('Failed to authenticate with PPL API');
+    const errorDetails = {
+      message: error.message,
+      data: error.response?.data,
+      status: error.response?.status,
+      url: PPL_TOKEN_URL,
+      clientId: clientId?.substring(0, 4) + '***' // Show only first 4 chars
+    };
+    console.error('Failed to get PPL access token:', errorDetails);
+    
+    // Throw a detailed error
+    const errorMessage = error.response?.data?.error_description || 
+                        error.response?.data?.error || 
+                        'Failed to authenticate with PPL API';
+    const err = new Error(errorMessage) as any;
+    err.details = errorDetails;
+    throw err;
   }
 }
 
@@ -190,8 +204,35 @@ export async function createPPLShipment(request: PPLCreateShipmentRequest): Prom
 
     return { batchId, location };
   } catch (error: any) {
-    console.error('Failed to create PPL shipment:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.message || 'Failed to create PPL shipment');
+    const errorDetails = {
+      message: error.message,
+      data: error.response?.data,
+      status: error.response?.status,
+      url: `${PPL_BASE_URL}/shipment/batch`,
+      requestData: JSON.stringify(request, null, 2)
+    };
+    console.error('Failed to create PPL shipment:', errorDetails);
+    
+    // Extract error message from various possible formats
+    let errorMessage = 'Failed to create PPL shipment';
+    if (error.response?.data) {
+      const data = error.response.data;
+      if (data.title && data.errors) {
+        // Validation errors format
+        const validationErrors = Object.entries(data.errors)
+          .map(([field, msgs]: [string, any]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+          .join('; ');
+        errorMessage = `${data.title}: ${validationErrors}`;
+      } else if (data.detail) {
+        errorMessage = data.detail;
+      } else if (data.message) {
+        errorMessage = data.message;
+      }
+    }
+    
+    const err = new Error(errorMessage) as any;
+    err.details = errorDetails;
+    throw err;
   }
 }
 

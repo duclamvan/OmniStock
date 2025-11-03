@@ -7889,9 +7889,30 @@ Return ONLY the subject line without quotes or extra formatting.`,
 
     } catch (error: any) {
       console.error('Error creating PPL labels:', error);
-      res.status(500).json({ 
-        error: error.message || 'Failed to create PPL labels'
-      });
+      
+      // Provide detailed error information for debugging
+      const errorResponse: any = { 
+        error: error.message || 'Failed to create PPL labels',
+        type: error.constructor.name
+      };
+      
+      // Include detailed error information if available
+      if (error.details) {
+        errorResponse.details = {
+          status: error.details.status,
+          data: error.details.data,
+          url: error.details.url
+        };
+      }
+      
+      // Add helpful hints based on error type
+      if (error.message?.includes('Invalid client') || error.message?.includes('credentials')) {
+        errorResponse.hint = 'PPL API credentials may be incorrect or not configured for the test environment. Please check PPL_CLIENT_ID and PPL_CLIENT_SECRET.';
+      } else if (error.message?.includes('ProductType')) {
+        errorResponse.hint = 'Invalid product type code. Valid codes are: BUSD (Business with COD), BUSS (Business Standard), COND (International with COD)';
+      }
+      
+      res.status(500).json(errorResponse);
     }
   });
 

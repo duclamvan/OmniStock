@@ -1772,10 +1772,38 @@ export default function PickPack() {
     },
     onError: (error: any) => {
       console.error('Error creating PPL labels:', error);
+      console.error('Error details:', {
+        message: error.message,
+        hint: error.hint,
+        details: error.details,
+        fullResponse: error.fullResponse
+      });
+      
+      // Build a detailed error message
+      let errorMessage = error.message || "Failed to create PPL labels";
+      
+      if (error.hint) {
+        errorMessage += `\n\n💡 ${error.hint}`;
+      }
+      
+      if (error.details) {
+        const details = error.details;
+        if (details.status) {
+          errorMessage += `\n\nStatus: ${details.status}`;
+        }
+        if (details.data) {
+          const dataStr = typeof details.data === 'string' 
+            ? details.data 
+            : JSON.stringify(details.data, null, 2);
+          errorMessage += `\n\nDetails: ${dataStr}`;
+        }
+      }
+      
       toast({
-        title: "Error",
-        description: error.message || "Failed to create PPL labels",
-        variant: "destructive"
+        title: "PPL Label Creation Failed",
+        description: errorMessage,
+        variant: "destructive",
+        duration: 10000, // Show for 10 seconds to allow reading
       });
     }
   });
