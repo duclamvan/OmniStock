@@ -7761,9 +7761,9 @@ Return ONLY the subject line without quotes or extra formatting.`,
       };
 
       // Determine product type based on destination country
-      // PPL Product codes: 2 = Domestic (CZ), 8 = International
+      // Use PPL Parcel CZ Business for Czech domestic shipments
       const recipientCountryCode = getCountryCode(shippingAddress.country);
-      const productType = recipientCountryCode === 'CZ' ? '2' : '8';
+      const productType = recipientCountryCode === 'CZ' ? 'PPL Parcel CZ Business' : 'PPL Parcel Connect';
 
       // Prepare PPL shipment data
       const shipments = cartons.map((carton, index) => ({
