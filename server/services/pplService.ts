@@ -11,9 +11,9 @@ interface PPLAuthCache {
   expiresAt: number;
 }
 
-// PPL API Configuration
-const PPL_BASE_URL = 'https://api.dhl.com/ecs/ppl/myapi2';
-const PPL_TOKEN_URL = 'https://api.dhl.com/ecs/ppl/myapi2/login/getAccessToken';
+// PPL API Configuration - Test Environment
+const PPL_BASE_URL = 'https://api-dev.dhl.com/ecs/ppl/myapi2';
+const PPL_TOKEN_URL = 'https://api-dev.dhl.com/ecs/ppl/myapi2/login/getAccessToken';
 
 // Cache for access token
 let tokenCache: PPLAuthCache | null = null;
