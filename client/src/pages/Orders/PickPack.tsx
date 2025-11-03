@@ -4785,12 +4785,6 @@ export default function PickPack() {
                         )}
                       </div>
                       <span className="text-base font-semibold">
-                        {activePackingOrder.items.every(item => {
-                          if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
-                            return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
-                          }
-                          return (verifiedItems[item.id] || 0) >= item.quantity;
-                        }) ? '✓ ' : ''}
                         Items Verified ({activePackingOrder.items.filter(item => {
                           if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
                             return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
