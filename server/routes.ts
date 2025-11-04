@@ -7820,7 +7820,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       // - Always verify dobírka amount exists and is valid before applying
       //
       // Strict validation: Check if order has valid COD amount
-      const codAmount = order.cashOnDeliveryAmount;
+      const codAmount = order.dobirkaAmount;
       const hasCOD = codAmount && !isNaN(parseFloat(codAmount)) && parseFloat(codAmount) > 0;
       const isFirstCarton = cartonNumber === 1;
       
@@ -7829,7 +7829,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       
       // Log COD assignment for debugging
       if (shouldAddCOD) {
-        console.log(`💰 Carton #${cartonNumber} (FIRST): Will include COD ${codAmount} ${order.cashOnDeliveryCurrency || 'CZK'}`);
+        console.log(`💰 Carton #${cartonNumber} (FIRST): Will include COD ${codAmount} ${order.dobirkaCurrency || 'CZK'}`);
       } else if (hasCOD && !isFirstCarton) {
         console.log(`📦 Carton #${cartonNumber}: NO COD (PPL restriction - only first carton has COD)`);
       } else {
@@ -7879,13 +7879,13 @@ Return ONLY the subject line without quotes or extra formatting.`,
         },
         // Validate and add COD only to first carton (PPL API restriction)
         cashOnDelivery: shouldAddCOD ? (() => {
-          const codValue = parseFloat(order.cashOnDeliveryAmount);
+          const codValue = parseFloat(order.dobirkaAmount);
           if (isNaN(codValue) || codValue <= 0) {
-            throw new Error(`Invalid COD amount for carton #${cartonNumber}: ${order.cashOnDeliveryAmount}`);
+            throw new Error(`Invalid COD amount for carton #${cartonNumber}: ${order.dobirkaAmount}`);
           }
           return {
             value: codValue,
-            currency: order.cashOnDeliveryCurrency || 'CZK',
+            currency: order.dobirkaCurrency || 'CZK',
             variableSymbol: numericOrderId || '1234567890'
           };
         })() : undefined
@@ -8478,11 +8478,11 @@ Return ONLY the subject line without quotes or extra formatting.`,
       const numericOrderId = order.orderId.replace(/\D/g, '').slice(0, 10);
       
       // Strict validation: Verify COD amount exists and is a valid positive number
-      const codAmount = order.cashOnDeliveryAmount;
+      const codAmount = order.dobirkaAmount;
       const hasCOD = codAmount && !isNaN(parseFloat(codAmount)) && parseFloat(codAmount) > 0;
       
       if (hasCOD) {
-        console.log(`✓ Order has COD: ${codAmount} ${order.cashOnDeliveryCurrency || 'CZK'}`);
+        console.log(`✓ Order has COD: ${codAmount} ${order.dobirkaCurrency || 'CZK'}`);
         console.log(`✓ COD will be applied ONLY to first carton (PPL API restriction)`);
       } else {
         console.log(`✓ Order has NO COD - all cartons will be standard shipments`);
@@ -8532,16 +8532,16 @@ Return ONLY the subject line without quotes or extra formatting.`,
         // Validate COD amount if present
         let cashOnDelivery = undefined;
         if (hasCOD) {
-          const codValue = parseFloat(order.cashOnDeliveryAmount);
+          const codValue = parseFloat(order.dobirkaAmount);
           if (isNaN(codValue) || codValue <= 0) {
-            throw new Error(`Invalid COD amount: ${order.cashOnDeliveryAmount}`);
+            throw new Error(`Invalid COD amount: ${order.dobirkaAmount}`);
           }
           cashOnDelivery = {
             value: codValue,
-            currency: order.cashOnDeliveryCurrency || 'CZK',
+            currency: order.dobirkaCurrency || 'CZK',
             variableSymbol: numericOrderId || '1234567890'
           };
-          console.log(`💰 Shipment SET WITH COD: ${codValue} ${order.cashOnDeliveryCurrency || 'CZK'} (applied to entire set)`);
+          console.log(`💰 Shipment SET WITH COD: ${codValue} ${order.dobirkaCurrency || 'CZK'} (applied to entire set)`);
         } else {
           console.log(`📦 Shipment SET: Standard shipment (no COD)`);
         }
@@ -8596,16 +8596,16 @@ Return ONLY the subject line without quotes or extra formatting.`,
         // Validate COD amount before creating cashOnDelivery object
         let cashOnDelivery = undefined;
         if (hasCOD) {
-          const codValue = parseFloat(order.cashOnDeliveryAmount);
+          const codValue = parseFloat(order.dobirkaAmount);
           if (isNaN(codValue) || codValue <= 0) {
-            throw new Error(`Invalid COD amount: ${order.cashOnDeliveryAmount}`);
+            throw new Error(`Invalid COD amount: ${order.dobirkaAmount}`);
           }
           cashOnDelivery = {
             value: codValue,
-            currency: order.cashOnDeliveryCurrency || 'CZK',
+            currency: order.dobirkaCurrency || 'CZK',
             variableSymbol: numericOrderId || '1234567890'
           };
-          console.log(`💰 Single carton WITH COD: ${codValue} ${order.cashOnDeliveryCurrency || 'CZK'}`);
+          console.log(`💰 Single carton WITH COD: ${codValue} ${order.dobirkaCurrency || 'CZK'}`);
         } else {
           console.log(`📦 Single carton: Standard shipment (no COD)`);
         }
