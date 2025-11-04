@@ -6374,12 +6374,12 @@ export default function PickPack() {
                       variant="outline"
                       className="w-full border-orange-300 text-orange-700 hover:bg-orange-50"
                       onClick={async () => {
-                        if (confirm(`Delete all ${cartons.length} cartons and their labels to start fresh?\n\nThis will cancel all shipments with PPL, allowing you to create new labels with correct numbering.`)) {
+                        if (confirm(`Delete all ${shipmentLabelsFromDB.length} shipping labels?\n\nThis will cancel all shipments with PPL. Your carton data (weight, dimensions) will be preserved, allowing you to regenerate labels.`)) {
                           try {
                             setIsGeneratingAllLabels(true);
-                            console.log('🗑️ Deleting all labels and cartons...');
+                            console.log('🗑️ Deleting all labels (carton data will be preserved)...');
                             
-                            // Delete all labels
+                            // Delete all labels (cartons are preserved)
                             for (const label of shipmentLabelsFromDB) {
                               await apiRequest('DELETE', `/api/shipment-labels/${label.id}`, {});
                             }
@@ -6394,7 +6394,7 @@ export default function PickPack() {
                             
                             toast({
                               title: "All Labels Deleted",
-                              description: "You can now add cartons and generate new labels with proper numbering",
+                              description: "Carton data preserved. You can now regenerate labels with correct numbering.",
                             });
                           } catch (error: any) {
                             console.error('❌ Delete error:', error);
@@ -6551,7 +6551,7 @@ export default function PickPack() {
                                   size="sm"
                                   className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-200"
                                   onClick={async () => {
-                                    if (confirm(`Delete shipment #${index + 1}? This will cancel the shipment with PPL.`)) {
+                                    if (confirm(`Delete label #${index + 1}?\n\nThis will cancel the shipment with PPL. Your carton data will be preserved.`)) {
                                       try {
                                         setDeletingShipment(prev => ({ ...prev, [label.id]: true }));
                                         await apiRequest('DELETE', `/api/shipment-labels/${label.id}`, {});
@@ -6564,11 +6564,14 @@ export default function PickPack() {
                                         await fetchShipmentLabels();
                                         setShipmentLabelsFromDB(prev => [...prev]);
                                         console.log('✅ Delete refresh complete');
-                                        toast({ title: "Shipment deleted successfully" });
+                                        toast({ 
+                                          title: "Label Deleted", 
+                                          description: "Carton data preserved. You can regenerate the label if needed."
+                                        });
                                       } catch (error) {
                                         toast({
                                           title: "Error",
-                                          description: "Failed to delete shipment",
+                                          description: "Failed to delete label",
                                           variant: "destructive"
                                         });
                                       } finally {
@@ -6802,13 +6805,13 @@ export default function PickPack() {
                                 className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
                                 onClick={async () => {
                                   // Check if this is a multi-carton shipment
-                                  const totalCartons = cartons.length;
-                                  let confirmMessage = `Delete carton #${index + 1}?`;
+                                  const totalLabels = shipmentLabelsFromDB.length;
+                                  let confirmMessage = `Delete label #${index + 1}?`;
                                   
-                                  if (totalCartons > 1) {
-                                    confirmMessage = `Delete carton #${index + 1}?\n\n⚠️ WARNING: This is a ${totalCartons}-carton shipment. After deletion, the remaining labels will show incorrect numbering (e.g., "1/${totalCartons}" instead of "1/${totalCartons - 1}").\n\nTo get proper label numbering, you'll need to delete ALL cartons and regenerate the entire shipment.\n\nContinue with deletion anyway?`;
+                                  if (totalLabels > 1) {
+                                    confirmMessage = `Delete label #${index + 1}?\n\n⚠️ WARNING: This is a ${totalLabels}-label shipment. After deletion, the remaining labels will show incorrect numbering (e.g., "1/${totalLabels}" instead of "1/${totalLabels - 1}").\n\nTo get proper label numbering, you'll need to delete ALL labels and regenerate the entire shipment.\n\nYour carton data will be preserved.\n\nContinue with deletion anyway?`;
                                   } else {
-                                    confirmMessage = `Delete this carton and its label? This will cancel the shipment with PPL.`;
+                                    confirmMessage = `Delete this label?\n\nThis will cancel the shipment with PPL. Your carton data will be preserved.`;
                                   }
                                   
                                   if (confirm(confirmMessage)) {
@@ -6827,13 +6830,13 @@ export default function PickPack() {
                                       console.log('✅ Delete refresh complete');
                                       
                                       toast({ 
-                                        title: "Carton Deleted",
-                                        description: totalCartons > 1 ? "Label numbering may be incorrect. Consider regenerating all labels." : "Shipment cancelled successfully"
+                                        title: "Label Deleted",
+                                        description: totalLabels > 1 ? "Carton data preserved. Label numbering may be incorrect - consider regenerating all labels." : "Carton data preserved. You can regenerate the label if needed."
                                       });
                                     } catch (error) {
                                       toast({
                                         title: "Error",
-                                        description: "Failed to delete shipment",
+                                        description: "Failed to delete label",
                                         variant: "destructive"
                                       });
                                     } finally {
