@@ -46,6 +46,7 @@ import {
   packingMaterials,
   customerShippingAddresses,
   productFiles,
+  orderCartons,
 } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -7316,9 +7317,9 @@ Return ONLY the subject line without quotes or extra formatting.`,
       // Get existing cartons for this order
       const existingCartons = await db
         .select()
-        .from(cartons)
-        .where(eq(cartons.orderId, orderId))
-        .orderBy(cartons.cartonNumber);
+        .from(orderCartons)
+        .where(eq(orderCartons.orderId, orderId))
+        .orderBy(orderCartons.cartonNumber);
 
       // Build PPL shipment
       const pplShipment: any = {
@@ -7484,8 +7485,8 @@ Return ONLY the subject line without quotes or extra formatting.`,
       // Calculate next carton number
       const existingCartons = await db
         .select()
-        .from(cartons)
-        .where(eq(cartons.orderId, orderId));
+        .from(orderCartons)
+        .where(eq(orderCartons.orderId, orderId));
       
       const nextCartonNumber = existingCartons.length > 0
         ? Math.max(...existingCartons.map(c => c.cartonNumber || 0)) + 1
@@ -7493,7 +7494,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
 
       // STEP 1: Create carton FIRST (before creating PPL label)
       const [newCarton] = await db
-        .insert(cartons)
+        .insert(orderCartons)
         .values({
           orderId,
           cartonNumber: nextCartonNumber,
@@ -7523,7 +7524,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
 
         if (!shippingAddress) {
           // Rollback carton creation
-          await db.delete(cartons).where(eq(cartons.id, newCarton.id));
+          await db.delete(orderCartons).where(eq(orderCartons.id, newCarton.id));
           return res.status(400).json({ error: 'No shipping address found for order' });
         }
 
@@ -7602,7 +7603,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
 
         if (batchStatus?.status !== 'Finished') {
           // Rollback carton creation
-          await db.delete(cartons).where(eq(cartons.id, newCarton.id));
+          await db.delete(orderCartons).where(eq(orderCartons.id, newCarton.id));
           throw new Error('Shipment creation timed out or failed');
         }
 
