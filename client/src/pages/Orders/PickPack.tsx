@@ -956,7 +956,7 @@ export default function PickPack() {
   // State for tracking printed files
   const [printedProductFiles, setPrintedProductFiles] = useState<Set<string>>(new Set());
   const [printedOrderFiles, setPrintedOrderFiles] = useState<Set<string>>(new Set());
-  const [printedPPLLabels, setPrintedPPLLabels] = useState<Set<number>>(new Set()); // Track printed PPL label indices
+  const [printedPPLLabels, setPrintedPPLLabels] = useState<Set<string>>(new Set()); // Track printed PPL labels by tracking number
   const [shipmentLabelsFromDB, setShipmentLabelsFromDB] = useState<any[]>([]); // Shipment labels from database
   
   // Loading states for shipping label operations
@@ -6324,12 +6324,15 @@ export default function PickPack() {
                               
                               setTimeout(() => URL.revokeObjectURL(url), 1000);
                               
-                              // Mark as printed
-                              setPrintedPPLLabels(prev => {
-                                const newSet = new Set(prev);
-                                newSet.add(i);
-                                return newSet;
-                              });
+                              // Mark as printed using tracking number
+                              const trackingNumber = label.trackingNumbers?.[0];
+                              if (trackingNumber) {
+                                setPrintedPPLLabels(prev => {
+                                  const newSet = new Set(prev);
+                                  newSet.add(trackingNumber);
+                                  return newSet;
+                                });
+                              }
                               
                               // Small delay between prints to prevent browser blocking
                               if (i < shipmentLabelsFromDB.length - 1) {
@@ -6497,7 +6500,7 @@ export default function PickPack() {
                                 variant="outline"
                                 size="sm"
                                 className={`h-8 text-xs flex-shrink-0 ${
-                                  printedPPLLabels.has(index)
+                                  label.trackingNumbers?.[0] && printedPPLLabels.has(label.trackingNumbers[0])
                                     ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
                                     : 'hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300'
                                 }`}
@@ -6514,12 +6517,15 @@ export default function PickPack() {
                                       if (printWindow) {
                                         printWindow.onload = () => {
                                           printWindow.print();
-                                          // Track that this label was printed
-                                          setPrintedPPLLabels(prev => {
-                                            const newSet = new Set(prev);
-                                            newSet.add(index);
-                                            return newSet;
-                                          });
+                                          // Track that this label was printed using tracking number
+                                          const trackingNumber = label.trackingNumbers?.[0];
+                                          if (trackingNumber) {
+                                            setPrintedPPLLabels(prev => {
+                                              const newSet = new Set(prev);
+                                              newSet.add(trackingNumber);
+                                              return newSet;
+                                            });
+                                          }
                                           // Refresh labels to ensure UI is up to date
                                           fetchShipmentLabels();
                                         };
@@ -6703,7 +6709,7 @@ export default function PickPack() {
                                 variant="outline"
                                 size="sm"
                                 className={`h-8 text-xs flex-shrink-0 ${
-                                  printedPPLLabels.has(index)
+                                  label.trackingNumbers?.[0] && printedPPLLabels.has(label.trackingNumbers[0])
                                     ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
                                     : 'hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300'
                                 }`}
@@ -6742,12 +6748,15 @@ export default function PickPack() {
                                       printWindow.onload = () => {
                                         console.log('✅ Print window loaded, triggering print dialog');
                                         printWindow.print();
-                                        // Track that this label was printed
-                                        setPrintedPPLLabels(prev => {
-                                          const newSet = new Set(prev);
-                                          newSet.add(index);
-                                          return newSet;
-                                        });
+                                        // Track that this label was printed using tracking number
+                                        const trackingNumber = label.trackingNumbers?.[0];
+                                        if (trackingNumber) {
+                                          setPrintedPPLLabels(prev => {
+                                            const newSet = new Set(prev);
+                                            newSet.add(trackingNumber);
+                                            return newSet;
+                                          });
+                                        }
                                         // Refresh labels to ensure UI is up to date
                                         fetchShipmentLabels();
                                       };
@@ -6771,7 +6780,7 @@ export default function PickPack() {
                                 }}
                                 data-testid={`button-print-ppl-label-${index + 1}`}
                               >
-                                {printedPPLLabels.has(index) ? (
+                                {label.trackingNumbers?.[0] && printedPPLLabels.has(label.trackingNumbers[0]) ? (
                                   <>
                                     <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
                                     Printed
