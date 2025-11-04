@@ -8421,6 +8421,20 @@ Return ONLY the subject line without quotes or extra formatting.`,
         });
       }
 
+      // Get customer details for fallback phone/email
+      let customer = null;
+      if (order.customerId) {
+        const customerResult = await db
+          .select()
+          .from(customers)
+          .where(eq(customers.id, order.customerId))
+          .limit(1);
+        
+        if (customerResult.length > 0) {
+          customer = customerResult[0];
+        }
+      }
+
       // Get cartons for the order
       const cartons = await storage.getOrderCartons(orderId);
       if (cartons.length === 0) {
