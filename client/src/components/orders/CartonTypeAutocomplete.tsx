@@ -32,8 +32,8 @@ interface PopularCarton {
 }
 
 interface CartonTypeAutocompleteProps {
-  value: string;
-  onValueChange: (value: string, cartonData?: PopularCarton) => void;
+  value: string | null;
+  onValueChange: (value: string | null, cartonData?: PopularCarton) => void;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
@@ -57,12 +57,16 @@ export function CartonTypeAutocomplete({
   });
 
   useEffect(() => {
+    // Handle null (non-company carton)
+    if (!value || value === "non-company") {
+      setDisplayValue("Non-Company Carton");
+      return;
+    }
+    
     // If value looks like a UUID (carton ID), look up the carton name
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
     
-    if (value === "non-company") {
-      setDisplayValue("Non-Company Carton");
-    } else if (isUUID && popularCartons.length > 0) {
+    if (isUUID && popularCartons.length > 0) {
       const carton = popularCartons.find(c => c.id === value);
       if (carton) {
         setDisplayValue(carton.name);
@@ -114,18 +118,16 @@ export function CartonTypeAutocomplete({
   };
 
   const handleFreeTextInput = (text: string) => {
-    setDisplayValue(text);
     setSearchValue(text);
-    if (allowFreeText) {
-      onValueChange(text, undefined);
-    }
+    // Don't call onValueChange on every keystroke for free text
+    // User should press Enter or select from dropdown
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && allowFreeText && searchValue) {
       e.preventDefault();
       setDisplayValue(searchValue);
-      onValueChange(searchValue, undefined);
+      onValueChange(null, undefined); // Custom text = non-company carton, use null
       setOpen(false);
       setSearchValue("");
     }
@@ -171,7 +173,7 @@ export function CartonTypeAutocomplete({
                       value="non-company"
                       onSelect={() => {
                         setDisplayValue("Non-Company Carton");
-                        onValueChange("non-company", undefined);
+                        onValueChange(null, undefined); // Pass null for non-company cartons
                         setOpen(false);
                         setSearchValue("");
                       }}
@@ -180,7 +182,7 @@ export function CartonTypeAutocomplete({
                       <Check
                         className={cn(
                           "mr-2 h-4 w-4",
-                          value === "non-company" || displayValue === "Non-Company Carton" ? "opacity-100" : "opacity-0"
+                          !value || displayValue === "Non-Company Carton" ? "opacity-100" : "opacity-0"
                         )}
                       />
                       <div className="flex items-center gap-2">
@@ -291,7 +293,7 @@ export function CartonTypeAutocomplete({
                               value="custom"
                               onSelect={() => {
                                 setDisplayValue(searchValue);
-                                onValueChange(searchValue, undefined);
+                                onValueChange(null, undefined); // Custom text = non-company carton, use null
                                 setOpen(false);
                                 setSearchValue("");
                               }}
