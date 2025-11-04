@@ -6368,18 +6368,18 @@ export default function PickPack() {
                     </Button>
                   ) : null}
 
-                  {/* Regenerate All Labels button - appears when labels exist and there are multiple cartons */}
+                  {/* Delete All Labels button - ONLY deletes (does NOT regenerate), appears when labels exist and there are multiple cartons */}
                   {shipmentLabelsFromDB.length > 0 && cartons.length > 1 && (
                     <Button
                       variant="outline"
-                      className="w-full border-orange-300 text-orange-700 hover:bg-orange-50"
+                      className="w-full border-red-300 text-red-700 hover:bg-red-50"
                       onClick={async () => {
-                        if (confirm(`Delete all ${shipmentLabelsFromDB.length} shipping labels?\n\nThis will cancel all shipments with PPL. Your carton data (weight, dimensions) will be preserved, allowing you to regenerate labels.`)) {
+                        if (confirm(`Delete all ${shipmentLabelsFromDB.length} shipping labels?\n\nThis will cancel all shipments with PPL. Your carton data (weight, dimensions) will be preserved.\n\nAfter deletion, you can regenerate labels using the "Generate All Labels" button.`)) {
                           try {
                             setIsGeneratingAllLabels(true);
                             console.log('🗑️ Deleting all labels (carton data will be preserved)...');
                             
-                            // Delete all labels (cartons are preserved)
+                            // Delete all labels (cartons are preserved) - NO regeneration happens
                             for (const label of shipmentLabelsFromDB) {
                               await apiRequest('DELETE', `/api/shipment-labels/${label.id}`, {});
                             }
@@ -6394,7 +6394,7 @@ export default function PickPack() {
                             
                             toast({
                               title: "All Labels Deleted",
-                              description: "Carton data preserved. You can now regenerate labels with correct numbering.",
+                              description: "Carton data preserved. Use 'Generate All Labels' to create new labels.",
                             });
                           } catch (error: any) {
                             console.error('❌ Delete error:', error);
@@ -6409,14 +6409,14 @@ export default function PickPack() {
                         }
                       }}
                       disabled={isGeneratingAllLabels}
-                      data-testid="button-regenerate-all-labels"
+                      data-testid="button-delete-all-labels"
                     >
                       {isGeneratingAllLabels ? (
                         <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                       ) : (
-                        <RotateCcw className="h-4 w-4 mr-2" />
+                        <Trash2 className="h-4 w-4 mr-2" />
                       )}
-                      {isGeneratingAllLabels ? 'Deleting...' : 'Delete All & Start Fresh'}
+                      {isGeneratingAllLabels ? 'Deleting...' : 'Delete All Labels'}
                     </Button>
                   )}
 
