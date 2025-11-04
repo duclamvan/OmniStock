@@ -1203,6 +1203,9 @@ export default function PickPack() {
       const loadedPrintedOrderFiles = loadPackingState(orderId, 'printedOrderFiles', []);
       const loadedPrintedPPLLabels = loadPackingState(orderId, 'printedPPLLabels', []);
       
+      // CRITICAL: Load manual modification flag to prevent AI recalculation
+      const loadedManualFlag = loadPackingState(orderId, 'hasManuallyModifiedCartons', false);
+      
       // Set states
       setVerifiedItems(loadedVerifiedItems);
       setExpandedBundles(new Set(loadedExpandedBundles));
@@ -1225,6 +1228,10 @@ export default function PickPack() {
       setPrintedProductFiles(new Set(loadedPrintedProductFiles));
       setPrintedOrderFiles(new Set(loadedPrintedOrderFiles));
       setPrintedPPLLabels(new Set(loadedPrintedPPLLabels));
+      
+      // CRITICAL: Restore manual modification flag to prevent AI interference
+      setHasManuallyModifiedCartons(loadedManualFlag);
+      console.log(`🔒 Loaded hasManuallyModifiedCartons for order ${orderId}:`, loadedManualFlag);
       
       // Mark this order as having completed initial load
       initialLoadedOrders.current.add(orderId);
@@ -1731,21 +1738,29 @@ export default function PickPack() {
   // Function to recalculate cartons - this will be defined after mutations
   const recalculateCartons = useRef<(() => Promise<void>) | null>(null);
 
-  // Reset auto-apply flag and trigger recalculation when active order changes (entering packing mode)
+  // Save manual modification flag to localStorage to prevent AI interference on reload
   useEffect(() => {
-    setHasAutoAppliedSuggestions(false);
-    setHasManuallyModifiedCartons(false); // Reset manual modification flag for new order
-    
-    // If we just entered packing mode and user hasn't manually modified cartons, recalculate
-    if (activePackingOrder?.id && recalculateCartons.current && !hasManuallyModifiedCartons) {
-      // Small delay to ensure the order is fully loaded
-      const timeoutId = setTimeout(() => {
-        recalculateCartons.current?.();
-      }, 500);
-      
-      return () => clearTimeout(timeoutId);
+    if (activePackingOrder?.id && hasManuallyModifiedCartons) {
+      savePackingState(activePackingOrder.id, 'hasManuallyModifiedCartons', true);
+      console.log(`🔒 Saved hasManuallyModifiedCartons=true for order ${activePackingOrder.id}`);
     }
-  }, [activePackingOrder?.id]);
+  }, [hasManuallyModifiedCartons, activePackingOrder?.id]);
+
+  // Detect if order already has cartons in database to prevent AI interference
+  useEffect(() => {
+    if (!activePackingOrder?.id) return;
+    
+    // If database has cartons, mark as manually modified to PREVENT AI recalculation
+    // This is critical to prevent flickering when navigating back to packing mode
+    if (orderCartons && orderCartons.length > 0) {
+      const shouldMarkModified = !hasManuallyModifiedCartons;
+      if (shouldMarkModified) {
+        setHasManuallyModifiedCartons(true);
+        savePackingState(activePackingOrder.id, 'hasManuallyModifiedCartons', true);
+        console.log(`🔒 Marked as manually modified (${orderCartons.length} cartons exist in DB) - AI BLOCKED`);
+      }
+    }
+  }, [activePackingOrder?.id, orderCartons, hasManuallyModifiedCartons]);
 
   // Automatically apply AI carton suggestions when they arrive
   useEffect(() => {
@@ -5713,6 +5728,10 @@ export default function PickPack() {
                         e.stopPropagation();
                         // Reset manual modification flag when user explicitly requests recalculation
                         setHasManuallyModifiedCartons(false);
+                        if (activePackingOrder?.id) {
+                          savePackingState(activePackingOrder.id, 'hasManuallyModifiedCartons', false);
+                          console.log('🔓 Manual flag reset - AI recalculation allowed');
+                        }
                         recalculateCartons.current?.();
                       }}
                       disabled={isRecalculating}
