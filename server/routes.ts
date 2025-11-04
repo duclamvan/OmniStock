@@ -7810,14 +7810,30 @@ Return ONLY the subject line without quotes or extra formatting.`,
         });
       }
       
-      // Check if this is the first carton and if order has COD
-      const hasCOD = order.cashOnDeliveryAmount && parseFloat(order.cashOnDeliveryAmount) > 0;
+      // CRITICAL PPL API RESTRICTION: "nelze slučovat zásilky s dobírkou"
+      // Translation: "cannot merge shipments with dobírka (cash on delivery)"
+      // 
+      // For multi-carton COD orders:
+      // - FIRST carton MUST have the full dobírka amount (customer pays ONCE)
+      // - REMAINING cartons MUST NOT have dobírka
+      // - Always verify dobírka amount exists and is valid before applying
+      //
+      // Strict validation: Check if order has valid COD amount
+      const codAmount = order.cashOnDeliveryAmount;
+      const hasCOD = codAmount && !isNaN(parseFloat(codAmount)) && parseFloat(codAmount) > 0;
       const isFirstCarton = cartonNumber === 1;
       
-      // IMPORTANT: For multi-carton COD orders:
-      // - Only the FIRST carton gets the COD amount (customer pays ONCE)
-      // - Other cartons are linked but have no COD
+      // Determine if THIS specific carton should have COD
       const shouldAddCOD = hasCOD && isFirstCarton;
+      
+      // Log COD assignment for debugging
+      if (shouldAddCOD) {
+        console.log(`💰 Carton #${cartonNumber} (FIRST): Will include COD ${codAmount} ${order.cashOnDeliveryCurrency || 'CZK'}`);
+      } else if (hasCOD && !isFirstCarton) {
+        console.log(`📦 Carton #${cartonNumber}: NO COD (PPL restriction - only first carton has COD)`);
+      } else {
+        console.log(`📦 Carton #${cartonNumber}: Standard shipment (order has no COD)`);
+      }
       
       // Extract numeric part from order ID for variable symbol (e.g., "ORD-251028-4142" -> "2510284142")
       const numericOrderId = order.orderId.replace(/\D/g, '').slice(0, 10);
@@ -7863,12 +7879,18 @@ Return ONLY the subject line without quotes or extra formatting.`,
         weighedShipmentInfo: {
           weight: cartonWeight
         },
-        // Only add COD to the first carton in multi-carton orders
-        cashOnDelivery: shouldAddCOD ? {
-          value: parseFloat(order.cashOnDeliveryAmount),
-          currency: order.cashOnDeliveryCurrency || 'CZK',
-          variableSymbol: numericOrderId || '1234567890'
-        } : undefined
+        // Validate and add COD only to first carton (PPL API restriction)
+        cashOnDelivery: shouldAddCOD ? (() => {
+          const codValue = parseFloat(order.cashOnDeliveryAmount);
+          if (isNaN(codValue) || codValue <= 0) {
+            throw new Error(`Invalid COD amount for carton #${cartonNumber}: ${order.cashOnDeliveryAmount}`);
+          }
+          return {
+            value: codValue,
+            currency: order.cashOnDeliveryCurrency || 'CZK',
+            variableSymbol: numericOrderId || '1234567890'
+          };
+        })() : undefined
       };
 
       // Create PPL shipment (new batch for this carton)
@@ -8435,10 +8457,27 @@ Return ONLY the subject line without quotes or extra formatting.`,
         return 'CZ'; // Default to CZ
       };
 
-      // Prepare dobírka (COD) information if present
+      // CRITICAL PPL API RESTRICTION: "nelze slučovat zásilky s dobírkou"
+      // Translation: "cannot merge shipments with dobírka (cash on delivery)"
+      // 
+      // For multi-carton orders with COD:
+      // - FIRST carton MUST have the full dobírka amount
+      // - REMAINING cartons MUST NOT have dobírka (customer pays once, not per carton)
+      // - Always verify dobírka amount exists and is valid before applying
+      //
       // Extract numeric part from order ID for variable symbol (max 10 digits)
       const numericOrderId = order.orderId.replace(/\D/g, '').slice(0, 10);
-      const hasCOD = order.cashOnDeliveryAmount && parseFloat(order.cashOnDeliveryAmount) > 0;
+      
+      // Strict validation: Verify COD amount exists and is a valid positive number
+      const codAmount = order.cashOnDeliveryAmount;
+      const hasCOD = codAmount && !isNaN(parseFloat(codAmount)) && parseFloat(codAmount) > 0;
+      
+      if (hasCOD) {
+        console.log(`✓ Order has COD: ${codAmount} ${order.cashOnDeliveryCurrency || 'CZK'}`);
+        console.log(`✓ COD will be applied ONLY to first carton (PPL API restriction)`);
+      } else {
+        console.log(`✓ Order has NO COD - all cartons will be standard shipments`);
+      }
       
       // Default sender information (warehouse/company)
       const sender = {
@@ -8473,9 +8512,35 @@ Return ONLY the subject line without quotes or extra formatting.`,
       const shipments: any[] = [];
       
       if (cartons.length > 1) {
-        // Create separate shipment for each carton
+        // Multi-carton order: Create SEPARATE shipments (not shipmentSet)
+        // PPL API RESTRICTION: Cannot merge shipments with dobírka
+        console.log(`📦 Creating ${cartons.length} separate PPL shipments`);
+        
         cartons.forEach((carton, index) => {
           const isFirstCarton = index === 0;
+          
+          // CRITICAL: Only first carton gets COD (if order has COD)
+          // Remaining cartons must NOT have COD to comply with PPL API
+          const shouldApplyCOD = hasCOD && isFirstCarton;
+          
+          // Validate COD amount before creating cashOnDelivery object
+          let cashOnDelivery = undefined;
+          if (shouldApplyCOD) {
+            const codValue = parseFloat(order.cashOnDeliveryAmount);
+            if (isNaN(codValue) || codValue <= 0) {
+              throw new Error(`Invalid COD amount: ${order.cashOnDeliveryAmount}`);
+            }
+            cashOnDelivery = {
+              value: codValue,
+              currency: order.cashOnDeliveryCurrency || 'CZK',
+              variableSymbol: numericOrderId || '1234567890'
+            };
+            console.log(`💰 Carton #${index + 1} (FIRST): COD ${codValue} ${order.cashOnDeliveryCurrency || 'CZK'}`);
+          } else if (hasCOD) {
+            console.log(`📦 Carton #${index + 1}: NO COD (PPL restriction - only first carton has COD)`);
+          } else {
+            console.log(`📦 Carton #${index + 1}: Standard shipment (no COD on order)`);
+          }
           
           shipments.push({
             referenceId: `${order.orderId}-${carton.cartonNumber}`,
@@ -8493,12 +8558,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
             weighedShipmentInfo: {
               weight: carton.weight ? parseFloat(carton.weight) : 1.0
             },
-            // COD only on the FIRST carton
-            cashOnDelivery: (hasCOD && isFirstCarton) ? {
-              value: parseFloat(order.cashOnDeliveryAmount),
-              currency: order.cashOnDeliveryCurrency || 'CZK',
-              variableSymbol: numericOrderId || '1234567890'
-            } : undefined,
+            cashOnDelivery,
             externalNumbers: [
               {
                 code: 'CUST',
@@ -8508,7 +8568,26 @@ Return ONLY the subject line without quotes or extra formatting.`,
           });
         });
       } else if (cartons.length === 1) {
-        // Single carton - use simpler structure
+        // Single carton - simpler structure with COD if present
+        console.log(`📦 Creating single PPL shipment`);
+        
+        // Validate COD amount before creating cashOnDelivery object
+        let cashOnDelivery = undefined;
+        if (hasCOD) {
+          const codValue = parseFloat(order.cashOnDeliveryAmount);
+          if (isNaN(codValue) || codValue <= 0) {
+            throw new Error(`Invalid COD amount: ${order.cashOnDeliveryAmount}`);
+          }
+          cashOnDelivery = {
+            value: codValue,
+            currency: order.cashOnDeliveryCurrency || 'CZK',
+            variableSymbol: numericOrderId || '1234567890'
+          };
+          console.log(`💰 Single carton WITH COD: ${codValue} ${order.cashOnDeliveryCurrency || 'CZK'}`);
+        } else {
+          console.log(`📦 Single carton: Standard shipment (no COD)`);
+        }
+        
         shipments.push({
           referenceId: order.orderId,
           productType,
@@ -8525,11 +8604,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
           weighedShipmentInfo: {
             weight: cartons[0].weight ? parseFloat(cartons[0].weight) : 1.0
           },
-          cashOnDelivery: hasCOD ? {
-            value: parseFloat(order.cashOnDeliveryAmount),
-            currency: order.cashOnDeliveryCurrency || 'CZK',
-            variableSymbol: numericOrderId || '1234567890'
-          } : undefined,
+          cashOnDelivery,
           externalNumbers: [
             {
               code: 'CUST',
