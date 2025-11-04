@@ -7313,8 +7313,15 @@ Return ONLY the subject line without quotes or extra formatting.`,
         customer = customerResult[0];
       }
 
+      // Get existing cartons for this order
+      const existingCartons = await db
+        .select()
+        .from(cartons)
+        .where(eq(cartons.orderId, orderId))
+        .orderBy(cartons.cartonNumber);
+
       // Build PPL shipment
-      const pplShipment = {
+      const pplShipment: any = {
         referenceId: order.orderId,
         productType: 'PPL Parcel CZ Business',
         recipient: {
@@ -7326,15 +7333,30 @@ Return ONLY the subject line without quotes or extra formatting.`,
           phone: shippingAddress.phone || customer?.phone || undefined,
           email: customer?.email || undefined
         },
-        weighedShipmentInfo: order.finalWeight ? {
-          weight: parseFloat(order.finalWeight.toString())
-        } : undefined,
         cashOnDelivery: (dobirkaAmount && parseFloat(dobirkaAmount) > 0) ? {
           codCurrency: dobirkaCurrency || 'CZK',
           codPrice: parseFloat(dobirkaAmount),
           codVarSymbol: order.orderId
         } : undefined
       };
+
+      // Use shipmentSet if multiple cartons exist
+      if (existingCartons.length > 1) {
+        pplShipment.shipmentSet = {
+          numberOfShipments: existingCartons.length,
+          shipmentSetItems: existingCartons.map((carton) => ({
+            shipmentNumber: `${order.orderId}-${carton.cartonNumber}`,
+            weighedShipmentInfo: {
+              weight: carton.weight ? parseFloat(carton.weight.toString()) : (order.finalWeight ? parseFloat(order.finalWeight.toString()) / existingCartons.length : 1.0)
+            }
+          }))
+        };
+      } else {
+        // Single shipment - use traditional weighedShipmentInfo
+        pplShipment.weighedShipmentInfo = order.finalWeight ? {
+          weight: parseFloat(order.finalWeight.toString())
+        } : undefined;
+      }
 
       // Create shipment
       const { batchId } = await createPPLShipment({
@@ -7516,10 +7538,14 @@ Return ONLY the subject line without quotes or extra formatting.`,
           customer = customerResult[0];
         }
 
-        // Build PPL shipment with unique reference (include carton number)
-        const referenceId = `${order.orderId}-${nextCartonNumber}`;
+        // Build PPL shipment with unique reference using shipmentSet structure
+        // NOTE: PPL batches are immutable - we cannot add to existing batch, so we create a NEW batch
+        const referenceId = `${order.orderId}-additional-${nextCartonNumber}`;
         
-        const pplShipment = {
+        const cartonWeight = newCarton.weight ? parseFloat(newCarton.weight.toString()) : 
+                            (order.finalWeight ? parseFloat(order.finalWeight.toString()) : 1.0);
+        
+        const pplShipment: any = {
           referenceId,
           productType: 'PPL Parcel CZ Business',
           recipient: {
@@ -7531,9 +7557,17 @@ Return ONLY the subject line without quotes or extra formatting.`,
             phone: shippingAddress.phone || customer?.phone || undefined,
             email: customer?.email || undefined
           },
-          weighedShipmentInfo: order.finalWeight ? {
-            weight: parseFloat(order.finalWeight.toString())
-          } : undefined,
+          // Use shipmentSet structure for the new carton (even though it's just one)
+          // This maintains consistency with the main batch structure
+          shipmentSet: {
+            numberOfShipments: 1,
+            shipmentSetItems: [{
+              shipmentNumber: `${order.orderId}-${nextCartonNumber}`,
+              weighedShipmentInfo: {
+                weight: cartonWeight
+              }
+            }]
+          },
           // Only include COD on the first shipment (already stored in order)
           cashOnDelivery: undefined
         };
