@@ -36,6 +36,7 @@ import {
   orderCartonPlans,
   orderCartonItems,
   orderCartons,
+  shipmentLabels,
   expenses,
   packingMaterials,
   packingMaterialUsage,
@@ -118,6 +119,8 @@ import {
   type InsertOrderCartonItem,
   type OrderCarton,
   type InsertOrderCarton,
+  type ShipmentLabel,
+  type InsertShipmentLabel,
   type PackingMaterial,
   type InsertPackingMaterial,
   type PackingMaterialUsage,
@@ -489,6 +492,14 @@ export interface IStorage {
   createOrderCarton(carton: InsertOrderCarton): Promise<OrderCarton>;
   updateOrderCarton(id: string, carton: Partial<InsertOrderCarton>): Promise<OrderCarton | undefined>;
   deleteOrderCarton(id: string): Promise<boolean>;
+  
+  // Shipment Labels (PPL, GLS, DHL, etc.)
+  getShipmentLabels(): Promise<ShipmentLabel[]>;
+  getShipmentLabel(id: string): Promise<ShipmentLabel | undefined>;
+  getShipmentLabelsByOrderId(orderId: string): Promise<ShipmentLabel[]>;
+  createShipmentLabel(label: InsertShipmentLabel): Promise<ShipmentLabel>;
+  updateShipmentLabel(id: string, label: Partial<InsertShipmentLabel>): Promise<ShipmentLabel | undefined>;
+  cancelShipmentLabel(id: string, reason?: string): Promise<ShipmentLabel | undefined>;
   
   // Order Fulfillment Performance Tracking
   logFulfillmentStart(orderId: string, userId: string, activityType: 'pick' | 'pack', itemCount: number, totalQuantity: number): Promise<OrderFulfillmentLog>;
@@ -4693,6 +4704,91 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error deleting order carton:', error);
       return false;
+    }
+  }
+  
+  // Shipment Labels (PPL, GLS, DHL, etc.)
+  async getShipmentLabels(): Promise<ShipmentLabel[]> {
+    try {
+      return await db
+        .select()
+        .from(shipmentLabels)
+        .orderBy(desc(shipmentLabels.createdAt));
+    } catch (error) {
+      console.error('Error fetching shipment labels:', error);
+      return [];
+    }
+  }
+
+  async getShipmentLabel(id: string): Promise<ShipmentLabel | undefined> {
+    try {
+      const [label] = await db
+        .select()
+        .from(shipmentLabels)
+        .where(eq(shipmentLabels.id, id));
+      return label || undefined;
+    } catch (error) {
+      console.error('Error fetching shipment label:', error);
+      return undefined;
+    }
+  }
+
+  async getShipmentLabelsByOrderId(orderId: string): Promise<ShipmentLabel[]> {
+    try {
+      return await db
+        .select()
+        .from(shipmentLabels)
+        .where(eq(shipmentLabels.orderId, orderId))
+        .orderBy(desc(shipmentLabels.createdAt));
+    } catch (error) {
+      console.error('Error fetching shipment labels by order ID:', error);
+      return [];
+    }
+  }
+
+  async createShipmentLabel(label: InsertShipmentLabel): Promise<ShipmentLabel> {
+    try {
+      const [newLabel] = await db
+        .insert(shipmentLabels)
+        .values(label)
+        .returning();
+      return newLabel;
+    } catch (error) {
+      console.error('Error creating shipment label:', error);
+      throw error;
+    }
+  }
+
+  async updateShipmentLabel(id: string, label: Partial<InsertShipmentLabel>): Promise<ShipmentLabel | undefined> {
+    try {
+      const [updated] = await db
+        .update(shipmentLabels)
+        .set({ ...label, updatedAt: new Date() })
+        .where(eq(shipmentLabels.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating shipment label:', error);
+      return undefined;
+    }
+  }
+
+  async cancelShipmentLabel(id: string, reason?: string): Promise<ShipmentLabel | undefined> {
+    try {
+      const [cancelled] = await db
+        .update(shipmentLabels)
+        .set({
+          status: 'cancelled',
+          cancelledAt: new Date(),
+          cancelReason: reason || 'Cancelled by user',
+          updatedAt: new Date()
+        })
+        .where(eq(shipmentLabels.id, id))
+        .returning();
+      return cancelled || undefined;
+    } catch (error) {
+      console.error('Error cancelling shipment label:', error);
+      return undefined;
     }
   }
   
