@@ -1684,7 +1684,9 @@ export default function PickPack() {
   
   // Fetch PPL shipment labels from database with proper refresh function
   const fetchShipmentLabels = useCallback(async () => {
-    if (activePackingOrder?.id && activePackingOrder?.pplLabelData) {
+    // Fetch labels whenever we have an active packing order (regardless of pplLabelData)
+    // This ensures labels load correctly when returning to packing mode
+    if (activePackingOrder?.id) {
       try {
         console.log('🔍 Fetching shipment labels for order:', activePackingOrder.id);
         const res = await fetch(`/api/shipment-labels/order/${activePackingOrder.id}`);
@@ -1698,16 +1700,21 @@ export default function PickPack() {
         setShipmentLabelsFromDB(activeLabels);
       } catch (err) {
         console.error('❌ Error fetching shipment labels:', err);
+        // Set empty array on error to prevent stale data
+        setShipmentLabelsFromDB([]);
       }
     } else {
-      console.log('⏭️ Skipping fetch - no order or PPL data');
+      console.log('⏭️ No active packing order - clearing labels');
+      setShipmentLabelsFromDB([]);
     }
-  }, [activePackingOrder?.id, activePackingOrder?.pplLabelData]);
+  }, [activePackingOrder?.id]);
 
-  // Auto-fetch shipment labels when dependencies change
+  // Auto-fetch shipment labels when active order changes
+  // This ensures labels reload when navigating back to packing mode
   useEffect(() => {
     fetchShipmentLabels();
-  }, [fetchShipmentLabels, cartons.length]);
+    console.log(`📥 Auto-fetching labels for order ${activePackingOrder?.id}`);
+  }, [activePackingOrder?.id, fetchShipmentLabels]);
 
   // Track if we've already auto-applied suggestions for this order
   const [hasAutoAppliedSuggestions, setHasAutoAppliedSuggestions] = useState(false);
