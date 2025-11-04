@@ -7781,8 +7781,9 @@ Return ONLY the subject line without quotes or extra formatting.`,
 
       // Build PPL shipment
       const referenceId = `${order.orderId}-carton-${cartonNumber}`;
+      // Only use weight if it's actually provided (no default)
       const cartonWeight = carton.weight ? parseFloat(carton.weight.toString()) : 
-                          (order.finalWeight ? parseFloat(order.finalWeight.toString()) : 1.0);
+                          (order.finalWeight ? parseFloat(order.finalWeight.toString()) : null);
       
       // Normalize country to ISO code (PPL requires 2-letter codes)
       const normalizeCountry = (country: string | null | undefined): string => {
@@ -7876,9 +7877,6 @@ Return ONLY the subject line without quotes or extra formatting.`,
           phone: shippingAddress.tel || customer?.phone || undefined,
           email: shippingAddress.email || customer?.email || undefined
         },
-        weighedShipmentInfo: {
-          weight: cartonWeight
-        },
         // Validate and add COD only to first carton (PPL API restriction)
         cashOnDelivery: shouldAddCOD ? (() => {
           const codValue = parseFloat(order.cashOnDeliveryAmount);
@@ -7892,6 +7890,13 @@ Return ONLY the subject line without quotes or extra formatting.`,
           };
         })() : undefined
       };
+      
+      // Only include weight if it's actually provided
+      if (cartonWeight !== null && cartonWeight > 0) {
+        pplShipment.weighedShipmentInfo = {
+          weight: cartonWeight
+        };
+      }
 
       // Create PPL shipment (new batch for this carton)
       const { batchId } = await createPPLShipment({
@@ -8586,12 +8591,18 @@ Return ONLY the subject line without quotes or extra formatting.`,
           // shipmentSet defines multiple cartons in ONE shipment
           shipmentSet: {
             numberOfShipments: cartons.length,
-            shipmentSetItems: cartons.map((carton, index) => ({
-              referenceId: `${order.orderId}-${carton.cartonNumber}`,
-              weighedShipmentInfo: {
-                weight: carton.weight ? parseFloat(carton.weight) : 1.0
+            shipmentSetItems: cartons.map((carton, index) => {
+              const item: any = {
+                referenceId: `${order.orderId}-${carton.cartonNumber}`
+              };
+              // Only include weight if it's actually provided
+              if (carton.weight && parseFloat(carton.weight) > 0) {
+                item.weighedShipmentInfo = {
+                  weight: parseFloat(carton.weight)
+                };
               }
-            }))
+              return item;
+            })
           }
         };
         
@@ -8618,7 +8629,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
           console.log(`📦 Single carton: Standard shipment (no COD)`);
         }
         
-        shipments.push({
+        const singleShipment: any = {
           referenceId: order.orderId,
           productType,
           sender,
@@ -8632,9 +8643,6 @@ Return ONLY the subject line without quotes or extra formatting.`,
             phone: shippingAddress.tel || customer?.phone || undefined,
             email: shippingAddress.email || customer?.email || undefined
           },
-          weighedShipmentInfo: {
-            weight: cartons[0].weight ? parseFloat(cartons[0].weight) : 1.0
-          },
           cashOnDelivery,
           externalNumbers: [
             {
@@ -8642,7 +8650,16 @@ Return ONLY the subject line without quotes or extra formatting.`,
               externalNumber: order.orderId
             }
           ]
-        });
+        };
+        
+        // Only include weight if it's actually provided
+        if (cartons[0].weight && parseFloat(cartons[0].weight) > 0) {
+          singleShipment.weighedShipmentInfo = {
+            weight: parseFloat(cartons[0].weight)
+          };
+        }
+        
+        shipments.push(singleShipment);
       }
 
       // Create PPL shipment
