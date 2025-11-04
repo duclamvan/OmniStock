@@ -7883,7 +7883,13 @@ Return ONLY the subject line without quotes or extra formatting.`,
       // Try to get label even if status check failed
       let labelBase64: string | undefined;
       try {
+        console.log('🔍 Attempting to retrieve PPL label for batch:', batchId);
         const labelResult = await getPPLLabel(batchId);
+        console.log('📄 Label result received:', {
+          hasLabelBase64: !!labelResult.labelBase64,
+          labelSize: labelResult.labelBase64?.length,
+          hasBatchStatus: !!labelResult.batchStatus
+        });
         labelBase64 = labelResult.labelBase64;
         
         // If we don't have shipment numbers yet, try to extract from batch status
@@ -7891,9 +7897,17 @@ Return ONLY the subject line without quotes or extra formatting.`,
           shipmentNumbers = labelResult.batchStatus.shipmentResults
             .filter(r => r.shipmentNumber)
             .map(r => r.shipmentNumber);
+          console.log('📦 Extracted shipment numbers from label result:', shipmentNumbers);
         }
+        
+        if (!labelBase64) {
+          console.error('❌ No labelBase64 in label result!');
+          throw new Error('Label PDF data not available from PPL API');
+        }
+        
+        console.log('✅ Successfully retrieved label, size:', labelBase64.length, 'bytes');
       } catch (labelError) {
-        console.error('Failed to retrieve PPL label:', labelError);
+        console.error('❌ Failed to retrieve PPL label:', labelError);
         throw new Error('Label was created but could not be retrieved from PPL API');
       }
 
