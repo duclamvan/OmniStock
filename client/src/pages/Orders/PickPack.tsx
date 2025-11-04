@@ -918,6 +918,7 @@ export default function PickPack() {
   const [packingTimer, setPackingTimer] = useState(0);
   const [isPackingTimerRunning, setIsPackingTimerRunning] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
+  const [recentlyScannedItemId, setRecentlyScannedItemId] = useState<string | null>(null);
   const [currentEmployee] = useState('Employee #001');
   const [pickingTimer, setPickingTimer] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
@@ -3599,25 +3600,67 @@ export default function PickPack() {
     }
   };
 
-  // Play sound effect
+  // Play sound effect using Web Audio API
   const playSound = (type: 'scan' | 'success' | 'error' | 'complete') => {
     if (!audioEnabled) return;
     
-    // In a real app, you would play actual sound files
-    const audio = new Audio();
-    switch (type) {
-      case 'scan':
-        console.log('Playing scan sound');
-        break;
-      case 'success':
-        console.log('Playing success sound');
-        break;
-      case 'error':
-        console.log('Playing error sound');
-        break;
-      case 'complete':
-        console.log('Playing complete sound');
-        break;
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Set frequency and duration based on sound type
+      switch (type) {
+        case 'scan':
+          // Short beep for successful scan
+          oscillator.frequency.value = 800;
+          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.1);
+          console.log('🔊 Playing scan sound (800Hz beep)');
+          break;
+        case 'success':
+          // Rising tone for success
+          oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+          oscillator.frequency.exponentialRampToValueAtTime(900, audioContext.currentTime + 0.15);
+          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.15);
+          console.log('🔊 Playing success sound (rising tone)');
+          break;
+        case 'error':
+          // Low buzzer for error
+          oscillator.frequency.value = 200;
+          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.3);
+          console.log('🔊 Playing error sound (low buzzer)');
+          break;
+        case 'complete':
+          // Triple beep for completion
+          const times = [0, 0.15, 0.3];
+          times.forEach((time, i) => {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.frequency.value = 1000;
+            gain.gain.setValueAtTime(0.3, audioContext.currentTime + time);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + time + 0.1);
+            osc.start(audioContext.currentTime + time);
+            osc.stop(audioContext.currentTime + time + 0.1);
+          });
+          console.log('🔊 Playing complete sound (triple beep)');
+          break;
+      }
+    } catch (error) {
+      console.error('Failed to play sound:', error);
     }
   };
 
@@ -5238,9 +5281,31 @@ export default function PickPack() {
                                   item => item.barcode === barcodeInput || item.sku === barcodeInput
                                 );
                                 if (matchingItem) {
-                                  setVerifiedItems(prev => ({ ...prev, [matchingItem.id]: Math.min((prev[matchingItem.id] || 0) + 1, matchingItem.quantity) }));
+                                  // Increment the verified count by 1
+                                  const currentCount = verifiedItems[matchingItem.id] || 0;
+                                  const newCount = Math.min(currentCount + 1, matchingItem.quantity);
+                                  setVerifiedItems(prev => ({ ...prev, [matchingItem.id]: newCount }));
+                                  
+                                  // Highlight the scanned item
+                                  setRecentlyScannedItemId(matchingItem.id);
+                                  
+                                  // Play success sound
                                   playSound('scan');
+                                  
+                                  // Check if item is now complete
+                                  if (newCount === matchingItem.quantity) {
+                                    console.log(`✅ Item "${matchingItem.productName}" completed (${newCount}/${matchingItem.quantity})`);
+                                    playSound('success');
+                                  } else {
+                                    console.log(`📊 Item "${matchingItem.productName}" progress: ${newCount}/${matchingItem.quantity}`);
+                                  }
+                                  
+                                  // Clear highlight after 800ms
+                                  setTimeout(() => {
+                                    setRecentlyScannedItemId(null);
+                                  }, 800);
                                 } else {
+                                  console.log(`❌ No match found for barcode: "${barcodeInput}"`);
                                   playSound('error');
                                 }
                                 setBarcodeInput('');
@@ -5268,11 +5333,15 @@ export default function PickPack() {
                         const allBundleComponentsVerified = isBundle && bundleComponentsVerified === totalBundleComponents;
                         const hasNotes = item.notes || item.shipmentNotes || item.packingInstructionsText || item.packingInstructionsImage;
                         
+                        const isRecentlyScanned = recentlyScannedItemId === item.id;
+                        
                         return (
                           <div 
                             key={item.id} 
-                            className={`relative p-2 sm:p-3 rounded-lg border-2 transition-all ${
-                              isVerified || (isBundle && allBundleComponentsVerified)
+                            className={`relative p-2 sm:p-3 rounded-lg border-2 transition-all duration-300 ${
+                              isRecentlyScanned
+                                ? 'bg-yellow-100 border-yellow-400 shadow-lg scale-105 ring-4 ring-yellow-200 animate-pulse'
+                                : isVerified || (isBundle && allBundleComponentsVerified)
                                 ? 'bg-green-50 border-green-300' 
                                 : 'bg-gray-50 border-gray-200'
                             }`}
