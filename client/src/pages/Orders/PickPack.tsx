@@ -6635,19 +6635,19 @@ export default function PickPack() {
                     </div>
                   )}
 
-                  {/* Add Shipment Button - Creates new non-company carton and generates new PPL label */}
+                  {/* Add Carton Label Button - Creates new non-company carton and generates new PPL label */}
                   {activePackingOrder.pplLabelData && activePackingOrder.pplStatus !== 'cancelled' && (
                     <Button
                       variant="outline"
                       className="w-full border-2 border-dashed border-orange-400 text-orange-700 hover:bg-orange-50 hover:border-orange-300"
                       onClick={async () => {
                         try {
-                          console.log('🔧 Adding shipment - Current cartons:', cartons.length);
+                          console.log('🔧 Adding carton label - Current cartons:', cartons.length);
                           
                           // Show loading toast
                           toast({
-                            title: "Creating PPL Label...",
-                            description: "Generating new shipping label from PPL API. This may take a few seconds.",
+                            title: "Creating Carton Label...",
+                            description: "Generating new PPL shipping label. This may take a few seconds.",
                           });
                           
                           // Create PPL label (backend atomically creates carton + label)
@@ -6670,14 +6670,14 @@ export default function PickPack() {
                           await fetchShipmentLabels(); // Refresh shipment labels
                           
                           toast({
-                            title: "Shipment Added",
-                            description: `New shipment created with PPL tracking number: ${labelResult.trackingNumber}. You now have ${cartons.length + 1} shipment(s).`,
+                            title: "Carton Label Added",
+                            description: `New carton created with PPL tracking number: ${labelResult.trackingNumber}. You now have ${cartons.length + 1} carton(s).`,
                           });
                         } catch (error: any) {
-                          console.error('❌ Error adding shipment:', error);
+                          console.error('❌ Error adding carton label:', error);
                           toast({
                             title: "Error",
-                            description: error.message || "Failed to add shipment",
+                            description: error.message || "Failed to add carton label",
                             variant: "destructive"
                           });
                         }
@@ -6685,7 +6685,7 @@ export default function PickPack() {
                       data-testid="button-add-ppl-shipment"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Add More Shipment
+                      Add Carton Label
                     </Button>
                   )}
                 </>
