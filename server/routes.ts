@@ -8708,12 +8708,55 @@ Return ONLY the subject line without quotes or extra formatting.`,
         pplStatus: 'created'
       });
 
+      // CRITICAL: Create individual shipment label records for each carton
+      // This allows the UI to display labels per carton
+      console.log(`📝 Creating ${cartons.length} shipment label record(s) in database...`);
+      const createdLabels = [];
+      
+      for (let i = 0; i < cartons.length; i++) {
+        const carton = cartons[i];
+        const cartonNumber = i + 1;
+        const trackingNumber = shipmentNumbers[i] || `PENDING-${cartonNumber}`;
+        const isFirstCarton = i === 0;
+        
+        console.log(`📦 Creating label record for carton #${cartonNumber}:`, {
+          cartonId: carton.id,
+          trackingNumber,
+          hasCOD: hasCOD && isFirstCarton
+        });
+        
+        const labelRecord = await storage.createShipmentLabel({
+          orderId,
+          carrier: 'PPL',
+          trackingNumbers: [trackingNumber],
+          batchId,
+          labelBase64: label.labelContent, // Same PDF for all (PPL returns combined PDF)
+          labelData: {
+            cartonNumber,
+            cartonId: carton.id,
+            referenceId: `${order.orderId}-${carton.cartonNumber}`,
+            hasCOD: hasCOD && isFirstCarton, // Only first carton has COD
+            productType,
+            recipientCountry: recipientCountryCode,
+            shipmentIndex: i
+          },
+          shipmentCount: 1,
+          status: 'active'
+        });
+        
+        createdLabels.push(labelRecord);
+        console.log(`✅ Label record created for carton #${cartonNumber}:`, labelRecord.id);
+      }
+
+      console.log(`✅ All ${createdLabels.length} shipment label records created successfully`);
+
       res.json({
         success: true,
         batchId,
         shipmentNumbers,
         labelBase64: label.labelContent,
-        format: label.format
+        format: label.format,
+        labelsCreated: createdLabels.length
       });
 
     } catch (error: any) {
