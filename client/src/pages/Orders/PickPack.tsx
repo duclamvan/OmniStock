@@ -1188,7 +1188,8 @@ export default function PickPack() {
       const loadedExpandedBundles = loadPackingState(orderId, 'expandedBundles', []);
       const loadedBundlePickedItems = loadPackingState(orderId, 'bundlePickedItems', {});
       const loadedShowBarcode = loadPackingState(orderId, 'showBarcodeScanner', false);
-      const loadedCartons = loadPackingState(orderId, 'cartons', []);
+      // NOTE: Cartons are NOT loaded from localStorage - database is the single source of truth
+      // Cartons are managed entirely through the database and useQuery hook below
       const loadedPackingChecklist = loadPackingState(orderId, 'packingChecklist', {
         itemsVerified: false,
         packingSlipIncluded: false,
@@ -1216,10 +1217,8 @@ export default function PickPack() {
       
       setShowBarcodeScanner(loadedShowBarcode);
       
-      // Only set cartons from localStorage if we have saved data
-      if (loadedCartons.length > 0) {
-        setCartons(loadedCartons);
-      }
+      // NOTE: Cartons are NOT loaded from localStorage here
+      // They will be loaded from database via the useQuery hook and synced in the effect below
       
       setPackingChecklist(loadedPackingChecklist);
       setPackingMaterialsApplied(loadedPackingMaterials);
@@ -1263,11 +1262,9 @@ export default function PickPack() {
     }
   }, [showBarcodeScanner, activePackingOrder?.id]);
 
-  useEffect(() => {
-    if (activePackingOrder?.id) {
-      savePackingState(activePackingOrder.id, 'cartons', cartons);
-    }
-  }, [cartons, activePackingOrder?.id]);
+  // NOTE: Cartons are NOT saved to localStorage - database is the single source of truth
+  // They are automatically saved through mutations (updateCartonMutation, createCartonMutation, deleteCartonMutation)
+  // and loaded via the useQuery hook below
 
   useEffect(() => {
     if (activePackingOrder?.id) {
@@ -1655,21 +1652,16 @@ export default function PickPack() {
   const initialLoadedOrders = useRef(new Set<string>());
 
   // Sync orderCartons with local cartons state
+  // DATABASE IS ALWAYS THE SOURCE OF TRUTH
   useEffect(() => {
     if (!activePackingOrder?.id) return;
     
-    const orderId = activePackingOrder.id;
-    const isFirstLoad = !initialLoadedOrders.current.has(orderId);
-    
-    if (orderCartons && orderCartons.length > 0) {
-      if (isFirstLoad) {
-        // First time seeing this order - localStorage will be loaded separately
-        // Don't update from database yet, let localStorage load first
-        return;
-      }
-      
-      // After first load, always sync from database (database is source of truth)
+    // Always sync from database - it's the single source of truth
+    // Mutations (create/update/delete) handle saving changes to the database
+    // This effect ensures UI is always in sync with database state
+    if (orderCartons) {
       setCartons(orderCartons);
+      console.log(`✅ Synced ${orderCartons.length} cartons from database for order ${activePackingOrder.id}`);
     }
   }, [orderCartons, activePackingOrder?.id]);
 
