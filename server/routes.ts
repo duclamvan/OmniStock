@@ -7321,16 +7321,34 @@ Return ONLY the subject line without quotes or extra formatting.`,
         .where(eq(orderCartons.orderId, orderId))
         .orderBy(orderCartons.cartonNumber);
 
+      // Normalize country to ISO code (PPL requires 2-letter codes)
+      const normalizeCountry = (country: string | null | undefined): string => {
+        if (!country) return 'CZ';
+        const upper = country.toUpperCase();
+        if (upper === 'CZECH REPUBLIC' || upper === 'CZECHIA') return 'CZ';
+        if (upper.length === 2) return upper;
+        return 'CZ'; // Default to CZ
+      };
+
       // Build PPL shipment
       const pplShipment: any = {
         referenceId: order.orderId,
         productType: 'PPL Parcel CZ Business',
+        sender: {
+          country: 'CZ',
+          zipCode: '35002',
+          name: 'Davie Supply',
+          street: 'Dragonska 2545/9A',
+          city: 'Cheb',
+          phone: '+420776887045',
+          email: 'info@daviesupply.cz'
+        },
         recipient: {
-          country: shippingAddress.country || 'CZ',
-          zipCode: shippingAddress.postalCode || '',
+          country: normalizeCountry(shippingAddress.country),
+          zipCode: shippingAddress.postalCode || '00000',
           name: shippingAddress.name || customer?.name || 'Unknown',
-          street: shippingAddress.address || '',
-          city: shippingAddress.city || '',
+          street: shippingAddress.address || 'Unknown',
+          city: shippingAddress.city || 'Unknown',
           phone: shippingAddress.phone || customer?.phone || undefined,
           email: customer?.email || undefined
         },
@@ -7546,15 +7564,33 @@ Return ONLY the subject line without quotes or extra formatting.`,
         const cartonWeight = newCarton.weight ? parseFloat(newCarton.weight.toString()) : 
                             (order.finalWeight ? parseFloat(order.finalWeight.toString()) : 1.0);
         
+        // Normalize country to ISO code (PPL requires 2-letter codes)
+        const normalizeCountry = (country: string | null | undefined): string => {
+          if (!country) return 'CZ';
+          const upper = country.toUpperCase();
+          if (upper === 'CZECH REPUBLIC' || upper === 'CZECHIA') return 'CZ';
+          if (upper.length === 2) return upper;
+          return 'CZ'; // Default to CZ
+        };
+        
         const pplShipment: any = {
           referenceId,
           productType: 'PPL Parcel CZ Business',
+          sender: {
+            country: 'CZ',
+            zipCode: '35002',
+            name: 'Davie Supply',
+            street: 'Dragonska 2545/9A',
+            city: 'Cheb',
+            phone: '+420776887045',
+            email: 'info@daviesupply.cz'
+          },
           recipient: {
-            country: shippingAddress.country || 'CZ',
-            zipCode: shippingAddress.postalCode || '',
+            country: normalizeCountry(shippingAddress.country),
+            zipCode: shippingAddress.postalCode || '00000',
             name: shippingAddress.name || customer?.name || 'Unknown',
-            street: shippingAddress.address || '',
-            city: shippingAddress.city || '',
+            street: shippingAddress.address || 'Unknown',
+            city: shippingAddress.city || 'Unknown',
             phone: shippingAddress.phone || customer?.phone || undefined,
             email: customer?.email || undefined
           },
