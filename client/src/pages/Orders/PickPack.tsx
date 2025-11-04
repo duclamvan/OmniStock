@@ -5171,9 +5171,9 @@ export default function PickPack() {
             
             {/* Item Verification List - Collapsible Accordion */}
             <Accordion type="single" collapsible defaultValue="items" className="w-full">
-              <AccordionItem value="items" className="border rounded-lg bg-white shadow-sm">
-                <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                  <div className="flex items-center justify-between w-full pr-4">
+              <AccordionItem value="items" className="border-2 rounded-lg bg-white shadow-sm overflow-hidden">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 transition-colors">
+                  <div className="flex items-center justify-between w-full pr-2">
                     <div className="flex items-center gap-2">
                       <div
                         onClick={(e) => {
@@ -5235,7 +5235,7 @@ export default function PickPack() {
                           <Circle className="h-5 w-5 text-gray-400" />
                         )}
                       </div>
-                      <span className="text-base font-semibold">
+                      <span className="text-sm sm:text-base font-bold text-gray-900">
                         Items Verified ({activePackingOrder.items.filter(item => {
                           if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
                             return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
@@ -5778,12 +5778,12 @@ export default function PickPack() {
           </Accordion>
 
           {/* Multi-Carton Packing Section */}
-          <Card className="shadow-sm border-2 border-emerald-200 bg-gradient-to-br from-white to-emerald-50">
-            <CardHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-3">
-              <CardTitle className="text-base">
+          <Card className="shadow-sm border-2 border-emerald-200 overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-3">
+              <CardTitle className="text-sm sm:text-base font-bold">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Box className="h-5 w-5" />
+                    <Box className="h-4 w-4 sm:h-5 sm:w-5" />
                     <span>Cartons ({cartons.length + cartonsDraft.length})</span>
                   </div>
                   <div className="flex items-center gap-2">
