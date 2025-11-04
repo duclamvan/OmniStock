@@ -7884,7 +7884,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
             throw new Error(`Invalid COD amount for carton #${cartonNumber}: ${order.dobirkaAmount}`);
           }
           return {
-            value: codValue,
+            CodPrice: codValue,                           // PPL API requires PascalCase
             CodCurrency: order.dobirkaCurrency || 'CZK',  // PPL API requires PascalCase
             CodVarSym: numericOrderId || '1234567890'     // PPL API requires PascalCase
           };
@@ -8537,7 +8537,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
             throw new Error(`Invalid COD amount: ${order.dobirkaAmount}`);
           }
           cashOnDelivery = {
-            value: codValue,
+            CodPrice: codValue,                           // PPL API requires PascalCase
             CodCurrency: order.dobirkaCurrency || 'CZK',  // PPL API requires PascalCase
             CodVarSym: numericOrderId || '1234567890'     // PPL API requires PascalCase
           };
@@ -8601,7 +8601,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
             throw new Error(`Invalid COD amount: ${order.dobirkaAmount}`);
           }
           cashOnDelivery = {
-            value: codValue,
+            CodPrice: codValue,                           // PPL API requires PascalCase
             CodCurrency: order.dobirkaCurrency || 'CZK',  // PPL API requires PascalCase
             CodVarSym: numericOrderId || '1234567890'     // PPL API requires PascalCase
           };

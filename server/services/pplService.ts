@@ -139,7 +139,7 @@ export interface PPLShipment {
     weight: number;
   };
   cashOnDelivery?: {
-    value: number;
+    CodPrice: number;     // PPL API requires PascalCase
     CodCurrency: string;  // PPL API requires PascalCase
     CodVarSym?: string;   // PPL API requires PascalCase
   };
