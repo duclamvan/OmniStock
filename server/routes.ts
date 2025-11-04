@@ -7886,22 +7886,14 @@ Return ONLY the subject line without quotes or extra formatting.`,
         console.log('🔍 Attempting to retrieve PPL label for batch:', batchId);
         const labelResult = await getPPLLabel(batchId);
         console.log('📄 Label result received:', {
-          hasLabelBase64: !!labelResult.labelBase64,
-          labelSize: labelResult.labelBase64?.length,
-          hasBatchStatus: !!labelResult.batchStatus
+          hasLabelContent: !!labelResult.labelContent,
+          labelSize: labelResult.labelContent?.length,
+          format: labelResult.format
         });
-        labelBase64 = labelResult.labelBase64;
-        
-        // If we don't have shipment numbers yet, try to extract from batch status
-        if (shipmentNumbers.length === 0 && labelResult.batchStatus?.shipmentResults) {
-          shipmentNumbers = labelResult.batchStatus.shipmentResults
-            .filter(r => r.shipmentNumber)
-            .map(r => r.shipmentNumber);
-          console.log('📦 Extracted shipment numbers from label result:', shipmentNumbers);
-        }
+        labelBase64 = labelResult.labelContent;
         
         if (!labelBase64) {
-          console.error('❌ No labelBase64 in label result!');
+          console.error('❌ No labelContent in label result!');
           throw new Error('Label PDF data not available from PPL API');
         }
         
