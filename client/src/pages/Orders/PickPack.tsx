@@ -5936,20 +5936,20 @@ export default function PickPack() {
           </Card>
 
           {/* Packing Completion Card - Combined Documents + Checklist */}
-          <Card className="shadow-sm border border-gray-200 bg-white">
-            <CardHeader className="bg-gradient-to-r from-violet-600 to-purple-600 text-white p-3 rounded-t-lg">
-              <CardTitle className="text-base flex items-center gap-2">
-                <ClipboardList className="h-4 w-4" />
+          <Card className="shadow-sm border-2 border-violet-200 overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-violet-600 to-purple-600 text-white px-4 py-3">
+              <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
+                <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5" />
                 Packing Completion
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-3 space-y-4">
+            <CardContent className="p-4 space-y-4">
               {/* Documents & Files - Unified Section */}
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-gray-700">Documents:</h3>
+              <div className="space-y-3">
+                <h3 className="text-xs sm:text-sm font-bold text-gray-900 uppercase tracking-wide">Documents:</h3>
                 <div className="space-y-2">
                   {/* Packing List - Always Shown */}
-                  <div className={`flex items-center gap-3 p-2.5 rounded-lg border transition-colors ${
+                  <div className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
                     printedDocuments.packingList
                       ? 'bg-green-50 border-green-300'
                       : 'bg-white border-gray-200 hover:border-violet-300'
@@ -5972,7 +5972,7 @@ export default function PickPack() {
                     <Button 
                       variant={printedDocuments.packingList ? "default" : "outline"}
                       size="sm"
-                      className={`h-8 text-xs flex-shrink-0 ${
+                      className={`h-9 px-3 text-xs font-semibold flex-shrink-0 ${
                         printedDocuments.packingList
                           ? 'bg-green-600 hover:bg-green-700 text-white'
                           : 'hover:bg-violet-50 hover:text-violet-700 hover:border-violet-300'
@@ -6022,8 +6022,8 @@ export default function PickPack() {
               <Separator />
 
               {/* Section 3: Packing Materials Required */}
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-gray-700">Packing Materials:</h3>
+              <div className="space-y-3">
+                <h3 className="text-xs sm:text-sm font-bold text-gray-900 uppercase tracking-wide">Packing Materials:</h3>
                 {orderPackingMaterials.length > 0 ? (
                   <div className="space-y-3">
                     {orderPackingMaterials.map((material) => (
@@ -6085,10 +6085,10 @@ export default function PickPack() {
           </Card>
 
           {/* Shipping Information Section */}
-          <Card className="shadow-sm border border-gray-200 bg-white">
-            <CardHeader className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-3 rounded-t-lg">
-              <CardTitle className="text-base flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
+          <Card className="shadow-sm border-2 border-purple-200 overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-3">
+              <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
+                <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
                 Shipping Information
               </CardTitle>
             </CardHeader>
