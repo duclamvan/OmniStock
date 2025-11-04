@@ -7371,9 +7371,9 @@ Return ONLY the subject line without quotes or extra formatting.`,
           email: shippingAddress.email || customer?.email || undefined
         },
         cashOnDelivery: (dobirkaAmount && parseFloat(dobirkaAmount) > 0) ? {
-          codCurrency: dobirkaCurrency || 'CZK',
-          codPrice: parseFloat(dobirkaAmount),
-          codVarSymbol: order.orderId
+          value: parseFloat(dobirkaAmount),
+          currency: dobirkaCurrency || 'CZK',
+          variableSymbol: order.orderId
         } : undefined
       };
 
@@ -7810,10 +7810,18 @@ Return ONLY the subject line without quotes or extra formatting.`,
         });
       }
       
+      // Check if this is the first carton and if order has COD
       const hasCOD = order.cashOnDeliveryAmount && parseFloat(order.cashOnDeliveryAmount) > 0;
+      const isFirstCarton = cartonNumber === 1;
+      
+      // IMPORTANT: For multi-carton COD orders:
+      // - Only the FIRST carton gets the COD amount (customer pays ONCE)
+      // - Other cartons are linked but have no COD
+      const shouldAddCOD = hasCOD && isFirstCarton;
+      
       const pplShipment: any = {
         referenceId,
-        productType: hasCOD ? 'BUSD' : 'BUSS',
+        productType: hasCOD ? 'BUSD' : 'BUSS', // Product type based on whether order has COD
         sender: {
           country: 'CZ',
           zipCode: '35002',
@@ -7835,7 +7843,12 @@ Return ONLY the subject line without quotes or extra formatting.`,
         weighedShipmentInfo: {
           weight: cartonWeight
         },
-        cashOnDelivery: undefined
+        // Only add COD to the first carton in multi-carton orders
+        cashOnDelivery: shouldAddCOD ? {
+          value: parseFloat(order.cashOnDeliveryAmount),
+          currency: order.cashOnDeliveryCurrency || 'CZK',
+          variableSymbol: order.orderId
+        } : undefined
       };
 
       // Create PPL shipment (new batch for this carton)
@@ -8406,12 +8419,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       // Extract numeric part from order ID for variable symbol (max 10 digits)
       const numericOrderId = order.orderId.replace(/\D/g, '').slice(0, 10);
       const hasCOD = order.dobirkaAmount && parseFloat(order.dobirkaAmount.toString()) > 0;
-      const codInfo = hasCOD ? {
-        codCurrency: order.dobirkaCurrency || 'CZK',
-        codPrice: parseFloat(order.dobirkaAmount.toString()),
-        codVarSym: numericOrderId || '1234567890' // Use numeric order ID or fallback
-      } : undefined;
-
+      
       // Default sender information (warehouse/company)
       const sender = {
         country: 'CZ',
@@ -8439,9 +8447,13 @@ Return ONLY the subject line without quotes or extra formatting.`,
         productType = hasCOD ? 'COND' : 'BUSS';
       }
 
-      // Prepare PPL shipment data
-      const shipments = cartons.map((carton, index) => ({
-        referenceId: `${order.orderId}-${carton.cartonNumber}`,
+      // Prepare PPL shipment data using shipmentSet for multi-carton orders
+      // IMPORTANT: For multi-carton orders with COD, PPL requires:
+      // 1. Single shipment with shipmentSet structure
+      // 2. COD on the parent shipment (customer pays ONCE for all cartons)
+      // 3. Each carton becomes an item in shipmentSetItems
+      const pplShipment: any = {
+        referenceId: order.orderId,
         productType,
         sender,
         recipient: {
@@ -8455,17 +8467,38 @@ Return ONLY the subject line without quotes or extra formatting.`,
           phone: shippingAddress.tel || undefined,
           email: shippingAddress.email || undefined
         },
-        weighedShipmentInfo: carton.weight ? {
-          weight: parseFloat(carton.weight)
+        // COD goes on the parent shipment (collected ONCE for all cartons)
+        cashOnDelivery: hasCOD ? {
+          value: parseFloat(order.dobirkaAmount.toString()),
+          currency: order.dobirkaCurrency || 'CZK',
+          variableSymbol: numericOrderId || '1234567890'
         } : undefined,
-        cashOnDelivery: codInfo,
         externalNumbers: [
           {
             code: 'CUST',
             externalNumber: order.orderId
           }
         ]
-      }));
+      };
+
+      // Use shipmentSet for multiple cartons, or weighedShipmentInfo for single carton
+      if (cartons.length > 1) {
+        pplShipment.shipmentSet = {
+          numberOfShipments: cartons.length,
+          shipmentSetItems: cartons.map((carton) => ({
+            shipmentNumber: `${order.orderId}-${carton.cartonNumber}`,
+            weighedShipmentInfo: {
+              weight: carton.weight ? parseFloat(carton.weight) : 1.0
+            }
+          }))
+        };
+      } else if (cartons.length === 1) {
+        pplShipment.weighedShipmentInfo = cartons[0].weight ? {
+          weight: parseFloat(cartons[0].weight)
+        } : undefined;
+      }
+
+      const shipments = [pplShipment];
 
       // Create PPL shipment
       const { batchId, location } = await createPPLShipment({

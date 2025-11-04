@@ -1,0 +1,102 @@
+For an order with multiple cartons and dobírka (COD), here's how to handle it in PPL CPL API:
+
+## The Correct Approach for Multi-Carton COD
+
+### 1. **Key Concept: Master Package Gets COD**
+With PPL, when you have multiple cartons:
+- **First/master package** carries the COD amount (5000 CZK)
+- **Other packages** are linked but have 0 CZK COD
+- Customer pays once when receiving ANY package from the set
+
+### 2. **Structure Your Request**
+
+```json
+{
+  "labelSettings": {
+    "format": "Pdf",
+    "completeLabelSettings": {
+      "isCompleteLabelRequested": true,
+      "pageSize": "A4"
+    }
+  },
+  "shipments": [{
+    "productType": "BUSS",
+    "recipient": {
+      "name": "Jan Novák",
+      "street": "Václavské náměstí 1",
+      "city": "Praha",
+      "zipCode": "11000",
+      "country": "CZ",
+      "phone": "+420777888999"
+    },
+    "cashOnDelivery": {
+      "value": 5000,
+      "currency": "CZK",
+      "variableSymbol": "2024001"  // your order number
+    },
+    "shipmentSet": {
+      "numberOfShipments": 3,  // e.g., 3 cartons
+      "shipmentSetItems": [
+        {
+          "shipmentNumber": "your-ref-001",
+          "weighedShipmentInfo": {
+            "weight": 10.5
+          }
+          // This first one will carry the COD
+        },
+        {
+          "shipmentNumber": "your-ref-002", 
+          "weighedShipmentInfo": {
+            "weight": 8.2
+          }
+          // Linked to first, no separate COD
+        },
+        {
+          "shipmentNumber": "your-ref-003",
+          "weighedShipmentInfo": {
+            "weight": 6.0
+          }
+          // Linked to first, no separate COD
+        }
+      ]
+    }
+  }]
+}
+```
+
+### 3. **How PPL Handles This**
+
+Using the `shipmentSet` structure with `numberOfShipments`, PPL knows these packages belong together:
+
+- **All cartons** get linked with same delivery
+- **Labels show** connection between packages (usually "1/3", "2/3", "3/3")
+- **COD collected once** - driver knows to collect 5000 CZK total
+- **Any package triggers COD** - if customer receives any package, they must pay
+
+### 4. **What Shows on Labels**
+
+- **Master carton label**: Shows COD 5000 CZK, package 1 of 3
+- **Other carton labels**: Shows package 2 of 3, 3 of 3 (linked to master)
+- **Tracking numbers**: Each has unique number but system knows they're grouped
+
+### 5. **Important for Your WMS**
+
+For your Davie Supply system:
+1. **Always put COD on first package** in the shipmentSet
+2. **Include variable symbol** (your order ID) for payment matching
+3. **All packages must have same recipient** address
+4. **Save all shipment numbers** - you might need to cancel individual packages
+
+### 6. **Alternative Approach (if above doesn't work)**
+
+Some integrations handle it differently - putting COD info at the batch level rather than individual shipment. Test in sandbox first to confirm PPL's exact implementation.
+
+### 7. **Testing Recommendation**
+
+Test this scenario in PPL Sandbox at https://sandbox.ppl.cz/ with:
+- Create 3-package set with 5000 CZK COD
+- Check if all labels generate correctly
+- Verify COD appears properly on labels
+- Confirm packages show as linked set
+
+This ensures the dobírka collection works correctly and the driver knows to collect payment only once for all packages.

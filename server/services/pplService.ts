@@ -139,9 +139,18 @@ export interface PPLShipment {
     weight: number;
   };
   cashOnDelivery?: {
-    codCurrency: string;
-    codPrice: number;
-    codVarSym?: string;
+    value: number;
+    currency: string;
+    variableSymbol?: string;
+  };
+  shipmentSet?: {
+    numberOfShipments: number;
+    shipmentSetItems: Array<{
+      shipmentNumber: string;
+      weighedShipmentInfo: {
+        weight: number;
+      };
+    }>;
   };
 }
 
