@@ -1079,6 +1079,38 @@ export default function PickPack() {
     localStorage.removeItem(`pickpack-progress-${orderId}`);
   };
 
+  // Helper functions for persisting packing state (per order)
+  const savePackingState = (orderId: string, key: string, value: any) => {
+    try {
+      localStorage.setItem(`packing-${orderId}-${key}`, JSON.stringify(value));
+    } catch (error) {
+      console.error(`Failed to save packing state for ${key}:`, error);
+    }
+  };
+
+  const loadPackingState = <T,>(orderId: string, key: string, defaultValue: T): T => {
+    try {
+      const saved = localStorage.getItem(`packing-${orderId}-${key}`);
+      if (saved) {
+        return JSON.parse(saved) as T;
+      }
+    } catch (error) {
+      console.error(`Failed to load packing state for ${key}:`, error);
+    }
+    return defaultValue;
+  };
+
+  const clearPackingState = (orderId: string) => {
+    const keysToRemove = [
+      'verifiedItems', 'expandedBundles', 'bundlePickedItems', 'showBarcodeScanner',
+      'cartons', 'packingChecklist', 'packingMaterialsApplied', 'printedDocuments',
+      'printedProductFiles', 'printedOrderFiles', 'printedPPLLabels'
+    ];
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(`packing-${orderId}-${key}`);
+    });
+  };
+
   // Toggle section collapse state
   const toggleSectionCollapse = (sectionName: string) => {
     setCollapsedSections(prev => {
@@ -1130,6 +1162,125 @@ export default function PickPack() {
       console.error('Failed to save expanded overview items to localStorage:', error);
     }
   }, [expandedOverviewItems]);
+
+  // Load packing state when activePackingOrder changes
+  useEffect(() => {
+    if (activePackingOrder?.id) {
+      const orderId = activePackingOrder.id;
+      
+      // Load all packing state
+      const loadedVerifiedItems = loadPackingState(orderId, 'verifiedItems', {});
+      const loadedExpandedBundles = loadPackingState(orderId, 'expandedBundles', []);
+      const loadedBundlePickedItems = loadPackingState(orderId, 'bundlePickedItems', {});
+      const loadedShowBarcode = loadPackingState(orderId, 'showBarcodeScanner', false);
+      const loadedCartons = loadPackingState(orderId, 'cartons', []);
+      const loadedPackingChecklist = loadPackingState(orderId, 'packingChecklist', {
+        itemsVerified: false,
+        packingSlipIncluded: false,
+        boxSealed: false,
+        weightRecorded: false,
+        fragileProtected: false,
+        promotionalMaterials: false
+      });
+      const loadedPackingMaterials = loadPackingState(orderId, 'packingMaterialsApplied', {});
+      const loadedPrintedDocs = loadPackingState(orderId, 'printedDocuments', { packingList: false });
+      const loadedPrintedProductFiles = loadPackingState(orderId, 'printedProductFiles', []);
+      const loadedPrintedOrderFiles = loadPackingState(orderId, 'printedOrderFiles', []);
+      const loadedPrintedPPLLabels = loadPackingState(orderId, 'printedPPLLabels', []);
+      
+      // Set states
+      setVerifiedItems(loadedVerifiedItems);
+      setExpandedBundles(new Set(loadedExpandedBundles));
+      
+      // Convert bundlePickedItems back to Sets
+      const bundlePickedItemsWithSets: Record<string, Set<string>> = {};
+      Object.entries(loadedBundlePickedItems).forEach(([key, value]) => {
+        bundlePickedItemsWithSets[key] = new Set(value as string[]);
+      });
+      setBundlePickedItems(bundlePickedItemsWithSets);
+      
+      setShowBarcodeScanner(loadedShowBarcode);
+      setCartons(loadedCartons);
+      setPackingChecklist(loadedPackingChecklist);
+      setPackingMaterialsApplied(loadedPackingMaterials);
+      setPrintedDocuments(loadedPrintedDocs);
+      setPrintedProductFiles(new Set(loadedPrintedProductFiles));
+      setPrintedOrderFiles(new Set(loadedPrintedOrderFiles));
+      setPrintedPPLLabels(new Set(loadedPrintedPPLLabels));
+    }
+  }, [activePackingOrder?.id]);
+
+  // Save packing state whenever it changes
+  useEffect(() => {
+    if (activePackingOrder?.id) {
+      savePackingState(activePackingOrder.id, 'verifiedItems', verifiedItems);
+    }
+  }, [verifiedItems, activePackingOrder?.id]);
+
+  useEffect(() => {
+    if (activePackingOrder?.id) {
+      savePackingState(activePackingOrder.id, 'expandedBundles', Array.from(expandedBundles));
+    }
+  }, [expandedBundles, activePackingOrder?.id]);
+
+  useEffect(() => {
+    if (activePackingOrder?.id) {
+      // Convert Sets to arrays for storage
+      const bundlePickedItemsForStorage: Record<string, string[]> = {};
+      Object.entries(bundlePickedItems).forEach(([key, value]) => {
+        bundlePickedItemsForStorage[key] = Array.from(value);
+      });
+      savePackingState(activePackingOrder.id, 'bundlePickedItems', bundlePickedItemsForStorage);
+    }
+  }, [bundlePickedItems, activePackingOrder?.id]);
+
+  useEffect(() => {
+    if (activePackingOrder?.id) {
+      savePackingState(activePackingOrder.id, 'showBarcodeScanner', showBarcodeScanner);
+    }
+  }, [showBarcodeScanner, activePackingOrder?.id]);
+
+  useEffect(() => {
+    if (activePackingOrder?.id) {
+      savePackingState(activePackingOrder.id, 'cartons', cartons);
+    }
+  }, [cartons, activePackingOrder?.id]);
+
+  useEffect(() => {
+    if (activePackingOrder?.id) {
+      savePackingState(activePackingOrder.id, 'packingChecklist', packingChecklist);
+    }
+  }, [packingChecklist, activePackingOrder?.id]);
+
+  useEffect(() => {
+    if (activePackingOrder?.id) {
+      savePackingState(activePackingOrder.id, 'packingMaterialsApplied', packingMaterialsApplied);
+    }
+  }, [packingMaterialsApplied, activePackingOrder?.id]);
+
+  useEffect(() => {
+    if (activePackingOrder?.id) {
+      savePackingState(activePackingOrder.id, 'printedDocuments', printedDocuments);
+    }
+  }, [printedDocuments, activePackingOrder?.id]);
+
+  useEffect(() => {
+    if (activePackingOrder?.id) {
+      savePackingState(activePackingOrder.id, 'printedProductFiles', Array.from(printedProductFiles));
+    }
+  }, [printedProductFiles, activePackingOrder?.id]);
+
+  useEffect(() => {
+    if (activePackingOrder?.id) {
+      savePackingState(activePackingOrder.id, 'printedOrderFiles', Array.from(printedOrderFiles));
+    }
+  }, [printedOrderFiles, activePackingOrder?.id]);
+
+  useEffect(() => {
+    if (activePackingOrder?.id) {
+      savePackingState(activePackingOrder.id, 'printedPPLLabels', Array.from(printedPPLLabels));
+    }
+  }, [printedPPLLabels, activePackingOrder?.id]);
 
   // Packing optimization wrapper function
   const runPackingOptimization = () => {
@@ -4317,9 +4468,15 @@ export default function PickPack() {
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data, orderIds) => {
       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      
+      // Clear packing state for all shipped orders
+      orderIds.forEach(orderId => {
+        clearPackingState(orderId);
+        clearPickedProgress(orderId);
+      });
     },
   });
 
