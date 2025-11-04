@@ -12,8 +12,8 @@ interface PPLAuthCache {
 }
 
 // PPL API Configuration - Sandbox Environment
-const PPL_BASE_URL = 'https://sandbox.ppl.cz/myapi2';
-const PPL_TOKEN_URL = 'https://sandbox.ppl.cz/myapi2/login/getAccessToken';
+const PPL_BASE_URL = 'https://api-dev.dhl.com/ecs/ppl/myapi2';
+const PPL_TOKEN_URL = 'https://api-dev.dhl.com/ecs/ppl/myapi2/login/getAccessToken';
 
 // Cache for access token
 let tokenCache: PPLAuthCache | null = null;
