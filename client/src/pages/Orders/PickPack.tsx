@@ -1213,7 +1213,6 @@ export default function PickPack() {
       // Only set cartons from localStorage if we have saved data
       if (loadedCartons.length > 0) {
         setCartons(loadedCartons);
-        hasLoadedFromStorage.current = true;
       }
       
       setPackingChecklist(loadedPackingChecklist);
@@ -1222,9 +1221,9 @@ export default function PickPack() {
       setPrintedProductFiles(new Set(loadedPrintedProductFiles));
       setPrintedOrderFiles(new Set(loadedPrintedOrderFiles));
       setPrintedPPLLabels(new Set(loadedPrintedPPLLabels));
-    } else {
-      // Reset the flag when leaving packing mode
-      hasLoadedFromStorage.current = false;
+      
+      // Mark this order as having completed initial load
+      initialLoadedOrders.current.add(orderId);
     }
   }, [activePackingOrder?.id]);
 
@@ -1646,19 +1645,27 @@ export default function PickPack() {
     staleTime: 30 * 1000,
   });
 
-  // Track if we've loaded from localStorage to prevent database from overwriting
-  const hasLoadedFromStorage = useRef(false);
+  // Track which orders we've done initial load for (to merge localStorage with DB on first load only)
+  const initialLoadedOrders = useRef(new Set<string>());
 
-  // Sync orderCartons with local cartons state (but don't overwrite localStorage state)
+  // Sync orderCartons with local cartons state
   useEffect(() => {
+    if (!activePackingOrder?.id) return;
+    
+    const orderId = activePackingOrder.id;
+    const isFirstLoad = !initialLoadedOrders.current.has(orderId);
+    
     if (orderCartons && orderCartons.length > 0) {
-      // Only sync from database if we haven't loaded from localStorage yet
-      // OR if the cartons state is empty (fresh load)
-      if (!hasLoadedFromStorage.current || cartons.length === 0) {
-        setCartons(orderCartons);
+      if (isFirstLoad) {
+        // First time seeing this order - localStorage will be loaded separately
+        // Don't update from database yet, let localStorage load first
+        return;
       }
+      
+      // After first load, always sync from database (database is source of truth)
+      setCartons(orderCartons);
     }
-  }, [orderCartons]);
+  }, [orderCartons, activePackingOrder?.id]);
 
   // Auto-populate shipping labels based on carton count
   useEffect(() => {
