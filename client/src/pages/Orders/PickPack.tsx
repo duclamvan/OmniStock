@@ -900,7 +900,11 @@ function OrderFilesDisplay({
 
 export default function PickPack() {
   const { toast } = useToast();
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'pending' | 'picking' | 'packing' | 'ready'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'pending' | 'picking' | 'packing' | 'ready'>(() => {
+    // Load selected tab from localStorage
+    const saved = localStorage.getItem('pickpack-selected-tab');
+    return (saved as any) || 'overview';
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [activePickingOrder, setActivePickingOrder] = useState<PickPackOrder | null>(null);
   const [activePackingOrder, setActivePackingOrder] = useState<PickPackOrder | null>(null);
@@ -1163,6 +1167,11 @@ export default function PickPack() {
     }
   }, [expandedOverviewItems]);
 
+  // Save selected tab to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('pickpack-selected-tab', selectedTab);
+  }, [selectedTab]);
+
   // Load packing state when activePackingOrder changes
   useEffect(() => {
     if (activePackingOrder?.id) {
@@ -1200,13 +1209,22 @@ export default function PickPack() {
       setBundlePickedItems(bundlePickedItemsWithSets);
       
       setShowBarcodeScanner(loadedShowBarcode);
-      setCartons(loadedCartons);
+      
+      // Only set cartons from localStorage if we have saved data
+      if (loadedCartons.length > 0) {
+        setCartons(loadedCartons);
+        hasLoadedFromStorage.current = true;
+      }
+      
       setPackingChecklist(loadedPackingChecklist);
       setPackingMaterialsApplied(loadedPackingMaterials);
       setPrintedDocuments(loadedPrintedDocs);
       setPrintedProductFiles(new Set(loadedPrintedProductFiles));
       setPrintedOrderFiles(new Set(loadedPrintedOrderFiles));
       setPrintedPPLLabels(new Set(loadedPrintedPPLLabels));
+    } else {
+      // Reset the flag when leaving packing mode
+      hasLoadedFromStorage.current = false;
     }
   }, [activePackingOrder?.id]);
 
@@ -1628,10 +1646,17 @@ export default function PickPack() {
     staleTime: 30 * 1000,
   });
 
-  // Sync orderCartons with local cartons state
+  // Track if we've loaded from localStorage to prevent database from overwriting
+  const hasLoadedFromStorage = useRef(false);
+
+  // Sync orderCartons with local cartons state (but don't overwrite localStorage state)
   useEffect(() => {
     if (orderCartons && orderCartons.length > 0) {
-      setCartons(orderCartons);
+      // Only sync from database if we haven't loaded from localStorage yet
+      // OR if the cartons state is empty (fresh load)
+      if (!hasLoadedFromStorage.current || cartons.length === 0) {
+        setCartons(orderCartons);
+      }
     }
   }, [orderCartons]);
 
