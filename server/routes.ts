@@ -46,7 +46,6 @@ import {
   packingMaterials,
   customerShippingAddresses,
   productFiles,
-  pplShipmentHistory,
 } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -7903,29 +7902,6 @@ Return ONLY the subject line without quotes or extra formatting.`,
         pplStatus: 'created'
       });
 
-      // Save shipment records to history table for permanent record
-      try {
-        const historyRecords = shipmentNumbers.map((shipmentNumber, index) => ({
-          orderId,
-          shipmentNumber,
-          batchId,
-          cartonNumber: cartons[index]?.cartonNumber || (index + 1),
-          status: 'active',
-          customerName: recipientName,
-          recipientCountry: recipientCountryCode,
-          hasCOD: hasCOD || false,
-          codAmount: hasCOD && codInfo ? codInfo.codPrice.toString() : null,
-          codCurrency: hasCOD && codInfo ? codInfo.codCurrency : null,
-          labelBase64: label.labelContent
-        }));
-
-        await db.insert(pplShipmentHistory).values(historyRecords);
-        console.log(`✅ Saved ${historyRecords.length} PPL shipment records to history table`);
-      } catch (historyError: any) {
-        // Don't fail the request if history save fails, just log it
-        console.error('Failed to save PPL shipment history:', historyError);
-      }
-
       res.json({
         success: true,
         batchId,
@@ -8011,111 +7987,6 @@ Return ONLY the subject line without quotes or extra formatting.`,
       console.error('Error cancelling PPL labels:', error);
       res.status(500).json({ 
         error: error.message || 'Failed to cancel PPL labels'
-      });
-    }
-  });
-
-  // Cancel individual PPL shipment by shipment number
-  app.post('/api/orders/:orderId/ppl/cancel-shipment/:shipmentNumber', async (req, res) => {
-    try {
-      const { orderId, shipmentNumber } = req.params;
-      const { cancelPPLShipment } = await import('./services/pplService');
-      
-      // Get order details
-      const order = await storage.getOrderById(orderId);
-      if (!order) {
-        return res.status(404).json({ error: 'Order not found' });
-      }
-
-      if (!order.pplShipmentNumbers || !order.pplShipmentNumbers.includes(shipmentNumber)) {
-        return res.status(400).json({ error: 'Shipment number not found in order' });
-      }
-
-      // Check if already cancelled
-      if (order.pplCancelledShipments && order.pplCancelledShipments.includes(shipmentNumber)) {
-        return res.status(400).json({ error: 'Shipment already cancelled' });
-      }
-
-      // Try to cancel the shipment via PPL API
-      // If it fails (e.g., test mode, already shipped), we still mark it as cancelled locally
-      let pplCancelSuccess = true;
-      let pplCancelError = null;
-      
-      try {
-        await cancelPPLShipment(shipmentNumber);
-        console.log(`✅ Successfully cancelled PPL shipment ${shipmentNumber} via API`);
-      } catch (pplError: any) {
-        pplCancelSuccess = false;
-        pplCancelError = pplError.message;
-        console.warn(`⚠️ PPL API cancellation failed for ${shipmentNumber}, marking as cancelled locally only:`, pplError.message);
-        // Continue to mark as cancelled in our database even if PPL API fails
-      }
-
-      // Add to cancelled shipments array (local cancellation always succeeds)
-      const cancelledShipments = [...(order.pplCancelledShipments || []), shipmentNumber];
-      
-      // Check if all shipments are now cancelled
-      const allCancelled = order.pplShipmentNumbers.every(num => cancelledShipments.includes(num));
-
-      // Update order
-      await storage.updateOrder(orderId, {
-        pplCancelledShipments: cancelledShipments,
-        ...(allCancelled && { pplStatus: 'cancelled' })
-      });
-
-      // Update shipment history record to mark as cancelled
-      try {
-        await db
-          .update(pplShipmentHistory)
-          .set({
-            status: 'cancelled',
-            cancelledAt: new Date(),
-            cancelledBy: 'system', // TODO: Use authenticated user when available
-            notes: pplCancelSuccess 
-              ? 'Cancelled via PPL API' 
-              : `Local cancellation only. PPL API error: ${pplCancelError}`
-          })
-          .where(and(
-            eq(pplShipmentHistory.orderId, orderId),
-            eq(pplShipmentHistory.shipmentNumber, shipmentNumber)
-          ));
-        
-        console.log(`✅ Updated PPL shipment history record for ${shipmentNumber} to cancelled status`);
-      } catch (historyError: any) {
-        // Don't fail the request if history update fails, just log it
-        console.error('Failed to update PPL shipment history:', historyError);
-      }
-
-      res.json({
-        success: true,
-        shipmentNumber,
-        cancelledShipments,
-        allCancelled,
-        pplCancelSuccess,
-        warning: !pplCancelSuccess ? 'Shipment marked as cancelled locally. PPL API cancellation failed - the shipment may still be active in PPL system.' : undefined
-      });
-
-    } catch (error: any) {
-      console.error('Error cancelling PPL shipment:', error);
-      res.status(500).json({ 
-        error: error.message || 'Failed to cancel PPL shipment'
-      });
-    }
-  });
-
-  // Get PPL shipment history (all labels - active and cancelled)
-  app.get('/api/shipping/ppl/history', async (req, res) => {
-    try {
-      const history = await db
-        .select()
-        .from(pplShipmentHistory)
-        .orderBy(desc(pplShipmentHistory.createdAt));
-      
-      res.json(history);
-    } catch (error: any) {
-      console.error('Error fetching PPL shipment history:', error);
-      res.status(500).json({ 
-        error: error.message || 'Failed to fetch PPL shipment history'
       });
     }
   });

@@ -1,773 +1,273 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { 
-  Truck, 
-  Package, 
-  Search,
-  FileText,
-  Calendar,
-  MapPin,
-  CheckCircle2,
-  XCircle,
-  Eye,
-  Download,
-  AlertTriangle,
-  Settings,
-  RefreshCw
-} from 'lucide-react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  Package, 
+  Truck, 
+  MapPin, 
+  CheckCircle, 
+  XCircle, 
+  AlertCircle,
+  ExternalLink,
+  Plus,
+  Settings,
+  TestTube
+} from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 
-interface PPLShipmentRecord {
+interface ShippingMethod {
   id: number;
-  orderId: string;
-  shipmentNumber: string;
-  batchId: string;
-  cartonNumber: number;
-  status: string;
-  customerName: string;
-  recipientCountry: string;
-  hasCOD: boolean;
-  codAmount: string;
-  codCurrency: string;
-  labelBase64: string;
-  createdAt: string;
-  cancelledAt: string | null;
-  cancelledBy: string | null;
+  name: string;
+  carrier: string;
+  min_weight: number;
+  max_weight: number;
+  price: number;
+  currency: string;
+  countries: string[];
+  service_point_input: 'none' | 'required' | 'optional';
+}
+
+interface TestAddress {
+  name: string;
+  address: string;
+  city: string;
+  postal_code: string;
+  country: string;
+  telephone?: string;
+  email?: string;
+}
+
+interface ShippingLabel {
+  parcel: any;
+  label?: any;
 }
 
 export default function ShippingManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCarrier, setSelectedCarrier] = useState('ppl');
-  const [viewingLabel, setViewingLabel] = useState<PPLShipmentRecord | null>(null);
-  const [cancellingShipment, setCancellingShipment] = useState<PPLShipmentRecord | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [senderAddress, setSenderAddress] = useState({
-    name: 'Davie Supply',
-    street: 'Dragonská 2545/9A',
-    city: 'Cheb',
-    zipCode: '35002',
-    country: 'CZ',
-    phone: '+420776887045',
-    email: 'info@daviesupply.cz'
+  const [testAddress, setTestAddress] = useState<TestAddress>({
+    name: 'Test Customer',
+    address: 'Test Street 123',
+    city: 'Amsterdam',
+    postal_code: '1012AB',
+    country: 'NL',
+    telephone: '+31612345678',
+    email: 'test@example.com'
   });
 
-  // Fetch PPL shipment history
-  const { data: pplHistory = [], isLoading: isLoadingPPL } = useQuery<PPLShipmentRecord[]>({
-    queryKey: ['/api/shipping/ppl/history'],
-    enabled: selectedCarrier === 'ppl'
-  });
-
-  // Check PPL API status
-  const { data: apiStatus, isLoading: isCheckingAPI, refetch: recheckAPI } = useQuery({
+  // Test connection
+  const { data: connectionStatus, isLoading: isTestingConnection } = useQuery({
     queryKey: ['/api/shipping/test-connection'],
-    enabled: false  // Only fetch when settings dialog is open
+    refetchInterval: false,
+    retry: false
   });
 
-  // Cancel shipment mutation
-  const cancelShipmentMutation = useMutation({
-    mutationFn: async (shipment: PPLShipmentRecord) => {
-      return apiRequest('POST', `/api/orders/${shipment.orderId}/ppl/cancel-shipment/${shipment.shipmentNumber}`, {});
-    },
-    onSuccess: () => {
+  // Get shipping methods
+  const { data: shippingMethods = [], isLoading: isLoadingMethods } = useQuery({
+    queryKey: ['/api/shipping/methods'],
+    enabled: connectionStatus?.connected === true
+  });
+
+  // Create test parcel mutation
+  const createTestParcelMutation = useMutation({
+    mutationFn: (address: TestAddress) => 
+      apiRequest('POST', '/api/shipping/create-test-parcel', address),
+    onSuccess: (data) => {
       toast({
-        title: "Shipment Cancelled",
-        description: "The shipment has been successfully cancelled.",
+        title: "Test Parcel Created",
+        description: `Test parcel created successfully. Tracking: ${data.tracking_number || 'N/A'}`
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/shipping/ppl/history'] });
-      setCancellingShipment(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/shipping'] });
     },
     onError: (error: any) => {
       toast({
-        title: "Cancellation Failed",
-        description: error.message || "Failed to cancel shipment",
-        variant: "destructive",
+        title: "Failed to Create Test Parcel",
+        description: error.message || "Unknown error occurred",
+        variant: "destructive"
       });
     }
   });
 
-  // Filter shipments based on search term
-  const filteredPPLHistory = pplHistory.filter(record => 
-    record.shipmentNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    record.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    record.customerName?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleViewLabel = (record: PPLShipmentRecord) => {
-    setViewingLabel(record);
+  const handleCreateTestParcel = () => {
+    createTestParcelMutation.mutate(testAddress);
   };
 
-  const handleDownloadLabel = (record: PPLShipmentRecord) => {
-    if (!record.labelBase64) {
-      toast({
-        title: "No Label Data",
-        description: "This shipment has no label data available",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Create a blob from base64 and download
-    const byteCharacters = atob(record.labelBase64);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    const blob = new Blob([byteArray], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `PPL_${record.shipmentNumber}_${record.orderId}.pdf`;
-    link.click();
-    URL.revokeObjectURL(url);
-
-    toast({
-      title: "Label Downloaded",
-      description: `Downloaded label for shipment ${record.shipmentNumber}`,
-    });
-  };
-
-  const handleCancelShipment = (record: PPLShipmentRecord) => {
-    setCancellingShipment(record);
-  };
-
-  const confirmCancelShipment = () => {
-    if (cancellingShipment) {
-      cancelShipmentMutation.mutate(cancellingShipment);
-    }
-  };
-
-  // Render shipment table (shared component for all carriers)
-  const renderShipmentTable = (
-    shipments: PPLShipmentRecord[],
-    isLoading: boolean,
-    carrier: string
-  ) => {
-    if (isLoading) {
-      return (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="w-8 h-8 border-4 border-orange-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-sm text-gray-500">Loading shipment history...</p>
-          </div>
-        </div>
-      );
-    }
-
-    if (shipments.length === 0) {
-      return (
-        <div className="flex flex-col items-center justify-center py-12">
-          <Package className="h-12 w-12 text-gray-300 mb-3" />
-          <p className="text-sm font-medium text-gray-900">No shipments found</p>
-          <p className="text-sm text-gray-500 mt-1">
-            {searchTerm ? 'Try a different search term' : `Start creating ${carrier} labels from the Pick & Pack workflow`}
-          </p>
-        </div>
-      );
-    }
-
-    return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[140px]">Tracking #</TableHead>
-            <TableHead>Order ID</TableHead>
-            <TableHead>Customer</TableHead>
-            <TableHead className="text-center">Carton</TableHead>
-            <TableHead className="text-center">Country</TableHead>
-            <TableHead className="text-center">COD</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead className="text-center">Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {shipments.map((record) => (
-            <TableRow key={record.id} data-testid={`shipment-row-${record.id}`}>
-              <TableCell className="font-mono text-xs">
-                {record.shipmentNumber}
-              </TableCell>
-              <TableCell className="font-medium">
-                {record.orderId}
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-3.5 w-3.5 text-gray-400" />
-                  <span className="text-sm">{record.customerName || 'N/A'}</span>
-                </div>
-              </TableCell>
-              <TableCell className="text-center">
-                <Badge variant="outline" className="font-mono">
-                  #{record.cartonNumber}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-center">
-                <Badge variant="secondary">
-                  {record.recipientCountry}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-center">
-                {record.hasCOD ? (
-                  <div className="flex flex-col items-center">
-                    <CheckCircle2 className="h-4 w-4 text-green-600 mb-1" />
-                    <span className="text-xs font-medium">
-                      {record.codAmount} {record.codCurrency}
-                    </span>
-                  </div>
-                ) : (
-                  <span className="text-gray-400 text-xs">—</span>
-                )}
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                  <Calendar className="h-3.5 w-3.5" />
-                  {format(new Date(record.createdAt), 'MMM d, yyyy')}
-                </div>
-              </TableCell>
-              <TableCell className="text-center">
-                {record.status === 'active' ? (
-                  <Badge className="bg-green-500 hover:bg-green-600">
-                    Active
-                  </Badge>
-                ) : (
-                  <div className="flex flex-col items-center gap-1">
-                    <Badge variant="destructive">
-                      Cancelled
-                    </Badge>
-                    {record.cancelledAt && (
-                      <span className="text-xs text-gray-500">
-                        {format(new Date(record.cancelledAt), 'MMM d')}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex items-center justify-end gap-1">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 px-2"
-                    title="View Label"
-                    onClick={() => handleViewLabel(record)}
-                    data-testid={`button-view-${record.id}`}
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    View
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 px-2"
-                    title="Download Label"
-                    onClick={() => handleDownloadLabel(record)}
-                    data-testid={`button-download-${record.id}`}
-                  >
-                    <Download className="h-4 w-4 mr-1" />
-                    Download
-                  </Button>
-                  {record.status === 'active' && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      title="Cancel Shipment"
-                      onClick={() => handleCancelShipment(record)}
-                      data-testid={`button-cancel-${record.id}`}
-                    >
-                      <XCircle className="h-4 w-4 mr-1" />
-                      Cancel
-                    </Button>
-                  )}
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    );
+  const formatPrice = (price: number, currency: string) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency || 'EUR'
+    }).format(price);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900" data-testid="title-shipping">
-                Shipping Management
-              </h1>
-              <p className="mt-1 text-sm text-gray-500">
-                Manage shipping labels and track parcels across all carriers
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Badge variant="outline" className="px-3 py-1.5">
-                <Package className="h-3.5 w-3.5 mr-1.5" />
-                {pplHistory.length} Total Labels
-              </Badge>
-            </div>
-          </div>
+    <div className="p-6 space-y-6" data-testid="shipping-management">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold" data-testid="title-shipping">Shipping Management</h1>
+          <p className="text-muted-foreground">Manage shipping labels and track parcels with PPL</p>
         </div>
+        <Button data-testid="button-settings">
+          <Settings className="w-4 h-4 mr-2" />
+          Settings
+        </Button>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs value={selectedCarrier} onValueChange={setSelectedCarrier} className="space-y-6">
-          {/* Carrier Tabs */}
-          <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
-            <TabsTrigger value="ppl" className="gap-2" data-testid="tab-ppl">
-              <Truck className="h-4 w-4" />
-              PPL
-            </TabsTrigger>
-            <TabsTrigger value="gls" className="gap-2" data-testid="tab-gls">
-              <Truck className="h-4 w-4" />
-              GLS
-            </TabsTrigger>
-            <TabsTrigger value="dhl" className="gap-2" data-testid="tab-dhl">
-              <Truck className="h-4 w-4" />
-              DHL
-            </TabsTrigger>
-          </TabsList>
+      <Tabs defaultValue="connection" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="connection" data-testid="tab-connection">Connection</TabsTrigger>
+          <TabsTrigger value="info" data-testid="tab-info">PPL Information</TabsTrigger>
+        </TabsList>
 
-          {/* PPL Tab Content */}
-          <TabsContent value="ppl" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-orange-600" />
-                      PPL Shipping Labels
-                    </CardTitle>
-                    <CardDescription className="mt-1.5">
-                      Complete history of all PPL shipments including active and cancelled labels
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSettingsOpen(true);
-                        recheckAPI();
-                      }}
-                      className="mr-2"
-                      data-testid="button-shipping-settings"
-                    >
-                      <Settings className="h-4 w-4 mr-2" />
-                      Settings
-                    </Button>
-                    <Badge variant="secondary" className="px-3 py-1">
-                      {pplHistory.filter(r => r.status === 'active').length} Active
-                    </Badge>
-                    <Badge variant="outline" className="px-3 py-1">
-                      {pplHistory.filter(r => r.status === 'cancelled').length} Cancelled
-                    </Badge>
-                  </div>
+        <TabsContent value="connection" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5" />
+                PPL Connection Status
+              </CardTitle>
+              <CardDescription>
+                Check your PPL API connection and configuration
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isTestingConnection ? (
+                <div className="flex items-center gap-2" data-testid="status-testing">
+                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                  <span>Testing connection...</span>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Search Bar */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search by tracking number, order ID, or customer name..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                    data-testid="input-search-shipments"
-                  />
+              ) : connectionStatus ? (
+                <div className="space-y-4">
+                  <Alert className={connectionStatus.connected ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'} data-testid="status-alert">
+                    <div className="flex items-center gap-2">
+                      {connectionStatus.connected ? (
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-600" />
+                      )}
+                      <AlertDescription className={connectionStatus.connected ? 'text-green-800' : 'text-red-800'}>
+                        {connectionStatus.connected ? 'Successfully connected to PPL API' : 'Failed to connect to PPL API'}
+                      </AlertDescription>
+                    </div>
+                  </Alert>
+
+                  {connectionStatus.connected && (
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="font-medium mb-2">Connection Information</h4>
+                      <div className="space-y-1 text-sm">
+                        <p><strong>Provider:</strong> {connectionStatus.provider || 'PPL'}</p>
+                        <p><strong>Status:</strong> Active</p>
+                        <p><strong>Message:</strong> {connectionStatus.message}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {connectionStatus.error && (
+                    <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                      <h4 className="font-medium text-red-800 mb-2">Error Details</h4>
+                      <p className="text-sm text-red-600">{connectionStatus.error}</p>
+                      <p className="text-sm text-red-600 mt-2">Please check that PPL_CLIENT_ID and PPL_CLIENT_SECRET environment variables are set.</p>
+                    </div>
+                  )}
                 </div>
+              ) : (
+                <Alert>
+                  <AlertCircle className="w-4 h-4" />
+                  <AlertDescription>
+                    Connection status unknown. Check your API credentials in environment variables (PPL_CLIENT_ID, PPL_CLIENT_SECRET).
+                  </AlertDescription>
+                </Alert>
+              )}
 
-                {/* Shipments Table */}
-                <div className="rounded-lg border bg-white">
-                  {renderShipmentTable(filteredPPLHistory, isLoadingPPL, 'PPL')}
-                </div>
-
-                {/* Summary Stats */}
-                {filteredPPLHistory.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4">
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-gray-900">
-                            {filteredPPLHistory.length}
-                          </div>
-                          <div className="text-sm text-gray-500 mt-1">Total Shipments</div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-green-600">
-                            {filteredPPLHistory.filter(r => r.status === 'active').length}
-                          </div>
-                          <div className="text-sm text-gray-500 mt-1">Active Labels</div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-orange-600">
-                            {filteredPPLHistory.filter(r => r.hasCOD).length}
-                          </div>
-                          <div className="text-sm text-gray-500 mt-1">COD Shipments</div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-red-600">
-                            {filteredPPLHistory.filter(r => r.status === 'cancelled').length}
-                          </div>
-                          <div className="text-sm text-gray-500 mt-1">Cancelled</div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* GLS Tab Content */}
-          <TabsContent value="gls" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Truck className="h-5 w-5 text-blue-600" />
-                  GLS Shipping Labels
-                </CardTitle>
-                <CardDescription>
-                  GLS carrier integration - showing table structure (integration coming soon)
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search GLS shipments..."
-                    className="pl-10"
-                    disabled
-                  />
-                </div>
-                <div className="rounded-lg border bg-white">
-                  {renderShipmentTable([], false, 'GLS')}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* DHL Tab Content */}
-          <TabsContent value="dhl" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Truck className="h-5 w-5 text-red-600" />
-                  DHL Shipping Labels
-                </CardTitle>
-                <CardDescription>
-                  DHL carrier integration - showing table structure (integration coming soon)
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search DHL shipments..."
-                    className="pl-10"
-                    disabled
-                  />
-                </div>
-                <div className="rounded-lg border bg-white">
-                  {renderShipmentTable([], false, 'DHL')}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      {/* View Label Dialog */}
-      <Dialog open={!!viewingLabel} onOpenChange={(open) => !open && setViewingLabel(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle>Shipping Label - {viewingLabel?.shipmentNumber}</DialogTitle>
-            <DialogDescription>
-              Order {viewingLabel?.orderId} • Carton #{viewingLabel?.cartonNumber}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-4">
-            {viewingLabel?.labelBase64 ? (
-              <iframe
-                src={`data:application/pdf;base64,${viewingLabel.labelBase64}`}
-                className="w-full h-[600px] border rounded"
-                title={`Label ${viewingLabel.shipmentNumber}`}
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-                <FileText className="h-12 w-12 mb-3" />
-                <p>No label data available</p>
-              </div>
-            )}
-          </div>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setViewingLabel(null)}>
-              Close
-            </Button>
-            {viewingLabel && (
-              <Button onClick={() => handleDownloadLabel(viewingLabel)}>
-                <Download className="h-4 w-4 mr-2" />
-                Download PDF
-              </Button>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Cancel Shipment Confirmation Dialog */}
-      <AlertDialog open={!!cancellingShipment} onOpenChange={(open) => !open && setCancellingShipment(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
-              Cancel Shipment?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to cancel shipment <strong>{cancellingShipment?.shipmentNumber}</strong>?
-              This action will attempt to cancel the shipment with PPL and mark it as cancelled in the system.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Keep Shipment</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmCancelShipment}
-              className="bg-red-600 hover:bg-red-700"
-              disabled={cancelShipmentMutation.isPending}
-            >
-              {cancelShipmentMutation.isPending ? 'Cancelling...' : 'Cancel Shipment'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Settings Dialog */}
-      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              PPL Shipping Settings
-            </DialogTitle>
-            <DialogDescription>
-              Configure API connection and default sender address
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-6 mt-4">
-            {/* API Status Section */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-base font-semibold">API Server Status</Label>
-                <Button
+              <div className="pt-4">
+                <Button 
+                  onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/shipping/test-connection'] })}
                   variant="outline"
-                  size="sm"
-                  onClick={() => recheckAPI()}
-                  disabled={isCheckingAPI}
-                  data-testid="button-recheck-api"
+                  data-testid="button-test-connection"
                 >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${isCheckingAPI ? 'animate-spin' : ''}`} />
-                  Check Status
+                  Test Connection Again
                 </Button>
               </div>
-              
-              <Card>
-                <CardContent className="pt-6">
-                  {isCheckingAPI ? (
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                      <span>Checking API connection...</span>
-                    </div>
-                  ) : apiStatus ? (
-                    <div className="space-y-3">
-                      <div className={`flex items-center gap-2 ${
-                        (apiStatus as any).connected ? 'text-green-700' : 'text-red-700'
-                      }`}>
-                        {(apiStatus as any).connected ? (
-                          <CheckCircle2 className="h-5 w-5" />
-                        ) : (
-                          <XCircle className="h-5 w-5" />
-                        )}
-                        <span className="font-medium">
-                          {(apiStatus as any).connected ? 'Connected to PPL API' : 'Connection Failed'}
-                        </span>
-                      </div>
-                      {(apiStatus as any).message && (
-                        <p className="text-sm text-gray-600">{(apiStatus as any).message}</p>
-                      )}
-                      {(apiStatus as any).error && (
-                        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-                          <p className="font-medium mb-1">Error:</p>
-                          <p>{(apiStatus as any).error}</p>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500 italic">Click "Check Status" to verify API connection</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-            <Separator />
+        <TabsContent value="info" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Truck className="w-5 h-5" />
+                PPL Shipping Information
+              </CardTitle>
+              <CardDescription>
+                Information about PPL shipping integration
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium mb-2">Supported Features</h4>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                    <li>Shipping label generation (PDF format)</li>
+                    <li>Batch shipment creation</li>
+                    <li>Dobírka (Cash on Delivery) support</li>
+                    <li>Tracking number assignment</li>
+                    <li>Automated label printing</li>
+                  </ul>
+                </div>
 
-            {/* Sender Address Section */}
-            <div className="space-y-3">
-              <Label className="text-base font-semibold">Default Sender Address</Label>
-              <p className="text-sm text-gray-500">
-                This address will be used as the sender for all PPL shipments
-              </p>
-              
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div className="col-span-2">
-                  <Label htmlFor="sender-name">Company Name</Label>
-                  <Input
-                    id="sender-name"
-                    value={senderAddress.name}
-                    onChange={(e) => setSenderAddress({ ...senderAddress, name: e.target.value })}
-                    placeholder="Company name"
-                    className="mt-1.5"
-                  />
-                </div>
-                
-                <div className="col-span-2">
-                  <Label htmlFor="sender-street">Street Address</Label>
-                  <Input
-                    id="sender-street"
-                    value={senderAddress.street}
-                    onChange={(e) => setSenderAddress({ ...senderAddress, street: e.target.value })}
-                    placeholder="Street address"
-                    className="mt-1.5"
-                  />
-                </div>
-                
+                <Separator />
+
                 <div>
-                  <Label htmlFor="sender-city">City</Label>
-                  <Input
-                    id="sender-city"
-                    value={senderAddress.city}
-                    onChange={(e) => setSenderAddress({ ...senderAddress, city: e.target.value })}
-                    placeholder="City"
-                    className="mt-1.5"
-                  />
+                  <h4 className="font-medium mb-2">Product Types</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="bg-gray-50 p-3 rounded">
+                      <p className="font-medium">PPL Parcel CZ Business</p>
+                      <p className="text-muted-foreground">Standard domestic Czech Republic shipments</p>
+                    </div>
+                  </div>
                 </div>
-                
+
+                <Separator />
+
                 <div>
-                  <Label htmlFor="sender-zip">Zip Code</Label>
-                  <Input
-                    id="sender-zip"
-                    value={senderAddress.zipCode}
-                    onChange={(e) => setSenderAddress({ ...senderAddress, zipCode: e.target.value })}
-                    placeholder="Zip code"
-                    className="mt-1.5"
-                  />
+                  <h4 className="font-medium mb-2">Dobírka (Cash on Delivery)</h4>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    PPL supports cash on delivery (dobírka) for shipments. You can specify:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                    <li>COD amount in CZK, EUR, or other currencies</li>
+                    <li>Variable symbol for payment tracking</li>
+                    <li>Automatic order ID association</li>
+                  </ul>
                 </div>
-                
+
+                <Separator />
+
                 <div>
-                  <Label htmlFor="sender-country">Country</Label>
-                  <Input
-                    id="sender-country"
-                    value={senderAddress.country}
-                    onChange={(e) => setSenderAddress({ ...senderAddress, country: e.target.value })}
-                    placeholder="Country code (CZ)"
-                    className="mt-1.5"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="sender-phone">Phone</Label>
-                  <Input
-                    id="sender-phone"
-                    value={senderAddress.phone}
-                    onChange={(e) => setSenderAddress({ ...senderAddress, phone: e.target.value })}
-                    placeholder="+420..."
-                    className="mt-1.5"
-                  />
-                </div>
-                
-                <div className="col-span-2">
-                  <Label htmlFor="sender-email">Email</Label>
-                  <Input
-                    id="sender-email"
-                    type="email"
-                    value={senderAddress.email}
-                    onChange={(e) => setSenderAddress({ ...senderAddress, email: e.target.value })}
-                    placeholder="email@example.com"
-                    className="mt-1.5"
-                  />
+                  <h4 className="font-medium mb-2">How to Use</h4>
+                  <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
+                    <li>Create or edit an order in the Orders section</li>
+                    <li>Add dobírka amount and currency if needed</li>
+                    <li>Go to Order Details and click "Create PPL Label"</li>
+                    <li>The label will be generated and stored with the order</li>
+                    <li>Download and print the label for shipping</li>
+                  </ol>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 mt-6">
-            <Button variant="outline" onClick={() => setSettingsOpen(false)}>
-              Close
-            </Button>
-            <Button onClick={() => {
-              toast({
-                title: "Settings Saved",
-                description: "Sender address has been updated successfully",
-              });
-              setSettingsOpen(false);
-            }}>
-              Save Changes
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
