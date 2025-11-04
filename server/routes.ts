@@ -7819,6 +7819,9 @@ Return ONLY the subject line without quotes or extra formatting.`,
       // - Other cartons are linked but have no COD
       const shouldAddCOD = hasCOD && isFirstCarton;
       
+      // Extract numeric part from order ID for variable symbol (e.g., "ORD-251028-4142" -> "2510284142")
+      const numericOrderId = order.orderId.replace(/\D/g, '').slice(0, 10);
+      
       const pplShipment: any = {
         referenceId,
         productType: hasCOD ? 'BUSD' : 'BUSS', // Product type based on whether order has COD
@@ -7847,7 +7850,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
         cashOnDelivery: shouldAddCOD ? {
           value: parseFloat(order.cashOnDeliveryAmount),
           currency: order.cashOnDeliveryCurrency || 'CZK',
-          variableSymbol: order.orderId
+          variableSymbol: numericOrderId || '1234567890'
         } : undefined
       };
 
