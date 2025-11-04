@@ -6069,6 +6069,7 @@ export default function PickPack() {
                                         // Refresh data
                                         await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
                                         await refetchCartons();
+                                        await fetchShipmentLabels(); // Refresh shipment labels
                                         toast({ title: "Shipment deleted successfully" });
                                       } catch (error) {
                                         toast({
