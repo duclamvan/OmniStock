@@ -7331,9 +7331,10 @@ Return ONLY the subject line without quotes or extra formatting.`,
       };
 
       // Build PPL shipment
+      const hasCOD = order.cashOnDeliveryAmount && parseFloat(order.cashOnDeliveryAmount) > 0;
       const pplShipment: any = {
         referenceId: order.orderId,
-        productType: 'PPL Parcel CZ Business',
+        productType: hasCOD ? 'BUSD' : 'BUSS',
         sender: {
           country: 'CZ',
           zipCode: '35002',
@@ -7573,9 +7574,10 @@ Return ONLY the subject line without quotes or extra formatting.`,
           return 'CZ'; // Default to CZ
         };
         
+        const hasCOD = order.cashOnDeliveryAmount && parseFloat(order.cashOnDeliveryAmount) > 0;
         const pplShipment: any = {
           referenceId,
-          productType: 'PPL Parcel CZ Business',
+          productType: hasCOD ? 'BUSD' : 'BUSS',
           sender: {
             country: 'CZ',
             zipCode: '35002',
