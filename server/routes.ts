@@ -7903,6 +7903,29 @@ Return ONLY the subject line without quotes or extra formatting.`,
         pplStatus: 'created'
       });
 
+      // Save shipment records to history table for permanent record
+      try {
+        const historyRecords = shipmentNumbers.map((shipmentNumber, index) => ({
+          orderId,
+          shipmentNumber,
+          batchId,
+          cartonNumber: cartons[index]?.cartonNumber || (index + 1),
+          status: 'active',
+          customerName: recipientName,
+          recipientCountry: recipientCountryCode,
+          hasCOD: hasCOD || false,
+          codAmount: hasCOD && codInfo ? codInfo.codPrice.toString() : null,
+          codCurrency: hasCOD && codInfo ? codInfo.codCurrency : null,
+          labelBase64: label.labelContent
+        }));
+
+        await db.insert(pplShipmentHistory).values(historyRecords);
+        console.log(`✅ Saved ${historyRecords.length} PPL shipment records to history table`);
+      } catch (historyError: any) {
+        // Don't fail the request if history save fails, just log it
+        console.error('Failed to save PPL shipment history:', historyError);
+      }
+
       res.json({
         success: true,
         batchId,
@@ -8039,6 +8062,29 @@ Return ONLY the subject line without quotes or extra formatting.`,
         pplCancelledShipments: cancelledShipments,
         ...(allCancelled && { pplStatus: 'cancelled' })
       });
+
+      // Update shipment history record to mark as cancelled
+      try {
+        await db
+          .update(pplShipmentHistory)
+          .set({
+            status: 'cancelled',
+            cancelledAt: new Date(),
+            cancelledBy: 'system', // TODO: Use authenticated user when available
+            notes: pplCancelSuccess 
+              ? 'Cancelled via PPL API' 
+              : `Local cancellation only. PPL API error: ${pplCancelError}`
+          })
+          .where(and(
+            eq(pplShipmentHistory.orderId, orderId),
+            eq(pplShipmentHistory.shipmentNumber, shipmentNumber)
+          ));
+        
+        console.log(`✅ Updated PPL shipment history record for ${shipmentNumber} to cancelled status`);
+      } catch (historyError: any) {
+        // Don't fail the request if history update fails, just log it
+        console.error('Failed to update PPL shipment history:', historyError);
+      }
 
       res.json({
         success: true,
