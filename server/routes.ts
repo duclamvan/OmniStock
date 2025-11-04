@@ -7331,12 +7331,12 @@ Return ONLY the subject line without quotes or extra formatting.`,
       };
 
       // Validate required shipping address fields
-      if (!shippingAddress.postalCode?.trim()) {
+      if (!shippingAddress.zipCode?.trim()) {
         return res.status(400).json({ 
           error: 'Missing required shipping address: Postal Code is required for PPL label creation. Please update the order shipping address.' 
         });
       }
-      if (!shippingAddress.address?.trim()) {
+      if (!shippingAddress.street?.trim()) {
         return res.status(400).json({ 
           error: 'Missing required shipping address: Street Address is required for PPL label creation. Please update the order shipping address.' 
         });
@@ -7363,12 +7363,12 @@ Return ONLY the subject line without quotes or extra formatting.`,
         },
         recipient: {
           country: normalizeCountry(shippingAddress.country),
-          zipCode: shippingAddress.postalCode.trim(),
-          name: shippingAddress.name || customer?.name || 'Unknown',
-          street: shippingAddress.address.trim(),
+          zipCode: shippingAddress.zipCode.trim(),
+          name: `${shippingAddress.firstName} ${shippingAddress.lastName}`.trim() || customer?.name || 'Unknown',
+          street: shippingAddress.street.trim(),
           city: shippingAddress.city.trim(),
-          phone: shippingAddress.phone || customer?.phone || undefined,
-          email: customer?.email || undefined
+          phone: shippingAddress.tel || customer?.phone || undefined,
+          email: shippingAddress.email || customer?.email || undefined
         },
         cashOnDelivery: (dobirkaAmount && parseFloat(dobirkaAmount) > 0) ? {
           codCurrency: dobirkaCurrency || 'CZK',
@@ -7592,14 +7592,14 @@ Return ONLY the subject line without quotes or extra formatting.`,
         };
         
         // Validate required shipping address fields
-        if (!shippingAddress.postalCode?.trim()) {
+        if (!shippingAddress.zipCode?.trim()) {
           // Rollback carton creation
           await db.delete(orderCartons).where(eq(orderCartons.id, newCarton.id));
           return res.status(400).json({ 
             error: 'Missing required shipping address: Postal Code is required for PPL label creation. Please update the order shipping address.' 
           });
         }
-        if (!shippingAddress.address?.trim()) {
+        if (!shippingAddress.street?.trim()) {
           // Rollback carton creation
           await db.delete(orderCartons).where(eq(orderCartons.id, newCarton.id));
           return res.status(400).json({ 
@@ -7629,12 +7629,12 @@ Return ONLY the subject line without quotes or extra formatting.`,
           },
           recipient: {
             country: normalizeCountry(shippingAddress.country),
-            zipCode: shippingAddress.postalCode.trim(),
-            name: shippingAddress.name || customer?.name || 'Unknown',
-            street: shippingAddress.address.trim(),
+            zipCode: shippingAddress.zipCode.trim(),
+            name: `${shippingAddress.firstName} ${shippingAddress.lastName}`.trim() || customer?.name || 'Unknown',
+            street: shippingAddress.street.trim(),
             city: shippingAddress.city.trim(),
-            phone: shippingAddress.phone || customer?.phone || undefined,
-            email: customer?.email || undefined
+            phone: shippingAddress.tel || customer?.phone || undefined,
+            email: shippingAddress.email || customer?.email || undefined
           },
           // Use traditional weighedShipmentInfo for single carton
           // (shipmentSet is only for 2+ cartons in same batch)
