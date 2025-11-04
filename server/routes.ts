@@ -7330,6 +7330,23 @@ Return ONLY the subject line without quotes or extra formatting.`,
         return 'CZ'; // Default to CZ
       };
 
+      // Validate required shipping address fields
+      if (!shippingAddress.postalCode?.trim()) {
+        return res.status(400).json({ 
+          error: 'Missing required shipping address: Postal Code is required for PPL label creation. Please update the order shipping address.' 
+        });
+      }
+      if (!shippingAddress.address?.trim()) {
+        return res.status(400).json({ 
+          error: 'Missing required shipping address: Street Address is required for PPL label creation. Please update the order shipping address.' 
+        });
+      }
+      if (!shippingAddress.city?.trim()) {
+        return res.status(400).json({ 
+          error: 'Missing required shipping address: City is required for PPL label creation. Please update the order shipping address.' 
+        });
+      }
+
       // Build PPL shipment
       const hasCOD = order.cashOnDeliveryAmount && parseFloat(order.cashOnDeliveryAmount) > 0;
       const pplShipment: any = {
@@ -7346,10 +7363,10 @@ Return ONLY the subject line without quotes or extra formatting.`,
         },
         recipient: {
           country: normalizeCountry(shippingAddress.country),
-          zipCode: shippingAddress.postalCode || '00000',
+          zipCode: shippingAddress.postalCode.trim(),
           name: shippingAddress.name || customer?.name || 'Unknown',
-          street: shippingAddress.address || 'Unknown',
-          city: shippingAddress.city || 'Unknown',
+          street: shippingAddress.address.trim(),
+          city: shippingAddress.city.trim(),
           phone: shippingAddress.phone || customer?.phone || undefined,
           email: customer?.email || undefined
         },
@@ -7574,6 +7591,29 @@ Return ONLY the subject line without quotes or extra formatting.`,
           return 'CZ'; // Default to CZ
         };
         
+        // Validate required shipping address fields
+        if (!shippingAddress.postalCode?.trim()) {
+          // Rollback carton creation
+          await db.delete(orderCartons).where(eq(orderCartons.id, newCarton.id));
+          return res.status(400).json({ 
+            error: 'Missing required shipping address: Postal Code is required for PPL label creation. Please update the order shipping address.' 
+          });
+        }
+        if (!shippingAddress.address?.trim()) {
+          // Rollback carton creation
+          await db.delete(orderCartons).where(eq(orderCartons.id, newCarton.id));
+          return res.status(400).json({ 
+            error: 'Missing required shipping address: Street Address is required for PPL label creation. Please update the order shipping address.' 
+          });
+        }
+        if (!shippingAddress.city?.trim()) {
+          // Rollback carton creation
+          await db.delete(orderCartons).where(eq(orderCartons.id, newCarton.id));
+          return res.status(400).json({ 
+            error: 'Missing required shipping address: City is required for PPL label creation. Please update the order shipping address.' 
+          });
+        }
+        
         const hasCOD = order.cashOnDeliveryAmount && parseFloat(order.cashOnDeliveryAmount) > 0;
         const pplShipment: any = {
           referenceId,
@@ -7589,10 +7629,10 @@ Return ONLY the subject line without quotes or extra formatting.`,
           },
           recipient: {
             country: normalizeCountry(shippingAddress.country),
-            zipCode: shippingAddress.postalCode || '00000',
+            zipCode: shippingAddress.postalCode.trim(),
             name: shippingAddress.name || customer?.name || 'Unknown',
-            street: shippingAddress.address || 'Unknown',
-            city: shippingAddress.city || 'Unknown',
+            street: shippingAddress.address.trim(),
+            city: shippingAddress.city.trim(),
             phone: shippingAddress.phone || customer?.phone || undefined,
             email: customer?.email || undefined
           },
