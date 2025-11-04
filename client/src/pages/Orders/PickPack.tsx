@@ -6119,6 +6119,8 @@ export default function PickPack() {
                                 <p className={`text-xs font-mono truncate ${isCancelled ? 'text-gray-500 line-through' : 'text-gray-600'}`}>
                                   {label.trackingNumbers[0]}
                                 </p>
+                              ) : label ? (
+                                <p className="text-xs text-orange-600 font-medium">Label generated - tracking pending</p>
                               ) : (
                                 <p className="text-xs text-gray-400 italic">No label generated yet</p>
                               )}
