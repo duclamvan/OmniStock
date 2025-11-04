@@ -8438,7 +8438,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       // Prepare dobírka (COD) information if present
       // Extract numeric part from order ID for variable symbol (max 10 digits)
       const numericOrderId = order.orderId.replace(/\D/g, '').slice(0, 10);
-      const hasCOD = order.dobirkaAmount && parseFloat(order.dobirkaAmount.toString()) > 0;
+      const hasCOD = order.cashOnDeliveryAmount && parseFloat(order.cashOnDeliveryAmount) > 0;
       
       // Default sender information (warehouse/company)
       const sender = {
@@ -8489,8 +8489,8 @@ Return ONLY the subject line without quotes or extra formatting.`,
         },
         // COD goes on the parent shipment (collected ONCE for all cartons)
         cashOnDelivery: hasCOD ? {
-          value: parseFloat(order.dobirkaAmount.toString()),
-          currency: order.dobirkaCurrency || 'CZK',
+          value: parseFloat(order.cashOnDeliveryAmount),
+          currency: order.cashOnDeliveryCurrency || 'CZK',
           variableSymbol: numericOrderId || '1234567890'
         } : undefined,
         externalNumbers: [

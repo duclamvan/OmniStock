@@ -6045,38 +6045,110 @@ export default function PickPack() {
                         </Button>
                       )}
                     </>
-                  ) : (
+                  ) : shipmentLabelsFromDB.length === 0 ? (
+                    // No labels exist - Show Generate All Labels button
                     <Button
                       variant="default"
                       className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold"
                       onClick={async () => {
                         try {
-                          console.log('🖨️ Fetching PPL labels for printing...');
-                          const response = await fetch(`/api/orders/${activePackingOrder.id}/ppl/label`);
-                          const data = await response.json();
-
-                          if (data.success && data.labelBase64) {
-                            const labelBlob = new Blob(
-                              [Uint8Array.from(atob(data.labelBase64), c => c.charCodeAt(0))],
-                              { type: 'application/pdf' }
-                            );
-                            const url = URL.createObjectURL(labelBlob);
-                            
-                            const printWindow = window.open(url, '_blank');
-                            if (printWindow) {
-                              printWindow.onload = () => {
-                                printWindow.print();
-                              };
-                            } else {
-                              toast({
-                                title: "Popup Blocked",
-                                description: "Please allow popups to print labels",
-                                variant: "destructive"
-                              });
-                            }
-                            
-                            setTimeout(() => URL.revokeObjectURL(url), 1000);
+                          if (cartons.length === 0) {
+                            toast({
+                              title: "No Cartons",
+                              description: "Please add cartons first before generating labels",
+                              variant: "destructive"
+                            });
+                            return;
                           }
+
+                          console.log('🎯 Generating all PPL labels for', cartons.length, 'cartons');
+                          toast({
+                            title: "Generating Labels...",
+                            description: `Creating ${cartons.length} PPL shipping label(s) with COD support`,
+                          });
+
+                          // Use the multi-carton endpoint that handles COD properly
+                          const response = await apiRequest('POST', `/api/orders/${activePackingOrder.id}/ppl/create-labels`, {});
+                          
+                          if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(error.error || 'Failed to create labels');
+                          }
+                          
+                          const result = await response.json();
+                          console.log('✅ All labels generated:', result);
+                          
+                          // Refresh data
+                          await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                          await refetchCartons();
+                          await new Promise(resolve => setTimeout(resolve, 300));
+                          await fetchShipmentLabels();
+                          
+                          toast({
+                            title: "Labels Generated",
+                            description: `Successfully created ${cartons.length} PPL shipping label(s)`,
+                          });
+                        } catch (error: any) {
+                          console.error('❌ Generate error:', error);
+                          toast({
+                            title: "Error",
+                            description: error.message || "Failed to generate labels",
+                            variant: "destructive"
+                          });
+                        }
+                      }}
+                      disabled={cartons.length === 0}
+                      data-testid="button-generate-all-ppl-labels"
+                    >
+                      <Package className="h-4 w-4 mr-2" />
+                      Generate All Labels
+                    </Button>
+                  ) : (
+                    // Labels exist - Show Print All Labels button
+                    <Button
+                      variant="default"
+                      className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold"
+                      onClick={async () => {
+                        try {
+                          console.log('🖨️ Printing all PPL labels...');
+                          
+                          // Print each label that has PDF data
+                          for (let i = 0; i < shipmentLabelsFromDB.length; i++) {
+                            const label = shipmentLabelsFromDB[i];
+                            if (label.labelBase64) {
+                              const labelBlob = new Blob(
+                                [Uint8Array.from(atob(label.labelBase64), c => c.charCodeAt(0))],
+                                { type: 'application/pdf' }
+                              );
+                              const url = URL.createObjectURL(labelBlob);
+                              
+                              const printWindow = window.open(url, '_blank');
+                              if (printWindow) {
+                                printWindow.onload = () => {
+                                  printWindow.print();
+                                };
+                              }
+                              
+                              setTimeout(() => URL.revokeObjectURL(url), 1000);
+                              
+                              // Mark as printed
+                              setPrintedPPLLabels(prev => {
+                                const newSet = new Set(prev);
+                                newSet.add(i);
+                                return newSet;
+                              });
+                              
+                              // Small delay between prints to prevent browser blocking
+                              if (i < shipmentLabelsFromDB.length - 1) {
+                                await new Promise(resolve => setTimeout(resolve, 500));
+                              }
+                            }
+                          }
+                          
+                          toast({
+                            title: "Labels Sent to Printer",
+                            description: `${shipmentLabelsFromDB.length} label(s) opened for printing`,
+                          });
                         } catch (error: any) {
                           console.error('Error printing labels:', error);
                           toast({
