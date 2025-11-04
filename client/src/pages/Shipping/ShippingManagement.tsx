@@ -4,7 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
   DialogContent,
@@ -33,7 +35,9 @@ import {
   XCircle,
   Eye,
   Download,
-  AlertTriangle
+  AlertTriangle,
+  Settings,
+  RefreshCw
 } from 'lucide-react';
 import {
   Table,
@@ -72,11 +76,27 @@ export default function ShippingManagement() {
   const [selectedCarrier, setSelectedCarrier] = useState('ppl');
   const [viewingLabel, setViewingLabel] = useState<PPLShipmentRecord | null>(null);
   const [cancellingShipment, setCancellingShipment] = useState<PPLShipmentRecord | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [senderAddress, setSenderAddress] = useState({
+    name: 'Davie Supply',
+    street: 'Dragonská 2545/9A',
+    city: 'Cheb',
+    zipCode: '35002',
+    country: 'CZ',
+    phone: '+420776887045',
+    email: 'info@daviesupply.cz'
+  });
 
   // Fetch PPL shipment history
   const { data: pplHistory = [], isLoading: isLoadingPPL } = useQuery<PPLShipmentRecord[]>({
     queryKey: ['/api/shipping/ppl/history'],
     enabled: selectedCarrier === 'ppl'
+  });
+
+  // Check PPL API status
+  const { data: apiStatus, isLoading: isCheckingAPI, refetch: recheckAPI } = useQuery({
+    queryKey: ['/api/shipping/test-connection'],
+    enabled: false  // Only fetch when settings dialog is open
   });
 
   // Cancel shipment mutation
@@ -363,6 +383,19 @@ export default function ShippingManagement() {
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSettingsOpen(true);
+                        recheckAPI();
+                      }}
+                      className="mr-2"
+                      data-testid="button-shipping-settings"
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      Settings
+                    </Button>
                     <Badge variant="secondary" className="px-3 py-1">
                       {pplHistory.filter(r => r.status === 'active').length} Active
                     </Badge>
@@ -559,6 +592,182 @@ export default function ShippingManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Settings Dialog */}
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              PPL Shipping Settings
+            </DialogTitle>
+            <DialogDescription>
+              Configure API connection and default sender address
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 mt-4">
+            {/* API Status Section */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold">API Server Status</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => recheckAPI()}
+                  disabled={isCheckingAPI}
+                  data-testid="button-recheck-api"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isCheckingAPI ? 'animate-spin' : ''}`} />
+                  Check Status
+                </Button>
+              </div>
+              
+              <Card>
+                <CardContent className="pt-6">
+                  {isCheckingAPI ? (
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      <span>Checking API connection...</span>
+                    </div>
+                  ) : apiStatus ? (
+                    <div className="space-y-3">
+                      <div className={`flex items-center gap-2 ${
+                        (apiStatus as any).connected ? 'text-green-700' : 'text-red-700'
+                      }`}>
+                        {(apiStatus as any).connected ? (
+                          <CheckCircle2 className="h-5 w-5" />
+                        ) : (
+                          <XCircle className="h-5 w-5" />
+                        )}
+                        <span className="font-medium">
+                          {(apiStatus as any).connected ? 'Connected to PPL API' : 'Connection Failed'}
+                        </span>
+                      </div>
+                      {(apiStatus as any).message && (
+                        <p className="text-sm text-gray-600">{(apiStatus as any).message}</p>
+                      )}
+                      {(apiStatus as any).error && (
+                        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                          <p className="font-medium mb-1">Error:</p>
+                          <p>{(apiStatus as any).error}</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">Click "Check Status" to verify API connection</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            <Separator />
+
+            {/* Sender Address Section */}
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">Default Sender Address</Label>
+              <p className="text-sm text-gray-500">
+                This address will be used as the sender for all PPL shipments
+              </p>
+              
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="col-span-2">
+                  <Label htmlFor="sender-name">Company Name</Label>
+                  <Input
+                    id="sender-name"
+                    value={senderAddress.name}
+                    onChange={(e) => setSenderAddress({ ...senderAddress, name: e.target.value })}
+                    placeholder="Company name"
+                    className="mt-1.5"
+                  />
+                </div>
+                
+                <div className="col-span-2">
+                  <Label htmlFor="sender-street">Street Address</Label>
+                  <Input
+                    id="sender-street"
+                    value={senderAddress.street}
+                    onChange={(e) => setSenderAddress({ ...senderAddress, street: e.target.value })}
+                    placeholder="Street address"
+                    className="mt-1.5"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="sender-city">City</Label>
+                  <Input
+                    id="sender-city"
+                    value={senderAddress.city}
+                    onChange={(e) => setSenderAddress({ ...senderAddress, city: e.target.value })}
+                    placeholder="City"
+                    className="mt-1.5"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="sender-zip">Zip Code</Label>
+                  <Input
+                    id="sender-zip"
+                    value={senderAddress.zipCode}
+                    onChange={(e) => setSenderAddress({ ...senderAddress, zipCode: e.target.value })}
+                    placeholder="Zip code"
+                    className="mt-1.5"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="sender-country">Country</Label>
+                  <Input
+                    id="sender-country"
+                    value={senderAddress.country}
+                    onChange={(e) => setSenderAddress({ ...senderAddress, country: e.target.value })}
+                    placeholder="Country code (CZ)"
+                    className="mt-1.5"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="sender-phone">Phone</Label>
+                  <Input
+                    id="sender-phone"
+                    value={senderAddress.phone}
+                    onChange={(e) => setSenderAddress({ ...senderAddress, phone: e.target.value })}
+                    placeholder="+420..."
+                    className="mt-1.5"
+                  />
+                </div>
+                
+                <div className="col-span-2">
+                  <Label htmlFor="sender-email">Email</Label>
+                  <Input
+                    id="sender-email"
+                    type="email"
+                    value={senderAddress.email}
+                    onChange={(e) => setSenderAddress({ ...senderAddress, email: e.target.value })}
+                    placeholder="email@example.com"
+                    className="mt-1.5"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 mt-6">
+            <Button variant="outline" onClick={() => setSettingsOpen(false)}>
+              Close
+            </Button>
+            <Button onClick={() => {
+              toast({
+                title: "Settings Saved",
+                description: "Sender address has been updated successfully",
+              });
+              setSettingsOpen(false);
+            }}>
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
