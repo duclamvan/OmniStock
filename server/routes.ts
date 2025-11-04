@@ -8455,12 +8455,16 @@ Return ONLY the subject line without quotes or extra formatting.`,
         return res.status(400).json({ error: 'No cartons found for this order. Please create cartons before generating PPL labels.' });
       }
 
-      // Prepare recipient name
-      const recipientName = shippingAddress.company 
-        ? shippingAddress.company
-        : `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim();
+      // Prepare recipient name (company name takes priority, otherwise use person name)
+      const recipientName = shippingAddress.company?.trim() || 
+                           `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || 
+                           customer?.name || 
+                           'Unknown';
       
-      const contactName = `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || recipientName;
+      // Prepare contact name (person name if company is primary recipient)
+      const contactName = shippingAddress.company?.trim() 
+        ? `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() 
+        : undefined;
 
       // Map country name to ISO 2-letter code
       const getCountryCode = (country: string): string => {
@@ -8565,10 +8569,11 @@ Return ONLY the subject line without quotes or extra formatting.`,
             country: getCountryCode(shippingAddress.country),
             zipCode: shippingAddress.zipCode.replace(/\s+/g, ''),
             name: recipientName,
+            name2: contactName, // Contact person if company is primary recipient
             street: `${shippingAddress.street} ${shippingAddress.streetNumber || ''}`.trim(),
             city: shippingAddress.city,
-            phone: shippingAddress.tel || undefined,
-            email: shippingAddress.email || undefined
+            phone: shippingAddress.tel || customer?.phone || undefined,
+            email: shippingAddress.email || customer?.email || undefined
           },
           // COD applied to the entire shipment set (if present)
           cashOnDelivery,
@@ -8621,10 +8626,11 @@ Return ONLY the subject line without quotes or extra formatting.`,
             country: getCountryCode(shippingAddress.country),
             zipCode: shippingAddress.zipCode.replace(/\s+/g, ''),
             name: recipientName,
+            name2: contactName, // Contact person if company is primary recipient
             street: `${shippingAddress.street} ${shippingAddress.streetNumber || ''}`.trim(),
             city: shippingAddress.city,
-            phone: shippingAddress.tel || undefined,
-            email: shippingAddress.email || undefined
+            phone: shippingAddress.tel || customer?.phone || undefined,
+            email: shippingAddress.email || customer?.email || undefined
           },
           weighedShipmentInfo: {
             weight: cartons[0].weight ? parseFloat(cartons[0].weight) : 1.0
