@@ -7822,6 +7822,22 @@ Return ONLY the subject line without quotes or extra formatting.`,
       // Extract numeric part from order ID for variable symbol (e.g., "ORD-251028-4142" -> "2510284142")
       const numericOrderId = order.orderId.replace(/\D/g, '').slice(0, 10);
       
+      // Prepare recipient name (company name takes priority, otherwise use person name)
+      const recipientName = shippingAddress.company?.trim() || 
+                           `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || 
+                           customer?.name || 
+                           'Unknown';
+      
+      // Prepare contact name (person name if company is primary)
+      const contactName = shippingAddress.company?.trim() 
+        ? `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() 
+        : undefined;
+      
+      // Prepare full street address with number
+      const fullStreet = shippingAddress.streetNumber 
+        ? `${shippingAddress.street.trim()} ${shippingAddress.streetNumber.trim()}`
+        : shippingAddress.street.trim();
+      
       const pplShipment: any = {
         referenceId,
         productType: hasCOD ? 'BUSD' : 'BUSS', // Product type based on whether order has COD
@@ -7837,8 +7853,9 @@ Return ONLY the subject line without quotes or extra formatting.`,
         recipient: {
           country: normalizeCountry(shippingAddress.country),
           zipCode: shippingAddress.zipCode.trim(),
-          name: `${shippingAddress.firstName} ${shippingAddress.lastName}`.trim() || customer?.name || 'Unknown',
-          street: shippingAddress.street.trim(),
+          name: recipientName,
+          name2: contactName, // Contact person if company is primary recipient
+          street: fullStreet,
           city: shippingAddress.city.trim(),
           phone: shippingAddress.tel || customer?.phone || undefined,
           email: shippingAddress.email || customer?.email || undefined
