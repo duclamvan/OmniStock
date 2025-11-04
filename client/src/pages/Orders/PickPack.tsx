@@ -958,6 +958,12 @@ export default function PickPack() {
   const [printedPPLLabels, setPrintedPPLLabels] = useState<Set<number>>(new Set()); // Track printed PPL label indices
   const [shipmentLabelsFromDB, setShipmentLabelsFromDB] = useState<any[]>([]); // Shipment labels from database
   
+  // Loading states for shipping label operations
+  const [isGeneratingAllLabels, setIsGeneratingAllLabels] = useState(false);
+  const [isPrintingAllLabels, setIsPrintingAllLabels] = useState(false);
+  const [generatingLabelForCarton, setGeneratingLabelForCarton] = useState<Record<string, boolean>>({});
+  const [deletingShipment, setDeletingShipment] = useState<Record<string, boolean>>({});
+  
   const [selectedBoxSize, setSelectedBoxSize] = useState<string>('');
   const [packageWeight, setPackageWeight] = useState<string>('');
   const [verifiedItems, setVerifiedItems] = useState<Record<string, number>>({});
@@ -6081,7 +6087,7 @@ export default function PickPack() {
                     // No labels exist - Show Generate All Labels button
                     <Button
                       variant="default"
-                      className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold"
+                      className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold transition-all duration-200"
                       onClick={async () => {
                         try {
                           if (cartons.length === 0) {
@@ -6093,6 +6099,7 @@ export default function PickPack() {
                             return;
                           }
 
+                          setIsGeneratingAllLabels(true);
                           console.log('🎯 Generating all PPL labels for', cartons.length, 'cartons');
                           toast({
                             title: "Generating Labels...",
@@ -6141,21 +6148,28 @@ export default function PickPack() {
                             description: error.message || "Failed to generate labels",
                             variant: "destructive"
                           });
+                        } finally {
+                          setIsGeneratingAllLabels(false);
                         }
                       }}
-                      disabled={cartons.length === 0}
+                      disabled={cartons.length === 0 || isGeneratingAllLabels}
                       data-testid="button-generate-all-ppl-labels"
                     >
-                      <Package className="h-4 w-4 mr-2" />
-                      Generate All Labels
+                      {isGeneratingAllLabels ? (
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Package className="h-4 w-4 mr-2" />
+                      )}
+                      {isGeneratingAllLabels ? 'Generating...' : 'Generate All Labels'}
                     </Button>
                   ) : (
                     // Labels exist - Show Print All Labels button
                     <Button
                       variant="default"
-                      className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold"
+                      className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold transition-all duration-200"
                       onClick={async () => {
                         try {
+                          setIsPrintingAllLabels(true);
                           console.log('🖨️ Printing all PPL labels...');
                           
                           // Print each label that has PDF data
@@ -6202,12 +6216,19 @@ export default function PickPack() {
                             description: "Failed to print labels",
                             variant: "destructive"
                           });
+                        } finally {
+                          setIsPrintingAllLabels(false);
                         }
                       }}
+                      disabled={isPrintingAllLabels}
                       data-testid="button-print-all-ppl-labels"
                     >
-                      <Printer className="h-4 w-4 mr-2" />
-                      Print All Labels
+                      {isPrintingAllLabels ? (
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Printer className="h-4 w-4 mr-2" />
+                      )}
+                      {isPrintingAllLabels ? 'Printing...' : 'Print All Labels'}
                     </Button>
                   )}
 
@@ -6257,15 +6278,16 @@ export default function PickPack() {
                           return shipmentLabelsFromDB.map((label, index) => (
                             <div 
                               key={label.id}
-                              className={`flex items-center gap-3 p-3 rounded-lg ${
+                              className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-300 ease-in-out animate-in fade-in-0 slide-in-from-bottom-2 ${
                                 isCancelled
                                   ? 'bg-gradient-to-r from-gray-100 to-gray-200 border-2 border-gray-400 opacity-75'
-                                  : 'bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300'
+                                  : 'bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300 hover:shadow-md hover:scale-[1.01]'
                               }`}
+                              style={{ animationDelay: `${index * 50}ms` }}
                               data-testid={`ppl-shipment-card-${index + 1}`}
                             >
-                              <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-                                isCancelled ? 'bg-gray-500' : 'bg-orange-600'
+                              <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-transform duration-300 hover:scale-110 ${
+                                isCancelled ? 'bg-gray-500' : 'bg-orange-600 shadow-lg'
                               }`}>
                                 <span className="text-white font-bold text-sm">{index + 1}</span>
                               </div>
@@ -6336,10 +6358,11 @@ export default function PickPack() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                  className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-200"
                                   onClick={async () => {
                                     if (confirm(`Delete shipment #${index + 1}? This will cancel the shipment with PPL.`)) {
                                       try {
+                                        setDeletingShipment(prev => ({ ...prev, [label.id]: true }));
                                         await apiRequest('DELETE', `/api/shipment-labels/${label.id}`, {});
                                         // Refresh data to update UI
                                         console.log('🔄 Refreshing after delete...');
@@ -6357,12 +6380,19 @@ export default function PickPack() {
                                           description: "Failed to delete shipment",
                                           variant: "destructive"
                                         });
+                                      } finally {
+                                        setDeletingShipment(prev => ({ ...prev, [label.id]: false }));
                                       }
                                     }
                                   }}
+                                  disabled={deletingShipment[label.id]}
                                   data-testid={`button-delete-ppl-shipment-${index + 1}`}
                                 >
-                                  <X className="h-4 w-4" />
+                                  {deletingShipment[label.id] ? (
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <X className="h-4 w-4" />
+                                  )}
                                 </Button>
                               )}
                             </div>
@@ -6373,15 +6403,16 @@ export default function PickPack() {
                         return cartonsWithLabels.map(({ carton, label, index }) => (
                           <div 
                             key={carton.id}
-                            className={`flex items-center gap-3 p-3 rounded-lg ${
+                            className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-300 ease-in-out animate-in fade-in-0 slide-in-from-bottom-2 ${
                               isCancelled
                                 ? 'bg-gradient-to-r from-gray-100 to-gray-200 border-2 border-gray-400 opacity-75'
-                                : 'bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300'
+                                : 'bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300 hover:shadow-md hover:scale-[1.01]'
                             }`}
+                            style={{ animationDelay: `${index * 50}ms` }}
                             data-testid={`ppl-shipment-card-${index + 1}`}
                           >
-                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-                              isCancelled ? 'bg-gray-500' : 'bg-orange-600'
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-transform duration-300 hover:scale-110 ${
+                              isCancelled ? 'bg-gray-500' : 'bg-orange-600 shadow-lg'
                             }`}>
                               <span className="text-white font-bold text-sm">{index + 1}</span>
                             </div>
@@ -6412,9 +6443,10 @@ export default function PickPack() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-8 text-xs flex-shrink-0 bg-orange-100 hover:bg-orange-200 text-orange-700 border-orange-300"
+                                className="h-8 text-xs flex-shrink-0 bg-orange-100 hover:bg-orange-200 text-orange-700 border-orange-300 transition-all duration-200"
                                 onClick={async () => {
                                   try {
+                                    setGeneratingLabelForCarton(prev => ({ ...prev, [carton.id]: true }));
                                     console.log(`🎯 Generate clicked for carton #${index + 1}`, carton.id);
                                     toast({
                                       title: "Generating PPL Label...",
@@ -6467,12 +6499,19 @@ export default function PickPack() {
                                       description: error.message || "Failed to generate label",
                                       variant: "destructive"
                                     });
+                                  } finally {
+                                    setGeneratingLabelForCarton(prev => ({ ...prev, [carton.id]: false }));
                                   }
                                 }}
+                                disabled={generatingLabelForCarton[carton.id]}
                                 data-testid={`button-generate-ppl-label-${index + 1}`}
                               >
-                                <Package className="h-3.5 w-3.5 mr-1.5" />
-                                Generate
+                                {generatingLabelForCarton[carton.id] ? (
+                                  <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                                ) : (
+                                  <Package className="h-3.5 w-3.5 mr-1.5" />
+                                )}
+                                {generatingLabelForCarton[carton.id] ? 'Generating...' : 'Generate'}
                               </Button>
                             ) : label && label.labelBase64 && !isCancelled ? (
                               <Button
