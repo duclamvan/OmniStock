@@ -6071,7 +6071,7 @@ export default function PickPack() {
                     </div>
                   )}
 
-                  {/* Add Shipment Button - Creates new non-company carton */}
+                  {/* Add Shipment Button - Creates new non-company carton and generates new PPL label */}
                   {activePackingOrder.pplLabelData && activePackingOrder.pplStatus !== 'cancelled' && (
                     <Button
                       variant="outline"
@@ -6080,39 +6080,34 @@ export default function PickPack() {
                         try {
                           console.log('🔧 Adding shipment - Current cartons:', cartons.length);
                           
-                          // Calculate next carton number (highest carton number + 1)
-                          const nextCartonNumber = cartons.length > 0
-                            ? Math.max(...cartons.map(c => c.cartonNumber || 0)) + 1
-                            : 1;
-                          
-                          console.log('📦 Next carton number:', nextCartonNumber);
-                          
-                          // Create a new non-company carton in the database
-                          const response = await apiRequest('POST', `/api/orders/${activePackingOrder.id}/cartons`, {
-                            cartonNumber: nextCartonNumber,
-                            cartonType: 'non-company',
-                            source: 'manual_ppl_shipment'
+                          // Show loading toast
+                          toast({
+                            title: "Creating PPL Label...",
+                            description: "Generating new shipping label from PPL API. This may take a few seconds.",
                           });
                           
-                          if (response.ok) {
-                            const result = await response.json();
-                            console.log('✅ Carton created:', result);
-                            
-                            // Refetch cartons and order data to update the UI
-                            await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
-                            await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-                            
-                            // Force a refetch to ensure UI updates
-                            await refetchCartons();
-                            
-                            toast({
-                              title: "Shipment Added",
-                              description: `New shipment #${nextCartonNumber} added for this order. You now have ${cartons.length + 1} shipment(s).`,
-                            });
-                          } else {
-                            const errorData = await response.json();
-                            throw new Error(errorData.error || 'Failed to add shipment');
+                          // Create PPL label (backend atomically creates carton + label)
+                          const labelResponse = await apiRequest('POST', `/api/shipping/create-additional-label/${activePackingOrder.id}`, {});
+                          
+                          if (!labelResponse.ok) {
+                            const errorData = await labelResponse.json();
+                            throw new Error(errorData.error || 'Failed to create PPL label');
                           }
+                          
+                          const labelResult = await labelResponse.json();
+                          console.log('✅ PPL label and carton created:', labelResult);
+                          
+                          // Refetch cartons and order data to update the UI
+                          await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
+                          await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                          
+                          // Force a refetch to ensure UI updates
+                          await refetchCartons();
+                          
+                          toast({
+                            title: "Shipment Added",
+                            description: `New shipment created with PPL tracking number: ${labelResult.trackingNumber}. You now have ${cartons.length + 1} shipment(s).`,
+                          });
                         } catch (error: any) {
                           console.error('❌ Error adding shipment:', error);
                           toast({

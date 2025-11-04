@@ -7444,6 +7444,183 @@ Return ONLY the subject line without quotes or extra formatting.`,
     }
   });
 
+  // Create additional PPL shipment for an order (for multiple packages)
+  app.post('/api/shipping/create-additional-label/:orderId', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      
+      if (!orderId) {
+        return res.status(400).json({ error: 'Order ID is required' });
+      }
+
+      // Get order details
+      const order = await storage.getOrder(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      // Calculate next carton number
+      const existingCartons = await db
+        .select()
+        .from(cartons)
+        .where(eq(cartons.orderId, orderId));
+      
+      const nextCartonNumber = existingCartons.length > 0
+        ? Math.max(...existingCartons.map(c => c.cartonNumber || 0)) + 1
+        : 1;
+
+      // STEP 1: Create carton FIRST (before creating PPL label)
+      const [newCarton] = await db
+        .insert(cartons)
+        .values({
+          orderId,
+          cartonNumber: nextCartonNumber,
+          cartonType: 'non-company',
+          source: 'manual_ppl_shipment',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning();
+
+      if (!newCarton) {
+        throw new Error('Failed to create carton');
+      }
+
+      // STEP 2: Now create PPL label (with rollback on failure)
+      try {
+        // Get shipping address
+        let shippingAddress;
+        if (order.shippingAddressId) {
+          const addresses = await db
+            .select()
+            .from(customerShippingAddresses)
+            .where(eq(customerShippingAddresses.id, order.shippingAddressId))
+            .limit(1);
+          shippingAddress = addresses[0];
+        }
+
+        if (!shippingAddress) {
+          // Rollback carton creation
+          await db.delete(cartons).where(eq(cartons.id, newCarton.id));
+          return res.status(400).json({ error: 'No shipping address found for order' });
+        }
+
+        // Get customer details
+        let customer;
+        if (order.customerId) {
+          const customerResult = await db
+            .select()
+            .from(customers)
+            .where(eq(customers.id, order.customerId))
+            .limit(1);
+          customer = customerResult[0];
+        }
+
+        // Build PPL shipment with unique reference (include carton number)
+        const referenceId = `${order.orderId}-${nextCartonNumber}`;
+        
+        const pplShipment = {
+          referenceId,
+          productType: 'PPL Parcel CZ Business',
+          recipient: {
+            country: shippingAddress.country || 'CZ',
+            zipCode: shippingAddress.postalCode || '',
+            name: shippingAddress.name || customer?.name || 'Unknown',
+            street: shippingAddress.address || '',
+            city: shippingAddress.city || '',
+            phone: shippingAddress.phone || customer?.phone || undefined,
+            email: customer?.email || undefined
+          },
+          weighedShipmentInfo: order.finalWeight ? {
+            weight: parseFloat(order.finalWeight.toString())
+          } : undefined,
+          // Only include COD on the first shipment (already stored in order)
+          cashOnDelivery: undefined
+        };
+
+        // Create NEW shipment (new batch)
+        const { batchId } = await createPPLShipment({
+          shipments: [pplShipment],
+          labelSettings: {
+            format: 'Pdf',
+            dpi: 203,
+            completeLabelSettings: {
+              isCompleteLabelRequested: true,
+              pageSize: 'Default'
+            }
+          }
+        });
+
+        // Poll for batch status
+        let attempts = 0;
+        const maxAttempts = 30;
+        let batchStatus;
+        
+        while (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          batchStatus = await getPPLBatchStatus(batchId);
+          
+          if (batchStatus.status === 'Finished' || batchStatus.status === 'Error') {
+            break;
+          }
+          attempts++;
+        }
+
+        if (batchStatus?.status !== 'Finished') {
+          // Rollback carton creation
+          await db.delete(cartons).where(eq(cartons.id, newCarton.id));
+          throw new Error('Shipment creation timed out or failed');
+        }
+
+        // Get shipment numbers
+        const shipmentNumbers = batchStatus.shipmentResults
+          ?.filter(r => r.shipmentNumber)
+          .map(r => r.shipmentNumber) || [];
+
+        // Get label PDF
+        const label = await getPPLLabel(batchId, 'pdf');
+        
+        const labelBase64 = label.labelContent;
+
+        // Save shipment label to shipment_labels table
+        const savedLabel = await storage.createShipmentLabel({
+          orderId,
+          carrier: 'PPL',
+          trackingNumbers: shipmentNumbers,
+          batchId,
+          labelBase64,
+          labelData: {
+            pplShipment,
+            batchStatus,
+            cartonNumber: nextCartonNumber,
+            referenceId
+          },
+          shipmentCount: shipmentNumbers.length,
+          status: 'active'
+        });
+
+        res.json({
+          success: true,
+          carton: newCarton,
+          label: savedLabel,
+          batchId,
+          shipmentNumbers,
+          trackingNumber: shipmentNumbers[0]
+        });
+      } catch (labelError) {
+        // If PPL label creation fails, rollback the carton
+        console.error('PPL label creation failed, rolling back carton:', labelError);
+        await db.delete(cartons).where(eq(cartons.id, newCarton.id));
+        throw labelError;
+      }
+    } catch (error) {
+      console.error('Failed to create additional PPL label:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to create additional PPL label' 
+      });
+    }
+  });
+
   // Shipment Labels Routes
   
   // Get all shipment labels

@@ -1,0 +1,83 @@
+Based on the PPL CPL API documentation, here's how to create multiple cartons/packages in one shipment:
+
+## How Multiple Cartons Work in PPL CPL API
+
+### 1. **Using ShipmentSet Structure**
+
+The API uses a `shipmentSet` object with `numberOfShipments` to define how many packages belong to one order, and `shipmentSetItems` array containing details for each package.
+
+### 2. **The Process - Step by Step**
+
+#### **Step 1: Create Batch Request**
+Use POST `/shipment/batch` endpoint with this structure:
+
+```
+{
+  "labelSettings": {
+    "format": "Pdf",
+    "completeLabelSettings": {
+      "isCompleteLabelRequested": true,
+      "pageSize": "A4"
+    }
+  },
+  "shipments": [{
+    "productType": "BUSS",
+    "recipient": { /* same address for all packages */ },
+    "shipmentSet": {
+      "numberOfShipments": 3,  // e.g., 3 cartons
+      "shipmentSetItems": [
+        {
+          "shipmentNumber": "unique-number-1",
+          "weighedShipmentInfo": {
+            "weight": 5.5  // kg
+          }
+        },
+        {
+          "shipmentNumber": "unique-number-2",
+          "weighedShipmentInfo": {
+            "weight": 8.2
+          }
+        },
+        {
+          "shipmentNumber": "unique-number-3",
+          "weighedShipmentInfo": {
+            "weight": 4.0
+          }
+        }
+      ]
+    }
+  }]
+}
+```
+
+#### **Step 2: Get BatchID**
+The API is asynchronous - it immediately returns a `batchId` in the Location header while processing happens in the background.
+
+#### **Step 3: Check Status**
+You must poll `GET /shipment/batch/{batchId}` and check `importState` until it returns "Complete".
+
+#### **Step 4: Get Labels**
+Once complete:
+- Get combined label from `completeLabel.labelUrls[0]` for all packages on one PDF
+- Get individual labels from `items[0].labelUrl`, `items[1].labelUrl`, etc.
+
+### 3. **Important Details**
+
+- **Each carton gets unique tracking**: Each package in the set gets its own unique shipment number and can be tracked/canceled individually
+- **Same destination required**: All packages in a shipmentSet must go to the same recipient address
+- **Weight per package**: You specify individual weight for each package
+- One batchId can handle hundreds of shipments at once to minimize HTTP calls
+
+### 4. **Practical Example for Your WMS**
+
+For your Davie Supply WMS with AI carton packing:
+1. Your AI determines you need 3 cartons for an order
+2. Create one shipment request with 3 items in `shipmentSetItems`
+3. Each carton gets its own label and tracking number
+4. All delivered to the same customer address
+5. You can cancel individual cartons if needed
+
+### 5. **Testing**
+Test this in PPL Sandbox at https://sandbox.ppl.cz/ before production use - credentials are provided with your main login.
+
+This approach is perfect for your WMS since you already have AI carton optimization - just feed the recommended carton count and weights into the `shipmentSet` structure!
