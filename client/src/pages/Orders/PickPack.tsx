@@ -532,7 +532,7 @@ const CartonCard = memo(({
         <div className="space-y-2">
           <label className="text-sm font-medium text-gray-700">Carton Type</label>
           <CartonTypeAutocomplete
-            value={carton.cartonId || ''}
+            value={carton.cartonType === 'non-company' ? 'non-company' : (carton.cartonId || '')}
             onValueChange={(cartonId, cartonDataParam) => {
               if (activePackingOrder) {
                 setHasManuallyModifiedCartons(true);
