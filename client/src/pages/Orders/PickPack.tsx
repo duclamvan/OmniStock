@@ -1183,13 +1183,12 @@ export default function PickPack() {
     if (activePackingOrder?.id) {
       const orderId = activePackingOrder.id;
       
-      // Load all packing state
+      // Load all packing state from localStorage
+      // NOTE: For cartons, localStorage is only a BACKUP - database is loaded separately via useQuery
       const loadedVerifiedItems = loadPackingState(orderId, 'verifiedItems', {});
       const loadedExpandedBundles = loadPackingState(orderId, 'expandedBundles', []);
       const loadedBundlePickedItems = loadPackingState(orderId, 'bundlePickedItems', {});
       const loadedShowBarcode = loadPackingState(orderId, 'showBarcodeScanner', false);
-      // NOTE: Cartons are NOT loaded from localStorage - database is the single source of truth
-      // Cartons are managed entirely through the database and useQuery hook below
       const loadedPackingChecklist = loadPackingState(orderId, 'packingChecklist', {
         itemsVerified: false,
         packingSlipIncluded: false,
@@ -1217,8 +1216,8 @@ export default function PickPack() {
       
       setShowBarcodeScanner(loadedShowBarcode);
       
-      // NOTE: Cartons are NOT loaded from localStorage here
-      // They will be loaded from database via the useQuery hook and synced in the effect below
+      // NOTE: Cartons are loaded from DATABASE via useQuery hook (see sync effect below)
+      // localStorage is used as backup only, updated after successful DB saves
       
       setPackingChecklist(loadedPackingChecklist);
       setPackingMaterialsApplied(loadedPackingMaterials);
@@ -1652,16 +1651,20 @@ export default function PickPack() {
   const initialLoadedOrders = useRef(new Set<string>());
 
   // Sync orderCartons with local cartons state
-  // DATABASE IS ALWAYS THE SOURCE OF TRUTH
+  // DATABASE IS ALWAYS THE PRIMARY SOURCE OF TRUTH
   useEffect(() => {
     if (!activePackingOrder?.id) return;
     
-    // Always sync from database - it's the single source of truth
-    // Mutations (create/update/delete) handle saving changes to the database
-    // This effect ensures UI is always in sync with database state
+    // Priority: Database > localStorage
+    // 1. If database has data, use it (even if empty array - that's valid state)
+    // 2. If database query hasn't loaded yet, wait for it
+    // 3. localStorage is only used as offline backup, updated after successful DB saves
     if (orderCartons) {
       setCartons(orderCartons);
-      console.log(`✅ Synced ${orderCartons.length} cartons from database for order ${activePackingOrder.id}`);
+      console.log(`✅ Loaded ${orderCartons.length} cartons from DATABASE for order ${activePackingOrder.id}`);
+      
+      // Also update localStorage backup after successful DB load
+      savePackingState(activePackingOrder.id, 'cartons', orderCartons);
     }
   }, [orderCartons, activePackingOrder?.id]);
 
@@ -1893,6 +1896,19 @@ export default function PickPack() {
         queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder?.id, 'cartons'] });
         refetchCartons();
       }
+      
+      // IMPORTANT: Save to localStorage ONLY after successful database save
+      // Database is primary source, localStorage is backup for offline resilience
+      if (activePackingOrder?.id) {
+        // Get updated cartons from query cache
+        const updatedCartons = queryClient.getQueryData<OrderCarton[]>(
+          ['/api/orders', activePackingOrder.id, 'cartons']
+        );
+        if (updatedCartons) {
+          savePackingState(activePackingOrder.id, 'cartons', updatedCartons);
+          console.log('✅ Cartons saved to localStorage after successful DB save');
+        }
+      }
     },
     onError: (error, variables) => {
       if (variables.tempId) {
@@ -1960,9 +1976,24 @@ export default function PickPack() {
       const response = await apiRequest('PATCH', `/api/orders/${data.orderId}/cartons/${data.cartonId}`, data.updates);
       return await response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder?.id, 'cartons'] });
-      refetchCartons();
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder?.id, 'cartons'] });
+      await refetchCartons();
+      
+      // IMPORTANT: Save to localStorage ONLY after successful database save
+      // Database is primary source, localStorage is backup for offline resilience
+      if (activePackingOrder?.id) {
+        // Wait a bit for refetch to complete
+        setTimeout(() => {
+          const updatedCartons = queryClient.getQueryData<OrderCarton[]>(
+            ['/api/orders', activePackingOrder.id, 'cartons']
+          );
+          if (updatedCartons) {
+            savePackingState(activePackingOrder.id, 'cartons', updatedCartons);
+            console.log('✅ Cartons saved to localStorage after successful DB update');
+          }
+        }, 100);
+      }
     },
   });
 
@@ -1980,9 +2011,24 @@ export default function PickPack() {
       const response = await apiRequest('DELETE', `/api/orders/${data.orderId}/cartons/${data.cartonId}`);
       return await response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder?.id, 'cartons'] });
-      refetchCartons();
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder?.id, 'cartons'] });
+      await refetchCartons();
+      
+      // IMPORTANT: Save to localStorage ONLY after successful database delete
+      // Database is primary source, localStorage is backup for offline resilience
+      if (activePackingOrder?.id) {
+        // Wait a bit for refetch to complete
+        setTimeout(() => {
+          const updatedCartons = queryClient.getQueryData<OrderCarton[]>(
+            ['/api/orders', activePackingOrder.id, 'cartons']
+          );
+          if (updatedCartons) {
+            savePackingState(activePackingOrder.id, 'cartons', updatedCartons);
+            console.log('✅ Cartons saved to localStorage after successful DB delete');
+          }
+        }, 100);
+      }
     },
   });
 
