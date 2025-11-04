@@ -318,10 +318,13 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
         },
         {
           name: "Shipping",
-          href: "/shipping",
           icon: Send,
           color: "text-blue-500",
-          description: "Outbound Logistics"
+          description: "Outbound Logistics",
+          children: [
+            { name: "Shipping Management", href: "/shipping" },
+            { name: "Shipment Labels", href: "/shipping/labels" },
+          ],
         },
       ]
     },

@@ -64,6 +64,7 @@ import WarehouseMap from "@/pages/WarehouseMap";
 import WarehouseMapNew from "@/pages/Warehouse/WarehouseMapNew";
 import PickPack from "@/pages/Orders/PickPack";
 import ShippingManagement from "@/pages/Shipping/ShippingManagement";
+import ShipmentLabels from "@/pages/Shipping/ShipmentLabels";
 import PackingMaterials from "@/pages/PackingMaterials";
 import AddPackingMaterial from "@/pages/PackingMaterials/AddPackingMaterial";
 import EditPackingMaterial from "@/pages/PackingMaterials/EditPackingMaterial";
@@ -187,6 +188,7 @@ function Router() {
         <Route path="/stock/under-allocated" component={UnderAllocated} />
         <Route path="/pos" component={POS} />
         <Route path="/shipping" component={ShippingManagement} />
+        <Route path="/shipping/labels" component={ShipmentLabels} />
         <Route path="/files" component={Files} />
         {/* Import Management Routes */}
         <Route path="/imports/kanban" component={ImportKanbanDashboard} />

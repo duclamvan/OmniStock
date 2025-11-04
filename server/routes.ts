@@ -7376,7 +7376,8 @@ Return ONLY the subject line without quotes or extra formatting.`,
       // Get label PDF
       const label = await getPPLLabel(batchId, 'pdf');
       
-      const labelUrl = `data:application/pdf;base64,${label.labelContent}`;
+      const labelBase64 = label.labelContent;
+      const labelUrl = `data:application/pdf;base64,${labelBase64}`;
 
       // Update order with PPL info
       await db
@@ -7403,14 +7404,15 @@ Return ONLY the subject line without quotes or extra formatting.`,
         carrier: 'PPL',
         trackingNumbers: shipmentNumbers,
         batchId,
-        labelUrl,
-        status: 'active',
-        shipmentData: {
+        labelBase64,
+        labelData: {
           pplShipment,
           batchStatus,
           dobirkaAmount: dobirkaAmount ? parseFloat(dobirkaAmount) : undefined,
           dobirkaCurrency: dobirkaCurrency || undefined
-        }
+        },
+        shipmentCount: shipmentNumbers.length,
+        status: 'active'
       });
 
       res.json({
@@ -7513,10 +7515,24 @@ Return ONLY the subject line without quotes or extra formatting.`,
     try {
       const { id } = req.params;
       const { reason } = req.body;
-      const label = await storage.cancelShipmentLabel(id, reason);
-      if (!label) {
+      
+      // Check if label exists
+      const existingLabel = await storage.getShipmentLabel(id);
+      if (!existingLabel) {
         return res.status(404).json({ message: 'Shipment label not found' });
       }
+      
+      // Check if already cancelled
+      if (existingLabel.status === 'cancelled') {
+        return res.status(400).json({ message: 'Shipment label is already cancelled' });
+      }
+      
+      // Cancel the label
+      const label = await storage.cancelShipmentLabel(id, reason || 'Cancelled by user');
+      if (!label) {
+        return res.status(500).json({ message: 'Failed to update shipment label status' });
+      }
+      
       res.json(label);
     } catch (error) {
       console.error('Error cancelling shipment label:', error);

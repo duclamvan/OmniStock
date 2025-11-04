@@ -28,9 +28,10 @@ interface ShipmentLabel {
   carrier: 'PPL' | 'GLS' | 'DHL';
   trackingNumbers: string[];
   batchId: string | null;
-  labelUrl: string;
+  labelBase64: string;
+  labelData: any;
   status: 'active' | 'cancelled';
-  shipmentData: any;
+  shipmentCount: number;
   cancelReason: string | null;
   createdAt: string;
   cancelledAt: string | null;
@@ -95,8 +96,8 @@ export default function ShipmentLabels() {
   const columns: DataTableColumn<ShipmentLabel>[] = [
     {
       key: 'orderId',
-      label: 'Order ID',
-      render: (label) => (
+      header: 'Order ID',
+      cell: (label: ShipmentLabel) => (
         <Link href={`/orders/${label.orderId}`}>
           <a className="text-blue-600 hover:underline font-medium flex items-center gap-1" data-testid={`link-order-${label.id}`}>
             {label.orderId}
@@ -107,8 +108,8 @@ export default function ShipmentLabels() {
     },
     {
       key: 'carrier',
-      label: 'Carrier',
-      render: (label) => (
+      header: 'Carrier',
+      cell: (label: ShipmentLabel) => (
         <Badge variant="outline" data-testid={`badge-carrier-${label.id}`}>
           {label.carrier}
         </Badge>
@@ -116,10 +117,10 @@ export default function ShipmentLabels() {
     },
     {
       key: 'trackingNumbers',
-      label: 'Tracking Numbers',
-      render: (label) => (
+      header: 'Tracking Numbers',
+      cell: (label: ShipmentLabel) => (
         <div className="space-y-1" data-testid={`text-tracking-${label.id}`}>
-          {label.trackingNumbers.map((tn, index) => (
+          {label.trackingNumbers.map((tn: string, index: number) => (
             <div key={index} className="text-sm font-mono">
               {tn}
             </div>
@@ -129,8 +130,8 @@ export default function ShipmentLabels() {
     },
     {
       key: 'status',
-      label: 'Status',
-      render: (label) => (
+      header: 'Status',
+      cell: (label: ShipmentLabel) => (
         <Badge
           variant={label.status === 'active' ? 'default' : 'secondary'}
           className={
@@ -146,8 +147,8 @@ export default function ShipmentLabels() {
     },
     {
       key: 'createdAt',
-      label: 'Created',
-      render: (label) => (
+      header: 'Created',
+      cell: (label: ShipmentLabel) => (
         <span className="text-sm" data-testid={`text-created-${label.id}`}>
           {formatDate(label.createdAt)}
         </span>
@@ -155,13 +156,16 @@ export default function ShipmentLabels() {
     },
     {
       key: 'actions',
-      label: 'Actions',
-      render: (label) => (
+      header: 'Actions',
+      cell: (label: ShipmentLabel) => (
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => window.open(label.labelUrl, '_blank')}
+            onClick={() => {
+              const dataUrl = `data:application/pdf;base64,${label.labelBase64}`;
+              window.open(dataUrl, '_blank');
+            }}
             data-testid={`button-view-label-${label.id}`}
           >
             <Eye className="w-4 h-4 mr-1" />
