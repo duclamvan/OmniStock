@@ -46,6 +46,7 @@ import {
   packingMaterials,
   customerShippingAddresses,
   productFiles,
+  pplShipmentHistory,
 } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -8052,6 +8053,23 @@ Return ONLY the subject line without quotes or extra formatting.`,
       console.error('Error cancelling PPL shipment:', error);
       res.status(500).json({ 
         error: error.message || 'Failed to cancel PPL shipment'
+      });
+    }
+  });
+
+  // Get PPL shipment history (all labels - active and cancelled)
+  app.get('/api/shipping/ppl/history', async (req, res) => {
+    try {
+      const history = await db
+        .select()
+        .from(pplShipmentHistory)
+        .orderBy(desc(pplShipmentHistory.createdAt));
+      
+      res.json(history);
+    } catch (error: any) {
+      console.error('Error fetching PPL shipment history:', error);
+      res.status(500).json({ 
+        error: error.message || 'Failed to fetch PPL shipment history'
       });
     }
   });
