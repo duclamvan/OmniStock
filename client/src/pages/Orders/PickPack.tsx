@@ -6110,11 +6110,25 @@ export default function PickPack() {
                           const result = await response.json();
                           console.log('✅ All labels generated:', result);
                           
-                          // Refresh data
+                          // Critical: Refresh ALL data to ensure UI updates
+                          console.log('🔄 Step 1: Invalidating all queries...');
                           await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                          await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
+                          
+                          console.log('🔄 Step 2: Refetching cartons...');
                           await refetchCartons();
-                          await new Promise(resolve => setTimeout(resolve, 300));
+                          
+                          console.log('🔄 Step 3: Waiting for database commit...');
+                          await new Promise(resolve => setTimeout(resolve, 500));
+                          
+                          console.log('🔄 Step 4: Fetching shipment labels...');
                           await fetchShipmentLabels();
+                          
+                          console.log('🔄 Step 5: Force re-render by updating state...');
+                          // Force state update to trigger re-render
+                          setShipmentLabelsFromDB(prev => [...prev]);
+                          
+                          console.log('✅ All refresh steps completed');
                           
                           toast({
                             title: "Labels Generated",
@@ -6327,10 +6341,15 @@ export default function PickPack() {
                                     if (confirm(`Delete shipment #${index + 1}? This will cancel the shipment with PPL.`)) {
                                       try {
                                         await apiRequest('DELETE', `/api/shipment-labels/${label.id}`, {});
-                                        // Refresh data
+                                        // Refresh data to update UI
+                                        console.log('🔄 Refreshing after delete...');
                                         await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                                        await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
                                         await refetchCartons();
-                                        await fetchShipmentLabels(); // Refresh shipment labels
+                                        await new Promise(resolve => setTimeout(resolve, 300));
+                                        await fetchShipmentLabels();
+                                        setShipmentLabelsFromDB(prev => [...prev]);
+                                        console.log('✅ Delete refresh complete');
                                         toast({ title: "Shipment deleted successfully" });
                                       } catch (error) {
                                         toast({
@@ -6419,14 +6438,22 @@ export default function PickPack() {
                                     console.log('✅ Label generated successfully:', result);
                                     
                                     // Refresh data - important to fetch labels AFTER backend has saved
-                                    console.log('🔄 Refreshing all data...');
+                                    console.log('🔄 Step 1: Invalidating queries...');
                                     await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                                    await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
+                                    
+                                    console.log('🔄 Step 2: Refetching cartons...');
                                     await refetchCartons();
                                     
-                                    // Small delay to ensure database has committed the label
-                                    await new Promise(resolve => setTimeout(resolve, 300));
+                                    console.log('🔄 Step 3: Waiting for database commit...');
+                                    await new Promise(resolve => setTimeout(resolve, 500));
                                     
-                                    await fetchShipmentLabels(); // Refresh shipment labels
+                                    console.log('🔄 Step 4: Fetching shipment labels...');
+                                    await fetchShipmentLabels();
+                                    
+                                    console.log('🔄 Step 5: Force re-render...');
+                                    setShipmentLabelsFromDB(prev => [...prev]);
+                                    
                                     console.log('✅ All data refreshed');
                                     
                                     toast({
