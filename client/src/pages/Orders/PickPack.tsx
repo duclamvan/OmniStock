@@ -6195,32 +6195,61 @@ export default function PickPack() {
                                 disabled={isCancelled}
                                 onClick={async () => {
                                   try {
-                                    if (label.labelBase64) {
-                                      const labelBlob = new Blob(
-                                        [Uint8Array.from(atob(label.labelBase64), c => c.charCodeAt(0))],
-                                        { type: 'application/pdf' }
-                                      );
-                                      const url = URL.createObjectURL(labelBlob);
-                                      const printWindow = window.open(url, '_blank');
-                                      if (printWindow) {
-                                        printWindow.onload = () => {
-                                          printWindow.print();
-                                          // Track that this label was printed
-                                          setPrintedPPLLabels(prev => {
-                                            const newSet = new Set(prev);
-                                            newSet.add(index);
-                                            return newSet;
-                                          });
-                                          // Refresh labels to ensure UI is up to date
-                                          fetchShipmentLabels();
-                                        };
-                                      }
-                                      setTimeout(() => URL.revokeObjectURL(url), 1000);
+                                    console.log('🖨️ Print button clicked for label:', {
+                                      labelId: label.id,
+                                      hasLabelBase64: !!label.labelBase64,
+                                      labelBase64Length: label.labelBase64?.length,
+                                      trackingNumbers: label.trackingNumbers
+                                    });
+                                    
+                                    if (!label.labelBase64) {
+                                      console.error('❌ No labelBase64 found!');
+                                      toast({
+                                        title: "Error",
+                                        description: "Label PDF not available. The label might still be processing.",
+                                        variant: "destructive"
+                                      });
+                                      return;
                                     }
-                                  } catch (error) {
+                                    
+                                    console.log('📄 Creating PDF blob...');
+                                    const labelBlob = new Blob(
+                                      [Uint8Array.from(atob(label.labelBase64), c => c.charCodeAt(0))],
+                                      { type: 'application/pdf' }
+                                    );
+                                    console.log('✅ Blob created, size:', labelBlob.size);
+                                    
+                                    const url = URL.createObjectURL(labelBlob);
+                                    console.log('🔗 Opening print window...');
+                                    const printWindow = window.open(url, '_blank');
+                                    
+                                    if (printWindow) {
+                                      printWindow.onload = () => {
+                                        console.log('✅ Print window loaded, triggering print dialog');
+                                        printWindow.print();
+                                        // Track that this label was printed
+                                        setPrintedPPLLabels(prev => {
+                                          const newSet = new Set(prev);
+                                          newSet.add(index);
+                                          return newSet;
+                                        });
+                                        // Refresh labels to ensure UI is up to date
+                                        fetchShipmentLabels();
+                                      };
+                                    } else {
+                                      console.error('❌ Failed to open print window - might be blocked by popup blocker');
+                                      toast({
+                                        title: "Error",
+                                        description: "Could not open print window. Please allow popups for this site.",
+                                        variant: "destructive"
+                                      });
+                                    }
+                                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                                  } catch (error: any) {
+                                    console.error('❌ Print error:', error);
                                     toast({
                                       title: "Error",
-                                      description: "Failed to print label",
+                                      description: error.message || "Failed to print label",
                                       variant: "destructive"
                                     });
                                   }
