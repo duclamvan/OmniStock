@@ -8467,58 +8467,77 @@ Return ONLY the subject line without quotes or extra formatting.`,
         productType = hasCOD ? 'COND' : 'BUSS';
       }
 
-      // Prepare PPL shipment data using shipmentSet for multi-carton orders
-      // IMPORTANT: For multi-carton orders with COD, PPL requires:
-      // 1. Single shipment with shipmentSet structure
-      // 2. COD on the parent shipment (customer pays ONCE for all cartons)
-      // 3. Each carton becomes an item in shipmentSetItems
-      const pplShipment: any = {
-        referenceId: order.orderId,
-        productType,
-        sender,
-        recipient: {
-          country: getCountryCode(shippingAddress.country),
-          zipCode: shippingAddress.zipCode.replace(/\s+/g, ''),
-          name: recipientName,
-          name2: shippingAddress.company ? contactName : undefined,
-          street: `${shippingAddress.street} ${shippingAddress.streetNumber || ''}`.trim(),
-          city: shippingAddress.city,
-          contact: contactName,
-          phone: shippingAddress.tel || undefined,
-          email: shippingAddress.email || undefined
-        },
-        // COD goes on the parent shipment (collected ONCE for all cartons)
-        cashOnDelivery: hasCOD ? {
-          value: parseFloat(order.cashOnDeliveryAmount),
-          currency: order.cashOnDeliveryCurrency || 'CZK',
-          variableSymbol: numericOrderId || '1234567890'
-        } : undefined,
-        externalNumbers: [
-          {
-            code: 'CUST',
-            externalNumber: order.orderId
-          }
-        ]
-      };
-
-      // Use shipmentSet for multiple cartons, or weighedShipmentInfo for single carton
+      // Prepare PPL shipment data
+      // For multi-carton orders, we create SEPARATE shipments (not shipmentSet)
+      // This ensures each carton gets proper tracking and label
+      const shipments: any[] = [];
+      
       if (cartons.length > 1) {
-        pplShipment.shipmentSet = {
-          numberOfShipments: cartons.length,
-          shipmentSetItems: cartons.map((carton) => ({
-            shipmentNumber: `${order.orderId}-${carton.cartonNumber}`,
+        // Create separate shipment for each carton
+        cartons.forEach((carton, index) => {
+          const isFirstCarton = index === 0;
+          
+          shipments.push({
+            referenceId: `${order.orderId}-${carton.cartonNumber}`,
+            productType,
+            sender,
+            recipient: {
+              country: getCountryCode(shippingAddress.country),
+              zipCode: shippingAddress.zipCode.replace(/\s+/g, ''),
+              name: recipientName,
+              street: `${shippingAddress.street} ${shippingAddress.streetNumber || ''}`.trim(),
+              city: shippingAddress.city,
+              phone: shippingAddress.tel || undefined,
+              email: shippingAddress.email || undefined
+            },
             weighedShipmentInfo: {
               weight: carton.weight ? parseFloat(carton.weight) : 1.0
-            }
-          }))
-        };
+            },
+            // COD only on the FIRST carton
+            cashOnDelivery: (hasCOD && isFirstCarton) ? {
+              value: parseFloat(order.cashOnDeliveryAmount),
+              currency: order.cashOnDeliveryCurrency || 'CZK',
+              variableSymbol: numericOrderId || '1234567890'
+            } : undefined,
+            externalNumbers: [
+              {
+                code: 'CUST',
+                externalNumber: order.orderId
+              }
+            ]
+          });
+        });
       } else if (cartons.length === 1) {
-        pplShipment.weighedShipmentInfo = cartons[0].weight ? {
-          weight: parseFloat(cartons[0].weight)
-        } : undefined;
+        // Single carton - use simpler structure
+        shipments.push({
+          referenceId: order.orderId,
+          productType,
+          sender,
+          recipient: {
+            country: getCountryCode(shippingAddress.country),
+            zipCode: shippingAddress.zipCode.replace(/\s+/g, ''),
+            name: recipientName,
+            street: `${shippingAddress.street} ${shippingAddress.streetNumber || ''}`.trim(),
+            city: shippingAddress.city,
+            phone: shippingAddress.tel || undefined,
+            email: shippingAddress.email || undefined
+          },
+          weighedShipmentInfo: {
+            weight: cartons[0].weight ? parseFloat(cartons[0].weight) : 1.0
+          },
+          cashOnDelivery: hasCOD ? {
+            value: parseFloat(order.cashOnDeliveryAmount),
+            currency: order.cashOnDeliveryCurrency || 'CZK',
+            variableSymbol: numericOrderId || '1234567890'
+          } : undefined,
+          externalNumbers: [
+            {
+              code: 'CUST',
+              externalNumber: order.orderId
+            }
+          ]
+        });
       }
-
-      const shipments = [pplShipment];
 
       // Create PPL shipment
       const { batchId, location } = await createPPLShipment({
