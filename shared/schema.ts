@@ -765,6 +765,23 @@ export const orderCartons = pgTable('order_cartons', {
   updatedAt: timestamp('updated_at').notNull().defaultNow()
 });
 
+// Shipment Labels - Track all shipping labels (PPL, GLS, DHL, etc.)
+export const shipmentLabels = pgTable('shipment_labels', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar('order_id').references(() => orders.id, { onDelete: 'set null' }), // Allow null if order deleted
+  carrier: varchar('carrier').notNull(), // PPL, GLS, DHL, etc.
+  trackingNumbers: text('tracking_numbers').array(), // Array of tracking numbers
+  batchId: varchar('batch_id'), // External batch ID from carrier API
+  labelData: jsonb('label_data'), // Complete label data from carrier
+  labelBase64: text('label_base64'), // PDF label in base64 format
+  shipmentCount: integer('shipment_count').default(1), // Number of shipments/cartons
+  status: varchar('status').notNull().default('active'), // active, cancelled
+  cancelledAt: timestamp('cancelled_at'),
+  cancelReason: text('cancel_reason'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
 // Packing Materials for warehouse management
 export const packingMaterials = pgTable('packing_materials', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
@@ -1244,6 +1261,7 @@ export const insertPackingCartonSchema = createInsertSchema(packingCartons).omit
 export const insertOrderCartonPlanSchema = createInsertSchema(orderCartonPlans).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertOrderCartonItemSchema = createInsertSchema(orderCartonItems).omit({ id: true, createdAt: true });
 export const insertOrderCartonSchema = createInsertSchema(orderCartons).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertShipmentLabelSchema = createInsertSchema(shipmentLabels).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Packing Materials schemas
 export const insertPackingMaterialSchema = createInsertSchema(packingMaterials).omit({ id: true, createdAt: true, updatedAt: true });
@@ -1402,6 +1420,8 @@ export type OrderCartonItem = typeof orderCartonItems.$inferSelect;
 export type InsertOrderCartonItem = z.infer<typeof insertOrderCartonItemSchema>;
 export type OrderCarton = typeof orderCartons.$inferSelect;
 export type InsertOrderCarton = z.infer<typeof insertOrderCartonSchema>;
+export type ShipmentLabel = typeof shipmentLabels.$inferSelect;
+export type InsertShipmentLabel = z.infer<typeof insertShipmentLabelSchema>;
 
 // Packing Materials types
 export type PackingMaterial = typeof packingMaterials.$inferSelect;
