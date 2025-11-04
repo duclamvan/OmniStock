@@ -6216,8 +6216,8 @@ export default function PickPack() {
                         </Button>
                       )}
                     </>
-                  ) : shipmentLabelsFromDB.length === 0 ? (
-                    // No labels exist - Show Generate All Labels button
+                  ) : shipmentLabelsFromDB.length === 0 && cartons.length > 1 ? (
+                    // No labels exist AND multiple cartons - Show Generate All Labels button
                     <Button
                       variant="default"
                       className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold transition-all duration-200"
@@ -6295,7 +6295,7 @@ export default function PickPack() {
                       )}
                       {isGeneratingAllLabels ? 'Generating...' : 'Generate All Labels'}
                     </Button>
-                  ) : (
+                  ) : shipmentLabelsFromDB.length > 0 ? (
                     // Labels exist - Show Print All Labels button
                     <Button
                       variant="default"
@@ -6366,7 +6366,7 @@ export default function PickPack() {
                       )}
                       {isPrintingAllLabels ? 'Printing...' : 'Print All Labels'}
                     </Button>
-                  )}
+                  ) : null}
 
                   {/* Regenerate All Labels button - appears when labels exist and there are multiple cartons */}
                   {shipmentLabelsFromDB.length > 0 && cartons.length > 1 && (
@@ -6632,8 +6632,8 @@ export default function PickPack() {
                               )}
                             </div>
                             
-                            {/* Show Generate button if no label OR label has no PDF data, Print button if label exists with PDF */}
-                            {(!label || !label.labelBase64) && !isCancelled ? (
+                            {/* Show Generate button ONLY for single carton shipments if no label OR label has no PDF data, Print button if label exists with PDF */}
+                            {(!label || !label.labelBase64) && !isCancelled && cartons.length === 1 ? (
                               <Button
                                 variant="outline"
                                 size="sm"
