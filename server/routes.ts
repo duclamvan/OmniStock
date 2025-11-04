@@ -7424,6 +7424,88 @@ Return ONLY the subject line without quotes or extra formatting.`,
     }
   });
 
+  // Shipment Labels Routes
+  
+  // Get all shipment labels
+  app.get('/api/shipment-labels', async (req, res) => {
+    try {
+      const labels = await storage.getShipmentLabels();
+      res.json(labels);
+    } catch (error) {
+      console.error('Error fetching shipment labels:', error);
+      res.status(500).json({ message: 'Failed to fetch shipment labels' });
+    }
+  });
+
+  // Get shipment labels by order ID
+  app.get('/api/shipment-labels/order/:orderId', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const labels = await storage.getShipmentLabelsByOrderId(orderId);
+      res.json(labels);
+    } catch (error) {
+      console.error('Error fetching shipment labels by order ID:', error);
+      res.status(500).json({ message: 'Failed to fetch shipment labels' });
+    }
+  });
+
+  // Get single shipment label
+  app.get('/api/shipment-labels/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const label = await storage.getShipmentLabel(id);
+      if (!label) {
+        return res.status(404).json({ message: 'Shipment label not found' });
+      }
+      res.json(label);
+    } catch (error) {
+      console.error('Error fetching shipment label:', error);
+      res.status(500).json({ message: 'Failed to fetch shipment label' });
+    }
+  });
+
+  // Create new shipment label
+  app.post('/api/shipment-labels', async (req, res) => {
+    try {
+      const label = await storage.createShipmentLabel(req.body);
+      res.json(label);
+    } catch (error) {
+      console.error('Error creating shipment label:', error);
+      res.status(500).json({ message: 'Failed to create shipment label' });
+    }
+  });
+
+  // Update shipment label
+  app.patch('/api/shipment-labels/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const label = await storage.updateShipmentLabel(id, req.body);
+      if (!label) {
+        return res.status(404).json({ message: 'Shipment label not found' });
+      }
+      res.json(label);
+    } catch (error) {
+      console.error('Error updating shipment label:', error);
+      res.status(500).json({ message: 'Failed to update shipment label' });
+    }
+  });
+
+  // Cancel shipment label
+  app.post('/api/shipment-labels/:id/cancel', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { reason } = req.body;
+      const label = await storage.cancelShipmentLabel(id, reason);
+      if (!label) {
+        return res.status(404).json({ message: 'Shipment label not found' });
+      }
+      res.json(label);
+    } catch (error) {
+      console.error('Error cancelling shipment label:', error);
+      res.status(500).json({ message: 'Failed to cancel shipment label' });
+    }
+  });
+
   // Get PPL label
   app.get('/api/shipping/ppl/label/:batchId', async (req, res) => {
     try {
