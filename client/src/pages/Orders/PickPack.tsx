@@ -6296,10 +6296,10 @@ export default function PickPack() {
                       {isGeneratingAllLabels ? 'Generating...' : 'Generate All Labels'}
                     </Button>
                   ) : shipmentLabelsFromDB.length > 0 ? (
-                    // Labels exist - Show Print All Labels button
+                    // Labels exist - Show Print All Labels button (blue to distinguish from Generate)
                     <Button
                       variant="default"
-                      className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold transition-all duration-200"
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-all duration-200"
                       onClick={async () => {
                         try {
                           setIsPrintingAllLabels(true);
