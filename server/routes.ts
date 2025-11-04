@@ -7755,6 +7755,57 @@ Return ONLY the subject line without quotes or extra formatting.`,
       res.status(500).json({ message: 'Failed to fetch shipment labels' });
     }
   });
+  
+  // Delete a shipment label (PPL Cancel API)
+  app.delete('/api/shipment-labels/:labelId', async (req, res) => {
+    try {
+      const { labelId } = req.params;
+      
+      // Get the label first to get tracking numbers
+      const label = await storage.getShipmentLabel(labelId);
+      if (!label) {
+        return res.status(404).json({ error: 'Shipment label not found' });
+      }
+      
+      // For PPL labels, try to cancel with PPL API
+      if (label.carrier === 'PPL' && label.trackingNumbers?.[0]) {
+        try {
+          const { cancelPPLShipment } = await import('./services/pplService');
+          await cancelPPLShipment(label.trackingNumbers[0]);
+          console.log('PPL shipment cancelled:', label.trackingNumbers[0]);
+        } catch (pplError) {
+          console.error('PPL cancellation failed (may already be processed):', pplError);
+          // Continue with deletion even if PPL cancellation fails
+        }
+      }
+      
+      // Cancel the label in our database
+      await storage.cancelShipmentLabel(labelId, 'User requested cancellation');
+      
+      // Also remove the corresponding carton if it exists
+      const orderId = label.orderId;
+      if (orderId) {
+        // Get cartons for this order
+        const cartons = await storage.getOrderCartons(orderId);
+        // Find carton with matching labelData.batchId
+        const labelData = label.labelData as any;
+        const cartonToDelete = cartons.find(c => {
+          const cartonData = c as any;
+          return cartonData.trackingNumber === label.trackingNumbers?.[0] || 
+                 cartonData.notes?.includes(label.batchId || '');
+        });
+        
+        if (cartonToDelete) {
+          await storage.deleteOrderCarton(cartonToDelete.id);
+        }
+      }
+      
+      res.json({ success: true, message: 'Shipment label cancelled' });
+    } catch (error) {
+      console.error('Error deleting shipment label:', error);
+      res.status(500).json({ error: 'Failed to delete shipment label' });
+    }
+  });
 
   // Get single shipment label
   app.get('/api/shipment-labels/:id', async (req, res) => {

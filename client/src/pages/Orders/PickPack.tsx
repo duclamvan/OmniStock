@@ -952,6 +952,7 @@ export default function PickPack() {
   const [printedProductFiles, setPrintedProductFiles] = useState<Set<string>>(new Set());
   const [printedOrderFiles, setPrintedOrderFiles] = useState<Set<string>>(new Set());
   const [printedPPLLabels, setPrintedPPLLabels] = useState<Set<number>>(new Set()); // Track printed PPL label indices
+  const [shipmentLabelsFromDB, setShipmentLabelsFromDB] = useState<any[]>([]); // Shipment labels from database
   
   const [selectedBoxSize, setSelectedBoxSize] = useState<string>('');
   const [packageWeight, setPackageWeight] = useState<string>('');
@@ -1499,6 +1500,19 @@ export default function PickPack() {
       setShippingLabels([]);
     }
   }, [cartons.length]);
+  
+  // Fetch PPL shipment labels from database
+  useEffect(() => {
+    if (activePackingOrder?.id && activePackingOrder?.pplLabelData) {
+      fetch(`/api/shipment-labels/order/${activePackingOrder.id}`)
+        .then(res => res.json())
+        .then(labels => {
+          console.log('Fetched shipment labels:', labels);
+          setShipmentLabelsFromDB(labels.filter((l: any) => l.status === 'active'));
+        })
+        .catch(err => console.error('Error fetching shipment labels:', err));
+    }
+  }, [activePackingOrder?.id, cartons.length]);
 
   // Track if we've already auto-applied suggestions for this order
   const [hasAutoAppliedSuggestions, setHasAutoAppliedSuggestions] = useState(false);
@@ -5908,33 +5922,135 @@ export default function PickPack() {
                     </Button>
                   )}
 
-                  {/* PPL Shipment Cards - Show previously generated labels */}
+                  {/* PPL Shipment Cards - Show cartons and labels */}
                   {activePackingOrder.pplLabelData && (
                     <div className="space-y-2">
                       {(() => {
-                        // Debug logging
-                        console.log('PPL Label Data:', {
-                          hasLabelData: !!activePackingOrder.pplLabelData,
-                          shipmentNumbers: activePackingOrder.pplShipmentNumbers,
-                          cartonsLength: cartons.length,
-                          batchId: activePackingOrder.pplBatchId
-                        });
-                        
-                        // Determine how many shipment cards to show
-                        // Always show at least 1 card if label data exists
-                        const shipmentCount = cartons.length > 0 
-                          ? cartons.length 
-                          : (activePackingOrder.pplShipmentNumbers?.length > 0 
-                              ? activePackingOrder.pplShipmentNumbers.length 
-                              : 1);
-                        
-                        console.log('Will display', shipmentCount, 'shipment cards');
-                        
+                        // For PPL shipments, show each carton with its label status
                         const isCancelled = activePackingOrder.pplStatus === 'cancelled';
                         
-                        return Array.from({ length: shipmentCount }, (_, index) => (
+                        // Combine cartons with their corresponding labels
+                        const cartonsWithLabels = cartons.map((carton, index) => {
+                          // Find label for this carton (by carton number in labelData)
+                          const label = shipmentLabelsFromDB.find((l: any) => {
+                            const labelData = l.labelData as any;
+                            return labelData?.cartonNumber === index + 1 || 
+                                   (index === 0 && !labelData?.cartonNumber); // First label might not have cartonNumber
+                          });
+                          
+                          return {
+                            carton,
+                            label,
+                            index
+                          };
+                        });
+                        
+                        // If no cartons but we have labels, show the labels
+                        if (cartons.length === 0 && shipmentLabelsFromDB.length > 0) {
+                          return shipmentLabelsFromDB.map((label, index) => (
+                            <div 
+                              key={label.id}
+                              className={`flex items-center gap-3 p-3 rounded-lg ${
+                                isCancelled
+                                  ? 'bg-gradient-to-r from-gray-100 to-gray-200 border-2 border-gray-400 opacity-75'
+                                  : 'bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300'
+                              }`}
+                              data-testid={`ppl-shipment-card-${index + 1}`}
+                            >
+                              <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
+                                isCancelled ? 'bg-gray-500' : 'bg-orange-600'
+                              }`}>
+                                <span className="text-white font-bold text-sm">{index + 1}</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <p className={`text-sm font-semibold truncate ${isCancelled ? 'text-gray-600 line-through' : 'text-gray-900'}`}>
+                                    CZ-PPL{label.labelData?.hasCOD || activePackingOrder.dobirkaAmount > 0 ? '-DOB' : ''} #{index + 1}
+                                  </p>
+                                  {isCancelled && (
+                                    <Badge variant="destructive" className="text-xs px-2 py-0 flex-shrink-0">
+                                      CANCELLED
+                                    </Badge>
+                                  )}
+                                </div>
+                                {label.trackingNumbers?.[0] && (
+                                  <p className={`text-xs font-mono truncate ${isCancelled ? 'text-gray-500 line-through' : 'text-gray-600'}`}>
+                                    {label.trackingNumbers[0]}
+                                  </p>
+                                )}
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className={`h-8 text-xs flex-shrink-0 ${
+                                  printedPPLLabels.has(index)
+                                    ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+                                    : 'hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300'
+                                }`}
+                                disabled={isCancelled}
+                                onClick={async () => {
+                                  try {
+                                    if (label.labelBase64) {
+                                      const labelBlob = new Blob(
+                                        [Uint8Array.from(atob(label.labelBase64), c => c.charCodeAt(0))],
+                                        { type: 'application/pdf' }
+                                      );
+                                      const url = URL.createObjectURL(labelBlob);
+                                      const printWindow = window.open(url, '_blank');
+                                      if (printWindow) {
+                                        printWindow.onload = () => printWindow.print();
+                                        setPrintedPPLLabels(prev => new Set(prev).add(index));
+                                      }
+                                      setTimeout(() => URL.revokeObjectURL(url), 1000);
+                                    }
+                                  } catch (error) {
+                                    toast({
+                                      title: "Error",
+                                      description: "Failed to print label",
+                                      variant: "destructive"
+                                    });
+                                  }
+                                }}
+                                data-testid={`button-print-ppl-label-${index + 1}`}
+                              >
+                                <Printer className="h-3.5 w-3.5 mr-1.5" />
+                                Print
+                              </Button>
+                              {!isCancelled && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                  onClick={async () => {
+                                    if (confirm(`Delete shipment #${index + 1}? This will cancel the shipment with PPL.`)) {
+                                      try {
+                                        await apiRequest('DELETE', `/api/shipment-labels/${label.id}`, {});
+                                        // Refresh data
+                                        await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                                        await refetchCartons();
+                                        toast({ title: "Shipment deleted successfully" });
+                                      } catch (error) {
+                                        toast({
+                                          title: "Error",
+                                          description: "Failed to delete shipment",
+                                          variant: "destructive"
+                                        });
+                                      }
+                                    }
+                                  }}
+                                  data-testid={`button-delete-ppl-shipment-${index + 1}`}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          ));
+                        }
+                        
+                        // Show cartons with their labels
+                        return cartonsWithLabels.map(({ carton, label, index }) => (
                           <div 
-                            key={cartons[index]?.id || `shipment-${index}`}
+                            key={carton.id}
                             className={`flex items-center gap-3 p-3 rounded-lg ${
                               isCancelled
                                 ? 'bg-gradient-to-r from-gray-100 to-gray-200 border-2 border-gray-400 opacity-75'
@@ -5950,15 +6066,7 @@ export default function PickPack() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 min-w-0">
                                 <p className={`text-sm font-semibold truncate ${isCancelled ? 'text-gray-600 line-through' : 'text-gray-900'}`}>
-                                  {(() => {
-                                    // Format: <Country>-PPL-DOB/> #x
-                                    const labelData = activePackingOrder.pplLabelData as any;
-                                    const country = labelData?.recipientCountry || 'CZ';
-                                    // Check both pplLabelData.hasCOD (new labels) and order.dobirkaAmount (fallback for old labels)
-                                    const hasCOD = labelData?.hasCOD || (activePackingOrder.dobirkaAmount && parseFloat(activePackingOrder.dobirkaAmount.toString()) > 0);
-                                    const codSuffix = hasCOD ? '-DOB' : '';
-                                    return `${country}-PPL${codSuffix} #${index + 1}`;
-                                  })()}
+                                  CZ-PPL{activePackingOrder.dobirkaAmount > 0 ? '-DOB' : ''} #{index + 1}
                                 </p>
                                 {isCancelled && (
                                   <Badge variant="destructive" className="text-xs px-2 py-0 flex-shrink-0">
@@ -5966,101 +6074,133 @@ export default function PickPack() {
                                   </Badge>
                                 )}
                               </div>
-                              {activePackingOrder.pplShipmentNumbers && activePackingOrder.pplShipmentNumbers.length > index && (
+                              {label?.trackingNumbers?.[0] ? (
                                 <p className={`text-xs font-mono truncate ${isCancelled ? 'text-gray-500 line-through' : 'text-gray-600'}`}>
-                                  {activePackingOrder.pplShipmentNumbers[index]}
+                                  {label.trackingNumbers[0]}
                                 </p>
+                              ) : (
+                                <p className="text-xs text-gray-400 italic">No label generated yet</p>
                               )}
                             </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className={`h-8 text-xs flex-shrink-0 ${
-                                printedPPLLabels.has(index)
-                                  ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
-                                  : 'hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300'
-                              }`}
-                              disabled={isCancelled}
-                              onClick={async () => {
-                                try {
-                                  console.log('🖨️ Fetching PPL label for order:', activePackingOrder.id);
-                                  const response = await fetch(`/api/orders/${activePackingOrder.id}/ppl/label`);
-                                  console.log('📥 Response status:', response.status);
-                                  
-                                  const data = await response.json();
-                                  console.log('📦 Response data:', { success: data.success, hasLabel: !!data.labelBase64, format: data.format });
-
-                                  if (data.success && data.labelBase64) {
-                                    console.log('✅ Creating PDF blob from base64...');
-                                    const labelBlob = new Blob(
-                                      [Uint8Array.from(atob(data.labelBase64), c => c.charCodeAt(0))],
-                                      { type: 'application/pdf' }
-                                    );
-                                    const url = URL.createObjectURL(labelBlob);
-                                    console.log('🔗 Blob URL created:', url);
+                            
+                            {/* Show Generate button if no label, Print button if label exists */}
+                            {!label && !isCancelled ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 text-xs flex-shrink-0 bg-orange-100 hover:bg-orange-200 text-orange-700 border-orange-300"
+                                onClick={async () => {
+                                  try {
+                                    toast({
+                                      title: "Generating PPL Label...",
+                                      description: "Creating shipping label from PPL API",
+                                    });
                                     
-                                    const printWindow = window.open(url, '_blank');
-                                    console.log('🪟 Window opened:', !!printWindow);
+                                    // Create label for this carton
+                                    const response = await apiRequest('POST', `/api/shipping/create-label-for-carton`, {
+                                      orderId: activePackingOrder.id,
+                                      cartonId: carton.id,
+                                      cartonNumber: index + 1
+                                    });
                                     
-                                    if (printWindow) {
-                                      printWindow.onload = () => {
-                                        console.log('🖨️ Triggering print dialog...');
-                                        printWindow.print();
-                                      };
-                                      // Mark as printed
-                                      setPrintedPPLLabels(prev => new Set(prev).add(index));
-                                    } else {
-                                      toast({
-                                        title: "Popup Blocked",
-                                        description: "Please allow popups for this site to print labels",
-                                        variant: "destructive"
-                                      });
+                                    if (!response.ok) {
+                                      throw new Error('Failed to create label');
                                     }
                                     
-                                    setTimeout(() => URL.revokeObjectURL(url), 1000);
-                                  } else {
-                                    console.error('❌ Invalid response:', data);
+                                    // Refresh data
+                                    await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                                    await refetchCartons();
+                                    
+                                    toast({
+                                      title: "Label Generated",
+                                      description: "PPL shipping label created successfully",
+                                    });
+                                  } catch (error) {
                                     toast({
                                       title: "Error",
-                                      description: data.error || "Label data not available",
+                                      description: "Failed to generate label",
                                       variant: "destructive"
                                     });
                                   }
-                                } catch (error: any) {
-                                  console.error('❌ Error printing PPL label:', error);
-                                  toast({
-                                    title: "Error",
-                                    description: error.message || "Failed to print label",
-                                    variant: "destructive"
-                                  });
-                                }
-                              }}
-                              data-testid={`button-print-ppl-label-${index + 1}`}
-                            >
-                              {printedPPLLabels.has(index) ? (
-                                <>
-                                  <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-                                  Printed
-                                </>
-                              ) : (
-                                <>
-                                  <Printer className="h-3.5 w-3.5 mr-1.5" />
-                                  Print
-                                </>
-                              )}
-                            </Button>
-                            {index === 0 && !isCancelled && (
+                                }}
+                                data-testid={`button-generate-ppl-label-${index + 1}`}
+                              >
+                                <Package className="h-3.5 w-3.5 mr-1.5" />
+                                Generate
+                              </Button>
+                            ) : label && !isCancelled ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className={`h-8 text-xs flex-shrink-0 ${
+                                  printedPPLLabels.has(index)
+                                    ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+                                    : 'hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300'
+                                }`}
+                                disabled={isCancelled}
+                                onClick={async () => {
+                                  try {
+                                    if (label.labelBase64) {
+                                      const labelBlob = new Blob(
+                                        [Uint8Array.from(atob(label.labelBase64), c => c.charCodeAt(0))],
+                                        { type: 'application/pdf' }
+                                      );
+                                      const url = URL.createObjectURL(labelBlob);
+                                      const printWindow = window.open(url, '_blank');
+                                      if (printWindow) {
+                                        printWindow.onload = () => printWindow.print();
+                                        setPrintedPPLLabels(prev => new Set(prev).add(index));
+                                      }
+                                      setTimeout(() => URL.revokeObjectURL(url), 1000);
+                                    }
+                                  } catch (error) {
+                                    toast({
+                                      title: "Error",
+                                      description: "Failed to print label",
+                                      variant: "destructive"
+                                    });
+                                  }
+                                }}
+                                data-testid={`button-print-ppl-label-${index + 1}`}
+                              >
+                                {printedPPLLabels.has(index) ? (
+                                  <>
+                                    <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                                    Printed
+                                  </>
+                                ) : (
+                                  <>
+                                    <Printer className="h-3.5 w-3.5 mr-1.5" />
+                                    Print
+                                  </>
+                                )}
+                              </Button>
+                            ) : null}
+                            
+                            {/* Delete button for each shipment */}
+                            {!isCancelled && label && (
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                onClick={() => {
-                                  if (confirm('Cancel all PPL shipments? This will cancel the shipments with PPL and cannot be undone.')) {
-                                    cancelPPLLabelsMutation.mutate(activePackingOrder.id);
+                                onClick={async () => {
+                                  if (confirm(`Delete shipment #${index + 1}? This will cancel the shipment with PPL.`)) {
+                                    try {
+                                      await apiRequest('DELETE', `/api/shipment-labels/${label.id}`, {});
+                                      // Refresh data
+                                      await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                                      await refetchCartons();
+                                      toast({ title: "Shipment deleted successfully" });
+                                    } catch (error) {
+                                      toast({
+                                        title: "Error",
+                                        description: "Failed to delete shipment",
+                                        variant: "destructive"
+                                      });
+                                    }
                                   }
                                 }}
-                                disabled={cancelPPLLabelsMutation.isPending}
-                                data-testid="button-cancel-ppl-shipments"
+                                data-testid={`button-delete-ppl-shipment-${index + 1}`}
                               >
                                 <X className="h-4 w-4" />
                               </Button>

@@ -247,6 +247,7 @@ export async function getPPLBatchStatus(batchId: string): Promise<PPLBatchStatus
   return pplRequest<PPLBatchStatus>('GET', `/shipment/batch/${batchId}/status`);
 }
 
+
 /**
  * Get PPL label (PDF)
  * @param batchId - The batch ID from shipment creation
