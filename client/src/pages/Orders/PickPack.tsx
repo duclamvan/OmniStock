@@ -6124,8 +6124,8 @@ export default function PickPack() {
                               )}
                             </div>
                             
-                            {/* Show Generate button if no label, Print button if label exists */}
-                            {!label && !isCancelled ? (
+                            {/* Show Generate button if no label OR label has no PDF data, Print button if label exists with PDF */}
+                            {(!label || !label.labelBase64) && !isCancelled ? (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -6183,7 +6183,7 @@ export default function PickPack() {
                                 <Package className="h-3.5 w-3.5 mr-1.5" />
                                 Generate
                               </Button>
-                            ) : label && !isCancelled ? (
+                            ) : label && label.labelBase64 && !isCancelled ? (
                               <Button
                                 variant="outline"
                                 size="sm"
