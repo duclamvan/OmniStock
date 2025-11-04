@@ -5248,7 +5248,7 @@ export default function PickPack() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className={`h-8 w-8 p-0 ${showBarcodeScanner ? 'text-purple-600 bg-purple-100' : 'text-gray-400'}`}
+                      className={`h-9 w-9 p-0 ${showBarcodeScanner ? 'text-purple-600 bg-purple-100' : 'text-gray-400 hover:bg-gray-100'}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         setShowBarcodeScanner(!showBarcodeScanner);
@@ -5258,7 +5258,7 @@ export default function PickPack() {
                       }}
                       title={showBarcodeScanner ? "Hide barcode scanner" : "Show barcode scanner"}
                     >
-                      <ScanLine className="h-4 w-4" />
+                      <ScanLine className="h-4 w-4 sm:h-5 sm:w-5" />
                     </Button>
                   </div>
                 </AccordionTrigger>
@@ -5315,15 +5315,15 @@ export default function PickPack() {
                             className="h-10 text-sm font-mono"
                           />
                         </div>
-                        <Button variant="outline" size="icon" className="h-10 w-10">
-                          <ScanLine className="h-4 w-4" />
+                        <Button variant="outline" size="icon" className="h-10 w-10 flex-shrink-0">
+                          <ScanLine className="h-5 w-5" />
                         </Button>
                       </div>
                     </div>
                   )}
                   <div className="pb-2">
                     <ScrollArea className="h-[400px] w-full">
-                      <div className="space-y-1.5 px-2 pr-3">
+                      <div className="space-y-2 px-2 pr-3">
                       {activePackingOrder.items.map((item, index) => {
                         const isVerified = (verifiedItems[item.id] || 0) >= item.quantity;
                         const isBundle = item.isBundle && item.bundleItems && item.bundleItems.length > 0;
@@ -5338,12 +5338,12 @@ export default function PickPack() {
                         return (
                           <div 
                             key={item.id} 
-                            className={`relative p-2 sm:p-3 rounded-lg border-2 transition-all duration-300 ${
+                            className={`relative p-3 rounded-lg border-2 transition-all duration-300 ${
                               isRecentlyScanned
                                 ? 'bg-yellow-100 border-yellow-400 shadow-lg scale-105 ring-4 ring-yellow-200 animate-pulse'
                                 : isVerified || (isBundle && allBundleComponentsVerified)
-                                ? 'bg-green-50 border-green-300' 
-                                : 'bg-gray-50 border-gray-200'
+                                ? 'bg-green-50 border-green-300 shadow-sm' 
+                                : 'bg-white border-gray-300 shadow-sm'
                             }`}
                           >
                             {(item.notes || item.shipmentNotes) && (
@@ -5475,14 +5475,14 @@ export default function PickPack() {
                                   {/* Location and Badges - Below on mobile */}
                                   <div className="mt-1">
                                     {!isBundle && item.warehouseLocation && (
-                                      <div className="text-sm text-gray-600 font-medium">
+                                      <div className="text-xs text-gray-600 font-medium">
                                         📍 {item.warehouseLocation}
                                         {item.sku && <span className="ml-1 text-gray-500">• {item.sku}</span>}
                                       </div>
                                     )}
                                     {isBundle && (
                                       <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                                        <Badge className="bg-amber-100 text-amber-800 text-sm px-2 py-0.5">
+                                        <Badge className="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 font-semibold">
                                           Bundle ({bundleComponentsVerified}/{totalBundleComponents})
                                         </Badge>
                                       </div>
@@ -5528,7 +5528,7 @@ export default function PickPack() {
                                 {/* Badges Row */}
                                 {isBundle && (
                                   <div className="flex items-center gap-1 mt-1 flex-wrap">
-                                    <Badge className="bg-amber-100 text-amber-800 text-xs px-1 py-0">
+                                    <Badge className="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 font-semibold">
                                       Bundle ({bundleComponentsVerified}/{totalBundleComponents})
                                     </Badge>
                                   </div>
@@ -5537,12 +5537,12 @@ export default function PickPack() {
                                 {/* SKU and Location */}
                                 <div className="flex items-center gap-2 mt-1">
                                   {!isBundle && item.warehouseLocation && (
-                                    <span className="text-xs text-gray-500 truncate">
+                                    <span className="text-xs text-gray-600 font-medium truncate">
                                       📍 {item.warehouseLocation}
                                     </span>
                                   )}
                                   {item.sku && (
-                                    <span className="text-xs text-gray-400 truncate">
+                                    <span className="text-xs text-gray-500 truncate">
                                       SKU: {item.sku}
                                     </span>
                                   )}
