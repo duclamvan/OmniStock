@@ -38,10 +38,10 @@ Utilizes PostgreSQL with Neon serverless driver and Drizzle ORM. The schema supp
 - **OpenAI API**: Used for AI-powered product weight and dimension inference in carton packing optimization.
 
 ## Shipping & Logistics APIs
-- **PPL CZ CPL API**: Automated shipping label generation for PPL courier service, using OAuth2 authentication. Uses PPL's `shipmentSet` structure for multi-carton orders where each carton receives its own tracking number within a single batch. Batches are immutable once created. Includes full dobírka (cash on delivery) support with configurable COD amount and currency (CZK/EUR/USD).
-  - **Proper Workflow**: Add all cartons to order FIRST (via AI recommendations or manually), then create PPL label once. The system automatically uses `shipmentSet` when multiple cartons exist.
-  - **Additional Shipments**: Creates new separate batches (cannot modify existing batches). Each shows "1/1" as it's a separate batch.
-  - **Carton Management**: New `/api/orders/:orderId/apply-ai-cartons` endpoint saves AI-recommended cartons to `orderCartons` table with type='non-company' and source='ai_recommendation'.
+- **PPL CZ CPL API**: Automated shipping label generation for PPL courier service, using OAuth2 authentication. Uses PPL's `shipmentSet` structure for multi-carton orders where all cartons are part of ONE shipment set, with labels showing "1/2", "2/2", etc. Each carton receives its own tracking number. Batches are immutable once created. Includes full dobírka (cash on delivery) support with configurable COD amount and currency (CZK/EUR/USD) applied to the entire shipment set.
+  - **Proper Workflow**: Add all cartons to order FIRST (via AI recommendations or manually), then create PPL labels once. The system automatically creates a shipmentSet when multiple cartons exist.
+  - **Label Display**: Multi-carton shipments show "1/N", "2/N" in corner of labels (one shipment set). Single carton shows "1/1" (standalone shipment).
+  - **COD Handling**: When using shipmentSet, COD is applied to the entire shipment (not per carton), complying with PPL API restriction "nelze slučovat zásilky s dobírkou" (cannot merge shipments with COD).
 - **OpenStreetMap Nominatim API**: For address geocoding and auto-correction.
 
 ## Other APIs

@@ -8507,66 +8507,72 @@ Return ONLY the subject line without quotes or extra formatting.`,
       }
 
       // Prepare PPL shipment data
-      // For multi-carton orders, we create SEPARATE shipments (not shipmentSet)
-      // This ensures each carton gets proper tracking and label
+      // For multi-carton orders, we use shipmentSet to create ONE shipment with multiple cartons
+      // This ensures labels show "1/2", "2/2" instead of separate "1/1", "1/1" shipments
       const shipments: any[] = [];
       
       if (cartons.length > 1) {
-        // Multi-carton order: Create SEPARATE shipments (not shipmentSet)
-        // PPL API RESTRICTION: Cannot merge shipments with dobírka
-        console.log(`📦 Creating ${cartons.length} separate PPL shipments`);
+        // Multi-carton order: Create ONE SHIPMENT with shipmentSet
+        // Each carton becomes an item in the set, labeled as 1/N, 2/N, etc.
+        console.log(`📦 Creating shipment SET with ${cartons.length} cartons`);
         
-        cartons.forEach((carton, index) => {
-          const isFirstCarton = index === 0;
-          
-          // CRITICAL: Only first carton gets COD (if order has COD)
-          // Remaining cartons must NOT have COD to comply with PPL API
-          const shouldApplyCOD = hasCOD && isFirstCarton;
-          
-          // Validate COD amount before creating cashOnDelivery object
-          let cashOnDelivery = undefined;
-          if (shouldApplyCOD) {
-            const codValue = parseFloat(order.cashOnDeliveryAmount);
-            if (isNaN(codValue) || codValue <= 0) {
-              throw new Error(`Invalid COD amount: ${order.cashOnDeliveryAmount}`);
-            }
-            cashOnDelivery = {
-              value: codValue,
-              currency: order.cashOnDeliveryCurrency || 'CZK',
-              variableSymbol: numericOrderId || '1234567890'
-            };
-            console.log(`💰 Carton #${index + 1} (FIRST): COD ${codValue} ${order.cashOnDeliveryCurrency || 'CZK'}`);
-          } else if (hasCOD) {
-            console.log(`📦 Carton #${index + 1}: NO COD (PPL restriction - only first carton has COD)`);
-          } else {
-            console.log(`📦 Carton #${index + 1}: Standard shipment (no COD on order)`);
+        // PPL API RESTRICTION for COD in shipmentSet:
+        // When using shipmentSet, ONLY the main shipment can have COD
+        // Individual items in the set cannot have separate COD values
+        
+        // Validate COD amount if present
+        let cashOnDelivery = undefined;
+        if (hasCOD) {
+          const codValue = parseFloat(order.cashOnDeliveryAmount);
+          if (isNaN(codValue) || codValue <= 0) {
+            throw new Error(`Invalid COD amount: ${order.cashOnDeliveryAmount}`);
           }
-          
-          shipments.push({
-            referenceId: `${order.orderId}-${carton.cartonNumber}`,
-            productType,
-            sender,
-            recipient: {
-              country: getCountryCode(shippingAddress.country),
-              zipCode: shippingAddress.zipCode.replace(/\s+/g, ''),
-              name: recipientName,
-              street: `${shippingAddress.street} ${shippingAddress.streetNumber || ''}`.trim(),
-              city: shippingAddress.city,
-              phone: shippingAddress.tel || undefined,
-              email: shippingAddress.email || undefined
-            },
-            weighedShipmentInfo: {
-              weight: carton.weight ? parseFloat(carton.weight) : 1.0
-            },
-            cashOnDelivery,
-            externalNumbers: [
-              {
-                code: 'CUST',
-                externalNumber: order.orderId
+          cashOnDelivery = {
+            value: codValue,
+            currency: order.cashOnDeliveryCurrency || 'CZK',
+            variableSymbol: numericOrderId || '1234567890'
+          };
+          console.log(`💰 Shipment SET WITH COD: ${codValue} ${order.cashOnDeliveryCurrency || 'CZK'} (applied to entire set)`);
+        } else {
+          console.log(`📦 Shipment SET: Standard shipment (no COD)`);
+        }
+        
+        // Create ONE shipment with shipmentSet structure
+        const shipment: any = {
+          referenceId: order.orderId,
+          productType,
+          sender,
+          recipient: {
+            country: getCountryCode(shippingAddress.country),
+            zipCode: shippingAddress.zipCode.replace(/\s+/g, ''),
+            name: recipientName,
+            street: `${shippingAddress.street} ${shippingAddress.streetNumber || ''}`.trim(),
+            city: shippingAddress.city,
+            phone: shippingAddress.tel || undefined,
+            email: shippingAddress.email || undefined
+          },
+          // COD applied to the entire shipment set (if present)
+          cashOnDelivery,
+          externalNumbers: [
+            {
+              code: 'CUST',
+              externalNumber: order.orderId
+            }
+          ],
+          // shipmentSet defines multiple cartons in ONE shipment
+          shipmentSet: {
+            numberOfShipments: cartons.length,
+            shipmentSetItems: cartons.map((carton, index) => ({
+              referenceId: `${order.orderId}-${carton.cartonNumber}`,
+              weighedShipmentInfo: {
+                weight: carton.weight ? parseFloat(carton.weight) : 1.0
               }
-            ]
-          });
-        });
+            }))
+          }
+        };
+        
+        shipments.push(shipment);
+        console.log(`✓ Created shipment SET:`, JSON.stringify(shipment.shipmentSet, null, 2));
       } else if (cartons.length === 1) {
         // Single carton - simpler structure with COD if present
         console.log(`📦 Creating single PPL shipment`);
