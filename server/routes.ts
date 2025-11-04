@@ -7658,33 +7658,36 @@ Return ONLY the subject line without quotes or extra formatting.`,
           }
         });
 
-        // Poll for batch status
-        let attempts = 0;
-        const maxAttempts = 30;
+        // Poll for batch status (with fallback if PPL status API fails)
         let batchStatus;
+        let shipmentNumbers: string[] = [];
         
-        while (attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          batchStatus = await getPPLBatchStatus(batchId);
+        try {
+          let attempts = 0;
+          const maxAttempts = 30;
           
-          if (batchStatus.status === 'Finished' || batchStatus.status === 'Error') {
-            break;
+          while (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            batchStatus = await getPPLBatchStatus(batchId);
+            
+            if (batchStatus.status === 'Finished' || batchStatus.status === 'Error') {
+              break;
+            }
+            attempts++;
           }
-          attempts++;
+
+          if (batchStatus?.status === 'Finished') {
+            shipmentNumbers = batchStatus.shipmentResults
+              ?.filter(r => r.shipmentNumber)
+              .map(r => r.shipmentNumber) || [];
+          }
+        } catch (statusError) {
+          // PPL status API sometimes returns 500 errors even when batch was created successfully
+          // Skip status polling and try to get the label directly
+          console.log('PPL batch status check failed (this is a known PPL API issue), attempting to retrieve label directly:', statusError);
         }
 
-        if (batchStatus?.status !== 'Finished') {
-          // Rollback carton creation
-          await db.delete(orderCartons).where(eq(orderCartons.id, newCarton.id));
-          throw new Error('Shipment creation timed out or failed');
-        }
-
-        // Get shipment numbers
-        const shipmentNumbers = batchStatus.shipmentResults
-          ?.filter(r => r.shipmentNumber)
-          .map(r => r.shipmentNumber) || [];
-
-        // Get label PDF
+        // Get label PDF (this usually works even when status API fails)
         const label = await getPPLLabel(batchId, 'pdf');
         
         const labelBase64 = label.labelContent;
