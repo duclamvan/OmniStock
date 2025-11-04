@@ -5087,17 +5087,18 @@ export default function PickPack() {
               </div>
             </div>
 
-            {/* Step Indicators (compact, single row) */}
-            <div className="flex items-center gap-1 mt-2 justify-center flex-wrap">
-              <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+            {/* Step Indicators - Professional Progress Bar */}
+            <div className="flex items-center gap-1.5 mt-3 justify-center flex-wrap px-2">
+              {/* Step 1: Items */}
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all ${
                 activePackingOrder.items.every(item => {
                   if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
                     return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
                   }
                   return (verifiedItems[item.id] || 0) >= item.quantity;
                 })
-                  ? 'bg-green-500 text-white' 
-                  : 'bg-black/20 text-purple-200'
+                  ? 'bg-green-500 text-white shadow-green-200' 
+                  : 'bg-white/30 text-white border border-white/40'
               }`}>
                 {activePackingOrder.items.every(item => {
                   if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
@@ -5105,62 +5106,69 @@ export default function PickPack() {
                   }
                   return (verifiedItems[item.id] || 0) >= item.quantity;
                 }) ? (
-                  <CheckCircle className="h-3 w-3" />
+                  <CheckCircle className="h-4 w-4" />
                 ) : (
-                  <Circle className="h-3 w-3" />
+                  <Circle className="h-4 w-4" />
                 )}
-                Items
+                <span className="hidden sm:inline">Items</span>
+                <span className="sm:hidden">1</span>
               </div>
               
-              <ChevronRight className="h-3 w-3 text-purple-300" />
+              <ChevronRight className="h-4 w-4 text-purple-200" />
               
-              <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+              {/* Step 2: Documents */}
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all ${
                 printedDocuments.packingList
-                  ? 'bg-green-500 text-white' 
-                  : 'bg-black/20 text-purple-200'
+                  ? 'bg-green-500 text-white shadow-green-200' 
+                  : 'bg-white/30 text-white border border-white/40'
               }`}>
                 {printedDocuments.packingList ? (
-                  <CheckCircle className="h-3 w-3" />
+                  <CheckCircle className="h-4 w-4" />
                 ) : (
-                  <Circle className="h-3 w-3" />
+                  <Circle className="h-4 w-4" />
                 )}
-                Docs
+                <span className="hidden sm:inline">Docs</span>
+                <span className="sm:hidden">2</span>
               </div>
               
-              <ChevronRight className="h-3 w-3 text-purple-300" />
+              <ChevronRight className="h-4 w-4 text-purple-200" />
               
-              <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+              {/* Step 3: Cartons */}
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all ${
                 selectedCarton 
-                  ? 'bg-green-500 text-white' 
-                  : 'bg-black/20 text-purple-200'
+                  ? 'bg-green-500 text-white shadow-green-200' 
+                  : 'bg-white/30 text-white border border-white/40'
               }`}>
                 {selectedCarton ? (
-                  <CheckCircle className="h-3 w-3" />
+                  <CheckCircle className="h-4 w-4" />
                 ) : (
-                  <Circle className="h-3 w-3" />
+                  <Circle className="h-4 w-4" />
                 )}
-                Carton
+                <span className="hidden sm:inline">Carton</span>
+                <span className="sm:hidden">3</span>
+                {cartons.length > 0 && (
+                  <span className="ml-0.5 opacity-90">({cartons.length})</span>
+                )}
               </div>
               
-              <ChevronRight className="h-3 w-3 text-purple-300" />
+              <ChevronRight className="h-4 w-4 text-purple-200" />
               
-              <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+              {/* Step 4: Checklist */}
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all ${
                 packingChecklist.itemsVerified && packingChecklist.packingSlipIncluded && 
                 packingChecklist.boxSealed && packingChecklist.weightRecorded
-                  ? 'bg-green-500 text-white' 
-                  : 'bg-black/20 text-purple-200'
+                  ? 'bg-green-500 text-white shadow-green-200' 
+                  : 'bg-white/30 text-white border border-white/40'
               }`}>
                 {packingChecklist.itemsVerified && packingChecklist.packingSlipIncluded && 
                  packingChecklist.boxSealed && packingChecklist.weightRecorded ? (
-                  <CheckCircle className="h-3 w-3" />
+                  <CheckCircle className="h-4 w-4" />
                 ) : (
-                  <Circle className="h-3 w-3" />
+                  <Circle className="h-4 w-4" />
                 )}
-                Checklist
+                <span className="hidden sm:inline">Done</span>
+                <span className="sm:hidden">4</span>
               </div>
-              
-              <ChevronRight className="h-3 w-3 text-purple-300" />
-              
             </div>
           </div>
         </div>
