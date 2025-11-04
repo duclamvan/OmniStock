@@ -7594,16 +7594,10 @@ Return ONLY the subject line without quotes or extra formatting.`,
             phone: shippingAddress.phone || customer?.phone || undefined,
             email: customer?.email || undefined
           },
-          // Use shipmentSet structure for the new carton (even though it's just one)
-          // This maintains consistency with the main batch structure
-          shipmentSet: {
-            numberOfShipments: 1,
-            shipmentSetItems: [{
-              shipmentNumber: `${order.orderId}-${nextCartonNumber}`,
-              weighedShipmentInfo: {
-                weight: cartonWeight
-              }
-            }]
+          // Use traditional weighedShipmentInfo for single carton
+          // (shipmentSet is only for 2+ cartons in same batch)
+          weighedShipmentInfo: {
+            weight: cartonWeight
           },
           // Only include COD on the first shipment (already stored in order)
           cashOnDelivery: undefined
