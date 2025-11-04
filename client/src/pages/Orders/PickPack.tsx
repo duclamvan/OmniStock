@@ -1501,18 +1501,24 @@ export default function PickPack() {
     }
   }, [cartons.length]);
   
-  // Fetch PPL shipment labels from database
-  useEffect(() => {
+  // Fetch PPL shipment labels from database with proper refresh function
+  const fetchShipmentLabels = useCallback(async () => {
     if (activePackingOrder?.id && activePackingOrder?.pplLabelData) {
-      fetch(`/api/shipment-labels/order/${activePackingOrder.id}`)
-        .then(res => res.json())
-        .then(labels => {
-          console.log('Fetched shipment labels:', labels);
-          setShipmentLabelsFromDB(labels.filter((l: any) => l.status === 'active'));
-        })
-        .catch(err => console.error('Error fetching shipment labels:', err));
+      try {
+        const res = await fetch(`/api/shipment-labels/order/${activePackingOrder.id}`);
+        const labels = await res.json();
+        console.log('Fetched shipment labels:', labels);
+        setShipmentLabelsFromDB(labels.filter((l: any) => l.status === 'active'));
+      } catch (err) {
+        console.error('Error fetching shipment labels:', err);
+      }
     }
-  }, [activePackingOrder?.id, cartons.length]);
+  }, [activePackingOrder?.id, activePackingOrder?.pplLabelData]);
+
+  // Auto-fetch shipment labels when dependencies change
+  useEffect(() => {
+    fetchShipmentLabels();
+  }, [fetchShipmentLabels, cartons.length]);
 
   // Track if we've already auto-applied suggestions for this order
   const [hasAutoAppliedSuggestions, setHasAutoAppliedSuggestions] = useState(false);
@@ -5998,8 +6004,17 @@ export default function PickPack() {
                                       const url = URL.createObjectURL(labelBlob);
                                       const printWindow = window.open(url, '_blank');
                                       if (printWindow) {
-                                        printWindow.onload = () => printWindow.print();
-                                        setPrintedPPLLabels(prev => new Set(prev).add(index));
+                                        printWindow.onload = () => {
+                                          printWindow.print();
+                                          // Track that this label was printed
+                                          setPrintedPPLLabels(prev => {
+                                            const newSet = new Set(prev);
+                                            newSet.add(index);
+                                            return newSet;
+                                          });
+                                          // Refresh labels to ensure UI is up to date
+                                          fetchShipmentLabels();
+                                        };
                                       }
                                       setTimeout(() => URL.revokeObjectURL(url), 1000);
                                     }
@@ -6110,6 +6125,7 @@ export default function PickPack() {
                                     // Refresh data
                                     await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
                                     await refetchCartons();
+                                    await fetchShipmentLabels(); // Refresh shipment labels
                                     
                                     toast({
                                       title: "Label Generated",
@@ -6148,8 +6164,17 @@ export default function PickPack() {
                                       const url = URL.createObjectURL(labelBlob);
                                       const printWindow = window.open(url, '_blank');
                                       if (printWindow) {
-                                        printWindow.onload = () => printWindow.print();
-                                        setPrintedPPLLabels(prev => new Set(prev).add(index));
+                                        printWindow.onload = () => {
+                                          printWindow.print();
+                                          // Track that this label was printed
+                                          setPrintedPPLLabels(prev => {
+                                            const newSet = new Set(prev);
+                                            newSet.add(index);
+                                            return newSet;
+                                          });
+                                          // Refresh labels to ensure UI is up to date
+                                          fetchShipmentLabels();
+                                        };
                                       }
                                       setTimeout(() => URL.revokeObjectURL(url), 1000);
                                     }
@@ -6190,6 +6215,7 @@ export default function PickPack() {
                                       // Refresh data
                                       await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
                                       await refetchCartons();
+                                      await fetchShipmentLabels(); // Refresh shipment labels
                                       toast({ title: "Shipment deleted successfully" });
                                     } catch (error) {
                                       toast({
@@ -6243,6 +6269,7 @@ export default function PickPack() {
                           
                           // Force a refetch to ensure UI updates
                           await refetchCartons();
+                          await fetchShipmentLabels(); // Refresh shipment labels
                           
                           toast({
                             title: "Shipment Added",
