@@ -6021,7 +6021,6 @@ export default function PickPack() {
                                   ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
                                   : 'hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300'
                               }`}
-                              disabled={isThisShipmentCancelled}
                               onClick={async () => {
                                 try {
                                   console.log('🖨️ Fetching PPL label for order:', activePackingOrder.id);
