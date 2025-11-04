@@ -7731,6 +7731,205 @@ Return ONLY the subject line without quotes or extra formatting.`,
     }
   });
 
+  // Create PPL label for a specific existing carton
+  app.post('/api/shipping/create-label-for-carton', async (req, res) => {
+    try {
+      const { orderId, cartonId, cartonNumber } = req.body;
+      
+      if (!orderId || !cartonId || !cartonNumber) {
+        return res.status(400).json({ error: 'Order ID, Carton ID, and Carton Number are required' });
+      }
+
+      // Get order details
+      const order = await storage.getOrder(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      // Get carton details
+      const cartons = await storage.getOrderCartons(orderId);
+      const carton = cartons.find(c => c.id === cartonId);
+      if (!carton) {
+        return res.status(404).json({ error: 'Carton not found' });
+      }
+
+      // Get shipping address
+      let shippingAddress;
+      if (order.shippingAddressId) {
+        const addresses = await db
+          .select()
+          .from(customerShippingAddresses)
+          .where(eq(customerShippingAddresses.id, order.shippingAddressId))
+          .limit(1);
+        shippingAddress = addresses[0];
+      }
+
+      if (!shippingAddress) {
+        return res.status(400).json({ error: 'No shipping address found for order' });
+      }
+
+      // Get customer details
+      let customer;
+      if (order.customerId) {
+        const customerResult = await db
+          .select()
+          .from(customers)
+          .where(eq(customers.id, order.customerId))
+          .limit(1);
+        customer = customerResult[0];
+      }
+
+      // Build PPL shipment
+      const referenceId = `${order.orderId}-carton-${cartonNumber}`;
+      const cartonWeight = carton.weight ? parseFloat(carton.weight.toString()) : 
+                          (order.finalWeight ? parseFloat(order.finalWeight.toString()) : 1.0);
+      
+      // Normalize country to ISO code (PPL requires 2-letter codes)
+      const normalizeCountry = (country: string | null | undefined): string => {
+        if (!country) return 'CZ';
+        const upper = country.toUpperCase();
+        if (upper === 'CZECH REPUBLIC' || upper === 'CZECHIA') return 'CZ';
+        if (upper.length === 2) return upper;
+        return 'CZ'; // Default to CZ
+      };
+      
+      // Validate required shipping address fields
+      if (!shippingAddress.zipCode?.trim()) {
+        return res.status(400).json({ 
+          error: 'Missing required shipping address: Postal Code is required for PPL label creation. Please update the order shipping address.' 
+        });
+      }
+      if (!shippingAddress.street?.trim()) {
+        return res.status(400).json({ 
+          error: 'Missing required shipping address: Street Address is required for PPL label creation. Please update the order shipping address.' 
+        });
+      }
+      if (!shippingAddress.city?.trim()) {
+        return res.status(400).json({ 
+          error: 'Missing required shipping address: City is required for PPL label creation. Please update the order shipping address.' 
+        });
+      }
+      
+      const hasCOD = order.cashOnDeliveryAmount && parseFloat(order.cashOnDeliveryAmount) > 0;
+      const pplShipment: any = {
+        referenceId,
+        productType: hasCOD ? 'BUSD' : 'BUSS',
+        sender: {
+          country: 'CZ',
+          zipCode: '35002',
+          name: 'Davie Supply',
+          street: 'Dragonska 2545/9A',
+          city: 'Cheb',
+          phone: '+420776887045',
+          email: 'info@daviesupply.cz'
+        },
+        recipient: {
+          country: normalizeCountry(shippingAddress.country),
+          zipCode: shippingAddress.zipCode.trim(),
+          name: `${shippingAddress.firstName} ${shippingAddress.lastName}`.trim() || customer?.name || 'Unknown',
+          street: shippingAddress.street.trim(),
+          city: shippingAddress.city.trim(),
+          phone: shippingAddress.tel || customer?.phone || undefined,
+          email: shippingAddress.email || customer?.email || undefined
+        },
+        weighedShipmentInfo: {
+          weight: cartonWeight
+        },
+        cashOnDelivery: undefined
+      };
+
+      // Create PPL shipment (new batch for this carton)
+      const { batchId } = await createPPLShipment({
+        shipments: [pplShipment],
+        labelSettings: {
+          format: 'Pdf',
+          dpi: 203,
+          completeLabelSettings: {
+            isCompleteLabelRequested: true,
+            pageSize: 'Default'
+          }
+        }
+      });
+
+      // Poll for batch status (with fallback if PPL status API fails)
+      let batchStatus;
+      let shipmentNumbers: string[] = [];
+      
+      try {
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        while (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          batchStatus = await getPPLBatchStatus(batchId);
+          
+          if (batchStatus.status === 'Finished' || batchStatus.status === 'Error') {
+            break;
+          }
+          attempts++;
+        }
+
+        if (batchStatus?.status === 'Finished') {
+          shipmentNumbers = batchStatus.shipmentResults
+            ?.filter(r => r.shipmentNumber)
+            .map(r => r.shipmentNumber) || [];
+        } else {
+          console.warn('⚠️ PPL batch status check timed out or failed - attempting direct label retrieval');
+        }
+      } catch (statusError) {
+        console.error('❌ PPL batch status polling failed:', statusError);
+      }
+
+      // Try to get label even if status check failed
+      let labelBase64: string | undefined;
+      try {
+        const labelResult = await getPPLLabel(batchId);
+        labelBase64 = labelResult.labelBase64;
+        
+        // If we don't have shipment numbers yet, try to extract from batch status
+        if (shipmentNumbers.length === 0 && labelResult.batchStatus?.shipmentResults) {
+          shipmentNumbers = labelResult.batchStatus.shipmentResults
+            .filter(r => r.shipmentNumber)
+            .map(r => r.shipmentNumber);
+        }
+      } catch (labelError) {
+        console.error('Failed to retrieve PPL label:', labelError);
+        throw new Error('Label was created but could not be retrieved from PPL API');
+      }
+
+      // Save shipment label to shipment_labels table
+      const savedLabel = await storage.createShipmentLabel({
+        orderId,
+        carrier: 'PPL',
+        trackingNumbers: shipmentNumbers,
+        batchId,
+        labelBase64,
+        labelData: {
+          pplShipment,
+          batchStatus,
+          cartonNumber,
+          referenceId,
+          hasCOD
+        },
+        shipmentCount: shipmentNumbers.length,
+        status: 'active'
+      });
+
+      res.json({
+        success: true,
+        label: savedLabel,
+        batchId,
+        shipmentNumbers,
+        trackingNumber: shipmentNumbers[0]
+      });
+    } catch (error) {
+      console.error('Failed to create PPL label for carton:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to create PPL label for carton' 
+      });
+    }
+  });
+
   // Shipment Labels Routes
   
   // Get all shipment labels

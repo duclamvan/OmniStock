@@ -1505,13 +1505,21 @@ export default function PickPack() {
   const fetchShipmentLabels = useCallback(async () => {
     if (activePackingOrder?.id && activePackingOrder?.pplLabelData) {
       try {
+        console.log('🔍 Fetching shipment labels for order:', activePackingOrder.id);
         const res = await fetch(`/api/shipment-labels/order/${activePackingOrder.id}`);
+        if (!res.ok) {
+          throw new Error(`Failed to fetch labels: ${res.status}`);
+        }
         const labels = await res.json();
-        console.log('Fetched shipment labels:', labels);
-        setShipmentLabelsFromDB(labels.filter((l: any) => l.status === 'active'));
+        console.log('✅ Fetched shipment labels:', labels);
+        const activeLabels = labels.filter((l: any) => l.status === 'active');
+        console.log('🏷️ Setting active labels:', activeLabels);
+        setShipmentLabelsFromDB(activeLabels);
       } catch (err) {
-        console.error('Error fetching shipment labels:', err);
+        console.error('❌ Error fetching shipment labels:', err);
       }
+    } else {
+      console.log('⏭️ Skipping fetch - no order or PPL data');
     }
   }, [activePackingOrder?.id, activePackingOrder?.pplLabelData]);
 
@@ -5935,13 +5943,31 @@ export default function PickPack() {
                         // For PPL shipments, show each carton with its label status
                         const isCancelled = activePackingOrder.pplStatus === 'cancelled';
                         
+                        // Debug: Log current state
+                        console.log('🎨 Rendering PPL cards:', {
+                          cartonCount: cartons.length,
+                          labelCount: shipmentLabelsFromDB.length,
+                          labels: shipmentLabelsFromDB.map(l => ({
+                            id: l.id,
+                            cartonNumber: (l.labelData as any)?.cartonNumber,
+                            trackingNumbers: l.trackingNumbers
+                          }))
+                        });
+                        
                         // Combine cartons with their corresponding labels
                         const cartonsWithLabels = cartons.map((carton, index) => {
                           // Find label for this carton (by carton number in labelData)
                           const label = shipmentLabelsFromDB.find((l: any) => {
                             const labelData = l.labelData as any;
-                            return labelData?.cartonNumber === index + 1 || 
+                            const matches = labelData?.cartonNumber === index + 1 || 
                                    (index === 0 && !labelData?.cartonNumber); // First label might not have cartonNumber
+                            return matches;
+                          });
+                          
+                          console.log(`📦 Carton #${index + 1}:`, {
+                            cartonId: carton.id,
+                            hasLabel: !!label,
+                            labelId: label?.id
                           });
                           
                           return {
@@ -6106,6 +6132,7 @@ export default function PickPack() {
                                 className="h-8 text-xs flex-shrink-0 bg-orange-100 hover:bg-orange-200 text-orange-700 border-orange-300"
                                 onClick={async () => {
                                   try {
+                                    console.log(`🎯 Generate clicked for carton #${index + 1}`, carton.id);
                                     toast({
                                       title: "Generating PPL Label...",
                                       description: "Creating shipping label from PPL API",
@@ -6119,22 +6146,34 @@ export default function PickPack() {
                                     });
                                     
                                     if (!response.ok) {
-                                      throw new Error('Failed to create label');
+                                      const error = await response.json();
+                                      console.error('❌ Label generation failed:', error);
+                                      throw new Error(error.error || 'Failed to create label');
                                     }
                                     
-                                    // Refresh data
+                                    const result = await response.json();
+                                    console.log('✅ Label generated successfully:', result);
+                                    
+                                    // Refresh data - important to fetch labels AFTER backend has saved
+                                    console.log('🔄 Refreshing all data...');
                                     await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
                                     await refetchCartons();
+                                    
+                                    // Small delay to ensure database has committed the label
+                                    await new Promise(resolve => setTimeout(resolve, 300));
+                                    
                                     await fetchShipmentLabels(); // Refresh shipment labels
+                                    console.log('✅ All data refreshed');
                                     
                                     toast({
                                       title: "Label Generated",
                                       description: "PPL shipping label created successfully",
                                     });
-                                  } catch (error) {
+                                  } catch (error: any) {
+                                    console.error('❌ Generate error:', error);
                                     toast({
                                       title: "Error",
-                                      description: "Failed to generate label",
+                                      description: error.message || "Failed to generate label",
                                       variant: "destructive"
                                     });
                                   }
