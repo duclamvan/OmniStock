@@ -7375,6 +7375,8 @@ Return ONLY the subject line without quotes or extra formatting.`,
 
       // Get label PDF
       const label = await getPPLLabel(batchId, 'pdf');
+      
+      const labelUrl = `data:application/pdf;base64,${label.labelContent}`;
 
       // Update order with PPL info
       await db
@@ -7385,7 +7387,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
           pplLabelData: {
             batchId,
             shipmentNumbers,
-            labelUrl: `data:application/pdf;base64,${label.labelContent}`,
+            labelUrl,
             createdAt: new Date().toISOString()
           },
           pplStatus: 'created',
@@ -7394,6 +7396,22 @@ Return ONLY the subject line without quotes or extra formatting.`,
           dobirkaCurrency: dobirkaCurrency || null
         })
         .where(eq(orders.id, orderId));
+      
+      // Save shipment label to shipment_labels table
+      await storage.createShipmentLabel({
+        orderId,
+        carrier: 'PPL',
+        trackingNumbers: shipmentNumbers,
+        batchId,
+        labelUrl,
+        status: 'active',
+        shipmentData: {
+          pplShipment,
+          batchStatus,
+          dobirkaAmount: dobirkaAmount ? parseFloat(dobirkaAmount) : undefined,
+          dobirkaCurrency: dobirkaCurrency || undefined
+        }
+      });
 
       res.json({
         success: true,
