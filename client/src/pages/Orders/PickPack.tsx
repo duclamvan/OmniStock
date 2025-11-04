@@ -6296,6 +6296,58 @@ export default function PickPack() {
                     </Button>
                   )}
 
+                  {/* Regenerate All Labels button - appears when labels exist and there are multiple cartons */}
+                  {shipmentLabelsFromDB.length > 0 && cartons.length > 1 && (
+                    <Button
+                      variant="outline"
+                      className="w-full border-orange-300 text-orange-700 hover:bg-orange-50"
+                      onClick={async () => {
+                        if (confirm(`Delete all ${cartons.length} cartons and their labels to start fresh?\n\nThis will cancel all shipments with PPL, allowing you to create new labels with correct numbering.`)) {
+                          try {
+                            setIsGeneratingAllLabels(true);
+                            console.log('🗑️ Deleting all labels and cartons...');
+                            
+                            // Delete all labels
+                            for (const label of shipmentLabelsFromDB) {
+                              await apiRequest('DELETE', `/api/shipment-labels/${label.id}`, {});
+                            }
+                            
+                            // Refresh data
+                            await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                            await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
+                            await refetchCartons();
+                            await new Promise(resolve => setTimeout(resolve, 300));
+                            await fetchShipmentLabels();
+                            setShipmentLabelsFromDB([]);
+                            
+                            toast({
+                              title: "All Labels Deleted",
+                              description: "You can now add cartons and generate new labels with proper numbering",
+                            });
+                          } catch (error: any) {
+                            console.error('❌ Delete error:', error);
+                            toast({
+                              title: "Error",
+                              description: error.message || "Failed to delete labels",
+                              variant: "destructive"
+                            });
+                          } finally {
+                            setIsGeneratingAllLabels(false);
+                          }
+                        }
+                      }}
+                      disabled={isGeneratingAllLabels}
+                      data-testid="button-regenerate-all-labels"
+                    >
+                      {isGeneratingAllLabels ? (
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                      )}
+                      {isGeneratingAllLabels ? 'Deleting...' : 'Delete All & Start Fresh'}
+                    </Button>
+                  )}
+
                   {/* PPL Shipment Cards - Show cartons and labels */}
                   {activePackingOrder.pplLabelData && (
                     <div className="space-y-2">
@@ -6671,26 +6723,54 @@ export default function PickPack() {
                                 size="sm"
                                 className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
                                 onClick={async () => {
-                                  if (confirm(`Delete shipment #${index + 1}? This will cancel the shipment with PPL.`)) {
+                                  // Check if this is a multi-carton shipment
+                                  const totalCartons = cartons.length;
+                                  let confirmMessage = `Delete carton #${index + 1}?`;
+                                  
+                                  if (totalCartons > 1) {
+                                    confirmMessage = `Delete carton #${index + 1}?\n\n⚠️ WARNING: This is a ${totalCartons}-carton shipment. After deletion, the remaining labels will show incorrect numbering (e.g., "1/${totalCartons}" instead of "1/${totalCartons - 1}").\n\nTo get proper label numbering, you'll need to delete ALL cartons and regenerate the entire shipment.\n\nContinue with deletion anyway?`;
+                                  } else {
+                                    confirmMessage = `Delete this carton and its label? This will cancel the shipment with PPL.`;
+                                  }
+                                  
+                                  if (confirm(confirmMessage)) {
                                     try {
+                                      setDeletingShipment(prev => ({ ...prev, [label.id]: true }));
                                       await apiRequest('DELETE', `/api/shipment-labels/${label.id}`, {});
-                                      // Refresh data
+                                      
+                                      // Refresh data to update UI
+                                      console.log('🔄 Refreshing after delete...');
                                       await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                                      await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
                                       await refetchCartons();
-                                      await fetchShipmentLabels(); // Refresh shipment labels
-                                      toast({ title: "Shipment deleted successfully" });
+                                      await new Promise(resolve => setTimeout(resolve, 300));
+                                      await fetchShipmentLabels();
+                                      setShipmentLabelsFromDB(prev => [...prev]);
+                                      console.log('✅ Delete refresh complete');
+                                      
+                                      toast({ 
+                                        title: "Carton Deleted",
+                                        description: totalCartons > 1 ? "Label numbering may be incorrect. Consider regenerating all labels." : "Shipment cancelled successfully"
+                                      });
                                     } catch (error) {
                                       toast({
                                         title: "Error",
                                         description: "Failed to delete shipment",
                                         variant: "destructive"
                                       });
+                                    } finally {
+                                      setDeletingShipment(prev => ({ ...prev, [label.id]: false }));
                                     }
                                   }
                                 }}
+                                disabled={deletingShipment[label.id]}
                                 data-testid={`button-delete-ppl-shipment-${index + 1}`}
                               >
-                                <X className="h-4 w-4" />
+                                {deletingShipment[label.id] ? (
+                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <X className="h-4 w-4" />
+                                )}
                               </Button>
                             )}
                           </div>
