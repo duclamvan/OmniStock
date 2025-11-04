@@ -8047,20 +8047,39 @@ Return ONLY the subject line without quotes or extra formatting.`,
       if (orderId) {
         // Get cartons for this order
         const cartons = await storage.getOrderCartons(orderId);
-        // Find carton with matching labelData.batchId
+        
+        // Find carton to delete based on labelData.cartonNumber
         const labelData = label.labelData as any;
-        const cartonToDelete = cartons.find(c => {
-          const cartonData = c as any;
-          return cartonData.trackingNumber === label.trackingNumbers?.[0] || 
-                 cartonData.notes?.includes(label.batchId || '');
+        const cartonNumber = labelData?.cartonNumber;
+        
+        console.log(`🔍 Looking for carton to delete:`, {
+          labelId,
+          orderId,
+          cartonNumber,
+          totalCartons: cartons.length,
+          labelData
         });
         
+        let cartonToDelete;
+        if (cartonNumber) {
+          // Match by carton number stored in label
+          cartonToDelete = cartons.find(c => c.cartonNumber === cartonNumber);
+          console.log(`📦 Found carton by cartonNumber ${cartonNumber}:`, cartonToDelete?.id);
+        } else {
+          // Fallback: If only one carton or first carton
+          cartonToDelete = cartons[0];
+          console.log(`📦 Fallback: Using first carton:`, cartonToDelete?.id);
+        }
+        
         if (cartonToDelete) {
+          console.log(`🗑️ Deleting carton ${cartonToDelete.id} (cartonNumber: ${cartonToDelete.cartonNumber})`);
           await storage.deleteOrderCarton(cartonToDelete.id);
+        } else {
+          console.warn(`⚠️ No carton found to delete for label ${labelId}`);
         }
       }
       
-      res.json({ success: true, message: 'Shipment label cancelled' });
+      res.json({ success: true, message: 'Shipment label cancelled and carton removed' });
     } catch (error) {
       console.error('Error deleting shipment label:', error);
       res.status(500).json({ error: 'Failed to delete shipment label' });
