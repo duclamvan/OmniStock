@@ -7645,7 +7645,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       } catch (labelError) {
         // If PPL label creation fails, rollback the carton
         console.error('PPL label creation failed, rolling back carton:', labelError);
-        await db.delete(cartons).where(eq(cartons.id, newCarton.id));
+        await db.delete(orderCartons).where(eq(orderCartons.id, newCarton.id));
         throw labelError;
       }
     } catch (error) {
@@ -8973,6 +8973,87 @@ Return ONLY the subject line without quotes or extra formatting.`,
       console.error('Error recommending carton:', error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : 'Failed to recommend carton' 
+      });
+    }
+  });
+
+  // Apply AI-recommended cartons to order
+  app.post('/api/orders/:orderId/apply-ai-cartons', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      const orderItemsData = await storage.getOrderItems(orderId);
+      const packingCartons = await storage.getPackingCartons();
+
+      const orderItemsWithProducts = await Promise.all(
+        orderItemsData.map(async (item) => {
+          let product = null;
+          if (item.productId) {
+            product = await storage.getProductById(item.productId);
+          }
+          return {
+            ...item,
+            product
+          };
+        })
+      );
+
+      // Get AI recommendations
+      const packingPlan = await optimizeCartonPacking(orderItemsWithProducts, packingCartons);
+
+      // Clear existing AI cartons (keep only manual/PPL cartons)
+      await db
+        .delete(orderCartons)
+        .where(
+          and(
+            eq(orderCartons.orderId, orderId),
+            eq(orderCartons.source, 'ai_recommendation')
+          )
+        );
+
+      // Save AI-recommended cartons to database with type "non-company"
+      const createdCartons = [];
+      for (let i = 0; i < packingPlan.cartons.length; i++) {
+        const aiCarton = packingPlan.cartons[i];
+        const [created] = await db
+          .insert(orderCartons)
+          .values({
+            orderId,
+            cartonNumber: i + 1,
+            cartonType: 'non-company', // Auto-select non-company
+            packingCartonId: aiCarton.cartonId,
+            weight: aiCarton.weightKg ? aiCarton.weightKg.toString() : null,
+            source: 'ai_recommendation',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          })
+          .returning();
+        
+        createdCartons.push(created);
+      }
+
+      res.json({
+        success: true,
+        cartons: createdCartons,
+        packingPlan: {
+          suggestions: packingPlan.cartons,
+          cartonCount: packingPlan.totalCartons,
+          nylonWrapItems: packingPlan.nylonWrapItems,
+          reasoning: packingPlan.reasoning,
+          totalWeightKg: packingPlan.totalWeightKg,
+          avgUtilization: packingPlan.avgUtilization,
+          optimizationSuggestions: packingPlan.suggestions
+        }
+      });
+    } catch (error) {
+      console.error('Error applying AI cartons:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to apply AI cartons' 
       });
     }
   });
