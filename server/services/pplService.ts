@@ -140,8 +140,8 @@ export interface PPLShipment {
   };
   cashOnDelivery?: {
     value: number;
-    currency: string;
-    variableSymbol?: string;
+    CodCurrency: string;  // PPL API requires PascalCase
+    CodVarSym?: string;   // PPL API requires PascalCase
   };
   shipmentSet?: {
     numberOfShipments: number;

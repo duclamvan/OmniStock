@@ -7885,8 +7885,8 @@ Return ONLY the subject line without quotes or extra formatting.`,
           }
           return {
             value: codValue,
-            currency: order.dobirkaCurrency || 'CZK',
-            variableSymbol: numericOrderId || '1234567890'
+            CodCurrency: order.dobirkaCurrency || 'CZK',  // PPL API requires PascalCase
+            CodVarSym: numericOrderId || '1234567890'     // PPL API requires PascalCase
           };
         })() : undefined
       };
@@ -8538,8 +8538,8 @@ Return ONLY the subject line without quotes or extra formatting.`,
           }
           cashOnDelivery = {
             value: codValue,
-            currency: order.dobirkaCurrency || 'CZK',
-            variableSymbol: numericOrderId || '1234567890'
+            CodCurrency: order.dobirkaCurrency || 'CZK',  // PPL API requires PascalCase
+            CodVarSym: numericOrderId || '1234567890'     // PPL API requires PascalCase
           };
           console.log(`💰 Shipment SET WITH COD: ${codValue} ${order.dobirkaCurrency || 'CZK'} (applied to entire set)`);
         } else {
@@ -8602,8 +8602,8 @@ Return ONLY the subject line without quotes or extra formatting.`,
           }
           cashOnDelivery = {
             value: codValue,
-            currency: order.dobirkaCurrency || 'CZK',
-            variableSymbol: numericOrderId || '1234567890'
+            CodCurrency: order.dobirkaCurrency || 'CZK',  // PPL API requires PascalCase
+            CodVarSym: numericOrderId || '1234567890'     // PPL API requires PascalCase
           };
           console.log(`💰 Single carton WITH COD: ${codValue} ${order.dobirkaCurrency || 'CZK'}`);
         } else {
