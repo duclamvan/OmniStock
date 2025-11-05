@@ -848,7 +848,7 @@ export default function AddOrder() {
 
     form.setValue('actualShippingCost', calculatedCost);
     form.setValue('shippingCost', calculatedCost); // Also set shipping cost for display
-  }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency, form]);
+  }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency]);
 
   // Auto-sync dobírka amount and currency when PPL + COD is selected
   // Recalculates on EVERY change (currency, items, shipping, discounts, taxes, adjustment)
@@ -892,7 +892,7 @@ export default function AddOrder() {
     if (selectedCustomer.preferredCurrency) {
       form.setValue('currency', selectedCustomer.preferredCurrency);
     }
-  }, [selectedCustomer, form]);
+  }, [selectedCustomer]);
 
   const createOrderMutation = useMutation({
     mutationFn: async (data: any) => {
