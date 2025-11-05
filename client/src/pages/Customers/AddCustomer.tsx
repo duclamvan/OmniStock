@@ -1486,18 +1486,10 @@ export default function AddCustomer() {
         const cleanCompany = removeVietnameseDiacritics(company);
         form.setValue('billingCompany', cleanCompany);
         filledFields.billingCompany = data.confidence;
-        // If business name exists, also use it as the customer name
-        if (!form.getValues('name')) {
-          form.setValue('name', cleanCompany);
-        }
       }
       if (fields.email) {
         form.setValue('billingEmail', fields.email);
         filledFields.billingEmail = data.confidence;
-      }
-      if (fields.phone) {
-        form.setValue('billingTel', fields.phone);
-        filledFields.billingTel = data.confidence;
       }
       
       // Use Nominatim-validated address values, capitalize and format properly
@@ -1529,6 +1521,22 @@ export default function AddCustomer() {
             form.setValue('country', countryCode);
           }
         }
+      }
+      
+      // Format phone number with country code after country is set
+      if (fields.phone && fields.country) {
+        const countryCode = getPhoneCountryCode(capitalizeWords(fields.country));
+        if (countryCode) {
+          const formatted = formatPhoneNumber(fields.phone, countryCode);
+          form.setValue('billingTel', formatted);
+          filledFields.billingTel = data.confidence;
+        } else {
+          form.setValue('billingTel', fields.phone);
+          filledFields.billingTel = data.confidence;
+        }
+      } else if (fields.phone) {
+        form.setValue('billingTel', fields.phone);
+        filledFields.billingTel = data.confidence;
       }
       
       // Update confidence tracking
