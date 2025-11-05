@@ -3422,7 +3422,7 @@ export default function AddOrder() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label htmlFor="shippingMethod" className="text-sm">Shipping Method</Label>
-                <Select value={form.watch('shippingMethod')} onValueChange={(value) => form.setValue('shippingMethod', value as any)}>
+                <Select value={watchedShippingMethod} onValueChange={(value) => form.setValue('shippingMethod', value as any)}>
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select shipping" />
                   </SelectTrigger>
@@ -3437,7 +3437,7 @@ export default function AddOrder() {
 
               <div>
                 <Label htmlFor="paymentMethod" className="text-sm">Payment Method</Label>
-                <Select value={form.watch('paymentMethod')} onValueChange={(value) => form.setValue('paymentMethod', value as any)}>
+                <Select value={watchedPaymentMethod} onValueChange={(value) => form.setValue('paymentMethod', value as any)}>
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select payment" />
                   </SelectTrigger>
