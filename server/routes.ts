@@ -10316,13 +10316,14 @@ IMPORTANT NAME AND COMPANY PARSING RULES:
 
 - **For Vietnamese names** (family name detection):
   * Common family names: Nguyen, Tran, Le, Pham, Hoang, Phan, Vu, Vo, Dang, Bui, Do, Ho, Ngo, Duong, Ly, Phung, Trinh, Dinh, Mai, Cao, Lam, Vuong, Ta, Huynh, Luu, Dao, Tong, Thai
-  * **If a known family name is present AND there are other words**: That word is lastName, all words BEFORE it are firstName
-    - Example: "Van Hang Bui" → firstName: "Van Hang", lastName: "Bui" (Bui is a known family name)
-    - Example: "Phung Thi Hong Tham" → firstName: "Thi Hong Tham", lastName: "Phung" (Phung is a known family name)
-  * **For EXACTLY 2-word names (regardless of family names)**: First word is firstName, second word is lastName
+  * **CRITICAL: For EXACTLY 2-word names, ALWAYS use**: First word is firstName, second word is lastName
+    - Example: "Ha Dang" → firstName: "Ha", lastName: "Dang" (even though Dang is a family name)
     - Example: "Diet Lam" → firstName: "Diet", lastName: "Lam"
     - Example: "Huong Vuong" → firstName: "Huong", lastName: "Vuong"
     - Example: "Van Bui" → firstName: "Van", lastName: "Bui"
+  * **For 3+ word names with known family names**: That word is lastName, all words BEFORE it are firstName
+    - Example: "Van Hang Bui" → firstName: "Van Hang", lastName: "Bui" (Bui is a known family name)
+    - Example: "Phung Thi Hong Tham" → firstName: "Thi Hong Tham", lastName: "Phung" (Phung is a known family name)
   * **For 3+ word names without known family names**: First word is lastName, remaining words are firstName
     - Example: "Minh Tuan Hoang" → firstName: "Tuan Hoang", lastName: "Minh"
 
