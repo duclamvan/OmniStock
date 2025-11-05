@@ -696,6 +696,59 @@ export default function AddOrder() {
     },
   });
 
+  // Helper function to get phone country code from country name
+  const getPhoneCountryCode = (countryName: string): string => {
+    const countryCodeMap: { [key: string]: string } = {
+      'Czech Republic': '+420',
+      'Czechia': '+420',
+      'Germany': '+49',
+      'Austria': '+43',
+      'Poland': '+48',
+      'Slovakia': '+421',
+      'Hungary': '+36',
+      'France': '+33',
+      'Italy': '+39',
+      'Spain': '+34',
+      'Netherlands': '+31',
+      'Belgium': '+32',
+      'United Kingdom': '+44',
+      'Vietnam': '+84',
+    };
+    return countryCodeMap[countryName] || '';
+  };
+
+  // Helper function to format phone number with country code
+  const formatPhoneNumber = (phone: string, countryCode: string): string => {
+    if (!phone) return phone;
+    if (!countryCode) return phone;
+    
+    // Remove all spaces and special chars except + and digits
+    let cleaned = phone.replace(/[^\d+]/g, '');
+    
+    if (!cleaned) return phone;
+    
+    // Handle "00" prefix (international format) - convert to "+"
+    if (cleaned.startsWith('00')) {
+      cleaned = '+' + cleaned.substring(2);
+    }
+    
+    // If already has proper + at start, just clean and return
+    if (cleaned.startsWith('+')) {
+      return cleaned;
+    }
+    
+    // Get country code digits (e.g., "420" from "+420")
+    const codeDigits = countryCode.replace('+', '');
+    
+    // Remove country code digits if present at start (e.g., "420776887045" → "776887045")
+    if (cleaned.startsWith(codeDigits)) {
+      cleaned = cleaned.substring(codeDigits.length);
+    }
+    
+    // Always add country code prefix with no spaces
+    return `${countryCode}${cleaned}`;
+  };
+
   // Smart Paste mutation for new customer address
   const parseNewCustomerAddressMutation = useMutation({
     mutationFn: async (rawAddress: string) => {
@@ -710,11 +763,10 @@ export default function AddOrder() {
       
       if (fields.firstName || fields.lastName) {
         const fullName = [fields.firstName, fields.lastName].filter(Boolean).map(capitalizeWords).join(' ');
-        setNewCustomer(prev => ({ ...prev, name: fullName }));
+        setNewCustomer(prev => ({ ...prev, name: fullName, firstName: fields.firstName, lastName: fields.lastName }));
       }
       if (fields.company) setNewCustomer(prev => ({ ...prev, company: fields.company }));
       if (fields.email) setNewCustomer(prev => ({ ...prev, email: fields.email }));
-      if (fields.phone) setNewCustomer(prev => ({ ...prev, phone: fields.phone }));
       
       // Use Nominatim-corrected address values
       if (fields.street) setNewCustomer(prev => ({ ...prev, street: fields.street }));
@@ -723,6 +775,19 @@ export default function AddOrder() {
       if (fields.zipCode) setNewCustomer(prev => ({ ...prev, zipCode: fields.zipCode }));
       if (fields.country) setNewCustomer(prev => ({ ...prev, country: fields.country }));
       if (fields.state) setNewCustomer(prev => ({ ...prev, state: fields.state }));
+      
+      // Format phone number with country code after country is set
+      if (fields.phone && fields.country) {
+        const countryCode = getPhoneCountryCode(capitalizeWords(fields.country));
+        if (countryCode) {
+          const formatted = formatPhoneNumber(fields.phone, countryCode);
+          setNewCustomer(prev => ({ ...prev, phone: formatted }));
+        } else {
+          setNewCustomer(prev => ({ ...prev, phone: fields.phone }));
+        }
+      } else if (fields.phone) {
+        setNewCustomer(prev => ({ ...prev, phone: fields.phone }));
+      }
       
       toast({
         title: "Address Parsed",
