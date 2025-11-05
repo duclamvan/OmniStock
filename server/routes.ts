@@ -10404,6 +10404,37 @@ Text: ${rawAddress}`;
 
       const parsedFields = JSON.parse(responseText);
 
+      // Post-processing: Fix missing firstName for 2-word names
+      // If AI failed to extract firstName but lastName exists, try to split the full name
+      if ((!parsedFields.firstName || parsedFields.firstName.trim() === '') && parsedFields.lastName) {
+        const lastNameWords = parsedFields.lastName.trim().split(/\s+/);
+        
+        // If lastName contains exactly 2 words, split them properly
+        if (lastNameWords.length === 2) {
+          parsedFields.firstName = lastNameWords[0];
+          parsedFields.lastName = lastNameWords[1];
+        } else if (lastNameWords.length > 2) {
+          // For 3+ words, keep first word as firstName, rest as lastName
+          parsedFields.firstName = lastNameWords[0];
+          parsedFields.lastName = lastNameWords.slice(1).join(' ');
+        }
+      }
+      
+      // Also check if AI put the full name in firstName but left lastName empty
+      if (parsedFields.firstName && (!parsedFields.lastName || parsedFields.lastName.trim() === '')) {
+        const firstNameWords = parsedFields.firstName.trim().split(/\s+/);
+        
+        // If firstName contains exactly 2 words, split them properly
+        if (firstNameWords.length === 2) {
+          parsedFields.firstName = firstNameWords[0];
+          parsedFields.lastName = firstNameWords[1];
+        } else if (firstNameWords.length > 2) {
+          // For 3+ words, keep first word as firstName, rest as lastName
+          parsedFields.lastName = firstNameWords[firstNameWords.length - 1];
+          parsedFields.firstName = firstNameWords.slice(0, -1).join(' ');
+        }
+      }
+
       // Validate and optionally enhance with Nominatim
       let confidence: 'high' | 'medium' | 'low' = 'medium';
       
