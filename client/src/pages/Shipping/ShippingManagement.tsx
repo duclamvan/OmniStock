@@ -137,7 +137,7 @@ export default function ShippingManagement() {
 
   // Load saved PPL default address
   const { data: savedAddress } = useQuery({
-    queryKey: ['/api/settings/ppl_default_receiver_address'],
+    queryKey: ['/api/settings/ppl_default_sender_address'],
     refetchInterval: false,
     retry: false
   });
@@ -153,17 +153,17 @@ export default function ShippingManagement() {
   const savePPLAddressMutation = useMutation({
     mutationFn: async (address: PPLAddress) => 
       apiRequest('POST', '/api/settings', {
-        key: 'ppl_default_receiver_address',
+        key: 'ppl_default_sender_address',
         value: address,
         category: 'shipping',
-        description: 'Default receiver address for PPL CZ labels'
+        description: 'Default sender address for PPL CZ labels'
       }),
     onSuccess: () => {
       toast({
         title: "Address Saved",
-        description: "Default PPL receiver address has been saved successfully"
+        description: "Default PPL sender address has been saved successfully"
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/settings/ppl_default_receiver_address'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/settings/ppl_default_sender_address'] });
     },
     onError: (error: any) => {
       toast({
@@ -518,10 +518,10 @@ export default function ShippingManagement() {
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-5 border border-blue-100">
                   <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-blue-600" />
-                    Default PPL Receiver Address
+                    Default PPL Sender Address
                   </h4>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Set the default receiver address used for all PPL label generation
+                    Set the default sender address (your company) used for all PPL label generation
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -645,7 +645,7 @@ export default function ShippingManagement() {
                       ) : (
                         <>
                           <CheckCircle className="w-4 h-4 mr-2" />
-                          Save as Default Receiver Address
+                          Save as Default Sender Address
                         </>
                       )}
                     </Button>
