@@ -6914,9 +6914,12 @@ export default function PickPack() {
                           await refetchCartons();
                           await fetchShipmentLabels(); // Refresh shipment labels
                           
+                          // Extract tracking number from response (handle both formats)
+                          const trackingNumber = labelResult.trackingNumber || labelResult.trackingNumbers?.[0] || 'N/A';
+                          
                           toast({
                             title: "Carton Label Added",
-                            description: `New carton created with PPL tracking number: ${labelResult.trackingNumber}. You now have ${cartons.length + 1} carton(s).`,
+                            description: `New carton created with PPL tracking number: ${trackingNumber}. You now have ${cartons.length + 1} carton(s).`,
                           });
                         } catch (error: any) {
                           console.error('❌ Error adding carton label:', error);
