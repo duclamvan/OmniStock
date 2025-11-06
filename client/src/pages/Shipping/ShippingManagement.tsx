@@ -65,9 +65,16 @@ export default function ShippingManagement() {
     email: 'test@example.com'
   });
 
-  // Test connection
+  // Test PPL connection
   const { data: connectionStatus, isLoading: isTestingConnection } = useQuery({
     queryKey: ['/api/shipping/test-connection'],
+    refetchInterval: false,
+    retry: false
+  });
+
+  // Test DHL connection
+  const { data: dhlConnectionStatus, isLoading: isTestingDHL } = useQuery({
+    queryKey: ['/api/dhl/test'],
     refetchInterval: false,
     retry: false
   });
@@ -114,7 +121,7 @@ export default function ShippingManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold" data-testid="title-shipping">Shipping Management</h1>
-          <p className="text-muted-foreground">Manage shipping labels and track parcels with PPL</p>
+          <p className="text-muted-foreground">Manage shipping labels and track parcels with PPL and DHL</p>
         </div>
         <Button data-testid="button-settings">
           <Settings className="w-4 h-4 mr-2" />
@@ -195,6 +202,89 @@ export default function ShippingManagement() {
                   data-testid="button-test-connection"
                 >
                   Test Connection Again
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="w-5 h-5" />
+                DHL Connection Status
+              </CardTitle>
+              <CardDescription>
+                Check your DHL API connection and configuration
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isTestingDHL ? (
+                <div className="flex items-center gap-2" data-testid="status-testing-dhl">
+                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                  <span>Testing DHL connection...</span>
+                </div>
+              ) : dhlConnectionStatus ? (
+                <div className="space-y-4">
+                  <Alert className={dhlConnectionStatus.success ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'} data-testid="status-alert-dhl">
+                    <div className="flex items-center gap-2">
+                      {dhlConnectionStatus.success ? (
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-600" />
+                      )}
+                      <AlertDescription className={dhlConnectionStatus.success ? 'text-green-800' : 'text-red-800'}>
+                        {dhlConnectionStatus.success ? 'Successfully connected to DHL API' : 'Failed to connect to DHL API'}
+                      </AlertDescription>
+                    </div>
+                  </Alert>
+
+                  {dhlConnectionStatus.success && dhlConnectionStatus.details && (
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="font-medium mb-2">Connection Information</h4>
+                      <div className="space-y-1 text-sm">
+                        <p><strong>Provider:</strong> DHL Parcel DE Shipping</p>
+                        <p><strong>Status:</strong> Active</p>
+                        <p><strong>Message:</strong> {dhlConnectionStatus.message}</p>
+                        {dhlConnectionStatus.details.expiresAt && (
+                          <p><strong>Token Expires:</strong> {new Date(dhlConnectionStatus.details.expiresAt).toLocaleString()}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {!dhlConnectionStatus.success && dhlConnectionStatus.message && (
+                    <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                      <h4 className="font-medium text-red-800 mb-2">Error Details</h4>
+                      <p className="text-sm text-red-600">{dhlConnectionStatus.message}</p>
+                      <p className="text-sm text-red-600 mt-2">Please check that DHL_API_KEY and DHL_API_SECRET environment variables are set.</p>
+                      {dhlConnectionStatus.details && (
+                        <details className="mt-2">
+                          <summary className="text-sm text-red-600 cursor-pointer">Technical Details</summary>
+                          <pre className="mt-2 text-xs text-red-500 overflow-auto">
+                            {JSON.stringify(dhlConnectionStatus.details, null, 2)}
+                          </pre>
+                        </details>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Alert>
+                  <AlertCircle className="w-4 h-4" />
+                  <AlertDescription>
+                    Connection status unknown. Check your API credentials in environment variables (DHL_API_KEY, DHL_API_SECRET).
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <div className="pt-4">
+                <Button 
+                  onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/dhl/test'] })}
+                  variant="outline"
+                  data-testid="button-test-connection-dhl"
+                >
+                  <TestTube className="w-4 h-4 mr-2" />
+                  Test DHL Connection Again
                 </Button>
               </div>
             </CardContent>

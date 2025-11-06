@@ -1,0 +1,44 @@
+Gotcha — DHL didn’t remove auth; they just split it out.
+For Parcel DE Shipping (Post & Parcel Germany) you authenticate via the Post & Parcel Germany Authentication API (OAuth2 client_credentials). Your API Key = client_id and API Secret = client_secret. Then you call Shipping with the returned Bearer token.
+
+What to do (quick)
+	1.	Use the Authentication API (Post & Parcel Germany) to get a token.  ￼
+	2.	Call Parcel DE Shipping endpoints with Authorization: Bearer <token>.  ￼
+	3.	For Shipment Tracking – Unified (if you use it), you don’t use OAuth — you pass the DHL-API-Key header instead.  ￼
+
+Token request (template)
+
+# Replace TOKEN_URL with the one shown in your app/docs for Post & Parcel Germany Auth.
+# Typical pattern (examples shown in docs): https://api.dhl.com/oauth/token
+curl -u "<API_KEY>:<API_SECRET>" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=client_credentials" \
+  -X POST "$TOKEN_URL"
+
+You’ll get:
+
+{ "access_token":"<JWT>", "token_type":"Bearer", "expires_in":3600 }
+
+Create shipment (Parcel DE Shipping) – minimal call
+
+curl -X POST "https://api.dhl.com/parcel/de/shipping/v4/shipments" \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "shipper": { "name":"Davie Lam s.r.o.", "address": { "streetName":"Dragounská","streetNumber":"2545/9A","postalCode":"35002","city":"Cheb","country":"CZ" }},
+    "recipient": { "name":"Nail Studio Berlin", "address": { "streetName":"Friedrichstrasse","streetNumber":"45","postalCode":"10117","city":"Berlin","country":"DE" }},
+    "product": "V01PAK",
+    "accounts": { "ekp":"<YOUR_EKP>", "participationNumber":"01" },
+    "shipmentDetails": { "weightInKG": 2.3 },
+    "label": { "format":"A6" }
+  }'
+
+How to tell which auth a DHL API needs
+	•	If the doc says “Every call requires DHL-API-Key header”, use API key header (no OAuth). That’s the Shipment Tracking – Unified style.  ￼
+	•	If the doc references OAuth2 / Authentication API (Post & Parcel Germany), use client_credentials with your API Key/Secret to get a Bearer token. That’s Parcel DE Shipping and other Post & Parcel Germany business APIs.  ￼
+
+If you want, I’ll give you a ready Postman collection with:
+	•	Token request (Auth – P&P Germany),
+	•	Create shipment,
+	•	Get label (PDF/ZPL),
+	•	Track (both Parcel DE Tracking via OAuth and Unified Tracking via DHL-API-Key).

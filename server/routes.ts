@@ -9031,6 +9031,31 @@ Return ONLY the subject line without quotes or extra formatting.`,
     }
   });
 
+  // ============================================================================
+  // DHL API ROUTES
+  // ============================================================================
+
+  // Test DHL API connection
+  app.get('/api/dhl/test', async (req, res) => {
+    try {
+      const { testDHLConnection } = await import('./services/dhlService');
+      const result = await testDHLConnection();
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(500).json(result);
+      }
+    } catch (error: any) {
+      console.error('DHL test connection error:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to connect to DHL API',
+        details: error.details
+      });
+    }
+  });
+
   // Get packing materials for an order
   // Get all files and documents for an order
   app.get('/api/orders/:orderId/files', async (req, res) => {
