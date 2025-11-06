@@ -7519,6 +7519,31 @@ Return ONLY the subject line without quotes or extra formatting.`,
         return res.status(404).json({ error: 'Order not found' });
       }
 
+      // Load default PPL sender address from settings
+      const settingsResult = await db
+        .select()
+        .from(appSettings)
+        .where(eq(appSettings.key, 'ppl_default_sender_address'))
+        .limit(1);
+      
+      if (settingsResult.length === 0 || !settingsResult[0].value) {
+        return res.status(400).json({ 
+          error: 'No default PPL sender address configured. Please set it in Shipping Management settings.' 
+        });
+      }
+
+      const senderAddress = settingsResult[0].value as any;
+
+      // Validate required sender address fields
+      const requiredSenderFields = ['country', 'zipCode', 'city', 'street', 'name'];
+      const missingSenderFields = requiredSenderFields.filter(field => !senderAddress[field]);
+      
+      if (missingSenderFields.length > 0) {
+        return res.status(400).json({ 
+          error: `Default sender address is incomplete. Missing required fields: ${missingSenderFields.join(', ')}` 
+        });
+      }
+
       // Calculate next carton number
       const existingCartons = await db
         .select()
@@ -7620,13 +7645,14 @@ Return ONLY the subject line without quotes or extra formatting.`,
           referenceId,
           productType: hasCOD ? 'BUSD' : 'BUSS',
           sender: {
-            country: 'CZ',
-            zipCode: '35002',
-            name: 'Davie Supply',
-            street: 'Dragonska 2545/9A',
-            city: 'Cheb',
-            phone: '+420776887045',
-            email: 'info@daviesupply.cz'
+            country: normalizeCountry(senderAddress.country),
+            zipCode: senderAddress.zipCode.replace(/\s+/g, ''),
+            name: senderAddress.name,
+            name2: senderAddress.name2 || undefined,
+            street: senderAddress.street,
+            city: senderAddress.city,
+            phone: senderAddress.phone || undefined,
+            email: senderAddress.email || undefined
           },
           recipient: {
             country: normalizeCountry(shippingAddress.country),
@@ -8433,28 +8459,28 @@ Return ONLY the subject line without quotes or extra formatting.`,
         return res.status(404).json({ error: 'Order not found' });
       }
 
-      // Load default PPL receiver address from settings
+      // Load default PPL sender address from settings
       const settingsResult = await db
         .select()
         .from(appSettings)
-        .where(eq(appSettings.key, 'ppl_default_receiver_address'))
+        .where(eq(appSettings.key, 'ppl_default_sender_address'))
         .limit(1);
       
       if (settingsResult.length === 0 || !settingsResult[0].value) {
         return res.status(400).json({ 
-          error: 'No default PPL receiver address configured. Please set it in Shipping Management settings.' 
+          error: 'No default PPL sender address configured. Please set it in Shipping Management settings.' 
         });
       }
 
-      const receiverAddress = settingsResult[0].value as any;
+      const senderAddress = settingsResult[0].value as any;
 
-      // Validate required receiver address fields
+      // Validate required sender address fields
       const requiredFields = ['country', 'zipCode', 'city', 'street', 'name'];
-      const missingFields = requiredFields.filter(field => !receiverAddress[field]);
+      const missingFields = requiredFields.filter(field => !senderAddress[field]);
       
       if (missingFields.length > 0) {
         return res.status(400).json({ 
-          error: `Default receiver address is incomplete. Missing required fields: ${missingFields.join(', ')}` 
+          error: `Default sender address is incomplete. Missing required fields: ${missingFields.join(', ')}` 
         });
       }
 
@@ -8464,9 +8490,40 @@ Return ONLY the subject line without quotes or extra formatting.`,
         return res.status(400).json({ error: 'No cartons found for this order. Please create cartons before generating PPL labels.' });
       }
 
-      // Use receiver address fields directly
-      const recipientName = receiverAddress.name || 'Unknown';
-      const contactName = receiverAddress.contact || receiverAddress.name2 || undefined;
+      // Get order shipping address (customer/recipient)
+      let shippingAddress;
+      if (order.shippingAddressId) {
+        const addresses = await db
+          .select()
+          .from(customerShippingAddresses)
+          .where(eq(customerShippingAddresses.id, order.shippingAddressId))
+          .limit(1);
+        shippingAddress = addresses[0];
+      }
+
+      if (!shippingAddress) {
+        return res.status(400).json({ error: 'No shipping address found for order' });
+      }
+
+      // Get customer details for fallback info
+      let customer;
+      if (order.customerId) {
+        const customerResult = await db
+          .select()
+          .from(customers)
+          .where(eq(customers.id, order.customerId))
+          .limit(1);
+        customer = customerResult[0];
+      }
+
+      // Prepare recipient info (customer receiving the package)
+      const recipientName = shippingAddress.company?.trim() || 
+                           `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || 
+                           customer?.name || 
+                           'Unknown';
+      const contactName = shippingAddress.company?.trim() 
+                         ? `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || undefined
+                         : undefined;
 
       // Map country name to ISO 2-letter code
       const getCountryCode = (country: string): string => {
@@ -8504,15 +8561,16 @@ Return ONLY the subject line without quotes or extra formatting.`,
         console.log(`✓ Order has NO COD - all cartons will be standard shipments`);
       }
       
-      // Default sender information (warehouse/company)
+      // Use sender address from settings (warehouse/company)
       const sender = {
-        country: 'CZ',
-        zipCode: '35002',
-        name: 'Davie Supply',
-        street: 'Dragonská 2545/9A',
-        city: 'Cheb',
-        phone: '+420776887045',
-        email: 'info@daviesupply.cz'
+        country: getCountryCode(senderAddress.country),
+        zipCode: senderAddress.zipCode.replace(/\s+/g, ''),
+        name: senderAddress.name,
+        name2: senderAddress.name2 || undefined,
+        street: senderAddress.street,
+        city: senderAddress.city,
+        phone: senderAddress.phone || undefined,
+        email: senderAddress.email || undefined
       };
 
       // Determine product type based on destination country and COD status
@@ -8520,7 +8578,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       // BUSD = Business Delivery with Cash on Delivery (Czech domestic)
       // BUSS = Business Standard (Czech domestic, no COD)
       // COND = Connect Delivery with CoD (International)
-      const recipientCountryCode = getCountryCode(receiverAddress.country);
+      const recipientCountryCode = getCountryCode(shippingAddress.country || 'CZ');
       let productType: string;
       
       if (recipientCountryCode === 'CZ') {
@@ -8568,14 +8626,14 @@ Return ONLY the subject line without quotes or extra formatting.`,
           productType,
           sender,
           recipient: {
-            country: getCountryCode(receiverAddress.country),
-            zipCode: receiverAddress.zipCode.replace(/\s+/g, ''),
+            country: recipientCountryCode,
+            zipCode: shippingAddress.zipCode.replace(/\s+/g, ''),
             name: recipientName,
-            name2: receiverAddress.name2 || undefined,
-            street: receiverAddress.street,
-            city: receiverAddress.city,
-            phone: receiverAddress.phone || undefined,
-            email: receiverAddress.email || undefined
+            name2: contactName,
+            street: shippingAddress.street,
+            city: shippingAddress.city,
+            phone: shippingAddress.tel || customer?.phone || undefined,
+            email: shippingAddress.email || customer?.email || undefined
           },
           // COD applied to the entire shipment set (if present)
           cashOnDelivery,
@@ -8631,14 +8689,14 @@ Return ONLY the subject line without quotes or extra formatting.`,
           productType,
           sender,
           recipient: {
-            country: getCountryCode(receiverAddress.country),
-            zipCode: receiverAddress.zipCode.replace(/\s+/g, ''),
+            country: recipientCountryCode,
+            zipCode: shippingAddress.zipCode.replace(/\s+/g, ''),
             name: recipientName,
-            name2: receiverAddress.name2 || undefined,
-            street: receiverAddress.street,
-            city: receiverAddress.city,
-            phone: receiverAddress.phone || undefined,
-            email: receiverAddress.email || undefined
+            name2: contactName,
+            street: shippingAddress.street,
+            city: shippingAddress.city,
+            phone: shippingAddress.tel || customer?.phone || undefined,
+            email: shippingAddress.email || customer?.email || undefined
           },
           cashOnDelivery,
           externalNumbers: [
