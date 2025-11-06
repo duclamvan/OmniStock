@@ -7753,31 +7753,20 @@ Return ONLY the subject line without quotes or extra formatting.`,
         return res.status(404).json({ error: 'Carton not found' });
       }
 
-      // Get shipping address
-      let shippingAddress;
-      if (order.shippingAddressId) {
-        const addresses = await db
-          .select()
-          .from(customerShippingAddresses)
-          .where(eq(customerShippingAddresses.id, order.shippingAddressId))
-          .limit(1);
-        shippingAddress = addresses[0];
+      // Load default PPL receiver address from settings
+      const settingsResult = await db
+        .select()
+        .from(appSettings)
+        .where(eq(appSettings.key, 'ppl_default_receiver_address'))
+        .limit(1);
+      
+      if (settingsResult.length === 0 || !settingsResult[0].value) {
+        return res.status(400).json({ 
+          error: 'No default PPL receiver address configured. Please set it in Shipping Management settings.' 
+        });
       }
 
-      if (!shippingAddress) {
-        return res.status(400).json({ error: 'No shipping address found for order' });
-      }
-
-      // Get customer details
-      let customer;
-      if (order.customerId) {
-        const customerResult = await db
-          .select()
-          .from(customers)
-          .where(eq(customers.id, order.customerId))
-          .limit(1);
-        customer = customerResult[0];
-      }
+      const receiverAddress = settingsResult[0].value as any;
 
       // Build PPL shipment
       const referenceId = `${order.orderId}-carton-${cartonNumber}`;
@@ -7794,20 +7783,20 @@ Return ONLY the subject line without quotes or extra formatting.`,
         return 'CZ'; // Default to CZ
       };
       
-      // Validate required shipping address fields
-      if (!shippingAddress.zipCode?.trim()) {
+      // Validate required receiver address fields
+      if (!receiverAddress.zipCode?.trim()) {
         return res.status(400).json({ 
-          error: 'Missing required shipping address: Postal Code is required for PPL label creation. Please update the order shipping address.' 
+          error: 'Missing required receiver address: Postal Code is required for PPL label creation. Please update the default receiver address in Shipping Management.' 
         });
       }
-      if (!shippingAddress.street?.trim()) {
+      if (!receiverAddress.street?.trim()) {
         return res.status(400).json({ 
-          error: 'Missing required shipping address: Street Address is required for PPL label creation. Please update the order shipping address.' 
+          error: 'Missing required receiver address: Street Address is required for PPL label creation. Please update the default receiver address in Shipping Management.' 
         });
       }
-      if (!shippingAddress.city?.trim()) {
+      if (!receiverAddress.city?.trim()) {
         return res.status(400).json({ 
-          error: 'Missing required shipping address: City is required for PPL label creation. Please update the order shipping address.' 
+          error: 'Missing required receiver address: City is required for PPL label creation. Please update the default receiver address in Shipping Management.' 
         });
       }
       
@@ -7839,21 +7828,10 @@ Return ONLY the subject line without quotes or extra formatting.`,
       // Extract numeric part from order ID for variable symbol (e.g., "ORD-251028-4142" -> "2510284142")
       const numericOrderId = order.orderId.replace(/\D/g, '').slice(0, 10);
       
-      // Prepare recipient name (company name takes priority, otherwise use person name)
-      const recipientName = shippingAddress.company?.trim() || 
-                           `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || 
-                           customer?.name || 
-                           'Unknown';
-      
-      // Prepare contact name (person name if company is primary)
-      const contactName = shippingAddress.company?.trim() 
-        ? `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() 
-        : undefined;
-      
-      // Prepare full street address with number
-      const fullStreet = shippingAddress.streetNumber 
-        ? `${shippingAddress.street.trim()} ${shippingAddress.streetNumber.trim()}`
-        : shippingAddress.street.trim();
+      // Use receiver address from settings (name, name2, street are already full values)
+      const recipientName = receiverAddress.name?.trim() || 'Unknown';
+      const contactName = receiverAddress.name2?.trim() || undefined;
+      const fullStreet = receiverAddress.street?.trim() || '';
       
       const pplShipment: any = {
         referenceId,
@@ -7868,14 +7846,14 @@ Return ONLY the subject line without quotes or extra formatting.`,
           email: 'info@daviesupply.cz'
         },
         recipient: {
-          country: normalizeCountry(shippingAddress.country),
-          zipCode: shippingAddress.zipCode.trim(),
+          country: normalizeCountry(receiverAddress.country),
+          zipCode: receiverAddress.zipCode.trim(),
           name: recipientName,
-          name2: contactName, // Contact person if company is primary recipient
+          name2: contactName,
           street: fullStreet,
-          city: shippingAddress.city.trim(),
-          phone: shippingAddress.tel || customer?.phone || undefined,
-          email: shippingAddress.email || customer?.email || undefined
+          city: receiverAddress.city.trim(),
+          phone: receiverAddress.phone || receiverAddress.contact || undefined,
+          email: receiverAddress.email || undefined
         },
         // Validate and add COD only to first carton (PPL API restriction)
         cashOnDelivery: shouldAddCOD ? (() => {
