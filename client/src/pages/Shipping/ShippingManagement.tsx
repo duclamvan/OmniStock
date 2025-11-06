@@ -131,12 +131,14 @@ export default function ShippingManagement() {
 
       <Tabs defaultValue="connection" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="connection" data-testid="tab-connection">Connection</TabsTrigger>
-          <TabsTrigger value="info" data-testid="tab-info">PPL Information</TabsTrigger>
+          <TabsTrigger value="connection" data-testid="tab-connection">Connection Status</TabsTrigger>
+          <TabsTrigger value="info" data-testid="tab-info">Shipping Information</TabsTrigger>
         </TabsList>
 
         <TabsContent value="connection" className="space-y-6">
-          <Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* PPL Connection Card */}
+            <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Settings className="w-5 h-5" />
@@ -289,6 +291,7 @@ export default function ShippingManagement() {
               </div>
             </CardContent>
           </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="info" className="space-y-6">
