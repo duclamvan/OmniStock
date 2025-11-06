@@ -6278,9 +6278,17 @@ export default function PickPack() {
                           
                           console.log('✅ All refresh steps completed');
                           
+                          // Show tracking numbers in success message
+                          const trackingNumbers = result.trackingNumbers || [];
+                          const trackingInfo = trackingNumbers.length > 0
+                            ? `Tracking: ${trackingNumbers.join(', ')}`
+                            : '';
+                          
                           toast({
                             title: "Labels Generated",
-                            description: `Successfully created ${cartons.length} PPL shipping label(s)`,
+                            description: trackingInfo 
+                              ? `Successfully created ${cartons.length} PPL shipping label(s). ${trackingInfo}`
+                              : `Successfully created ${cartons.length} PPL shipping label(s)`,
                           });
                         } catch (error: any) {
                           console.error('❌ Generate error:', error);
@@ -6690,9 +6698,13 @@ export default function PickPack() {
                                     
                                     console.log('✅ All data refreshed');
                                     
+                                    // Show tracking number in success message
+                                    const trackingNumber = result.trackingNumber || result.trackingNumbers?.[0];
                                     toast({
                                       title: "Label Generated",
-                                      description: "PPL shipping label created successfully",
+                                      description: trackingNumber 
+                                        ? `PPL shipping label created. Tracking: ${trackingNumber}`
+                                        : "PPL shipping label created successfully",
                                     });
                                   } catch (error: any) {
                                     console.error('❌ Generate error:', error);
