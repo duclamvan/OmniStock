@@ -52,6 +52,29 @@ interface ShippingLabel {
   label?: any;
 }
 
+interface PPLConnectionStatus {
+  connected: boolean;
+  provider?: string;
+  message: string;
+  error?: string;
+}
+
+interface DHLConnectionStatus {
+  success: boolean;
+  message: string;
+  details?: {
+    tokenPreview?: string;
+    expiresAt?: string;
+    environment?: string;
+    baseUrl?: string;
+  };
+}
+
+interface CreateParcelResponse {
+  tracking_number: string;
+  label_url?: string;
+}
+
 export default function ShippingManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -66,14 +89,14 @@ export default function ShippingManagement() {
   });
 
   // Test PPL connection
-  const { data: connectionStatus, isLoading: isTestingConnection } = useQuery({
+  const { data: connectionStatus, isLoading: isTestingConnection } = useQuery<PPLConnectionStatus>({
     queryKey: ['/api/shipping/test-connection'],
     refetchInterval: false,
     retry: false
   });
 
   // Test DHL connection
-  const { data: dhlConnectionStatus, isLoading: isTestingDHL } = useQuery({
+  const { data: dhlConnectionStatus, isLoading: isTestingDHL } = useQuery<DHLConnectionStatus>({
     queryKey: ['/api/dhl/test'],
     refetchInterval: false,
     retry: false
@@ -86,7 +109,7 @@ export default function ShippingManagement() {
   });
 
   // Create test parcel mutation
-  const createTestParcelMutation = useMutation({
+  const createTestParcelMutation = useMutation<CreateParcelResponse, Error, TestAddress>({
     mutationFn: (address: TestAddress) => 
       apiRequest('POST', '/api/shipping/create-test-parcel', address),
     onSuccess: (data) => {
