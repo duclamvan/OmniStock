@@ -47,6 +47,7 @@ import {
   customerShippingAddresses,
   productFiles,
   orderCartons,
+  appSettings,
 } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
