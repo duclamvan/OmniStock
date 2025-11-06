@@ -9056,6 +9056,86 @@ Return ONLY the subject line without quotes or extra formatting.`,
     }
   });
 
+  // ============================================================================
+  // APP SETTINGS ROUTES
+  // ============================================================================
+
+  // Get a setting by key
+  app.get('/api/settings/:key', async (req, res) => {
+    try {
+      const { key } = req.params;
+      const { appSettings } = await import('@shared/schema');
+      
+      const setting = await db
+        .select()
+        .from(appSettings)
+        .where(eq(appSettings.key, key))
+        .limit(1);
+      
+      if (setting.length === 0) {
+        return res.status(404).json({ error: 'Setting not found' });
+      }
+      
+      res.json(setting[0]);
+    } catch (error: any) {
+      console.error('Error fetching setting:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch setting' });
+    }
+  });
+
+  // Save or update a setting
+  app.post('/api/settings', async (req, res) => {
+    try {
+      const { key, value, category, description } = req.body;
+      const { appSettings } = await import('@shared/schema');
+      
+      if (!key || !value) {
+        return res.status(400).json({ error: 'Key and value are required' });
+      }
+
+      // Check if setting exists
+      const existing = await db
+        .select()
+        .from(appSettings)
+        .where(eq(appSettings.key, key))
+        .limit(1);
+
+      let result;
+      if (existing.length > 0) {
+        // Update existing setting
+        result = await db
+          .update(appSettings)
+          .set({
+            value,
+            category: category || existing[0].category,
+            description: description || existing[0].description,
+            updatedAt: new Date(),
+            updatedBy: (req as any).user?.id || null
+          })
+          .where(eq(appSettings.key, key))
+          .returning();
+      } else {
+        // Insert new setting
+        result = await db
+          .insert(appSettings)
+          .values({
+            key,
+            value,
+            category: category || 'general',
+            description: description || null,
+            updatedAt: new Date(),
+            updatedBy: (req as any).user?.id || null
+          })
+          .returning();
+      }
+
+      res.json(result[0]);
+    } catch (error: any) {
+      console.error('Error saving setting:', error);
+      res.status(500).json({ error: error.message || 'Failed to save setting' });
+    }
+  });
+
   // Get packing materials for an order
   // Get all files and documents for an order
   app.get('/api/orders/:orderId/files', async (req, res) => {

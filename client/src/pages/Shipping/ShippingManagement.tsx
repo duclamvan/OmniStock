@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -75,6 +75,18 @@ interface CreateParcelResponse {
   label_url?: string;
 }
 
+interface PPLAddress {
+  name: string;
+  name2?: string;
+  street: string;
+  city: string;
+  zipCode: string;
+  country: string;
+  contact?: string;
+  phone?: string;
+  email?: string;
+}
+
 export default function ShippingManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -89,6 +101,19 @@ export default function ShippingManagement() {
   });
   const [isPPLTesting, setIsPPLTesting] = useState(false);
   const [isDHLTesting, setIsDHLTesting] = useState(false);
+  
+  // PPL default address form state
+  const [pplAddress, setPplAddress] = useState<PPLAddress>({
+    name: '',
+    name2: '',
+    street: '',
+    city: '',
+    zipCode: '',
+    country: 'CZ',
+    contact: '',
+    phone: '',
+    email: ''
+  });
 
   // Test PPL connection
   const { data: connectionStatus, isLoading: isTestingConnection, refetch: refetchPPL } = useQuery<PPLConnectionStatus>({
@@ -108,6 +133,45 @@ export default function ShippingManagement() {
   const { data: shippingMethods = [], isLoading: isLoadingMethods } = useQuery({
     queryKey: ['/api/shipping/methods'],
     enabled: connectionStatus?.connected === true
+  });
+
+  // Load saved PPL default address
+  const { data: savedAddress } = useQuery({
+    queryKey: ['/api/settings/ppl_default_receiver_address'],
+    refetchInterval: false,
+    retry: false
+  });
+
+  // Update form when saved address loads
+  useEffect(() => {
+    if (savedAddress && (savedAddress as any).value) {
+      setPplAddress((savedAddress as any).value as PPLAddress);
+    }
+  }, [savedAddress]);
+
+  // Save PPL default address mutation
+  const savePPLAddressMutation = useMutation({
+    mutationFn: async (address: PPLAddress) => 
+      apiRequest('POST', '/api/settings', {
+        key: 'ppl_default_receiver_address',
+        value: address,
+        category: 'shipping',
+        description: 'Default receiver address for PPL CZ labels'
+      }),
+    onSuccess: () => {
+      toast({
+        title: "Address Saved",
+        description: "Default PPL receiver address has been saved successfully"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/settings/ppl_default_receiver_address'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Save Address",
+        description: error.message || "Unknown error occurred",
+        variant: "destructive"
+      });
+    }
   });
 
   // Create test parcel mutation
@@ -132,6 +196,20 @@ export default function ShippingManagement() {
 
   const handleCreateTestParcel = () => {
     createTestParcelMutation.mutate(testAddress);
+  };
+
+  // Handle saving PPL default address
+  const handleSavePPLAddress = () => {
+    // Validate required fields
+    if (!pplAddress.name || !pplAddress.street || !pplAddress.city || !pplAddress.zipCode || !pplAddress.country) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields (marked with *)",
+        variant: "destructive"
+      });
+      return;
+    }
+    savePPLAddressMutation.mutate(pplAddress);
   };
 
   // Handle PPL test connection
@@ -446,6 +524,8 @@ export default function ShippingManagement() {
                       </Label>
                       <Input 
                         id="ppl-name"
+                        value={pplAddress.name}
+                        onChange={(e) => setPplAddress({ ...pplAddress, name: e.target.value })}
                         placeholder="Recipient name"
                         data-testid="input-ppl-name"
                       />
@@ -454,6 +534,8 @@ export default function ShippingManagement() {
                       <Label htmlFor="ppl-name2">Company (name2)</Label>
                       <Input 
                         id="ppl-name2"
+                        value={pplAddress.name2}
+                        onChange={(e) => setPplAddress({ ...pplAddress, name2: e.target.value })}
                         placeholder="Company name (optional)"
                         data-testid="input-ppl-name2"
                       />
@@ -464,6 +546,8 @@ export default function ShippingManagement() {
                       </Label>
                       <Input 
                         id="ppl-street"
+                        value={pplAddress.street}
+                        onChange={(e) => setPplAddress({ ...pplAddress, street: e.target.value })}
                         placeholder="Street address"
                         data-testid="input-ppl-street"
                       />
@@ -474,6 +558,8 @@ export default function ShippingManagement() {
                       </Label>
                       <Input 
                         id="ppl-city"
+                        value={pplAddress.city}
+                        onChange={(e) => setPplAddress({ ...pplAddress, city: e.target.value })}
                         placeholder="City"
                         data-testid="input-ppl-city"
                       />
@@ -484,6 +570,8 @@ export default function ShippingManagement() {
                       </Label>
                       <Input 
                         id="ppl-zipcode"
+                        value={pplAddress.zipCode}
+                        onChange={(e) => setPplAddress({ ...pplAddress, zipCode: e.target.value })}
                         placeholder="12000"
                         data-testid="input-ppl-zipcode"
                       />
@@ -494,6 +582,8 @@ export default function ShippingManagement() {
                       </Label>
                       <Input 
                         id="ppl-country"
+                        value={pplAddress.country}
+                        onChange={(e) => setPplAddress({ ...pplAddress, country: e.target.value.toUpperCase() })}
                         placeholder="CZ"
                         maxLength={2}
                         data-testid="input-ppl-country"
@@ -504,6 +594,8 @@ export default function ShippingManagement() {
                       <Label htmlFor="ppl-contact">Contact Person</Label>
                       <Input 
                         id="ppl-contact"
+                        value={pplAddress.contact}
+                        onChange={(e) => setPplAddress({ ...pplAddress, contact: e.target.value })}
                         placeholder="Contact name (optional)"
                         data-testid="input-ppl-contact"
                       />
@@ -513,6 +605,8 @@ export default function ShippingManagement() {
                       <Input 
                         id="ppl-phone"
                         type="tel"
+                        value={pplAddress.phone}
+                        onChange={(e) => setPplAddress({ ...pplAddress, phone: e.target.value })}
                         placeholder="+420123456789"
                         data-testid="input-ppl-phone"
                       />
@@ -522,10 +616,33 @@ export default function ShippingManagement() {
                       <Input 
                         id="ppl-email"
                         type="email"
+                        value={pplAddress.email}
+                        onChange={(e) => setPplAddress({ ...pplAddress, email: e.target.value })}
                         placeholder="recipient@example.com"
                         data-testid="input-ppl-email"
                       />
                     </div>
+                  </div>
+                  
+                  <div className="pt-4">
+                    <Button 
+                      onClick={handleSavePPLAddress}
+                      className="w-full"
+                      disabled={savePPLAddressMutation.isPending}
+                      data-testid="button-save-ppl-address"
+                    >
+                      {savePPLAddressMutation.isPending ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Save as Default Receiver Address
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </div>
 

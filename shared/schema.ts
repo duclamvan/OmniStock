@@ -1465,3 +1465,17 @@ export type InsertTicketComment = z.infer<typeof insertTicketCommentSchema>;
 // Order Fulfillment Performance types
 export type OrderFulfillmentLog = typeof orderFulfillmentLogs.$inferSelect;
 export type InsertOrderFulfillmentLog = z.infer<typeof insertOrderFulfillmentLogSchema>;
+
+// Application Settings table - stores key-value pairs for system-wide settings
+export const appSettings = pgTable('app_settings', {
+  key: varchar('key').primaryKey(), // e.g., 'ppl_default_sender_address'
+  value: jsonb('value').notNull(), // JSON value for flexibility
+  category: varchar('category').default('general'), // general, shipping, billing, etc.
+  description: text('description'),
+  updatedAt: timestamp('updated_at').defaultNow(),
+  updatedBy: varchar('updated_by').references(() => users.id)
+});
+
+export const insertAppSettingSchema = createInsertSchema(appSettings);
+export type AppSetting = typeof appSettings.$inferSelect;
+export type InsertAppSetting = z.infer<typeof insertAppSettingSchema>;
