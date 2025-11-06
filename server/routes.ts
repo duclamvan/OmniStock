@@ -8401,53 +8401,29 @@ Return ONLY the subject line without quotes or extra formatting.`,
         return res.status(404).json({ error: 'Order not found' });
       }
 
-      // Get shipping address
-      let shippingAddress = null;
-      if (order.shippingAddressId) {
-        const addressResult = await db
-          .select()
-          .from(customerShippingAddresses)
-          .where(eq(customerShippingAddresses.id, order.shippingAddressId))
-          .limit(1);
-        
-        if (addressResult.length > 0) {
-          shippingAddress = addressResult[0];
-        }
+      // Load default PPL receiver address from settings
+      const settingsResult = await db
+        .select()
+        .from(appSettings)
+        .where(eq(appSettings.key, 'ppl_default_receiver_address'))
+        .limit(1);
+      
+      if (settingsResult.length === 0 || !settingsResult[0].value) {
+        return res.status(400).json({ 
+          error: 'No default PPL receiver address configured. Please set it in Shipping Management settings.' 
+        });
       }
 
-      if (!shippingAddress) {
-        return res.status(400).json({ error: 'No shipping address found for this order' });
-      }
+      const receiverAddress = settingsResult[0].value as any;
 
-      // Validate required shipping address fields
-      const requiredFields = ['country', 'zipCode', 'city', 'street'];
-      const missingFields = requiredFields.filter(field => !shippingAddress[field]);
+      // Validate required receiver address fields
+      const requiredFields = ['country', 'zipCode', 'city', 'street', 'name'];
+      const missingFields = requiredFields.filter(field => !receiverAddress[field]);
       
       if (missingFields.length > 0) {
         return res.status(400).json({ 
-          error: `Shipping address is incomplete. Missing required fields: ${missingFields.join(', ')}` 
+          error: `Default receiver address is incomplete. Missing required fields: ${missingFields.join(', ')}` 
         });
-      }
-
-      // Validate name
-      if (!shippingAddress.firstName && !shippingAddress.lastName && !shippingAddress.company) {
-        return res.status(400).json({ 
-          error: 'Shipping address must have either a name (first/last name) or company name' 
-        });
-      }
-
-      // Get customer details for fallback phone/email
-      let customer = null;
-      if (order.customerId) {
-        const customerResult = await db
-          .select()
-          .from(customers)
-          .where(eq(customers.id, order.customerId))
-          .limit(1);
-        
-        if (customerResult.length > 0) {
-          customer = customerResult[0];
-        }
       }
 
       // Get cartons for the order
@@ -8456,16 +8432,9 @@ Return ONLY the subject line without quotes or extra formatting.`,
         return res.status(400).json({ error: 'No cartons found for this order. Please create cartons before generating PPL labels.' });
       }
 
-      // Prepare recipient name (company name takes priority, otherwise use person name)
-      const recipientName = shippingAddress.company?.trim() || 
-                           `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || 
-                           customer?.name || 
-                           'Unknown';
-      
-      // Prepare contact name (person name if company is primary recipient)
-      const contactName = shippingAddress.company?.trim() 
-        ? `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() 
-        : undefined;
+      // Use receiver address fields directly
+      const recipientName = receiverAddress.name || 'Unknown';
+      const contactName = receiverAddress.contact || receiverAddress.name2 || undefined;
 
       // Map country name to ISO 2-letter code
       const getCountryCode = (country: string): string => {
@@ -8519,7 +8488,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       // BUSD = Business Delivery with Cash on Delivery (Czech domestic)
       // BUSS = Business Standard (Czech domestic, no COD)
       // COND = Connect Delivery with CoD (International)
-      const recipientCountryCode = getCountryCode(shippingAddress.country);
+      const recipientCountryCode = getCountryCode(receiverAddress.country);
       let productType: string;
       
       if (recipientCountryCode === 'CZ') {
@@ -8567,14 +8536,14 @@ Return ONLY the subject line without quotes or extra formatting.`,
           productType,
           sender,
           recipient: {
-            country: getCountryCode(shippingAddress.country),
-            zipCode: shippingAddress.zipCode.replace(/\s+/g, ''),
+            country: getCountryCode(receiverAddress.country),
+            zipCode: receiverAddress.zipCode.replace(/\s+/g, ''),
             name: recipientName,
-            name2: contactName, // Contact person if company is primary recipient
-            street: `${shippingAddress.street} ${shippingAddress.streetNumber || ''}`.trim(),
-            city: shippingAddress.city,
-            phone: shippingAddress.tel || customer?.phone || undefined,
-            email: shippingAddress.email || customer?.email || undefined
+            name2: receiverAddress.name2 || undefined,
+            street: receiverAddress.street,
+            city: receiverAddress.city,
+            phone: receiverAddress.phone || undefined,
+            email: receiverAddress.email || undefined
           },
           // COD applied to the entire shipment set (if present)
           cashOnDelivery,
@@ -8630,14 +8599,14 @@ Return ONLY the subject line without quotes or extra formatting.`,
           productType,
           sender,
           recipient: {
-            country: getCountryCode(shippingAddress.country),
-            zipCode: shippingAddress.zipCode.replace(/\s+/g, ''),
+            country: getCountryCode(receiverAddress.country),
+            zipCode: receiverAddress.zipCode.replace(/\s+/g, ''),
             name: recipientName,
-            name2: contactName, // Contact person if company is primary recipient
-            street: `${shippingAddress.street} ${shippingAddress.streetNumber || ''}`.trim(),
-            city: shippingAddress.city,
-            phone: shippingAddress.tel || customer?.phone || undefined,
-            email: shippingAddress.email || customer?.email || undefined
+            name2: receiverAddress.name2 || undefined,
+            street: receiverAddress.street,
+            city: receiverAddress.city,
+            phone: receiverAddress.phone || undefined,
+            email: receiverAddress.email || undefined
           },
           cashOnDelivery,
           externalNumbers: [
