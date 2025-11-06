@@ -6181,7 +6181,7 @@ export default function PickPack() {
             }`}>
               <CardTitle className="text-base flex items-center gap-2">
                 <Truck className="h-4 w-4" />
-                Shipping Labels
+                Shipping Labels {shipmentLabelsFromDB.length > 0 && `(${shipmentLabelsFromDB.length})`}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-3">
