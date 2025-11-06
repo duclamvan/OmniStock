@@ -39,10 +39,11 @@ Utilizes PostgreSQL with Neon serverless driver and Drizzle ORM. The schema supp
 
 ## Shipping & Logistics APIs
 - **PPL CZ CPL API**: Automated shipping label generation for PPL courier service, using OAuth2 authentication. Uses PPL's `shipmentSet` structure for multi-carton orders where all cartons are part of ONE shipment set, with labels showing "1/2", "2/2", etc. Each carton receives its own tracking number. Batches are immutable once created. Includes full dobírka (cash on delivery) support with configurable COD amount and currency (CZK/EUR/USD) applied to the entire shipment set.
-  - **Sender/Recipient Configuration**: Default sender address (your company) is configured in `/shipping` page and stored in `app_settings` (key: `ppl_default_sender_address`). Recipient address is automatically pulled from each order's shipping address.
+  - **Sender/Recipient Configuration**: Default sender address (your company) is configured in `/shipping` page and stored in `app_settings` (key: `ppl_default_sender_address`). Recipient address is automatically pulled from each order's shipping address. Recipient data includes full company name and contact person (name2 field) for proper label formatting.
   - **Proper Workflow**: Add all cartons to order FIRST (via AI recommendations or manually), then create PPL labels once. The system automatically creates a shipmentSet when multiple cartons exist.
   - **Label Display**: Multi-carton shipments show "1/N", "2/N" in corner of labels (one shipment set). Single carton shows "1/1" (standalone shipment).
   - **COD Handling**: When using shipmentSet, COD is applied to the entire shipment (not per carton), complying with PPL API restriction "nelze slučovat zásilky s dobírkou" (cannot merge shipments with COD).
+  - **Label Retrieval**: Includes automatic retry logic (5 attempts, 2s intervals) to handle PPL API's delayed label processing after batch creation. Labels may return 404 initially and become available within seconds.
 - **DHL Parcel DE Shipping API v2**: Integrated for German domestic and international parcel shipping. Uses OAuth2 ROPC (Resource Owner Password Credentials) authentication with sandbox test credentials. Connection test available at `/shipping` page. Service implementation ready in `server/services/dhlService.ts`.
   - **Environment**: Customer Integration Testing (Sandbox) at `https://api-sandbox.dhl.com/parcel/de/shipping/v2`
   - **Authentication**: OAuth2 with grant_type=password, using sandbox test credentials (username: `user-valid`, password: `SandboxPasswort2023!`)

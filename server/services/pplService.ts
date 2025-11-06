@@ -259,6 +259,7 @@ export async function getPPLBatchStatus(batchId: string): Promise<PPLBatchStatus
 
 /**
  * Get PPL label (PDF)
+ * Includes retry logic because PPL API sometimes needs time to process the label after batch creation
  * @param batchId - The batch ID from shipment creation
  * @param format - Label format (pdf or zpl)
  * @param options - Additional options like offset and limit for pagination
@@ -274,42 +275,63 @@ export async function getPPLLabel(
   const offset = options?.offset ?? 0;
   const limit = options?.limit ?? 100;
   
-  try {
-    const response = await axios.get(
-      `${PPL_BASE_URL}/shipment/batch/${batchId}/label`,
-      {
-        params: {
-          offset,
-          limit
-        },
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': format === 'pdf' ? 'application/pdf' : 'application/zpl'
-        },
-        responseType: 'arraybuffer'
+  // Retry logic: PPL sometimes returns 404 immediately after batch creation
+  // Label might need a few seconds to become available
+  const maxRetries = 5;
+  const retryDelay = 2000; // 2 seconds between retries
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await axios.get(
+        `${PPL_BASE_URL}/shipment/batch/${batchId}/label`,
+        {
+          params: {
+            offset,
+            limit
+          },
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': format === 'pdf' ? 'application/pdf' : 'application/zpl'
+          },
+          responseType: 'arraybuffer'
+        }
+      );
+
+      // Convert to base64
+      const labelContent = Buffer.from(response.data).toString('base64');
+
+      console.log(`✅ Successfully retrieved PPL label for batch ${batchId} (attempt ${attempt})`);
+      return {
+        labelContent,
+        format: format === 'pdf' ? 'application/pdf' : 'application/zpl'
+      };
+    } catch (error: any) {
+      const errorDetails = {
+        message: error.message,
+        data: error.response?.data ? Buffer.from(error.response.data).toString('utf-8') : null,
+        status: error.response?.status,
+        batchId,
+        attempt
+      };
+      
+      // If it's a 404, retry (label might not be ready yet)
+      if (error.response?.status === 404 && attempt < maxRetries) {
+        console.log(`⏳ Label not ready yet for batch ${batchId}, retrying in ${retryDelay}ms (attempt ${attempt}/${maxRetries})...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        continue;
       }
-    );
-
-    // Convert to base64
-    const labelContent = Buffer.from(response.data).toString('base64');
-
-    return {
-      labelContent,
-      format: format === 'pdf' ? 'application/pdf' : 'application/zpl'
-    };
-  } catch (error: any) {
-    const errorDetails = {
-      message: error.message,
-      data: error.response?.data ? Buffer.from(error.response.data).toString('utf-8') : null,
-      status: error.response?.status,
-      batchId
-    };
-    console.error('Failed to get PPL label:', errorDetails);
-    
-    const err = new Error('Failed to retrieve PPL label') as any;
-    err.details = errorDetails;
-    throw err;
+      
+      // For other errors or last attempt, fail
+      console.error('Failed to get PPL label:', errorDetails);
+      
+      const err = new Error('Failed to retrieve PPL label') as any;
+      err.details = errorDetails;
+      throw err;
+    }
   }
+  
+  // Should never reach here, but TypeScript needs this
+  throw new Error('Failed to retrieve PPL label after all retries');
 }
 
 /**
