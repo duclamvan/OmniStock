@@ -331,40 +331,95 @@ export default function ShippingManagement() {
             <CardContent className="space-y-4">
               <div className="space-y-4">
                 <div>
-                  <h4 className="font-medium mb-3">Recipient Information</h4>
+                  <h4 className="font-medium mb-3">Recipient Address (PPL CZ Format)</h4>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Enter recipient details in PPL API format for label generation
+                  </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="recipient-name">Name</Label>
+                      <Label htmlFor="ppl-name">
+                        Name <span className="text-red-500">*</span>
+                      </Label>
                       <Input 
-                        id="recipient-name"
-                        placeholder="Enter recipient name"
-                        data-testid="input-recipient-name"
+                        id="ppl-name"
+                        placeholder="Recipient name"
+                        data-testid="input-ppl-name"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="recipient-company">Company</Label>
+                      <Label htmlFor="ppl-name2">Company (name2)</Label>
                       <Input 
-                        id="recipient-company"
-                        placeholder="Enter company name"
-                        data-testid="input-recipient-company"
+                        id="ppl-name2"
+                        placeholder="Company name (optional)"
+                        data-testid="input-ppl-name2"
                       />
                     </div>
                     <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="recipient-address">Address</Label>
-                      <Textarea 
-                        id="recipient-address"
-                        placeholder="Enter full address"
-                        rows={3}
-                        data-testid="input-recipient-address"
+                      <Label htmlFor="ppl-street">
+                        Street <span className="text-red-500">*</span>
+                      </Label>
+                      <Input 
+                        id="ppl-street"
+                        placeholder="Street address"
+                        data-testid="input-ppl-street"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="recipient-telephone">Telephone Number</Label>
+                      <Label htmlFor="ppl-city">
+                        City <span className="text-red-500">*</span>
+                      </Label>
                       <Input 
-                        id="recipient-telephone"
+                        id="ppl-city"
+                        placeholder="City"
+                        data-testid="input-ppl-city"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="ppl-zipcode">
+                        Zip Code <span className="text-red-500">*</span>
+                      </Label>
+                      <Input 
+                        id="ppl-zipcode"
+                        placeholder="12000"
+                        data-testid="input-ppl-zipcode"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="ppl-country">
+                        Country <span className="text-red-500">*</span>
+                      </Label>
+                      <Input 
+                        id="ppl-country"
+                        placeholder="CZ"
+                        maxLength={2}
+                        data-testid="input-ppl-country"
+                      />
+                      <p className="text-xs text-muted-foreground">2-letter country code (e.g., CZ, SK, DE)</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="ppl-contact">Contact Person</Label>
+                      <Input 
+                        id="ppl-contact"
+                        placeholder="Contact name (optional)"
+                        data-testid="input-ppl-contact"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="ppl-phone">Phone</Label>
+                      <Input 
+                        id="ppl-phone"
                         type="tel"
-                        placeholder="+420 123 456 789"
-                        data-testid="input-recipient-telephone"
+                        placeholder="+420123456789"
+                        data-testid="input-ppl-phone"
+                      />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="ppl-email">Email</Label>
+                      <Input 
+                        id="ppl-email"
+                        type="email"
+                        placeholder="recipient@example.com"
+                        data-testid="input-ppl-email"
                       />
                     </div>
                   </div>
