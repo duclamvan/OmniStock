@@ -21,7 +21,7 @@ import {
   ExternalLink,
   Plus,
   Settings,
-  TestTube
+  RefreshCw
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -336,7 +336,10 @@ export default function ShippingManagement() {
                           </div>
                           <div className="space-y-1">
                             <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Status</p>
-                            <p className="font-medium text-green-600">Active</p>
+                            <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-md px-3 py-1.5 animate-in fade-in duration-500">
+                              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                              <p className="font-semibold text-green-700">Active</p>
+                            </div>
                           </div>
                         </div>
                         <div className="pt-2 border-t">
@@ -378,7 +381,7 @@ export default function ShippingManagement() {
                       </>
                     ) : (
                       <>
-                        <TestTube className="w-4 h-4 mr-2" />
+                        <RefreshCw className="w-4 h-4 mr-2" />
                         Test Connection
                       </>
                     )}
@@ -433,7 +436,10 @@ export default function ShippingManagement() {
                           </div>
                           <div className="space-y-1">
                             <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Status</p>
-                            <p className="font-medium text-green-600">Active</p>
+                            <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-md px-3 py-1.5 animate-in fade-in duration-500">
+                              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                              <p className="font-semibold text-green-700">Active</p>
+                            </div>
                           </div>
                         </div>
                         <div className="pt-2 border-t space-y-2">
@@ -483,7 +489,7 @@ export default function ShippingManagement() {
                       </>
                     ) : (
                       <>
-                        <TestTube className="w-4 h-4 mr-2" />
+                        <RefreshCw className="w-4 h-4 mr-2" />
                         Test Connection
                       </>
                     )}
