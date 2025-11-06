@@ -5179,7 +5179,7 @@ export default function PickPack() {
             
             {/* Item Verification List - Collapsible Accordion */}
             <Accordion type="single" collapsible defaultValue="items" className="w-full">
-              <AccordionItem value="items" className="border-2 rounded-lg bg-white shadow-sm overflow-hidden">
+              <AccordionItem value="items" className="border-2 rounded-lg bg-white shadow-sm overflow-hidden" id="checklist-items-verified">
                 <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 transition-colors">
                   <div className="flex items-center justify-between w-full pr-2">
                     <div className="flex items-center gap-2">
@@ -5786,7 +5786,7 @@ export default function PickPack() {
           </Accordion>
 
           {/* Multi-Carton Packing Section */}
-          <Card className="shadow-sm border-2 border-emerald-200 overflow-hidden">
+          <Card className="shadow-sm border-2 border-emerald-200 overflow-hidden" id="checklist-cartons">
             <CardHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-3">
               <CardTitle className="text-sm sm:text-base font-bold">
                 <div className="flex items-center justify-between">
@@ -5957,7 +5957,7 @@ export default function PickPack() {
                 <h3 className="text-xs sm:text-sm font-bold text-gray-900 uppercase tracking-wide">Documents:</h3>
                 <div className="space-y-2">
                   {/* Packing List - Always Shown */}
-                  <div className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                  <div id="checklist-packing-slip" className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
                     printedDocuments.packingList
                       ? 'bg-green-50 border-green-300'
                       : 'bg-white border-gray-200 hover:border-violet-300'
@@ -6169,7 +6169,7 @@ export default function PickPack() {
           </Card>
 
           {/* Unified Shipping Labels Section */}
-          <Card className={`shadow-sm bg-white ${
+          <Card id="checklist-shipping-labels" className={`shadow-sm bg-white ${
             activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') 
               ? 'border border-orange-200' 
               : 'border border-blue-200'
@@ -7016,51 +7016,77 @@ export default function PickPack() {
 
           {/* Complete Packing Button - Large, Prominent */}
           <div className="sticky bottom-0 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent pt-4 pb-2">
-            {canCompletePacking ? (
-              <Button 
-                size="lg" 
-                onClick={completePacking}
-                className="w-full h-14 text-base font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg transition-all"
-              >
-                <CheckCircle className="h-5 w-5 mr-2" />
-                Complete Packing - Ready for Shipping
-              </Button>
-            ) : (
-              <Button 
-                size="lg" 
-                disabled={true}
-                className="w-full h-14 text-base bg-gray-200 text-gray-500 cursor-not-allowed"
-                onClick={() => {
-                  const missingChecks = [];
-                  if (!(packingChecklist.itemsVerified || allItemsVerified)) missingChecks.push('✓ Verify All Items');
-                  if (!packingChecklist.packingSlipIncluded) missingChecks.push('✓ Include Packing Slip');
-                  if (!packingChecklist.weightRecorded) missingChecks.push('✓ Record Weight');
-                  if (!packingChecklist.boxSealed) missingChecks.push('✓ Seal Box');
-                  if (!packingChecklist.promotionalMaterials) missingChecks.push('✓ Add Promotional Materials');
-                  if (needsFragileProtection && !packingChecklist.fragileProtected) missingChecks.push('✓ Protect Fragile Items');
-                  if (!selectedCarton) missingChecks.push('✓ Select Carton');
-                  if (!packageWeight) missingChecks.push('✓ Enter Package Weight');
-                  
-                  toast({
-                    title: "Cannot Complete Packing",
-                    description: (
-                      <div className="mt-2 space-y-1">
-                        <div className="font-medium mb-2">Please complete all required steps:</div>
-                        {missingChecks.map((check, i) => (
-                          <div key={i} className="text-sm">{check}</div>
-                        ))}
-                      </div>
-                    ),
-                    variant: "destructive",
-                    duration: 8000,
-                  });
-                  playSound('error');
-                }}
-              >
-                <PackageCheck className="h-5 w-5 mr-2" />
-                Complete All Steps to Finish Packing
-              </Button>
-            )}
+            <Button 
+              size="lg" 
+              onClick={() => {
+                if (canCompletePacking) {
+                  completePacking();
+                } else {
+                  // Find the first incomplete item and scroll to it
+                  const scrollToElement = (id: string, message: string) => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      // Add a brief highlight effect
+                      element.classList.add('ring-4', 'ring-yellow-400', 'ring-offset-2');
+                      setTimeout(() => {
+                        element.classList.remove('ring-4', 'ring-yellow-400', 'ring-offset-2');
+                      }, 2000);
+                      
+                      toast({
+                        title: "Almost there!",
+                        description: message,
+                        duration: 5000,
+                      });
+                      playSound('error');
+                      return true;
+                    }
+                    return false;
+                  };
+
+                  // Check each item in order and scroll to the first incomplete one
+                  if (!(packingChecklist.itemsVerified || allItemsVerified)) {
+                    scrollToElement('checklist-items-verified', 'Please check all items to make sure everything is correct.');
+                  } else if (!printedDocuments.packingList) {
+                    scrollToElement('checklist-packing-slip', 'Please print the packing slip to include in the shipment.');
+                  } else if (cartons.length === 0) {
+                    scrollToElement('checklist-cartons', 'Please add at least one carton for this shipment.');
+                  } else if (cartons.some(c => !c.cartonId && c.cartonType !== 'non-company')) {
+                    scrollToElement('checklist-cartons', 'Please select a carton type for all cartons.');
+                  } else if (cartons.some(c => !c.weight || parseFloat(c.weight) <= 0)) {
+                    scrollToElement('checklist-cartons', 'Please enter the weight for all cartons.');
+                  } else if (cartons.some(c => !c.labelPrinted)) {
+                    scrollToElement('checklist-shipping-labels', 'Please generate and print shipping labels for all cartons.');
+                  } else {
+                    // Fallback - show general message
+                    toast({
+                      title: "Almost there!",
+                      description: "Please complete all required steps before finishing packing.",
+                      duration: 5000,
+                    });
+                    playSound('error');
+                  }
+                }
+              }}
+              className={`w-full h-14 text-base font-bold shadow-lg transition-all ${
+                canCompletePacking
+                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white'
+                  : 'bg-yellow-500 hover:bg-yellow-600 text-white'
+              }`}
+              data-testid="button-complete-packing"
+            >
+              {canCompletePacking ? (
+                <>
+                  <CheckCircle className="h-5 w-5 mr-2" />
+                  Complete Packing - Ready for Shipping
+                </>
+              ) : (
+                <>
+                  <PackageCheck className="h-5 w-5 mr-2" />
+                  Complete All Steps to Finish Packing
+                </>
+              )}
+            </Button>
           </div>
         </div>
       </div>
