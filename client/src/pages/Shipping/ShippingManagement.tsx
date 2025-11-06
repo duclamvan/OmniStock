@@ -110,8 +110,8 @@ export default function ShippingManagement() {
 
   // Create test parcel mutation
   const createTestParcelMutation = useMutation<CreateParcelResponse, Error, TestAddress>({
-    mutationFn: (address: TestAddress) => 
-      apiRequest('POST', '/api/shipping/create-test-parcel', address),
+    mutationFn: async (address: TestAddress) => 
+      apiRequest('POST', '/api/shipping/create-test-parcel', address) as unknown as Promise<CreateParcelResponse>,
     onSuccess: (data) => {
       toast({
         title: "Test Parcel Created",
@@ -330,6 +330,48 @@ export default function ShippingManagement() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium mb-3">Recipient Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="recipient-name">Name</Label>
+                      <Input 
+                        id="recipient-name"
+                        placeholder="Enter recipient name"
+                        data-testid="input-recipient-name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="recipient-company">Company</Label>
+                      <Input 
+                        id="recipient-company"
+                        placeholder="Enter company name"
+                        data-testid="input-recipient-company"
+                      />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="recipient-address">Address</Label>
+                      <Textarea 
+                        id="recipient-address"
+                        placeholder="Enter full address"
+                        rows={3}
+                        data-testid="input-recipient-address"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="recipient-telephone">Telephone Number</Label>
+                      <Input 
+                        id="recipient-telephone"
+                        type="tel"
+                        placeholder="+420 123 456 789"
+                        data-testid="input-recipient-telephone"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
                 <div>
                   <h4 className="font-medium mb-2">Supported Features</h4>
                   <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
