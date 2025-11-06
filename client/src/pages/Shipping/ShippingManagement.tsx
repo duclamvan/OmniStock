@@ -198,16 +198,10 @@ export default function ShippingManagement() {
   };
 
   return (
-    <div className="p-6 space-y-6" data-testid="shipping-management">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold" data-testid="title-shipping">Shipping Management</h1>
-          <p className="text-muted-foreground">Manage shipping labels and track parcels with PPL and DHL</p>
-        </div>
-        <Button data-testid="button-settings">
-          <Settings className="w-4 h-4 mr-2" />
-          Settings
-        </Button>
+    <div className="p-6 space-y-8" data-testid="shipping-management">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-bold tracking-tight" data-testid="title-shipping">Shipping Management</h1>
+        <p className="text-muted-foreground">Manage multi-carrier shipping integrations and test API connections</p>
       </div>
 
       <Tabs defaultValue="connection" className="space-y-6">
@@ -219,200 +213,231 @@ export default function ShippingManagement() {
         <TabsContent value="connection" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* PPL Connection Card */}
-            <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="w-5 h-5" />
-                PPL Connection Status
-              </CardTitle>
-              <CardDescription>
-                Check your PPL API connection and configuration
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {isTestingConnection ? (
-                <div className="flex items-center gap-2" data-testid="status-testing">
-                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                  <span>Testing connection...</span>
-                </div>
-              ) : connectionStatus ? (
-                <div className="space-y-4">
-                  <Alert className={connectionStatus.connected ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'} data-testid="status-alert">
-                    <div className="flex items-center gap-2">
-                      {connectionStatus.connected ? (
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-600" />
-                      )}
-                      <AlertDescription className={connectionStatus.connected ? 'text-green-800' : 'text-red-800'}>
-                        {connectionStatus.connected ? 'Successfully connected to PPL API' : 'Failed to connect to PPL API'}
-                      </AlertDescription>
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white rounded-lg shadow-sm">
+                      <Truck className="w-5 h-5 text-blue-600" />
                     </div>
-                  </Alert>
-
-                  {connectionStatus.connected && (
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h4 className="font-medium mb-2">Connection Information</h4>
-                      <div className="space-y-1 text-sm">
-                        <p><strong>Provider:</strong> {connectionStatus.provider || 'PPL'}</p>
-                        <p><strong>Status:</strong> Active</p>
-                        <p><strong>Message:</strong> {connectionStatus.message}</p>
+                    <div>
+                      <CardTitle className="text-lg">PPL CZ</CardTitle>
+                      <CardDescription className="text-xs mt-0.5">Czech Parcel Service</CardDescription>
+                    </div>
+                  </div>
+                  {connectionStatus?.connected && (
+                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Connected
+                    </Badge>
+                  )}
+                  {connectionStatus && !connectionStatus.connected && (
+                    <Badge variant="destructive">
+                      <XCircle className="w-3 h-3 mr-1" />
+                      Disconnected
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6 space-y-4">
+                {isTestingConnection ? (
+                  <div className="flex items-center justify-center py-8" data-testid="status-testing">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      <span className="text-sm text-muted-foreground">Testing connection...</span>
+                    </div>
+                  </div>
+                ) : connectionStatus ? (
+                  <div className="space-y-4">
+                    {connectionStatus.connected ? (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="space-y-1">
+                            <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Provider</p>
+                            <p className="font-medium">{connectionStatus.provider || 'PPL'}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Status</p>
+                            <p className="font-medium text-green-600">Active</p>
+                          </div>
+                        </div>
+                        <div className="pt-2 border-t">
+                          <p className="text-xs text-muted-foreground mb-1">Response</p>
+                          <p className="text-sm">{connectionStatus.message}</p>
+                        </div>
                       </div>
-                    </div>
-                  )}
-
-                  {connectionStatus.error && (
-                    <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                      <h4 className="font-medium text-red-800 mb-2">Error Details</h4>
-                      <p className="text-sm text-red-600">{connectionStatus.error}</p>
-                      <p className="text-sm text-red-600 mt-2">Please check that PPL_CLIENT_ID and PPL_CLIENT_SECRET environment variables are set.</p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <Alert>
-                  <AlertCircle className="w-4 h-4" />
-                  <AlertDescription>
-                    Connection status unknown. Check your API credentials in environment variables (PPL_CLIENT_ID, PPL_CLIENT_SECRET).
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              <div className="pt-4">
-                <Button 
-                  onClick={handleTestPPLConnection}
-                  variant="outline"
-                  disabled={isPPLTesting || isTestingConnection}
-                  data-testid="button-test-connection"
-                >
-                  {isPPLTesting || isTestingConnection ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mr-2" />
-                      Testing...
-                    </>
-                  ) : (
-                    <>
-                      <TestTube className="w-4 h-4 mr-2" />
-                      Test Connection
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="w-5 h-5" />
-                DHL Connection Status
-              </CardTitle>
-              <CardDescription>
-                Check your DHL API connection and configuration
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {isTestingDHL ? (
-                <div className="flex items-center gap-2" data-testid="status-testing-dhl">
-                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                  <span>Testing DHL connection...</span>
-                </div>
-              ) : dhlConnectionStatus ? (
-                <div className="space-y-4">
-                  <Alert className={dhlConnectionStatus.success ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'} data-testid="status-alert-dhl">
-                    <div className="flex items-center gap-2">
-                      {dhlConnectionStatus.success ? (
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-600" />
-                      )}
-                      <AlertDescription className={dhlConnectionStatus.success ? 'text-green-800' : 'text-red-800'}>
-                        {dhlConnectionStatus.success ? 'Successfully connected to DHL API' : 'Failed to connect to DHL API'}
-                      </AlertDescription>
-                    </div>
+                    ) : (
+                      <Alert variant="destructive" className="border-red-200">
+                        <AlertCircle className="w-4 h-4" />
+                        <AlertDescription>
+                          <p className="font-medium mb-1">Connection Failed</p>
+                          <p className="text-xs">{connectionStatus.error || 'Unable to connect to PPL API'}</p>
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+                ) : (
+                  <Alert>
+                    <AlertCircle className="w-4 h-4" />
+                    <AlertDescription className="text-sm">
+                      No connection test performed yet. Click the button below to test.
+                    </AlertDescription>
                   </Alert>
+                )}
 
-                  {dhlConnectionStatus.success && dhlConnectionStatus.details && (
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h4 className="font-medium mb-2">Connection Information</h4>
-                      <div className="space-y-1 text-sm">
-                        <p><strong>Provider:</strong> DHL Parcel DE Shipping</p>
-                        <p><strong>Status:</strong> Active</p>
-                        <p><strong>Message:</strong> {dhlConnectionStatus.message}</p>
-                        {dhlConnectionStatus.details.expiresAt && (
-                          <p><strong>Token Expires:</strong> {new Date(dhlConnectionStatus.details.expiresAt).toLocaleString()}</p>
-                        )}
-                      </div>
+                <div className="pt-2">
+                  <Button 
+                    onClick={handleTestPPLConnection}
+                    className="w-full"
+                    variant={connectionStatus?.connected ? "outline" : "default"}
+                    disabled={isPPLTesting || isTestingConnection}
+                    data-testid="button-test-connection"
+                  >
+                    {isPPLTesting || isTestingConnection ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                        Testing Connection...
+                      </>
+                    ) : (
+                      <>
+                        <TestTube className="w-4 h-4 mr-2" />
+                        Test Connection
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* DHL Connection Card */}
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-yellow-50 to-orange-50 border-b">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white rounded-lg shadow-sm">
+                      <Package className="w-5 h-5 text-yellow-600" />
                     </div>
+                    <div>
+                      <CardTitle className="text-lg">DHL Parcel DE</CardTitle>
+                      <CardDescription className="text-xs mt-0.5">German Shipping Service</CardDescription>
+                    </div>
+                  </div>
+                  {dhlConnectionStatus?.success && (
+                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Connected
+                    </Badge>
                   )}
-
-                  {!dhlConnectionStatus.success && dhlConnectionStatus.message && (
-                    <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                      <h4 className="font-medium text-red-800 mb-2">Error Details</h4>
-                      <p className="text-sm text-red-600">{dhlConnectionStatus.message}</p>
-                      <p className="text-sm text-red-600 mt-2">Please check that DHL_API_KEY and DHL_API_SECRET environment variables are set.</p>
-                      {dhlConnectionStatus.details && (
-                        <details className="mt-2">
-                          <summary className="text-sm text-red-600 cursor-pointer">Technical Details</summary>
-                          <pre className="mt-2 text-xs text-red-500 overflow-auto">
-                            {JSON.stringify(dhlConnectionStatus.details, null, 2)}
-                          </pre>
-                        </details>
-                      )}
-                    </div>
+                  {dhlConnectionStatus && !dhlConnectionStatus.success && (
+                    <Badge variant="destructive">
+                      <XCircle className="w-3 h-3 mr-1" />
+                      Disconnected
+                    </Badge>
                   )}
                 </div>
-              ) : (
-                <Alert>
-                  <AlertCircle className="w-4 h-4" />
-                  <AlertDescription>
-                    Connection status unknown. Check your API credentials in environment variables (DHL_API_KEY, DHL_API_SECRET).
-                  </AlertDescription>
-                </Alert>
-              )}
+              </CardHeader>
+              <CardContent className="pt-6 space-y-4">
+                {isTestingDHL ? (
+                  <div className="flex items-center justify-center py-8" data-testid="status-testing-dhl">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-8 h-8 border-3 border-yellow-600 border-t-transparent rounded-full animate-spin" />
+                      <span className="text-sm text-muted-foreground">Testing connection...</span>
+                    </div>
+                  </div>
+                ) : dhlConnectionStatus ? (
+                  <div className="space-y-4">
+                    {dhlConnectionStatus.success ? (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="space-y-1">
+                            <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Provider</p>
+                            <p className="font-medium">DHL Parcel DE</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Status</p>
+                            <p className="font-medium text-green-600">Active</p>
+                          </div>
+                        </div>
+                        <div className="pt-2 border-t space-y-2">
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Environment</p>
+                            <p className="text-sm font-medium">{dhlConnectionStatus.details?.environment || 'Production'}</p>
+                          </div>
+                          {dhlConnectionStatus.details?.expiresAt && (
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Token Expires</p>
+                              <p className="text-sm">{new Date(dhlConnectionStatus.details.expiresAt).toLocaleString()}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <Alert variant="destructive" className="border-red-200">
+                        <AlertCircle className="w-4 h-4" />
+                        <AlertDescription>
+                          <p className="font-medium mb-1">Connection Failed</p>
+                          <p className="text-xs">{dhlConnectionStatus.message || 'Unable to connect to DHL API'}</p>
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+                ) : (
+                  <Alert>
+                    <AlertCircle className="w-4 h-4" />
+                    <AlertDescription className="text-sm">
+                      No connection test performed yet. Click the button below to test.
+                    </AlertDescription>
+                  </Alert>
+                )}
 
-              <div className="pt-4">
-                <Button 
-                  onClick={handleTestDHLConnection}
-                  variant="outline"
-                  disabled={isDHLTesting || isTestingDHL}
-                  data-testid="button-test-connection-dhl"
-                >
-                  {isDHLTesting || isTestingDHL ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mr-2" />
-                      Testing...
-                    </>
-                  ) : (
-                    <>
-                      <TestTube className="w-4 h-4 mr-2" />
-                      Test Connection
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="pt-2">
+                  <Button 
+                    onClick={handleTestDHLConnection}
+                    className="w-full"
+                    variant={dhlConnectionStatus?.success ? "outline" : "default"}
+                    disabled={isDHLTesting || isTestingDHL}
+                    data-testid="button-test-connection-dhl"
+                  >
+                    {isDHLTesting || isTestingDHL ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                        Testing Connection...
+                      </>
+                    ) : (
+                      <>
+                        <TestTube className="w-4 h-4 mr-2" />
+                        Test Connection
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
 
         <TabsContent value="info" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Truck className="w-5 h-5" />
-                PPL Shipping Information
-              </CardTitle>
-              <CardDescription>
-                Information about PPL shipping integration
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-4">
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 border-b">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white rounded-lg shadow-sm">
+                  <Truck className="w-5 h-5 text-slate-700" />
+                </div>
                 <div>
-                  <h4 className="font-medium mb-3">Recipient Address (PPL CZ Format)</h4>
+                  <CardTitle className="text-lg">PPL Shipping Information</CardTitle>
+                  <CardDescription className="text-xs mt-0.5">Test label generation and view integration details</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              <div className="space-y-6">
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-5 border border-blue-100">
+                  <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-blue-600" />
+                    Recipient Address
+                  </h4>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Enter recipient details in PPL API format for label generation
+                    Test PPL label generation with recipient details
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -504,56 +529,70 @@ export default function ShippingManagement() {
                   </div>
                 </div>
 
-                <Separator />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-sm flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                      Supported Features
+                    </h4>
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-2 text-sm">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5" />
+                        <span>Shipping label generation (PDF format)</span>
+                      </div>
+                      <div className="flex items-start gap-2 text-sm">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5" />
+                        <span>Batch shipment creation</span>
+                      </div>
+                      <div className="flex items-start gap-2 text-sm">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5" />
+                        <span>Dobírka (Cash on Delivery) support</span>
+                      </div>
+                      <div className="flex items-start gap-2 text-sm">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5" />
+                        <span>Tracking number assignment</span>
+                      </div>
+                      <div className="flex items-start gap-2 text-sm">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5" />
+                        <span>Automated label printing</span>
+                      </div>
+                    </div>
+                  </div>
 
-                <div>
-                  <h4 className="font-medium mb-2">Supported Features</h4>
-                  <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                    <li>Shipping label generation (PDF format)</li>
-                    <li>Batch shipment creation</li>
-                    <li>Dobírka (Cash on Delivery) support</li>
-                    <li>Tracking number assignment</li>
-                    <li>Automated label printing</li>
-                  </ul>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <h4 className="font-medium mb-2">Product Types</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="bg-gray-50 p-3 rounded">
-                      <p className="font-medium">PPL Parcel CZ Business</p>
-                      <p className="text-muted-foreground">Standard domestic Czech Republic shipments</p>
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-sm flex items-center gap-2">
+                      <Package className="w-4 h-4 text-blue-600" />
+                      Product Types
+                    </h4>
+                    <div className="bg-white border rounded-lg p-4">
+                      <p className="font-medium text-sm">PPL Parcel CZ Business</p>
+                      <p className="text-muted-foreground text-xs mt-1">Standard domestic Czech Republic shipments</p>
                     </div>
                   </div>
                 </div>
 
-                <Separator />
-
-                <div>
-                  <h4 className="font-medium mb-2">Dobírka (Cash on Delivery)</h4>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    PPL supports cash on delivery (dobírka) for shipments. You can specify:
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                    <ExternalLink className="w-4 h-4 text-amber-600" />
+                    Cash on Delivery (Dobírka)
+                  </h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    PPL supports cash on delivery (dobírka) for shipments:
                   </p>
-                  <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                    <li>COD amount in CZK, EUR, or other currencies</li>
-                    <li>Variable symbol for payment tracking</li>
-                    <li>Automatic order ID association</li>
-                  </ul>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <h4 className="font-medium mb-2">How to Use</h4>
-                  <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
-                    <li>Create or edit an order in the Orders section</li>
-                    <li>Add dobírka amount and currency if needed</li>
-                    <li>Go to Order Details and click "Create PPL Label"</li>
-                    <li>The label will be generated and stored with the order</li>
-                    <li>Download and print the label for shipping</li>
-                  </ol>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                    <div className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
+                      <span>COD amount in CZK, EUR, or USD</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
+                      <span>Variable symbol for payment tracking</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
+                      <span>Automatic order ID association</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>
