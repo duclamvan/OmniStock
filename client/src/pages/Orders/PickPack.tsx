@@ -6912,7 +6912,15 @@ export default function PickPack() {
                           
                           // Force a refetch to ensure UI updates
                           await refetchCartons();
-                          await fetchShipmentLabels(); // Refresh shipment labels
+                          
+                          // Add delay to ensure database commit completes
+                          await new Promise(resolve => setTimeout(resolve, 500));
+                          
+                          // Refresh shipment labels AFTER database commit
+                          await fetchShipmentLabels();
+                          
+                          // Force re-render by updating state
+                          setShipmentLabelsFromDB(prev => [...prev]);
                           
                           // Extract tracking number from response (handle both formats)
                           const trackingNumber = labelResult.trackingNumber || labelResult.trackingNumbers?.[0] || 'N/A';

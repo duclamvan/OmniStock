@@ -7641,6 +7641,21 @@ Return ONLY the subject line without quotes or extra formatting.`,
         }
         
         const hasCOD = order.cashOnDeliveryAmount && parseFloat(order.cashOnDeliveryAmount) > 0;
+        
+        // Prepare recipient info (customer receiving the package)
+        const recipientName = shippingAddress.company?.trim() || 
+                             `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || 
+                             customer?.name || 
+                             'Unknown';
+        
+        const recipientContactName = shippingAddress.company?.trim() 
+          ? `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() 
+          : undefined;
+        
+        const recipientStreet = shippingAddress.streetNumber 
+          ? `${shippingAddress.street.trim()} ${shippingAddress.streetNumber.trim()}`
+          : shippingAddress.street.trim();
+        
         const pplShipment: any = {
           referenceId,
           productType: hasCOD ? 'BUSD' : 'BUSS',
@@ -7657,8 +7672,9 @@ Return ONLY the subject line without quotes or extra formatting.`,
           recipient: {
             country: normalizeCountry(shippingAddress.country),
             zipCode: shippingAddress.zipCode.trim(),
-            name: `${shippingAddress.firstName} ${shippingAddress.lastName}`.trim() || customer?.name || 'Unknown',
-            street: shippingAddress.street.trim(),
+            name: recipientName,
+            name2: recipientContactName,
+            street: recipientStreet,
             city: shippingAddress.city.trim(),
             phone: shippingAddress.tel || customer?.phone || undefined,
             email: shippingAddress.email || customer?.email || undefined
