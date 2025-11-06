@@ -87,16 +87,18 @@ export default function ShippingManagement() {
     telephone: '+31612345678',
     email: 'test@example.com'
   });
+  const [isPPLTesting, setIsPPLTesting] = useState(false);
+  const [isDHLTesting, setIsDHLTesting] = useState(false);
 
   // Test PPL connection
-  const { data: connectionStatus, isLoading: isTestingConnection } = useQuery<PPLConnectionStatus>({
+  const { data: connectionStatus, isLoading: isTestingConnection, refetch: refetchPPL } = useQuery<PPLConnectionStatus>({
     queryKey: ['/api/shipping/test-connection'],
     refetchInterval: false,
     retry: false
   });
 
   // Test DHL connection
-  const { data: dhlConnectionStatus, isLoading: isTestingDHL } = useQuery<DHLConnectionStatus>({
+  const { data: dhlConnectionStatus, isLoading: isTestingDHL, refetch: refetchDHL } = useQuery<DHLConnectionStatus>({
     queryKey: ['/api/dhl/test'],
     refetchInterval: false,
     retry: false
@@ -130,6 +132,62 @@ export default function ShippingManagement() {
 
   const handleCreateTestParcel = () => {
     createTestParcelMutation.mutate(testAddress);
+  };
+
+  // Handle PPL test connection
+  const handleTestPPLConnection = async () => {
+    setIsPPLTesting(true);
+    try {
+      const result = await refetchPPL();
+      if (result.data?.connected) {
+        toast({
+          title: "PPL Connection Successful",
+          description: result.data.message || "Successfully connected to PPL API",
+        });
+      } else {
+        toast({
+          title: "PPL Connection Failed",
+          description: result.data?.error || "Failed to connect to PPL API",
+          variant: "destructive"
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "PPL Connection Error",
+        description: error.message || "An error occurred while testing PPL connection",
+        variant: "destructive"
+      });
+    } finally {
+      setIsPPLTesting(false);
+    }
+  };
+
+  // Handle DHL test connection
+  const handleTestDHLConnection = async () => {
+    setIsDHLTesting(true);
+    try {
+      const result = await refetchDHL();
+      if (result.data?.success) {
+        toast({
+          title: "DHL Connection Successful",
+          description: result.data.message || "Successfully connected to DHL API",
+        });
+      } else {
+        toast({
+          title: "DHL Connection Failed",
+          description: result.data?.message || "Failed to connect to DHL API",
+          variant: "destructive"
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "DHL Connection Error",
+        description: error.message || "An error occurred while testing DHL connection",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDHLTesting(false);
+    }
   };
 
   const formatPrice = (price: number, currency: string) => {
@@ -222,11 +280,22 @@ export default function ShippingManagement() {
 
               <div className="pt-4">
                 <Button 
-                  onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/shipping/test-connection'] })}
+                  onClick={handleTestPPLConnection}
                   variant="outline"
+                  disabled={isPPLTesting || isTestingConnection}
                   data-testid="button-test-connection"
                 >
-                  Test Connection Again
+                  {isPPLTesting || isTestingConnection ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mr-2" />
+                      Testing...
+                    </>
+                  ) : (
+                    <>
+                      <TestTube className="w-4 h-4 mr-2" />
+                      Test Connection
+                    </>
+                  )}
                 </Button>
               </div>
             </CardContent>
@@ -304,12 +373,22 @@ export default function ShippingManagement() {
 
               <div className="pt-4">
                 <Button 
-                  onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/dhl/test'] })}
+                  onClick={handleTestDHLConnection}
                   variant="outline"
+                  disabled={isDHLTesting || isTestingDHL}
                   data-testid="button-test-connection-dhl"
                 >
-                  <TestTube className="w-4 h-4 mr-2" />
-                  Test DHL Connection Again
+                  {isDHLTesting || isTestingDHL ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mr-2" />
+                      Testing...
+                    </>
+                  ) : (
+                    <>
+                      <TestTube className="w-4 h-4 mr-2" />
+                      Test Connection
+                    </>
+                  )}
                 </Button>
               </div>
             </CardContent>
