@@ -42,6 +42,12 @@ Utilizes PostgreSQL with Neon serverless driver and Drizzle ORM. The schema supp
   - **Proper Workflow**: Add all cartons to order FIRST (via AI recommendations or manually), then create PPL labels once. The system automatically creates a shipmentSet when multiple cartons exist.
   - **Label Display**: Multi-carton shipments show "1/N", "2/N" in corner of labels (one shipment set). Single carton shows "1/1" (standalone shipment).
   - **COD Handling**: When using shipmentSet, COD is applied to the entire shipment (not per carton), complying with PPL API restriction "nelze slučovat zásilky s dobírkou" (cannot merge shipments with COD).
+- **DHL Parcel DE Shipping API v2**: Integrated for German domestic and international parcel shipping. Uses OAuth2 ROPC (Resource Owner Password Credentials) authentication with sandbox test credentials. Connection test available at `/shipping` page. Service implementation ready in `server/services/dhlService.ts`.
+  - **Environment**: Customer Integration Testing (Sandbox) at `https://api-sandbox.dhl.com/parcel/de/shipping/v2`
+  - **Authentication**: OAuth2 with grant_type=password, using sandbox test credentials (username: `user-valid`, password: `SandboxPasswort2023!`)
+  - **Credentials Required**: DHL_API_KEY and DHL_API_SECRET (client_id and client_secret from DHL Developer Portal)
+  - **Token Management**: Access tokens expire after 5 minutes, automatically cached and refreshed
+  - **Next Steps**: Implement shipment creation once connection testing is verified
 - **OpenStreetMap Nominatim API**: For address geocoding and auto-correction.
 
 ## Other APIs

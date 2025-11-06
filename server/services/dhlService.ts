@@ -11,17 +11,22 @@ interface DHLAuthCache {
   expiresAt: number;
 }
 
-// DHL API Configuration - Production Environment
-// Post & Parcel Germany Authentication API
-const DHL_AUTH_URL = 'https://api-eu.dhl.com/post/de/shipping/oauth/token';
-// DHL Parcel DE Shipping v4
-const DHL_SHIPPING_BASE_URL = 'https://api-eu.dhl.com/parcel/de/shipping/v4';
+// DHL API Configuration
+// Authentication API (Post & Parcel Germany) - ROPC OAuth2
+const DHL_AUTH_URL = 'https://api-sandbox.dhl.com/parcel/de/account/auth/ropc/v1/token';
+// Parcel DE Shipping API v2
+const DHL_SHIPPING_BASE_URL = 'https://api-sandbox.dhl.com/parcel/de/shipping/v2';
+
+// Sandbox test credentials (as per DHL documentation)
+const DHL_SANDBOX_USERNAME = 'user-valid';
+const DHL_SANDBOX_PASSWORD = 'SandboxPasswort2023!';
 
 // Cache for access token
 let tokenCache: DHLAuthCache | null = null;
 
 /**
- * Get DHL API access token with caching using OAuth2 client_credentials
+ * Get DHL OAuth2 access token using ROPC grant type
+ * Tokens expire after ~5 minutes (300 seconds)
  */
 export async function getDHLAccessToken(): Promise<string> {
   // Check if we have a valid cached token
@@ -37,17 +42,18 @@ export async function getDHLAccessToken(): Promise<string> {
   }
 
   try {
-    // OAuth2 client_credentials flow using Basic Auth
-    const credentials = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
-    
     const response = await axios.post<DHLTokenResponse>(
       DHL_AUTH_URL,
       new URLSearchParams({
-        grant_type: 'client_credentials'
+        grant_type: 'password',
+        username: DHL_SANDBOX_USERNAME,
+        password: DHL_SANDBOX_PASSWORD,
+        client_id: apiKey,
+        client_secret: apiSecret
       }),
       {
         headers: {
-          'Authorization': `Basic ${credentials}`,
+          'Accept': 'application/json',
           'Content-Type': 'application/x-www-form-urlencoded'
         }
       }
@@ -55,10 +61,10 @@ export async function getDHLAccessToken(): Promise<string> {
 
     const { access_token, expires_in } = response.data;
 
-    // Cache the token with a 5-minute buffer before expiration
+    // Cache the token with a 1-minute buffer before expiration
     tokenCache = {
       token: access_token,
-      expiresAt: Date.now() + (expires_in - 300) * 1000
+      expiresAt: Date.now() + (expires_in - 60) * 1000
     };
 
     return access_token;
@@ -67,14 +73,14 @@ export async function getDHLAccessToken(): Promise<string> {
       message: error.message,
       data: error.response?.data,
       status: error.response?.status,
-      url: DHL_AUTH_URL,
-      apiKey: apiKey?.substring(0, 4) + '***' // Show only first 4 chars
+      url: DHL_AUTH_URL
     };
     console.error('Failed to get DHL access token:', errorDetails);
     
-    // Throw a detailed error
     const errorMessage = error.response?.data?.error_description || 
-                        error.response?.data?.error || 
+                        error.response?.data?.detail || 
+                        error.response?.data?.title ||
+                        error.message || 
                         'Failed to authenticate with DHL API';
     const err = new Error(errorMessage) as any;
     err.details = errorDetails;
@@ -83,7 +89,7 @@ export async function getDHLAccessToken(): Promise<string> {
 }
 
 /**
- * Test DHL API connection
+ * Test DHL API connection by requesting an OAuth2 token
  */
 export async function testDHLConnection(): Promise<{ success: boolean; message: string; details?: any }> {
   try {
@@ -94,7 +100,9 @@ export async function testDHLConnection(): Promise<{ success: boolean; message: 
       message: 'Successfully connected to DHL API',
       details: {
         tokenPreview: token.substring(0, 20) + '...',
-        expiresAt: tokenCache?.expiresAt ? new Date(tokenCache.expiresAt).toISOString() : null
+        expiresAt: tokenCache?.expiresAt ? new Date(tokenCache.expiresAt).toISOString() : null,
+        environment: 'Sandbox (Customer Integration Testing)',
+        baseUrl: DHL_SHIPPING_BASE_URL
       }
     };
   } catch (error: any) {
@@ -107,7 +115,7 @@ export async function testDHLConnection(): Promise<{ success: boolean; message: 
 }
 
 /**
- * Make authenticated request to DHL API
+ * Make authenticated request to DHL API using OAuth2 Bearer token
  */
 async function dhlRequest<T>(
   method: 'GET' | 'POST' | 'PUT' | 'DELETE',
@@ -116,7 +124,6 @@ async function dhlRequest<T>(
   headers?: Record<string, string>
 ): Promise<T> {
   const token = await getDHLAccessToken();
-
   const url = `${DHL_SHIPPING_BASE_URL}${endpoint}`;
 
   try {
@@ -127,7 +134,7 @@ async function dhlRequest<T>(
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'Accept-Language': 'de-DE',
+        'Accept': 'application/json',
         ...headers
       }
     });
