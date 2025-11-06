@@ -518,10 +518,10 @@ export default function ShippingManagement() {
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-5 border border-blue-100">
                   <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-blue-600" />
-                    Recipient Address
+                    Default PPL Receiver Address
                   </h4>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Test PPL label generation with recipient details
+                    Set the default receiver address used for all PPL label generation
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
