@@ -8874,6 +8874,13 @@ Return ONLY the subject line without quotes or extra formatting.`,
         
         createdLabels.push(labelRecord);
         console.log(`✅ Label record created for carton #${cartonNumber}:`, labelRecord.id);
+        
+        // IMPORTANT: Update the carton to mark label as printed
+        await storage.updateOrderCarton(carton.id, {
+          labelPrinted: true,
+          trackingNumber
+        });
+        console.log(`✅ Carton #${cartonNumber} marked as labelPrinted: true`);
       }
 
       console.log(`✅ All ${createdLabels.length} shipment label records created successfully`);
