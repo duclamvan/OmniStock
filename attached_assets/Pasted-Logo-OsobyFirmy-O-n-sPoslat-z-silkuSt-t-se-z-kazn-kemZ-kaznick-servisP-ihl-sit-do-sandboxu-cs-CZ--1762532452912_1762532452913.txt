@@ -1,0 +1,379 @@
+Logo
+OsobyFirmy
+O násPoslat zásilkuStát se zákazníkemZákaznický servisPřihlásit do sandboxu
+cs-CZ
+​
+Swagger
+CPL API
+Pomocí API můžete jednoduše propojit svůj systém se systémem PPL. To Vám umožní pracovat se zásilkami ještě jednodušeji a rychleji.
+Dostupnost produkčního prostředíONLINE
+alertNovinky v API
+R2509 - Novinky
+doku: https://ppl-cpl-api.apidog.io/ - shipment/batch - nová povinná pole - get shipment - nová informace o změně produktu (true/false) - /connectSet - nová metoda pro update sady. Vytváření dodatečné sady - codelisty - service, externalNumber nové filtry - /routing - nová metoda nahrazující GetCitiesRouting (myapi)
+Zobrazit všechny změny 
+API endpointy
+Vyzkoušejte si to
+Přihlaste se a vyzkoušejte si volání všech metod.
+CPL API
+ v1 
+OAS 3.0
+
+POST
+/shipment/batch
+Slouží k vytvoření zásilky. Odpověď je v header (Location)
+
+Roles allowed to access endpoint: myapi.client
+Parameters
+Name	Description
+Accept-Language
+string
+(header)
+Language specification, default language: cs-CZ
+
+Accept-Language
+X-Correlation-ID
+string
+(header)
+Correlation Id of request
+
+X-Correlation-ID
+X-LogLevel
+string
+(header)
+The forced log level
+
+Available values : Trace, Debug, Information, Warning, Error, Critical
+
+
+--
+Request body
+
+application/json-patch+json
+The request data
+
+Examples: 
+Domestic shipment
+Example Value
+Schema
+{
+  "labelSettings": {
+    "format": "Pdf",
+    "completeLabelSettings": {
+      "isCompleteLabelRequested": true,
+      "pageSize": "A4"
+    }
+  },
+  "shipments": [
+    {
+      "referenceId": "2a6dd9e6-7e33-409c-8c29-f9889b279f64",
+      "productType": "BUSS",
+      "sender": {
+        "name": "Sender",
+        "street": "Novoveská 1262/95",
+        "city": "Ostrava",
+        "zipCode": "70900",
+        "country": "CZ",
+        "phone": "+420777888999",
+        "email": "sender@email.cz"
+      },
+      "recipient": {
+        "name": "Recipient",
+        "street": "Františka a Anny Ryšových 1168",
+        "city": "Ostrava-Svinov",
+        "zipCode": "72100",
+        "country": "CZ",
+        "phone": "+420666777888",
+        "email": "recipient@email.cz"
+      }
+    }
+  ],
+  "shipmentsOrderBy": "ShipmentNumber"
+}
+Responses
+Code	Description
+201	
+Created
+
+Headers:
+Name	Description	Type
+X-Correlation-ID	
+Correlation Id of request otherwise id of response
+
+string
+Location	
+Newly created entity location
+
+string
+400	
+BadRequest
+
+Media type
+
+application/problem+json
+Example Value
+Schema
+{
+  "errors": {
+    "additionalProp1": [
+      "string"
+    ],
+    "additionalProp2": [
+      "string"
+    ],
+    "additionalProp3": [
+      "string"
+    ]
+  },
+  "type": "string",
+  "title": "string",
+  "status": 0,
+  "detail": "string",
+  "instance": "string",
+  "additionalProp1": "string",
+  "additionalProp2": "string",
+  "additionalProp3": "string"
+}
+401	
+Unauthorized
+
+Media type
+
+application/problem+json
+Example Value
+Schema
+{
+  "errors": {
+    "additionalProp1": [
+      "string"
+    ],
+    "additionalProp2": [
+      "string"
+    ],
+    "additionalProp3": [
+      "string"
+    ]
+  },
+  "type": "string",
+  "title": "string",
+  "status": 0,
+  "detail": "string",
+  "instance": "string",
+  "additionalProp1": "string",
+  "additionalProp2": "string",
+  "additionalProp3": "string"
+}
+403	
+Forbidden
+
+Media type
+
+application/problem+json
+Example Value
+Schema
+{
+  "errors": {
+    "additionalProp1": [
+      "string"
+    ],
+    "additionalProp2": [
+      "string"
+    ],
+    "additionalProp3": [
+      "string"
+    ]
+  },
+  "type": "string",
+  "title": "string",
+  "status": 0,
+  "detail": "string",
+  "instance": "string",
+  "additionalProp1": "string",
+  "additionalProp2": "string",
+  "additionalProp3": "string"
+}
+500	
+InternalServerError
+
+Media type
+
+application/problem+json
+Example Value
+Schema
+{
+  "errors": {
+    "additionalProp1": [
+      "string"
+    ],
+    "additionalProp2": [
+      "string"
+    ],
+    "additionalProp3": [
+      "string"
+    ]
+  },
+  "type": "string",
+  "title": "string",
+  "status": 0,
+  "detail": "string",
+  "instance": "string",
+  "additionalProp1": "string",
+  "additionalProp2": "string",
+  "additionalProp3": "string"
+}
+503	
+ServiceUnavailable
+
+Media type
+
+application/problem+json
+Example Value
+Schema
+{
+  "errors": {
+    "additionalProp1": [
+      "string"
+    ],
+    "additionalProp2": [
+      "string"
+    ],
+    "additionalProp3": [
+      "string"
+    ]
+  },
+  "type": "string",
+  "title": "string",
+  "status": 0,
+  "detail": "string",
+  "instance": "string",
+  "additionalProp1": "string",
+  "additionalProp2": "string",
+  "additionalProp3": "string"
+}
+Shipment batch
+POST /shipment/batch
+Vytvoření zásilky. Odpověď, batchID, je v header (Location).
+
+GET /shipment/batch/{batchId}
+BatchId z předchozí metody. Slouží k získání stavu importu zásilky. Odpovědí je URL (hromadné nebo k jednotlivému balíku) pro stažení vygenerované etikety.
+
+GET /shipment/batch/{batchId}/label
+Etikety.
+
+Metoda shipment/batch slouží k vytvoření požadavku na získání zásilky , nebo skupiny zásilek. Při zavolání metody je návratovou hodnotou batchId, které následně slouží pro získávání stavu zpracovaní zásilky a následně pro získání etikety.
+
+batchId je unikátní identifikátor, který se generuje pro každé zavolání metody pro vytvoření zásilky a pro další jeho zpracování je potřeba si jej uchovat.
+returnChannel.address: Email formát: xxxxxxx@yyyy.zzz
+
+completeLabelSettings
+.isCompleteLabelRequested : Vygeneruje URL se všemi štítky do jednoho souboru ( max 1000 štítků per request; max 50 kusů na zásilku)
+
+completeLabelSettings.pageSize : Typ štítku (Default, A4)
+
+completeLabelSettings.position : Pozice na A4, pro začátek generování
+labels
+
+productType.note: Poznámka se tiskne na etiketu.
+
+backAddress.phone,
+backAddress.email: Vyplněný kontaktní údaj výrazně zvyšuje úspěšnost doručení.
+
+backAddress.senderMask: Odesílatel zásilky - Alternativní adresa (v případě jiného odesílatele na etiketě).
+
+backAddress.recepient.name2: Kontaktní osoba. V případě zásilky na Výdejní místo, zde uvádět kontakt příjemce (jméno nebo firma) nebo duplikovat "Name"
+
+backAddress.recepient.zipCode:
+Irsko: Město kopírujte do PSČ
+GB dle vzoru:
+A9 9AA
+A99 9AA
+A9A 9AA
+AA9 9AA
+AA99 9AA
+AA9A 9AA
+NL dle vzoru: 1234 AA
+
+backAddress.recepient.phone,
+backAddress.recepient.email: Vyplněný kontaktní údaj výrazně zvyšuje úspěšnost doručení.
+
+parcelShopCode: Validace proti /accessPoint
+
+cashOnDelivery.iban:
+IBAN pokud je vyplněn, pak musí být vyplněno i pole SWIFT.
+Pokud je vyplněno IBAN a SWIFT, pak nemůže být vyplněny BankAccount a BankCode.
+cashOnDelivery.swift:
+
+SWIFT, pokud je vyplněno, pak musí být vyplněno i pole IBAN.
+Pokud je vyplněno IBAN a SWIFT, pak nemůže být vyplněny BankAccount a BankCode.
+cashOnDelivery.specSymbol: Omezení na 0-10 čísel
+
+cashOnDelivery.account:
+
+BankAccount pokud je vyplněno, pak musí být vyplněno i pole BankCode.
+Pokud je vyplněno BankAccount a BankCode, pak nemůže být vyplněn IBAN a SWIFT
+cashOnDelivery.bankCode:
+
+BankCode pokud je vyplněn, pak musí být vyplněno i pole BankAccount.
+Pokud je vyplněno BankAccount a BankCode, pak nemůže být vyplněn IBAN a SWIFT
+cashOnDelivery.codPrice: Částka je oddělena tečkou. Pouze kladné číslo. Pokud je v CZK a země CZ, pak zaokrouhlená na celé částky. Max. limity - /codelist/servicePriceLimit.
+
+cashOnDelivery.codVarSym: Omezení na 0-10 čísel. Pokud jsou vyplněny elementy CodCurrency nebo CodPrice, pak CodVarSym musí být vyplněn.
+
+insurance.insurPrice: Částka připojištění. Zadává se jen připojištění. Standardní pojištění zásilky se zde neuvádí. Limity viz.: /codelist/servicePriceLimit
+
+insurance.insurCurrency: Připojištění může být pouze v CZK.
+
+dormant: Primárně se týká produktu PPL Parcel Return CZ + EU.
+
+recepient.phone,
+recepient.email: Vyplněný kontaktní údaj výrazně zvyšuje úspěšnost doručení.
+
+directInjection: Využito v případě přímého závozu zásilek do zahraničního depa. Musí být dohodnuto a přiděleno obch. zástupcem.
+
+labelService.labelless: Možnost volby tisku label / QR kód se smart PIN. Defaultně label. Pro QR je nutné nejprve kontaktovat obchodního zástupce k nastavení.
+
+shipmentsOrderBy: Možnosti - ReferenceId, ShipmentNumber.
+
+PPL
+O nás
+Mapa výdejních míst
+Seznam výdejních míst
+Přepravní síť PPL
+Aktuální informace
+Pro média
+Osobní údaje
+Kariéra
+Whistleblowing
+Osoby
+Vyhledat zásilku
+Výdejní místa
+Poslat zásilku
+Vrátit zboží
+Poškozená zásilka
+Zákaznický servis
+Mobilní aplikace
+Ke stažení pro osoby
+Firmy
+Stát se zákazníkem
+Poslat zásilku
+Vnitrostátní přeprava
+Mezinárodní přeprava
+Aplikace Klient
+Zákaznická zóna
+Integrátoři
+Ke stažení - firmy
+Užitečné odkazy
+Zákaznický servis
+Kontaktní formulář
+Poškozená zásilka
+Parcelshopy
+Chci mít Parcelbox
+Chci mít Parcelshop
+Provozuji Parcelshop
+Řešení sporů
+Obchodní podmínky
+Sledujte Nás
+LogoLogoLogo
+Mobilní aplikace mojeppl
+Logo
+Logo
+náš svět jsou vaše zásilky

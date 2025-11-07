@@ -8727,16 +8727,22 @@ Return ONLY the subject line without quotes or extra formatting.`,
       }
 
       // Now try to get tracking numbers from batch status endpoint (after label is ready)
-      // Add retry logic since PPL may need time to process the batch
+      // Add initial delay + retry logic since PPL needs time to process the batch
       let shipmentNumbers: string[] = [];
-      const maxStatusRetries = 3;
-      const statusRetryDelay = 2000;
+      const maxStatusRetries = 5;
+      const statusRetryDelay = 3000;
+      const initialDelay = 2000; // Wait 2 seconds before first attempt
+      
+      console.log(`⏳ Waiting ${initialDelay}ms for PPL to process batch...`);
+      await new Promise(resolve => setTimeout(resolve, initialDelay));
       
       for (let attempt = 1; attempt <= maxStatusRetries; attempt++) {
         try {
           console.log(`📊 Fetching batch status (attempt ${attempt}/${maxStatusRetries})...`);
           const batchStatus = await getPPLBatchStatus(batchId);
-          console.log('📦 Batch status response:', JSON.stringify(batchStatus, null, 2));
+          
+          // Log the full response to see what we're getting
+          console.log('📦 Batch status SUCCESS - Full response:', JSON.stringify(batchStatus, null, 2));
           
           if (batchStatus.items && Array.isArray(batchStatus.items)) {
             shipmentNumbers = batchStatus.items
@@ -8744,15 +8750,20 @@ Return ONLY the subject line without quotes or extra formatting.`,
               .map(item => item.shipmentNumber!);
             console.log(`✅ Extracted ${shipmentNumbers.length} tracking number(s):`, shipmentNumbers);
             break; // Success - exit retry loop
+          } else {
+            console.log('⚠️ Batch status response has no items array');
           }
         } catch (statusError: any) {
-          console.log(`⚠️ Attempt ${attempt}/${maxStatusRetries} failed:`, statusError.message);
+          const errorDetails = statusError.response?.data || statusError.message;
+          console.log(`⚠️ Attempt ${attempt}/${maxStatusRetries} failed:`, errorDetails);
           
           if (attempt < maxStatusRetries) {
             console.log(`⏳ Retrying in ${statusRetryDelay}ms...`);
             await new Promise(resolve => setTimeout(resolve, statusRetryDelay));
           } else {
             console.log('⚠️ All attempts failed - will use placeholder tracking numbers');
+            console.log('💡 The PPL batch status endpoint appears to be unavailable in sandbox');
+            console.log('💡 Real tracking numbers are visible on the PDF label barcodes');
             // Continue with empty tracking numbers - will use placeholders
           }
         }
