@@ -7985,71 +7985,74 @@ Return ONLY the subject line without quotes or extra formatting.`,
         }
       });
 
-      // Wait for batch processing to complete with retry logic (same as Generate All Labels)
-      let attempts = 0;
-      const maxAttempts = 8; // Increased attempts for better reliability
-      let batchStatus;
-      let lastError;
+      console.log(`✅ PPL batch created: ${batchId}`);
 
-      while (attempts < maxAttempts) {
-        // Increase wait time with each attempt (exponential backoff) - start with 2s, max 8s
-        const waitTime = Math.min(2000 * Math.pow(1.3, attempts), 8000);
+      // STEP 1: Get the label FIRST (this is fast and reliable)
+      let labelBase64: string | undefined;
+      try {
+        console.log('📄 Step 1: Retrieving PPL label for batch:', batchId);
+        const label = await getPPLLabel(batchId, 'pdf');
+        labelBase64 = label.labelContent;
+        console.log(`✅ Label retrieved successfully (${labelBase64?.length} bytes)`);
+      } catch (labelError: any) {
+        console.error('❌ Failed to retrieve PPL label:', labelError.message);
+        return res.status(500).json({ 
+          error: 'PPL shipment created but label retrieval failed. The shipment may still be processing. Please try again in a few moments.',
+          batchId,
+          labelError: labelError.message
+        });
+      }
+
+      // STEP 2: Now that label is ready, poll for tracking number (non-blocking)
+      let shipmentNumbers: string[] = [];
+      let batchStatus;
+      
+      console.log('🔍 Step 2: Polling for tracking number...');
+      const maxAttempts = 10; // Try 10 times over ~30 seconds
+      
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        // Wait before checking (exponential backoff: 1s, 1.5s, 2.2s, 3.3s, 5s, 7.5s...)
+        const waitTime = Math.min(1000 * Math.pow(1.5, attempt), 10000);
         await new Promise(resolve => setTimeout(resolve, waitTime));
         
         try {
           batchStatus = await getPPLBatchStatus(batchId);
-          console.log(`Batch status (attempt ${attempts + 1}):`, JSON.stringify(batchStatus, null, 2));
+          console.log(`📊 Batch status (attempt ${attempt + 1}/${maxAttempts}):`, batchStatus.status);
           
-          if (batchStatus.status === 'Finished' || batchStatus.status === 'Error') {
+          // Extract tracking numbers if available
+          const foundNumbers = batchStatus?.shipmentResults
+            ?.filter(r => r.parcelNumber || r.shipmentNumber)
+            .map(r => r.parcelNumber || r.shipmentNumber!);
+          
+          if (foundNumbers && foundNumbers.length > 0) {
+            shipmentNumbers = foundNumbers;
+            console.log(`✅ Found tracking number(s):`, shipmentNumbers);
+            break; // Success! Exit polling loop
+          }
+          
+          // If status is Finished but no tracking numbers, something's wrong
+          if (batchStatus.status === 'Finished') {
+            console.warn('⚠️ Batch finished but no tracking numbers in response');
             break;
           }
+          
+          // If status is Error, stop trying
+          if (batchStatus.status === 'Error') {
+            console.error('❌ Batch processing error');
+            break;
+          }
+          
         } catch (error: any) {
-          lastError = error;
-          console.log(`Batch status check attempt ${attempts + 1} failed:`, error.message);
-          // Continue trying even if status check fails (PPL might be processing)
+          console.log(`⚠️ Batch status check failed (attempt ${attempt + 1}):`, error.message);
+          // Continue trying - PPL API can be flaky
         }
-        
-        attempts++;
       }
-
-      // If we couldn't get status after all attempts, but batch was created, try to get the label anyway
-      if (!batchStatus || batchStatus.status !== 'Finished') {
-        console.warn('Could not confirm batch finished status, attempting to retrieve label anyway');
-        // Don't return error yet, try to get the label
-      }
-
-      // Get shipment numbers if available - prefer parcelNumber (actual tracking #) over shipmentNumber (reference)
-      let shipmentNumbers = batchStatus?.shipmentResults
-        ?.filter(r => r.parcelNumber || r.shipmentNumber)
-        .map(r => r.parcelNumber || r.shipmentNumber!) || [];
       
-      // If no shipment numbers were returned but we have a carton, use "PENDING" placeholder
-      // The real tracking number will be visible on the label PDF barcode
+      // If we still don't have tracking numbers after all attempts, use PENDING placeholder
       if (shipmentNumbers.length === 0) {
-        console.log('⚠️ No shipment numbers from PPL API (batch status failed)');
-        console.log('⚠️ The real tracking number is on the label barcode - user should check the PDF');
-        // Use "PENDING" to indicate tracking number needs to be extracted from label
         shipmentNumbers = [`PENDING-${batchId.slice(0, 8)}`];
-        console.log('Using temporary tracking number:', shipmentNumbers[0]);
-      }
-      
-      console.log(`Extracted/generated ${shipmentNumbers.length} shipment number(s):`, shipmentNumbers);
-
-      // Try to get the label even if we don't have shipment numbers yet
-      let labelBase64: string | undefined;
-      try {
-        console.log('🔍 Attempting to retrieve PPL label for batch:', batchId);
-        const label = await getPPLLabel(batchId, 'pdf');
-        labelBase64 = label.labelContent;
-        console.log('✅ Successfully retrieved label, size:', labelBase64?.length, 'bytes');
-      } catch (labelError: any) {
-        console.error('Failed to retrieve PPL label:', labelError.message);
-        return res.status(500).json({ 
-          error: 'PPL shipment created but label retrieval failed. The shipment may still be processing. Please try again in a few moments.',
-          batchId,
-          statusError: lastError?.message,
-          labelError: labelError.message
-        });
+        console.log('⚠️ Could not retrieve tracking number from PPL API after 10 attempts');
+        console.log('💡 Using placeholder. Real tracking number is visible on the label barcode.');
       }
 
       // Save shipment label to shipment_labels table
@@ -8786,68 +8789,73 @@ Return ONLY the subject line without quotes or extra formatting.`,
         }
       });
 
-      // Wait for batch processing to complete with retry logic
-      let attempts = 0;
-      const maxAttempts = 8; // Increased attempts for better reliability
-      let batchStatus;
-      let lastError;
+      console.log(`✅ PPL batch created: ${batchId}`);
 
-      while (attempts < maxAttempts) {
-        // Increase wait time with each attempt (exponential backoff) - start with 2s, max 8s
-        const waitTime = Math.min(2000 * Math.pow(1.3, attempts), 8000);
+      // STEP 1: Get the label FIRST (this is fast and reliable)
+      let label;
+      try {
+        console.log('📄 Step 1: Retrieving PPL label for batch:', batchId);
+        label = await getPPLLabel(batchId, 'pdf');
+        console.log(`✅ Label retrieved successfully (${label.labelContent?.length} bytes)`);
+      } catch (labelError: any) {
+        console.error('❌ Failed to retrieve PPL label:', labelError.message);
+        return res.status(500).json({ 
+          error: 'PPL shipment created but label retrieval failed. The shipment may still be processing. Please try again in a few moments.',
+          batchId,
+          labelError: labelError.message
+        });
+      }
+
+      // STEP 2: Now that label is ready, poll for tracking numbers (non-blocking)
+      let shipmentNumbers: string[] = [];
+      let batchStatus;
+      
+      console.log('🔍 Step 2: Polling for tracking numbers...');
+      const maxAttempts = 10; // Try 10 times over ~30 seconds
+      
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        // Wait before checking (exponential backoff: 1s, 1.5s, 2.2s, 3.3s, 5s, 7.5s...)
+        const waitTime = Math.min(1000 * Math.pow(1.5, attempt), 10000);
         await new Promise(resolve => setTimeout(resolve, waitTime));
         
         try {
           batchStatus = await getPPLBatchStatus(batchId);
-          console.log(`Batch status (attempt ${attempts + 1}):`, JSON.stringify(batchStatus, null, 2));
+          console.log(`📊 Batch status (attempt ${attempt + 1}/${maxAttempts}):`, batchStatus.status);
           
-          if (batchStatus.status === 'Finished' || batchStatus.status === 'Error') {
+          // Extract tracking numbers if available
+          const foundNumbers = batchStatus?.shipmentResults
+            ?.filter(r => r.parcelNumber || r.shipmentNumber)
+            .map(r => r.parcelNumber || r.shipmentNumber!);
+          
+          if (foundNumbers && foundNumbers.length > 0) {
+            shipmentNumbers = foundNumbers;
+            console.log(`✅ Found ${shipmentNumbers.length} tracking number(s):`, shipmentNumbers);
+            break; // Success! Exit polling loop
+          }
+          
+          // If status is Finished but no tracking numbers, something's wrong
+          if (batchStatus.status === 'Finished') {
+            console.warn('⚠️ Batch finished but no tracking numbers in response');
             break;
           }
+          
+          // If status is Error, stop trying
+          if (batchStatus.status === 'Error') {
+            console.error('❌ Batch processing error');
+            break;
+          }
+          
         } catch (error: any) {
-          lastError = error;
-          console.log(`Batch status check attempt ${attempts + 1} failed:`, error.message);
-          // Continue trying even if status check fails (PPL might be processing)
+          console.log(`⚠️ Batch status check failed (attempt ${attempt + 1}):`, error.message);
+          // Continue trying - PPL API can be flaky
         }
-        
-        attempts++;
       }
-
-      // If we couldn't get status after all attempts, but batch was created, try to get the label anyway
-      if (!batchStatus || batchStatus.status !== 'Finished') {
-        console.warn('Could not confirm batch finished status, attempting to retrieve label anyway');
-        // Don't return error yet, try to get the label
-      }
-
-      // Get shipment numbers if available - prefer parcelNumber (actual tracking #) over shipmentNumber (reference)
-      let shipmentNumbers = batchStatus?.shipmentResults
-        ?.filter(r => r.parcelNumber || r.shipmentNumber)
-        .map(r => r.parcelNumber || r.shipmentNumber!) || [];
       
-      // If no shipment numbers were returned but we have cartons, use "PENDING" placeholders
-      // The real tracking numbers will be visible on the label PDF barcodes
+      // If we still don't have tracking numbers after all attempts, use PENDING placeholders
       if (shipmentNumbers.length === 0 && cartons.length > 0) {
-        console.log('⚠️ No shipment numbers from PPL API (batch status failed)');
-        console.log('⚠️ Real tracking numbers are on the label barcodes - users should check the PDFs');
-        // Use "PENDING" to indicate tracking numbers need to be extracted from labels
         shipmentNumbers = cartons.map((_, index) => `PENDING-${batchId.slice(0, 8)}-${index + 1}`);
-        console.log('Using temporary tracking numbers:', shipmentNumbers);
-      }
-      
-      console.log(`Extracted/generated ${shipmentNumbers.length} shipment numbers:`, shipmentNumbers);
-
-      // Try to get the label even if we don't have shipment numbers yet
-      let label;
-      try {
-        label = await getPPLLabel(batchId, 'pdf');
-      } catch (labelError: any) {
-        console.error('Failed to retrieve PPL label:', labelError.message);
-        return res.status(500).json({ 
-          error: 'PPL shipment created but label retrieval failed. The shipment may still be processing. Please try again in a few moments.',
-          batchId,
-          statusError: lastError?.message,
-          labelError: labelError.message
-        });
+        console.log('⚠️ Could not retrieve tracking numbers from PPL API after 10 attempts');
+        console.log('💡 Using placeholders. Real tracking numbers are visible on the label barcodes.');
       }
 
       // Update order with PPL data
