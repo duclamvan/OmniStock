@@ -191,8 +191,14 @@ export interface PPLLabel {
 
 /**
  * Create PPL shipment(s)
+ * Returns batchId, location, and any tracking numbers included in the response
  */
-export async function createPPLShipment(request: PPLCreateShipmentRequest): Promise<{ batchId: string; location: string }> {
+export async function createPPLShipment(request: PPLCreateShipmentRequest): Promise<{ 
+  batchId: string; 
+  location: string;
+  trackingNumbers?: string[];
+  responseData?: any;
+}> {
   try {
     const token = await getPPLAccessToken();
     
@@ -216,7 +222,53 @@ export async function createPPLShipment(request: PPLCreateShipmentRequest): Prom
       throw new Error('No batchId returned from PPL API');
     }
 
-    return { batchId, location };
+    // 🔍 LOG EVERYTHING - Let's see what PPL actually returns!
+    console.log('═══════════════════════════════════════════════════');
+    console.log('📦 PPL BATCH CREATION RESPONSE - FULL DATA:');
+    console.log('═══════════════════════════════════════════════════');
+    console.log('Status:', response.status);
+    console.log('Headers:', JSON.stringify(response.headers, null, 2));
+    console.log('Response Body:', JSON.stringify(response.data, null, 2));
+    console.log('BatchId extracted:', batchId);
+    console.log('═══════════════════════════════════════════════════');
+
+    // Try to extract tracking numbers from response if they exist
+    let trackingNumbers: string[] = [];
+    const responseData = response.data;
+    
+    // Check various possible locations for tracking numbers in the response
+    if (responseData) {
+      // Try shipmentResults array (similar to batch status format)
+      if (Array.isArray(responseData.shipmentResults)) {
+        trackingNumbers = responseData.shipmentResults
+          .filter((r: any) => r.parcelNumber || r.shipmentNumber)
+          .map((r: any) => r.parcelNumber || r.shipmentNumber);
+      }
+      // Try direct parcelNumber field
+      else if (responseData.parcelNumber) {
+        trackingNumbers = [responseData.parcelNumber];
+      }
+      // Try shipments array
+      else if (Array.isArray(responseData.shipments)) {
+        trackingNumbers = responseData.shipments
+          .filter((s: any) => s.parcelNumber || s.shipmentNumber)
+          .map((s: any) => s.parcelNumber || s.shipmentNumber);
+      }
+      
+      if (trackingNumbers.length > 0) {
+        console.log('✅ FOUND TRACKING NUMBERS in batch creation response:', trackingNumbers);
+      } else {
+        console.log('⚠️ No tracking numbers found in batch creation response');
+        console.log('   Will need to retrieve from label or use alternative method');
+      }
+    }
+
+    return { 
+      batchId, 
+      location,
+      trackingNumbers: trackingNumbers.length > 0 ? trackingNumbers : undefined,
+      responseData
+    };
   } catch (error: any) {
     const errorDetails = {
       message: error.message,
