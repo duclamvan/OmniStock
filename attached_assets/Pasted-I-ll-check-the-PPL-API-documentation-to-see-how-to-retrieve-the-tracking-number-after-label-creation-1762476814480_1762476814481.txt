@@ -1,0 +1,96 @@
+I'll check the PPL API documentation to see how to retrieve the tracking number after label creation.Based on the PPL CPL API documentation I found, here's how the API works and what you need to do:
+
+## PPL API Process
+
+The PPL CPL API is **asynchronous**:
+
+1. **Create Shipment**: `POST /shipment/batch`
+   - Returns immediately with `201 Created` status
+   - Response includes a `batchId` in the `Location` header
+   - The tracking number is NOT immediately available
+
+2. **Poll for Status**: `GET /shipment/batch/{batchId}`
+   - You must repeatedly call this endpoint
+   - Check the `importState` field
+   - When `importState` is `"Complete"`, the results are ready
+   - The response will include the tracking number and label URLs
+
+## What You Need to Do
+
+### 1. **After Creating Label:**
+```typescript
+// When you create the shipment
+const createResponse = await fetch('https://api.dhl.com/ecs/ppl/myapi2/shipment/batch', {
+  method: 'POST',
+  // ... your shipment data
+});
+
+// Get the batchId from Location header
+const location = createResponse.headers.get('Location');
+const batchId = location.split('/').pop(); // Extract batchId
+
+// Store the batchId in your database
+await updateShippingLabel({
+  batchId,
+  status: 'PENDING'
+});
+```
+
+### 2. **Poll for Tracking Number:**
+```typescript
+// Function to check if label is ready
+async function checkLabelStatus(batchId) {
+  const response = await fetch(
+    `https://api.dhl.com/ecs/ppl/myapi2/shipment/batch/${batchId}`,
+    {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    }
+  );
+  
+  const data = await response.json();
+  
+  if (data.importState === 'Complete') {
+    // Extract tracking number from the response
+    const trackingNumber = data.packages[0].shipmentNumber; // or similar field
+    const labelUrl = data.packages[0].labelUrl;
+    
+    // Update your database
+    await updateShippingLabel({
+      batchId,
+      trackingNumber,
+      labelUrl,
+      status: 'READY'
+    });
+    
+    return { trackingNumber, labelUrl };
+  }
+  
+  return null; // Still processing
+}
+```
+
+### 3. **Implementation Options:**
+
+**Option A: Webhook/Polling Job**
+- Create a background job that polls every 30 seconds
+- Check all labels with `status: 'PENDING'`
+- Update when `importState` becomes `'Complete'`
+
+**Option B: User-Triggered**
+- Add a "Refresh" button in your UI
+- Call the check function when user clicks it
+
+## Update Your UI
+
+Once you have the tracking number in your database:
+
+```typescript
+// In your React component
+<div className="text-sm text-gray-500">
+  {label.trackingNumber || `PENDING-${label.batchId.slice(0, 6)}...`}
+</div>
+```
+
+Would you like me to help you implement the polling mechanism or show you the complete code for storing and retrieving the tracking number?
