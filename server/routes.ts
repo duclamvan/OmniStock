@@ -7987,13 +7987,13 @@ Return ONLY the subject line without quotes or extra formatting.`,
 
       // Wait for batch processing to complete with retry logic (same as Generate All Labels)
       let attempts = 0;
-      const maxAttempts = 5; // Reduced for faster response
+      const maxAttempts = 8; // Increased attempts for better reliability
       let batchStatus;
       let lastError;
 
       while (attempts < maxAttempts) {
-        // Increase wait time with each attempt (exponential backoff)
-        const waitTime = Math.min(1000 * Math.pow(1.5, attempts), 5000);
+        // Increase wait time with each attempt (exponential backoff) - start with 2s, max 8s
+        const waitTime = Math.min(2000 * Math.pow(1.3, attempts), 8000);
         await new Promise(resolve => setTimeout(resolve, waitTime));
         
         try {
@@ -8023,14 +8023,14 @@ Return ONLY the subject line without quotes or extra formatting.`,
         ?.filter(r => r.parcelNumber || r.shipmentNumber)
         .map(r => r.parcelNumber || r.shipmentNumber!) || [];
       
-      // If no shipment numbers were returned but we have a carton, generate placeholder tracking number
-      // This handles cases where the batch status API fails but shipment was created
+      // If no shipment numbers were returned but we have a carton, use "PENDING" placeholder
+      // The real tracking number will be visible on the label PDF barcode
       if (shipmentNumbers.length === 0) {
-        console.log('No shipment numbers from PPL API, generating placeholder tracking number');
-        // Generate placeholder tracking number based on batch ID
-        const batchIdNumeric = batchId.replace(/[^0-9]/g, '').slice(0, 8) || '80392335';
-        shipmentNumbers = [`${batchIdNumeric}20`];
-        console.log('Generated placeholder tracking number:', shipmentNumbers[0]);
+        console.log('⚠️ No shipment numbers from PPL API (batch status failed)');
+        console.log('⚠️ The real tracking number is on the label barcode - user should check the PDF');
+        // Use "PENDING" to indicate tracking number needs to be extracted from label
+        shipmentNumbers = [`PENDING-${batchId.slice(0, 8)}`];
+        console.log('Using temporary tracking number:', shipmentNumbers[0]);
       }
       
       console.log(`Extracted/generated ${shipmentNumbers.length} shipment number(s):`, shipmentNumbers);
@@ -8748,13 +8748,13 @@ Return ONLY the subject line without quotes or extra formatting.`,
 
       // Wait for batch processing to complete with retry logic
       let attempts = 0;
-      const maxAttempts = 5; // Reduced from 15 to 5 for faster response
+      const maxAttempts = 8; // Increased attempts for better reliability
       let batchStatus;
       let lastError;
 
       while (attempts < maxAttempts) {
-        // Increase wait time with each attempt (exponential backoff)
-        const waitTime = Math.min(1000 * Math.pow(1.5, attempts), 5000);
+        // Increase wait time with each attempt (exponential backoff) - start with 2s, max 8s
+        const waitTime = Math.min(2000 * Math.pow(1.3, attempts), 8000);
         await new Promise(resolve => setTimeout(resolve, waitTime));
         
         try {
@@ -8784,14 +8784,14 @@ Return ONLY the subject line without quotes or extra formatting.`,
         ?.filter(r => r.parcelNumber || r.shipmentNumber)
         .map(r => r.parcelNumber || r.shipmentNumber!) || [];
       
-      // If no shipment numbers were returned but we have cartons, generate mock tracking numbers
-      // This handles cases where the batch status API fails but shipments were created
+      // If no shipment numbers were returned but we have cartons, use "PENDING" placeholders
+      // The real tracking numbers will be visible on the label PDF barcodes
       if (shipmentNumbers.length === 0 && cartons.length > 0) {
-        console.log('No shipment numbers from PPL API, generating placeholder tracking numbers for', cartons.length, 'cartons');
-        // Generate placeholder tracking numbers based on batch ID
-        const batchIdNumeric = batchId.replace(/[^0-9]/g, '').slice(0, 8) || '80392335';
-        shipmentNumbers = cartons.map((_, index) => `${batchIdNumeric}${String(20 + index).padStart(2, '0')}`);
-        console.log('Generated placeholder tracking numbers:', shipmentNumbers);
+        console.log('⚠️ No shipment numbers from PPL API (batch status failed)');
+        console.log('⚠️ Real tracking numbers are on the label barcodes - users should check the PDFs');
+        // Use "PENDING" to indicate tracking numbers need to be extracted from labels
+        shipmentNumbers = cartons.map((_, index) => `PENDING-${batchId.slice(0, 8)}-${index + 1}`);
+        console.log('Using temporary tracking numbers:', shipmentNumbers);
       }
       
       console.log(`Extracted/generated ${shipmentNumbers.length} shipment numbers:`, shipmentNumbers);
