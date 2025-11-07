@@ -6652,9 +6652,56 @@ export default function PickPack() {
                                       )}
                                     </div>
                                     {label?.trackingNumbers?.[0] ? (
-                                      <p className={`text-xs font-mono truncate ${isCancelled ? 'text-gray-500 line-through' : 'text-gray-600'}`}>
-                                        {label.trackingNumbers[0]}
-                                      </p>
+                                      <div className="flex items-center gap-1.5">
+                                        <p className={`text-xs font-mono truncate ${isCancelled ? 'text-gray-500 line-through' : 'text-gray-600'}`}>
+                                          {label.trackingNumbers[0]}
+                                        </p>
+                                        {/* Show edit button for PENDING tracking numbers */}
+                                        {label.trackingNumbers[0].startsWith('PENDING-') && !isCancelled && (
+                                          <button
+                                            onClick={async () => {
+                                              const trackingNumber = prompt(
+                                                `⚠️ PPL API couldn't retrieve the tracking number.\n\n` +
+                                                `Please check the barcode on the printed label and enter the tracking number:\n\n` +
+                                                `Batch ID: ${label.batchId}\n` +
+                                                `Label #${index + 1}`,
+                                                ''
+                                              );
+                                              
+                                              if (trackingNumber && trackingNumber.trim()) {
+                                                try {
+                                                  const response = await apiRequest('PATCH', `/api/shipment-labels/${label.id}/tracking`, {
+                                                    trackingNumber: trackingNumber.trim()
+                                                  });
+                                                  
+                                                  if (!response.ok) {
+                                                    throw new Error('Failed to update tracking number');
+                                                  }
+                                                  
+                                                  // Refresh labels
+                                                  await fetchShipmentLabels();
+                                                  setShipmentLabelsFromDB(prev => [...prev]);
+                                                  
+                                                  toast({
+                                                    title: "Tracking Number Updated",
+                                                    description: `Label #${index + 1} tracking number: ${trackingNumber.trim()}`,
+                                                  });
+                                                } catch (error: any) {
+                                                  toast({
+                                                    title: "Error",
+                                                    description: error.message || "Failed to update tracking number",
+                                                    variant: "destructive"
+                                                  });
+                                                }
+                                              }
+                                            }}
+                                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-100 p-0.5 rounded transition-colors"
+                                            title="Update tracking number from label barcode"
+                                          >
+                                            <Edit className="h-3 w-3" />
+                                          </button>
+                                        )}
+                                      </div>
                                     ) : (
                                       <p className="text-xs text-gray-400 italic">No label generated yet</p>
                                     )}

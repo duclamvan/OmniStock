@@ -8188,6 +8188,46 @@ Return ONLY the subject line without quotes or extra formatting.`,
     }
   });
 
+  // Update tracking number for a shipment label
+  app.patch('/api/shipment-labels/:id/tracking', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { trackingNumber } = req.body;
+      
+      if (!trackingNumber || typeof trackingNumber !== 'string' || trackingNumber.trim() === '') {
+        return res.status(400).json({ error: 'Valid tracking number is required' });
+      }
+      
+      // Get existing label
+      const existingLabel = await storage.getShipmentLabel(id);
+      if (!existingLabel) {
+        return res.status(404).json({ error: 'Shipment label not found' });
+      }
+      
+      // Update tracking numbers array - replace the first tracking number
+      const updatedTrackingNumbers = [trackingNumber.trim()];
+      
+      // Update the label
+      const label = await storage.updateShipmentLabel(id, {
+        trackingNumbers: updatedTrackingNumbers as any
+      });
+      
+      if (!label) {
+        return res.status(500).json({ error: 'Failed to update tracking number' });
+      }
+      
+      console.log(`✅ Updated tracking number for label ${id}: ${trackingNumber}`);
+      res.json({ 
+        success: true, 
+        label,
+        message: 'Tracking number updated successfully'
+      });
+    } catch (error) {
+      console.error('Error updating tracking number:', error);
+      res.status(500).json({ error: 'Failed to update tracking number' });
+    }
+  });
+
   // Cancel shipment label
   app.post('/api/shipment-labels/:id/cancel', async (req, res) => {
     try {
