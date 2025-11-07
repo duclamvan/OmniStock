@@ -8110,8 +8110,17 @@ Return ONLY the subject line without quotes or extra formatting.`,
       const { labelId } = req.params;
       const { trackingNumbers } = req.body;
 
+      // Validate tracking numbers
       if (!trackingNumbers || !Array.isArray(trackingNumbers) || trackingNumbers.length === 0) {
-        return res.status(400).json({ error: 'Invalid tracking numbers' });
+        return res.status(400).json({ error: 'Tracking numbers must be a non-empty array' });
+      }
+
+      // Validate each tracking number is a non-empty string
+      const hasInvalidNumbers = trackingNumbers.some(num => 
+        typeof num !== 'string' || num.trim().length === 0
+      );
+      if (hasInvalidNumbers) {
+        return res.status(400).json({ error: 'All tracking numbers must be non-empty strings' });
       }
 
       // Get the existing label
@@ -8120,12 +8129,15 @@ Return ONLY the subject line without quotes or extra formatting.`,
         return res.status(404).json({ error: 'Shipment label not found' });
       }
 
+      // Trim all tracking numbers
+      const trimmedNumbers = trackingNumbers.map(num => num.trim());
+
       // Update just the tracking numbers
       const updatedLabel = await storage.updateShipmentLabel(labelId, {
-        trackingNumbers
+        trackingNumbers: trimmedNumbers
       });
 
-      console.log(`✅ Updated tracking numbers for label ${labelId}:`, trackingNumbers);
+      console.log(`✅ Updated tracking numbers for label ${labelId}:`, trimmedNumbers);
 
       res.json(updatedLabel);
     } catch (error) {
