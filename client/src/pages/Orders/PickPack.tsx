@@ -6477,6 +6477,16 @@ export default function PickPack() {
                           };
                         });
                         
+                        // Find orphaned labels (labels without matching cartons)
+                        const matchedLabelIds = new Set(cartonsWithLabels.map(c => c.label?.id).filter(Boolean));
+                        const orphanedLabels = shipmentLabelsFromDB.filter(l => !matchedLabelIds.has(l.id));
+                        
+                        console.log('🏷️ Label status:', {
+                          totalLabels: shipmentLabelsFromDB.length,
+                          matchedLabels: matchedLabelIds.size,
+                          orphanedLabels: orphanedLabels.length
+                        });
+                        
                         // If no cartons but we have labels, show the labels
                         if (cartons.length === 0 && shipmentLabelsFromDB.length > 0) {
                           return shipmentLabelsFromDB.map((label, index) => (
@@ -6609,271 +6619,427 @@ export default function PickPack() {
                           ));
                         }
                         
-                        // Show cartons with their labels
-                        return cartonsWithLabels.map(({ carton, label, index }) => (
-                          <div 
-                            key={carton.id}
-                            className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-300 ease-in-out animate-in fade-in-0 slide-in-from-bottom-2 ${
-                              isCancelled
-                                ? 'bg-gradient-to-r from-gray-100 to-gray-200 border-2 border-gray-400 opacity-75'
-                                : 'bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300 hover:shadow-md hover:scale-[1.01]'
-                            }`}
-                            style={{ animationDelay: `${index * 50}ms` }}
-                            data-testid={`ppl-shipment-card-${index + 1}`}
-                          >
-                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-transform duration-300 hover:scale-110 ${
-                              isCancelled ? 'bg-gray-500' : 'bg-orange-600 shadow-lg'
-                            }`}>
-                              <span className="text-white font-bold text-sm">{index + 1}</span>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <p className={`text-sm font-semibold truncate ${isCancelled ? 'text-gray-600 line-through' : 'text-gray-900'}`}>
-                                  CZ-PPL{activePackingOrder.dobirkaAmount > 0 ? '-DOB' : ''} #{index + 1}
-                                </p>
-                                {isCancelled && (
-                                  <Badge variant="destructive" className="text-xs px-2 py-0 flex-shrink-0">
-                                    CANCELLED
-                                  </Badge>
-                                )}
-                              </div>
-                              {label?.trackingNumbers?.[0] ? (
-                                <p className={`text-xs font-mono truncate ${isCancelled ? 'text-gray-500 line-through' : 'text-gray-600'}`}>
-                                  {label.trackingNumbers[0]}
-                                </p>
-                              ) : (
-                                <p className="text-xs text-gray-400 italic">No label generated yet</p>
-                              )}
-                            </div>
-                            
-                            {/* Show Generate button ONLY for single carton shipments if no label OR label has no PDF data, Print button if label exists with PDF */}
-                            {(!label || !label.labelBase64) && !isCancelled && cartons.length === 1 ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-8 text-xs flex-shrink-0 bg-orange-100 hover:bg-orange-200 text-orange-700 border-orange-300 transition-all duration-200"
-                                onClick={async () => {
-                                  try {
-                                    setGeneratingLabelForCarton(prev => ({ ...prev, [carton.id]: true }));
-                                    console.log(`🎯 Generate clicked for carton #${index + 1}`, carton.id);
-                                    toast({
-                                      title: "Generating PPL Label...",
-                                      description: "Creating shipping label from PPL API",
-                                    });
-                                    
-                                    // Create label for this carton
-                                    const response = await apiRequest('POST', `/api/shipping/create-label-for-carton`, {
-                                      orderId: activePackingOrder.id,
-                                      cartonId: carton.id,
-                                      cartonNumber: index + 1
-                                    });
-                                    
-                                    if (!response.ok) {
-                                      const error = await response.json();
-                                      console.error('❌ Label generation failed:', error);
-                                      throw new Error(error.error || 'Failed to create label');
-                                    }
-                                    
-                                    const result = await response.json();
-                                    console.log('✅ Label generated successfully:', result);
-                                    
-                                    // Refresh data - important to fetch labels AFTER backend has saved
-                                    console.log('🔄 Step 1: Invalidating queries...');
-                                    await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-                                    await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
-                                    
-                                    console.log('🔄 Step 2: Refetching cartons...');
-                                    await refetchCartons();
-                                    
-                                    console.log('🔄 Step 3: Waiting for database commit...');
-                                    await new Promise(resolve => setTimeout(resolve, 500));
-                                    
-                                    console.log('🔄 Step 4: Fetching shipment labels...');
-                                    await fetchShipmentLabels();
-                                    
-                                    console.log('🔄 Step 5: Force re-render...');
-                                    setShipmentLabelsFromDB(prev => [...prev]);
-                                    
-                                    console.log('✅ All data refreshed');
-                                    
-                                    // Show tracking number in success message
-                                    const trackingNumber = result.trackingNumber || result.trackingNumbers?.[0];
-                                    toast({
-                                      title: "Label Generated",
-                                      description: trackingNumber 
-                                        ? `PPL shipping label created. Tracking: ${trackingNumber}`
-                                        : "PPL shipping label created successfully",
-                                    });
-                                  } catch (error: any) {
-                                    console.error('❌ Generate error:', error);
-                                    toast({
-                                      title: "Error",
-                                      description: error.message || "Failed to generate label",
-                                      variant: "destructive"
-                                    });
-                                  } finally {
-                                    setGeneratingLabelForCarton(prev => ({ ...prev, [carton.id]: false }));
-                                  }
-                                }}
-                                disabled={generatingLabelForCarton[carton.id]}
-                                data-testid={`button-generate-ppl-label-${index + 1}`}
-                              >
-                                {generatingLabelForCarton[carton.id] ? (
-                                  <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                                ) : (
-                                  <Package className="h-3.5 w-3.5 mr-1.5" />
-                                )}
-                                {generatingLabelForCarton[carton.id] ? 'Generating...' : 'Generate'}
-                              </Button>
-                            ) : label && label.labelBase64 && !isCancelled ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className={`h-8 text-xs flex-shrink-0 ${
-                                  label.trackingNumbers?.[0] && printedPPLLabels.has(label.trackingNumbers[0])
-                                    ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
-                                    : 'hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300'
-                                }`}
-                                disabled={isCancelled}
-                                onClick={async () => {
-                                  try {
-                                    console.log('🖨️ Print button clicked for label:', {
-                                      labelId: label.id,
-                                      hasLabelBase64: !!label.labelBase64,
-                                      labelBase64Length: label.labelBase64?.length,
-                                      trackingNumbers: label.trackingNumbers
-                                    });
-                                    
-                                    if (!label.labelBase64) {
-                                      console.error('❌ No labelBase64 found!');
-                                      toast({
-                                        title: "Error",
-                                        description: "Label PDF not available. The label might still be processing.",
-                                        variant: "destructive"
-                                      });
-                                      return;
-                                    }
-                                    
-                                    console.log('📄 Creating PDF blob...');
-                                    const labelBlob = new Blob(
-                                      [Uint8Array.from(atob(label.labelBase64), c => c.charCodeAt(0))],
-                                      { type: 'application/pdf' }
-                                    );
-                                    console.log('✅ Blob created, size:', labelBlob.size);
-                                    
-                                    const url = URL.createObjectURL(labelBlob);
-                                    console.log('🔗 Opening print window...');
-                                    const printWindow = window.open(url, '_blank');
-                                    
-                                    if (printWindow) {
-                                      printWindow.onload = () => {
-                                        console.log('✅ Print window loaded, triggering print dialog');
-                                        printWindow.print();
-                                        // Track that this label was printed using tracking number
-                                        const trackingNumber = label.trackingNumbers?.[0];
-                                        if (trackingNumber) {
-                                          setPrintedPPLLabels(prev => {
-                                            const newSet = new Set(prev);
-                                            newSet.add(trackingNumber);
-                                            return newSet;
+                        // Return both cartons with labels AND orphaned labels
+                        return (
+                          <>
+                            {/* Show cartons with their matched labels */}
+                            {cartonsWithLabels.map(({ carton, label, index }) => {
+                              return (
+                                <div 
+                                  key={carton.id}
+                                  className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-300 ease-in-out animate-in fade-in-0 slide-in-from-bottom-2 ${
+                                    isCancelled
+                                      ? 'bg-gradient-to-r from-gray-100 to-gray-200 border-2 border-gray-400 opacity-75'
+                                      : 'bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300 hover:shadow-md hover:scale-[1.01]'
+                                  }`}
+                                  style={{ animationDelay: `${index * 50}ms` }}
+                                  data-testid={`ppl-shipment-card-${index + 1}`}
+                                >
+                                  <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-transform duration-300 hover:scale-110 ${
+                                    isCancelled ? 'bg-gray-500' : 'bg-orange-600 shadow-lg'
+                                  }`}>
+                                    <span className="text-white font-bold text-sm">{index + 1}</span>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <p className={`text-sm font-semibold truncate ${isCancelled ? 'text-gray-600 line-through' : 'text-gray-900'}`}>
+                                        CZ-PPL{activePackingOrder.dobirkaAmount > 0 ? '-DOB' : ''} #{index + 1}
+                                      </p>
+                                      {isCancelled && (
+                                        <Badge variant="destructive" className="text-xs px-2 py-0 flex-shrink-0">
+                                          CANCELLED
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    {label?.trackingNumbers?.[0] ? (
+                                      <p className={`text-xs font-mono truncate ${isCancelled ? 'text-gray-500 line-through' : 'text-gray-600'}`}>
+                                        {label.trackingNumbers[0]}
+                                      </p>
+                                    ) : (
+                                      <p className="text-xs text-gray-400 italic">No label generated yet</p>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Show Generate button ONLY for single carton shipments if no label OR label has no PDF data, Print button if label exists with PDF */}
+                                  {(!label || !label.labelBase64) && !isCancelled && cartons.length === 1 ? (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-8 text-xs flex-shrink-0 bg-orange-100 hover:bg-orange-200 text-orange-700 border-orange-300 transition-all duration-200"
+                                      onClick={async () => {
+                                        try {
+                                          setGeneratingLabelForCarton(prev => ({ ...prev, [carton.id]: true }));
+                                          console.log(`🎯 Generate clicked for carton #${index + 1}`, carton.id);
+                                          toast({
+                                            title: "Generating PPL Label...",
+                                            description: "Creating shipping label from PPL API",
+                                          });
+                                          
+                                          // Create label for this carton
+                                          const response = await apiRequest('POST', `/api/shipping/create-label-for-carton`, {
+                                            orderId: activePackingOrder.id,
+                                            cartonId: carton.id,
+                                            cartonNumber: index + 1
+                                          });
+                                          
+                                          if (!response.ok) {
+                                            const error = await response.json();
+                                            console.error('❌ Label generation failed:', error);
+                                            throw new Error(error.error || 'Failed to create label');
+                                          }
+                                          
+                                          const result = await response.json();
+                                          console.log('✅ Label generated successfully:', result);
+                                          
+                                          // Refresh data - important to fetch labels AFTER backend has saved
+                                          console.log('🔄 Step 1: Invalidating queries...');
+                                          await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                                          await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
+                                          
+                                          console.log('🔄 Step 2: Refetching cartons...');
+                                          await refetchCartons();
+                                          
+                                          console.log('🔄 Step 3: Waiting for database commit...');
+                                          await new Promise(resolve => setTimeout(resolve, 500));
+                                          
+                                          console.log('🔄 Step 4: Fetching shipment labels...');
+                                          await fetchShipmentLabels();
+                                          
+                                          console.log('🔄 Step 5: Force re-render...');
+                                          setShipmentLabelsFromDB(prev => [...prev]);
+                                          
+                                          console.log('✅ All data refreshed');
+                                          
+                                          // Show tracking number in success message
+                                          const trackingNumber = result.trackingNumber || result.trackingNumbers?.[0];
+                                          toast({
+                                            title: "Label Generated",
+                                            description: trackingNumber 
+                                              ? `PPL shipping label created. Tracking: ${trackingNumber}`
+                                              : "PPL shipping label created successfully",
+                                          });
+                                        } catch (error: any) {
+                                          console.error('❌ Generate error:', error);
+                                          toast({
+                                            title: "Error",
+                                            description: error.message || "Failed to generate label",
+                                            variant: "destructive"
+                                          });
+                                        } finally {
+                                          setGeneratingLabelForCarton(prev => ({ ...prev, [carton.id]: false }));
+                                        }
+                                      }}
+                                      disabled={generatingLabelForCarton[carton.id]}
+                                      data-testid={`button-generate-ppl-label-${index + 1}`}
+                                    >
+                                      {generatingLabelForCarton[carton.id] ? (
+                                        <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                                      ) : (
+                                        <Package className="h-3.5 w-3.5 mr-1.5" />
+                                      )}
+                                      {generatingLabelForCarton[carton.id] ? 'Generating...' : 'Generate'}
+                                    </Button>
+                                  ) : label && label.labelBase64 && !isCancelled ? (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className={`h-8 text-xs flex-shrink-0 ${
+                                        label.trackingNumbers?.[0] && printedPPLLabels.has(label.trackingNumbers[0])
+                                          ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+                                          : 'hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300'
+                                      }`}
+                                      disabled={isCancelled}
+                                      onClick={async () => {
+                                        try {
+                                          console.log('🖨️ Print button clicked for label:', {
+                                            labelId: label.id,
+                                            hasLabelBase64: !!label.labelBase64,
+                                            labelBase64Length: label.labelBase64?.length,
+                                            trackingNumbers: label.trackingNumbers
+                                          });
+                                          
+                                          if (!label.labelBase64) {
+                                            console.error('❌ No labelBase64 found!');
+                                            toast({
+                                              title: "Error",
+                                              description: "Label PDF not available. The label might still be processing.",
+                                              variant: "destructive"
+                                            });
+                                            return;
+                                          }
+                                          
+                                          console.log('📄 Creating PDF blob...');
+                                          const labelBlob = new Blob(
+                                            [Uint8Array.from(atob(label.labelBase64), c => c.charCodeAt(0))],
+                                            { type: 'application/pdf' }
+                                          );
+                                          console.log('✅ Blob created, size:', labelBlob.size);
+                                          
+                                          const url = URL.createObjectURL(labelBlob);
+                                          console.log('🔗 Opening print window...');
+                                          const printWindow = window.open(url, '_blank');
+                                          
+                                          if (printWindow) {
+                                            printWindow.onload = () => {
+                                              console.log('✅ Print window loaded, triggering print dialog');
+                                              printWindow.print();
+                                              // Track that this label was printed using tracking number
+                                              const trackingNumber = label.trackingNumbers?.[0];
+                                              if (trackingNumber) {
+                                                setPrintedPPLLabels(prev => {
+                                                  const newSet = new Set(prev);
+                                                  newSet.add(trackingNumber);
+                                                  return newSet;
+                                                });
+                                              }
+                                              // Refresh labels to ensure UI is up to date
+                                              fetchShipmentLabels();
+                                            };
+                                          } else {
+                                            console.error('❌ Failed to open print window - might be blocked by popup blocker');
+                                            toast({
+                                              title: "Error",
+                                              description: "Could not open print window. Please allow popups for this site.",
+                                              variant: "destructive"
+                                            });
+                                          }
+                                          setTimeout(() => URL.revokeObjectURL(url), 1000);
+                                        } catch (error: any) {
+                                          console.error('❌ Print error:', error);
+                                          toast({
+                                            title: "Error",
+                                            description: error.message || "Failed to print label",
+                                            variant: "destructive"
                                           });
                                         }
-                                        // Refresh labels to ensure UI is up to date
-                                        fetchShipmentLabels();
-                                      };
-                                    } else {
-                                      console.error('❌ Failed to open print window - might be blocked by popup blocker');
-                                      toast({
-                                        title: "Error",
-                                        description: "Could not open print window. Please allow popups for this site.",
-                                        variant: "destructive"
-                                      });
-                                    }
-                                    setTimeout(() => URL.revokeObjectURL(url), 1000);
-                                  } catch (error: any) {
-                                    console.error('❌ Print error:', error);
-                                    toast({
-                                      title: "Error",
-                                      description: error.message || "Failed to print label",
-                                      variant: "destructive"
-                                    });
-                                  }
-                                }}
-                                data-testid={`button-print-ppl-label-${index + 1}`}
-                              >
-                                {label.trackingNumbers?.[0] && printedPPLLabels.has(label.trackingNumbers[0]) ? (
-                                  <>
-                                    <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-                                    Printed
-                                  </>
-                                ) : (
-                                  <>
-                                    <Printer className="h-3.5 w-3.5 mr-1.5" />
-                                    Print
-                                  </>
-                                )}
-                              </Button>
-                            ) : null}
+                                      }}
+                                      data-testid={`button-print-ppl-label-${index + 1}`}
+                                    >
+                                      {label.trackingNumbers?.[0] && printedPPLLabels.has(label.trackingNumbers[0]) ? (
+                                        <>
+                                          <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                                          Printed
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Printer className="h-3.5 w-3.5 mr-1.5" />
+                                          Print
+                                        </>
+                                      )}
+                                    </Button>
+                                  ) : null}
+                                  
+                                  {/* Delete button for each shipment */}
+                                  {!isCancelled && label && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                      onClick={async () => {
+                                        // Check if this is a multi-carton shipment
+                                        const totalLabels = shipmentLabelsFromDB.length;
+                                        let confirmMessage = `Delete label #${index + 1}?`;
+                                        
+                                        if (totalLabels > 1) {
+                                          confirmMessage = `Delete label #${index + 1}?\n\n⚠️ WARNING: This is a ${totalLabels}-label shipment. After deletion, the remaining labels will show incorrect numbering (e.g., "1/${totalLabels}" instead of "1/${totalLabels - 1}").\n\nTo get proper label numbering, you'll need to delete ALL labels and regenerate the entire shipment.\n\nYour carton data will be preserved.\n\nContinue with deletion anyway?`;
+                                        } else {
+                                          confirmMessage = `Delete this label?\n\nThis will cancel the shipment with PPL. Your carton data will be preserved.`;
+                                        }
+                                        
+                                        if (confirm(confirmMessage)) {
+                                          try {
+                                            setDeletingShipment(prev => ({ ...prev, [label.id]: true }));
+                                            await apiRequest('DELETE', `/api/shipment-labels/${label.id}`, {});
+                                            
+                                            // Refresh data to update UI
+                                            console.log('🔄 Refreshing after delete...');
+                                            await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                                            await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
+                                            await refetchCartons();
+                                            await new Promise(resolve => setTimeout(resolve, 300));
+                                            await fetchShipmentLabels();
+                                            setShipmentLabelsFromDB(prev => [...prev]);
+                                            console.log('✅ Delete refresh complete');
+                                            
+                                            toast({ 
+                                              title: "Label Deleted",
+                                              description: totalLabels > 1 ? "Carton data preserved. Label numbering may be incorrect - consider regenerating all labels." : "Carton data preserved. You can regenerate the label if needed."
+                                            });
+                                          } catch (error) {
+                                            toast({
+                                              title: "Error",
+                                              description: "Failed to delete label",
+                                              variant: "destructive"
+                                            });
+                                          } finally {
+                                            setDeletingShipment(prev => ({ ...prev, [label.id]: false }));
+                                          }
+                                        }
+                                      }}
+                                      disabled={deletingShipment[label.id]}
+                                      data-testid={`button-delete-ppl-shipment-${index + 1}`}
+                                    >
+                                      {deletingShipment[label.id] ? (
+                                        <RefreshCw className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <X className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                  )}
+                                </div>
+                              );
+                            })}
                             
-                            {/* Delete button for each shipment */}
-                            {!isCancelled && label && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                onClick={async () => {
-                                  // Check if this is a multi-carton shipment
-                                  const totalLabels = shipmentLabelsFromDB.length;
-                                  let confirmMessage = `Delete label #${index + 1}?`;
+                            {/* Show orphaned labels (labels without matching cartons) */}
+                            {orphanedLabels.map((label, orphanIndex) => {
+                              const displayIndex = cartons.length + orphanIndex;
+                              const labelNumber = (label.labelData as any)?.cartonNumber || displayIndex + 1;
+                              
+                              return (
+                                <div 
+                                  key={label.id}
+                                  className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-300 ease-in-out animate-in fade-in-0 slide-in-from-bottom-2 ${
+                                    isCancelled
+                                      ? 'bg-gradient-to-r from-gray-100 to-gray-200 border-2 border-gray-400 opacity-75'
+                                      : 'bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-400 hover:shadow-md hover:scale-[1.01]'
+                                  }`}
+                                  style={{ animationDelay: `${displayIndex * 50}ms` }}
+                                  data-testid={`ppl-orphaned-label-${orphanIndex + 1}`}
+                                >
+                                  <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-transform duration-300 hover:scale-110 ${
+                                    isCancelled ? 'bg-gray-500' : 'bg-amber-600 shadow-lg'
+                                  }`}>
+                                    <span className="text-white font-bold text-sm">{labelNumber}</span>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <p className={`text-sm font-semibold truncate ${isCancelled ? 'text-gray-600 line-through' : 'text-gray-900'}`}>
+                                        CZ-PPL{label.labelData?.hasCOD || activePackingOrder.dobirkaAmount > 0 ? '-DOB' : ''} #{labelNumber}
+                                      </p>
+                                      <Badge variant="outline" className="text-xs px-2 py-0 flex-shrink-0 border-amber-500 text-amber-700">
+                                        No Carton
+                                      </Badge>
+                                      {isCancelled && (
+                                        <Badge variant="destructive" className="text-xs px-2 py-0 flex-shrink-0">
+                                          CANCELLED
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    {label.trackingNumbers?.[0] ? (
+                                      <p className={`text-xs font-mono truncate ${isCancelled ? 'text-gray-500 line-through' : 'text-gray-600'}`}>
+                                        {label.trackingNumbers[0]}
+                                      </p>
+                                    ) : (
+                                      <p className="text-xs text-gray-400 italic">No tracking number</p>
+                                    )}
+                                  </div>
                                   
-                                  if (totalLabels > 1) {
-                                    confirmMessage = `Delete label #${index + 1}?\n\n⚠️ WARNING: This is a ${totalLabels}-label shipment. After deletion, the remaining labels will show incorrect numbering (e.g., "1/${totalLabels}" instead of "1/${totalLabels - 1}").\n\nTo get proper label numbering, you'll need to delete ALL labels and regenerate the entire shipment.\n\nYour carton data will be preserved.\n\nContinue with deletion anyway?`;
-                                  } else {
-                                    confirmMessage = `Delete this label?\n\nThis will cancel the shipment with PPL. Your carton data will be preserved.`;
-                                  }
+                                  {/* Print button */}
+                                  {label.labelBase64 && !isCancelled && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className={`h-8 text-xs flex-shrink-0 ${
+                                        label.trackingNumbers?.[0] && printedPPLLabels.has(label.trackingNumbers[0])
+                                          ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+                                          : 'hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300'
+                                      }`}
+                                      onClick={async () => {
+                                        try {
+                                          const labelBlob = new Blob(
+                                            [Uint8Array.from(atob(label.labelBase64), c => c.charCodeAt(0))],
+                                            { type: 'application/pdf' }
+                                          );
+                                          const url = URL.createObjectURL(labelBlob);
+                                          const printWindow = window.open(url, '_blank');
+                                          if (printWindow) {
+                                            printWindow.onload = () => {
+                                              printWindow.print();
+                                              const trackingNumber = label.trackingNumbers?.[0];
+                                              if (trackingNumber) {
+                                                setPrintedPPLLabels(prev => {
+                                                  const newSet = new Set(prev);
+                                                  newSet.add(trackingNumber);
+                                                  return newSet;
+                                                });
+                                              }
+                                            };
+                                          }
+                                          setTimeout(() => URL.revokeObjectURL(url), 1000);
+                                        } catch (error) {
+                                          toast({
+                                            title: "Error",
+                                            description: "Failed to print label",
+                                            variant: "destructive"
+                                          });
+                                        }
+                                      }}
+                                      data-testid={`button-print-orphaned-label-${orphanIndex + 1}`}
+                                    >
+                                      {label.trackingNumbers?.[0] && printedPPLLabels.has(label.trackingNumbers[0]) ? (
+                                        <>
+                                          <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                                          Printed
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Printer className="h-3.5 w-3.5 mr-1.5" />
+                                          Print
+                                        </>
+                                      )}
+                                    </Button>
+                                  )}
                                   
-                                  if (confirm(confirmMessage)) {
-                                    try {
-                                      setDeletingShipment(prev => ({ ...prev, [label.id]: true }));
-                                      await apiRequest('DELETE', `/api/shipment-labels/${label.id}`, {});
-                                      
-                                      // Refresh data to update UI
-                                      console.log('🔄 Refreshing after delete...');
-                                      await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-                                      await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
-                                      await refetchCartons();
-                                      await new Promise(resolve => setTimeout(resolve, 300));
-                                      await fetchShipmentLabels();
-                                      setShipmentLabelsFromDB(prev => [...prev]);
-                                      console.log('✅ Delete refresh complete');
-                                      
-                                      toast({ 
-                                        title: "Label Deleted",
-                                        description: totalLabels > 1 ? "Carton data preserved. Label numbering may be incorrect - consider regenerating all labels." : "Carton data preserved. You can regenerate the label if needed."
-                                      });
-                                    } catch (error) {
-                                      toast({
-                                        title: "Error",
-                                        description: "Failed to delete label",
-                                        variant: "destructive"
-                                      });
-                                    } finally {
-                                      setDeletingShipment(prev => ({ ...prev, [label.id]: false }));
-                                    }
-                                  }
-                                }}
-                                disabled={deletingShipment[label.id]}
-                                data-testid={`button-delete-ppl-shipment-${index + 1}`}
-                              >
-                                {deletingShipment[label.id] ? (
-                                  <RefreshCw className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <X className="h-4 w-4" />
-                                )}
-                              </Button>
-                            )}
-                          </div>
-                        ));
+                                  {/* Delete button */}
+                                  {!isCancelled && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                      onClick={async () => {
+                                        if (confirm(`Delete label #${labelNumber}?\n\nThis will cancel the shipment with PPL.`)) {
+                                          try {
+                                            setDeletingShipment(prev => ({ ...prev, [label.id]: true }));
+                                            await apiRequest('DELETE', `/api/shipment-labels/${label.id}`, {});
+                                            
+                                            // Refresh data
+                                            await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                                            await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
+                                            await refetchCartons();
+                                            await new Promise(resolve => setTimeout(resolve, 300));
+                                            await fetchShipmentLabels();
+                                            setShipmentLabelsFromDB(prev => [...prev]);
+                                            
+                                            toast({ 
+                                              title: "Label Deleted", 
+                                              description: "Label removed successfully."
+                                            });
+                                          } catch (error) {
+                                            toast({
+                                              title: "Error",
+                                              description: "Failed to delete label",
+                                              variant: "destructive"
+                                            });
+                                          } finally {
+                                            setDeletingShipment(prev => ({ ...prev, [label.id]: false }));
+                                          }
+                                        }
+                                      }}
+                                      disabled={deletingShipment[label.id]}
+                                      data-testid={`button-delete-orphaned-label-${orphanIndex + 1}`}
+                                    >
+                                      {deletingShipment[label.id] ? (
+                                        <RefreshCw className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <X className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </>
+                        );
                       })()}
                     </div>
                   )}
