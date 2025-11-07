@@ -911,6 +911,8 @@ export default function PickPack() {
   // Track which tab the user was on when they started picking/packing
   const [originatingTab, setOriginatingTab] = useState<'overview' | 'pending' | 'picking' | 'packing' | 'ready'>('overview');
   const [showPickingCompletionModal, setShowPickingCompletionModal] = useState(false);
+  const [showPackingCompletionModal, setShowPackingCompletionModal] = useState(false);
+  const [justCompletedPackingOrderId, setJustCompletedPackingOrderId] = useState<string | null>(null);
   const [showItemOverviewModal, setShowItemOverviewModal] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState('');
   const [overviewBarcodeInput, setOverviewBarcodeInput] = useState(''); // Barcode for overview modal
@@ -4600,8 +4602,12 @@ export default function PickPack() {
       // Suppress notifications in picking/packing mode - but this is completion so allow sound
       
       playSound('complete');
-      setActivePackingOrder(null);
-      setSelectedTab('ready');
+      
+      // Store the completed order ID to exclude from next searches
+      setJustCompletedPackingOrderId(activePackingOrder.id);
+      
+      // Show completion modal instead of immediately switching tabs
+      setShowPackingCompletionModal(true);
     } catch (error) {
       console.error('Error completing packing:', error);
       // Suppress error notifications in picking/packing mode
@@ -5021,6 +5027,166 @@ export default function PickPack() {
     // Stop timer when packing is complete
     if (canCompletePacking && isPackingTimerRunning) {
       setIsPackingTimerRunning(false);
+    }
+
+    // Show completion modal if packing is done
+    if (showPackingCompletionModal) {
+      // Calculate next action buttons based on available orders
+      const pendingOrders = transformedOrders.filter(o => 
+        o.id !== justCompletedPackingOrderId &&
+        o.pickStatus === 'not_started' && 
+        o.status === 'to_fulfill'
+      );
+      const packingOrders = transformedOrders.filter(o => 
+        o.id !== justCompletedPackingOrderId &&
+        o.pickStatus === 'completed' && 
+        o.packStatus === 'not_started' && 
+        o.status === 'to_fulfill'
+      );
+      const hasOrdersToProcess = pendingOrders.length > 0 || packingOrders.length > 0;
+
+      return (
+        <div className="max-w-3xl mx-auto px-3 lg:px-0 py-8">
+          <Card className="shadow-2xl border-0 overflow-hidden bg-gradient-to-br from-purple-50 to-indigo-50">
+            <div className="bg-gradient-to-r from-purple-500 to-indigo-500 p-1 lg:p-2"></div>
+            <CardContent className="p-6 sm:p-10 lg:p-16 text-center">
+              <div className="bg-gradient-to-br from-purple-400 to-indigo-400 rounded-full w-20 h-20 sm:w-24 sm:h-24 lg:w-32 lg:h-32 mx-auto mb-4 lg:mb-8 flex items-center justify-center shadow-xl animate-bounce">
+                <CheckCircle className="h-12 w-12 sm:h-16 sm:w-16 lg:h-20 lg:w-20 text-white" />
+              </div>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black mb-2 lg:mb-4 text-gray-800">
+                🎉 Packing Complete!
+              </h2>
+              <p className="text-base sm:text-lg lg:text-xl text-gray-600 mb-4 lg:mb-8">
+                Excellent work! Order {activePackingOrder.orderId} is ready to ship
+              </p>
+              
+              <div className="bg-white rounded-xl p-4 lg:p-6 mb-4 lg:mb-8 shadow-inner">
+                <div className="grid grid-cols-3 gap-2 lg:gap-4">
+                  <div>
+                    <p className="text-xs lg:text-sm text-gray-500">Time</p>
+                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-600">{formatTimer(packingTimer)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs lg:text-sm text-gray-500">Cartons</p>
+                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-indigo-600">{cartons.length}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs lg:text-sm text-gray-500">Weight</p>
+                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">{packageWeight}kg</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                {/* Pick Next Order - Show if there are pending orders */}
+                {pendingOrders.length > 0 && (
+                  <Button 
+                    size="lg" 
+                    onClick={() => {
+                      // Find best next order to pick
+                      const nextOrder = pendingOrders
+                        .map(order => ({
+                          order,
+                          score: calculateOrderScore(order)
+                        }))
+                        .sort((a, b) => b.score - a.score)
+                        .map(item => item.order)[0];
+                      
+                      if (nextOrder) {
+                        setShowPackingCompletionModal(false);
+                        setActivePackingOrder(null);
+                        setPackingTimer(0);
+                        startPicking(nextOrder);
+                        setSelectedTab('picking');
+                      }
+                    }}
+                    className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-xl transform hover:scale-105 transition-all"
+                    data-testid="button-pick-next-order"
+                  >
+                    <PlayCircle className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 mr-2 lg:mr-3" />
+                    PICK NEXT ORDER
+                  </Button>
+                )}
+                
+                {/* Pack Next Order - Show if there are orders ready to pack */}
+                {packingOrders.length > 0 && (
+                  <Button 
+                    size="lg" 
+                    onClick={() => {
+                      // Find next order to pack
+                      const nextOrder = packingOrders[0];
+                      
+                      if (nextOrder) {
+                        setShowPackingCompletionModal(false);
+                        setActivePackingOrder(null);
+                        setPackingTimer(0);
+                        startPacking(nextOrder);
+                        setSelectedTab('packing');
+                      }
+                    }}
+                    className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-xl transform hover:scale-105 transition-all"
+                    data-testid="button-pack-next-order"
+                  >
+                    <PackageCheck className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 mr-2 lg:mr-3" />
+                    PACK NEXT ORDER
+                  </Button>
+                )}
+                
+                {/* Go To Ready To Ship - Show if all picking/packing is done OR as alternative action */}
+                {!hasOrdersToProcess ? (
+                  <Button 
+                    size="lg" 
+                    onClick={() => {
+                      setShowPackingCompletionModal(false);
+                      setActivePackingOrder(null);
+                      setPackingTimer(0);
+                      setSelectedTab('ready');
+                    }}
+                    className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-xl transform hover:scale-105 transition-all"
+                    data-testid="button-go-to-ready"
+                  >
+                    <Truck className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 mr-2 lg:mr-3" />
+                    GO TO READY TO SHIP
+                  </Button>
+                ) : (
+                  <Button 
+                    size="lg" 
+                    variant="outline"
+                    onClick={() => {
+                      setShowPackingCompletionModal(false);
+                      setActivePackingOrder(null);
+                      setPackingTimer(0);
+                      setSelectedTab('ready');
+                    }}
+                    className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold border-2 border-green-600 text-green-600 hover:bg-green-50 shadow-lg"
+                    data-testid="button-go-to-ready"
+                  >
+                    <Truck className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 mr-2 lg:mr-3" />
+                    GO TO READY TO SHIP
+                  </Button>
+                )}
+                
+                {/* Close button - Stay in packing tab */}
+                <Button 
+                  size="lg" 
+                  variant="outline"
+                  onClick={() => {
+                    setShowPackingCompletionModal(false);
+                    setActivePackingOrder(null);
+                    setPackingTimer(0);
+                    setSelectedTab('packing');
+                  }}
+                  className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold border-2 border-gray-400 text-gray-600 hover:bg-gray-50 shadow-lg"
+                  data-testid="button-close-modal"
+                >
+                  <X className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 mr-2 lg:mr-3" />
+                  CLOSE
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
     }
 
     return (
