@@ -8029,7 +8029,6 @@ Return ONLY the subject line without quotes or extra formatting.`,
         labelBase64,
         labelData: {
           pplShipment,
-          batchStatus,
           cartonNumber,
           referenceId,
           hasCOD
