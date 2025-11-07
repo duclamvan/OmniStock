@@ -9383,12 +9383,28 @@ export default function PickPack() {
                       const readyOrders = getOrdersByStatus('ready')
                         .filter(order => !ordersReturnedToPacking.has(order.id)); // Filter out orders being returned
                       
+                      // Helper to safely get address string (handles both string and object formats)
+                      const getAddressString = (order: any): string => {
+                        if (!order.shippingAddress) return '';
+                        if (typeof order.shippingAddress === 'string') {
+                          return order.shippingAddress.toLowerCase();
+                        }
+                        // If it's an object, concatenate relevant fields
+                        const addr = order.shippingAddress;
+                        return [
+                          addr.street,
+                          addr.city,
+                          addr.country,
+                          addr.zipCode
+                        ].filter(Boolean).join(' ').toLowerCase();
+                      };
+                      
                       // Categorize orders
                       const czechiaSlovakia = readyOrders.filter(order => {
                         // Check order ID prefix or notes content for CZ orders
                         const orderId = order.orderId?.toLowerCase() || '';
                         const notes = order.notes?.toLowerCase() || '';
-                        const address = order.shippingAddress?.toLowerCase() || '';
+                        const address = getAddressString(order);
                         
                         return orderId.includes('-cz') || 
                                notes.includes('czech/slovak') || 
@@ -9405,7 +9421,7 @@ export default function PickPack() {
                         // Check order ID prefix or notes content for DE orders
                         const orderId = order.orderId?.toLowerCase() || '';
                         const notes = order.notes?.toLowerCase() || '';
-                        const address = order.shippingAddress?.toLowerCase() || '';
+                        const address = getAddressString(order);
                         const isCzechSlovak = czechiaSlovakia.includes(order);
                         
                         return !isCzechSlovak && (
