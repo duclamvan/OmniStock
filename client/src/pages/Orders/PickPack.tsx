@@ -5104,7 +5104,7 @@ export default function PickPack() {
                     data-testid="button-pick-next-order"
                   >
                     <PlayCircle className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 mr-2 lg:mr-3" />
-                    PICK NEXT ORDER
+                    PICK NEXT ORDER ({pendingOrders.length})
                   </Button>
                 )}
                 
@@ -5128,43 +5128,48 @@ export default function PickPack() {
                     data-testid="button-pack-next-order"
                   >
                     <PackageCheck className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 mr-2 lg:mr-3" />
-                    PACK NEXT ORDER
+                    PACK NEXT ORDER ({packingOrders.length})
                   </Button>
                 )}
                 
                 {/* Go To Ready To Ship - Show if all picking/packing is done OR as alternative action */}
-                {!hasOrdersToProcess ? (
-                  <Button 
-                    size="lg" 
-                    onClick={() => {
-                      setShowPackingCompletionModal(false);
-                      setActivePackingOrder(null);
-                      setPackingTimer(0);
-                      setSelectedTab('ready');
-                    }}
-                    className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-xl transform hover:scale-105 transition-all"
-                    data-testid="button-go-to-ready"
-                  >
-                    <Truck className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 mr-2 lg:mr-3" />
-                    GO TO READY TO SHIP
-                  </Button>
-                ) : (
-                  <Button 
-                    size="lg" 
-                    variant="outline"
-                    onClick={() => {
-                      setShowPackingCompletionModal(false);
-                      setActivePackingOrder(null);
-                      setPackingTimer(0);
-                      setSelectedTab('ready');
-                    }}
-                    className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold border-2 border-green-600 text-green-600 hover:bg-green-50 shadow-lg"
-                    data-testid="button-go-to-ready"
-                  >
-                    <Truck className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 mr-2 lg:mr-3" />
-                    GO TO READY TO SHIP
-                  </Button>
-                )}
+                {(() => {
+                  const readyOrders = transformedOrders.filter(o => 
+                    o.status === 'ready_to_ship' && o.packStatus === 'completed'
+                  );
+                  return !hasOrdersToProcess ? (
+                    <Button 
+                      size="lg" 
+                      onClick={() => {
+                        setShowPackingCompletionModal(false);
+                        setActivePackingOrder(null);
+                        setPackingTimer(0);
+                        setSelectedTab('ready');
+                      }}
+                      className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-xl transform hover:scale-105 transition-all"
+                      data-testid="button-go-to-ready"
+                    >
+                      <Truck className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 mr-2 lg:mr-3" />
+                      GO TO READY TO SHIP ({readyOrders.length})
+                    </Button>
+                  ) : (
+                    <Button 
+                      size="lg" 
+                      variant="outline"
+                      onClick={() => {
+                        setShowPackingCompletionModal(false);
+                        setActivePackingOrder(null);
+                        setPackingTimer(0);
+                        setSelectedTab('ready');
+                      }}
+                      className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold border-2 border-green-600 text-green-600 hover:bg-green-50 shadow-lg"
+                      data-testid="button-go-to-ready"
+                    >
+                      <Truck className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 mr-2 lg:mr-3" />
+                      GO TO READY TO SHIP ({readyOrders.length})
+                    </Button>
+                  );
+                })()}
                 
                 {/* Close button - Stay in packing tab */}
                 <Button 
