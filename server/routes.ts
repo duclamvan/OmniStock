@@ -7409,29 +7409,21 @@ Return ONLY the subject line without quotes or extra formatting.`,
         }
       });
 
-      // Poll for batch status
-      let attempts = 0;
-      const maxAttempts = 30;
-      let batchStatus;
-      
-      while (attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        batchStatus = await getPPLBatchStatus(batchId);
-        
-        if (batchStatus.status === 'Finished' || batchStatus.status === 'Error') {
-          break;
+      // Get shipment numbers from batch status
+      let shipmentNumbers: string[] = [];
+      try {
+        const batchStatus = await getPPLBatchStatus(batchId);
+        console.log('📦 Batch status response:', JSON.stringify(batchStatus, null, 2));
+        if (batchStatus.items && Array.isArray(batchStatus.items)) {
+          shipmentNumbers = batchStatus.items
+            .filter(item => item.shipmentNumber)
+            .map(item => item.shipmentNumber!);
+          console.log('✅ Extracted shipment numbers:', shipmentNumbers);
         }
-        attempts++;
+      } catch (statusError) {
+        console.log('⚠️ Could not get batch status:', statusError);
+        // Continue with empty tracking numbers - will use placeholder
       }
-
-      if (batchStatus?.status !== 'Finished') {
-        throw new Error('Shipment creation timed out or failed');
-      }
-
-      // Get shipment numbers - prefer parcelNumber (actual tracking #) over shipmentNumber (reference)
-      const shipmentNumbers = batchStatus.shipmentResults
-        ?.filter(r => r.parcelNumber || r.shipmentNumber)
-        .map(r => r.parcelNumber || r.shipmentNumber!) || [];
 
       // Get label PDF
       const label = await getPPLLabel(batchId, 'pdf');
@@ -7701,33 +7693,21 @@ Return ONLY the subject line without quotes or extra formatting.`,
           }
         });
 
-        // Poll for batch status (with fallback if PPL status API fails)
-        let batchStatus;
+        // Get shipment numbers from batch status (with fallback if API fails)
         let shipmentNumbers: string[] = [];
         
         try {
-          let attempts = 0;
-          const maxAttempts = 30;
-          
-          while (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            batchStatus = await getPPLBatchStatus(batchId);
-            
-            if (batchStatus.status === 'Finished' || batchStatus.status === 'Error') {
-              break;
-            }
-            attempts++;
-          }
-
-          if (batchStatus?.status === 'Finished') {
-            shipmentNumbers = batchStatus.shipmentResults
-              ?.filter(r => r.shipmentNumber)
-              .map(r => r.shipmentNumber) || [];
+          const batchStatus = await getPPLBatchStatus(batchId);
+          console.log('📦 Batch status response:', JSON.stringify(batchStatus, null, 2));
+          if (batchStatus.items && Array.isArray(batchStatus.items)) {
+            shipmentNumbers = batchStatus.items
+              .filter(item => item.shipmentNumber)
+              .map(item => item.shipmentNumber!);
+            console.log('✅ Extracted shipment numbers:', shipmentNumbers);
           }
         } catch (statusError) {
-          // PPL status API sometimes returns 500 errors even when batch was created successfully
-          // Skip status polling and try to get the label directly
-          console.log('PPL batch status check failed (this is a known PPL API issue), attempting to retrieve label directly:', statusError);
+          // PPL status API sometimes fails - continue with label retrieval anyway
+          console.log('⚠️ PPL batch status check failed, attempting to retrieve label directly:', statusError);
         }
 
         // Get label PDF (this usually works even when status API fails)
@@ -7744,7 +7724,6 @@ Return ONLY the subject line without quotes or extra formatting.`,
           labelBase64,
           labelData: {
             pplShipment,
-            batchStatus,
             cartonNumber: nextCartonNumber,
             referenceId
           },
@@ -9024,14 +9003,16 @@ Return ONLY the subject line without quotes or extra formatting.`,
 
       const batchId = order.pplBatchId;
 
-      // Try to get batch status first to check if shipment is ready
+      // Try to get batch status first to check if shipment is ready and get tracking numbers
       let shipmentNumbers: string[] = [];
       try {
         const batchStatus = await getPPLBatchStatus(batchId);
-        if (batchStatus.status === 'Finished' && batchStatus.shipmentResults) {
-          shipmentNumbers = batchStatus.shipmentResults
-            .filter(r => r.shipmentNumber)
-            .map(r => r.shipmentNumber!);
+        console.log('📦 Batch status response:', JSON.stringify(batchStatus, null, 2));
+        if (batchStatus.items && Array.isArray(batchStatus.items)) {
+          shipmentNumbers = batchStatus.items
+            .filter(item => item.shipmentNumber)
+            .map(item => item.shipmentNumber!);
+          console.log('✅ Extracted shipment numbers:', shipmentNumbers);
         }
       } catch (statusError) {
         console.log('Could not get batch status, attempting label retrieval anyway:', statusError);

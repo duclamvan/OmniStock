@@ -174,14 +174,18 @@ export interface PPLCreateShipmentResponse {
 }
 
 export interface PPLBatchStatus {
-  batchId: string;
-  status: 'InProgress' | 'Finished' | 'Error';
-  shipmentResults?: Array<{
-    referenceId: string;
+  items?: Array<{
+    referenceId?: string;
     shipmentNumber?: string;
-    parcelNumber?: string; // Actual tracking number for the parcel
+    insuranceCurrency?: string;
+    insurancePrice?: number;
+    labelUrl?: string;
+    importState?: string;
     errorMessage?: string;
+    errorCode?: string;
+    relatedItems?: any[];
   }>;
+  completeLabel?: any;
 }
 
 export interface PPLLabel {
@@ -306,7 +310,7 @@ export async function createPPLShipment(request: PPLCreateShipmentRequest): Prom
  * Get PPL batch status
  */
 export async function getPPLBatchStatus(batchId: string): Promise<PPLBatchStatus> {
-  return pplRequest<PPLBatchStatus>('GET', `/shipment/batch/${batchId}/status`);
+  return pplRequest<PPLBatchStatus>('GET', `/shipment/batch/${batchId}`);
 }
 
 
