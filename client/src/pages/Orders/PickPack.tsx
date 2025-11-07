@@ -4501,24 +4501,39 @@ export default function PickPack() {
       // For regular items, check if the item has been verified the required quantity
       return (verifiedItems[item.id] || 0) >= item.quantity;
     }) : false;
-    const needsFragileProtection = currentCarton?.isFragile || false;
     
-    // Check each required checkbox
+    // Check each required checkbox (only check what's actually visible in the UI)
     const missingChecks = [];
-    if (!(packingChecklist.itemsVerified || allItemsVerified)) missingChecks.push('Items Verification');
-    if (!packingChecklist.packingSlipIncluded) missingChecks.push('Packing Slip');
-    if (!packingChecklist.boxSealed) missingChecks.push('Box Sealing');
-    if (!packingChecklist.promotionalMaterials) missingChecks.push('Promotional Materials');
-    if (needsFragileProtection && !packingChecklist.fragileProtected) missingChecks.push('Fragile Protection');
     
-    // Multi-carton validation
-    if (cartons.length === 0) missingChecks.push('At least one carton');
+    // 1. Items verification
+    if (!(packingChecklist.itemsVerified || allItemsVerified)) {
+      missingChecks.push('Items Verification');
+    }
+    
+    // 2. Packing list printed
+    if (!printedDocuments.packingList) {
+      missingChecks.push('Packing List');
+    }
+    
+    // 3. Multi-carton validation
+    if (cartons.length === 0) {
+      missingChecks.push('At least one carton');
+    }
+    
     const cartonsWithoutType = cartons.filter(c => !c.cartonId && c.cartonType !== 'non-company');
-    if (cartonsWithoutType.length > 0) missingChecks.push(`Carton type for ${cartonsWithoutType.length} carton(s)`);
+    if (cartonsWithoutType.length > 0) {
+      missingChecks.push(`Carton type for ${cartonsWithoutType.length} carton(s)`);
+    }
+    
     const cartonsWithoutWeight = cartons.filter(c => !c.weight || parseFloat(c.weight) <= 0);
-    if (cartonsWithoutWeight.length > 0) missingChecks.push(`Weight for ${cartonsWithoutWeight.length} carton(s)`);
+    if (cartonsWithoutWeight.length > 0) {
+      missingChecks.push(`Weight for ${cartonsWithoutWeight.length} carton(s)`);
+    }
+    
     const cartonsWithoutLabel = cartons.filter(c => !c.labelPrinted);
-    if (cartonsWithoutLabel.length > 0) missingChecks.push(`Label for ${cartonsWithoutLabel.length} carton(s)`);
+    if (cartonsWithoutLabel.length > 0) {
+      missingChecks.push(`Label for ${cartonsWithoutLabel.length} carton(s)`);
+    }
     
     if (missingChecks.length > 0) {
       toast({
@@ -4991,17 +5006,6 @@ export default function PickPack() {
       return (verifiedItems[item.id] || 0) >= item.quantity;
     }) : false;
     
-    // Simplified packing completion check
-    const documentsReady = printedDocuments.packingList;
-    const cartonSelected = selectedCarton !== null;
-    const checklistComplete = (packingChecklist.itemsVerified || allItemsVerified) && 
-                             packingChecklist.packingSlipIncluded && 
-                             packingChecklist.boxSealed;
-    const labelReady = true;
-    
-    // Check if fragile items need protection
-    const needsFragileProtection = currentCarton?.isFragile || false;
-    
     // Multi-carton validation: all cartons must have type, weight, and label
     const allCartonsValid = cartons.length > 0 && cartons.every(carton => 
       (carton.cartonType === 'company' ? !!carton.cartonId : carton.cartonType === 'non-company') &&
@@ -5009,13 +5013,10 @@ export default function PickPack() {
       carton.labelPrinted
     );
     
-    // ALL required checkboxes must be checked
+    // Packing completion check - only check what's visible in the UI
     const canCompletePacking = (packingChecklist.itemsVerified || allItemsVerified) && 
-                              packingChecklist.packingSlipIncluded && 
-                              packingChecklist.boxSealed &&
-                              packingChecklist.promotionalMaterials &&
-                              (!needsFragileProtection || packingChecklist.fragileProtected) && // Only required if fragile
-                              allCartonsValid; // All cartons must be valid
+                              printedDocuments.packingList && 
+                              allCartonsValid;
     
     // Stop timer when packing is complete
     if (canCompletePacking && isPackingTimerRunning) {
