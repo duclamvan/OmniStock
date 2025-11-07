@@ -7383,18 +7383,12 @@ Return ONLY the subject line without quotes or extra formatting.`,
         pplShipment.shipmentSet = {
           numberOfShipments: existingCartons.length,
           shipmentSetItems: existingCartons.map((carton) => ({
-            shipmentNumber: `${order.orderId}-${carton.cartonNumber}`,
-            weighedShipmentInfo: {
-              weight: carton.weight ? parseFloat(carton.weight.toString()) : (order.finalWeight ? parseFloat(order.finalWeight.toString()) / existingCartons.length : 1.0)
-            }
+            shipmentNumber: `${order.orderId}-${carton.cartonNumber}`
+            // Weight removed as per user requirement - PPL doesn't need weight input
           }))
         };
-      } else {
-        // Single shipment - use traditional weighedShipmentInfo
-        pplShipment.weighedShipmentInfo = order.finalWeight ? {
-          weight: parseFloat(order.finalWeight.toString())
-        } : undefined;
       }
+      // Weight removed for single shipment as well - PPL doesn't need weight input
 
       // Create shipment
       const { batchId } = await createPPLShipment({
@@ -7671,11 +7665,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
             phone: shippingAddress.tel || customer?.phone || undefined,
             email: shippingAddress.email || customer?.email || undefined
           },
-          // Use traditional weighedShipmentInfo for single carton
-          // (shipmentSet is only for 2+ cartons in same batch)
-          weighedShipmentInfo: {
-            weight: cartonWeight
-          },
+          // Weight removed as per user requirement - PPL doesn't need weight input
           // Only include COD on the first shipment (already stored in order)
           cashOnDelivery: undefined
         };
@@ -7944,12 +7934,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
         })() : undefined
       };
       
-      // Only include weight if it's actually provided
-      if (cartonWeight !== null && cartonWeight > 0) {
-        pplShipment.weighedShipmentInfo = {
-          weight: cartonWeight
-        };
-      }
+      // Weight removed as per user requirement - PPL doesn't need weight input
 
       // 🔄 NEW APPROACH: Create batch and extract tracking numbers from response
       console.log('🚀 Creating PPL batch...');
@@ -8651,13 +8636,8 @@ Return ONLY the subject line without quotes or extra formatting.`,
             shipmentSetItems: cartons.map((carton, index) => {
               const item: any = {
                 referenceId: `${order.orderId}-${carton.cartonNumber}`
+                // Weight removed as per user requirement - PPL doesn't need weight input
               };
-              // Only include weight if it's actually provided
-              if (carton.weight && parseFloat(carton.weight) > 0) {
-                item.weighedShipmentInfo = {
-                  weight: parseFloat(carton.weight)
-                };
-              }
               return item;
             })
           }
@@ -8709,12 +8689,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
           ]
         };
         
-        // Only include weight if it's actually provided
-        if (cartons[0].weight && parseFloat(cartons[0].weight) > 0) {
-          singleShipment.weighedShipmentInfo = {
-            weight: parseFloat(cartons[0].weight)
-          };
-        }
+        // Weight removed as per user requirement - PPL doesn't need weight input
         
         shipments.push(singleShipment);
       }
