@@ -4997,14 +4997,15 @@ export default function PickPack() {
     const progress = (activePackingOrder.packedItems / activePackingOrder.totalItems) * 100;
     const currentCarton = packingRecommendation?.cartons.find(c => c.id === selectedCarton);
     // Check if all items are verified, including bundle components
-    const allItemsVerified = currentCarton ? currentCarton.items.every(item => {
+    // IMPORTANT: Check activePackingOrder.items (what's shown in UI), NOT currentCarton.items
+    const allItemsVerified = activePackingOrder.items.every(item => {
       if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
         // For bundles, check if all components have been verified the required number of times
         return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
       }
       // For regular items, check if the item has been verified the required quantity
       return (verifiedItems[item.id] || 0) >= item.quantity;
-    }) : false;
+    });
     
     // Multi-carton validation: all cartons must have type, weight, and label
     const allCartonsValid = cartons.length > 0 && cartons.every(carton => 
