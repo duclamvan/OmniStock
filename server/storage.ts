@@ -1137,7 +1137,8 @@ export class DatabaseStorage implements IStorage {
         ...row.order,
         customerName: row.customer?.name || 'Unknown Customer',
         // Use joined address object if available, otherwise fall back to legacy string address
-        shippingAddress: row.shippingAddress ?? row.order.shippingAddress,
+        // Always ensure shippingAddress is defined (never undefined) to prevent runtime errors
+        shippingAddress: row.shippingAddress ?? row.order.shippingAddress ?? null,
         // Map database status to frontend status based on pick/pack status
         status: this.getPickPackStatus(row.order),
         // Explicitly include dobírka fields for COD orders
