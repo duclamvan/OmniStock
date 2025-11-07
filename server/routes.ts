@@ -8711,25 +8711,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       const batchId = batchResult.batchId;
       console.log(`✅ PPL batch created: ${batchId}`);
 
-      // Get tracking numbers from batch status endpoint
-      let shipmentNumbers: string[] = [];
-      try {
-        console.log('📊 Fetching batch status to get tracking numbers...');
-        const batchStatus = await getPPLBatchStatus(batchId);
-        console.log('📦 Batch status response:', JSON.stringify(batchStatus, null, 2));
-        
-        if (batchStatus.items && Array.isArray(batchStatus.items)) {
-          shipmentNumbers = batchStatus.items
-            .filter(item => item.shipmentNumber)
-            .map(item => item.shipmentNumber!);
-          console.log(`✅ Extracted ${shipmentNumbers.length} tracking number(s):`, shipmentNumbers);
-        }
-      } catch (statusError: any) {
-        console.log('⚠️ Could not get batch status:', statusError.message);
-        // Continue with empty tracking numbers - will use placeholders
-      }
-
-      // Get the label PDF
+      // Get the label PDF first (it needs to be ready before batch status works)
       let label;
       try {
         console.log('📄 Retrieving PPL label...');
@@ -8742,6 +8724,38 @@ Return ONLY the subject line without quotes or extra formatting.`,
           batchId,
           labelError: labelError.message
         });
+      }
+
+      // Now try to get tracking numbers from batch status endpoint (after label is ready)
+      // Add retry logic since PPL may need time to process the batch
+      let shipmentNumbers: string[] = [];
+      const maxStatusRetries = 3;
+      const statusRetryDelay = 2000;
+      
+      for (let attempt = 1; attempt <= maxStatusRetries; attempt++) {
+        try {
+          console.log(`📊 Fetching batch status (attempt ${attempt}/${maxStatusRetries})...`);
+          const batchStatus = await getPPLBatchStatus(batchId);
+          console.log('📦 Batch status response:', JSON.stringify(batchStatus, null, 2));
+          
+          if (batchStatus.items && Array.isArray(batchStatus.items)) {
+            shipmentNumbers = batchStatus.items
+              .filter(item => item.shipmentNumber)
+              .map(item => item.shipmentNumber!);
+            console.log(`✅ Extracted ${shipmentNumbers.length} tracking number(s):`, shipmentNumbers);
+            break; // Success - exit retry loop
+          }
+        } catch (statusError: any) {
+          console.log(`⚠️ Attempt ${attempt}/${maxStatusRetries} failed:`, statusError.message);
+          
+          if (attempt < maxStatusRetries) {
+            console.log(`⏳ Retrying in ${statusRetryDelay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, statusRetryDelay));
+          } else {
+            console.log('⚠️ All attempts failed - will use placeholder tracking numbers');
+            // Continue with empty tracking numbers - will use placeholders
+          }
+        }
       }
 
       // If we STILL don't have tracking numbers, use placeholders
