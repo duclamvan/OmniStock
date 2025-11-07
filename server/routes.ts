@@ -8711,11 +8711,22 @@ Return ONLY the subject line without quotes or extra formatting.`,
       const batchId = batchResult.batchId;
       console.log(`✅ PPL batch created: ${batchId}`);
 
-      // Get tracking numbers from batch creation response if available
-      let shipmentNumbers: string[] = batchResult.trackingNumbers || [];
-      
-      if (shipmentNumbers.length > 0) {
-        console.log(`🎯 ${shipmentNumbers.length} tracking number(s) from batch creation:`, shipmentNumbers);
+      // Get tracking numbers from batch status endpoint
+      let shipmentNumbers: string[] = [];
+      try {
+        console.log('📊 Fetching batch status to get tracking numbers...');
+        const batchStatus = await getPPLBatchStatus(batchId);
+        console.log('📦 Batch status response:', JSON.stringify(batchStatus, null, 2));
+        
+        if (batchStatus.items && Array.isArray(batchStatus.items)) {
+          shipmentNumbers = batchStatus.items
+            .filter(item => item.shipmentNumber)
+            .map(item => item.shipmentNumber!);
+          console.log(`✅ Extracted ${shipmentNumbers.length} tracking number(s):`, shipmentNumbers);
+        }
+      } catch (statusError: any) {
+        console.log('⚠️ Could not get batch status:', statusError.message);
+        // Continue with empty tracking numbers - will use placeholders
       }
 
       // Get the label PDF
