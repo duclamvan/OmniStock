@@ -7428,10 +7428,10 @@ Return ONLY the subject line without quotes or extra formatting.`,
         throw new Error('Shipment creation timed out or failed');
       }
 
-      // Get shipment numbers
+      // Get shipment numbers - prefer parcelNumber (actual tracking #) over shipmentNumber (reference)
       const shipmentNumbers = batchStatus.shipmentResults
-        ?.filter(r => r.shipmentNumber)
-        .map(r => r.shipmentNumber) || [];
+        ?.filter(r => r.parcelNumber || r.shipmentNumber)
+        .map(r => r.parcelNumber || r.shipmentNumber!) || [];
 
       // Get label PDF
       const label = await getPPLLabel(batchId, 'pdf');
@@ -8018,10 +8018,10 @@ Return ONLY the subject line without quotes or extra formatting.`,
         // Don't return error yet, try to get the label
       }
 
-      // Get shipment numbers if available
+      // Get shipment numbers if available - prefer parcelNumber (actual tracking #) over shipmentNumber (reference)
       let shipmentNumbers = batchStatus?.shipmentResults
-        ?.filter(r => r.shipmentNumber)
-        .map(r => r.shipmentNumber) || [];
+        ?.filter(r => r.parcelNumber || r.shipmentNumber)
+        .map(r => r.parcelNumber || r.shipmentNumber!) || [];
       
       // If no shipment numbers were returned but we have a carton, generate placeholder tracking number
       // This handles cases where the batch status API fails but shipment was created
@@ -8779,10 +8779,10 @@ Return ONLY the subject line without quotes or extra formatting.`,
         // Don't return error yet, try to get the label
       }
 
-      // Get shipment numbers if available
+      // Get shipment numbers if available - prefer parcelNumber (actual tracking #) over shipmentNumber (reference)
       let shipmentNumbers = batchStatus?.shipmentResults
-        ?.filter(r => r.shipmentNumber)
-        .map(r => r.shipmentNumber) || [];
+        ?.filter(r => r.parcelNumber || r.shipmentNumber)
+        .map(r => r.parcelNumber || r.shipmentNumber!) || [];
       
       // If no shipment numbers were returned but we have cartons, generate mock tracking numbers
       // This handles cases where the batch status API fails but shipments were created

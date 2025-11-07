@@ -179,6 +179,7 @@ export interface PPLBatchStatus {
   shipmentResults?: Array<{
     referenceId: string;
     shipmentNumber?: string;
+    parcelNumber?: string; // Actual tracking number for the parcel
     errorMessage?: string;
   }>;
 }
