@@ -960,6 +960,7 @@ export default function PickPack() {
   const [printedOrderFiles, setPrintedOrderFiles] = useState<Set<string>>(new Set());
   const [printedPPLLabels, setPrintedPPLLabels] = useState<Set<string>>(new Set()); // Track printed PPL labels by tracking number
   const [shipmentLabelsFromDB, setShipmentLabelsFromDB] = useState<any[]>([]); // Shipment labels from database
+  const [labelPreviewData, setLabelPreviewData] = useState<{ orderId: string; labelBase64: string; trackingNumbers: string[] } | null>(null);
   
   // Loading states for shipping label operations
   const [isGeneratingAllLabels, setIsGeneratingAllLabels] = useState(false);
@@ -9821,6 +9822,12 @@ export default function PickPack() {
                                           <div className="flex items-center gap-1.5 text-xs mt-1">
                                             <CheckCircle className="h-3 w-3 text-green-500" />
                                             <span className="text-green-600 font-medium">Packed by {order.packedBy}</span>
+                                          </div>
+                                        )}
+                                        {order.trackingNumber && (
+                                          <div className="flex items-center gap-1.5 text-xs mt-1">
+                                            <Hash className="h-3 w-3 text-blue-500" />
+                                            <span className="text-blue-600 font-medium">Tracking: {order.trackingNumber}</span>
                                           </div>
                                         )}
                                         {/* Compact product list */}
