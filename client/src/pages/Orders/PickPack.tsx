@@ -1467,15 +1467,6 @@ export default function PickPack() {
     }
   }, [activePackingOrder?.id, selectedCarton, useNonCompanyCarton]);
 
-  // Auto-focus barcode input when entering picking mode
-  useEffect(() => {
-    if (activePickingOrder && barcodeInputRef.current) {
-      setTimeout(() => {
-        barcodeInputRef.current?.focus();
-      }, 100);
-    }
-  }, [activePickingOrder?.id]);
-
   // Auto-focus barcode input when opening item overview modal
   useEffect(() => {
     if (showItemOverviewModal && overviewBarcodeInputRef.current) {
@@ -1484,15 +1475,6 @@ export default function PickPack() {
       }, 100);
     }
   }, [showItemOverviewModal]);
-
-  // Auto-focus barcode input when entering packing mode
-  useEffect(() => {
-    if (activePackingOrder && barcodeInputRef.current) {
-      setTimeout(() => {
-        barcodeInputRef.current?.focus();
-      }, 100);
-    }
-  }, [activePackingOrder?.id]);
 
   // Auto-focus search field when on overview tab
   useEffect(() => {
