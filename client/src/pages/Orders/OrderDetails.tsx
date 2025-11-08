@@ -239,6 +239,12 @@ export default function OrderDetails() {
     enabled: !!id && !!order,
   });
 
+  // Fetch order cartons
+  const { data: orderCartons = [] } = useQuery<any[]>({
+    queryKey: [`/api/orders/${id}/cartons`],
+    enabled: !!id && !!order,
+  });
+
   // Prevent OrderDetails from rendering on pick-pack page
   if (location === '/orders/pick-pack') {
     return null;
@@ -1494,6 +1500,91 @@ export default function OrderDetails() {
                       <p className="font-medium text-slate-900 dark:text-slate-100 mt-1">
                         {new Date(order.shippedAt).toLocaleString()}
                       </p>
+                    </div>
+                  )}
+
+                  {/* Carton Information */}
+                  {orderCartons && orderCartons.length > 0 && (
+                    <div className="pt-3 border-t border-slate-200 dark:border-slate-700" data-testid="section-cartons">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Package className="h-4 w-4 text-slate-500" />
+                        <span className="text-slate-500 dark:text-slate-400 font-medium">
+                          Cartons: {orderCartons.length} {orderCartons.length === 1 ? 'box' : 'boxes'}
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {orderCartons.map((carton: any, index: number) => (
+                          <div 
+                            key={carton.id} 
+                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3"
+                            data-testid={`carton-${index}`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-medium text-slate-900 dark:text-slate-100">
+                                Carton #{carton.cartonNumber}
+                              </span>
+                              <Badge variant="outline" className="text-xs">
+                                {carton.cartonType === 'company' ? 'Company Box' : 'Non-Company'}
+                              </Badge>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              {carton.weight && (
+                                <div>
+                                  <span className="text-slate-500">Total Weight:</span>
+                                  <p className="font-medium text-slate-900 dark:text-slate-100">
+                                    {parseFloat(carton.weight).toFixed(2)} kg
+                                  </p>
+                                </div>
+                              )}
+                              {carton.payloadWeightKg && (
+                                <div>
+                                  <span className="text-slate-500">Items Weight:</span>
+                                  <p className="font-medium text-slate-900 dark:text-slate-100">
+                                    {parseFloat(carton.payloadWeightKg).toFixed(2)} kg
+                                  </p>
+                                </div>
+                              )}
+                              {(carton.innerLengthCm || carton.innerWidthCm || carton.innerHeightCm) && (
+                                <div className="col-span-2">
+                                  <span className="text-slate-500">Dimensions (L×W×H):</span>
+                                  <p className="font-medium text-slate-900 dark:text-slate-100">
+                                    {carton.innerLengthCm ? parseFloat(carton.innerLengthCm).toFixed(1) : '?'} × {carton.innerWidthCm ? parseFloat(carton.innerWidthCm).toFixed(1) : '?'} × {carton.innerHeightCm ? parseFloat(carton.innerHeightCm).toFixed(1) : '?'} cm
+                                  </p>
+                                </div>
+                              )}
+                              {carton.trackingNumber && (
+                                <div className="col-span-2">
+                                  <span className="text-slate-500">Tracking:</span>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <code className="text-xs bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded font-mono">
+                                      {carton.trackingNumber}
+                                    </code>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6"
+                                      onClick={() => copyToClipboard(carton.trackingNumber, "Tracking number")}
+                                    >
+                                      <Copy className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Total weight summary */}
+                      {orderCartons.some((c: any) => c.weight) && (
+                        <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium text-slate-700 dark:text-slate-300">Total Shipment Weight:</span>
+                            <span className="font-bold text-slate-900 dark:text-slate-100">
+                              {orderCartons.reduce((total: number, c: any) => total + (c.weight ? parseFloat(c.weight) : 0), 0).toFixed(2)} kg
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
