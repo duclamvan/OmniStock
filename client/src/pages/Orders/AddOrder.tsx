@@ -3000,8 +3000,8 @@ export default function AddOrder() {
                               </div>
                             )}
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 mb-0.5">
-                                <div className="font-medium text-sm text-slate-900 truncate">{product.name}</div>
+                              <div className="flex items-start gap-1.5 mb-0.5">
+                                <div className="font-medium text-sm text-slate-900 line-clamp-2 flex-1">{product.name}</div>
                               {isBestMatch && (
                                 <Badge variant="default" className="text-[10px] px-1 py-0 bg-blue-600 flex-shrink-0">
                                   Best
@@ -3015,11 +3015,6 @@ export default function AddOrder() {
                               {isBundle && (
                                 <Badge variant="outline" className="text-[10px] px-1 py-0 border-purple-500 text-purple-600 flex-shrink-0">
                                   Bundle
-                                </Badge>
-                              )}
-                              {!isService && !isBundle && frequency > 0 && (
-                                <Badge variant="secondary" className="text-[10px] px-1 py-0 flex-shrink-0">
-                                  {frequency}x
                                 </Badge>
                               )}
                             </div>
