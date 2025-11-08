@@ -9161,6 +9161,346 @@ Return ONLY the subject line without quotes or extra formatting.`,
     }
   });
 
+  // Create DHL shipping labels for an order
+  app.post('/api/orders/:orderId/dhl/create-labels', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { createDHLShipment } = await import('./services/dhlService');
+      
+      // Get order details
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      // Load default DHL sender address from settings
+      const settingsResult = await db
+        .select()
+        .from(appSettings)
+        .where(eq(appSettings.key, 'dhl_default_sender_address'))
+        .limit(1);
+      
+      if (settingsResult.length === 0 || !settingsResult[0].value) {
+        return res.status(400).json({ 
+          error: 'No default DHL sender address configured. Please set it in Shipping Management settings.' 
+        });
+      }
+
+      const senderAddress = settingsResult[0].value as any;
+
+      // Validate required sender address fields
+      const requiredFields = ['country', 'zipCode', 'city', 'street', 'name'];
+      const missingFields = requiredFields.filter(field => !senderAddress[field]);
+      
+      if (missingFields.length > 0) {
+        return res.status(400).json({ 
+          error: `Default sender address is incomplete. Missing required fields: ${missingFields.join(', ')}` 
+        });
+      }
+
+      // Load DHL account credentials from settings
+      const dhlAccountSettings = await db
+        .select()
+        .from(appSettings)
+        .where(eq(appSettings.key, 'dhl_account_credentials'))
+        .limit(1);
+      
+      let dhlAccounts;
+      if (dhlAccountSettings.length > 0 && dhlAccountSettings[0].value) {
+        dhlAccounts = dhlAccountSettings[0].value as any;
+      } else {
+        // Fallback to sandbox test account if not configured
+        console.warn('⚠️ No DHL account credentials configured in settings, using sandbox test account');
+        dhlAccounts = {
+          ekp: '2222222222', // 10-digit customer account number (sandbox)
+          participationNumber: '01' // Standard product participation
+        };
+      }
+
+      // Validate DHL account credentials
+      if (!dhlAccounts.ekp || !dhlAccounts.participationNumber) {
+        return res.status(400).json({ 
+          error: 'DHL account credentials incomplete. Please configure EKP and participation number in settings.' 
+        });
+      }
+
+      // Get cartons for the order
+      const cartons = await storage.getOrderCartons(orderId);
+      if (cartons.length === 0) {
+        return res.status(400).json({ error: 'No cartons found for this order. Please create cartons before generating DHL labels.' });
+      }
+
+      // Get order shipping address (customer/recipient)
+      let shippingAddress;
+      if (order.shippingAddressId) {
+        const addresses = await db
+          .select()
+          .from(customerShippingAddresses)
+          .where(eq(customerShippingAddresses.id, order.shippingAddressId))
+          .limit(1);
+        shippingAddress = addresses[0];
+      }
+
+      if (!shippingAddress) {
+        return res.status(400).json({ error: 'No shipping address found for order' });
+      }
+
+      // Get customer details for fallback info
+      let customer;
+      if (order.customerId) {
+        const customerResult = await db
+          .select()
+          .from(customers)
+          .where(eq(customers.id, order.customerId))
+          .limit(1);
+        customer = customerResult[0];
+      }
+
+      // Parse address to extract street name and house number
+      // Handles both combined street fields and pre-split data
+      const parseAddress = (street: string): { streetName: string; streetNumber: string } => {
+        if (!street || street.trim() === '') {
+          throw new Error('Street address is required');
+        }
+        
+        const trimmed = street.trim();
+        
+        // Try to extract house number from END of street string (European format)
+        // Matches: "Hauptstraße 123", "Main St. 45A", "Rue de la Paix 12-14"
+        const endMatch = trimmed.match(/^(.+?)\s+(\d+[\w\-\/]*\w*)$/);
+        if (endMatch) {
+          return { 
+            streetName: endMatch[1].trim(), 
+            streetNumber: endMatch[2].trim() 
+          };
+        }
+        
+        // Try to extract house number from BEGINNING of street string (US format)
+        // Matches: "123 Main St", "45A Elm Avenue", "12-14 Oak Road"
+        const beginMatch = trimmed.match(/^(\d+[\w\-\/]*)\s+(.+)$/);
+        if (beginMatch) {
+          return {
+            streetName: beginMatch[2].trim(),
+            streetNumber: beginMatch[1].trim()
+          };
+        }
+        
+        // If no number found in either position, use entire string as street name with default number
+        return { 
+          streetName: trimmed, 
+          streetNumber: '1' 
+        };
+      };
+
+      const senderParsed = parseAddress(senderAddress.street);
+      const recipientParsed = parseAddress(shippingAddress.street);
+
+      // Prepare recipient info (customer receiving the package)
+      const recipientName = shippingAddress.company?.trim() || 
+                           `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || 
+                           customer?.name || 
+                           'Unknown';
+      const contactName = shippingAddress.company?.trim() 
+                         ? `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || undefined
+                         : undefined;
+
+      // Map country name to ISO 2-letter code
+      const getCountryCode = (country: string): string => {
+        const countryUpper = country.toUpperCase();
+        if (countryUpper === 'CZECH REPUBLIC' || countryUpper === 'CZECHIA' || countryUpper === 'CZ') return 'CZ';
+        if (countryUpper === 'SLOVAKIA' || countryUpper === 'SK') return 'SK';
+        if (countryUpper === 'GERMANY' || countryUpper === 'DEUTSCHLAND' || countryUpper === 'DE') return 'DE';
+        if (countryUpper === 'AUSTRIA' || countryUpper === 'AT') return 'AT';
+        if (countryUpper === 'POLAND' || countryUpper === 'PL') return 'PL';
+        if (countryUpper === 'HUNGARY' || countryUpper === 'HU') return 'HU';
+        // If it's already a 2-letter code, return it
+        if (countryUpper.length === 2) return countryUpper;
+        return 'DE'; // Default to Germany for DHL
+      };
+
+      // Check for COD
+      const codAmount = order.dobirkaAmount;
+      const hasCOD = codAmount && !isNaN(parseFloat(codAmount)) && parseFloat(codAmount) > 0;
+      
+      if (hasCOD) {
+        console.log(`✓ Order has COD (Nachnahme): ${codAmount} ${order.dobirkaCurrency || 'EUR'}`);
+      } else {
+        console.log(`✓ Order has NO COD - all cartons will be standard shipments`);
+      }
+
+      // Prepare DHL shipper address
+      const shipper = {
+        name: senderAddress.name,
+        name2: senderAddress.name2 || undefined,
+        address: {
+          streetName: senderParsed.streetName,
+          streetNumber: senderParsed.streetNumber,
+          postalCode: senderAddress.zipCode.replace(/\s+/g, ''),
+          city: senderAddress.city,
+          country: getCountryCode(senderAddress.country)
+        },
+        contactPerson: {
+          phone: senderAddress.phone || undefined,
+          email: senderAddress.email || undefined
+        }
+      };
+
+      // Prepare DHL recipient address
+      const recipient = {
+        name: recipientName,
+        name2: contactName,
+        address: {
+          streetName: recipientParsed.streetName,
+          streetNumber: recipientParsed.streetNumber,
+          postalCode: shippingAddress.zipCode.replace(/\s+/g, ''),
+          city: shippingAddress.city,
+          country: getCountryCode(shippingAddress.country || 'DE')
+        },
+        contactPerson: {
+          phone: shippingAddress.tel || customer?.phone || undefined,
+          email: shippingAddress.email || customer?.email || undefined
+        }
+      };
+
+      // Determine product code based on destination
+      // V01PAK = Domestic parcel (Germany)
+      // V53WPAK = International parcel
+      const recipientCountryCode = recipient.address.country;
+      const product = recipientCountryCode === 'DE' ? 'V01PAK' : 'V53WPAK';
+
+      // Create individual shipments for each carton
+      const shipments = [];
+      const createdLabels = [];
+      const trackingNumbers: string[] = [];
+
+      console.log(`🚀 Creating ${cartons.length} DHL shipment(s)...`);
+
+      for (let i = 0; i < cartons.length; i++) {
+        const carton = cartons[i];
+        const cartonNumber = i + 1;
+
+        // Get carton weight (convert to kg if needed)
+        const weightKg = carton.payloadWeightKg || 1.0; // Default to 1kg if not specified
+
+        // Prepare shipment services (including COD if applicable)
+        // IMPORTANT: Unlike PPL (which groups cartons into one shipmentSet), DHL creates
+        // individual independent shipments. For multi-carton COD orders, we apply the
+        // full COD amount to EACH shipment so the customer can pay upon receiving ANY carton.
+        // DHL's backend handles preventing duplicate collection across related shipments.
+        const services: any = {};
+        
+        if (hasCOD) {
+          const codValue = parseFloat(order.dobirkaAmount);
+          services.cashOnDelivery = {
+            amount: codValue,
+            currency: order.dobirkaCurrency || 'EUR'
+          };
+          console.log(`💰 Carton #${cartonNumber} WITH Nachnahme: ${codValue} ${order.dobirkaCurrency || 'EUR'}`);
+        } else {
+          console.log(`📦 Carton #${cartonNumber}: Standard shipment`);
+        }
+
+        // Create DHL shipment
+        const shipmentData: any = {
+          shipper,
+          recipient,
+          product,
+          accounts: dhlAccounts, // Use configured DHL account credentials
+          shipmentDetails: {
+            weightInKG: weightKg,
+            lengthInCM: carton.innerLengthCm || undefined,
+            widthInCM: carton.innerWidthCm || undefined,
+            heightInCM: carton.innerHeightCm || undefined
+          },
+          label: {
+            format: 'A4' // PDF label format
+          },
+          services: Object.keys(services).length > 0 ? services : undefined,
+          customerReference: `${order.orderId}-${cartonNumber}`
+        };
+
+        shipments.push(shipmentData);
+      }
+
+      // Create all shipments in DHL API
+      const dhlResponse = await createDHLShipment({ shipments });
+
+      if (!dhlResponse.shipments || dhlResponse.shipments.length === 0) {
+        throw new Error('DHL API returned no shipments');
+      }
+
+      console.log(`✅ DHL created ${dhlResponse.shipments.length} shipment(s)`);
+
+      // Create shipment label records for each carton
+      for (let i = 0; i < dhlResponse.shipments.length; i++) {
+        const dhlShipment = dhlResponse.shipments[i];
+        const carton = cartons[i];
+        const cartonNumber = i + 1;
+        const trackingNumber = dhlShipment.shipmentNo;
+        const isFirstCarton = i === 0;
+
+        trackingNumbers.push(trackingNumber);
+
+        console.log(`📦 Creating label record for carton #${cartonNumber}:`, {
+          cartonId: carton.id,
+          trackingNumber,
+          hasCOD: hasCOD && isFirstCarton
+        });
+
+        const labelRecord = await storage.createShipmentLabel({
+          orderId,
+          carrier: 'DHL',
+          trackingNumbers: [trackingNumber],
+          labelBase64: dhlShipment.label?.b64 || '',
+          labelData: {
+            cartonNumber,
+            cartonId: carton.id,
+            referenceId: `${order.orderId}-${carton.cartonNumber}`,
+            hasCOD, // All DHL shipments have COD if order has COD
+            product,
+            recipientCountry: recipientCountryCode,
+            shipmentIndex: i,
+            shipmentNo: trackingNumber
+          },
+          shipmentCount: 1,
+          status: 'active'
+        });
+
+        createdLabels.push(labelRecord);
+        console.log(`✅ Label record created for carton #${cartonNumber}:`, labelRecord.id);
+
+        // Update carton with tracking number
+        await storage.updateOrderCarton(carton.id, {
+          trackingNumber,
+          labelPrinted: true
+        });
+      }
+
+      // Update order with DHL status
+      await storage.updateOrder(orderId, {
+        trackingNumber: trackingNumbers[0] // First tracking number as primary
+      });
+
+      res.json({
+        success: true,
+        message: `Successfully created ${trackingNumbers.length} DHL label(s)`,
+        trackingNumbers,
+        labels: createdLabels.map(l => ({
+          id: l.id,
+          trackingNumber: l.trackingNumbers?.[0],
+          carrier: l.carrier
+        }))
+      });
+
+    } catch (error: any) {
+      console.error('Error creating DHL labels:', error);
+      res.status(500).json({ 
+        error: error.message || 'Failed to create DHL labels',
+        details: error.response?.data || error.details
+      });
+    }
+  });
+
   // ============================================================================
   // APP SETTINGS ROUTES
   // ============================================================================
