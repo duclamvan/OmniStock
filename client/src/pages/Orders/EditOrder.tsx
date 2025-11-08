@@ -3963,36 +3963,10 @@ export default function EditOrder() {
                   <div className="flex items-center gap-2 mt-1">
                     <Input
                       id="grandTotal"
-                      type="number"
-                      step="0.01"
-                      placeholder="Click to enter desired total"
-                      value={calculateGrandTotal().toFixed(2)}
-                      onChange={(e) => {
-                        const desiredTotal = parseFloat(e.target.value);
-                        if (!isNaN(desiredTotal) && desiredTotal > 0) {
-                          const subtotal = calculateSubtotal();
-                          const tax = showTaxInvoice ? calculateTax() : 0;
-                          const shippingValue = form.watch('shippingCost');
-                          const shipping = typeof shippingValue === 'string' ? parseFloat(shippingValue || '0') : (shippingValue || 0);
-                          const adjustmentValue = form.watch('adjustment');
-                          const adjustment = typeof adjustmentValue === 'string' ? parseFloat(adjustmentValue || '0') : (adjustmentValue || 0);
-                          
-                          // Calculate the discount needed to reach desired total
-                          // Formula: subtotal + tax + shipping + adjustment - discount = desiredTotal
-                          // So: discount = subtotal + tax + shipping + adjustment - desiredTotal
-                          const neededDiscount = subtotal + tax + shipping + adjustment - desiredTotal;
-                          
-                          // Set discount type to flat and apply the calculated discount
-                          form.setValue('discountType', 'flat');
-                          form.setValue('discountValue', Math.max(0, parseFloat(neededDiscount.toFixed(2))));
-                          
-                          toast({
-                            title: "Total Adjusted",
-                            description: `Discount set to ${formatCurrency(Math.max(0, neededDiscount), form.watch('currency'))} to reach ${formatCurrency(desiredTotal, form.watch('currency'))}`,
-                          });
-                        }
-                      }}
-                      className="font-bold text-lg bg-white dark:bg-slate-900 border-blue-300 dark:border-blue-700 cursor-pointer"
+                      type="text"
+                      value={formatCurrency(calculateGrandTotal(), form.watch('currency'))}
+                      readOnly
+                      className="font-bold text-lg bg-gray-50 dark:bg-slate-800 border-blue-300 dark:border-blue-700 cursor-default"
                       data-testid="input-grand-total"
                     />
                     <Button
@@ -4032,7 +4006,7 @@ export default function EditOrder() {
                       Round Up
                     </Button>
                   </div>
-                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">Click to type desired total or use Round Up button. Discount will auto-adjust.</p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">Use Round Up button or adjust discount/shipping to change the total.</p>
                 </div>
               </div>
             </div>
