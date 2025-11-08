@@ -285,6 +285,9 @@ export default function AddOrder() {
     type: "regular"
   });
   
+  // Track if Facebook Name has been manually edited
+  const [facebookNameManuallyEdited, setFacebookNameManuallyEdited] = useState(false);
+  
   const [rawNewCustomerAddress, setRawNewCustomerAddress] = useState("");
 
   const [addressAutocomplete, setAddressAutocomplete] = useState("");
@@ -2469,6 +2472,7 @@ export default function AddOrder() {
                       setShowNewCustomerForm(false);
                       setAddressAutocomplete("");
                       setRawNewCustomerAddress("");
+                      setFacebookNameManuallyEdited(false); // Reset the manual edit flag
                       setNewCustomer({
                         name: "",
                         facebookName: "",
@@ -2502,11 +2506,12 @@ export default function AddOrder() {
                       value={newCustomer.name}
                       onChange={(e) => {
                         const newName = e.target.value;
-                        // Update customer name and always sync to Facebook name
+                        // Update customer name and sync to Facebook name only if not manually edited
                         setNewCustomer(prev => ({
                           ...prev,
                           name: newName,
-                          facebookName: newName // Always keep Facebook Name in sync with Customer Name
+                          // Only sync to Facebook Name if it hasn't been manually edited
+                          facebookName: facebookNameManuallyEdited ? prev.facebookName : newName
                         }));
                       }}
                       placeholder="Type here"
@@ -2518,9 +2523,12 @@ export default function AddOrder() {
                     <Input
                       id="facebookName"
                       value={newCustomer.facebookName || ""}
-                      placeholder="Auto-synced with Customer Name"
-                      readOnly
-                      className="bg-slate-50 dark:bg-slate-900/50 cursor-not-allowed"
+                      onChange={(e) => {
+                        // User is manually editing, so stop auto-sync
+                        setFacebookNameManuallyEdited(true);
+                        setNewCustomer({ ...newCustomer, facebookName: e.target.value });
+                      }}
+                      placeholder="Synced with Customer Name"
                     />
                   </div>
                   <div>
