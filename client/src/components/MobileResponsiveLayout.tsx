@@ -446,6 +446,20 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
           color: "text-gray-600",
           description: "Analytics & Reports"
         },
+        {
+          name: "Settings",
+          icon: Settings,
+          color: "text-slate-600",
+          description: "System Configuration",
+          children: [
+            { name: "General", href: "/settings/general" },
+            { name: "Shipping", href: "/settings/shipping" },
+            { name: "Orders", href: "/settings/orders" },
+            { name: "Financial", href: "/settings/financial" },
+            { name: "Inventory", href: "/settings/inventory" },
+            { name: "System", href: "/settings/system" },
+          ],
+        },
       ]
     }
   ];
@@ -913,7 +927,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                       location.includes('/discounts/') || location.includes('/services/') || 
                       location.includes('/tickets/') || location.includes('/expenses/') ||
                       location.includes('/imports/') || location.includes('/receiving/') ||
-                      location.includes('/stock')) && (
+                      location.includes('/stock') || location.includes('/settings/')) && (
                       <>
                         <BreadcrumbChevron className="h-3 w-3" />
                         <Link href={
@@ -930,6 +944,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                           location.includes('/imports') ? '/imports' :
                           location.includes('/receiving') ? '/receiving' :
                           location.includes('/stock') ? '/stock' :
+                          location.includes('/settings') ? '/settings' :
                           '/'
                         }>
                           <button className="hover:text-foreground transition-colors">
@@ -946,6 +961,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                              location.includes('/imports') ? 'Imports' :
                              location.includes('/receiving') ? 'Receiving' :
                              location.includes('/stock') ? 'Stock' :
+                             location.includes('/settings') ? 'Settings' :
                              'Dashboard'}
                           </button>
                         </Link>
@@ -1003,6 +1019,12 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                        location.includes('/receiving/') ? 'Receiving Details' :
                        location.includes('/receiving') ? 'Receiving' :
                        location.includes('/stock') ? 'Stock Lookup' :
+                       location.includes('/settings/general') ? 'General Settings' :
+                       location.includes('/settings/shipping') ? 'Shipping Settings' :
+                       location.includes('/settings/orders') ? 'Order Settings' :
+                       location.includes('/settings/financial') ? 'Financial Settings' :
+                       location.includes('/settings/inventory') ? 'Inventory Settings' :
+                       location.includes('/settings/system') ? 'System Settings' :
                        'Dashboard'}
                     </span>
                   </>
@@ -1030,6 +1052,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                  location.includes('/imports') ? 'Import Management' :
                  location.includes('/receiving') ? 'Receiving & Storage' :
                  location.includes('/stock') ? 'Stock Lookup' :
+                 location.includes('/settings') ? 'System Settings' :
                  'Dashboard'}
               </h2>
               <div className="flex-1 max-w-sm ml-2">
