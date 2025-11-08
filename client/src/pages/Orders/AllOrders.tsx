@@ -20,7 +20,7 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { getCountryFlag } from "@/lib/countries";
 import { cn } from "@/lib/utils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
-import { Plus, Search, Filter, Download, FileDown, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal, Sparkles, RefreshCw, Heart, AlertTriangle, TrendingUp, ArrowUp, ArrowDown, MoreVertical, ShoppingCart, DollarSign, Users } from "lucide-react";
+import { Plus, Search, Filter, Download, FileDown, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal, Sparkles, RefreshCw, Heart, AlertTriangle, TrendingUp, ArrowUp, ArrowDown, MoreVertical, ShoppingCart, DollarSign, Users, Zap } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,6 +43,90 @@ import {
 
 interface AllOrdersProps {
   filter?: string;
+}
+
+// Hook to manage daily high scores using Prague timezone
+function useDailyHighScores(statistics: {
+  totalOrders: number;
+  totalRevenue: number;
+  totalProfit: number;
+  newCustomers: number;
+  returningCustomers: number;
+} | null) {
+  const [highScores, setHighScores] = useState<Record<string, number>>({});
+
+  // Get today's date in Prague timezone
+  const getTodayDateKey = () => {
+    const pragueDate = new Date().toLocaleString('en-US', { timeZone: 'Europe/Prague' });
+    const date = new Date(pragueDate);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const dateKey = getTodayDateKey();
+
+  // Fetch today's high scores
+  const { data: settingsData } = useQuery({
+    queryKey: ['/api/settings', 'daily_high_scores', dateKey],
+    queryFn: async () => {
+      const response = await fetch('/api/settings?category=daily_high_scores');
+      if (!response.ok) throw new Error('Failed to fetch settings');
+      return response.json();
+    },
+  });
+
+  // Update high scores mutation
+  const updateHighScoreMutation = useMutation({
+    mutationFn: async ({ key, value }: { key: string; value: number }) => {
+      return apiRequest('POST', '/api/settings', {
+        key,
+        value: String(value),
+        category: 'daily_high_scores',
+        description: `Daily high score for ${dateKey}`,
+      });
+    },
+  });
+
+  // Parse high scores from settings
+  useEffect(() => {
+    if (settingsData && Array.isArray(settingsData)) {
+      const scores: Record<string, number> = {};
+      settingsData.forEach((setting: any) => {
+        if (setting.key.startsWith(`high_score_${dateKey}_`)) {
+          const metric = setting.key.replace(`high_score_${dateKey}_`, '');
+          scores[metric] = parseFloat(setting.value) || 0;
+        }
+      });
+      setHighScores(scores);
+    }
+  }, [settingsData, dateKey]);
+
+  // Update high scores when statistics change
+  useEffect(() => {
+    if (!statistics) return;
+
+    const metrics = {
+      totalOrders: statistics.totalOrders,
+      totalRevenue: statistics.totalRevenue,
+      totalProfit: statistics.totalProfit,
+      totalCustomers: statistics.newCustomers + statistics.returningCustomers,
+    };
+
+    Object.entries(metrics).forEach(([metric, value]) => {
+      const currentHigh = highScores[metric] || 0;
+      if (value > currentHigh) {
+        updateHighScoreMutation.mutate({
+          key: `high_score_${dateKey}_${metric}`,
+          value,
+        });
+        setHighScores(prev => ({ ...prev, [metric]: value }));
+      }
+    });
+  }, [statistics, dateKey]);
+
+  return highScores;
 }
 
 export default function AllOrders({ filter }: AllOrdersProps) {
@@ -577,6 +661,9 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     };
   }, [filter, filteredOrders, orders]);
 
+  // Track daily high scores
+  const highScores = useDailyHighScores(statistics);
+
   // Define table columns - Clean professional design
   const columns: DataTableColumn<any>[] = [
     {
@@ -954,6 +1041,12 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                   <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
                     {formatCompactNumber(statistics.totalOrders)}
                   </p>
+                  {highScores.totalOrders > 0 && (
+                    <div className="flex items-center gap-1 mt-2 text-xs text-amber-600 dark:text-amber-400">
+                      <Zap className="h-3 w-3" />
+                      <span>Record: {formatCompactNumber(highScores.totalOrders)}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
                   <ShoppingCart className="h-7 w-7 text-cyan-600 dark:text-cyan-400" />
@@ -973,6 +1066,12 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                   <p className="text-3xl font-bold text-purple-600 dark:text-purple-400 truncate">
                     {formatCompactNumber(statistics.totalRevenue)}
                   </p>
+                  {highScores.totalRevenue > 0 && (
+                    <div className="flex items-center gap-1 mt-2 text-xs text-amber-600 dark:text-amber-400">
+                      <Zap className="h-3 w-3" />
+                      <span>Record: {formatCompactNumber(highScores.totalRevenue)}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
                   <DollarSign className="h-7 w-7 text-purple-600 dark:text-purple-400" />
@@ -992,6 +1091,12 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                   <p className={`text-3xl font-bold truncate ${statistics.totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                     {formatCompactNumber(statistics.totalProfit)}
                   </p>
+                  {highScores.totalProfit > 0 && (
+                    <div className="flex items-center gap-1 mt-2 text-xs text-amber-600 dark:text-amber-400">
+                      <Zap className="h-3 w-3" />
+                      <span>Record: {formatCompactNumber(highScores.totalProfit)}</span>
+                    </div>
+                  )}
                 </div>
                 <div className={`flex-shrink-0 p-3 rounded-xl bg-gradient-to-br ${statistics.totalProfit >= 0 ? 'from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950' : 'from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950'}`}>
                   <TrendingUp className={`h-7 w-7 ${statistics.totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`} />
@@ -1016,6 +1121,12 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     {' • '}
                     <span className="text-slate-600 dark:text-slate-400">{statistics.returningCustomers} returning</span>
                   </p>
+                  {highScores.totalCustomers > 0 && (
+                    <div className="flex items-center gap-1 mt-1 text-xs text-amber-600 dark:text-amber-400">
+                      <Zap className="h-3 w-3" />
+                      <span>Record: {formatCompactNumber(highScores.totalCustomers)}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
                   <Users className="h-7 w-7 text-blue-600 dark:text-blue-400" />
