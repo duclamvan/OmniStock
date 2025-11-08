@@ -2145,7 +2145,7 @@ export default function AddOrder() {
                     className="mt-3"
                     onClick={() => {
                       setShowNewCustomerForm(true);
-                      setNewCustomer({ ...newCustomer, name: customerSearch });
+                      setNewCustomer({ ...newCustomer, name: customerSearch, facebookName: customerSearch });
                       setShowCustomerDropdown(false);
                     }}
                   >
