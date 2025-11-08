@@ -2502,12 +2502,11 @@ export default function AddOrder() {
                       value={newCustomer.name}
                       onChange={(e) => {
                         const newName = e.target.value;
-                        // Update customer name and also mirror to Facebook name if it's empty or matches the previous name
+                        // Update customer name and always sync to Facebook name
                         setNewCustomer(prev => ({
                           ...prev,
                           name: newName,
-                          // Mirror to Facebook name if it's currently empty or was previously mirroring
-                          facebookName: prev.facebookName === prev.name || prev.facebookName === "" ? newName : prev.facebookName
+                          facebookName: newName // Always keep Facebook Name in sync with Customer Name
                         }));
                       }}
                       placeholder="Type here"
@@ -2516,38 +2515,13 @@ export default function AddOrder() {
                   </div>
                   <div>
                     <Label htmlFor="facebookName">Facebook Name</Label>
-                    <div className="relative">
-                      <Input
-                        id="facebookName"
-                        value={newCustomer.facebookName || ""}
-                        onChange={(e) => {
-                          console.log('Facebook Name changed to:', e.target.value);
-                          setNewCustomer({ ...newCustomer, facebookName: e.target.value });
-                        }}
-                        placeholder="Facebook display name"
-                        className="pr-10"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-1 top-1 h-8 w-8 p-0"
-                        onClick={() => {
-                          if (newCustomer.name) {
-                            setNewCustomer({ ...newCustomer, facebookName: newCustomer.name });
-                            toast({
-                              title: "Name copied",
-                              description: "Customer name copied to Facebook Name",
-                            });
-                          }
-                        }}
-                        disabled={!newCustomer.name}
-                        title="Copy customer name"
-                        data-testid="button-copy-facebook-name"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <Input
+                      id="facebookName"
+                      value={newCustomer.facebookName || ""}
+                      placeholder="Auto-synced with Customer Name"
+                      readOnly
+                      className="bg-slate-50 dark:bg-slate-900/50 cursor-not-allowed"
+                    />
                   </div>
                   <div>
                     <Label htmlFor="facebookUrl">Facebook URL</Label>
