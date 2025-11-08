@@ -3894,8 +3894,8 @@ export default function EditOrder() {
 
             <Separator className="my-4" />
 
-            {/* Dobírka (COD) Section - Only show for PPL + COD */}
-            {form.watch('shippingMethod') === 'PPL' && form.watch('paymentMethod') === 'COD' && (
+            {/* Dobírka (COD) Section - Only show for PPL/DHL + COD */}
+            {(form.watch('shippingMethod') === 'PPL' || form.watch('shippingMethod') === 'DHL') && form.watch('paymentMethod') === 'COD' && (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
