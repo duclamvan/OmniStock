@@ -36,6 +36,8 @@ interface ShipmentLabel {
   createdAt: string;
   cancelledAt: string | null;
   updatedAt: string;
+  customOrderId?: string | null;
+  customerName?: string | null;
 }
 
 export default function ShipmentLabels() {
@@ -88,6 +90,8 @@ export default function ShipmentLabels() {
     const query = searchQuery.toLowerCase();
     return (
       label.orderId.toLowerCase().includes(query) ||
+      (label.customOrderId && label.customOrderId.toLowerCase().includes(query)) ||
+      (label.customerName && label.customerName.toLowerCase().includes(query)) ||
       label.carrier.toLowerCase().includes(query) ||
       label.trackingNumbers.some((tn) => tn.toLowerCase().includes(query)) ||
       (label.batchId && label.batchId.toLowerCase().includes(query))
@@ -97,14 +101,21 @@ export default function ShipmentLabels() {
   const columns: DataTableColumn<ShipmentLabel>[] = [
     {
       key: 'orderId',
-      header: 'Order ID',
+      header: 'Order & Customer',
       cell: (label: ShipmentLabel) => (
-        <Link href={`/orders/${label.orderId}`}>
-          <a className="text-blue-600 hover:underline font-medium flex items-center gap-1" data-testid={`link-order-${label.id}`}>
-            {label.orderId}
-            <ExternalLink className="w-3 h-3" />
-          </a>
-        </Link>
+        <div className="flex flex-col gap-1">
+          <Link href={`/orders/${label.orderId}`}>
+            <a className="text-blue-600 hover:underline font-medium flex items-center gap-1" data-testid={`link-order-${label.id}`}>
+              {label.customOrderId || label.orderId}
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </Link>
+          {label.customerName && (
+            <div className="text-sm text-slate-600 dark:text-slate-400">
+              {label.customerName}
+            </div>
+          )}
+        </div>
       ),
     },
     {
@@ -210,7 +221,7 @@ export default function ShipmentLabels() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Search by Order ID, Carrier, Tracking Number..."
+                placeholder="Search by Order ID, Customer Name, Carrier, Tracking..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"

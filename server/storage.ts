@@ -4711,10 +4711,30 @@ export class DatabaseStorage implements IStorage {
   // Shipment Labels (PPL, GLS, DHL, etc.)
   async getShipmentLabels(): Promise<ShipmentLabel[]> {
     try {
-      return await db
-        .select()
+      const results = await db
+        .select({
+          id: shipmentLabels.id,
+          orderId: shipmentLabels.orderId,
+          carrier: shipmentLabels.carrier,
+          trackingNumbers: shipmentLabels.trackingNumbers,
+          batchId: shipmentLabels.batchId,
+          labelBase64: shipmentLabels.labelBase64,
+          labelData: shipmentLabels.labelData,
+          status: shipmentLabels.status,
+          shipmentCount: shipmentLabels.shipmentCount,
+          cancelReason: shipmentLabels.cancelReason,
+          createdAt: shipmentLabels.createdAt,
+          cancelledAt: shipmentLabels.cancelledAt,
+          updatedAt: shipmentLabels.updatedAt,
+          customOrderId: orders.orderId,
+          customerName: customers.name,
+        })
         .from(shipmentLabels)
+        .leftJoin(orders, eq(shipmentLabels.orderId, orders.id))
+        .leftJoin(customers, eq(orders.customerId, customers.id))
         .orderBy(desc(shipmentLabels.createdAt));
+      
+      return results as any;
     } catch (error) {
       console.error('Error fetching shipment labels:', error);
       return [];
