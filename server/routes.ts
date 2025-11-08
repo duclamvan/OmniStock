@@ -32,6 +32,7 @@ import {
   insertTicketSchema,
   insertTicketCommentSchema,
   insertOrderCartonSchema,
+  insertAppSettingSchema,
   productCostHistory,
   products,
   productBundles,
@@ -11014,6 +11015,93 @@ Text: ${rawAddress}`;
     } catch (error) {
       console.error('Facebook OAuth error:', error);
       res.redirect('/login?error=auth_failed');
+    }
+  });
+
+  // App Settings endpoints
+  app.get('/api/settings', async (req, res) => {
+    try {
+      const settings = await storage.getAppSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error('Error fetching app settings:', error);
+      res.status(500).json({ message: 'Failed to fetch app settings' });
+    }
+  });
+
+  app.get('/api/settings/:key', async (req, res) => {
+    try {
+      const { key } = req.params;
+      const setting = await storage.getAppSettingByKey(key);
+      
+      if (!setting) {
+        return res.status(404).json({ message: `Setting with key '${key}' not found` });
+      }
+      
+      res.json(setting);
+    } catch (error) {
+      console.error('Error fetching app setting:', error);
+      res.status(500).json({ message: 'Failed to fetch app setting' });
+    }
+  });
+
+  app.post('/api/settings', async (req, res) => {
+    try {
+      const data = insertAppSettingSchema.parse(req.body);
+      const setting = await storage.createAppSetting(data);
+      res.status(201).json(setting);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: 'Validation error', 
+          errors: error.errors 
+        });
+      }
+      console.error('Error creating app setting:', error);
+      res.status(500).json({ message: 'Failed to create app setting' });
+    }
+  });
+
+  app.patch('/api/settings/:key', async (req, res) => {
+    try {
+      const { key } = req.params;
+      const data = req.body;
+      
+      // Check if setting exists first
+      const existing = await storage.getAppSettingByKey(key);
+      if (!existing) {
+        return res.status(404).json({ message: `Setting with key '${key}' not found` });
+      }
+      
+      const updated = await storage.updateAppSetting(key, data);
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: 'Validation error', 
+          errors: error.errors 
+        });
+      }
+      console.error('Error updating app setting:', error);
+      res.status(500).json({ message: 'Failed to update app setting' });
+    }
+  });
+
+  app.delete('/api/settings/:key', async (req, res) => {
+    try {
+      const { key } = req.params;
+      
+      // Check if setting exists first
+      const existing = await storage.getAppSettingByKey(key);
+      if (!existing) {
+        return res.status(404).json({ message: `Setting with key '${key}' not found` });
+      }
+      
+      await storage.deleteAppSetting(key);
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting app setting:', error);
+      res.status(500).json({ message: 'Failed to delete app setting' });
     }
   });
 

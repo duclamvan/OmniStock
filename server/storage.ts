@@ -45,6 +45,7 @@ import {
   tickets,
   ticketComments,
   orderFulfillmentLogs,
+  appSettings,
   type User,
   type InsertUser,
   type Category,
@@ -134,7 +135,9 @@ import {
   type TicketComment,
   type InsertTicketComment,
   type OrderFulfillmentLog,
-  type InsertOrderFulfillmentLog
+  type InsertOrderFulfillmentLog,
+  type AppSetting,
+  type InsertAppSetting
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, ilike, sql, gte, lte, inArray, ne, asc, isNull, notInArray, not } from "drizzle-orm";
@@ -505,6 +508,13 @@ export interface IStorage {
   logFulfillmentStart(orderId: string, userId: string, activityType: 'pick' | 'pack', itemCount: number, totalQuantity: number): Promise<OrderFulfillmentLog>;
   logFulfillmentComplete(orderId: string, userId: string, activityType: 'pick' | 'pack'): Promise<OrderFulfillmentLog | undefined>;
   getPickPackPredictions(userId: string): Promise<{ pickingTimePerOrder: number; packingTimePerOrder: number; pickingTimePerItem: number; packingTimePerItem: number }>;
+  
+  // App Settings
+  getAppSettings(): Promise<AppSetting[]>;
+  getAppSettingByKey(key: string): Promise<AppSetting | undefined>;
+  createAppSetting(data: InsertAppSetting): Promise<AppSetting>;
+  updateAppSetting(key: string, data: Partial<InsertAppSetting>): Promise<AppSetting>;
+  deleteAppSetting(key: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4959,6 +4969,79 @@ export class DatabaseStorage implements IStorage {
         pickingTimePerItem: 1,
         packingTimePerItem: 0.5,
       };
+    }
+  }
+  
+  // App Settings
+  async getAppSettings(): Promise<AppSetting[]> {
+    try {
+      return await db
+        .select()
+        .from(appSettings)
+        .orderBy(appSettings.category, appSettings.key);
+    } catch (error) {
+      console.error('Error getting app settings:', error);
+      throw new Error('Failed to retrieve app settings');
+    }
+  }
+  
+  async getAppSettingByKey(key: string): Promise<AppSetting | undefined> {
+    try {
+      const [setting] = await db
+        .select()
+        .from(appSettings)
+        .where(eq(appSettings.key, key));
+      return setting || undefined;
+    } catch (error) {
+      console.error(`Error getting app setting with key ${key}:`, error);
+      throw new Error(`Failed to retrieve app setting with key: ${key}`);
+    }
+  }
+  
+  async createAppSetting(data: InsertAppSetting): Promise<AppSetting> {
+    try {
+      const [setting] = await db
+        .insert(appSettings)
+        .values({ ...data, updatedAt: new Date() })
+        .returning();
+      return setting;
+    } catch (error) {
+      console.error('Error creating app setting:', error);
+      throw new Error('Failed to create app setting');
+    }
+  }
+  
+  async updateAppSetting(key: string, data: Partial<InsertAppSetting>): Promise<AppSetting> {
+    try {
+      const [updated] = await db
+        .update(appSettings)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(appSettings.key, key))
+        .returning();
+      
+      if (!updated) {
+        throw new Error(`App setting with key ${key} not found`);
+      }
+      
+      return updated;
+    } catch (error) {
+      console.error(`Error updating app setting with key ${key}:`, error);
+      throw new Error(`Failed to update app setting with key: ${key}`);
+    }
+  }
+  
+  async deleteAppSetting(key: string): Promise<void> {
+    try {
+      const result = await db
+        .delete(appSettings)
+        .where(eq(appSettings.key, key));
+      
+      if ((result.rowCount ?? 0) === 0) {
+        throw new Error(`App setting with key ${key} not found`);
+      }
+    } catch (error) {
+      console.error(`Error deleting app setting with key ${key}:`, error);
+      throw new Error(`Failed to delete app setting with key: ${key}`);
     }
   }
 }
