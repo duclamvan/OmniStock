@@ -10394,26 +10394,16 @@ export default function PickPack() {
         <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden">
           {/* Header */}
           <div className="px-6 py-4 border-b bg-gradient-to-r from-slate-50 to-gray-50">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  Shipping Label - {labelPreviewData?.orderId}
-                </h2>
-                {labelPreviewData?.trackingNumbers && labelPreviewData.trackingNumbers.length > 0 && (
-                  <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
-                    <Hash className="h-3.5 w-3.5" />
-                    Tracking: <span className="font-medium text-gray-900">{labelPreviewData.trackingNumbers.join(', ')}</span>
-                  </p>
-                )}
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setLabelPreviewData(null)}
-                className="h-8 w-8 p-0 hover:bg-gray-200 rounded-full -mt-1"
-              >
-                <X className="h-4 w-4 text-gray-600" />
-              </Button>
+            <div className="flex-1">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Shipping Label - {labelPreviewData?.orderId}
+              </h2>
+              {labelPreviewData?.trackingNumbers && labelPreviewData.trackingNumbers.length > 0 && (
+                <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
+                  <Hash className="h-3.5 w-3.5" />
+                  Tracking: <span className="font-medium text-gray-900">{labelPreviewData.trackingNumbers.join(', ')}</span>
+                </p>
+              )}
             </div>
           </div>
 
