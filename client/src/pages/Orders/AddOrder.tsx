@@ -2682,127 +2682,117 @@ export default function AddOrder() {
 
                 <Separator className="my-6" />
 
-                {/* Address Information */}
-                <div className="space-y-2">
-                  <Label>Shipping Address</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="md:col-span-2">
-                      <Input
-                        id="street"
-                        value={newCustomer.street}
-                        onChange={(e) => setNewCustomer({ ...newCustomer, street: e.target.value })}
-                        placeholder="Street name"
-                      />
-                    </div>
-                    <div>
-                      <Input
-                        id="streetNumber"
-                        value={newCustomer.streetNumber}
-                        onChange={(e) => setNewCustomer({ ...newCustomer, streetNumber: e.target.value })}
-                        placeholder="Number"
-                      />
-                    </div>
-                    <div>
-                      <Input
-                        id="city"
-                        value={newCustomer.city}
-                        onChange={(e) => setNewCustomer({ ...newCustomer, city: e.target.value })}
-                        placeholder="City"
-                      />
-                    </div>
-                    <div>
-                      <Input
-                        id="zipCode"
-                        value={newCustomer.zipCode}
-                        onChange={(e) => setNewCustomer({ ...newCustomer, zipCode: e.target.value })}
-                        placeholder="Postal Code"
-                      />
-                    </div>
-                    <div>
-                      <Input
-                        id="country"
-                        value={newCustomer.country}
-                        onChange={(e) => setNewCustomer({ ...newCustomer, country: e.target.value })}
-                        placeholder="Country"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <Separator className="my-6" />
-
-                {/* Additional Details */}
-                <div className="space-y-2">
-                  <Label>Additional Details</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="firstName">First Name</Label>
-                      <Input
-                        id="firstName"
-                        value={newCustomer.firstName || ""}
-                        onChange={(e) => setNewCustomer({ ...newCustomer, firstName: e.target.value })}
-                        placeholder="First name"
-                        data-testid="input-firstName"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input
-                        id="lastName"
-                        value={newCustomer.lastName || ""}
-                        onChange={(e) => setNewCustomer({ ...newCustomer, lastName: e.target.value })}
-                        placeholder="Last name"
-                        data-testid="input-lastName"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="pickupPoint">Pickup Point</Label>
-                      <Input
-                        id="pickupPoint"
-                        value={newCustomer.pickupPoint || ""}
-                        onChange={(e) => setNewCustomer({ ...newCustomer, pickupPoint: e.target.value })}
-                        placeholder="Branch or pickup location"
-                        data-testid="input-pickupPoint"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="customerEmail">Email</Label>
-                      <div className="relative">
-                        <Input
-                          id="customerEmail"
-                          type="email"
-                          value={newCustomer.email}
-                          onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
-                          placeholder="email@example.com"
-                          className="pr-10"
-                          data-testid="input-customerEmail"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-1 top-1 h-8 w-8 p-0"
-                          onClick={() => {
-                            setNewCustomer({ ...newCustomer, email: "davienails999@gmail.com" });
-                            toast({
-                              title: "Default email pasted",
-                              description: "davienails999@gmail.com",
-                            });
-                          }}
-                          title="Paste default email"
-                          data-testid="button-paste-default-email"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <Separator className="my-6" />
-
-                {/* Contact Information - Phone */}
+                {/* First Name and Last Name */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Input
+                      id="firstName"
+                      value={newCustomer.firstName || ""}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, firstName: e.target.value })}
+                      placeholder="Vorname"
+                      data-testid="input-firstName"
+                    />
+                  </div>
+                  <div>
+                    <Input
+                      id="lastName"
+                      value={newCustomer.lastName || ""}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, lastName: e.target.value })}
+                      placeholder="Nachname"
+                      data-testid="input-lastName"
+                    />
+                  </div>
+                </div>
+
+                {/* Company (optional) */}
+                <div>
+                  <Input
+                    id="company"
+                    value={newCustomer.company}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, company: e.target.value })}
+                    placeholder="Firma (optional)"
+                  />
+                </div>
+
+                {/* Address Section Header */}
+                <div className="mt-6">
+                  <Label className="text-base">Adresse</Label>
+                </div>
+
+                {/* Street and House Number */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="md:col-span-3">
+                    <Input
+                      id="street"
+                      value={newCustomer.street}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, street: e.target.value })}
+                      placeholder="Straße"
+                    />
+                  </div>
+                  <div>
+                    <Input
+                      id="streetNumber"
+                      value={newCustomer.streetNumber}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, streetNumber: e.target.value })}
+                      placeholder="Hausnummer"
+                    />
+                  </div>
+                </div>
+
+                {/* Postal Code and City */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <Input
+                      id="zipCode"
+                      value={newCustomer.zipCode}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, zipCode: e.target.value })}
+                      placeholder="Postleitzahl"
+                    />
+                  </div>
+                  <div className="md:col-span-3">
+                    <Input
+                      id="city"
+                      value={newCustomer.city}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, city: e.target.value })}
+                      placeholder="Stadt"
+                    />
+                  </div>
+                </div>
+
+                {/* Email (optional) */}
+                <div className="relative">
+                  <Input
+                    id="customerEmail"
+                    type="email"
+                    value={newCustomer.email}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                    placeholder="E-Mail (optional)"
+                    className="pr-10"
+                    data-testid="input-customerEmail"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1 h-8 w-8 p-0"
+                    onClick={() => {
+                      setNewCustomer({ ...newCustomer, email: "davienails999@gmail.com" });
+                      toast({
+                        title: "Default email pasted",
+                        description: "davienails999@gmail.com",
+                      });
+                    }}
+                    title="Paste default email"
+                    data-testid="button-paste-default-email"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <Separator className="my-6" />
+
+                {/* Additional Fields (Collapsible or Hidden) */}
+                <div className="space-y-4">
                   <div>
                     <Label htmlFor="customerPhone">Phone</Label>
                     <Input
@@ -2813,18 +2803,25 @@ export default function AddOrder() {
                       data-testid="input-customerPhone"
                     />
                   </div>
-                </div>
-
-                <Separator className="my-6" />
-
-                <div>
-                  <Label htmlFor="company">Company</Label>
-                  <Input
-                    id="company"
-                    value={newCustomer.company}
-                    onChange={(e) => setNewCustomer({ ...newCustomer, company: e.target.value })}
-                    placeholder="Type here"
-                  />
+                  <div>
+                    <Label htmlFor="country">Country</Label>
+                    <Input
+                      id="country"
+                      value={newCustomer.country}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, country: e.target.value })}
+                      placeholder="Type here"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="pickupPoint">Pickup Point</Label>
+                    <Input
+                      id="pickupPoint"
+                      value={newCustomer.pickupPoint || ""}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, pickupPoint: e.target.value })}
+                      placeholder="Branch or pickup location"
+                      data-testid="input-pickupPoint"
+                    />
+                  </div>
                 </div>
 
                 {/* Add customer to order button */}
