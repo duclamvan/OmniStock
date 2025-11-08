@@ -2948,9 +2948,9 @@ export default function AddOrder() {
 
               {/* Real-time dropdown for products - Flat list sorted by relevance */}
               {showProductDropdown && filteredProducts && filteredProducts.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-64 overflow-y-auto z-50">
-                  <div className="p-2 bg-slate-50 border-b text-xs text-slate-600 sticky top-0 z-10">
-                    {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found - Use ↑↓ arrows to navigate
+                <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-[70vh] overflow-y-auto z-50">
+                  <div className="px-2 py-1.5 bg-slate-50 border-b text-xs text-slate-600 sticky top-0 z-10">
+                    {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
                   </div>
                   {filteredProducts.map((product: any, index: number) => {
                     const frequency = productFrequency[product.id] || 0;
@@ -2963,10 +2963,10 @@ export default function AddOrder() {
                       <button
                         type="button"
                         key={product.id}
-                        className={`w-full p-3 cursor-pointer border-b last:border-b-0 transition-colors text-left ${
+                        className={`w-full p-2 cursor-pointer border-b last:border-b-0 transition-colors text-left ${
                           isKeyboardSelected ? 'bg-blue-50 ring-2 ring-inset ring-blue-500' : 'hover:bg-blue-50'
                         } ${
-                          isBestMatch ? 'bg-blue-100 border-l-4 border-l-blue-500' : ''
+                          isBestMatch ? 'bg-blue-100 border-l-2 border-l-blue-500' : ''
                         }`}
                         onClick={() => {
                           addProductToOrder(product);
@@ -2974,8 +2974,8 @@ export default function AddOrder() {
                         }}
                         data-testid={`${isService ? 'service' : isBundle ? 'bundle' : 'product'}-item-${product.id}`}
                       >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
                             {/* Product Image */}
                             {!isService && !isBundle && (
                               <div className="flex-shrink-0">
@@ -2983,59 +2983,55 @@ export default function AddOrder() {
                                   <img 
                                     src={product.image} 
                                     alt={product.name}
-                                    className="w-12 h-12 object-contain rounded border border-slate-200 bg-slate-50"
+                                    className="w-10 h-10 object-contain rounded border border-slate-200 bg-slate-50"
                                   />
                                 ) : (
-                                  <div className="w-12 h-12 bg-slate-100 rounded border border-slate-200 flex items-center justify-center">
-                                    <Package className="h-6 w-6 text-slate-300" />
+                                  <div className="w-10 h-10 bg-slate-100 rounded border border-slate-200 flex items-center justify-center">
+                                    <Package className="h-5 w-5 text-slate-300" />
                                   </div>
                                 )}
                               </div>
                             )}
                             {/* Service/Bundle Icon */}
                             {(isService || isBundle) && (
-                              <div className="w-12 h-12 flex-shrink-0 rounded bg-slate-100 border border-slate-200 flex items-center justify-center">
-                                {isService && <Wrench className="h-6 w-6 text-orange-500" />}
-                                {isBundle && <Box className="h-6 w-6 text-purple-500" />}
+                              <div className="w-10 h-10 flex-shrink-0 rounded bg-slate-100 border border-slate-200 flex items-center justify-center">
+                                {isService && <Wrench className="h-5 w-5 text-orange-500" />}
+                                {isBundle && <Box className="h-5 w-5 text-purple-500" />}
                               </div>
                             )}
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <div className="font-medium text-slate-900">{product.name}</div>
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <div className="font-medium text-sm text-slate-900 truncate">{product.name}</div>
                               {isBestMatch && (
-                                <Badge variant="default" className="text-xs px-1.5 py-0 bg-blue-600">
-                                  Best Match
+                                <Badge variant="default" className="text-[10px] px-1 py-0 bg-blue-600 flex-shrink-0">
+                                  Best
                                 </Badge>
                               )}
                               {isService && (
-                                <Badge variant="outline" className="text-xs px-1.5 py-0 border-orange-500 text-orange-600">
+                                <Badge variant="outline" className="text-[10px] px-1 py-0 border-orange-500 text-orange-600 flex-shrink-0">
                                   Service
                                 </Badge>
                               )}
                               {isBundle && (
-                                <Badge variant="outline" className="text-xs px-1.5 py-0 border-purple-500 text-purple-600">
+                                <Badge variant="outline" className="text-[10px] px-1 py-0 border-purple-500 text-purple-600 flex-shrink-0">
                                   Bundle
                                 </Badge>
                               )}
                               {!isService && !isBundle && frequency > 0 && (
-                                <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                                <Badge variant="secondary" className="text-[10px] px-1 py-0 flex-shrink-0">
                                   {frequency}x
                                 </Badge>
                               )}
                             </div>
-                            {!isService && !isBundle && (
-                              <div className="text-sm text-slate-500">SKU: {product.sku}</div>
-                            )}
-                            {isService && product.description && (
-                              <div className="text-sm text-slate-500">{product.description}</div>
-                            )}
-                            {isBundle && product.description && (
-                              <div className="text-sm text-slate-500">{product.description}</div>
-                            )}
+                            <div className="text-xs text-slate-500 truncate">
+                              {!isService && !isBundle && `SKU: ${product.sku}`}
+                              {isService && product.description && product.description}
+                              {isBundle && product.description && product.description}
+                            </div>
                             </div>
                           </div>
-                          <div className="text-right ml-4 flex-shrink-0">
-                            <div className="font-medium text-slate-900">
+                          <div className="text-right flex-shrink-0 ml-2">
+                            <div className="font-semibold text-sm text-slate-900">
                               {isService ? (
                                 formatCurrency(parseFloat(product.totalCost || '0'), 'EUR')
                               ) : (
@@ -3055,14 +3051,9 @@ export default function AddOrder() {
                               )}
                             </div>
                             {!isService && (
-                              <>
-                                <div className="text-sm text-slate-500">
-                                  Stock: {isBundle ? (product.availableStock ?? 0) : (product.quantity || 0)}
-                                </div>
-                                {!isBundle && product.warehouseName && (
-                                  <div className="text-xs text-slate-400">{product.warehouseName}</div>
-                                )}
-                              </>
+                              <div className="text-xs text-slate-500">
+                                Stock: {isBundle ? (product.availableStock ?? 0) : (product.quantity || 0)}
+                              </div>
                             )}
                           </div>
                         </div>
