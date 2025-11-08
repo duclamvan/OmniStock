@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Link } from "wouter";
 import { useEffect, useRef, useMemo, useState } from "react";
 import {
@@ -58,6 +59,7 @@ import {
   MoreVertical,
   RotateCcw,
   ChevronDown,
+  ChevronUp,
   TrendingUp,
   BarChart3,
   MessageCircle,
@@ -112,6 +114,11 @@ export default function OrderDetails() {
     const saved = localStorage.getItem('orderDetailsBadgesVisible');
     return saved === null ? true : saved === 'true';
   });
+
+  // Collapsible sections state
+  const [isProductDocsOpen, setIsProductDocsOpen] = useState(true);
+  const [isUploadedFilesOpen, setIsUploadedFilesOpen] = useState(true);
+  const [isShippingLabelsOpen, setIsShippingLabelsOpen] = useState(true);
 
   // Toggle badges visibility
   const toggleBadges = () => {
@@ -1645,12 +1652,16 @@ export default function OrderDetails() {
               <CardContent className="space-y-4">
                 {/* Product Documents */}
                 {productFiles && productFiles.length > 0 && (
-                  <div className="space-y-2">
-                    <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                      <Package className="h-4 w-4" />
-                      Product Documents ({productFiles.length})
-                    </h4>
-                    <div className="grid grid-cols-1 gap-2">
+                  <Collapsible open={isProductDocsOpen} onOpenChange={setIsProductDocsOpen}>
+                    <CollapsibleTrigger className="w-full">
+                      <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+                        <Package className="h-4 w-4" />
+                        Product Documents ({productFiles.length})
+                        {isProductDocsOpen ? <ChevronUp className="h-4 w-4 ml-auto" /> : <ChevronDown className="h-4 w-4 ml-auto" />}
+                      </h4>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="grid grid-cols-1 gap-2 mt-2">
                       {productFiles.map((file: any) => {
                         const fileTypeIcons: Record<string, any> = {
                           sds: Shield,
@@ -1706,19 +1717,24 @@ export default function OrderDetails() {
                           </div>
                         );
                       })}
-                    </div>
-                  </div>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                 )}
 
                 {/* Uploaded Files */}
                 {orderFiles && orderFiles.length > 0 && (
-                  <div className="space-y-2">
+                  <Collapsible open={isUploadedFilesOpen} onOpenChange={setIsUploadedFilesOpen}>
                     {productFiles && productFiles.length > 0 && <Separator />}
-                    <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                      <Upload className="h-4 w-4" />
-                      Uploaded Files ({orderFiles.length})
-                    </h4>
-                    <div className="grid grid-cols-1 gap-2">
+                    <CollapsibleTrigger className="w-full">
+                      <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+                        <Upload className="h-4 w-4" />
+                        Uploaded Files ({orderFiles.length})
+                        {isUploadedFilesOpen ? <ChevronUp className="h-4 w-4 ml-auto" /> : <ChevronDown className="h-4 w-4 ml-auto" />}
+                      </h4>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="grid grid-cols-1 gap-2 mt-2">
                       {orderFiles.map((file: any) => (
                         <div
                           key={file.id}
@@ -1750,19 +1766,24 @@ export default function OrderDetails() {
                           )}
                         </div>
                       ))}
-                    </div>
-                  </div>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                 )}
 
                 {/* Shipping Labels */}
                 {shipmentLabels && shipmentLabels.filter((label: any) => label.status !== 'cancelled').length > 0 && (
-                  <div className="space-y-2">
+                  <Collapsible open={isShippingLabelsOpen} onOpenChange={setIsShippingLabelsOpen}>
                     {((productFiles && productFiles.length > 0) || (orderFiles && orderFiles.length > 0)) && <Separator />}
-                    <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                      <Truck className="h-4 w-4" />
-                      Shipping Labels ({shipmentLabels.filter((label: any) => label.status !== 'cancelled').length})
-                    </h4>
-                    <div className="grid grid-cols-1 gap-2">
+                    <CollapsibleTrigger className="w-full">
+                      <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+                        <Truck className="h-4 w-4" />
+                        Shipping Labels ({shipmentLabels.filter((label: any) => label.status !== 'cancelled').length})
+                        {isShippingLabelsOpen ? <ChevronUp className="h-4 w-4 ml-auto" /> : <ChevronDown className="h-4 w-4 ml-auto" />}
+                      </h4>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="grid grid-cols-1 gap-2 mt-2">
                       {shipmentLabels.filter((label: any) => label.status !== 'cancelled').map((label: any) => (
                         <div
                           key={label.id}
@@ -1798,8 +1819,9 @@ export default function OrderDetails() {
                           )}
                         </div>
                       ))}
-                    </div>
-                  </div>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                 )}
               </CardContent>
             </Card>
