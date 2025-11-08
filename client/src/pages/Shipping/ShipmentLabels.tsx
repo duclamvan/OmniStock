@@ -6,6 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { DataTable, DataTableColumn } from '@/components/ui/data-table';
 import { Input } from '@/components/ui/input';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -19,7 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { formatDate } from '@/lib/currencyUtils';
 import { fuzzySearch } from '@/lib/fuzzySearch';
-import { Package, XCircle, ExternalLink, Search, Eye } from 'lucide-react';
+import { Package, XCircle, ExternalLink, Search, Eye, Filter } from 'lucide-react';
 import { Link } from 'wouter';
 
 interface ShipmentLabel {
@@ -45,6 +52,8 @@ export default function ShipmentLabels() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLabel, setSelectedLabel] = useState<ShipmentLabel | null>(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [carrierFilter, setCarrierFilter] = useState<string>('all');
 
   const { data: labels = [], isLoading } = useQuery<ShipmentLabel[]>({
     queryKey: ['/api/shipment-labels'],
@@ -86,30 +95,49 @@ export default function ShipmentLabels() {
   };
 
   const filteredLabels = labels.filter((label) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      label.orderId.toLowerCase().includes(query) ||
-      (label.customOrderId && label.customOrderId.toLowerCase().includes(query)) ||
-      (label.customerName && label.customerName.toLowerCase().includes(query)) ||
-      label.carrier.toLowerCase().includes(query) ||
-      label.trackingNumbers.some((tn) => tn.toLowerCase().includes(query)) ||
-      (label.batchId && label.batchId.toLowerCase().includes(query))
-    );
+    // Status filter
+    if (statusFilter !== 'all' && label.status !== statusFilter) {
+      return false;
+    }
+    
+    // Carrier filter
+    if (carrierFilter !== 'all' && label.carrier !== carrierFilter) {
+      return false;
+    }
+    
+    // Search query filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch = (
+        label.orderId.toLowerCase().includes(query) ||
+        (label.customOrderId && label.customOrderId.toLowerCase().includes(query)) ||
+        (label.customerName && label.customerName.toLowerCase().includes(query)) ||
+        label.carrier.toLowerCase().includes(query) ||
+        label.trackingNumbers.some((tn) => tn.toLowerCase().includes(query)) ||
+        (label.batchId && label.batchId.toLowerCase().includes(query))
+      );
+      if (!matchesSearch) return false;
+    }
+    
+    return true;
   });
 
   const columns: DataTableColumn<ShipmentLabel>[] = [
     {
       key: 'orderId',
       header: 'Order & Customer',
+      sortable: true,
+      sortKey: 'customOrderId',
       cell: (label: ShipmentLabel) => (
         <div className="flex flex-col gap-1">
-          <Link href={`/orders/${label.orderId}`}>
-            <a className="text-blue-600 hover:underline font-medium flex items-center gap-1" data-testid={`link-order-${label.id}`}>
-              {label.customOrderId || label.orderId}
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </Link>
+          <a 
+            href={`/orders/${label.orderId}`}
+            className="text-blue-600 hover:underline font-medium flex items-center gap-1" 
+            data-testid={`link-order-${label.id}`}
+          >
+            {label.customOrderId || label.orderId}
+            <ExternalLink className="w-3 h-3" />
+          </a>
           {label.customerName && (
             <div className="text-sm text-slate-600 dark:text-slate-400">
               {label.customerName}
@@ -121,6 +149,7 @@ export default function ShipmentLabels() {
     {
       key: 'carrier',
       header: 'Carrier',
+      sortable: true,
       cell: (label: ShipmentLabel) => (
         <Badge variant="outline" data-testid={`badge-carrier-${label.id}`}>
           {label.carrier}
@@ -143,6 +172,7 @@ export default function ShipmentLabels() {
     {
       key: 'status',
       header: 'Status',
+      sortable: true,
       cell: (label: ShipmentLabel) => (
         <Badge
           variant={label.status === 'active' ? 'default' : 'secondary'}
@@ -160,6 +190,7 @@ export default function ShipmentLabels() {
     {
       key: 'createdAt',
       header: 'Created',
+      sortable: true,
       cell: (label: ShipmentLabel) => (
         <span className="text-sm" data-testid={`text-created-${label.id}`}>
           {formatDate(label.createdAt)}
@@ -216,8 +247,11 @@ export default function ShipmentLabels() {
       <Card>
         <CardHeader>
           <CardTitle>All Shipment Labels</CardTitle>
-          <div className="flex items-center gap-2 mt-4">
-            <div className="relative flex-1 max-w-sm">
+          
+          {/* Filters Row */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mt-4">
+            {/* Search */}
+            <div className="relative flex-1 w-full sm:max-w-sm">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 type="text"
@@ -228,6 +262,57 @@ export default function ShipmentLabels() {
                 data-testid="input-search"
               />
             </div>
+            
+            {/* Carrier Filter */}
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-muted-foreground hidden sm:block" />
+              <Select value={carrierFilter} onValueChange={setCarrierFilter}>
+                <SelectTrigger className="w-[140px]" data-testid="select-carrier-filter">
+                  <SelectValue placeholder="Carrier" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Carriers</SelectItem>
+                  <SelectItem value="PPL">PPL</SelectItem>
+                  <SelectItem value="GLS">GLS</SelectItem>
+                  <SelectItem value="DHL">DHL</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Status Filter */}
+            <div className="flex items-center gap-2">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[140px]" data-testid="select-status-filter">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Clear Filters Button */}
+            {(searchQuery || statusFilter !== 'all' || carrierFilter !== 'all') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearchQuery('');
+                  setStatusFilter('all');
+                  setCarrierFilter('all');
+                }}
+                data-testid="button-clear-filters"
+              >
+                Clear Filters
+              </Button>
+            )}
+          </div>
+          
+          {/* Results Count */}
+          <div className="text-sm text-muted-foreground mt-2">
+            Showing {filteredLabels.length} of {labels.length} labels
           </div>
         </CardHeader>
         <CardContent>
