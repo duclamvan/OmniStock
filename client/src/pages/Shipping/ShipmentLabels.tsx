@@ -244,157 +244,157 @@ export default function ShipmentLabels() {
   ];
 
   return (
-    <div className="p-4 sm:p-6 space-y-6" data-testid="page-shipment-labels">
+    <div className="p-4 space-y-4" data-testid="page-shipment-labels">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2" data-testid="title-shipment-labels">
-            <Package className="w-6 h-6 sm:w-8 sm:h-8" />
+          <h1 className="text-2xl font-bold flex items-center gap-2" data-testid="title-shipment-labels">
+            <Package className="w-6 h-6" />
             Shipment Labels
           </h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Manage all shipping labels (PPL, GLS, DHL) created for orders
           </p>
         </div>
       </div>
 
       {/* Carrier Statistics Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {/* All Carriers */}
         <Card
-          className={`cursor-pointer transition-all hover:shadow-md ${
-            carrierFilter === 'all' ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950' : ''
+          className={`cursor-pointer transition-all hover:shadow-sm ${
+            carrierFilter === 'all' ? 'ring-1 ring-blue-500 bg-blue-50 dark:bg-blue-950' : ''
           }`}
           onClick={() => setCarrierFilter('all')}
           data-testid="card-filter-all"
         >
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">All Labels</p>
-                <p className="text-2xl sm:text-3xl font-bold mt-1">{carrierStats.all}</p>
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-muted-foreground truncate">All</p>
+                <p className="text-xl font-bold">{carrierStats.all}</p>
               </div>
-              <Truck className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+              <Truck className="h-5 w-5 text-blue-600 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
 
         {/* PPL */}
         <Card
-          className={`cursor-pointer transition-all hover:shadow-md ${
-            carrierFilter === 'PPL' ? 'ring-2 ring-orange-500 bg-orange-50 dark:bg-orange-950' : ''
+          className={`cursor-pointer transition-all hover:shadow-sm ${
+            carrierFilter === 'PPL' ? 'ring-1 ring-orange-500 bg-orange-50 dark:bg-orange-950' : ''
           }`}
           onClick={() => setCarrierFilter('PPL')}
           data-testid="card-filter-ppl"
         >
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">PPL</p>
-                <p className="text-2xl sm:text-3xl font-bold mt-1">{carrierStats.PPL}</p>
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-muted-foreground truncate">PPL</p>
+                <p className="text-xl font-bold">{carrierStats.PPL}</p>
               </div>
-              <Package className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
+              <Package className="h-5 w-5 text-orange-600 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
 
         {/* GLS */}
         <Card
-          className={`cursor-pointer transition-all hover:shadow-md ${
-            carrierFilter === 'GLS' ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950' : ''
+          className={`cursor-pointer transition-all hover:shadow-sm ${
+            carrierFilter === 'GLS' ? 'ring-1 ring-green-500 bg-green-50 dark:bg-green-950' : ''
           }`}
           onClick={() => setCarrierFilter('GLS')}
           data-testid="card-filter-gls"
         >
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">GLS</p>
-                <p className="text-2xl sm:text-3xl font-bold mt-1">{carrierStats.GLS}</p>
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-muted-foreground truncate">GLS</p>
+                <p className="text-xl font-bold">{carrierStats.GLS}</p>
               </div>
-              <Package className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
+              <Package className="h-5 w-5 text-green-600 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
 
         {/* DHL */}
         <Card
-          className={`cursor-pointer transition-all hover:shadow-md ${
-            carrierFilter === 'DHL' ? 'ring-2 ring-red-500 bg-red-50 dark:bg-red-950' : ''
+          className={`cursor-pointer transition-all hover:shadow-sm ${
+            carrierFilter === 'DHL' ? 'ring-1 ring-red-500 bg-red-50 dark:bg-red-950' : ''
           }`}
           onClick={() => setCarrierFilter('DHL')}
           data-testid="card-filter-dhl"
         >
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">DHL</p>
-                <p className="text-2xl sm:text-3xl font-bold mt-1">{carrierStats.DHL}</p>
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-muted-foreground truncate">DHL</p>
+                <p className="text-xl font-bold">{carrierStats.DHL}</p>
               </div>
-              <Package className="h-6 w-6 sm:h-8 sm:w-8 text-red-600" />
+              <Package className="h-5 w-5 text-red-600 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Status Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 gap-2">
         <Card
-          className={`cursor-pointer transition-all hover:shadow-md ${
-            statusFilter === 'active' ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950' : ''
+          className={`cursor-pointer transition-all hover:shadow-sm ${
+            statusFilter === 'active' ? 'ring-1 ring-green-500 bg-green-50 dark:bg-green-950' : ''
           }`}
           onClick={() => setStatusFilter(statusFilter === 'active' ? 'all' : 'active')}
           data-testid="card-filter-active"
         >
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Active Labels</p>
-                <p className="text-2xl sm:text-3xl font-bold mt-1">{statusStats.active}</p>
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-muted-foreground truncate">Active</p>
+                <p className="text-xl font-bold">{statusStats.active}</p>
               </div>
-              <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
+              <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
 
         <Card
-          className={`cursor-pointer transition-all hover:shadow-md ${
-            statusFilter === 'cancelled' ? 'ring-2 ring-red-500 bg-red-50 dark:bg-red-950' : ''
+          className={`cursor-pointer transition-all hover:shadow-sm ${
+            statusFilter === 'cancelled' ? 'ring-1 ring-red-500 bg-red-50 dark:bg-red-950' : ''
           }`}
           onClick={() => setStatusFilter(statusFilter === 'cancelled' ? 'all' : 'cancelled')}
           data-testid="card-filter-cancelled"
         >
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Cancelled</p>
-                <p className="text-2xl sm:text-3xl font-bold mt-1">{statusStats.cancelled}</p>
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-muted-foreground truncate">Cancelled</p>
+                <p className="text-xl font-bold">{statusStats.cancelled}</p>
               </div>
-              <XOctagon className="h-6 w-6 sm:h-8 sm:w-8 text-red-600" />
+              <XOctagon className="h-5 w-5 text-red-600 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
       </div>
 
       <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <CardTitle>Labels</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                Showing {filteredLabels.length} of {labels.length} labels
+              <CardTitle className="text-lg">Labels</CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Showing {filteredLabels.length} of {labels.length}
               </p>
             </div>
             
             {/* Search and Clear Filters */}
             <div className="flex items-center gap-2">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                 <Input
                   type="text"
-                  placeholder="Search orders, customers, tracking..."
+                  placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 w-full sm:w-[300px]"
+                  className="pl-8 h-8 text-sm w-full sm:w-[200px]"
                   data-testid="input-search"
                 />
               </div>
@@ -404,6 +404,7 @@ export default function ShipmentLabels() {
                 <Button
                   variant="outline"
                   size="sm"
+                  className="h-8"
                   onClick={() => {
                     setSearchQuery('');
                     setStatusFilter('all');
@@ -411,14 +412,14 @@ export default function ShipmentLabels() {
                   }}
                   data-testid="button-clear-filters"
                 >
-                  <XCircle className="h-4 w-4 mr-1" />
+                  <XCircle className="h-3.5 w-3.5 mr-1" />
                   Clear
                 </Button>
               )}
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground" data-testid="loading-labels">
               Loading labels...
