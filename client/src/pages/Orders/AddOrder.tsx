@@ -766,7 +766,13 @@ export default function AddOrder() {
         setNewCustomer(prev => ({ ...prev, name: fullName, firstName: fields.firstName, lastName: fields.lastName }));
       }
       if (fields.company) setNewCustomer(prev => ({ ...prev, company: fields.company }));
-      if (fields.email) setNewCustomer(prev => ({ ...prev, email: fields.email }));
+      
+      // Set email - use parsed email or default to davienails999@gmail.com if not found
+      if (fields.email) {
+        setNewCustomer(prev => ({ ...prev, email: fields.email }));
+      } else {
+        setNewCustomer(prev => ({ ...prev, email: "davienails999@gmail.com" }));
+      }
       
       // Use Nominatim-corrected address values
       if (fields.street) setNewCustomer(prev => ({ ...prev, street: fields.street }));
