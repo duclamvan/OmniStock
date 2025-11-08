@@ -302,6 +302,7 @@ export default function EditOrder() {
   const [showShippingModal, setShowShippingModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
   const [addressToDelete, setAddressToDelete] = useState<any>(null);
+  const [grandTotalInput, setGrandTotalInput] = useState<string>("");
   
   // Variant/Bundle selection state
   const [showVariantDialog, setShowVariantDialog] = useState(false);
@@ -1257,6 +1258,45 @@ export default function EditOrder() {
     watchedTaxRate,
     watchedAdjustment
   ]); // Recalculates on any value change including adjustment
+
+  // Sync grandTotalInput with calculated total (unless user is editing)
+  useEffect(() => {
+    const calculatedTotal = calculateGrandTotal();
+    setGrandTotalInput(calculatedTotal.toFixed(2));
+  }, [
+    orderItems,
+    showTaxInvoice,
+    watchedDiscountValue,
+    watchedShippingCost,
+    watchedTaxRate,
+    watchedAdjustment,
+    form.watch('discountType')
+  ]);
+
+  // Handler for when user finishes editing grand total
+  const handleGrandTotalChange = () => {
+    const desiredTotal = parseFloat(grandTotalInput);
+    if (!isNaN(desiredTotal) && desiredTotal > 0) {
+      const subtotal = calculateSubtotal();
+      const tax = showTaxInvoice ? calculateTax() : 0;
+      const shippingValue = form.watch('shippingCost');
+      const shipping = typeof shippingValue === 'string' ? parseFloat(shippingValue || '0') : (shippingValue || 0);
+      const adjustmentValue = form.watch('adjustment');
+      const adjustment = typeof adjustmentValue === 'string' ? parseFloat(adjustmentValue || '0') : (adjustmentValue || 0);
+      
+      // Calculate the discount needed to reach desired total
+      const neededDiscount = subtotal + tax + shipping + adjustment - desiredTotal;
+      
+      // Set discount type to flat and apply the calculated discount
+      form.setValue('discountType', 'flat');
+      form.setValue('discountValue', Math.max(0, parseFloat(neededDiscount.toFixed(2))));
+      
+      toast({
+        title: "Total Adjusted",
+        description: `Discount set to ${formatCurrency(Math.max(0, neededDiscount), form.watch('currency'))} to reach ${formatCurrency(desiredTotal, form.watch('currency'))}`,
+      });
+    }
+  };
 
   // Auto-fill currency from customer preference (only when creating new orders)
   // Note: This is intentionally NOT in EditOrder - we preserve the order's saved currency
@@ -3963,10 +4003,19 @@ export default function EditOrder() {
                   <div className="flex items-center gap-2 mt-1">
                     <Input
                       id="grandTotal"
-                      type="text"
-                      value={formatCurrency(calculateGrandTotal(), form.watch('currency'))}
-                      readOnly
-                      className="font-bold text-lg bg-gray-50 dark:bg-slate-800 border-blue-300 dark:border-blue-700 cursor-default"
+                      type="number"
+                      step="0.01"
+                      placeholder="Enter desired total"
+                      value={grandTotalInput}
+                      onChange={(e) => setGrandTotalInput(e.target.value)}
+                      onBlur={handleGrandTotalChange}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleGrandTotalChange();
+                        }
+                      }}
+                      className="font-bold text-lg bg-white dark:bg-slate-900 border-blue-300 dark:border-blue-700"
                       data-testid="input-grand-total"
                     />
                     <Button
@@ -3979,14 +4028,11 @@ export default function EditOrder() {
                         const difference = roundedTotal - currentTotal;
                         
                         if (difference > 0) {
-                          // Add the difference to adjustment field instead of shipping cost
+                          // Add the difference to adjustment field
                           form.setValue('adjustment', parseFloat(difference.toFixed(2)));
                           
-                          // Update the grand total input to show the new rounded value
-                          const grandTotalInput = document.getElementById('grandTotal') as HTMLInputElement;
-                          if (grandTotalInput) {
-                            grandTotalInput.value = roundedTotal.toFixed(2);
-                          }
+                          // Update the state (the effect will update grandTotalInput automatically)
+                          setGrandTotalInput(roundedTotal.toFixed(2));
                           
                           toast({
                             title: "Total Rounded Up",
@@ -4006,7 +4052,7 @@ export default function EditOrder() {
                       Round Up
                     </Button>
                   </div>
-                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">Use Round Up button or adjust discount/shipping to change the total.</p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">Enter desired total or use Round Up button. Discount will auto-adjust.</p>
                 </div>
               </div>
             </div>
