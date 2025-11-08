@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Package, 
@@ -21,7 +22,9 @@ import {
   ExternalLink,
   Plus,
   Settings,
-  RefreshCw
+  RefreshCw,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -115,6 +118,23 @@ export default function ShippingManagement() {
     email: ''
   });
 
+  // DHL default address form state
+  const [dhlAddress, setDhlAddress] = useState<PPLAddress>({
+    name: '',
+    name2: '',
+    street: '',
+    city: '',
+    zipCode: '',
+    country: 'DE',
+    contact: '',
+    phone: '',
+    email: ''
+  });
+
+  // Collapsible state
+  const [isPPLOpen, setIsPPLOpen] = useState(true);
+  const [isDHLOpen, setIsDHLOpen] = useState(false);
+
   // Test PPL connection
   const { data: connectionStatus, isLoading: isTestingConnection, refetch: refetchPPL } = useQuery<PPLConnectionStatus>({
     queryKey: ['/api/shipping/test-connection'],
@@ -142,12 +162,26 @@ export default function ShippingManagement() {
     retry: false
   });
 
+  // Load saved DHL default address
+  const { data: savedDHLAddress } = useQuery({
+    queryKey: ['/api/settings/dhl_default_sender_address'],
+    refetchInterval: false,
+    retry: false
+  });
+
   // Update form when saved address loads
   useEffect(() => {
     if (savedAddress && (savedAddress as any).value) {
       setPplAddress((savedAddress as any).value as PPLAddress);
     }
   }, [savedAddress]);
+
+  // Update DHL form when saved address loads
+  useEffect(() => {
+    if (savedDHLAddress && (savedDHLAddress as any).value) {
+      setDhlAddress((savedDHLAddress as any).value as PPLAddress);
+    }
+  }, [savedDHLAddress]);
 
   // Save PPL default address mutation
   const savePPLAddressMutation = useMutation({
@@ -164,6 +198,31 @@ export default function ShippingManagement() {
         description: "Default PPL sender address has been saved successfully"
       });
       queryClient.invalidateQueries({ queryKey: ['/api/settings/ppl_default_sender_address'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Save Address",
+        description: error.message || "Unknown error occurred",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Save DHL default address mutation
+  const saveDHLAddressMutation = useMutation({
+    mutationFn: async (address: PPLAddress) => 
+      apiRequest('POST', '/api/settings', {
+        key: 'dhl_default_sender_address',
+        value: address,
+        category: 'shipping',
+        description: 'Default sender address for DHL Parcel DE labels'
+      }),
+    onSuccess: () => {
+      toast({
+        title: "Address Saved",
+        description: "Default DHL sender address has been saved successfully"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/settings/dhl_default_sender_address'] });
     },
     onError: (error: any) => {
       toast({
@@ -210,6 +269,20 @@ export default function ShippingManagement() {
       return;
     }
     savePPLAddressMutation.mutate(pplAddress);
+  };
+
+  // Handle saving DHL default address
+  const handleSaveDHLAddress = () => {
+    // Validate required fields
+    if (!dhlAddress.name || !dhlAddress.street || !dhlAddress.city || !dhlAddress.zipCode || !dhlAddress.country) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields (marked with *)",
+        variant: "destructive"
+      });
+      return;
+    }
+    saveDHLAddressMutation.mutate(dhlAddress);
   };
 
   // Handle PPL test connection
@@ -501,21 +574,29 @@ export default function ShippingManagement() {
         </TabsContent>
 
         <TabsContent value="info" className="space-y-6">
-          <Card className="overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 border-b">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white rounded-lg shadow-sm">
-                  <Truck className="w-5 h-5 text-slate-700" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg">PPL Shipping Information</CardTitle>
-                  <CardDescription className="text-xs mt-0.5">Test label generation and view integration details</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-6">
-              <div className="space-y-6">
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-5 border border-blue-100">
+          {/* PPL Shipping Information Card */}
+          <Collapsible open={isPPLOpen} onOpenChange={setIsPPLOpen}>
+            <Card className="overflow-hidden">
+              <CollapsibleTrigger className="w-full">
+                <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 border-b cursor-pointer hover:bg-slate-100 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-white rounded-lg shadow-sm">
+                        <Truck className="w-5 h-5 text-slate-700" />
+                      </div>
+                      <div className="text-left">
+                        <CardTitle className="text-lg">PPL Shipping Information</CardTitle>
+                        <CardDescription className="text-xs mt-0.5">Test label generation and view integration details</CardDescription>
+                      </div>
+                    </div>
+                    {isPPLOpen ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
+                  </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-6 space-y-6">
+                  <div className="space-y-6">
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-5 border border-blue-100">
                   <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-blue-600" />
                     Default PPL Sender Address
@@ -717,9 +798,249 @@ export default function ShippingManagement() {
                     </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+
+          {/* DHL Shipping Information Card */}
+          <Collapsible open={isDHLOpen} onOpenChange={setIsDHLOpen}>
+            <Card className="overflow-hidden">
+              <CollapsibleTrigger className="w-full">
+                <CardHeader className="bg-gradient-to-r from-red-50 to-orange-50 border-b cursor-pointer hover:bg-red-100 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-white rounded-lg shadow-sm">
+                        <Package className="w-5 h-5 text-red-600" />
+                      </div>
+                      <div className="text-left">
+                        <CardTitle className="text-lg">DHL Shipping Information</CardTitle>
+                        <CardDescription className="text-xs mt-0.5">Configure DHL Parcel DE integration and sender address</CardDescription>
+                      </div>
+                    </div>
+                    {isDHLOpen ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
+                  </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-6 space-y-6">
+                  <div className="space-y-6">
+                    <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-lg p-5 border border-red-100">
+                      <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-red-600" />
+                        Default DHL Sender Address
+                      </h4>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Set the default sender address (Absender) used for all DHL Parcel DE label generation
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2 md:col-span-2">
+                          <Label htmlFor="dhl-name">
+                            Name / Firma <span className="text-red-500">*</span>
+                          </Label>
+                          <Input 
+                            id="dhl-name"
+                            value={dhlAddress.name}
+                            onChange={(e) => setDhlAddress({ ...dhlAddress, name: e.target.value })}
+                            placeholder="Company or personal name"
+                            data-testid="input-dhl-name"
+                          />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <Label htmlFor="dhl-name2">Additional Name (optional)</Label>
+                          <Input 
+                            id="dhl-name2"
+                            value={dhlAddress.name2}
+                            onChange={(e) => setDhlAddress({ ...dhlAddress, name2: e.target.value })}
+                            placeholder="Contact person or department (optional)"
+                            data-testid="input-dhl-name2"
+                          />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <Label htmlFor="dhl-street">
+                            Straße & Hausnummer <span className="text-red-500">*</span>
+                          </Label>
+                          <Input 
+                            id="dhl-street"
+                            value={dhlAddress.street}
+                            onChange={(e) => setDhlAddress({ ...dhlAddress, street: e.target.value })}
+                            placeholder="Street and house number"
+                            data-testid="input-dhl-street"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="dhl-zipcode">
+                            PLZ <span className="text-red-500">*</span>
+                          </Label>
+                          <Input 
+                            id="dhl-zipcode"
+                            value={dhlAddress.zipCode}
+                            onChange={(e) => setDhlAddress({ ...dhlAddress, zipCode: e.target.value })}
+                            placeholder="12345"
+                            maxLength={5}
+                            data-testid="input-dhl-zipcode"
+                          />
+                          <p className="text-xs text-muted-foreground">5-digit postal code (e.g., 10115 for Berlin)</p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="dhl-city">
+                            Ort <span className="text-red-500">*</span>
+                          </Label>
+                          <Input 
+                            id="dhl-city"
+                            value={dhlAddress.city}
+                            onChange={(e) => setDhlAddress({ ...dhlAddress, city: e.target.value })}
+                            placeholder="City"
+                            data-testid="input-dhl-city"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="dhl-country">
+                            Land <span className="text-red-500">*</span>
+                          </Label>
+                          <Input 
+                            id="dhl-country"
+                            value={dhlAddress.country}
+                            onChange={(e) => setDhlAddress({ ...dhlAddress, country: e.target.value.toUpperCase() })}
+                            placeholder="DE"
+                            maxLength={2}
+                            data-testid="input-dhl-country"
+                          />
+                          <p className="text-xs text-muted-foreground">2-letter country code (e.g., DE, AT, CH)</p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="dhl-contact">Kontakt</Label>
+                          <Input 
+                            id="dhl-contact"
+                            value={dhlAddress.contact}
+                            onChange={(e) => setDhlAddress({ ...dhlAddress, contact: e.target.value })}
+                            placeholder="Contact person (optional)"
+                            data-testid="input-dhl-contact"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="dhl-phone">Telefon</Label>
+                          <Input 
+                            id="dhl-phone"
+                            type="tel"
+                            value={dhlAddress.phone}
+                            onChange={(e) => setDhlAddress({ ...dhlAddress, phone: e.target.value.replace(/\D/g, '') })}
+                            placeholder="491234567890"
+                            data-testid="input-dhl-phone"
+                          />
+                          <p className="text-xs text-muted-foreground">Numbers only, no spaces (e.g., 491234567890)</p>
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <Label htmlFor="dhl-email">E-Mail</Label>
+                          <Input 
+                            id="dhl-email"
+                            type="email"
+                            value={dhlAddress.email}
+                            onChange={(e) => setDhlAddress({ ...dhlAddress, email: e.target.value })}
+                            placeholder="sender@example.com"
+                            data-testid="input-dhl-email"
+                          />
+                          <p className="text-xs text-muted-foreground">Strongly recommended for label delivery and notifications</p>
+                        </div>
+                      </div>
+                      
+                      <div className="pt-4">
+                        <Button 
+                          onClick={handleSaveDHLAddress}
+                          className="w-full bg-red-600 hover:bg-red-700"
+                          disabled={saveDHLAddressMutation.isPending}
+                          data-testid="button-save-dhl-address"
+                        >
+                          {saveDHLAddressMutation.isPending ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                              Save as Default Sender Address
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-sm flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          Supported Features
+                        </h4>
+                        <div className="space-y-2">
+                          <div className="flex items-start gap-2 text-sm">
+                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5" />
+                            <span>DHL Parcel DE shipping labels (PDF)</span>
+                          </div>
+                          <div className="flex items-start gap-2 text-sm">
+                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5" />
+                            <span>Domestic and international parcels</span>
+                          </div>
+                          <div className="flex items-start gap-2 text-sm">
+                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5" />
+                            <span>OAuth2 authentication with sandbox testing</span>
+                          </div>
+                          <div className="flex items-start gap-2 text-sm">
+                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5" />
+                            <span>Tracking number assignment</span>
+                          </div>
+                          <div className="flex items-start gap-2 text-sm">
+                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5" />
+                            <span>Automated label generation</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-sm flex items-center gap-2">
+                          <Package className="w-4 h-4 text-red-600" />
+                          Product Types
+                        </h4>
+                        <div className="bg-white border rounded-lg p-4">
+                          <p className="font-medium text-sm">DHL Paket</p>
+                          <p className="text-muted-foreground text-xs mt-1">Standard German domestic and international shipments</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-blue-600" />
+                        Important Notes
+                      </h4>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        DHL Parcel DE integration requirements:
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div className="flex items-start gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5" />
+                          <span>Phone numbers must be digits only (no spaces)</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5" />
+                          <span>Email strongly recommended for label delivery</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5" />
+                          <span>Postal codes are 5 digits for Germany</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5" />
+                          <span>Currently using sandbox environment</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
         </TabsContent>
       </Tabs>
     </div>
