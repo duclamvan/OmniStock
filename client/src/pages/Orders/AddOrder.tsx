@@ -37,6 +37,7 @@ import {
   ArrowLeft,
   Save,
   User,
+  UserPlus,
   Package,
   Truck,
   CreditCard,
@@ -1776,10 +1777,10 @@ export default function AddOrder() {
               </CardHeader>
               <CardContent className="p-3 space-y-3">
             {/* Quick Customer Options */}
-            {!selectedCustomer && !quickCustomerType && (
+            {!selectedCustomer && !quickCustomerType && !showNewCustomerForm && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Quick Customer</Label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   <Button
                     type="button"
                     variant="outline"
@@ -1839,6 +1840,20 @@ export default function AddOrder() {
                   >
                     <Plus className="h-3.5 w-3.5" />
                     Custom
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1.5 text-xs border-blue-300 text-blue-700 hover:bg-blue-50"
+                    onClick={() => {
+                      setShowNewCustomerForm(true);
+                      setCustomerSearch("");
+                    }}
+                    data-testid="button-new-customer"
+                  >
+                    <UserPlus className="h-3.5 w-3.5" />
+                    New
                   </Button>
                 </div>
                 <Separator className="my-3" />
@@ -1969,6 +1984,7 @@ export default function AddOrder() {
               </div>
             )}
 
+            {!showNewCustomerForm && (
             <div className="relative customer-search-container">
               <Label htmlFor="customer">Search Customer</Label>
               <div className="relative">
@@ -2156,8 +2172,8 @@ export default function AddOrder() {
                 </div>
               )}
             </div>
+            )}
 
-            {/* Selected customer display */}
             {selectedCustomer && (
               <Card className="mt-4 border-2 border-green-500 bg-white">
                 <CardContent className="p-6">
