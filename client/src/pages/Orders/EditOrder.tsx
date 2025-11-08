@@ -3921,7 +3921,7 @@ export default function EditOrder() {
                       {form.watch('shippingMethod') === 'DHL' ? 'Nachnahme Currency' : 'Dobírka Currency'}
                     </Label>
                     <Select 
-                      value={form.watch('dobirkaCurrency') || 'CZK'}
+                      value={form.watch('dobirkaCurrency') || (form.watch('shippingMethod') === 'DHL' ? 'EUR' : 'CZK')}
                       onValueChange={(value) => form.setValue('dobirkaCurrency', value as any)}
                     >
                       <SelectTrigger className="mt-1" data-testid="select-dobirka-currency">
