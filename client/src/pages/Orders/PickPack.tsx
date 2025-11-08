@@ -224,6 +224,10 @@ interface PickPackOrder {
   pplShipmentNumbers?: string[];
   pplLabelData?: any;
   pplStatus?: string;
+  // Payment and COD fields
+  paymentMethod?: string;
+  dobirkaAmount?: number | string;
+  dobirkaCurrency?: string;
 }
 
 interface OrderCarton {
@@ -6334,31 +6338,62 @@ export default function PickPack() {
                   <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
                     <div className="flex items-center gap-2 mb-1">
                       <Truck className="h-4 w-4 text-purple-600 flex-shrink-0" />
-                      <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Shipment Type</span>
+                      <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Shipping Method</span>
                     </div>
                     <p className="text-sm font-medium text-gray-900 pl-6" data-testid="text-shipment-type">
-                      {activePackingOrder.shippingMethod}
+                      {(() => {
+                        const method = activePackingOrder.shippingMethod;
+                        const hasCOD = activePackingOrder.paymentMethod === 'COD' && 
+                                       activePackingOrder.dobirkaAmount && 
+                                       Number(activePackingOrder.dobirkaAmount) > 0;
+                        
+                        if (hasCOD) {
+                          if (method === 'DHL') return 'DHL Nachnahme';
+                          if (method === 'PPL') return 'PPL Dobírka';
+                        }
+                        return method;
+                      })()}
                     </p>
                   </div>
                 )}
 
-                {/* COD / Dobírka / Nachnahme */}
-                {activePackingOrder.dobirkaAmount && Number(activePackingOrder.dobirkaAmount) > 0 && (
-                  <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                {/* Payment Method */}
+                {activePackingOrder.paymentMethod && (
+                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <DollarSign className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                      <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Payment Method</span>
+                    </div>
+                    <p className="text-sm font-medium text-gray-900 pl-6" data-testid="text-payment-method">
+                      {activePackingOrder.paymentMethod}
+                    </p>
+                  </div>
+                )}
+
+                {/* COD Amount with Currency - Only show if COD is selected */}
+                {activePackingOrder.paymentMethod === 'COD' && 
+                 activePackingOrder.dobirkaAmount && 
+                 Number(activePackingOrder.dobirkaAmount) > 0 && (
+                  <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg col-span-1 sm:col-span-2">
                     <div className="flex items-center gap-2 mb-1">
                       <DollarSign className="h-4 w-4 text-orange-600 flex-shrink-0" />
                       <span className="text-xs font-semibold text-orange-900 uppercase tracking-wide">
                         {(() => {
-                          const currency = (activePackingOrder.dobirkaCurrency || 'CZK').toUpperCase();
-                          if (currency === 'CZK') return 'Dobírka';
-                          if (currency === 'EUR') return 'Nachnahme';
-                          return 'COD';
+                          const method = activePackingOrder.shippingMethod;
+                          if (method === 'DHL') return 'Nachnahme Amount';
+                          if (method === 'PPL') return 'Dobírka Amount';
+                          return 'COD Amount';
                         })()}
                       </span>
                     </div>
-                    <p className="text-sm font-bold text-orange-900 pl-6" data-testid="text-cod-amount">
-                      {formatCurrency(Number(activePackingOrder.dobirkaAmount), activePackingOrder.dobirkaCurrency || 'CZK')}
-                    </p>
+                    <div className="pl-6">
+                      <p className="text-lg font-bold text-orange-900" data-testid="text-cod-amount">
+                        {formatCurrency(Number(activePackingOrder.dobirkaAmount), activePackingOrder.dobirkaCurrency || 'CZK')}
+                      </p>
+                      <p className="text-xs text-orange-700 mt-0.5">
+                        Currency: {activePackingOrder.dobirkaCurrency || 'CZK'}
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
