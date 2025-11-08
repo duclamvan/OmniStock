@@ -26,7 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { formatDate } from '@/lib/currencyUtils';
 import { fuzzySearch } from '@/lib/fuzzySearch';
-import { Package, XCircle, ExternalLink, Search, Eye, Filter } from 'lucide-react';
+import { Package, XCircle, ExternalLink, Search, Eye, Filter, Truck, CheckCircle, XOctagon } from 'lucide-react';
 import { Link } from 'wouter';
 
 interface ShipmentLabel {
@@ -92,6 +92,19 @@ export default function ShipmentLabels() {
     if (selectedLabel) {
       cancelLabelMutation.mutate(selectedLabel.id);
     }
+  };
+
+  // Calculate carrier statistics
+  const carrierStats = {
+    all: labels.length,
+    PPL: labels.filter(l => l.carrier === 'PPL').length,
+    GLS: labels.filter(l => l.carrier === 'GLS').length,
+    DHL: labels.filter(l => l.carrier === 'DHL').length,
+  };
+
+  const statusStats = {
+    active: labels.filter(l => l.status === 'active').length,
+    cancelled: labels.filter(l => l.status === 'cancelled').length,
   };
 
   const filteredLabels = labels.filter((label) => {
@@ -231,88 +244,178 @@ export default function ShipmentLabels() {
   ];
 
   return (
-    <div className="p-6 space-y-6" data-testid="page-shipment-labels">
+    <div className="p-4 sm:p-6 space-y-6" data-testid="page-shipment-labels">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2" data-testid="title-shipment-labels">
-            <Package className="w-8 h-8" />
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2" data-testid="title-shipment-labels">
+            <Package className="w-6 h-6 sm:w-8 sm:h-8" />
             Shipment Labels
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground">
             Manage all shipping labels (PPL, GLS, DHL) created for orders
           </p>
         </div>
       </div>
 
+      {/* Carrier Statistics Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        {/* All Carriers */}
+        <Card
+          className={`cursor-pointer transition-all hover:shadow-md ${
+            carrierFilter === 'all' ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950' : ''
+          }`}
+          onClick={() => setCarrierFilter('all')}
+          data-testid="card-filter-all"
+        >
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">All Labels</p>
+                <p className="text-2xl sm:text-3xl font-bold mt-1">{carrierStats.all}</p>
+              </div>
+              <Truck className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* PPL */}
+        <Card
+          className={`cursor-pointer transition-all hover:shadow-md ${
+            carrierFilter === 'PPL' ? 'ring-2 ring-orange-500 bg-orange-50 dark:bg-orange-950' : ''
+          }`}
+          onClick={() => setCarrierFilter('PPL')}
+          data-testid="card-filter-ppl"
+        >
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">PPL</p>
+                <p className="text-2xl sm:text-3xl font-bold mt-1">{carrierStats.PPL}</p>
+              </div>
+              <Package className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* GLS */}
+        <Card
+          className={`cursor-pointer transition-all hover:shadow-md ${
+            carrierFilter === 'GLS' ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950' : ''
+          }`}
+          onClick={() => setCarrierFilter('GLS')}
+          data-testid="card-filter-gls"
+        >
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">GLS</p>
+                <p className="text-2xl sm:text-3xl font-bold mt-1">{carrierStats.GLS}</p>
+              </div>
+              <Package className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* DHL */}
+        <Card
+          className={`cursor-pointer transition-all hover:shadow-md ${
+            carrierFilter === 'DHL' ? 'ring-2 ring-red-500 bg-red-50 dark:bg-red-950' : ''
+          }`}
+          onClick={() => setCarrierFilter('DHL')}
+          data-testid="card-filter-dhl"
+        >
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">DHL</p>
+                <p className="text-2xl sm:text-3xl font-bold mt-1">{carrierStats.DHL}</p>
+              </div>
+              <Package className="h-6 w-6 sm:h-8 sm:w-8 text-red-600" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Status Cards */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <Card
+          className={`cursor-pointer transition-all hover:shadow-md ${
+            statusFilter === 'active' ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950' : ''
+          }`}
+          onClick={() => setStatusFilter(statusFilter === 'active' ? 'all' : 'active')}
+          data-testid="card-filter-active"
+        >
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Active Labels</p>
+                <p className="text-2xl sm:text-3xl font-bold mt-1">{statusStats.active}</p>
+              </div>
+              <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card
+          className={`cursor-pointer transition-all hover:shadow-md ${
+            statusFilter === 'cancelled' ? 'ring-2 ring-red-500 bg-red-50 dark:bg-red-950' : ''
+          }`}
+          onClick={() => setStatusFilter(statusFilter === 'cancelled' ? 'all' : 'cancelled')}
+          data-testid="card-filter-cancelled"
+        >
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Cancelled</p>
+                <p className="text-2xl sm:text-3xl font-bold mt-1">{statusStats.cancelled}</p>
+              </div>
+              <XOctagon className="h-6 w-6 sm:h-8 sm:w-8 text-red-600" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle>All Shipment Labels</CardTitle>
-          
-          {/* Filters Row */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mt-4">
-            {/* Search */}
-            <div className="relative flex-1 w-full sm:max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search by Order ID, Customer Name, Carrier, Tracking..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-                data-testid="input-search"
-              />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <CardTitle>Labels</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Showing {filteredLabels.length} of {labels.length} labels
+              </p>
             </div>
             
-            {/* Carrier Filter */}
+            {/* Search and Clear Filters */}
             <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-muted-foreground hidden sm:block" />
-              <Select value={carrierFilter} onValueChange={setCarrierFilter}>
-                <SelectTrigger className="w-[140px]" data-testid="select-carrier-filter">
-                  <SelectValue placeholder="Carrier" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Carriers</SelectItem>
-                  <SelectItem value="PPL">PPL</SelectItem>
-                  <SelectItem value="GLS">GLS</SelectItem>
-                  <SelectItem value="DHL">DHL</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search orders, customers, tracking..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 w-full sm:w-[300px]"
+                  data-testid="input-search"
+                />
+              </div>
+              
+              {/* Clear Filters Button */}
+              {(searchQuery || statusFilter !== 'all' || carrierFilter !== 'all') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setStatusFilter('all');
+                    setCarrierFilter('all');
+                  }}
+                  data-testid="button-clear-filters"
+                >
+                  <XCircle className="h-4 w-4 mr-1" />
+                  Clear
+                </Button>
+              )}
             </div>
-            
-            {/* Status Filter */}
-            <div className="flex items-center gap-2">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[140px]" data-testid="select-status-filter">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {/* Clear Filters Button */}
-            {(searchQuery || statusFilter !== 'all' || carrierFilter !== 'all') && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSearchQuery('');
-                  setStatusFilter('all');
-                  setCarrierFilter('all');
-                }}
-                data-testid="button-clear-filters"
-              >
-                Clear Filters
-              </Button>
-            )}
-          </div>
-          
-          {/* Results Count */}
-          <div className="text-sm text-muted-foreground mt-2">
-            Showing {filteredLabels.length} of {labels.length} labels
           </div>
         </CardHeader>
         <CardContent>
