@@ -3632,7 +3632,7 @@ export default function AddOrder() {
                   <div>
                     <Label htmlFor="dobirkaAmount" className="flex items-center gap-2">
                       <Banknote className="w-4 h-4" />
-                      Dobírka Amount (COD)
+                      {form.watch('shippingMethod') === 'DHL' ? 'Nachnahme (COD)' : 'Dobírka Amount (COD)'}
                     </Label>
                     <Input
                       type="number"
@@ -3646,7 +3646,7 @@ export default function AddOrder() {
                   </div>
 
                   <div>
-                    <Label htmlFor="dobirkaCurrency">Dobírka Currency</Label>
+                    <Label htmlFor="dobirkaCurrency">{form.watch('shippingMethod') === 'DHL' ? 'Nachnahme Currency' : 'Dobírka Currency'}</Label>
                     <Select 
                       value={form.watch('dobirkaCurrency') || 'CZK'}
                       onValueChange={(value) => form.setValue('dobirkaCurrency', value as any)}

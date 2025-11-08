@@ -3901,7 +3901,7 @@ export default function EditOrder() {
                   <div>
                     <Label htmlFor="dobirkaAmount" className="text-sm flex items-center gap-2">
                       <Banknote className="w-4 h-4" />
-                      Dobírka Amount (COD)
+                      {form.watch('shippingMethod') === 'DHL' ? 'Nachnahme (COD)' : 'Dobírka Amount (COD)'}
                     </Label>
                     <Input
                       type="number"
@@ -3918,7 +3918,7 @@ export default function EditOrder() {
                   <div>
                     <Label htmlFor="dobirkaCurrency" className="text-sm flex items-center gap-2">
                       <span className="w-4 h-4"></span>
-                      Dobírka Currency
+                      {form.watch('shippingMethod') === 'DHL' ? 'Nachnahme Currency' : 'Dobírka Currency'}
                     </Label>
                     <Select 
                       value={form.watch('dobirkaCurrency') || 'CZK'}
