@@ -219,8 +219,18 @@ export default function ShipmentLabels() {
             variant="outline"
             size="sm"
             onClick={() => {
-              const dataUrl = `data:application/pdf;base64,${label.labelBase64}`;
-              window.open(dataUrl, '_blank');
+              // Convert base64 to blob for proper PDF display
+              const byteCharacters = atob(label.labelBase64);
+              const byteNumbers = new Array(byteCharacters.length);
+              for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+              }
+              const byteArray = new Uint8Array(byteNumbers);
+              const blob = new Blob([byteArray], { type: 'application/pdf' });
+              const url = URL.createObjectURL(blob);
+              window.open(url, '_blank');
+              // Clean up the URL after a delay
+              setTimeout(() => URL.revokeObjectURL(url), 100);
             }}
             data-testid={`button-view-label-${label.id}`}
           >
