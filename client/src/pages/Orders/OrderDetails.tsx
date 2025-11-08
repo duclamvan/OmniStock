@@ -233,6 +233,12 @@ export default function OrderDetails() {
     enabled: !!id && !!order,
   });
 
+  // Fetch shipment labels
+  const { data: shipmentLabels = [] } = useQuery<any[]>({
+    queryKey: [`/api/orders/${id}/shipment-labels`],
+    enabled: !!id && !!order,
+  });
+
   // Prevent OrderDetails from rendering on pick-pack page
   if (location === '/orders/pick-pack') {
     return null;
@@ -1537,7 +1543,7 @@ export default function OrderDetails() {
           </Card>
 
           {/* Files Sent Card */}
-          {((productFiles && productFiles.length > 0) || (orderFiles && orderFiles.length > 0)) && (
+          {((productFiles && productFiles.length > 0) || (orderFiles && orderFiles.length > 0) || (shipmentLabels && shipmentLabels.length > 0)) && (
             <Card data-testid="card-files-sent">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
@@ -1645,6 +1651,54 @@ export default function OrderDetails() {
                               download={file.fileName}
                               className="shrink-0"
                               data-testid={`button-download-${file.id}`}
+                            >
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Shipping Labels */}
+                {shipmentLabels && shipmentLabels.length > 0 && (
+                  <div className="space-y-2">
+                    {((productFiles && productFiles.length > 0) || (orderFiles && orderFiles.length > 0)) && <Separator />}
+                    <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                      <Truck className="h-4 w-4" />
+                      Shipping Labels ({shipmentLabels.length})
+                    </h4>
+                    <div className="grid grid-cols-1 gap-2">
+                      {shipmentLabels.map((label: any) => (
+                        <div
+                          key={label.id}
+                          className="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-700 rounded-md"
+                          data-testid={`shipping-label-${label.id}`}
+                        >
+                          <Printer className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100 truncate">
+                              Shipping Label - {label.carrier?.toUpperCase() || 'Unknown'}
+                            </p>
+                            {label.trackingNumbers && label.trackingNumbers.length > 0 && (
+                              <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5 flex items-center gap-1">
+                                <Hash className="h-3 w-3" />
+                                {label.trackingNumbers.join(', ')}
+                              </p>
+                            )}
+                            <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
+                              {new Date(label.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          {label.labelBase64 && (
+                            <a
+                              href={`data:application/pdf;base64,${label.labelBase64}`}
+                              download={`shipping-label-${order.orderId}-${label.id}.pdf`}
+                              className="shrink-0"
+                              data-testid={`button-download-label-${label.id}`}
                             >
                               <Button variant="ghost" size="icon" className="h-8 w-8">
                                 <Download className="h-4 w-4" />
