@@ -10382,95 +10382,102 @@ export default function PickPack() {
 
       {/* Label Preview Dialog */}
       <Dialog open={!!labelPreviewData} onOpenChange={() => setLabelPreviewData(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <DialogTitle>Shipping Label - {labelPreviewData?.orderId}</DialogTitle>
-                <DialogDescription>
-                  {labelPreviewData?.trackingNumbers && labelPreviewData.trackingNumbers.length > 0 && (
-                    <span className="text-sm">
-                      Tracking: {labelPreviewData.trackingNumbers.join(', ')}
-                    </span>
-                  )}
-                </DialogDescription>
+        <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden">
+          {/* Header */}
+          <div className="px-6 py-4 border-b bg-gradient-to-r from-slate-50 to-gray-50">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Shipping Label - {labelPreviewData?.orderId}
+                </h2>
+                {labelPreviewData?.trackingNumbers && labelPreviewData.trackingNumbers.length > 0 && (
+                  <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
+                    <Hash className="h-3.5 w-3.5" />
+                    Tracking: <span className="font-medium text-gray-900">{labelPreviewData.trackingNumbers.join(', ')}</span>
+                  </p>
+                )}
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setLabelPreviewData(null)}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 hover:bg-gray-200 rounded-full -mt-1"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4 text-gray-600" />
               </Button>
             </div>
-          </DialogHeader>
-          <div className="mt-4 flex flex-col items-center">
+          </div>
+
+          {/* PDF Viewer */}
+          <div className="bg-white">
             {labelPreviewData?.labelBase64 && (
-              <>
-                <div className="w-full border rounded-lg overflow-hidden bg-gray-50 max-h-[60vh] overflow-y-auto">
-                  <embed
-                    src={`data:application/pdf;base64,${labelPreviewData.labelBase64}`}
-                    type="application/pdf"
-                    width="100%"
-                    height="600px"
-                    className="w-full"
-                  />
-                </div>
-                <div className="mt-4 flex gap-3">
-                  <Button
-                    onClick={() => {
-                      // Print the label
-                      const printWindow = window.open('', '_blank');
-                      if (printWindow) {
-                        printWindow.document.write(`
-                          <html>
-                            <head><title>Shipping Label - ${labelPreviewData.orderId}</title></head>
-                            <body style="margin:0">
-                              <embed src="data:application/pdf;base64,${labelPreviewData.labelBase64}" 
-                                     type="application/pdf" 
-                                     width="100%" 
-                                     height="100%" />
-                            </body>
-                          </html>
-                        `);
-                        printWindow.document.close();
-                        setTimeout(() => {
-                          printWindow.print();
-                        }, 250);
-                      }
-                      playSound('success');
-                      toast({
-                        title: "Printing Label",
-                        description: `Shipping label for ${labelPreviewData.orderId}`,
-                      });
-                    }}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Printer className="h-4 w-4 mr-2" />
-                    Print Label
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      // Download the label
-                      const link = document.createElement('a');
-                      link.href = `data:application/pdf;base64,${labelPreviewData.labelBase64}`;
-                      link.download = `shipping-label-${labelPreviewData.orderId}.pdf`;
-                      link.click();
-                      playSound('success');
-                      toast({
-                        title: "Downloading Label",
-                        description: `Label saved as shipping-label-${labelPreviewData.orderId}.pdf`,
-                      });
-                    }}
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Download PDF
-                  </Button>
-                </div>
-              </>
+              <div className="w-full bg-gray-100 border-y">
+                <embed
+                  src={`data:application/pdf;base64,${labelPreviewData.labelBase64}`}
+                  type="application/pdf"
+                  width="100%"
+                  height="600px"
+                  className="w-full"
+                />
+              </div>
             )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="px-6 py-4 bg-gray-50 border-t flex items-center justify-center gap-3">
+            <Button
+              onClick={() => {
+                // Print the label
+                const printWindow = window.open('', '_blank');
+                if (printWindow) {
+                  printWindow.document.write(`
+                    <html>
+                      <head><title>Shipping Label - ${labelPreviewData?.orderId}</title></head>
+                      <body style="margin:0">
+                        <embed src="data:application/pdf;base64,${labelPreviewData?.labelBase64}" 
+                               type="application/pdf" 
+                               width="100%" 
+                               height="100%" />
+                      </body>
+                    </html>
+                  `);
+                  printWindow.document.close();
+                  setTimeout(() => {
+                    printWindow.print();
+                  }, 250);
+                }
+                playSound('success');
+                toast({
+                  title: "Printing Label",
+                  description: `Shipping label for ${labelPreviewData?.orderId}`,
+                });
+              }}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm px-6"
+              size="lg"
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Print Label
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => {
+                // Download the label
+                const link = document.createElement('a');
+                link.href = `data:application/pdf;base64,${labelPreviewData?.labelBase64}`;
+                link.download = `shipping-label-${labelPreviewData?.orderId}.pdf`;
+                link.click();
+                playSound('success');
+                toast({
+                  title: "Downloading Label",
+                  description: `Label saved as shipping-label-${labelPreviewData?.orderId}.pdf`,
+                });
+              }}
+              className="border-gray-300 hover:bg-gray-100 px-6"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Download PDF
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
