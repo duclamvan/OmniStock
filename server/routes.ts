@@ -9407,6 +9407,10 @@ Return ONLY the subject line without quotes or extra formatting.`,
       // Get order items
       const orderItems = await storage.getOrderItems(orderId);
       
+      // Get order cartons
+      const orderCartons = await storage.getOrderCartons(orderId);
+      const cartonCount = orderCartons.length;
+      
       // Get shipping address
       let formattedAddress = 'Address not provided';
       if (order.shippingAddressId) {
@@ -9641,7 +9645,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       }
       
       // Summary box
-      doc.rect(350, yPosition, 205, 50)
+      doc.rect(350, yPosition, 205, 66)
          .fillAndStroke('#F0F4F8', '#CCCCCC');
       
       const totalItems = itemsWithProducts.reduce((sum, item) => sum + item.quantity, 0);
@@ -9650,23 +9654,32 @@ Return ONLY the subject line without quotes or extra formatting.`,
         return sum + (weight * item.quantity);
       }, 0);
       
+      // Total cartons
+      doc.fontSize(10)
+         .font('Helvetica')
+         .fillColor('#666666')
+         .text('Total Cartons:', 360, yPosition + 10)
+         .font('Helvetica-Bold')
+         .fillColor('#000000')
+         .text(cartonCount.toString(), 480, yPosition + 10, { align: 'right' });
+      
       // Total items
       doc.fontSize(10)
          .font('Helvetica')
          .fillColor('#666666')
-         .text('Total Items:', 360, yPosition + 12)
+         .text('Total Items:', 360, yPosition + 28)
          .font('Helvetica-Bold')
          .fillColor('#000000')
-         .text(totalItems.toString(), 480, yPosition + 12, { align: 'right' });
+         .text(totalItems.toString(), 480, yPosition + 28, { align: 'right' });
       
       // Total weight
       doc.fontSize(10)
          .font('Helvetica')
          .fillColor('#666666')
-         .text('Total Weight:', 360, yPosition + 28)
+         .text('Total Weight:', 360, yPosition + 46)
          .font('Helvetica-Bold')
          .fillColor('#000000')
-         .text(`${totalWeight.toFixed(2)} kg`, 480, yPosition + 28, { align: 'right' });
+         .text(`${totalWeight.toFixed(2)} kg`, 480, yPosition + 46, { align: 'right' });
       
       // ===== FOOTER =====
       const footerY = 760;
