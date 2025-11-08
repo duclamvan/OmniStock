@@ -10180,6 +10180,15 @@ export default function PickPack() {
                       : 'N/A'}
                   </p>
                 </div>
+                {previewOrder?.trackingNumber && (
+                  <div className="col-span-2">
+                    <span className="text-gray-600">Tracking Number:</span>
+                    <p className="font-medium text-blue-600 flex items-center gap-1">
+                      <Hash className="h-3 w-3" />
+                      {previewOrder.trackingNumber}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
