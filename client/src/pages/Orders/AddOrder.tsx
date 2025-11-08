@@ -2524,9 +2524,10 @@ export default function AddOrder() {
                       id="facebookName"
                       value={newCustomer.facebookName || ""}
                       onChange={(e) => {
-                        // User is manually editing, so stop auto-sync
-                        setFacebookNameManuallyEdited(true);
-                        setNewCustomer({ ...newCustomer, facebookName: e.target.value });
+                        const newValue = e.target.value;
+                        setNewCustomer({ ...newCustomer, facebookName: newValue });
+                        // Only mark as manually edited if value differs from Customer Name
+                        setFacebookNameManuallyEdited(newValue !== newCustomer.name);
                       }}
                       placeholder="Synced with Customer Name"
                     />
