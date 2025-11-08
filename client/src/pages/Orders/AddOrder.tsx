@@ -54,6 +54,7 @@ import {
   ChevronDown,
   ChevronUp,
   TrendingUp,
+  ArrowUpCircle,
   MessageSquare,
   Box,
   Weight,
@@ -4266,7 +4267,7 @@ export default function AddOrder() {
                             className="h-8 px-2"
                             data-testid="button-round-up"
                           >
-                            <TrendingUp className="w-3 h-3" />
+                            <ArrowUpCircle className="w-3 h-3" />
                           </Button>
                         </div>
                       </div>
@@ -4444,7 +4445,7 @@ export default function AddOrder() {
                       }}
                       className="h-8 px-2"
                     >
-                      <TrendingUp className="w-3 h-3" />
+                      <ArrowUpCircle className="w-3 h-3" />
                     </Button>
                   </div>
                 </div>

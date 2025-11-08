@@ -51,6 +51,7 @@ import {
   ChevronDown,
   ChevronUp,
   TrendingUp,
+  ArrowUpCircle,
   MessageSquare,
   Box,
   Weight,
@@ -4027,7 +4028,7 @@ export default function EditOrder() {
                       className="whitespace-nowrap border-blue-300 hover:bg-blue-100 text-blue-700 dark:border-blue-700 dark:hover:bg-blue-900 dark:text-blue-300"
                       data-testid="button-round-up"
                     >
-                      <TrendingUp className="w-4 h-4 mr-1" />
+                      <ArrowUpCircle className="w-4 h-4 mr-1" />
                       Round Up
                     </Button>
                   </div>
