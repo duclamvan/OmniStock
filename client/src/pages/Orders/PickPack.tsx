@@ -8059,7 +8059,7 @@ export default function PickPack() {
                       <div className="space-y-4">
                         {/* Hero Product Image - Always Large and Prominent */}
                         <div 
-                          className="relative bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-sm"
+                          className="relative bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-sm flex items-center justify-center"
                           onClick={() => handleImageClick(currentItem.id)}
                         >
                           <div className="aspect-square max-h-64 sm:max-h-80 lg:max-h-96 bg-gradient-to-br from-gray-50 to-gray-100 cursor-pointer p-4">
