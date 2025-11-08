@@ -165,8 +165,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard endpoints with caching
   app.get('/api/dashboard/metrics', cacheMiddleware(60000), async (req, res) => {
     try {
-      // Fetch exchange rates from free API
-      const exchangeRateResponse = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json');
+      // Fetch exchange rates from Frankfurter API
+      const exchangeRateResponse = await fetch('https://api.frankfurter.app/latest?from=EUR');
       const exchangeRates = await exchangeRateResponse.json();
       
       const metrics = await storage.getDashboardMetrics();
@@ -177,11 +177,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!amount || !currency) return 0;
         if (currency === 'EUR') return amount;
         
-        // Get the rate from the currency to EUR
-        const currencyLower = currency.toLowerCase();
-        if (exchangeRates.eur && exchangeRates.eur[currencyLower]) {
-          // The API gives EUR to other currency rates, so we need to invert
-          return amount / exchangeRates.eur[currencyLower];
+        // Get the rate from the currency to EUR using Frankfurter API format
+        const currencyUpper = currency.toUpperCase();
+        if (exchangeRates.rates && exchangeRates.rates[currencyUpper]) {
+          // Frankfurter gives EUR to other currency rates, so we need to invert
+          return amount / exchangeRates.rates[currencyUpper];
         }
         
         // Fallback if rate not found
@@ -295,17 +295,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/dashboard/financial-summary', cacheMiddleware(60000), async (req, res) => {
     try {
-      // Fetch exchange rates from free API
-      const exchangeRateResponse = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json');
+      // Fetch exchange rates from Frankfurter API
+      const exchangeRateResponse = await fetch('https://api.frankfurter.app/latest?from=EUR');
       const exchangeRates = await exchangeRateResponse.json();
       
       const convertToEur = (amount: number, currency: string): number => {
         if (!amount || !currency) return 0;
         if (currency === 'EUR') return amount;
         
-        const currencyLower = currency.toLowerCase();
-        if (exchangeRates.eur && exchangeRates.eur[currencyLower]) {
-          return amount / exchangeRates.eur[currencyLower];
+        const currencyUpper = currency.toUpperCase();
+        if (exchangeRates.rates && exchangeRates.rates[currencyUpper]) {
+          return amount / exchangeRates.rates[currencyUpper];
         }
         
         return amount;

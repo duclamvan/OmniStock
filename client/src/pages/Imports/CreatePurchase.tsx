@@ -298,15 +298,15 @@ export default function CreatePurchase() {
   useEffect(() => {
     const fetchExchangeRates = async () => {
       try {
-        const response = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json');
+        const response = await fetch('https://api.frankfurter.app/latest?from=USD&to=EUR,CZK,VND,CNY');
         const data = await response.json();
         
         setExchangeRates({
           USD: 1,
-          EUR: data.usd.eur || 0.92,
-          CZK: data.usd.czk || 23,
-          VND: data.usd.vnd || 24500,
-          CNY: data.usd.cny || 7.2
+          EUR: data.rates?.EUR || 0.92,
+          CZK: data.rates?.CZK || 23,
+          VND: data.rates?.VND || 24500,
+          CNY: data.rates?.CNY || 7.2
         });
       } catch (error) {
         console.error('Error fetching exchange rates:', error);
@@ -2581,14 +2581,13 @@ export default function CreatePurchase() {
                 
                 // Try to fetch exchange rate for the new currency
                 try {
-                  const response = await fetch(`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json`);
+                  const response = await fetch(`https://api.frankfurter.app/latest?from=USD&to=${newCurrencyCode}`);
                   const data = await response.json();
                   
-                  const currencyLower = newCurrencyCode.toLowerCase();
-                  if (data.usd && data.usd[currencyLower]) {
+                  if (data.rates && data.rates[newCurrencyCode]) {
                     setExchangeRates(prev => ({
                       ...prev,
-                      [newCurrencyCode]: data.usd[currencyLower]
+                      [newCurrencyCode]: data.rates[newCurrencyCode]
                     }));
                   } else {
                     // If rate not found, default to 1

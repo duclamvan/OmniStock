@@ -53,5 +53,5 @@ Utilizes PostgreSQL with Neon serverless driver and Drizzle ORM. The schema supp
 - **OpenStreetMap Nominatim API**: For address geocoding and auto-correction.
 
 ## Other APIs
-- **Fawaz Ahmed's free currency API**: For real-time exchange rates.
+- **Frankfurter API** (https://frankfurter.dev/): Free, open-source currency exchange rate API for real-time and historical exchange rates. Provides reliable EUR-based conversion rates for multi-currency support across the application.
 - **Facebook Graph API**: For fetching customer profile pictures and names.

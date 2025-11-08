@@ -7131,28 +7131,20 @@ router.get("/exchange-rates", async (req, res) => {
     const currencyList = (currencies as string).split(',').map(c => c.trim().toUpperCase());
     
     try {
-      // Fetch from external API (fawazahmed's free currency API)
-      const response = await fetch(`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${base.toLowerCase()}.json`);
+      // Fetch from Frankfurter API
+      const targetCurrencies = currencyList.join(',');
+      const response = await fetch(`https://api.frankfurter.app/latest?from=${base}&to=${targetCurrencies}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch exchange rates');
       }
       
       const data = await response.json();
-      const rates = data[base.toLowerCase()] || {};
-      
-      // Filter to requested currencies
-      const filteredRates: Record<string, number> = {};
-      for (const currency of currencyList) {
-        if (rates[currency.toLowerCase()]) {
-          filteredRates[currency] = rates[currency.toLowerCase()];
-        }
-      }
       
       res.json({
-        base,
+        base: data.base || base,
         date: data.date || new Date().toISOString().split('T')[0],
-        rates: filteredRates
+        rates: data.rates || {}
       });
     } catch (apiError) {
       // Fallback to placeholder rates if API fails

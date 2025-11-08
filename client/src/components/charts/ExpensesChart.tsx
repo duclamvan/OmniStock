@@ -6,17 +6,17 @@ export function ExpensesChart() {
   const { data: expenses = [], isLoading } = useQuery({
     queryKey: ['/api/expenses'],
     queryFn: async () => {
-      // Fetch exchange rates
-      const exchangeRateResponse = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json');
+      // Fetch exchange rates from Frankfurter API
+      const exchangeRateResponse = await fetch('https://api.frankfurter.app/latest?from=EUR');
       const exchangeRates = await exchangeRateResponse.json();
       
       const convertToEur = (amount: number, currency: string): number => {
         if (!amount || !currency) return 0;
         if (currency === 'EUR') return amount;
         
-        const currencyLower = currency.toLowerCase();
-        if (exchangeRates.eur && exchangeRates.eur[currencyLower]) {
-          return amount / exchangeRates.eur[currencyLower];
+        const currencyUpper = currency.toUpperCase();
+        if (exchangeRates.rates && exchangeRates.rates[currencyUpper]) {
+          return amount / exchangeRates.rates[currencyUpper];
         }
         return amount;
       };
