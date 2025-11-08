@@ -2299,7 +2299,6 @@ export default function PickPack() {
       if (e.altKey && e.key === 'n') {
         e.preventDefault();
         if (activePickingOrder && !isFormInput) {
-          window.scrollTo(0, 0);
           const currentItemIndex = manualItemIndex;
           setManualItemIndex(Math.min(activePickingOrder.items.length - 1, currentItemIndex + 1));
         }
@@ -2309,7 +2308,6 @@ export default function PickPack() {
       if (e.altKey && e.key === 'p') {
         e.preventDefault();
         if (activePickingOrder && !isFormInput) {
-          window.scrollTo(0, 0);
           const currentItemIndex = manualItemIndex;
           setManualItemIndex(Math.max(0, currentItemIndex - 1));
         }
@@ -8013,7 +8011,6 @@ export default function PickPack() {
                                 onClick={() => {
                                   setManualItemIndex(index);
                                   setShowItemOverviewModal(false);
-                                  window.scrollTo(0, 0);
                                 }}
                               >
                                 <ChevronRight className="h-4 w-4 mr-2" />
@@ -8379,7 +8376,6 @@ export default function PickPack() {
                             variant="outline"
                             className="flex-1 h-11 text-sm font-semibold border-2 border-gray-300 hover:bg-gray-50 disabled:opacity-30 rounded-lg"
                             onClick={() => {
-                              window.scrollTo(0, 0);
                               setManualItemIndex(Math.max(0, currentItemIndex - 1));
                             }}
                             disabled={currentItemIndex === 0}
@@ -8392,7 +8388,6 @@ export default function PickPack() {
                             variant="outline"
                             className="flex-1 h-11 text-sm font-semibold border-2 border-gray-300 hover:bg-gray-50 disabled:opacity-30 rounded-lg"
                             onClick={() => {
-                              window.scrollTo(0, 0);
                               setManualItemIndex(Math.min(activePickingOrder.items.length - 1, currentItemIndex + 1));
                             }}
                             disabled={currentItemIndex === activePickingOrder.items.length - 1}
