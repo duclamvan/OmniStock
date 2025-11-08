@@ -46,6 +46,7 @@ export default function ShipmentLabels() {
 
   const { data: labels = [], isLoading } = useQuery<ShipmentLabel[]>({
     queryKey: ['/api/shipment-labels'],
+    refetchInterval: 5000, // Auto-refresh every 5 seconds to show new labels in real-time
   });
 
   const cancelLabelMutation = useMutation({
@@ -219,13 +220,22 @@ export default function ShipmentLabels() {
           </div>
         </CardHeader>
         <CardContent>
-          <DataTable
-            data={filteredLabels}
-            columns={columns}
-            isLoading={isLoading}
-            emptyMessage="No shipment labels found"
-            data-testid="table-shipment-labels"
-          />
+          {isLoading ? (
+            <div className="text-center py-8 text-muted-foreground" data-testid="loading-labels">
+              Loading labels...
+            </div>
+          ) : filteredLabels.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground" data-testid="empty-labels">
+              No shipment labels found
+            </div>
+          ) : (
+            <DataTable
+              data={filteredLabels}
+              columns={columns}
+              getRowKey={(label) => label.id}
+              data-testid="table-shipment-labels"
+            />
+          )}
         </CardContent>
       </Card>
 
