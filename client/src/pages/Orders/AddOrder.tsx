@@ -1785,6 +1785,20 @@ export default function AddOrder() {
                     type="button"
                     variant="outline"
                     size="sm"
+                    className="flex items-center gap-1.5 text-xs border-blue-300 text-blue-700 hover:bg-blue-50"
+                    onClick={() => {
+                      setShowNewCustomerForm(true);
+                      setCustomerSearch("");
+                    }}
+                    data-testid="button-new-customer"
+                  >
+                    <UserPlus className="h-3.5 w-3.5" />
+                    New
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
                     className="flex items-center gap-1.5 text-xs"
                     onClick={() => {
                       setQuickCustomerType('quick');
@@ -1840,20 +1854,6 @@ export default function AddOrder() {
                   >
                     <Plus className="h-3.5 w-3.5" />
                     Custom
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-1.5 text-xs border-blue-300 text-blue-700 hover:bg-blue-50"
-                    onClick={() => {
-                      setShowNewCustomerForm(true);
-                      setCustomerSearch("");
-                    }}
-                    data-testid="button-new-customer"
-                  >
-                    <UserPlus className="h-3.5 w-3.5" />
-                    New
                   </Button>
                 </div>
                 <Separator className="my-3" />
