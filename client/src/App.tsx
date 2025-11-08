@@ -85,7 +85,7 @@ import Login from "@/pages/Auth/Login";
 import Register from "@/pages/Auth/Register";
 import Reports from "@/pages/Reports/Reports";
 import CustomReport from "@/pages/Reports/CustomReport";
-import Settings from "@/pages/Settings/Settings";
+import Settings from "@/pages/Settings";
 import StockLookup from "@/pages/Stock/StockLookup";
 import StockAdjustmentApprovals from "@/pages/Stock/StockAdjustmentApprovals";
 import OverAllocated from "@/pages/Stock/OverAllocated";
@@ -210,7 +210,14 @@ function Router() {
         <Route path="/receiving/approve/:id" component={ReviewApprove} />
         <Route path="/reports/custom" component={CustomReport} />
         <Route path="/reports" component={Reports} />
+        {/* Settings Routes */}
         <Route path="/settings" component={Settings} />
+        <Route path="/settings/general" component={Settings} />
+        <Route path="/settings/shipping" component={Settings} />
+        <Route path="/settings/orders" component={Settings} />
+        <Route path="/settings/financial" component={Settings} />
+        <Route path="/settings/inventory" component={Settings} />
+        <Route path="/settings/system" component={Settings} />
       </Layout>
       <Route component={NotFound} />
     </Switch>
