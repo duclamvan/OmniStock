@@ -9849,10 +9849,37 @@ export default function PickPack() {
                                           size="sm"
                                           variant="outline"
                                           className="h-7 text-xs px-2"
-                                          onClick={(e) => {
+                                          onClick={async (e) => {
                                             e.stopPropagation();
-                                            // Print shipping label
-                                            playSound('success');
+                                            // Fetch and show label preview
+                                            try {
+                                              const response = await fetch(`/api/orders/${order.id}/shipment-labels`);
+                                              if (response.ok) {
+                                                const labels = await response.json();
+                                                if (labels && labels.length > 0) {
+                                                  const firstLabel = labels[0];
+                                                  setLabelPreviewData({
+                                                    orderId: order.orderId,
+                                                    labelBase64: firstLabel.labelBase64,
+                                                    trackingNumbers: firstLabel.trackingNumbers || []
+                                                  });
+                                                  playSound('success');
+                                                } else {
+                                                  toast({
+                                                    title: "No Label Found",
+                                                    description: "No shipping label has been generated for this order yet.",
+                                                    variant: "destructive"
+                                                  });
+                                                }
+                                              }
+                                            } catch (error) {
+                                              console.error('Error fetching label:', error);
+                                              toast({
+                                                title: "Error",
+                                                description: "Failed to load shipping label",
+                                                variant: "destructive"
+                                              });
+                                            }
                                           }}
                                         >
                                           <Printer className="h-3 w-3 mr-1" />
@@ -10349,6 +10376,101 @@ export default function PickPack() {
               <RotateCcw className="h-4 w-4 mr-2" />
               Reset Order
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Label Preview Dialog */}
+      <Dialog open={!!labelPreviewData} onOpenChange={() => setLabelPreviewData(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle>Shipping Label - {labelPreviewData?.orderId}</DialogTitle>
+                <DialogDescription>
+                  {labelPreviewData?.trackingNumbers && labelPreviewData.trackingNumbers.length > 0 && (
+                    <span className="text-sm">
+                      Tracking: {labelPreviewData.trackingNumbers.join(', ')}
+                    </span>
+                  )}
+                </DialogDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLabelPreviewData(null)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="mt-4 flex flex-col items-center">
+            {labelPreviewData?.labelBase64 && (
+              <>
+                <div className="w-full border rounded-lg overflow-hidden bg-gray-50 max-h-[60vh] overflow-y-auto">
+                  <embed
+                    src={`data:application/pdf;base64,${labelPreviewData.labelBase64}`}
+                    type="application/pdf"
+                    width="100%"
+                    height="600px"
+                    className="w-full"
+                  />
+                </div>
+                <div className="mt-4 flex gap-3">
+                  <Button
+                    onClick={() => {
+                      // Print the label
+                      const printWindow = window.open('', '_blank');
+                      if (printWindow) {
+                        printWindow.document.write(`
+                          <html>
+                            <head><title>Shipping Label - ${labelPreviewData.orderId}</title></head>
+                            <body style="margin:0">
+                              <embed src="data:application/pdf;base64,${labelPreviewData.labelBase64}" 
+                                     type="application/pdf" 
+                                     width="100%" 
+                                     height="100%" />
+                            </body>
+                          </html>
+                        `);
+                        printWindow.document.close();
+                        setTimeout(() => {
+                          printWindow.print();
+                        }, 250);
+                      }
+                      playSound('success');
+                      toast({
+                        title: "Printing Label",
+                        description: `Shipping label for ${labelPreviewData.orderId}`,
+                      });
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Printer className="h-4 w-4 mr-2" />
+                    Print Label
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      // Download the label
+                      const link = document.createElement('a');
+                      link.href = `data:application/pdf;base64,${labelPreviewData.labelBase64}`;
+                      link.download = `shipping-label-${labelPreviewData.orderId}.pdf`;
+                      link.click();
+                      playSound('success');
+                      toast({
+                        title: "Downloading Label",
+                        description: `Label saved as shipping-label-${labelPreviewData.orderId}.pdf`,
+                      });
+                    }}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Download PDF
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>

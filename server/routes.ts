@@ -5210,6 +5210,17 @@ Important:
     }
   });
 
+  // Get shipment labels for an order
+  app.get('/api/orders/:id/shipment-labels', async (req: any, res) => {
+    try {
+      const labels = await storage.getShipmentLabelsByOrderId(req.params.id);
+      res.json(labels);
+    } catch (error) {
+      console.error("Error getting shipment labels:", error);
+      res.status(500).json({ message: "Failed to get shipment labels" });
+    }
+  });
+
   app.get('/api/orders/:id', async (req, res) => {
     try {
       // Prevent all caching for order details to ensure fresh data
