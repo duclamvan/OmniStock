@@ -228,6 +228,10 @@ interface PickPackOrder {
   paymentMethod?: string;
   dobirkaAmount?: number | string;
   dobirkaCurrency?: string;
+  // Shipping costs and tracking
+  shippingCost?: number | string;
+  actualShippingCost?: number | string;
+  trackingNumber?: string;
 }
 
 interface OrderCarton {
@@ -6451,57 +6455,9 @@ export default function PickPack() {
                 )}
               </div>
 
-              {/* COD/Nachnahme Amount - PROMINENT display for COD orders */}
-              {activePackingOrder.paymentMethod === 'COD' && 
-               activePackingOrder.dobirkaAmount && 
-               Number(activePackingOrder.dobirkaAmount) > 0 && (
-                <div className={`p-4 rounded-lg border-2 ${
-                  activePackingOrder.shippingMethod === 'DHL' 
-                    ? 'bg-blue-50 border-blue-300' 
-                    : 'bg-orange-50 border-orange-300'
-                }`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <DollarSign className={`h-5 w-5 ${
-                      activePackingOrder.shippingMethod === 'DHL' 
-                        ? 'text-blue-600' 
-                        : 'text-orange-600'
-                    } flex-shrink-0`} />
-                    <span className={`text-sm font-bold ${
-                      activePackingOrder.shippingMethod === 'DHL' 
-                        ? 'text-blue-900' 
-                        : 'text-orange-900'
-                    } uppercase tracking-wide`}>
-                      {(() => {
-                        const method = activePackingOrder.shippingMethod;
-                        if (method === 'DHL') return '💶 DHL Nachnahme (Cash on Delivery)';
-                        if (method === 'PPL') return '💶 PPL Dobírka (Cash on Delivery)';
-                        return '💶 Cash on Delivery';
-                      })()}
-                    </span>
-                  </div>
-                  <div className="pl-7">
-                    <p className={`text-2xl font-bold ${
-                      activePackingOrder.shippingMethod === 'DHL' 
-                        ? 'text-blue-900' 
-                        : 'text-orange-900'
-                    }`} data-testid="text-cod-amount">
-                      {formatCurrency(Number(activePackingOrder.dobirkaAmount), activePackingOrder.dobirkaCurrency || 'CZK')}
-                    </p>
-                    <p className={`text-xs ${
-                      activePackingOrder.shippingMethod === 'DHL' 
-                        ? 'text-blue-700' 
-                        : 'text-orange-700'
-                    } mt-1 font-medium`}>
-                      Customer pays this amount to the courier upon delivery
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Shipment Type Badge - NEW: Shows DHL Nachnahme or PPL Dobírka prominently */}
-              {activePackingOrder.shippingMethod && activePackingOrder.paymentMethod === 'COD' && 
-               activePackingOrder.dobirkaAmount && Number(activePackingOrder.dobirkaAmount) > 0 && (
-                <div className={`p-3 rounded-lg border-2 flex items-center gap-3 ${
+              {/* Shipment Type Badge - Shows DHL Nachnahme or PPL Dobírka prominently for COD orders */}
+              {activePackingOrder.shippingMethod && activePackingOrder.paymentMethod === 'COD' && (
+                <div className={`p-4 rounded-lg border-2 flex items-center gap-3 ${
                   activePackingOrder.shippingMethod === 'DHL' 
                     ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-blue-400' 
                     : 'bg-gradient-to-r from-orange-50 to-orange-100 border-orange-400'
@@ -6526,8 +6482,56 @@ export default function PickPack() {
                         ? 'text-blue-900' 
                         : 'text-orange-900'
                     }`} data-testid="text-shipment-type">
-                      {activePackingOrder.shippingMethod === 'DHL' && 'DHL Nachnahme'}
-                      {activePackingOrder.shippingMethod === 'PPL' && 'PPL Dobírka'}
+                      {activePackingOrder.shippingMethod === 'DHL' && '💶 DHL Nachnahme (Cash on Delivery)'}
+                      {activePackingOrder.shippingMethod === 'PPL' && '💶 PPL Dobírka (Cash on Delivery)'}
+                      {activePackingOrder.shippingMethod !== 'DHL' && activePackingOrder.shippingMethod !== 'PPL' && '💶 Cash on Delivery'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* COD/Nachnahme Amount - Show if amount is specified */}
+              {activePackingOrder.paymentMethod === 'COD' && 
+               activePackingOrder.dobirkaAmount && 
+               Number(activePackingOrder.dobirkaAmount) > 0 && (
+                <div className={`p-4 rounded-lg border-2 ${
+                  activePackingOrder.shippingMethod === 'DHL' 
+                    ? 'bg-blue-50 border-blue-300' 
+                    : 'bg-orange-50 border-orange-300'
+                }`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <DollarSign className={`h-5 w-5 ${
+                      activePackingOrder.shippingMethod === 'DHL' 
+                        ? 'text-blue-600' 
+                        : 'text-orange-600'
+                    } flex-shrink-0`} />
+                    <span className={`text-sm font-bold ${
+                      activePackingOrder.shippingMethod === 'DHL' 
+                        ? 'text-blue-900' 
+                        : 'text-orange-900'
+                    } uppercase tracking-wide`}>
+                      {(() => {
+                        const method = activePackingOrder.shippingMethod;
+                        if (method === 'DHL') return 'Nachnahme Amount';
+                        if (method === 'PPL') return 'Dobírka Amount';
+                        return 'COD Amount';
+                      })()}
+                    </span>
+                  </div>
+                  <div className="pl-7">
+                    <p className={`text-2xl font-bold ${
+                      activePackingOrder.shippingMethod === 'DHL' 
+                        ? 'text-blue-900' 
+                        : 'text-orange-900'
+                    }`} data-testid="text-cod-amount">
+                      {formatCurrency(Number(activePackingOrder.dobirkaAmount), activePackingOrder.dobirkaCurrency || 'CZK')}
+                    </p>
+                    <p className={`text-xs ${
+                      activePackingOrder.shippingMethod === 'DHL' 
+                        ? 'text-blue-700' 
+                        : 'text-orange-700'
+                    } mt-1 font-medium`}>
+                      Customer pays this amount to the courier upon delivery
                     </p>
                   </div>
                 </div>
