@@ -761,9 +761,14 @@ export default function AddOrder() {
       // Capitalize names
       const capitalizeWords = (str: string) => str.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
       
+      // Only update firstName and lastName (fields below Address Search)
+      // DO NOT update 'name' field as it appears above Address Search
       if (fields.firstName || fields.lastName) {
-        const fullName = [fields.firstName, fields.lastName].filter(Boolean).map(capitalizeWords).join(' ');
-        setNewCustomer(prev => ({ ...prev, name: fullName, firstName: fields.firstName, lastName: fields.lastName }));
+        setNewCustomer(prev => ({ 
+          ...prev, 
+          firstName: fields.firstName ? capitalizeWords(fields.firstName) : prev.firstName,
+          lastName: fields.lastName ? capitalizeWords(fields.lastName) : prev.lastName
+        }));
       }
       if (fields.company) setNewCustomer(prev => ({ ...prev, company: fields.company }));
       
