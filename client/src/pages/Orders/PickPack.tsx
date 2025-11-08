@@ -4922,12 +4922,69 @@ export default function PickPack() {
     avgPickTime: calculateAvgPickTime()
   };
   
-  // Trigger bouncy animation when counts change
+  // Function to play professional notification sound
+  const playNotificationSound = () => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Create a pleasant, professional "ding" sound using Web Audio API
+      const oscillator1 = audioContext.createOscillator();
+      const oscillator2 = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      // Two harmonious frequencies for a pleasant chime
+      oscillator1.frequency.value = 800; // E5
+      oscillator2.frequency.value = 1200; // E6
+      
+      oscillator1.type = 'sine';
+      oscillator2.type = 'sine';
+      
+      // Connect oscillators to gain node
+      oscillator1.connect(gainNode);
+      oscillator2.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Envelope for smooth, professional sound
+      const now = audioContext.currentTime;
+      gainNode.gain.setValueAtTime(0, now);
+      gainNode.gain.linearRampToValueAtTime(0.15, now + 0.01); // Gentle attack
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5); // Smooth decay
+      
+      oscillator1.start(now);
+      oscillator2.start(now);
+      oscillator1.stop(now + 0.5);
+      oscillator2.stop(now + 0.5);
+      
+      // Clean up after sound plays
+      setTimeout(() => {
+        audioContext.close();
+      }, 600);
+    } catch (error) {
+      console.error('Failed to play notification sound:', error);
+    }
+  };
+
+  // Trigger bouncy animation when counts change, plus notification for new pending orders
   useEffect(() => {
     const countersToAnimate = new Set<string>();
     
+    // Check if pending count increased (new order arrived)
+    const pendingIncreased = stats.pending > previousCountsRef.current.pending && previousCountsRef.current.pending >= 0;
+    
     if (stats.pending !== previousCountsRef.current.pending) {
       countersToAnimate.add('pending');
+      
+      // Play sound and show notification only when pending count increases
+      if (pendingIncreased && isSuccess) {
+        playNotificationSound();
+        
+        const newOrderCount = stats.pending - previousCountsRef.current.pending;
+        toast({
+          title: "🎯 New Order" + (newOrderCount > 1 ? "s" : "") + " Arrived!",
+          description: `${newOrderCount} new order${newOrderCount > 1 ? "s" : ""} ready to pick in Pending queue`,
+          duration: 6000,
+        });
+      }
     }
     if (stats.picking !== previousCountsRef.current.picking) {
       countersToAnimate.add('picking');
@@ -4955,7 +5012,7 @@ export default function PickPack() {
       packing: stats.packing,
       ready: stats.ready
     };
-  }, [stats.pending, stats.picking, stats.packing, stats.ready]);
+  }, [stats.pending, stats.picking, stats.packing, stats.ready, isSuccess, toast]);
 
   // Skeleton loader component for order cards
   const OrderCardSkeleton = () => (
