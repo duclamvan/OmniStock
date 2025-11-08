@@ -1225,7 +1225,7 @@ export default function EditOrder() {
     form.setValue('shippingCost', calculatedCost); // Also set shipping cost for display
   }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency, existingOrder?.shippingCost]); // Added existingOrder.shippingCost
 
-  // Auto-sync dobírka amount and currency when PPL + COD is selected
+  // Auto-sync dobírka/nachnahme amount and currency when PPL/DHL + COD is selected
   // Recalculates on EVERY change (currency, items, shipping, discounts, taxes, adjustment)
   const watchedPaymentMethod = form.watch('paymentMethod');
   const watchedDiscountValue = form.watch('discountValue');
@@ -1234,10 +1234,10 @@ export default function EditOrder() {
   const watchedAdjustment = form.watch('adjustment');
   
   useEffect(() => {
-    // Only auto-sync if PPL shipping and COD payment are selected
-    if (watchedShippingMethod === 'PPL' && watchedPaymentMethod === 'COD') {
-      console.log('✅ Auto-syncing dobírka amount to match grand total');
-      // Always sync dobírka amount to match grand total
+    // Only auto-sync if PPL/DHL shipping and COD payment are selected
+    if ((watchedShippingMethod === 'PPL' || watchedShippingMethod === 'DHL') && watchedPaymentMethod === 'COD') {
+      console.log('✅ Auto-syncing COD amount to match grand total');
+      // Always sync COD amount to match grand total
       const grandTotal = calculateGrandTotal();
       form.setValue('dobirkaAmount', parseFloat(grandTotal.toFixed(2)));
       
