@@ -3910,6 +3910,18 @@ export default function EditOrder() {
               </div>
 
               <div>
+                <Label htmlFor="actualShippingCost" className="text-sm">Actual Shipping Cost</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  {...form.register('actualShippingCost', { valueAsNumber: true })}
+                  className="mt-1"
+                  data-testid="input-actual-shipping-cost"
+                />
+                <p className="text-xs text-gray-500 mt-1">Real cost from carrier</p>
+              </div>
+
+              <div>
                 <Label htmlFor="adjustment" className="text-sm">Adjustment</Label>
                 <Input
                   type="number"
@@ -3919,16 +3931,6 @@ export default function EditOrder() {
                   data-testid="input-adjustment"
                 />
                 <p className="text-xs text-gray-500 mt-1">Rounding or other adjustments</p>
-              </div>
-
-              <div className="hidden">
-                <Label htmlFor="actualShippingCost" className="text-sm">Actual Shipping Cost</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  {...form.register('actualShippingCost', { valueAsNumber: true })}
-                  className="mt-1"
-                />
               </div>
             </div>
 
