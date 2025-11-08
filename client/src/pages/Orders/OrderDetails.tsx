@@ -1755,15 +1755,15 @@ export default function OrderDetails() {
                 )}
 
                 {/* Shipping Labels */}
-                {shipmentLabels && shipmentLabels.length > 0 && (
+                {shipmentLabels && shipmentLabels.filter((label: any) => label.status !== 'cancelled').length > 0 && (
                   <div className="space-y-2">
                     {((productFiles && productFiles.length > 0) || (orderFiles && orderFiles.length > 0)) && <Separator />}
                     <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2">
                       <Truck className="h-4 w-4" />
-                      Shipping Labels ({shipmentLabels.length})
+                      Shipping Labels ({shipmentLabels.filter((label: any) => label.status !== 'cancelled').length})
                     </h4>
                     <div className="grid grid-cols-1 gap-2">
-                      {shipmentLabels.map((label: any) => (
+                      {shipmentLabels.filter((label: any) => label.status !== 'cancelled').map((label: any) => (
                         <div
                           key={label.id}
                           className="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-700 rounded-md"
