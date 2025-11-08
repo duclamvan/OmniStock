@@ -2693,6 +2693,11 @@ export default function AddOrder() {
 
                 <Separator className="my-6" />
 
+                {/* Customer Details Section Header */}
+                <div>
+                  <Label className="text-base">Customer Details</Label>
+                </div>
+
                 {/* First Name and Last Name */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -2700,7 +2705,7 @@ export default function AddOrder() {
                       id="firstName"
                       value={newCustomer.firstName || ""}
                       onChange={(e) => setNewCustomer({ ...newCustomer, firstName: e.target.value })}
-                      placeholder="Vorname"
+                      placeholder="First Name"
                       data-testid="input-firstName"
                     />
                   </div>
@@ -2709,7 +2714,7 @@ export default function AddOrder() {
                       id="lastName"
                       value={newCustomer.lastName || ""}
                       onChange={(e) => setNewCustomer({ ...newCustomer, lastName: e.target.value })}
-                      placeholder="Nachname"
+                      placeholder="Last Name"
                       data-testid="input-lastName"
                     />
                   </div>
@@ -2721,13 +2726,13 @@ export default function AddOrder() {
                     id="company"
                     value={newCustomer.company}
                     onChange={(e) => setNewCustomer({ ...newCustomer, company: e.target.value })}
-                    placeholder="Firma (optional)"
+                    placeholder="Company (optional)"
                   />
                 </div>
 
                 {/* Address Section Header */}
                 <div className="mt-6">
-                  <Label className="text-base">Adresse</Label>
+                  <Label className="text-base">Address</Label>
                 </div>
 
                 {/* Street and House Number */}
@@ -2737,7 +2742,7 @@ export default function AddOrder() {
                       id="street"
                       value={newCustomer.street}
                       onChange={(e) => setNewCustomer({ ...newCustomer, street: e.target.value })}
-                      placeholder="Straße"
+                      placeholder="Street"
                     />
                   </div>
                   <div>
@@ -2745,7 +2750,7 @@ export default function AddOrder() {
                       id="streetNumber"
                       value={newCustomer.streetNumber}
                       onChange={(e) => setNewCustomer({ ...newCustomer, streetNumber: e.target.value })}
-                      placeholder="Hausnummer"
+                      placeholder="House Number"
                     />
                   </div>
                 </div>
@@ -2757,7 +2762,7 @@ export default function AddOrder() {
                       id="zipCode"
                       value={newCustomer.zipCode}
                       onChange={(e) => setNewCustomer({ ...newCustomer, zipCode: e.target.value })}
-                      placeholder="Postleitzahl"
+                      placeholder="Postal Code"
                     />
                   </div>
                   <div className="md:col-span-3">
@@ -2765,7 +2770,7 @@ export default function AddOrder() {
                       id="city"
                       value={newCustomer.city}
                       onChange={(e) => setNewCustomer({ ...newCustomer, city: e.target.value })}
-                      placeholder="Stadt"
+                      placeholder="City"
                     />
                   </div>
                 </div>
@@ -2777,7 +2782,7 @@ export default function AddOrder() {
                     type="email"
                     value={newCustomer.email}
                     onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
-                    placeholder="E-Mail (optional)"
+                    placeholder="Email (optional)"
                     className="pr-10"
                     data-testid="input-customerEmail"
                   />
