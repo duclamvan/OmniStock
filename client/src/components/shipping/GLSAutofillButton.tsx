@@ -152,22 +152,30 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
       'input[name*="number" i]'
     ], data.recipient.houseNumber, 'House Number');
     
+    // Fill postal code FIRST (before city) to avoid conflicts
     trySetValue([
-      'input[name*="plz" i]',
-      'input[name*="postleitzahl" i]',
-      'input[placeholder*="plz" i]',
-      'input[id*="plz" i]',
-      'input[name*="postal" i]',
-      'input[name*="zip" i]'
+      'input[name="postleitzahl"]',
+      'input[id="postleitzahl"]',
+      'input[placeholder="Postleitzahl"]',
+      'input[name*="plz" i]:not([name*="stadt" i]):not([name*="ort" i])',
+      'input[name*="postleitzahl" i]:not([name*="stadt" i]):not([name*="ort" i])',
+      'input[placeholder*="plz" i]:not([placeholder*="stadt" i]):not([placeholder*="ort" i])',
+      'input[id*="plz" i]:not([id*="stadt" i]):not([id*="ort" i])',
+      'input[name*="postal" i]:not([name*="city" i])',
+      'input[name*="zip" i]:not([name*="city" i])'
     ], data.recipient.postalCode, 'Postal Code');
     
+    // Fill city AFTER postal code
     trySetValue([
-      'input[name*="ort" i]',
-      'input[name*="stadt" i]',
-      'input[placeholder*="ort" i]',
-      'input[placeholder*="stadt" i]',
-      'input[id*="ort" i]',
-      'input[name*="city" i]'
+      'input[name="stadt"]',
+      'input[id="stadt"]',
+      'input[placeholder="Stadt"]',
+      'input[name*="ort" i]:not([name*="plz" i])',
+      'input[name*="stadt" i]:not([name*="plz" i])',
+      'input[placeholder*="ort" i]:not([placeholder*="plz" i])',
+      'input[placeholder*="stadt" i]:not([placeholder*="plz" i])',
+      'input[id*="ort" i]:not([id*="plz" i])',
+      'input[name*="city" i]:not([name*="postal" i]):not([name*="zip" i])'
     ], data.recipient.city, 'City');
     
     trySetValue([
