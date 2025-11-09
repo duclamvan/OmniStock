@@ -6386,7 +6386,7 @@ export default function PickPack() {
                     </div>
                     <p className="text-sm font-medium text-gray-900 pl-6" data-testid="text-shipping-method">
                       {activePackingOrder.shippingMethod}
-                      {activePackingOrder.codAmount && Number(activePackingOrder.codAmount) > 0 && (
+                      {activePackingOrder.paymentMethod === 'COD' && activePackingOrder.codAmount && Number(activePackingOrder.codAmount) > 0 && (
                         <span className="ml-2 text-xs font-semibold text-purple-700 bg-purple-100 px-2 py-0.5 rounded">
                           COD
                         </span>
@@ -6396,7 +6396,7 @@ export default function PickPack() {
                 )}
 
                 {/* COD Amount - Unified style */}
-                {activePackingOrder.codAmount && Number(activePackingOrder.codAmount) > 0 && (
+                {activePackingOrder.paymentMethod === 'COD' && activePackingOrder.codAmount && Number(activePackingOrder.codAmount) > 0 && (
                   <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
                     <div className="flex items-center gap-2 mb-1">
                       <DollarSign className="h-4 w-4 text-purple-600 flex-shrink-0" />
