@@ -9210,24 +9210,23 @@ Return ONLY the subject line without quotes or extra formatting.`,
         .where(eq(appSettings.key, 'dhl_account_credentials'))
         .limit(1);
       
-      let dhlAccounts;
-      if (dhlAccountSettings.length > 0 && dhlAccountSettings[0].value) {
-        dhlAccounts = dhlAccountSettings[0].value as any;
-      } else {
-        // Fallback to sandbox test account if not configured
-        console.warn('⚠️ No DHL account credentials configured in settings, using sandbox test account');
-        dhlAccounts = {
-          ekp: '2222222222', // 10-digit customer account number (sandbox)
-          participationNumber: '01' // Standard product participation
-        };
+      // DHL account credentials are REQUIRED - no sandbox fallback
+      if (dhlAccountSettings.length === 0 || !dhlAccountSettings[0].value) {
+        return res.status(400).json({ 
+          error: 'DHL account credentials not configured. Please go to Shipping Management and configure your DHL EKP and participation number.' 
+        });
       }
+
+      const dhlAccounts = dhlAccountSettings[0].value as any;
 
       // Validate DHL account credentials
       if (!dhlAccounts.ekp || !dhlAccounts.participationNumber) {
         return res.status(400).json({ 
-          error: 'DHL account credentials incomplete. Please configure EKP and participation number in settings.' 
+          error: 'DHL account credentials incomplete. Please configure both EKP (customer account number) and participation number in Shipping Management settings.' 
         });
       }
+
+      console.log(`✅ Using DHL account: EKP ${dhlAccounts.ekp}, Participation ${dhlAccounts.participationNumber}`);
 
       // Get cartons for the order
       const cartons = await storage.getOrderCartons(orderId);
@@ -9499,8 +9498,21 @@ Return ONLY the subject line without quotes or extra formatting.`,
 
     } catch (error: any) {
       console.error('Error creating DHL labels:', error);
+      
+      // Provide user-friendly error messages for common DHL API errors
+      let userMessage = error.message || 'Failed to create DHL labels';
+      
+      if (error.message?.includes('RF-UndefinedResource')) {
+        userMessage = 'DHL account credentials are invalid. Your EKP (customer account number) or participation number is not recognized by DHL. Please verify your credentials in Shipping Management settings.';
+      } else if (error.message?.includes('Unauthorized')) {
+        userMessage = 'DHL authentication failed. Please check your DHL API key and secret in environment settings.';
+      } else if (error.message?.includes('RF-')) {
+        // Other DHL fault codes
+        userMessage = `DHL API error: ${error.message}. Please check your DHL account settings and shipment details.`;
+      }
+      
       res.status(500).json({ 
-        error: error.message || 'Failed to create DHL labels',
+        error: userMessage,
         details: error.response?.data || error.details
       });
     }
