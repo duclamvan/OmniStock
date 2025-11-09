@@ -73,18 +73,26 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
       if (elements.length > 0) {
         elements.forEach(el => {
           if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-            const nativeInputSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-            const nativeTextAreaSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
-            
-            if (el.tagName === 'INPUT') {
-              nativeInputSetter.call(el, value);
-            } else {
-              nativeTextAreaSetter.call(el, value);
+            try {
+              el.value = value;
+              el.dispatchEvent(new Event('input', { bubbles: true }));
+              el.dispatchEvent(new Event('change', { bubbles: true }));
+              el.dispatchEvent(new Event('blur', { bubbles: true }));
+              
+              setTimeout(() => {
+                if (el.value !== value && el._valueTracker) {
+                  const nativeSetter = Object.getOwnPropertyDescriptor(
+                    el.tagName === 'INPUT' ? window.HTMLInputElement.prototype : window.HTMLTextAreaElement.prototype,
+                    'value'
+                  ).set;
+                  nativeSetter.call(el, value);
+                  el.dispatchEvent(new Event('input', { bubbles: true }));
+                  console.log('⚠️ Used native setter fallback for ' + label);
+                }
+              }, 50);
+            } catch (err) {
+              console.error('❌ Failed to set ' + label + ':', err);
             }
-            
-            el.dispatchEvent(new Event('input', { bubbles: true }));
-            el.dispatchEvent(new Event('change', { bubbles: true }));
-            el.dispatchEvent(new Event('blur', { bubbles: true }));
           }
         });
         filledCount++;
@@ -368,13 +376,50 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
       'input[id*="telefon" i]'
     ], data.recipient.phone, 'Phone');
     
-    // Fill country (React-compatible combobox)
+    // Fill country LAST (React-compatible combobox) and re-validate fields after
     if (data.recipient.country) {
-      setCountry(data.recipient.country);
+      setTimeout(() => {
+        setCountry(data.recipient.country);
+        
+        setTimeout(() => {
+          console.log('🔄 Re-validating address fields after country selection...');
+          
+          const streetInput = document.querySelector('input[name="street"]');
+          if (streetInput && !streetInput.value && data.recipient.street) {
+            streetInput.value = data.recipient.street;
+            streetInput.dispatchEvent(new Event('input', { bubbles: true }));
+            console.log('✅ Re-filled street');
+          }
+          
+          const houseInput = document.querySelector('input[name="housenumber"]');
+          if (houseInput && !houseInput.value && data.recipient.houseNumber) {
+            houseInput.value = data.recipient.houseNumber;
+            houseInput.dispatchEvent(new Event('input', { bubbles: true }));
+            console.log('✅ Re-filled house number');
+          }
+          
+          const postalInput = document.querySelector('input[name="postcode"]');
+          if (postalInput && !postalInput.value && data.recipient.postalCode) {
+            postalInput.value = data.recipient.postalCode;
+            postalInput.dispatchEvent(new Event('input', { bubbles: true }));
+            console.log('✅ Re-filled postal code');
+          }
+          
+          const cityInput = document.querySelector('input[name="city"]');
+          if (cityInput && !cityInput.value && data.recipient.city) {
+            cityInput.value = data.recipient.city;
+            cityInput.dispatchEvent(new Event('input', { bubbles: true }));
+            console.log('✅ Re-filled city');
+          }
+          
+          console.log('\\n📊 Summary: Filled ' + filledCount + ' fields');
+          alert('GLS Autofill Complete\\n\\n' + log.join('\\n') + '\\n\\nFilled ' + filledCount + ' fields. Check console for details (F12).');
+        }, 500);
+      }, 100);
+    } else {
+      console.log('\\n📊 Summary: Filled ' + filledCount + ' fields');
+      alert('GLS Autofill Complete\\n\\n' + log.join('\\n') + '\\n\\nFilled ' + filledCount + ' fields. Check console for details (F12).');
     }
-    
-    console.log('\\n📊 Summary: Filled ' + filledCount + ' fields');
-    alert('GLS Autofill Complete\\n\\n' + log.join('\\n') + '\\n\\nFilled ' + filledCount + ' fields. Check console for details (F12).');
   }, 1000);
 })();
     `.trim();
