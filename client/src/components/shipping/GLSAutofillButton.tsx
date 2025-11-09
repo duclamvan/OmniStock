@@ -221,24 +221,19 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
       ], data.recipient.postalCode, 'Postal Code');
     }
     
-    // Fill city by finding label first
-    let cityFilled = setFieldByLabel('Stadt', data.recipient.city, 'City');
-    if (!cityFilled) {
-      cityFilled = setFieldByLabel('Ort', data.recipient.city, 'City');
-    }
-    if (!cityFilled) {
-      cityFilled = trySetValue([
-        'input[name="stadt"]',
-        'input[id="stadt"]',
-        'input[placeholder="Stadt"]',
-        'input[name*="ort" i]',
-        'input[name*="stadt" i]',
-        'input[placeholder*="ort" i]',
-        'input[placeholder*="stadt" i]',
-        'input[id*="ort" i]',
-        'input[name*="city" i]'
-      ], data.recipient.city, 'City');
-    }
+    // Fill city - try exact match first
+    trySetValue([
+      'input[name="city"]',
+      'input[id="city"]',
+      'input[name="stadt"]',
+      'input[id="stadt"]',
+      'input[placeholder="Stadt"]',
+      'input[name*="ort" i]',
+      'input[name*="stadt" i]',
+      'input[placeholder*="ort" i]',
+      'input[placeholder*="stadt" i]',
+      'input[id*="ort" i]'
+    ], data.recipient.city, 'City');
     
     trySetValue([
       'input[name*="email" i]',
