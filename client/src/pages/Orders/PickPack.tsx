@@ -6384,18 +6384,18 @@ export default function PickPack() {
                 Shipping Information
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 space-y-3">
-              
-              {/* Shipping Address - ALWAYS shown */}
-              {(() => {
-                const formattedAddress = formatShippingAddress(activePackingOrder.shippingAddress);
-                return (
-                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <MapPin className="h-4 w-4 text-purple-600 flex-shrink-0" />
-                      <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Shipping Address</span>
-                    </div>
-                    {formattedAddress ? (
+            <CardContent className="p-4">
+              {/* Unified Grid Layout - All information in consistent cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Shipping Address - Full width */}
+                <div className="sm:col-span-2 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                  <div className="flex items-center gap-2 mb-1">
+                    <MapPin className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                    <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Shipping Address</span>
+                  </div>
+                  {(() => {
+                    const formattedAddress = formatShippingAddress(activePackingOrder.shippingAddress);
+                    return formattedAddress ? (
                       <p className="text-sm text-gray-900 whitespace-pre-line pl-6" data-testid="text-shipping-address">
                         {formattedAddress}
                       </p>
@@ -6406,14 +6406,11 @@ export default function PickPack() {
                           No shipping address provided
                         </p>
                       </div>
-                    )}
-                  </div>
-                );
-              })()}
+                    );
+                  })()}
+                </div>
 
-              {/* Shipment Details Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Shipping Method - ALWAYS show if available */}
+                {/* Shipping Method */}
                 {activePackingOrder.shippingMethod && (
                   <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
                     <div className="flex items-center gap-2 mb-1">
@@ -6422,6 +6419,31 @@ export default function PickPack() {
                     </div>
                     <p className="text-sm font-medium text-gray-900 pl-6" data-testid="text-shipping-method">
                       {activePackingOrder.shippingMethod}
+                      {activePackingOrder.codAmount && Number(activePackingOrder.codAmount) > 0 && (
+                        <span className="ml-2 text-xs font-semibold text-purple-700 bg-purple-100 px-2 py-0.5 rounded">
+                          COD
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                )}
+
+                {/* COD Amount - Unified style */}
+                {activePackingOrder.codAmount && Number(activePackingOrder.codAmount) > 0 && (
+                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <DollarSign className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                      <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">
+                        {(() => {
+                          const method = activePackingOrder.shippingMethod;
+                          if (method === 'DHL') return 'Nachnahme';
+                          if (method === 'PPL') return 'Dobírka';
+                          return 'COD Amount';
+                        })()}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium text-gray-900 pl-6" data-testid="text-cod-amount">
+                      {formatCurrency(Number(activePackingOrder.codAmount), activePackingOrder.codCurrency || 'CZK')}
                     </p>
                   </div>
                 )}
@@ -6444,121 +6466,40 @@ export default function PickPack() {
                   <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
                     <div className="flex items-center gap-2 mb-1">
                       <DollarSign className="h-4 w-4 text-purple-600 flex-shrink-0" />
-                      <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Actual Shipping Cost</span>
+                      <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Actual Cost</span>
                     </div>
                     <p className="text-sm font-medium text-gray-900 pl-6" data-testid="text-actual-shipping-cost">
                       {formatCurrency(Number(activePackingOrder.actualShippingCost), activePackingOrder.currency || 'CZK')}
                     </p>
                   </div>
                 )}
+
+                {/* Tracking Number */}
+                {activePackingOrder.trackingNumber && (
+                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Package className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                      <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Tracking Number</span>
+                    </div>
+                    <p className="text-sm font-mono font-medium text-gray-900 pl-6" data-testid="text-tracking-number">
+                      {activePackingOrder.trackingNumber}
+                    </p>
+                  </div>
+                )}
+
+                {/* Shipment Notes - Full width if exists */}
+                {activePackingOrder.notes && (
+                  <div className="sm:col-span-2 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <FileText className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                      <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Notes</span>
+                    </div>
+                    <p className="text-sm text-gray-900 whitespace-pre-line pl-6" data-testid="text-shipment-notes">
+                      {activePackingOrder.notes}
+                    </p>
+                  </div>
+                )}
               </div>
-
-              {/* Shipment Type Badge - Shows DHL Nachnahme or PPL Dobírka prominently for COD orders */}
-              {activePackingOrder.shippingMethod && activePackingOrder.codAmount && Number(activePackingOrder.codAmount) > 0 && (
-                <div className={`p-4 rounded-lg border-2 flex items-center gap-3 ${
-                  activePackingOrder.shippingMethod === 'DHL' 
-                    ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-blue-400' 
-                    : 'bg-gradient-to-r from-orange-50 to-orange-100 border-orange-400'
-                }`}>
-                  <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${
-                    activePackingOrder.shippingMethod === 'DHL' 
-                      ? 'bg-blue-600' 
-                      : 'bg-orange-600'
-                  }`}>
-                    <Truck className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <p className={`text-xs font-semibold ${
-                      activePackingOrder.shippingMethod === 'DHL' 
-                        ? 'text-blue-700' 
-                        : 'text-orange-700'
-                    } uppercase tracking-wide mb-0.5`}>
-                      Shipment Type
-                    </p>
-                    <p className={`text-lg font-bold ${
-                      activePackingOrder.shippingMethod === 'DHL' 
-                        ? 'text-blue-900' 
-                        : 'text-orange-900'
-                    }`} data-testid="text-shipment-type">
-                      {activePackingOrder.shippingMethod === 'DHL' && '💶 DHL Nachnahme (Cash on Delivery)'}
-                      {activePackingOrder.shippingMethod === 'PPL' && '💶 PPL Dobírka (Cash on Delivery)'}
-                      {activePackingOrder.shippingMethod !== 'DHL' && activePackingOrder.shippingMethod !== 'PPL' && '💶 Cash on Delivery'}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* COD/Nachnahme Amount - Show if amount is specified */}
-              {activePackingOrder.codAmount && 
-               Number(activePackingOrder.codAmount) > 0 && (
-                <div className={`p-4 rounded-lg border-2 ${
-                  activePackingOrder.shippingMethod === 'DHL' 
-                    ? 'bg-blue-50 border-blue-300' 
-                    : 'bg-orange-50 border-orange-300'
-                }`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <DollarSign className={`h-5 w-5 ${
-                      activePackingOrder.shippingMethod === 'DHL' 
-                        ? 'text-blue-600' 
-                        : 'text-orange-600'
-                    } flex-shrink-0`} />
-                    <span className={`text-sm font-bold ${
-                      activePackingOrder.shippingMethod === 'DHL' 
-                        ? 'text-blue-900' 
-                        : 'text-orange-900'
-                    } uppercase tracking-wide`}>
-                      {(() => {
-                        const method = activePackingOrder.shippingMethod;
-                        if (method === 'DHL') return 'Nachnahme Amount';
-                        if (method === 'PPL') return 'Dobírka Amount';
-                        return 'COD Amount';
-                      })()}
-                    </span>
-                  </div>
-                  <div className="pl-7">
-                    <p className={`text-2xl font-bold ${
-                      activePackingOrder.shippingMethod === 'DHL' 
-                        ? 'text-blue-900' 
-                        : 'text-orange-900'
-                    }`} data-testid="text-cod-amount">
-                      {formatCurrency(Number(activePackingOrder.codAmount), activePackingOrder.codCurrency || 'CZK')}
-                    </p>
-                    <p className={`text-xs ${
-                      activePackingOrder.shippingMethod === 'DHL' 
-                        ? 'text-blue-700' 
-                        : 'text-orange-700'
-                    } mt-1 font-medium`}>
-                      Customer pays this amount to the courier upon delivery
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Tracking Number(s) */}
-              {activePackingOrder.trackingNumber && (
-                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Package className="h-4 w-4 text-green-600 flex-shrink-0" />
-                    <span className="text-xs font-semibold text-green-900 uppercase tracking-wide">Tracking Number</span>
-                  </div>
-                  <p className="text-sm font-mono font-medium text-green-900 pl-6" data-testid="text-tracking-number">
-                    {activePackingOrder.trackingNumber}
-                  </p>
-                </div>
-              )}
-
-              {/* Shipment Notes */}
-              {activePackingOrder.notes && (
-                <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <FileText className="h-4 w-4 text-purple-600 flex-shrink-0" />
-                    <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Shipment Notes</span>
-                  </div>
-                  <p className="text-sm text-gray-900 whitespace-pre-line pl-6" data-testid="text-shipment-notes">
-                    {activePackingOrder.notes}
-                  </p>
-                </div>
-              )}
             </CardContent>
           </Card>
 
