@@ -198,15 +198,22 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
       'input[name*="number" i]'
     ], data.recipient.houseNumber, 'House Number');
     
-    // Fill postal code by finding label first
-    let postalFilled = setFieldByLabel('Postleitzahl', data.recipient.postalCode, 'Postal Code');
+    // Fill postal code - try exact match first
+    let postalFilled = trySetValue([
+      'input[name="postcode"]',
+      'input[name="postleitzahl"]',
+      'input[id="postcode"]',
+      'input[id="postleitzahl"]'
+    ], data.recipient.postalCode, 'Postal Code');
+    
+    if (!postalFilled) {
+      postalFilled = setFieldByLabel('Postleitzahl', data.recipient.postalCode, 'Postal Code');
+    }
     if (!postalFilled) {
       postalFilled = setFieldByLabel('PLZ', data.recipient.postalCode, 'Postal Code');
     }
     if (!postalFilled) {
       postalFilled = trySetValue([
-        'input[name="postleitzahl"]',
-        'input[id="postleitzahl"]',
         'input[placeholder="Postleitzahl"]',
         'input[name*="plz" i]',
         'input[placeholder*="plz" i]',
