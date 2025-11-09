@@ -73,7 +73,15 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
       if (elements.length > 0) {
         elements.forEach(el => {
           if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-            el.value = value;
+            const nativeInputSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+            const nativeTextAreaSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+            
+            if (el.tagName === 'INPUT') {
+              nativeInputSetter.call(el, value);
+            } else {
+              nativeTextAreaSetter.call(el, value);
+            }
+            
             el.dispatchEvent(new Event('input', { bubbles: true }));
             el.dispatchEvent(new Event('change', { bubbles: true }));
             el.dispatchEvent(new Event('blur', { bubbles: true }));
@@ -165,6 +173,68 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
     }
     log.push('❌ ' + label + ' (dropdown not found or option not available)');
     console.warn('❌ Could not select ' + label + ' for value: ' + value);
+    return false;
+  }
+  
+  function setCountry(countryValue) {
+    if (!countryValue) return false;
+    
+    const countryMappings = {
+      'germany': ['deutschland', 'de', 'ger', 'deu', 'germany'],
+      'switzerland': ['schweiz', 'ch', 'sui', 'switzerland'],
+      'austria': ['österreich', 'osterreich', 'at', 'aut', 'austria'],
+      'belgium': ['belgien', 'be', 'bel', 'belgium'],
+      'france': ['frankreich', 'fr', 'fra', 'france'],
+      'netherlands': ['niederlande', 'nl', 'nld', 'netherlands'],
+      'czech republic': ['tschechien', 'cz', 'cze', 'czech'],
+      'poland': ['polen', 'pl', 'pol', 'poland'],
+      'italy': ['italien', 'it', 'ita', 'italy'],
+      'spain': ['spanien', 'es', 'esp', 'spain']
+    };
+    
+    let targetCountryName = countryValue;
+    const searchValue = countryValue.toLowerCase();
+    
+    for (const key in countryMappings) {
+      if (countryMappings[key].some(variant => searchValue.includes(variant) || variant.includes(searchValue))) {
+        targetCountryName = countryMappings[key][0];
+        break;
+      }
+    }
+    
+    console.log('🌍 Setting country:', countryValue, '→', targetCountryName);
+    
+    const countryInput = document.querySelector('input[name="country-selector"]') || 
+                        document.querySelector('input[role="combobox"]') ||
+                        document.querySelector('input[aria-autocomplete="list"]');
+    
+    if (countryInput) {
+      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+      nativeSetter.call(countryInput, targetCountryName);
+      
+      countryInput.dispatchEvent(new Event('input', { bubbles: true }));
+      countryInput.dispatchEvent(new Event('change', { bubbles: true }));
+      countryInput.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      countryInput.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+      countryInput.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+      countryInput.dispatchEvent(new Event('blur', { bubbles: true }));
+      
+      setTimeout(() => {
+        if (countryInput.value === targetCountryName) {
+          console.log('✅ Country confirmed:', targetCountryName);
+          filledCount++;
+          log.push('✅ Country: ' + targetCountryName);
+        } else {
+          console.warn('❌ Country selection failed. Current value:', countryInput.value);
+          nativeSetter.call(countryInput, targetCountryName);
+          countryInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }, 150);
+      
+      return true;
+    }
+    
+    console.warn('❌ Country field not found');
     return false;
   }
   
@@ -283,27 +353,9 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
       'input[id*="telefon" i]'
     ], data.recipient.phone, 'Phone');
     
-    // Fill country (combobox/autocomplete input)
+    // Fill country (React-compatible combobox)
     if (data.recipient.country) {
-      const countryFilled = trySetValue([
-        'input[name="country-selector"]',
-        'input[role="combobox"][name*="country" i]',
-        'input[aria-autocomplete="list"]',
-        'select[name="country"]',
-        'select[id="country"]',
-        'select[name*="land" i]',
-        'select[id*="land" i]'
-      ], data.recipient.country, 'Country');
-      
-      if (countryFilled) {
-        setTimeout(() => {
-          const countryInput = document.querySelector('input[name="country-selector"]');
-          if (countryInput) {
-            countryInput.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' }));
-            countryInput.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'Enter' }));
-          }
-        }, 100);
-      }
+      setCountry(data.recipient.country);
     }
     
     console.log('\\n📊 Summary: Filled ' + filledCount + ' fields');
