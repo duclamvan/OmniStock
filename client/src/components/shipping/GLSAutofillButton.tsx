@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, Copy, BookmarkIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -38,9 +38,11 @@ interface GLSAutofillButtonProps {
 
 export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M', weight }: GLSAutofillButtonProps) {
   const [showBookmarkletDialog, setShowBookmarkletDialog] = useState(false);
+  const [showDebugData, setShowDebugData] = useState(false);
+  const bookmarkletRef = useRef<HTMLAnchorElement>(null);
   const { toast } = useToast();
 
-  // Generate the bookmarklet code
+  // Generate the bookmarklet code (both display and encoded versions)
   const generateBookmarklet = () => {
     const data = {
       recipient: recipientData,
@@ -49,12 +51,14 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
       weight,
     };
 
-    // This JavaScript will run on the GLS page to fill the form
-    const bookmarkletCode = `
-javascript:(function(){
-  const data = ${JSON.stringify(data)};
+    // Encoded data payload (safe from special characters)
+    const encodedData = encodeURIComponent(JSON.stringify(data));
+
+    // Core bookmarklet logic (using decoded data)
+    const bookmarkletLogic = `
+(function(){
+  const data = JSON.parse(decodeURIComponent('${encodedData}'));
   
-  // Helper function to set input value and trigger events
   function setInputValue(selector, value) {
     const input = document.querySelector(selector);
     if (input) {
@@ -65,7 +69,6 @@ javascript:(function(){
     }
   }
   
-  // Helper function to select option by text or value
   function selectOption(selector, value) {
     const select = document.querySelector(selector);
     if (select && value) {
@@ -81,9 +84,7 @@ javascript:(function(){
     }
   }
   
-  // Wait a bit for the page to fully load
   setTimeout(() => {
-    // Fill recipient data
     setInputValue('input[name="recipientFirstName"], input[placeholder*="Vorname"]', data.recipient.name.split(' ')[0]);
     setInputValue('input[name="recipientLastName"], input[placeholder*="Nachname"]', data.recipient.name.split(' ').slice(1).join(' '));
     setInputValue('input[name="recipientCompany"], input[placeholder*="Firma"]', data.recipient.company);
@@ -94,7 +95,6 @@ javascript:(function(){
     setInputValue('input[name="recipientEmail"], input[placeholder*="E-Mail"]', data.recipient.email);
     setInputValue('input[name="recipientPhone"], input[placeholder*="Telefon"]', data.recipient.phone);
     
-    // Fill sender data if provided
     if (data.sender) {
       setInputValue('input[name="senderFirstName"]', data.sender.name.split(' ')[0]);
       setInputValue('input[name="senderLastName"]', data.sender.name.split(' ').slice(1).join(' '));
@@ -107,12 +107,10 @@ javascript:(function(){
       setInputValue('input[name="senderPhone"]', data.sender.phone);
     }
     
-    // Select package size if possible
     if (data.packageSize) {
       selectOption('select[name="packageSize"]', data.packageSize);
     }
     
-    // Set weight if available
     if (data.weight) {
       setInputValue('input[name="weight"]', data.weight.toString());
     }
@@ -122,8 +120,22 @@ javascript:(function(){
 })();
     `.trim();
 
-    return bookmarkletCode;
+    // Encoded href for actual bookmarklet
+    const href = `javascript:${encodeURIComponent(bookmarkletLogic)}`;
+    
+    // Pretty display version
+    const displayCode = `javascript:${bookmarkletLogic}`;
+
+    return { href, displayCode };
   };
+
+  // Set the bookmarklet href via ref to avoid React warning
+  useEffect(() => {
+    if (bookmarkletRef.current && showBookmarkletDialog) {
+      const { href } = generateBookmarklet();
+      bookmarkletRef.current.href = href;
+    }
+  }, [showBookmarkletDialog, recipientData, senderData, packageSize, weight]);
 
   // Copy formatted details to clipboard
   const copyToClipboard = () => {
@@ -217,7 +229,8 @@ ${weight ? `Gewicht: ${weight} kg` : ''}
               <h3 className="font-semibold text-sm sm:text-base">1. Drag to bookmarks bar:</h3>
               <div className="flex justify-center p-3 sm:p-4 bg-blue-50 dark:bg-blue-950 rounded border-2 border-dashed border-blue-300">
                 <a
-                  href={generateBookmarklet()}
+                  ref={bookmarkletRef}
+                  href="#"
                   className="inline-flex items-center gap-2 px-3 py-2 sm:px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-move text-sm"
                   onClick={(e) => {
                     e.preventDefault();
@@ -241,14 +254,15 @@ ${weight ? `Gewicht: ${weight} kg` : ''}
               <h3 className="font-semibold text-sm sm:text-base">2. Or copy manually:</h3>
               <div className="relative">
                 <pre className="p-2 sm:p-3 bg-muted rounded text-xs overflow-x-auto whitespace-pre-wrap break-all">
-                  {generateBookmarklet()}
+                  {generateBookmarklet().displayCode}
                 </pre>
                 <Button
                   size="sm"
                   variant="outline"
                   className="absolute top-2 right-2"
                   onClick={() => {
-                    navigator.clipboard.writeText(generateBookmarklet());
+                    const { displayCode } = generateBookmarklet();
+                    navigator.clipboard.writeText(displayCode);
                     toast({
                       title: "Code copied",
                       description: "Bookmarklet code copied to clipboard!",
@@ -272,6 +286,49 @@ ${weight ? `Gewicht: ${weight} kg` : ''}
                 <li>Always verify auto-filled details</li>
                 <li>Update if form fields change</li>
               </ul>
+            </div>
+
+            {/* Debug Data Section */}
+            <div className="rounded-lg border p-3 sm:p-4 bg-blue-50 dark:bg-blue-950/20">
+              <button
+                onClick={() => setShowDebugData(!showDebugData)}
+                className="w-full flex items-center justify-between text-left"
+              >
+                <h3 className="font-semibold text-blue-800 dark:text-blue-200 text-sm sm:text-base">
+                  🔍 Debug: View Data to be Sent
+                </h3>
+                <span className="text-blue-600 dark:text-blue-400 text-sm">
+                  {showDebugData ? '▼' : '▶'}
+                </span>
+              </button>
+              
+              {showDebugData && (
+                <div className="mt-3 space-y-2">
+                  <div className="bg-white dark:bg-slate-900 rounded p-2 border">
+                    <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 mb-1">Recipient:</p>
+                    <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                      {JSON.stringify(recipientData, null, 2)}
+                    </pre>
+                  </div>
+                  
+                  {senderData && (
+                    <div className="bg-white dark:bg-slate-900 rounded p-2 border">
+                      <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 mb-1">Sender:</p>
+                      <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                        {JSON.stringify(senderData, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                  
+                  <div className="bg-white dark:bg-slate-900 rounded p-2 border">
+                    <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 mb-1">Package Info:</p>
+                    <pre className="text-xs text-gray-700 dark:text-gray-300">
+                      Size: {packageSize}
+{weight ? `Weight: ${weight} kg` : 'Weight: Not specified'}
+                    </pre>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2">
