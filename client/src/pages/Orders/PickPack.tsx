@@ -37,6 +37,7 @@ import { useToast } from "@/hooks/use-toast";
 import { offlineQueue } from "@/lib/offlineQueue";
 import { CartonTypeAutocomplete } from "@/components/orders/CartonTypeAutocomplete";
 import { usePackingOptimization } from "@/hooks/usePackingOptimization";
+import { GLSAutofillButton } from "@/components/shipping/GLSAutofillButton";
 import { 
   Dialog, 
   DialogContent, 
@@ -976,12 +977,6 @@ export default function PickPack() {
   const [generatingLabelForCarton, setGeneratingLabelForCarton] = useState<Record<string, boolean>>({});
   const [deletingShipment, setDeletingShipment] = useState<Record<string, boolean>>({});
   
-  // DHL-specific loading states
-  const [isGeneratingDHLLabels, setIsGeneratingDHLLabels] = useState(false);
-  const [isPrintingDHLLabels, setIsPrintingDHLLabels] = useState(false);
-  const [deletingDHLShipment, setDeletingDHLShipment] = useState<Record<string, boolean>>({});
-  const [printedDHLLabels, setPrintedDHLLabels] = useState<Set<string>>(new Set()); // Track printed DHL labels by tracking number
-  
   const [selectedBoxSize, setSelectedBoxSize] = useState<string>('');
   const [packageWeight, setPackageWeight] = useState<string>('');
   const [verifiedItems, setVerifiedItems] = useState<Record<string, number>>({});
@@ -1597,6 +1592,14 @@ export default function PickPack() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
+  // Query for GLS default sender address from settings
+  const { data: glsSenderAddress } = useQuery<any>({
+    queryKey: ['/api/settings/gls_default_sender_address'],
+    staleTime: 60 * 60 * 1000, // 1 hour (sender address rarely changes)
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
+  });
+
   // Filter cartons based on search
   const filteredCartons = availableCartons.filter((carton: any) => {
     if (!cartonSearchFilter) return true;
@@ -2048,6 +2051,28 @@ export default function PickPack() {
     },
   });
 
+  // Update carton tracking number mutation
+  const updateCartonTrackingMutation = useMutation({
+    mutationFn: async ({ cartonId, trackingNumber }: { cartonId: string; trackingNumber: string }) => {
+      return apiRequest('PATCH', `/api/cartons/${cartonId}`, { trackingNumber });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+      toast({
+        title: "Tracking Number Saved",
+        description: "Carton tracking number updated successfully"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Save",
+        description: error.message || "Failed to update tracking number",
+        variant: "destructive"
+      });
+    }
+  });
+
   // PPL Label mutations
   const createPPLLabelsMutation = useMutation({
     mutationFn: async (orderId: string) => {
@@ -2195,64 +2220,6 @@ export default function PickPack() {
     }
   });
 
-  // DHL Label mutations
-  const createDHLLabelsMutation = useMutation({
-    mutationFn: async (orderId: string) => {
-      const response = await apiRequest('POST', `/api/orders/${orderId}/dhl/create-labels`, {});
-      return await response.json();
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "DHL Labels Created",
-        description: `Created ${data.shipmentNumbers?.length || 'shipping'} label(s)`,
-      });
-
-      // Refetch order to get updated DHL data
-      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-      
-      // Refetch shipment labels
-      if (activePackingOrder?.id) {
-        fetchShipmentLabels();
-      }
-    },
-    onError: (error: any) => {
-      console.error('Error creating DHL labels:', error);
-      console.error('Error details:', {
-        message: error.message,
-        hint: error.hint,
-        details: error.details,
-        fullResponse: error.fullResponse
-      });
-      
-      // Build a detailed error message
-      let errorMessage = error.message || "Failed to create DHL labels";
-      
-      if (error.hint) {
-        errorMessage += `\n\n💡 ${error.hint}`;
-      }
-      
-      if (error.details) {
-        const details = error.details;
-        if (details.status) {
-          errorMessage += `\n\nStatus: ${details.status}`;
-        }
-        if (details.data) {
-          const dataStr = typeof details.data === 'string' 
-            ? details.data 
-            : JSON.stringify(details.data, null, 2);
-          errorMessage += `\n\nDetails: ${dataStr}`;
-        }
-      }
-      
-      toast({
-        title: "DHL Label Creation Failed",
-        description: errorMessage,
-        variant: "destructive",
-        duration: 10000,
-      });
-    }
-  });
 
   // Define the actual recalculate function after mutations are available
   recalculateCartons.current = async () => {
@@ -7482,420 +7449,225 @@ export default function PickPack() {
                 </>
               )}
 
-              {/* DHL-Specific Actions */}
-              {activePackingOrder.shippingMethod?.toUpperCase().includes('DHL') && (
-                <>
-                  {/* Generate All DHL Labels Button */}
-                  {shipmentLabelsFromDB.filter((l: any) => l.carrier === 'DHL').length === 0 ? (
-                    <Button
-                      variant="default"
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-all duration-200"
-                      onClick={async () => {
-                        try {
-                          if (cartons.length === 0) {
-                            toast({
-                              title: "No Cartons",
-                              description: "Please add cartons first before generating labels",
-                              variant: "destructive"
-                            });
-                            return;
-                          }
-
-                          setIsGeneratingDHLLabels(true);
-                          console.log('🎯 Generating all DHL labels for', cartons.length, 'cartons');
-                          toast({
-                            title: "Generating Labels...",
-                            description: `Creating ${cartons.length} DHL shipping label(s)`,
-                          });
-
-                          const response = await apiRequest('POST', `/api/orders/${activePackingOrder.id}/dhl/create-labels`, {});
-                          
-                          if (!response.ok) {
-                            const error = await response.json();
-                            throw new Error(error.error || 'Failed to create labels');
-                          }
-                          
-                          const result = await response.json();
-                          console.log('✅ All DHL labels generated:', result);
-                          
-                          // Refresh ALL data to ensure UI updates
-                          console.log('🔄 Step 1: Invalidating all queries...');
-                          await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-                          await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
-                          
-                          console.log('🔄 Step 2: Refetching cartons...');
-                          await refetchCartons();
-                          
-                          console.log('🔄 Step 3: Waiting for database commit...');
-                          await new Promise(resolve => setTimeout(resolve, 500));
-                          
-                          console.log('🔄 Step 4: Fetching shipment labels...');
-                          await fetchShipmentLabels();
-                          
-                          console.log('🔄 Step 5: Force re-render by updating state...');
-                          setShipmentLabelsFromDB(prev => [...prev]);
-                          
-                          console.log('✅ All refresh steps completed');
-                          
-                          // Show tracking numbers in success message
-                          const trackingNumbers = result.trackingNumbers || [];
-                          const trackingInfo = trackingNumbers.length > 0
-                            ? `Tracking: ${trackingNumbers.join(', ')}`
-                            : '';
-                          
-                          toast({
-                            title: "Labels Generated",
-                            description: trackingInfo 
-                              ? `Successfully created ${cartons.length} DHL shipping label(s). ${trackingInfo}`
-                              : `Successfully created ${cartons.length} DHL shipping label(s)`,
-                          });
-                        } catch (error: any) {
-                          console.error('❌ Generate error:', error);
-                          toast({
-                            title: "Error",
-                            description: error.message || "Failed to generate labels",
-                            variant: "destructive"
-                          });
-                        } finally {
-                          setIsGeneratingDHLLabels(false);
-                        }
-                      }}
-                      disabled={cartons.length === 0 || isGeneratingDHLLabels}
-                      data-testid="button-generate-all-dhl-labels"
-                    >
-                      {isGeneratingDHLLabels ? (
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Package className="h-4 w-4 mr-2" />
-                      )}
-                      {isGeneratingDHLLabels ? 'Generating...' : 'Generate All DHL Labels'}
-                    </Button>
-                  ) : (
-                    // Labels exist - Show Print All Labels button
-                    <Button
-                      variant="default"
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-all duration-200"
-                      onClick={async () => {
-                        try {
-                          setIsPrintingDHLLabels(true);
-                          console.log('🖨️ Printing all DHL labels...');
-                          
-                          const dhlLabels = shipmentLabelsFromDB.filter((l: any) => l.carrier === 'DHL');
-                          
-                          // Print each label that has PDF data
-                          for (let i = 0; i < dhlLabels.length; i++) {
-                            const label = dhlLabels[i];
-                            if (label.labelBase64) {
-                              const labelBlob = new Blob(
-                                [Uint8Array.from(atob(label.labelBase64), c => c.charCodeAt(0))],
-                                { type: 'application/pdf' }
-                              );
-                              const url = URL.createObjectURL(labelBlob);
-                              
-                              const printWindow = window.open(url, '_blank');
-                              if (printWindow) {
-                                printWindow.onload = () => {
-                                  printWindow.print();
-                                };
-                              }
-                              
-                              setTimeout(() => URL.revokeObjectURL(url), 1000);
-                              
-                              // Mark as printed using tracking number
-                              const trackingNumber = label.trackingNumbers?.[0];
-                              if (trackingNumber) {
-                                setPrintedDHLLabels(prev => {
-                                  const newSet = new Set(prev);
-                                  newSet.add(trackingNumber);
-                                  return newSet;
-                                });
-                              }
-                              
-                              // Small delay between prints to prevent browser blocking
-                              if (i < dhlLabels.length - 1) {
-                                await new Promise(resolve => setTimeout(resolve, 500));
-                              }
-                            }
-                          }
-                          
-                          toast({
-                            title: "Labels Sent to Printer",
-                            description: `${dhlLabels.length} label(s) opened for printing`,
-                          });
-                        } catch (error: any) {
-                          console.error('Error printing labels:', error);
-                          toast({
-                            title: "Error",
-                            description: "Failed to print labels",
-                            variant: "destructive"
-                          });
-                        } finally {
-                          setIsPrintingDHLLabels(false);
-                        }
-                      }}
-                      disabled={isPrintingDHLLabels}
-                      data-testid="button-print-all-dhl-labels"
-                    >
-                      {isPrintingDHLLabels ? (
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Printer className="h-4 w-4 mr-2" />
-                      )}
-                      {isPrintingDHLLabels ? 'Printing...' : 'Print All Labels'}
-                    </Button>
-                  )}
-
-                  {/* Delete All Labels button */}
-                  {shipmentLabelsFromDB.filter((l: any) => l.carrier === 'DHL').length > 0 && (
-                    <Button
-                      variant="outline"
-                      className="w-full border-red-300 text-red-700 hover:bg-red-50"
-                      onClick={async () => {
-                        const dhlLabels = shipmentLabelsFromDB.filter((l: any) => l.carrier === 'DHL');
-                        if (confirm(`Delete all ${dhlLabels.length} DHL shipping labels?\n\nThis will cancel all shipments with DHL. Your carton data (weight, dimensions) will be preserved.\n\nAfter deletion, you can regenerate labels using the "Generate All DHL Labels" button.`)) {
-                          try {
-                            setIsGeneratingDHLLabels(true);
-                            console.log('🗑️ Deleting all DHL labels (carton data will be preserved)...');
-                            
-                            // Delete all DHL labels (cartons are preserved)
-                            for (const label of dhlLabels) {
-                              await apiRequest('DELETE', `/api/shipment-labels/${label.id}`, {});
-                            }
-                            
-                            // Refresh data
-                            await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-                            await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
-                            await refetchCartons();
-                            await new Promise(resolve => setTimeout(resolve, 300));
-                            await fetchShipmentLabels();
-                            setShipmentLabelsFromDB(prev => prev.filter((l: any) => l.carrier !== 'DHL'));
-                            
-                            toast({
-                              title: "All Labels Deleted",
-                              description: "Carton data preserved. Use 'Generate All DHL Labels' to create new labels.",
-                            });
-                          } catch (error: any) {
-                            console.error('❌ Delete error:', error);
-                            toast({
-                              title: "Error",
-                              description: error.message || "Failed to delete labels",
-                              variant: "destructive"
-                            });
-                          } finally {
-                            setIsGeneratingDHLLabels(false);
-                          }
-                        }
-                      }}
-                      disabled={isGeneratingDHLLabels}
-                      data-testid="button-delete-all-dhl-labels"
-                    >
-                      {isGeneratingDHLLabels ? (
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4 mr-2" />
-                      )}
-                      {isGeneratingDHLLabels ? 'Deleting...' : 'Delete All Labels'}
-                    </Button>
-                  )}
-
-                  {/* DHL Shipment Cards - Always show cartons, matching PPL layout */}
-                  {cartons.length > 0 && (
-                    <div className="space-y-2">
-                      {(() => {
-                        const dhlLabels = shipmentLabelsFromDB.filter((l: any) => l.carrier === 'DHL');
-                        
-                        // Combine cartons with their corresponding labels
-                        const cartonsWithLabels = cartons.map((carton, index) => {
-                          // Find label for this carton (by carton number in labelData)
-                          const label = dhlLabels.find((l: any) => {
-                            const labelData = l.labelData as any;
-                            return labelData?.cartonNumber === index + 1 || 
-                                   (index === 0 && !labelData?.cartonNumber);
-                          });
-                          
-                          return {
-                            carton,
-                            label,
-                            index
-                          };
-                        });
-                        
-                        const totalCartons = cartons.length;
-                        
-                        return (
+              {/* GLS Germany - Manual Shipping Workflow */}
+              {(() => {
+                // Check if the shipping country is Germany
+                let isGermanyOrder = false;
+                if (activePackingOrder.shippingAddress) {
+                  if (typeof activePackingOrder.shippingAddress === 'string') {
+                    // Legacy string format - simple check
+                    const addressLower = activePackingOrder.shippingAddress.toLowerCase();
+                    isGermanyOrder = addressLower.includes('germany') || addressLower.includes('deutschland');
+                  } else if (typeof activePackingOrder.shippingAddress === 'object') {
+                    // Object format - check country field
+                    const country = (activePackingOrder.shippingAddress as any).country;
+                    if (country) {
+                      const countryLower = country.toLowerCase();
+                      isGermanyOrder = countryLower === 'germany' || 
+                                      countryLower === 'deutschland' || 
+                                      countryLower === 'de' ||
+                                      countryLower === 'deu';
+                    }
+                  }
+                }
+                
+                if (!isGermanyOrder) return null;
+                
+                // Prepare recipient data from shipping address
+                const shippingAddr = activePackingOrder.shippingAddress;
+                const recipientData = typeof shippingAddr === 'object' ? {
+                  name: [shippingAddr.firstName, shippingAddr.lastName].filter(Boolean).join(' ') || 'N/A',
+                  company: shippingAddr.company || '',
+                  street: shippingAddr.street || '',
+                  houseNumber: shippingAddr.streetNumber || '',
+                  postalCode: shippingAddr.zipCode || '',
+                  city: shippingAddr.city || '',
+                  country: shippingAddr.country || 'Germany',
+                  email: shippingAddr.email || '',
+                  phone: shippingAddr.tel || '',
+                } : {
+                  name: 'N/A',
+                  company: '',
+                  street: '',
+                  houseNumber: '',
+                  postalCode: '',
+                  city: '',
+                  country: 'Germany',
+                  email: '',
+                  phone: '',
+                };
+                
+                // Prepare sender data from GLS settings
+                const senderData = glsSenderAddress ? {
+                  name: glsSenderAddress.name || '',
+                  company: glsSenderAddress.company || '',
+                  street: glsSenderAddress.street || '',
+                  houseNumber: glsSenderAddress.streetNumber || '',
+                  postalCode: glsSenderAddress.zipCode || '',
+                  city: glsSenderAddress.city || '',
+                  email: glsSenderAddress.email || '',
+                  phone: glsSenderAddress.phone || '',
+                } : undefined;
+                
+                // Calculate package size and weight from cartons
+                let totalWeight = 0;
+                cartons.forEach(carton => {
+                  if (carton.weight) {
+                    totalWeight += parseFloat(carton.weight);
+                  }
+                });
+                
+                return (
+                  <Card className="border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 to-green-50">
+                    <CardHeader>
+                      <CardTitle className="text-emerald-800 flex items-center gap-2">
+                        <Package className="h-5 w-5" />
+                        GLS Germany - Manual Shipping
+                      </CardTitle>
+                      <CardDescription className="text-emerald-700">
+                        Create labels on the GLS website and optionally enter tracking numbers here
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Shipping Details Summary */}
+                      <div className="bg-emerald-100 rounded-lg p-3 space-y-2">
+                        <div className="flex items-center gap-2 text-sm">
+                          <MapPin className="h-4 w-4 text-emerald-600" />
+                          <span className="font-semibold text-emerald-900">Shipping to:</span>
+                          <span className="text-emerald-700">{recipientData.name}</span>
+                        </div>
+                        {cartons.length > 0 && (
                           <>
-                            {cartonsWithLabels.map(({ carton, label, index }) => {
-                              // Check if this is a COD/Nachnahme label
-                              const isNachnahme = activePackingOrder.codAmount && 
-                                                   Number(activePackingOrder.codAmount) > 0;
-                              
-                              return (
-                                <div 
-                                  key={carton.id}
-                                  className="flex items-center gap-3 p-3 rounded-lg transition-all duration-300 ease-in-out animate-in fade-in-0 slide-in-from-bottom-2 bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-300 hover:shadow-md hover:scale-[1.01]"
-                                  style={{ animationDelay: `${index * 50}ms` }}
-                                  data-testid={`dhl-shipment-card-${index + 1}`}
-                                >
-                                  <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-transform duration-300 hover:scale-110 bg-blue-600 shadow-lg">
-                                    <span className="text-white font-bold text-sm">{index + 1}</span>
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <p className="text-sm font-semibold truncate text-gray-900">
-                                        DE-DHL{isNachnahme ? '-NACH' : ''} #{index + 1}
-                                      </p>
-                                    </div>
-                                    {label?.trackingNumbers?.[0] ? (
-                                      <p className="text-xs font-mono truncate text-gray-600">
-                                        {label.trackingNumbers[0]}
-                                      </p>
-                                    ) : (
-                                      <p className="text-xs text-gray-400 italic">No label generated yet</p>
+                            <div className="flex items-center gap-2 text-sm">
+                              <Box className="h-4 w-4 text-emerald-600" />
+                              <span className="font-semibold text-emerald-900">Cartons:</span>
+                              <span className="text-emerald-700">{cartons.length}</span>
+                            </div>
+                            {totalWeight > 0 && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <Package className="h-4 w-4 text-emerald-600" />
+                                <span className="font-semibold text-emerald-900">Total Weight:</span>
+                                <span className="text-emerald-700">{totalWeight.toFixed(2)} kg</span>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+
+                      {/* GLS Autofill Button */}
+                      <div className="space-y-2">
+                        <GLSAutofillButton
+                          recipientData={recipientData}
+                          senderData={senderData}
+                          packageSize="M"
+                          weight={totalWeight > 0 ? totalWeight : undefined}
+                        />
+                      </div>
+
+                      {/* Instructions */}
+                      <Alert className="bg-emerald-50 border-emerald-300">
+                        <Info className="h-4 w-4 text-emerald-600" />
+                        <AlertDescription className="text-sm text-emerald-800">
+                          <strong>How to use:</strong>
+                          <ol className="list-decimal list-inside mt-2 space-y-1">
+                            <li>Click "Ship with GLS" to open the GLS website</li>
+                            <li>Set up the autofill bookmarklet (one-time setup)</li>
+                            <li>Use the bookmarklet to fill the form automatically</li>
+                            <li>Complete the shipment and get your tracking number</li>
+                            <li>Enter tracking numbers below after creating labels</li>
+                          </ol>
+                        </AlertDescription>
+                      </Alert>
+
+                      {/* Manual Tracking Number Entry for Each Carton */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Package className="h-4 w-4 text-emerald-600" />
+                          <label className="text-sm font-semibold text-emerald-900">
+                            Tracking Numbers
+                          </label>
+                        </div>
+                        <p className="text-xs text-emerald-700">
+                          Enter tracking numbers after creating labels on the GLS website
+                        </p>
+                        
+                        {cartons.length === 0 ? (
+                          <Alert className="bg-amber-50 border-amber-300">
+                            <AlertCircle className="h-4 w-4 text-amber-600" />
+                            <AlertDescription className="text-sm text-amber-800">
+                              Add cartons first to enter tracking numbers
+                            </AlertDescription>
+                          </Alert>
+                        ) : (
+                          <div className="space-y-2">
+                            {cartons.map((carton, index) => (
+                              <div 
+                                key={carton.id}
+                                className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 space-y-2"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <Box className="h-4 w-4 text-emerald-600" />
+                                    <span className="font-semibold text-sm text-emerald-900">
+                                      Carton #{carton.cartonNumber}
+                                    </span>
+                                    {carton.weight && (
+                                      <span className="text-xs text-emerald-700">
+                                        ({carton.weight} kg)
+                                      </span>
                                     )}
                                   </div>
-                                  
-                                  {/* View button */}
-                                  {label && label.labelBase64 && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-8 text-xs flex-shrink-0 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300"
-                                      onClick={() => {
-                                        try {
-                                          const labelBlob = new Blob(
-                                            [Uint8Array.from(atob(label.labelBase64), c => c.charCodeAt(0))],
-                                            { type: 'application/pdf' }
-                                          );
-                                          const url = URL.createObjectURL(labelBlob);
-                                          window.open(url, '_blank');
-                                          setTimeout(() => URL.revokeObjectURL(url), 1000);
-                                        } catch (error) {
-                                          toast({
-                                            title: "Error",
-                                            description: "Failed to view label",
-                                            variant: "destructive"
-                                          });
-                                        }
-                                      }}
-                                      data-testid={`button-view-dhl-label-${index + 1}`}
-                                    >
-                                      <Eye className="h-3.5 w-3.5 mr-1.5" />
-                                      View
-                                    </Button>
-                                  )}
-                                  
-                                  {/* Print button */}
-                                  {label && label.labelBase64 && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className={`h-8 text-xs flex-shrink-0 ${
-                                        label.trackingNumbers?.[0] && printedDHLLabels.has(label.trackingNumbers[0])
-                                          ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
-                                          : 'hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300'
-                                      }`}
-                                      onClick={async () => {
-                                        try {
-                                          const labelBlob = new Blob(
-                                            [Uint8Array.from(atob(label.labelBase64), c => c.charCodeAt(0))],
-                                            { type: 'application/pdf' }
-                                          );
-                                          const url = URL.createObjectURL(labelBlob);
-                                          const printWindow = window.open(url, '_blank');
-                                          if (printWindow) {
-                                            printWindow.onload = () => {
-                                              printWindow.print();
-                                              // Track that this label was printed
-                                              const trackingNumber = label.trackingNumbers?.[0];
-                                              if (trackingNumber) {
-                                                setPrintedDHLLabels(prev => {
-                                                  const newSet = new Set(prev);
-                                                  newSet.add(trackingNumber);
-                                                  return newSet;
-                                                });
-                                              }
-                                            };
-                                          }
-                                          setTimeout(() => URL.revokeObjectURL(url), 1000);
-                                        } catch (error) {
-                                          toast({
-                                            title: "Error",
-                                            description: "Failed to print label",
-                                            variant: "destructive"
-                                          });
-                                        }
-                                      }}
-                                      data-testid={`button-print-dhl-label-${index + 1}`}
-                                    >
-                                      {label.trackingNumbers?.[0] && printedDHLLabels.has(label.trackingNumbers[0]) ? (
-                                        <>
-                                          <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-                                          Printed
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Printer className="h-3.5 w-3.5 mr-1.5" />
-                                          Print
-                                        </>
-                                      )}
-                                    </Button>
-                                  )}
-                                  
-                                  {/* Delete button */}
-                                  {label && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                      onClick={async () => {
-                                        if (confirm(`Delete label #${index + 1}?\n\nThis will cancel the shipment with DHL. Your carton data will be preserved.`)) {
-                                          try {
-                                            setDeletingDHLShipment(prev => ({ ...prev, [label.id]: true }));
-                                            await apiRequest('DELETE', `/api/shipment-labels/${label.id}`, {});
-                                            
-                                            // Refresh data
-                                            await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-                                            await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
-                                            await refetchCartons();
-                                            await new Promise(resolve => setTimeout(resolve, 300));
-                                            await fetchShipmentLabels();
-                                            setShipmentLabelsFromDB(prev => [...prev]);
-                                            
-                                            toast({ 
-                                              title: "Label Deleted", 
-                                              description: "Carton data preserved. You can regenerate the label if needed."
-                                            });
-                                          } catch (error) {
-                                            toast({
-                                              title: "Error",
-                                              description: "Failed to delete label",
-                                              variant: "destructive"
-                                            });
-                                          } finally {
-                                            setDeletingDHLShipment(prev => ({ ...prev, [label.id]: false }));
-                                          }
-                                        }
-                                      }}
-                                      disabled={deletingDHLShipment[label.id]}
-                                      data-testid={`button-delete-dhl-shipment-${index + 1}`}
-                                    >
-                                      {deletingDHLShipment[label.id] ? (
-                                        <RefreshCw className="h-4 w-4 animate-spin" />
-                                      ) : (
-                                        <X className="h-4 w-4" />
-                                      )}
-                                    </Button>
+                                  {carton.trackingNumber && (
+                                    <Check className="h-4 w-4 text-emerald-600" />
                                   )}
                                 </div>
-                              );
-                            })}
-                          </>
-                        );
-                      })()}
-                    </div>
-                  )}
-                </>
-              )}
+                                
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    type="text"
+                                    placeholder="Enter GLS tracking number"
+                                    defaultValue={carton.trackingNumber || ''}
+                                    onBlur={(e) => {
+                                      const trackingNumber = e.target.value.trim();
+                                      if (trackingNumber && trackingNumber !== carton.trackingNumber) {
+                                        updateCartonTrackingMutation.mutate({
+                                          cartonId: carton.id,
+                                          trackingNumber
+                                        });
+                                      }
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        const trackingNumber = e.currentTarget.value.trim();
+                                        if (trackingNumber && trackingNumber !== carton.trackingNumber) {
+                                          updateCartonTrackingMutation.mutate({
+                                            cartonId: carton.id,
+                                            trackingNumber
+                                          });
+                                        }
+                                        e.currentTarget.blur();
+                                      }
+                                    }}
+                                    className="flex-1 border-emerald-300 focus:border-emerald-500 text-sm"
+                                    data-testid={`input-gls-tracking-carton-${index + 1}`}
+                                  />
+                                </div>
+                                
+                                {carton.trackingNumber && (
+                                  <p className="text-xs text-emerald-600 flex items-center gap-1">
+                                    <CheckCircle className="h-3 w-3" />
+                                    Saved: {carton.trackingNumber}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
 
               {/* Regular Shipping Labels (for non-PPL and non-DHL shipments) */}
               {!activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') && 

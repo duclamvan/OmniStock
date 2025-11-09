@@ -44,14 +44,12 @@ Utilizes PostgreSQL with Neon serverless driver and Drizzle ORM. The schema supp
   - **Label Display**: Multi-carton shipments show "1/N", "2/N" in corner of labels (one shipment set). Single carton shows "1/1" (standalone shipment).
   - **COD Handling**: When using shipmentSet, COD is applied to the entire shipment (not per carton), complying with PPL API restriction "nelze slučovat zásilky s dobírkou" (cannot merge shipments with COD).
   - **Label Retrieval**: Includes automatic retry logic (5 attempts, 2s intervals) to handle PPL API's delayed label processing after batch creation. Labels may return 404 initially and become available within seconds.
-- **DHL Parcel DE Shipping API v2**: Fully integrated for German domestic and international parcel shipping with automated label generation. Uses OAuth2 ROPC (Resource Owner Password Credentials) authentication. Unlike PPL's shipmentSet approach, DHL creates independent shipments per carton. Connection test and label generation available at `/shipping` page and PickPack workflow.
-  - **Environment**: Customer Integration Testing (Sandbox) at `https://api-sandbox.dhl.com/parcel/de/shipping/v2`
-  - **Authentication**: OAuth2 with grant_type=password, using sandbox credentials with automatic token refresh (5-minute expiry)
-  - **Credentials**: DHL_API_KEY, DHL_API_SECRET (from DHL Developer Portal), EKP and participation number stored in `app_settings` (key: `dhl_account_credentials`) with sandbox fallback
-  - **Sender/Recipient Configuration**: Default sender address configured in `/shipping` page (stored in `dhl_default_sender_address` setting). Recipient address pulled from order's shipping address. Smart address parser handles both EU format ("Hauptstraße 123") and US format ("123 Main St").
-  - **Multi-Carton Architecture**: Each carton creates an independent DHL shipment (not grouped). Each receives its own tracking number. Labels show "Shipment 1 of N" in UI.
-  - **COD Handling (Nachnahme)**: Full COD amount applied to ALL shipments in multi-carton orders, allowing customer to pay upon receiving any carton. DHL backend prevents duplicate collection.
-  - **Label Display**: Blue-branded UI with print, delete, and view functionality. Labels stored in `shipment_labels` table with carrier='DHL'.
+- **GLS Germany Manual Shipping**: Manual label workflow for German domestic shipping using GLS bookmarklet autofill technology. No API integration - users create labels on the GLS website and optionally enter tracking numbers in the app for record-keeping.
+  - **Sender Configuration**: Default sender address configured in `/shipping` page (stored in `gls_default_sender_address` setting).
+  - **Workflow**: Bookmarklet autofills GLS web form with order data. After creating labels on GLS website, users manually enter tracking numbers in PickPack.
+  - **Autofill Technology**: One-time bookmarklet setup that injects order data (recipient, sender, package details) into GLS web form.
+  - **Manual Tracking**: Per-carton tracking number input with auto-save to database. Numbers stored in `order_cartons.trackingNumber` field.
+  - **Benefits**: No API complexity, affordable rates (from €3.29 within Germany), suitable for low-volume German domestic shipments.
 - **OpenStreetMap Nominatim API**: For address geocoding and auto-correction.
 
 ## Other APIs

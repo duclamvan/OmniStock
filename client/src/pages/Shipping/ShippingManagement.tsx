@@ -62,17 +62,6 @@ interface PPLConnectionStatus {
   error?: string;
 }
 
-interface DHLConnectionStatus {
-  success: boolean;
-  message: string;
-  details?: {
-    tokenPreview?: string;
-    expiresAt?: string;
-    environment?: string;
-    baseUrl?: string;
-  };
-}
-
 interface CreateParcelResponse {
   tracking_number: string;
   label_url?: string;
@@ -103,7 +92,6 @@ export default function ShippingManagement() {
     email: 'test@example.com'
   });
   const [isPPLTesting, setIsPPLTesting] = useState(false);
-  const [isDHLTesting, setIsDHLTesting] = useState(false);
   
   // PPL default address form state
   const [pplAddress, setPplAddress] = useState<PPLAddress>({
@@ -118,33 +106,26 @@ export default function ShippingManagement() {
     email: ''
   });
 
-  // DHL default address form state
-  const [dhlAddress, setDhlAddress] = useState<PPLAddress>({
+  // GLS default address form state (simplified - no API integration)
+  const [glsAddress, setGlsAddress] = useState({
     name: '',
-    name2: '',
+    company: 'Davie Supply GmbH',
     street: '',
-    city: '',
-    zipCode: '',
-    country: 'DE',
-    contact: '',
-    phone: '',
-    email: ''
+    houseNumber: '',
+    postalCode: '',
+    city: 'Waldsassen',
+    country: 'Deutschland',
+    email: '',
+    phone: ''
   });
 
   // Collapsible state
   const [isPPLOpen, setIsPPLOpen] = useState(true);
-  const [isDHLOpen, setIsDHLOpen] = useState(false);
+  const [isGLSOpen, setIsGLSOpen] = useState(false);
 
   // Test PPL connection
   const { data: connectionStatus, isLoading: isTestingConnection, refetch: refetchPPL } = useQuery<PPLConnectionStatus>({
     queryKey: ['/api/shipping/test-connection'],
-    refetchInterval: false,
-    retry: false
-  });
-
-  // Test DHL connection
-  const { data: dhlConnectionStatus, isLoading: isTestingDHL, refetch: refetchDHL } = useQuery<DHLConnectionStatus>({
-    queryKey: ['/api/dhl/test'],
     refetchInterval: false,
     retry: false
   });
@@ -162,9 +143,9 @@ export default function ShippingManagement() {
     retry: false
   });
 
-  // Load saved DHL default address
-  const { data: savedDHLAddress } = useQuery({
-    queryKey: ['/api/settings/dhl_default_sender_address'],
+  // Load saved GLS default address
+  const { data: savedGLSAddress } = useQuery({
+    queryKey: ['/api/settings/gls_default_sender_address'],
     refetchInterval: false,
     retry: false
   });
@@ -176,12 +157,12 @@ export default function ShippingManagement() {
     }
   }, [savedAddress]);
 
-  // Update DHL form when saved address loads
+  // Update GLS form when saved address loads
   useEffect(() => {
-    if (savedDHLAddress && (savedDHLAddress as any).value) {
-      setDhlAddress((savedDHLAddress as any).value as PPLAddress);
+    if (savedGLSAddress && (savedGLSAddress as any).value) {
+      setGlsAddress((savedGLSAddress as any).value);
     }
-  }, [savedDHLAddress]);
+  }, [savedGLSAddress]);
 
   // Save PPL default address mutation
   const savePPLAddressMutation = useMutation({
@@ -208,21 +189,21 @@ export default function ShippingManagement() {
     }
   });
 
-  // Save DHL default address mutation
-  const saveDHLAddressMutation = useMutation({
-    mutationFn: async (address: PPLAddress) => 
+  // Save GLS default address mutation
+  const saveGLSAddressMutation = useMutation({
+    mutationFn: async (address: typeof glsAddress) => 
       apiRequest('POST', '/api/settings', {
-        key: 'dhl_default_sender_address',
+        key: 'gls_default_sender_address',
         value: address,
         category: 'shipping',
-        description: 'Default sender address for DHL Parcel DE labels'
+        description: 'Default sender address for GLS Germany shipping (manual labels)'
       }),
     onSuccess: () => {
       toast({
         title: "Address Saved",
-        description: "Default DHL sender address has been saved successfully"
+        description: "Default GLS sender address has been saved successfully"
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/settings/dhl_default_sender_address'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/settings/gls_default_sender_address'] });
     },
     onError: (error: any) => {
       toast({
@@ -271,18 +252,18 @@ export default function ShippingManagement() {
     savePPLAddressMutation.mutate(pplAddress);
   };
 
-  // Handle saving DHL default address
-  const handleSaveDHLAddress = () => {
+  // Handle saving GLS default address
+  const handleSaveGLSAddress = () => {
     // Validate required fields
-    if (!dhlAddress.name || !dhlAddress.street || !dhlAddress.city || !dhlAddress.zipCode || !dhlAddress.country) {
+    if (!glsAddress.street || !glsAddress.postalCode || !glsAddress.city) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields (marked with *)",
+        description: "Please fill in street, postal code, and city",
         variant: "destructive"
       });
       return;
     }
-    saveDHLAddressMutation.mutate(dhlAddress);
+    saveGLSAddressMutation.mutate(glsAddress);
   };
 
   // Handle PPL test connection
@@ -310,34 +291,6 @@ export default function ShippingManagement() {
       });
     } finally {
       setIsPPLTesting(false);
-    }
-  };
-
-  // Handle DHL test connection
-  const handleTestDHLConnection = async () => {
-    setIsDHLTesting(true);
-    try {
-      const result = await refetchDHL();
-      if (result.data?.success) {
-        toast({
-          title: "DHL Connection Successful",
-          description: result.data.message || "Successfully connected to DHL API",
-        });
-      } else {
-        toast({
-          title: "DHL Connection Failed",
-          description: result.data?.message || "Failed to connect to DHL API",
-          variant: "destructive"
-        });
-      }
-    } catch (error: any) {
-      toast({
-        title: "DHL Connection Error",
-        description: error.message || "An error occurred while testing DHL connection",
-        variant: "destructive"
-      });
-    } finally {
-      setIsDHLTesting(false);
     }
   };
 
@@ -448,114 +401,6 @@ export default function ShippingManagement() {
                     data-testid="button-test-connection"
                   >
                     {isPPLTesting || isTestingConnection ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                        Testing Connection...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                        Test Connection
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* DHL Connection Card */}
-            <Card className="overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-yellow-50 to-orange-50 border-b">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white rounded-lg shadow-sm">
-                      <Package className="w-5 h-5 text-yellow-600" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">DHL Parcel DE</CardTitle>
-                      <CardDescription className="text-xs mt-0.5">German Shipping Service</CardDescription>
-                    </div>
-                  </div>
-                  {dhlConnectionStatus?.success && (
-                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Connected
-                    </Badge>
-                  )}
-                  {dhlConnectionStatus && !dhlConnectionStatus.success && (
-                    <Badge variant="destructive">
-                      <XCircle className="w-3 h-3 mr-1" />
-                      Disconnected
-                    </Badge>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="pt-6 space-y-4">
-                {isTestingDHL ? (
-                  <div className="flex items-center justify-center py-8" data-testid="status-testing-dhl">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="w-8 h-8 border-3 border-yellow-600 border-t-transparent rounded-full animate-spin" />
-                      <span className="text-sm text-muted-foreground">Testing connection...</span>
-                    </div>
-                  </div>
-                ) : dhlConnectionStatus ? (
-                  <div className="space-y-4">
-                    {dhlConnectionStatus.success ? (
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div className="space-y-1">
-                            <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Provider</p>
-                            <p className="font-medium">DHL Parcel DE</p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Status</p>
-                            <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-md px-3 py-1.5 animate-in fade-in duration-500">
-                              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                              <p className="font-semibold text-green-700">Active</p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="pt-2 border-t space-y-2">
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-1">Environment</p>
-                            <p className="text-sm font-medium">{dhlConnectionStatus.details?.environment || 'Production'}</p>
-                          </div>
-                          {dhlConnectionStatus.details?.expiresAt && (
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1">Token Expires</p>
-                              <p className="text-sm">{new Date(dhlConnectionStatus.details.expiresAt).toLocaleString()}</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <Alert variant="destructive" className="border-red-200">
-                        <AlertCircle className="w-4 h-4" />
-                        <AlertDescription>
-                          <p className="font-medium mb-1">Connection Failed</p>
-                          <p className="text-xs">{dhlConnectionStatus.message || 'Unable to connect to DHL API'}</p>
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </div>
-                ) : (
-                  <Alert>
-                    <AlertCircle className="w-4 h-4" />
-                    <AlertDescription className="text-sm">
-                      No connection test performed yet. Click the button below to test.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                <div className="pt-2">
-                  <Button 
-                    onClick={handleTestDHLConnection}
-                    className="w-full"
-                    variant={dhlConnectionStatus?.success ? "outline" : "default"}
-                    disabled={isDHLTesting || isTestingDHL}
-                    data-testid="button-test-connection-dhl"
-                  >
-                    {isDHLTesting || isTestingDHL ? (
                       <>
                         <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
                         Testing Connection...
@@ -804,155 +649,135 @@ export default function ShippingManagement() {
             </Card>
           </Collapsible>
 
-          {/* DHL Shipping Information Card */}
-          <Collapsible open={isDHLOpen} onOpenChange={setIsDHLOpen}>
+          {/* GLS Shipping Information Card */}
+          <Collapsible open={isGLSOpen} onOpenChange={setIsGLSOpen}>
             <Card className="overflow-hidden">
               <CollapsibleTrigger className="w-full">
-                <CardHeader className="bg-gradient-to-r from-red-50 to-orange-50 border-b cursor-pointer hover:bg-red-100 transition-colors">
+                <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b cursor-pointer hover:bg-green-100 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-white rounded-lg shadow-sm">
-                        <Package className="w-5 h-5 text-red-600" />
+                        <Package className="w-5 h-5 text-green-600" />
                       </div>
                       <div className="text-left">
-                        <CardTitle className="text-lg">DHL Shipping Information</CardTitle>
-                        <CardDescription className="text-xs mt-0.5">Configure DHL Parcel DE integration and sender address</CardDescription>
+                        <CardTitle className="text-lg">GLS Germany - Manual Shipping</CardTitle>
+                        <CardDescription className="text-xs mt-0.5">Configure sender address for manual GLS label workflow</CardDescription>
                       </div>
                     </div>
-                    {isDHLOpen ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
+                    {isGLSOpen ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
                   </div>
                 </CardHeader>
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <CardContent className="pt-6 space-y-6">
                   <div className="space-y-6">
-                    <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-lg p-5 border border-red-100">
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-5 border border-green-100">
                       <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-red-600" />
-                        Default DHL Sender Address
+                        <MapPin className="w-4 h-4 text-green-600" />
+                        Default GLS Sender Address
                       </h4>
                       <p className="text-sm text-muted-foreground mb-4">
-                        Set the default sender address (Absender) used for all DHL Parcel DE label generation
+                        Set the default sender address used for GLS label autofill via bookmarklet
                       </p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2 md:col-span-2">
-                          <Label htmlFor="dhl-name">
-                            Name / Firma <span className="text-red-500">*</span>
-                          </Label>
+                        <div className="space-y-2">
+                          <Label htmlFor="gls-name">Contact Person Name</Label>
                           <Input 
-                            id="dhl-name"
-                            value={dhlAddress.name}
-                            onChange={(e) => setDhlAddress({ ...dhlAddress, name: e.target.value })}
-                            placeholder="Company or personal name"
-                            data-testid="input-dhl-name"
-                          />
-                        </div>
-                        <div className="space-y-2 md:col-span-2">
-                          <Label htmlFor="dhl-name2">Additional Name (optional)</Label>
-                          <Input 
-                            id="dhl-name2"
-                            value={dhlAddress.name2}
-                            onChange={(e) => setDhlAddress({ ...dhlAddress, name2: e.target.value })}
-                            placeholder="Contact person or department (optional)"
-                            data-testid="input-dhl-name2"
-                          />
-                        </div>
-                        <div className="space-y-2 md:col-span-2">
-                          <Label htmlFor="dhl-street">
-                            Straße & Hausnummer <span className="text-red-500">*</span>
-                          </Label>
-                          <Input 
-                            id="dhl-street"
-                            value={dhlAddress.street}
-                            onChange={(e) => setDhlAddress({ ...dhlAddress, street: e.target.value })}
-                            placeholder="Street and house number"
-                            data-testid="input-dhl-street"
+                            id="gls-name"
+                            value={glsAddress.name}
+                            onChange={(e) => setGlsAddress({ ...glsAddress, name: e.target.value })}
+                            placeholder="Your Name"
+                            data-testid="input-gls-name"
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="dhl-zipcode">
-                            PLZ <span className="text-red-500">*</span>
+                          <Label htmlFor="gls-company">Company Name</Label>
+                          <Input 
+                            id="gls-company"
+                            value={glsAddress.company}
+                            onChange={(e) => setGlsAddress({ ...glsAddress, company: e.target.value })}
+                            placeholder="Davie Supply GmbH"
+                            data-testid="input-gls-company"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="gls-street">
+                            Street <span className="text-red-500">*</span>
                           </Label>
                           <Input 
-                            id="dhl-zipcode"
-                            value={dhlAddress.zipCode}
-                            onChange={(e) => setDhlAddress({ ...dhlAddress, zipCode: e.target.value })}
-                            placeholder="12345"
-                            maxLength={5}
-                            data-testid="input-dhl-zipcode"
+                            id="gls-street"
+                            value={glsAddress.street}
+                            onChange={(e) => setGlsAddress({ ...glsAddress, street: e.target.value })}
+                            placeholder="Street name"
+                            data-testid="input-gls-street"
                           />
-                          <p className="text-xs text-muted-foreground">5-digit postal code (e.g., 10115 for Berlin)</p>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="dhl-city">
-                            Ort <span className="text-red-500">*</span>
+                          <Label htmlFor="gls-houseNumber">House Number</Label>
+                          <Input 
+                            id="gls-houseNumber"
+                            value={glsAddress.houseNumber}
+                            onChange={(e) => setGlsAddress({ ...glsAddress, houseNumber: e.target.value })}
+                            placeholder="123"
+                            data-testid="input-gls-housenumber"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="gls-postalCode">
+                            Postal Code <span className="text-red-500">*</span>
                           </Label>
                           <Input 
-                            id="dhl-city"
-                            value={dhlAddress.city}
-                            onChange={(e) => setDhlAddress({ ...dhlAddress, city: e.target.value })}
-                            placeholder="City"
-                            data-testid="input-dhl-city"
+                            id="gls-postalCode"
+                            value={glsAddress.postalCode}
+                            onChange={(e) => setGlsAddress({ ...glsAddress, postalCode: e.target.value })}
+                            placeholder="95652"
+                            data-testid="input-gls-postalcode"
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="dhl-country">
-                            Land <span className="text-red-500">*</span>
+                          <Label htmlFor="gls-city">
+                            City <span className="text-red-500">*</span>
                           </Label>
                           <Input 
-                            id="dhl-country"
-                            value={dhlAddress.country}
-                            onChange={(e) => setDhlAddress({ ...dhlAddress, country: e.target.value.toUpperCase() })}
-                            placeholder="DE"
-                            maxLength={2}
-                            data-testid="input-dhl-country"
-                          />
-                          <p className="text-xs text-muted-foreground">2-letter country code (e.g., DE, AT, CH)</p>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="dhl-contact">Kontakt</Label>
-                          <Input 
-                            id="dhl-contact"
-                            value={dhlAddress.contact}
-                            onChange={(e) => setDhlAddress({ ...dhlAddress, contact: e.target.value })}
-                            placeholder="Contact person (optional)"
-                            data-testid="input-dhl-contact"
+                            id="gls-city"
+                            value={glsAddress.city}
+                            onChange={(e) => setGlsAddress({ ...glsAddress, city: e.target.value })}
+                            placeholder="Waldsassen"
+                            data-testid="input-gls-city"
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="dhl-phone">Telefon</Label>
+                          <Label htmlFor="gls-email">Email</Label>
                           <Input 
-                            id="dhl-phone"
-                            type="tel"
-                            value={dhlAddress.phone}
-                            onChange={(e) => setDhlAddress({ ...dhlAddress, phone: e.target.value.replace(/\D/g, '') })}
-                            placeholder="491234567890"
-                            data-testid="input-dhl-phone"
-                          />
-                          <p className="text-xs text-muted-foreground">Numbers only, no spaces (e.g., 491234567890)</p>
-                        </div>
-                        <div className="space-y-2 md:col-span-2">
-                          <Label htmlFor="dhl-email">E-Mail</Label>
-                          <Input 
-                            id="dhl-email"
+                            id="gls-email"
                             type="email"
-                            value={dhlAddress.email}
-                            onChange={(e) => setDhlAddress({ ...dhlAddress, email: e.target.value })}
-                            placeholder="sender@example.com"
-                            data-testid="input-dhl-email"
+                            value={glsAddress.email}
+                            onChange={(e) => setGlsAddress({ ...glsAddress, email: e.target.value })}
+                            placeholder="info@example.com"
+                            data-testid="input-gls-email"
                           />
-                          <p className="text-xs text-muted-foreground">Strongly recommended for label delivery and notifications</p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="gls-phone">Phone</Label>
+                          <Input 
+                            id="gls-phone"
+                            type="tel"
+                            value={glsAddress.phone}
+                            onChange={(e) => setGlsAddress({ ...glsAddress, phone: e.target.value })}
+                            placeholder="+49 123 456789"
+                            data-testid="input-gls-phone"
+                          />
                         </div>
                       </div>
                       
                       <div className="pt-4">
                         <Button 
-                          onClick={handleSaveDHLAddress}
-                          className="w-full bg-red-600 hover:bg-red-700"
-                          disabled={saveDHLAddressMutation.isPending}
-                          data-testid="button-save-dhl-address"
+                          onClick={handleSaveGLSAddress}
+                          className="w-full bg-green-600 hover:bg-green-700"
+                          disabled={saveGLSAddressMutation.isPending}
+                          data-testid="button-save-gls-address"
                         >
-                          {saveDHLAddressMutation.isPending ? (
+                          {saveGLSAddressMutation.isPending ? (
                             <>
                               <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
                               Saving...
@@ -960,79 +785,89 @@ export default function ShippingManagement() {
                           ) : (
                             <>
                               <CheckCircle className="w-4 h-4 mr-2" />
-                              Save as Default Sender Address
+                              Save GLS Sender Address
                             </>
                           )}
                         </Button>
                       </div>
                     </div>
 
+                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-5 border border-blue-100">
+                      <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-blue-600" />
+                        How to Use GLS Autofill
+                      </h4>
+                      <ol className="text-sm space-y-2 list-decimal list-inside">
+                        <li>Save your sender address above</li>
+                        <li>Go to any order and click "Ship with GLS"</li>
+                        <li>Follow the one-time bookmarklet setup instructions</li>
+                        <li>Use the bookmarklet to auto-fill the GLS form anytime</li>
+                      </ol>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-4">
                         <h4 className="font-semibold text-sm flex items-center gap-2">
                           <CheckCircle className="w-4 h-4 text-green-600" />
-                          Supported Features
+                          Features
                         </h4>
                         <div className="space-y-2">
                           <div className="flex items-start gap-2 text-sm">
-                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5" />
-                            <span>DHL Parcel DE shipping labels (PDF)</span>
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5" />
+                            <span>Manual label workflow via GLS website</span>
                           </div>
                           <div className="flex items-start gap-2 text-sm">
-                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5" />
-                            <span>Domestic and international parcels</span>
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5" />
+                            <span>No API integration required</span>
                           </div>
                           <div className="flex items-start gap-2 text-sm">
-                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5" />
-                            <span>OAuth2 authentication with sandbox testing</span>
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5" />
+                            <span>Bookmarklet autofill for fast processing</span>
                           </div>
                           <div className="flex items-start gap-2 text-sm">
-                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5" />
-                            <span>Tracking number assignment</span>
-                          </div>
-                          <div className="flex items-start gap-2 text-sm">
-                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5" />
-                            <span>Automated label generation</span>
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5" />
+                            <span>Affordable rates from €3.29 within Germany</span>
                           </div>
                         </div>
                       </div>
 
                       <div className="space-y-4">
                         <h4 className="font-semibold text-sm flex items-center gap-2">
-                          <Package className="w-4 h-4 text-red-600" />
-                          Product Types
+                          <Package className="w-4 h-4 text-green-600" />
+                          Why This Approach?
                         </h4>
                         <div className="bg-white border rounded-lg p-4">
-                          <p className="font-medium text-sm">DHL Paket</p>
-                          <p className="text-muted-foreground text-xs mt-1">Standard German domestic and international shipments</p>
+                          <p className="text-sm text-muted-foreground">
+                            GLS Germany doesn't offer a business API for private customer shipping. The bookmarklet approach allows you to automatically fill the GLS web form with order data, avoiding manual typing errors and speeding up your shipping workflow.
+                          </p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                       <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-blue-600" />
+                        <AlertCircle className="w-4 h-4 text-amber-600" />
                         Important Notes
                       </h4>
                       <p className="text-sm text-muted-foreground mb-3">
-                        DHL Parcel DE integration requirements:
+                        GLS manual shipping workflow:
                       </p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                         <div className="flex items-start gap-2">
-                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5" />
-                          <span>Phone numbers must be digits only (no spaces)</span>
+                          <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
+                          <span>Labels created via GLS website</span>
                         </div>
                         <div className="flex items-start gap-2">
-                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5" />
-                          <span>Email strongly recommended for label delivery</span>
+                          <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
+                          <span>Bookmarklet auto-fills recipient data</span>
                         </div>
                         <div className="flex items-start gap-2">
-                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5" />
-                          <span>Postal codes are 5 digits for Germany</span>
+                          <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
+                          <span>One-time bookmarklet setup required</span>
                         </div>
                         <div className="flex items-start gap-2">
-                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5" />
-                          <span>Currently using sandbox environment</span>
+                          <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
+                          <span>Best for German domestic shipments</span>
                         </div>
                       </div>
                     </div>
