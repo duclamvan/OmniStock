@@ -145,8 +145,8 @@ const editOrderSchema = z.object({
   actualShippingCost: z.coerce.number().min(0).default(0),
   adjustment: z.coerce.number().default(0),
   // Dobírka (Cash on Delivery) fields
-  dobirkaAmount: z.coerce.number().min(0).optional().nullable(),
-  dobirkaCurrency: z.enum(['CZK', 'EUR', 'USD']).optional().nullable(),
+  codAmount: z.coerce.number().min(0).optional().nullable(),
+  codCurrency: z.enum(['CZK', 'EUR', 'USD']).optional().nullable(),
   notes: z.string().optional(),
   orderLocation: z.string().optional(),
 });
@@ -735,8 +735,8 @@ export default function EditOrder() {
       shippingCost: order.shippingCost || 0,
       actualShippingCost: order.actualShippingCost || 0,
       adjustment: order.adjustment || 0,
-      dobirkaAmount: order.dobirkaAmount,
-      dobirkaCurrency: order.dobirkaCurrency,
+      codAmount: order.codAmount,
+      codCurrency: order.codCurrency,
       notes: order.notes,
       orderLocation: order.orderLocation,
     });
@@ -1240,11 +1240,11 @@ export default function EditOrder() {
       console.log('✅ Auto-syncing COD amount to match grand total');
       // Always sync COD amount to match grand total
       const grandTotal = calculateGrandTotal();
-      form.setValue('dobirkaAmount', parseFloat(grandTotal.toFixed(2)));
+      form.setValue('codAmount', parseFloat(grandTotal.toFixed(2)));
       
       // Always sync currency to match order currency (only if it's a supported COD currency)
       if (watchedCurrency === 'CZK' || watchedCurrency === 'EUR' || watchedCurrency === 'USD') {
-        form.setValue('dobirkaCurrency', watchedCurrency);
+        form.setValue('codCurrency', watchedCurrency);
       }
     }
   }, [
@@ -1841,8 +1841,8 @@ export default function EditOrder() {
       shippingCost: (data.shippingCost || 0).toString(),
       actualShippingCost: (data.actualShippingCost || 0).toString(),
       adjustment: (data.adjustment || 0).toString(),
-      dobirkaAmount: data.dobirkaAmount && data.dobirkaAmount > 0 ? data.dobirkaAmount.toString() : null,
-      dobirkaCurrency: data.dobirkaAmount && data.dobirkaAmount > 0 ? (data.dobirkaCurrency || 'CZK') : null,
+      codAmount: data.codAmount && data.codAmount > 0 ? data.codAmount.toString() : null,
+      codCurrency: data.codAmount && data.codAmount > 0 ? (data.codCurrency || 'CZK') : null,
       items: orderItems.map(item => ({
         productId: item.productId || null,
         serviceId: item.serviceId || null,
@@ -3941,7 +3941,7 @@ export default function EditOrder() {
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="dobirkaAmount" className="text-sm flex items-center gap-2">
+                    <Label htmlFor="codAmount" className="text-sm flex items-center gap-2">
                       <Banknote className="w-4 h-4" />
                       {form.watch('shippingMethod') === 'DHL' ? 'Nachnahme (COD)' : 'Dobírka Amount (COD)'}
                     </Label>
@@ -3950,7 +3950,7 @@ export default function EditOrder() {
                       step="0.01"
                       min="0"
                       placeholder="0.00"
-                      {...form.register('dobirkaAmount', { valueAsNumber: true })}
+                      {...form.register('codAmount', { valueAsNumber: true })}
                       className="mt-1"
                       data-testid="input-dobirka-amount"
                     />
@@ -3958,13 +3958,13 @@ export default function EditOrder() {
                   </div>
 
                   <div>
-                    <Label htmlFor="dobirkaCurrency" className="text-sm flex items-center gap-2">
+                    <Label htmlFor="codCurrency" className="text-sm flex items-center gap-2">
                       <span className="w-4 h-4"></span>
                       {form.watch('shippingMethod') === 'DHL' ? 'Nachnahme Currency' : 'Dobírka Currency'}
                     </Label>
                     <Select 
-                      value={form.watch('dobirkaCurrency') || (form.watch('shippingMethod') === 'DHL' ? 'EUR' : 'CZK')}
-                      onValueChange={(value) => form.setValue('dobirkaCurrency', value as any)}
+                      value={form.watch('codCurrency') || (form.watch('shippingMethod') === 'DHL' ? 'EUR' : 'CZK')}
+                      onValueChange={(value) => form.setValue('codCurrency', value as any)}
                     >
                       <SelectTrigger className="mt-1" data-testid="select-dobirka-currency">
                         <SelectValue placeholder="Select currency" />

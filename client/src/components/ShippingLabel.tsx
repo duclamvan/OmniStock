@@ -35,8 +35,8 @@ interface ShippingLabelProps {
     }>;
     total?: string;
     weight?: number;
-    dobirkaAmount?: string | null;
-    dobirkaCurrency?: string | null;
+    codAmount?: string | null;
+    codCurrency?: string | null;
   };
   onLabelCreated?: (labelData: any) => void;
 }
@@ -45,8 +45,8 @@ export function ShippingLabel({ order, onLabelCreated }: ShippingLabelProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [dobirkaAmount, setDobirkaAmount] = useState(order.dobirkaAmount || '');
-  const [dobirkaCurrency, setDobirkaCurrency] = useState(order.dobirkaCurrency || 'CZK');
+  const [codAmount, setDobirkaAmount] = useState(order.codAmount || '');
+  const [codCurrency, setDobirkaCurrency] = useState(order.codCurrency || 'CZK');
 
   // Create shipping label mutation for PPL
   const createLabelMutation = useMutation({
@@ -73,8 +73,8 @@ export function ShippingLabel({ order, onLabelCreated }: ShippingLabelProps) {
   const handleCreateLabel = () => {
     const labelData = {
       orderId: order.id,
-      dobirkaAmount: dobirkaAmount && parseFloat(dobirkaAmount) > 0 ? dobirkaAmount : null,
-      dobirkaCurrency: dobirkaAmount && parseFloat(dobirkaAmount) > 0 ? dobirkaCurrency : null
+      codAmount: codAmount && parseFloat(codAmount) > 0 ? codAmount : null,
+      codCurrency: codAmount && parseFloat(codAmount) > 0 ? codCurrency : null
     };
 
     createLabelMutation.mutate(labelData);
@@ -143,7 +143,7 @@ export function ShippingLabel({ order, onLabelCreated }: ShippingLabelProps) {
                     step="0.01"
                     min="0"
                     placeholder="0.00"
-                    value={dobirkaAmount}
+                    value={codAmount}
                     onChange={(e) => setDobirkaAmount(e.target.value)}
                     data-testid="input-dobirka-amount"
                   />
@@ -152,7 +152,7 @@ export function ShippingLabel({ order, onLabelCreated }: ShippingLabelProps) {
                   <Label htmlFor="dobirka-currency" data-testid="label-dobirka-currency">
                     Currency
                   </Label>
-                  <Select value={dobirkaCurrency} onValueChange={setDobirkaCurrency}>
+                  <Select value={codCurrency} onValueChange={setDobirkaCurrency}>
                     <SelectTrigger id="dobirka-currency" data-testid="select-dobirka-currency">
                       <SelectValue />
                     </SelectTrigger>

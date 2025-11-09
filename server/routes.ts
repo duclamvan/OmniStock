@@ -7294,7 +7294,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
   // Create PPL shipping label for order
   app.post('/api/shipping/create-label', async (req, res) => {
     try {
-      const { orderId, dobirkaAmount, dobirkaCurrency } = req.body;
+      const { orderId, codAmount, codCurrency } = req.body;
       
       if (!orderId) {
         return res.status(400).json({ error: 'Order ID is required' });
@@ -7388,9 +7388,9 @@ Return ONLY the subject line without quotes or extra formatting.`,
           phone: shippingAddress.tel || customer?.phone || undefined,
           email: shippingAddress.email || customer?.email || undefined
         },
-        cashOnDelivery: (dobirkaAmount && parseFloat(dobirkaAmount) > 0) ? {
-          value: parseFloat(dobirkaAmount),
-          currency: dobirkaCurrency || 'CZK',
+        cashOnDelivery: (codAmount && parseFloat(codAmount) > 0) ? {
+          value: parseFloat(codAmount),
+          currency: codCurrency || 'CZK',
           variableSymbol: order.orderId
         } : undefined
       };
@@ -7456,8 +7456,8 @@ Return ONLY the subject line without quotes or extra formatting.`,
           },
           pplStatus: 'created',
           trackingNumber: shipmentNumbers[0] || null,
-          dobirkaAmount: dobirkaAmount ? dobirkaAmount.toString() : null,
-          dobirkaCurrency: dobirkaCurrency || null
+          codAmount: codAmount ? codAmount.toString() : null,
+          codCurrency: codCurrency || null
         })
         .where(eq(orders.id, orderId));
       
@@ -7471,8 +7471,8 @@ Return ONLY the subject line without quotes or extra formatting.`,
         labelData: {
           pplShipment,
           batchStatus,
-          dobirkaAmount: dobirkaAmount ? parseFloat(dobirkaAmount) : undefined,
-          dobirkaCurrency: dobirkaCurrency || undefined
+          codAmount: codAmount ? parseFloat(codAmount) : undefined,
+          codCurrency: codCurrency || undefined
         },
         shipmentCount: shipmentNumbers.length,
         status: 'active'
@@ -7881,7 +7881,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       // - Always verify dobírka amount exists and is valid before applying
       //
       // Strict validation: Check if order has valid COD amount
-      const codAmount = order.dobirkaAmount;
+      const codAmount = order.codAmount;
       const hasCOD = codAmount && !isNaN(parseFloat(codAmount)) && parseFloat(codAmount) > 0;
       const isFirstCarton = cartonNumber === 1;
       
@@ -7890,7 +7890,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       
       // Log COD assignment for debugging
       if (shouldAddCOD) {
-        console.log(`💰 Carton #${cartonNumber} (FIRST): Will include COD ${codAmount} ${order.dobirkaCurrency || 'CZK'}`);
+        console.log(`💰 Carton #${cartonNumber} (FIRST): Will include COD ${codAmount} ${order.codCurrency || 'CZK'}`);
       } else if (hasCOD && !isFirstCarton) {
         console.log(`📦 Carton #${cartonNumber}: NO COD (PPL restriction - only first carton has COD)`);
       } else {
@@ -7939,13 +7939,13 @@ Return ONLY the subject line without quotes or extra formatting.`,
         },
         // Validate and add COD only to first carton (PPL API restriction)
         cashOnDelivery: shouldAddCOD ? (() => {
-          const codValue = parseFloat(order.dobirkaAmount);
+          const codValue = parseFloat(order.codAmount);
           if (isNaN(codValue) || codValue <= 0) {
-            throw new Error(`Invalid COD amount for carton #${cartonNumber}: ${order.dobirkaAmount}`);
+            throw new Error(`Invalid COD amount for carton #${cartonNumber}: ${order.codAmount}`);
           }
           return {
             CodPrice: codValue,                           // PPL API requires PascalCase
-            CodCurrency: order.dobirkaCurrency || 'CZK',  // PPL API requires PascalCase
+            CodCurrency: order.codCurrency || 'CZK',  // PPL API requires PascalCase
             CodVarSym: numericOrderId || '1234567890'     // PPL API requires PascalCase
           };
         })() : undefined
@@ -8597,11 +8597,11 @@ Return ONLY the subject line without quotes or extra formatting.`,
       const numericOrderId = order.orderId.replace(/\D/g, '').slice(0, 10);
       
       // Strict validation: Verify COD amount exists and is a valid positive number
-      const codAmount = order.dobirkaAmount;
+      const codAmount = order.codAmount;
       const hasCOD = codAmount && !isNaN(parseFloat(codAmount)) && parseFloat(codAmount) > 0;
       
       if (hasCOD) {
-        console.log(`✓ Order has COD: ${codAmount} ${order.dobirkaCurrency || 'CZK'}`);
+        console.log(`✓ Order has COD: ${codAmount} ${order.codCurrency || 'CZK'}`);
         console.log(`✓ COD will be applied ONLY to first carton (PPL API restriction)`);
       } else {
         console.log(`✓ Order has NO COD - all cartons will be standard shipments`);
@@ -8652,16 +8652,16 @@ Return ONLY the subject line without quotes or extra formatting.`,
         // Validate COD amount if present
         let cashOnDelivery = undefined;
         if (hasCOD) {
-          const codValue = parseFloat(order.dobirkaAmount);
+          const codValue = parseFloat(order.codAmount);
           if (isNaN(codValue) || codValue <= 0) {
-            throw new Error(`Invalid COD amount: ${order.dobirkaAmount}`);
+            throw new Error(`Invalid COD amount: ${order.codAmount}`);
           }
           cashOnDelivery = {
             CodPrice: codValue,                           // PPL API requires PascalCase
-            CodCurrency: order.dobirkaCurrency || 'CZK',  // PPL API requires PascalCase
+            CodCurrency: order.codCurrency || 'CZK',  // PPL API requires PascalCase
             CodVarSym: numericOrderId || '1234567890'     // PPL API requires PascalCase
           };
-          console.log(`💰 Shipment SET WITH COD: ${codValue} ${order.dobirkaCurrency || 'CZK'} (applied to entire set)`);
+          console.log(`💰 Shipment SET WITH COD: ${codValue} ${order.codCurrency || 'CZK'} (applied to entire set)`);
         } else {
           console.log(`📦 Shipment SET: Standard shipment (no COD)`);
         }
@@ -8711,16 +8711,16 @@ Return ONLY the subject line without quotes or extra formatting.`,
         // Validate COD amount before creating cashOnDelivery object
         let cashOnDelivery = undefined;
         if (hasCOD) {
-          const codValue = parseFloat(order.dobirkaAmount);
+          const codValue = parseFloat(order.codAmount);
           if (isNaN(codValue) || codValue <= 0) {
-            throw new Error(`Invalid COD amount: ${order.dobirkaAmount}`);
+            throw new Error(`Invalid COD amount: ${order.codAmount}`);
           }
           cashOnDelivery = {
             CodPrice: codValue,                           // PPL API requires PascalCase
-            CodCurrency: order.dobirkaCurrency || 'CZK',  // PPL API requires PascalCase
+            CodCurrency: order.codCurrency || 'CZK',  // PPL API requires PascalCase
             CodVarSym: numericOrderId || '1234567890'     // PPL API requires PascalCase
           };
-          console.log(`💰 Single carton WITH COD: ${codValue} ${order.dobirkaCurrency || 'CZK'}`);
+          console.log(`💰 Single carton WITH COD: ${codValue} ${order.codCurrency || 'CZK'}`);
         } else {
           console.log(`📦 Single carton: Standard shipment (no COD)`);
         }
@@ -9324,11 +9324,11 @@ Return ONLY the subject line without quotes or extra formatting.`,
       };
 
       // Check for COD
-      const codAmount = order.dobirkaAmount;
+      const codAmount = order.codAmount;
       const hasCOD = codAmount && !isNaN(parseFloat(codAmount)) && parseFloat(codAmount) > 0;
       
       if (hasCOD) {
-        console.log(`✓ Order has COD (Nachnahme): ${codAmount} ${order.dobirkaCurrency || 'EUR'}`);
+        console.log(`✓ Order has COD (Nachnahme): ${codAmount} ${order.codCurrency || 'EUR'}`);
       } else {
         console.log(`✓ Order has NO COD - all cartons will be standard shipments`);
       }
@@ -9395,12 +9395,12 @@ Return ONLY the subject line without quotes or extra formatting.`,
         const services: any = {};
         
         if (hasCOD) {
-          const codValue = parseFloat(order.dobirkaAmount);
+          const codValue = parseFloat(order.codAmount);
           services.cashOnDelivery = {
             amount: codValue,
-            currency: order.dobirkaCurrency || 'EUR'
+            currency: order.codCurrency || 'EUR'
           };
-          console.log(`💰 Carton #${cartonNumber} WITH Nachnahme: ${codValue} ${order.dobirkaCurrency || 'EUR'}`);
+          console.log(`💰 Carton #${cartonNumber} WITH Nachnahme: ${codValue} ${order.codCurrency || 'EUR'}`);
         } else {
           console.log(`📦 Carton #${cartonNumber}: Standard shipment`);
         }

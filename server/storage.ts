@@ -1153,8 +1153,8 @@ export class DatabaseStorage implements IStorage {
         status: this.getPickPackStatus(row.order),
         // Explicitly include payment and dobírka fields for COD orders
         paymentMethod: row.order.paymentMethod,
-        dobirkaAmount: row.order.dobirkaAmount,
-        dobirkaCurrency: row.order.dobirkaCurrency,
+        codAmount: row.order.codAmount,
+        codCurrency: row.order.codCurrency,
       }));
     } catch (error) {
       console.error('Error fetching pick/pack orders:', error);

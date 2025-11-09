@@ -106,8 +106,8 @@ const addOrderSchema = z.object({
   actualShippingCost: z.coerce.number().min(0).default(0),
   adjustment: z.coerce.number().default(0),
   // Dobírka (Cash on Delivery) fields
-  dobirkaAmount: z.coerce.number().min(0).optional().nullable(),
-  dobirkaCurrency: z.enum(['CZK', 'EUR', 'USD']).optional().nullable(),
+  codAmount: z.coerce.number().min(0).optional().nullable(),
+  codCurrency: z.enum(['CZK', 'EUR', 'USD']).optional().nullable(),
   notes: z.string().optional(),
   orderLocation: z.string().optional(),
 });
@@ -880,11 +880,11 @@ export default function AddOrder() {
     if ((watchedShippingMethod === 'PPL' || watchedShippingMethod === 'DHL') && watchedPaymentMethod === 'COD') {
       // Always sync COD amount to match grand total
       const grandTotal = calculateGrandTotal();
-      form.setValue('dobirkaAmount', parseFloat(grandTotal.toFixed(2)));
+      form.setValue('codAmount', parseFloat(grandTotal.toFixed(2)));
       
       // Always sync currency to match order currency (only if it's a supported COD currency)
       if (watchedCurrency === 'CZK' || watchedCurrency === 'EUR' || watchedCurrency === 'USD') {
-        form.setValue('dobirkaCurrency', watchedCurrency);
+        form.setValue('codCurrency', watchedCurrency);
       }
     }
   }, [
@@ -1446,8 +1446,8 @@ export default function AddOrder() {
       shippingCost: (data.shippingCost || 0).toString(),
       actualShippingCost: (data.actualShippingCost || 0).toString(),
       adjustment: (data.adjustment || 0).toString(),
-      dobirkaAmount: data.dobirkaAmount && data.dobirkaAmount > 0 ? data.dobirkaAmount.toString() : null,
-      dobirkaCurrency: data.dobirkaAmount && data.dobirkaAmount > 0 ? (data.dobirkaCurrency || 'CZK') : null,
+      codAmount: data.codAmount && data.codAmount > 0 ? data.codAmount.toString() : null,
+      codCurrency: data.codAmount && data.codAmount > 0 ? (data.codCurrency || 'CZK') : null,
       items: orderItems.map(item => ({
         productId: item.productId,
         serviceId: item.serviceId,
@@ -3634,7 +3634,7 @@ export default function AddOrder() {
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="dobirkaAmount" className="flex items-center gap-2">
+                    <Label htmlFor="codAmount" className="flex items-center gap-2">
                       <Banknote className="w-4 h-4" />
                       {form.watch('shippingMethod') === 'DHL' ? 'Nachnahme (COD)' : 'Dobírka Amount (COD)'}
                     </Label>
@@ -3643,17 +3643,17 @@ export default function AddOrder() {
                       step="0.01"
                       min="0"
                       placeholder="0.00"
-                      {...form.register('dobirkaAmount', { valueAsNumber: true })}
+                      {...form.register('codAmount', { valueAsNumber: true })}
                       data-testid="input-dobirka-amount"
                     />
                     <p className="text-xs text-gray-500 mt-1">Cash on delivery amount (optional)</p>
                   </div>
 
                   <div>
-                    <Label htmlFor="dobirkaCurrency">{form.watch('shippingMethod') === 'DHL' ? 'Nachnahme Currency' : 'Dobírka Currency'}</Label>
+                    <Label htmlFor="codCurrency">{form.watch('shippingMethod') === 'DHL' ? 'Nachnahme Currency' : 'Dobírka Currency'}</Label>
                     <Select 
-                      value={form.watch('dobirkaCurrency') || (form.watch('shippingMethod') === 'DHL' ? 'EUR' : 'CZK')}
-                      onValueChange={(value) => form.setValue('dobirkaCurrency', value as any)}
+                      value={form.watch('codCurrency') || (form.watch('shippingMethod') === 'DHL' ? 'EUR' : 'CZK')}
+                      onValueChange={(value) => form.setValue('codCurrency', value as any)}
                     >
                       <SelectTrigger data-testid="select-dobirka-currency">
                         <SelectValue placeholder="Select currency" />

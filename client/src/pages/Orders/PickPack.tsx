@@ -226,8 +226,8 @@ interface PickPackOrder {
   pplStatus?: string;
   // Payment and COD fields
   paymentMethod?: string;
-  dobirkaAmount?: number | string;
-  dobirkaCurrency?: string;
+  codAmount?: number | string;
+  codCurrency?: string;
   // Shipping costs and tracking
   shippingCost?: number | string;
   actualShippingCost?: number | string;
@@ -3329,8 +3329,8 @@ export default function PickPack() {
       grandTotal: order.grandTotal,
       paymentStatus: order.paymentStatus,
       // Include dobírka/COD information
-      dobirkaAmount: order.dobirkaAmount,
-      dobirkaCurrency: order.dobirkaCurrency,
+      codAmount: order.codAmount,
+      codCurrency: order.codCurrency,
       // Include PPL shipping integration fields
       pplBatchId: order.pplBatchId,
       pplShipmentNumbers: order.pplShipmentNumbers,
@@ -6390,8 +6390,8 @@ export default function PickPack() {
                 console.log('🔍 SHIPPING DEBUG:', {
                   shippingMethod: activePackingOrder.shippingMethod,
                   paymentMethod: activePackingOrder.paymentMethod,
-                  dobirkaAmount: activePackingOrder.dobirkaAmount,
-                  dobirkaCurrency: activePackingOrder.dobirkaCurrency,
+                  codAmount: activePackingOrder.codAmount,
+                  codCurrency: activePackingOrder.codCurrency,
                   shippingCost: activePackingOrder.shippingCost,
                   actualShippingCost: activePackingOrder.actualShippingCost,
                   trackingNumber: activePackingOrder.trackingNumber,
@@ -6508,8 +6508,8 @@ export default function PickPack() {
 
               {/* COD/Nachnahme Amount - Show if amount is specified */}
               {activePackingOrder.paymentMethod === 'COD' && 
-               activePackingOrder.dobirkaAmount && 
-               Number(activePackingOrder.dobirkaAmount) > 0 && (
+               activePackingOrder.codAmount && 
+               Number(activePackingOrder.codAmount) > 0 && (
                 <div className={`p-4 rounded-lg border-2 ${
                   activePackingOrder.shippingMethod === 'DHL' 
                     ? 'bg-blue-50 border-blue-300' 
@@ -6540,7 +6540,7 @@ export default function PickPack() {
                         ? 'text-blue-900' 
                         : 'text-orange-900'
                     }`} data-testid="text-cod-amount">
-                      {formatCurrency(Number(activePackingOrder.dobirkaAmount), activePackingOrder.dobirkaCurrency || 'CZK')}
+                      {formatCurrency(Number(activePackingOrder.codAmount), activePackingOrder.codCurrency || 'CZK')}
                     </p>
                     <p className={`text-xs ${
                       activePackingOrder.shippingMethod === 'DHL' 
@@ -6921,7 +6921,7 @@ export default function PickPack() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 min-w-0">
                                   <p className={`text-sm font-semibold truncate ${isCancelled ? 'text-gray-600 line-through' : 'text-gray-900'}`}>
-                                    CZ-PPL{label.labelData?.hasCOD || activePackingOrder.dobirkaAmount > 0 ? '-DOB' : ''} #{index + 1}
+                                    CZ-PPL{label.labelData?.hasCOD || activePackingOrder.codAmount > 0 ? '-DOB' : ''} #{index + 1}
                                   </p>
                                   {isCancelled && (
                                     <Badge variant="destructive" className="text-xs px-2 py-0 flex-shrink-0">
@@ -7056,7 +7056,7 @@ export default function PickPack() {
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 min-w-0">
                                       <p className={`text-sm font-semibold truncate ${isCancelled ? 'text-gray-600 line-through' : 'text-gray-900'}`}>
-                                        CZ-PPL{activePackingOrder.dobirkaAmount > 0 ? '-DOB' : ''} #{index + 1}
+                                        CZ-PPL{activePackingOrder.codAmount > 0 ? '-DOB' : ''} #{index + 1}
                                       </p>
                                       {isCancelled && (
                                         <Badge variant="destructive" className="text-xs px-2 py-0 flex-shrink-0">
@@ -7386,7 +7386,7 @@ export default function PickPack() {
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 min-w-0">
                                       <p className={`text-sm font-semibold truncate ${isCancelled ? 'text-gray-600 line-through' : 'text-gray-900'}`}>
-                                        CZ-PPL{label.labelData?.hasCOD || activePackingOrder.dobirkaAmount > 0 ? '-DOB' : ''} #{labelNumber}
+                                        CZ-PPL{label.labelData?.hasCOD || activePackingOrder.codAmount > 0 ? '-DOB' : ''} #{labelNumber}
                                       </p>
                                       <Badge variant="outline" className="text-xs px-2 py-0 flex-shrink-0 border-amber-500 text-amber-700">
                                         No Carton
@@ -7825,8 +7825,8 @@ export default function PickPack() {
                           <>
                             {cartonsWithLabels.map(({ carton, label, index }) => {
                               // Check if this is a COD/Nachnahme label
-                              const isNachnahme = activePackingOrder.dobirkaAmount && 
-                                                   Number(activePackingOrder.dobirkaAmount) > 0;
+                              const isNachnahme = activePackingOrder.codAmount && 
+                                                   Number(activePackingOrder.codAmount) > 0;
                               
                               return (
                                 <div 
