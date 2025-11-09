@@ -981,6 +981,33 @@ export default function AddOrder() {
         console.log('Customer API response:', customerResponse);
         console.log('New customer created with ID:', customerResponse?.id);
         data.customerId = customerResponse?.id;
+        
+        // Auto-create shipping address from customer data if address fields are provided
+        if (selectedCustomer.street || selectedCustomer.city || selectedCustomer.zipCode) {
+          console.log('Auto-creating shipping address for new customer...');
+          const addressData = {
+            customerId: customerResponse?.id,
+            firstName: selectedCustomer.firstName || undefined,
+            lastName: selectedCustomer.lastName || undefined,
+            company: selectedCustomer.company || undefined,
+            street: selectedCustomer.street || '',
+            streetNumber: selectedCustomer.streetNumber || undefined,
+            city: selectedCustomer.city || '',
+            zipCode: selectedCustomer.zipCode || '',
+            country: selectedCustomer.country || '',
+            tel: selectedCustomer.phone || undefined,
+            email: selectedCustomer.email || undefined,
+            pickupPoint: selectedCustomer.pickupPoint || undefined,
+            label: 'Default Address',
+          };
+          
+          const addressResponse = await apiRequest('POST', `/api/customers/${customerResponse?.id}/shipping-addresses`, addressData);
+          const createdAddress = await addressResponse.json();
+          console.log('Shipping address created:', createdAddress);
+          
+          // Link the new shipping address to this order
+          data.shippingAddressId = createdAddress?.id;
+        }
       } else if (selectedCustomer?.id && !selectedCustomer.id.startsWith('temp-')) {
         // Use existing customer's ID (not a temporary one)
         data.customerId = selectedCustomer.id;
