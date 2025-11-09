@@ -58,65 +58,137 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
     const bookmarkletLogic = `
 (function(){
   const data = JSON.parse(decodeURIComponent('${encodedData}'));
+  console.log('🔵 GLS Autofill - Starting with data:', data);
   
-  function setInputValue(selector, value) {
-    const input = document.querySelector(selector);
-    if (input) {
-      input.value = value || '';
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-      input.dispatchEvent(new Event('blur', { bubbles: true }));
-    }
-  }
+  let filledCount = 0;
+  const log = [];
   
-  function selectOption(selector, value) {
-    const select = document.querySelector(selector);
-    if (select && value) {
-      const options = Array.from(select.options);
-      const option = options.find(opt => 
-        opt.text.toLowerCase().includes(value.toLowerCase()) || 
-        opt.value.toLowerCase().includes(value.toLowerCase())
-      );
-      if (option) {
-        select.value = option.value;
-        select.dispatchEvent(new Event('change', { bubbles: true }));
+  function trySetValue(selectors, value, label) {
+    if (!value) return false;
+    
+    const selectorList = Array.isArray(selectors) ? selectors : [selectors];
+    
+    for (const selector of selectorList) {
+      const elements = document.querySelectorAll(selector);
+      if (elements.length > 0) {
+        elements.forEach(el => {
+          if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+            el.value = value;
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+            el.dispatchEvent(new Event('blur', { bubbles: true }));
+          }
+        });
+        filledCount++;
+        log.push('✅ ' + label + ': ' + value);
+        console.log('✅ Filled ' + label + ' (' + selector + '): ' + value);
+        return true;
       }
     }
+    log.push('❌ ' + label + ' (not found)');
+    console.warn('❌ Could not find field for ' + label);
+    return false;
   }
   
   setTimeout(() => {
-    setInputValue('input[name="recipientFirstName"], input[placeholder*="Vorname"]', data.recipient.name.split(' ')[0]);
-    setInputValue('input[name="recipientLastName"], input[placeholder*="Nachname"]', data.recipient.name.split(' ').slice(1).join(' '));
-    setInputValue('input[name="recipientCompany"], input[placeholder*="Firma"]', data.recipient.company);
-    setInputValue('input[name="recipientStreet"], input[placeholder*="Straße"]', data.recipient.street);
-    setInputValue('input[name="recipientHouseNumber"], input[placeholder*="Hausnummer"]', data.recipient.houseNumber);
-    setInputValue('input[name="recipientPostalCode"], input[placeholder*="PLZ"]', data.recipient.postalCode);
-    setInputValue('input[name="recipientCity"], input[placeholder*="Ort"]', data.recipient.city);
-    setInputValue('input[name="recipientEmail"], input[placeholder*="E-Mail"]', data.recipient.email);
-    setInputValue('input[name="recipientPhone"], input[placeholder*="Telefon"]', data.recipient.phone);
+    console.log('🔍 Searching for form fields...');
     
-    if (data.sender) {
-      setInputValue('input[name="senderFirstName"]', data.sender.name.split(' ')[0]);
-      setInputValue('input[name="senderLastName"]', data.sender.name.split(' ').slice(1).join(' '));
-      setInputValue('input[name="senderCompany"]', data.sender.company);
-      setInputValue('input[name="senderStreet"]', data.sender.street);
-      setInputValue('input[name="senderHouseNumber"]', data.sender.houseNumber);
-      setInputValue('input[name="senderPostalCode"]', data.sender.postalCode);
-      setInputValue('input[name="senderCity"]', data.sender.city);
-      setInputValue('input[name="senderEmail"]', data.sender.email);
-      setInputValue('input[name="senderPhone"]', data.sender.phone);
-    }
+    // List all inputs on the page for debugging
+    const allInputs = document.querySelectorAll('input, textarea, select');
+    console.log('📋 Found ' + allInputs.length + ' form fields:');
+    allInputs.forEach((el, i) => {
+      console.log(i + ': ', {
+        tag: el.tagName,
+        type: el.type,
+        name: el.name,
+        id: el.id,
+        placeholder: el.placeholder,
+        className: el.className
+      });
+    });
     
-    if (data.packageSize) {
-      selectOption('select[name="packageSize"]', data.packageSize);
-    }
+    // Try multiple selectors for each field
+    const nameParts = data.recipient.name.split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ');
     
-    if (data.weight) {
-      setInputValue('input[name="weight"]', data.weight.toString());
-    }
+    // Recipient fields - try multiple selectors
+    trySetValue([
+      'input[name*="vorname" i]',
+      'input[placeholder*="vorname" i]',
+      'input[id*="vorname" i]',
+      'input[name*="firstname" i]'
+    ], firstName, 'First Name');
     
-    alert('✅ GLS form autofilled! Please verify all details before submitting.');
-  }, 500);
+    trySetValue([
+      'input[name*="nachname" i]',
+      'input[placeholder*="nachname" i]',
+      'input[id*="nachname" i]',
+      'input[name*="lastname" i]',
+      'input[name*="name" i]'
+    ], lastName, 'Last Name');
+    
+    trySetValue([
+      'input[name*="firma" i]',
+      'input[placeholder*="firma" i]',
+      'input[id*="firma" i]',
+      'input[name*="company" i]'
+    ], data.recipient.company, 'Company');
+    
+    trySetValue([
+      'input[name*="strasse" i]',
+      'input[name*="straße" i]',
+      'input[placeholder*="strasse" i]',
+      'input[placeholder*="straße" i]',
+      'input[id*="strasse" i]',
+      'input[name*="street" i]',
+      'input[name*="adresse" i]'
+    ], data.recipient.street, 'Street');
+    
+    trySetValue([
+      'input[name*="hausnummer" i]',
+      'input[placeholder*="hausnummer" i]',
+      'input[id*="hausnummer" i]',
+      'input[name*="number" i]'
+    ], data.recipient.houseNumber, 'House Number');
+    
+    trySetValue([
+      'input[name*="plz" i]',
+      'input[name*="postleitzahl" i]',
+      'input[placeholder*="plz" i]',
+      'input[id*="plz" i]',
+      'input[name*="postal" i]',
+      'input[name*="zip" i]'
+    ], data.recipient.postalCode, 'Postal Code');
+    
+    trySetValue([
+      'input[name*="ort" i]',
+      'input[name*="stadt" i]',
+      'input[placeholder*="ort" i]',
+      'input[placeholder*="stadt" i]',
+      'input[id*="ort" i]',
+      'input[name*="city" i]'
+    ], data.recipient.city, 'City');
+    
+    trySetValue([
+      'input[name*="email" i]',
+      'input[name*="mail" i]',
+      'input[type="email"]',
+      'input[placeholder*="email" i]',
+      'input[id*="email" i]'
+    ], data.recipient.email, 'Email');
+    
+    trySetValue([
+      'input[name*="telefon" i]',
+      'input[name*="phone" i]',
+      'input[type="tel"]',
+      'input[placeholder*="telefon" i]',
+      'input[id*="telefon" i]'
+    ], data.recipient.phone, 'Phone');
+    
+    console.log('\\n📊 Summary: Filled ' + filledCount + ' fields');
+    alert('GLS Autofill Complete\\n\\n' + log.join('\\n') + '\\n\\nFilled ' + filledCount + ' fields. Check console for details (F12).');
+  }, 1000);
 })();
     `.trim();
 
