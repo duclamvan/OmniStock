@@ -6386,20 +6386,29 @@ export default function PickPack() {
             </CardHeader>
             <CardContent className="p-4 space-y-3">
               
-              {/* Shipping Address */}
+              {/* Shipping Address - ALWAYS shown */}
               {(() => {
                 const formattedAddress = formatShippingAddress(activePackingOrder.shippingAddress);
-                return formattedAddress ? (
+                return (
                   <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
                       <MapPin className="h-4 w-4 text-purple-600 flex-shrink-0" />
                       <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Shipping Address</span>
                     </div>
-                    <p className="text-sm text-gray-900 whitespace-pre-line pl-6" data-testid="text-shipping-address">
-                      {formattedAddress}
-                    </p>
+                    {formattedAddress ? (
+                      <p className="text-sm text-gray-900 whitespace-pre-line pl-6" data-testid="text-shipping-address">
+                        {formattedAddress}
+                      </p>
+                    ) : (
+                      <div className="pl-6">
+                        <p className="text-sm text-amber-700 bg-amber-50 border border-amber-300 rounded px-3 py-2 inline-flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                          No shipping address provided
+                        </p>
+                      </div>
+                    )}
                   </div>
-                ) : null;
+                );
               })()}
 
               {/* Shipment Details Grid */}
@@ -6828,17 +6837,6 @@ export default function PickPack() {
                         // For PPL shipments, show each carton with its label status
                         const isCancelled = activePackingOrder.pplStatus === 'cancelled';
                         
-                        // Debug: Log current state
-                        console.log('🎨 Rendering PPL cards:', {
-                          cartonCount: cartons.length,
-                          labelCount: shipmentLabelsFromDB.length,
-                          labels: shipmentLabelsFromDB.map(l => ({
-                            id: l.id,
-                            cartonNumber: (l.labelData as any)?.cartonNumber,
-                            trackingNumbers: l.trackingNumbers
-                          }))
-                        });
-                        
                         // Combine cartons with their corresponding labels
                         const cartonsWithLabels = cartons.map((carton, index) => {
                           // Find label for this carton (by carton number in labelData)
@@ -6847,12 +6845,6 @@ export default function PickPack() {
                             const matches = labelData?.cartonNumber === index + 1 || 
                                    (index === 0 && !labelData?.cartonNumber); // First label might not have cartonNumber
                             return matches;
-                          });
-                          
-                          console.log(`📦 Carton #${index + 1}:`, {
-                            cartonId: carton.id,
-                            hasLabel: !!label,
-                            labelId: label?.id
                           });
                           
                           return {
@@ -6865,12 +6857,6 @@ export default function PickPack() {
                         // Find orphaned labels (labels without matching cartons)
                         const matchedLabelIds = new Set(cartonsWithLabels.map(c => c.label?.id).filter(Boolean));
                         const orphanedLabels = shipmentLabelsFromDB.filter(l => !matchedLabelIds.has(l.id));
-                        
-                        console.log('🏷️ Label status:', {
-                          totalLabels: shipmentLabelsFromDB.length,
-                          matchedLabels: matchedLabelIds.size,
-                          orphanedLabels: orphanedLabels.length
-                        });
                         
                         // If no cartons but we have labels, show the labels
                         if (cartons.length === 0 && shipmentLabelsFromDB.length > 0) {
@@ -7793,6 +7779,8 @@ export default function PickPack() {
                           };
                         });
                         
+                        const totalCartons = cartons.length;
+                        
                         return (
                           <>
                             {cartonsWithLabels.map(({ carton, label, index }) => {
@@ -7813,7 +7801,7 @@ export default function PickPack() {
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 min-w-0">
                                       <p className="text-sm font-semibold truncate text-gray-900">
-                                        DE-DHL{isNachnahme ? '-NACH' : ''} #{index + 1}
+                                        {totalCartons > 1 ? `Carton ${index + 1} of ${totalCartons}` : `DE-DHL${isNachnahme ? '-NACH' : ''}`}
                                       </p>
                                     </div>
                                     {label?.trackingNumbers?.[0] ? (
@@ -7825,8 +7813,38 @@ export default function PickPack() {
                                     )}
                                   </div>
                                   
+                                  {/* View button */}
+                                  {label && label.labelBase64 && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-8 text-xs flex-shrink-0 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300"
+                                      onClick={() => {
+                                        try {
+                                          const labelBlob = new Blob(
+                                            [Uint8Array.from(atob(label.labelBase64), c => c.charCodeAt(0))],
+                                            { type: 'application/pdf' }
+                                          );
+                                          const url = URL.createObjectURL(labelBlob);
+                                          window.open(url, '_blank');
+                                          setTimeout(() => URL.revokeObjectURL(url), 1000);
+                                        } catch (error) {
+                                          toast({
+                                            title: "Error",
+                                            description: "Failed to view label",
+                                            variant: "destructive"
+                                          });
+                                        }
+                                      }}
+                                      data-testid={`button-view-dhl-label-${index + 1}`}
+                                    >
+                                      <Eye className="h-3.5 w-3.5 mr-1.5" />
+                                      View
+                                    </Button>
+                                  )}
+                                  
                                   {/* Print button */}
-                                  {label && label.labelBase64 ? (
+                                  {label && label.labelBase64 && (
                                     <Button
                                       variant="outline"
                                       size="sm"
@@ -7880,7 +7898,7 @@ export default function PickPack() {
                                         </>
                                       )}
                                     </Button>
-                                  ) : null}
+                                  )}
                                   
                                   {/* Delete button */}
                                   {label && (
