@@ -214,22 +214,37 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
       
       countryInput.dispatchEvent(new Event('input', { bubbles: true }));
       countryInput.dispatchEvent(new Event('change', { bubbles: true }));
-      countryInput.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      countryInput.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-      countryInput.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
-      countryInput.dispatchEvent(new Event('blur', { bubbles: true }));
       
       setTimeout(() => {
-        if (countryInput.value === targetCountryName) {
-          console.log('✅ Country confirmed:', targetCountryName);
-          filledCount++;
-          log.push('✅ Country: ' + targetCountryName);
-        } else {
-          console.warn('❌ Country selection failed. Current value:', countryInput.value);
-          nativeSetter.call(countryInput, targetCountryName);
-          countryInput.dispatchEvent(new Event('change', { bubbles: true }));
+        const dropdownOptions = document.querySelectorAll('[role="option"], li[data-value], .autocomplete-option, [class*="option"]');
+        let optionClicked = false;
+        
+        dropdownOptions.forEach(option => {
+          if (option.textContent && option.textContent.toLowerCase().includes(targetCountryName.toLowerCase())) {
+            option.click();
+            optionClicked = true;
+            console.log('✅ Clicked dropdown option:', option.textContent);
+          }
+        });
+        
+        if (!optionClicked) {
+          countryInput.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter', keyCode: 13 }));
+          countryInput.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'Enter', keyCode: 13 }));
+          console.log('✅ Pressed Enter to confirm');
         }
-      }, 150);
+        
+        countryInput.dispatchEvent(new Event('blur', { bubbles: true }));
+        
+        setTimeout(() => {
+          if (countryInput.value === targetCountryName || countryInput.value.toLowerCase().includes(targetCountryName.toLowerCase())) {
+            console.log('✅ Country confirmed:', countryInput.value);
+            filledCount++;
+            log.push('✅ Country: ' + countryInput.value);
+          } else {
+            console.warn('❌ Country selection failed. Current value:', countryInput.value);
+          }
+        }, 150);
+      }, 200);
       
       return true;
     }
