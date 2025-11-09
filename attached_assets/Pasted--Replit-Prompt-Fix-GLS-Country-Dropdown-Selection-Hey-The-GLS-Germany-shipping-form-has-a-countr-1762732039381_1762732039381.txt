@@ -1,0 +1,98 @@
+# Replit Prompt: Fix GLS Country Dropdown Selection
+
+Hey! The GLS Germany shipping form has a country dropdown (Zielland). My bookmarklet selects it and it looks selected, but when I submit the form, GLS says "please select a country" - the selection doesn't register.
+
+## The Problem
+
+GLS uses React for their form. When I do:
+```javascript
+dropdown.value = 'DE';
+dropdown.dispatchEvent(new Event('change'));
+```
+
+It LOOKS selected but React doesn't recognize the change.
+
+## What I Need
+
+Fix the country dropdown selection so React registers it properly. Here's what needs to happen:
+
+**1. Use Native Value Setter**
+```javascript
+// Instead of just: element.value = 'DE'
+// Use React-compatible native setter:
+const nativeSetter = Object.getOwnPropertyDescriptor(
+  window.HTMLSelectElement.prototype, 'value'
+).set;
+nativeSetter.call(element, targetValue);
+```
+
+**2. Set Multiple Properties**
+```javascript
+element.selectedIndex = targetOption.index;
+targetOption.selected = true;
+```
+
+**3. Fire Multiple Events (not just 'change')**
+Fire these events in order:
+- input (bubbles: true)
+- change (bubbles: true)  
+- click (bubbles: true)
+- mousedown (bubbles: true)
+- mouseup (bubbles: true)
+- blur (bubbles: true)
+
+**4. Verify It Stuck**
+After 150ms, check if `element.value` still equals what we set. If not, set it again and fire 'change' event again.
+
+## Country Matching
+
+The dropdown has options like "Deutschland", "Österreich", "Schweiz". My order data has "Germany", "Austria", "Switzerland".
+
+Make it smart:
+- If user sends "Germany" → match "Deutschland" 
+- If user sends "DE" → match "Deutschland"
+- If user sends "Austria" → match "Österreich"
+- If user sends "AT" → match "Österreich"
+
+Use these mappings:
+```
+germany → [deutschland, de, ger, deu, germany]
+switzerland → [schweiz, ch, sui, switzerland]
+austria → [österreich, osterreich, at, aut, austria]
+```
+
+## Find the Dropdown
+
+Try these selectors in order:
+```javascript
+'select[name="zielland"]'           // German for "destination country"
+'select[name="country"]'
+'select[name="recipientCountry"]'
+'select[id*="country"]'
+'select[id*="land"]'
+```
+
+## Console Logging
+
+Log these messages so I can debug:
+```
+🌍 Selecting country: Germany
+✅ Found: Deutschland (value: DE)
+✅ Country confirmed: DE
+```
+
+If it fails:
+```
+❌ Country selection failed
+Available options: [list them]
+```
+
+## The Result
+
+After running the bookmarklet:
+1. Dropdown should show "Deutschland" selected
+2. Console should say "✅ Country confirmed: DE"
+3. When I click submit, NO error about country
+4. Form should proceed
+
+That's it! Fix my country dropdown selection so React registers it properly.
