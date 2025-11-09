@@ -136,6 +136,38 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
     return false;
   }
   
+  function selectDropdown(selectors, value, label) {
+    if (!value) return false;
+    
+    const selectorList = Array.isArray(selectors) ? selectors : [selectors];
+    
+    for (const selector of selectorList) {
+      const select = document.querySelector(selector);
+      if (select && select.tagName === 'SELECT') {
+        const options = Array.from(select.options);
+        const option = options.find(opt => 
+          opt.text.toLowerCase().includes(value.toLowerCase()) || 
+          opt.value.toLowerCase().includes(value.toLowerCase()) ||
+          opt.text.toLowerCase() === value.toLowerCase() ||
+          opt.value.toLowerCase() === value.toLowerCase()
+        );
+        if (option) {
+          select.value = option.value;
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+          select.dispatchEvent(new Event('input', { bubbles: true }));
+          select.dispatchEvent(new Event('blur', { bubbles: true }));
+          filledCount++;
+          log.push('✅ ' + label + ': ' + value);
+          console.log('✅ Selected ' + label + ' (' + selector + '): ' + value + ' -> ' + option.value);
+          return true;
+        }
+      }
+    }
+    log.push('❌ ' + label + ' (dropdown not found or option not available)');
+    console.warn('❌ Could not select ' + label + ' for value: ' + value);
+    return false;
+  }
+  
   setTimeout(() => {
     console.log('🔍 Searching for form fields...');
     
@@ -250,6 +282,17 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
       'input[placeholder*="telefon" i]',
       'input[id*="telefon" i]'
     ], data.recipient.phone, 'Phone');
+    
+    // Select country from dropdown
+    if (data.recipient.country) {
+      selectDropdown([
+        'select[name="country"]',
+        'select[id="country"]',
+        'select[name*="land" i]',
+        'select[id*="land" i]',
+        'select[name*="country" i]'
+      ], data.recipient.country, 'Country');
+    }
     
     console.log('\\n📊 Summary: Filled ' + filledCount + ' fields');
     alert('GLS Autofill Complete\\n\\n' + log.join('\\n') + '\\n\\nFilled ' + filledCount + ' fields. Check console for details (F12).');
