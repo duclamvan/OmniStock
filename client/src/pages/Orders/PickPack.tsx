@@ -7698,8 +7698,8 @@ export default function PickPack() {
                     </Button>
                   )}
 
-                  {/* DHL Shipment Cards - Show cartons and labels */}
-                  {shipmentLabelsFromDB.filter((l: any) => l.carrier === 'DHL').length > 0 && (
+                  {/* DHL Shipment Cards - Always show cartons, matching PPL layout */}
+                  {cartons.length > 0 && (
                     <div className="space-y-2">
                       {(() => {
                         const dhlLabels = shipmentLabelsFromDB.filter((l: any) => l.carrier === 'DHL');
@@ -7742,7 +7742,7 @@ export default function PickPack() {
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 min-w-0">
                                       <p className="text-sm font-semibold truncate text-gray-900">
-                                        {totalCartons > 1 ? `Carton ${index + 1} of ${totalCartons}` : `DE-DHL${isNachnahme ? '-NACH' : ''}`}
+                                        DE-DHL{isNachnahme ? '-NACH' : ''} #{index + 1}
                                       </p>
                                     </div>
                                     {label?.trackingNumbers?.[0] ? (
