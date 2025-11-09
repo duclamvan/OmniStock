@@ -4456,6 +4456,11 @@ Important:
   // Pick & Pack endpoints (OPTIMIZED - eliminates N+1 queries)
   app.get('/api/orders/pick-pack', async (req, res) => {
     try {
+      // Disable HTTP caching to ensure fresh data is always sent
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
+      
       const status = req.query.status as string; // pending, picking, packing, ready
       const orders = await storage.getPickPackOrders(status);
       

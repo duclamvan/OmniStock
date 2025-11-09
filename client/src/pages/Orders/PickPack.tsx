@@ -1529,10 +1529,11 @@ export default function PickPack() {
   // Real-time data synchronization: refetch every 5 seconds to ensure Pick & Pack always shows latest order data
   const { data: allOrders = [], isLoading, isSuccess } = useQuery({
     queryKey: ['/api/orders/pick-pack'],
-    staleTime: 10 * 1000, // 10 seconds - keep data fresh
+    staleTime: 0, // IMPORTANT: Set to 0 to always fetch fresh data (fixes 304 cache issue)
     refetchInterval: 5000, // 5 seconds - real-time updates for active picking/packing
     refetchOnWindowFocus: true, // Always refetch when user returns to tab
     refetchOnMount: true, // Always refetch when component mounts
+    gcTime: 0, // Don't cache query results
   });
   
   // Sync activePackingOrder with latest data from query
@@ -6384,6 +6385,21 @@ export default function PickPack() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-3">
+              {/* DEBUG: Log shipping data */}
+              {(() => {
+                console.log('🔍 SHIPPING DEBUG:', {
+                  shippingMethod: activePackingOrder.shippingMethod,
+                  paymentMethod: activePackingOrder.paymentMethod,
+                  dobirkaAmount: activePackingOrder.dobirkaAmount,
+                  dobirkaCurrency: activePackingOrder.dobirkaCurrency,
+                  shippingCost: activePackingOrder.shippingCost,
+                  actualShippingCost: activePackingOrder.actualShippingCost,
+                  trackingNumber: activePackingOrder.trackingNumber,
+                  fullOrder: activePackingOrder
+                });
+                return null;
+              })()}
+              
               {/* Shipping Address */}
               {(() => {
                 const formattedAddress = formatShippingAddress(activePackingOrder.shippingAddress);
