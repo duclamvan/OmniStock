@@ -73,6 +73,15 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
     queryKey: ['/api/orders'],
   });
 
+  // Read URL query parameters for pre-filling
+  const urlParams = useMemo(() => {
+    if (typeof window === 'undefined') return {};
+    const params = new URLSearchParams(window.location.search);
+    return {
+      orderId: params.get('orderId') || undefined,
+    };
+  }, []);
+
   const form = useForm<TicketFormValues>({
     resolver: zodResolver(ticketFormSchema),
     defaultValues: {
@@ -113,6 +122,28 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
       }
     }
   }, [ticket?.customerId, customers]);
+
+  // Auto-fill from URL parameters (for creating ticket from Order Details)
+  useEffect(() => {
+    if (mode !== 'add') return; // Only in add mode
+    if (!urlParams.orderId) return; // Only if orderId in URL
+    if (!orders.length || !customers.length) return; // Wait for data to load
+
+    const order = orders.find((o: any) => o.id === urlParams.orderId);
+    if (!order) return;
+
+    // Set orderId in form
+    form.setValue('orderId', order.id);
+
+    // Set customerId and customer search if available
+    if (order.customerId) {
+      const customer = customers.find((c: any) => c.id === order.customerId);
+      if (customer) {
+        form.setValue('customerId', customer.id);
+        setCustomerSearch(customer.name);
+      }
+    }
+  }, [mode, urlParams.orderId, orders, customers, form]);
 
   // AI Subject Generation function
   const generateSubject = async (descriptionText: string) => {
