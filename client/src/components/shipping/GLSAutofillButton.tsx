@@ -283,15 +283,27 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
       'input[id*="telefon" i]'
     ], data.recipient.phone, 'Phone');
     
-    // Select country from dropdown
+    // Fill country (combobox/autocomplete input)
     if (data.recipient.country) {
-      selectDropdown([
+      const countryFilled = trySetValue([
+        'input[name="country-selector"]',
+        'input[role="combobox"][name*="country" i]',
+        'input[aria-autocomplete="list"]',
         'select[name="country"]',
         'select[id="country"]',
         'select[name*="land" i]',
-        'select[id*="land" i]',
-        'select[name*="country" i]'
+        'select[id*="land" i]'
       ], data.recipient.country, 'Country');
+      
+      if (countryFilled) {
+        setTimeout(() => {
+          const countryInput = document.querySelector('input[name="country-selector"]');
+          if (countryInput) {
+            countryInput.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' }));
+            countryInput.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'Enter' }));
+          }
+        }, 100);
+      }
     }
     
     console.log('\\n📊 Summary: Filled ' + filledCount + ' fields');
