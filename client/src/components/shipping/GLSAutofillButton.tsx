@@ -191,34 +191,34 @@ ${weight ? `Gewicht: ${weight} kg` : ''}
 
       {/* Bookmarklet Setup Dialog */}
       <Dialog open={showBookmarkletDialog} onOpenChange={setShowBookmarkletDialog}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:w-full max-w-2xl max-h-[90vh] sm:max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
               <BookmarkIcon className="h-5 w-5" />
-              GLS Autofill Setup (One-Time)
+              GLS Autofill Setup
             </DialogTitle>
-            <DialogDescription>
-              Set up the GLS autofill bookmarklet once, then use it anytime to fill the form automatically
+            <DialogDescription className="text-sm">
+              Set up once, then use it anytime to auto-fill the GLS form
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="rounded-lg border p-4 bg-muted">
-              <h3 className="font-semibold mb-2">📋 How to use:</h3>
-              <ol className="list-decimal list-inside space-y-2 text-sm">
-                <li>Save the bookmarklet below to your browser bookmarks bar</li>
-                <li>Open the GLS configuration page (it should be open now)</li>
-                <li>Click the saved bookmarklet to auto-fill the form</li>
-                <li>Verify the details and complete your shipment</li>
+            <div className="rounded-lg border p-3 sm:p-4 bg-muted">
+              <h3 className="font-semibold mb-2 text-sm sm:text-base">📋 How to use:</h3>
+              <ol className="list-decimal list-inside space-y-1.5 text-xs sm:text-sm">
+                <li>Save the bookmarklet below to your bookmarks bar</li>
+                <li>Open the GLS page (should be open now)</li>
+                <li>Click the saved bookmarklet to auto-fill</li>
+                <li>Verify details and complete shipment</li>
               </ol>
             </div>
 
             <div className="space-y-2">
-              <h3 className="font-semibold">1. Drag this button to your bookmarks bar:</h3>
-              <div className="flex justify-center p-4 bg-blue-50 dark:bg-blue-950 rounded border-2 border-dashed border-blue-300">
+              <h3 className="font-semibold text-sm sm:text-base">1. Drag to bookmarks bar:</h3>
+              <div className="flex justify-center p-3 sm:p-4 bg-blue-50 dark:bg-blue-950 rounded border-2 border-dashed border-blue-300">
                 <a
                   href={generateBookmarklet()}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-move"
+                  className="inline-flex items-center gap-2 px-3 py-2 sm:px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-move text-sm"
                   onClick={(e) => {
                     e.preventDefault();
                     toast({
@@ -233,14 +233,14 @@ ${weight ? `Gewicht: ${weight} kg` : ''}
                 </a>
               </div>
               <p className="text-xs text-muted-foreground text-center">
-                Or right-click and "Add to Bookmarks" / "Bookmark This Link"
+                Or right-click and "Add to Bookmarks"
               </p>
             </div>
 
             <div className="space-y-2">
-              <h3 className="font-semibold">2. Alternative: Copy the code manually</h3>
+              <h3 className="font-semibold text-sm sm:text-base">2. Or copy manually:</h3>
               <div className="relative">
-                <pre className="p-3 bg-muted rounded text-xs overflow-x-auto">
+                <pre className="p-2 sm:p-3 bg-muted rounded text-xs overflow-x-auto whitespace-pre-wrap break-all">
                   {generateBookmarklet()}
                 </pre>
                 <Button
@@ -260,21 +260,21 @@ ${weight ? `Gewicht: ${weight} kg` : ''}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Create a new bookmark, paste this code as the URL, and click it when on the GLS page
+                Create a bookmark, paste as URL, click on GLS page
               </p>
             </div>
 
-            <div className="rounded-lg border p-4 bg-yellow-50 dark:bg-yellow-950/20">
-              <h3 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">⚠️ Important Notes:</h3>
-              <ul className="list-disc list-inside space-y-1 text-sm text-yellow-700 dark:text-yellow-300">
-                <li>The bookmarklet works directly on the GLS website</li>
-                <li>You only need to save it once - it will work for all future orders</li>
-                <li>Always verify the auto-filled details before submitting</li>
-                <li>If form fields don't match, you may need to update the bookmarklet</li>
+            <div className="rounded-lg border p-3 sm:p-4 bg-yellow-50 dark:bg-yellow-950/20">
+              <h3 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2 text-sm sm:text-base">⚠️ Important:</h3>
+              <ul className="list-disc list-inside space-y-1 text-xs sm:text-sm text-yellow-700 dark:text-yellow-300">
+                <li>Works directly on GLS website</li>
+                <li>Save once, use for all future orders</li>
+                <li>Always verify auto-filled details</li>
+                <li>Update if form fields change</li>
               </ul>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button
                 variant="outline"
                 onClick={() => setShowBookmarkletDialog(false)}
