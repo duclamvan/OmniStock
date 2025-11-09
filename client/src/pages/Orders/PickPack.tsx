@@ -6385,20 +6385,6 @@ export default function PickPack() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-3">
-              {/* DEBUG: Log shipping data */}
-              {(() => {
-                console.log('🔍 SHIPPING DEBUG:', {
-                  shippingMethod: activePackingOrder.shippingMethod,
-                  paymentMethod: activePackingOrder.paymentMethod,
-                  codAmount: activePackingOrder.codAmount,
-                  codCurrency: activePackingOrder.codCurrency,
-                  shippingCost: activePackingOrder.shippingCost,
-                  actualShippingCost: activePackingOrder.actualShippingCost,
-                  trackingNumber: activePackingOrder.trackingNumber,
-                  fullOrder: activePackingOrder
-                });
-                return null;
-              })()}
               
               {/* Shipping Address */}
               {(() => {
@@ -6431,19 +6417,6 @@ export default function PickPack() {
                   </div>
                 )}
 
-                {/* Payment Method - ALWAYS show if available */}
-                {activePackingOrder.paymentMethod && (
-                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                      <DollarSign className="h-4 w-4 text-purple-600 flex-shrink-0" />
-                      <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Payment Method</span>
-                    </div>
-                    <p className="text-sm font-medium text-gray-900 pl-6" data-testid="text-payment-method">
-                      {activePackingOrder.paymentMethod}
-                    </p>
-                  </div>
-                )}
-
                 {/* Shipping Cost */}
                 {activePackingOrder.shippingCost && Number(activePackingOrder.shippingCost) > 0 && (
                   <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
@@ -6472,7 +6445,7 @@ export default function PickPack() {
               </div>
 
               {/* Shipment Type Badge - Shows DHL Nachnahme or PPL Dobírka prominently for COD orders */}
-              {activePackingOrder.shippingMethod && activePackingOrder.paymentMethod === 'COD' && (
+              {activePackingOrder.shippingMethod && activePackingOrder.codAmount && Number(activePackingOrder.codAmount) > 0 && (
                 <div className={`p-4 rounded-lg border-2 flex items-center gap-3 ${
                   activePackingOrder.shippingMethod === 'DHL' 
                     ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-blue-400' 
@@ -6507,8 +6480,7 @@ export default function PickPack() {
               )}
 
               {/* COD/Nachnahme Amount - Show if amount is specified */}
-              {activePackingOrder.paymentMethod === 'COD' && 
-               activePackingOrder.codAmount && 
+              {activePackingOrder.codAmount && 
                Number(activePackingOrder.codAmount) > 0 && (
                 <div className={`p-4 rounded-lg border-2 ${
                   activePackingOrder.shippingMethod === 'DHL' 
