@@ -43,7 +43,7 @@ import { offlineQueue } from "@/lib/offlineQueue";
 import { CartonTypeAutocomplete } from "@/components/orders/CartonTypeAutocomplete";
 import { usePackingOptimization } from "@/hooks/usePackingOptimization";
 import { GLSAutofillButton } from "@/components/shipping/GLSAutofillButton";
-import { copyGLSDetailsToClipboard, type GLSRecipientData } from "@/lib/gls";
+import { GLS_COUNTRY_MAP } from "@/lib/gls";
 import { 
   Dialog, 
   DialogContent, 
@@ -7760,64 +7760,128 @@ export default function PickPack() {
                                     )}
                                   </div>
 
-                                  {/* Shipping Label Actions */}
-                                  <div className="flex items-center gap-2 pt-2 border-t border-emerald-200">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600"
-                                      onClick={() => {
-                                        // Pass order ID to GLS website for Tampermonkey to pick up
-                                        const glsUrl = `https://www.gls-pakete.de/privatkunden/paketversand/paketkonfiguration?davie_order_id=${activePackingOrder.id}`;
-                                        window.open(glsUrl, '_blank');
-                                      }}
-                                      data-testid={`button-ship-with-gls-${index + 1}`}
-                                    >
-                                      <Truck className="h-3.5 w-3.5 mr-1.5" />
-                                      Ship with GLS
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
-                                      onClick={async () => {
-                                        const glsData: GLSRecipientData = {
-                                          name: recipientData.name,
-                                          company: recipientData.company,
-                                          street: recipientData.street,
-                                          houseNumber: recipientData.houseNumber,
-                                          postalCode: recipientData.postalCode,
-                                          city: recipientData.city,
-                                          country: recipientData.country,
-                                          email: recipientData.email,
-                                          phone: recipientData.phone
+                                  {/* GLS Shipping Details - Individual Copyable Fields */}
+                                  <Collapsible className="pt-2 border-t border-emerald-200">
+                                    <CollapsibleTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600"
+                                        data-testid={`button-show-gls-fields-${index + 1}`}
+                                      >
+                                        <Truck className="h-3.5 w-3.5 mr-1.5" />
+                                        GLS Shipping Details (Click to Show)
+                                        <ChevronDown className="h-3.5 w-3.5 ml-auto" />
+                                      </Button>
+                                    </CollapsibleTrigger>
+                                    <CollapsibleContent className="mt-3 space-y-2">
+                                      {/* Helper Function to Copy Individual Field */}
+                                      {(() => {
+                                        const nameParts = (recipientData.name || '').trim().split(' ');
+                                        const firstName = nameParts[0] || '';
+                                        const lastName = nameParts.slice(1).join(' ') || '';
+                                        const germanCountry = GLS_COUNTRY_MAP[recipientData.country] || recipientData.country;
+                                        
+                                        const copyField = async (value: string, fieldName: string) => {
+                                          try {
+                                            await navigator.clipboard.writeText(value);
+                                            toast({
+                                              title: "Copied!",
+                                              description: `${fieldName} copied to clipboard`,
+                                              duration: 2000
+                                            });
+                                          } catch {
+                                            toast({
+                                              title: "Copy failed",
+                                              description: "Please try again",
+                                              variant: "destructive"
+                                            });
+                                          }
                                         };
-                                        
-                                        const success = await copyGLSDetailsToClipboard({
-                                          recipientData: glsData,
-                                          packageSize: 'M',
-                                          weight: carton.weight ? parseFloat(carton.weight) : undefined
-                                        });
-                                        
-                                        if (success) {
-                                          toast({
-                                            title: "Copied to clipboard!",
-                                            description: "GLS shipping details copied. Paste each field into the GLS form (tab-separated).",
-                                          });
-                                        } else {
-                                          toast({
-                                            title: "Copy failed",
-                                            description: "Could not copy to clipboard. Please try again.",
-                                            variant: "destructive"
-                                          });
-                                        }
-                                      }}
-                                      data-testid={`button-copy-gls-details-${index + 1}`}
-                                    >
-                                      <Copy className="h-3.5 w-3.5 mr-1.5" />
-                                      Copy Details
-                                    </Button>
-                                  </div>
+
+                                        const CopyField = ({ label, value }: { label: string; value: string }) => (
+                                          <div className="flex items-center gap-2 bg-white/50 rounded p-2 border border-emerald-200">
+                                            <div className="flex-1 min-w-0">
+                                              <p className="text-xs font-semibold text-emerald-900">{label}</p>
+                                              <p className="text-sm text-gray-900 truncate">{value || '-'}</p>
+                                            </div>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-8 w-8 p-0 flex-shrink-0 hover:bg-emerald-100"
+                                              onClick={() => copyField(value, label)}
+                                            >
+                                              <Copy className="h-3.5 w-3.5 text-emerald-700" />
+                                            </Button>
+                                          </div>
+                                        );
+
+                                        return (
+                                          <>
+                                            <p className="text-xs font-semibold text-emerald-900 flex items-center gap-1">
+                                              <Info className="h-3 w-3" />
+                                              Copy each field individually and paste into GLS form
+                                            </p>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <CopyField label="Vorname (First Name)" value={firstName} />
+                                              <CopyField label="Nachname (Last Name)" value={lastName} />
+                                            </div>
+                                            <CopyField label="Firma (Company)" value={recipientData.company || ''} />
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <div className="col-span-2">
+                                                <CopyField label="Straße (Street)" value={recipientData.street || ''} />
+                                              </div>
+                                              <CopyField label="Hausnummer (No.)" value={recipientData.houseNumber || ''} />
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <CopyField label="PLZ (Postal Code)" value={recipientData.postalCode || ''} />
+                                              <div className="col-span-2">
+                                                <CopyField label="Ort (City)" value={recipientData.city || ''} />
+                                              </div>
+                                            </div>
+                                            <CopyField label="Land (Country)" value={germanCountry} />
+                                            <CopyField label="E-Mail" value={recipientData.email || ''} />
+                                            <CopyField label="Telefon (Phone)" value={recipientData.phone || ''} />
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <CopyField label="Paketgröße (Package Size)" value="M" />
+                                              {/* Weight field - display with 'kg' but copy without suffix */}
+                                              <div className="flex items-center gap-2 bg-white/50 rounded p-2 border border-emerald-200">
+                                                <div className="flex-1 min-w-0">
+                                                  <p className="text-xs font-semibold text-emerald-900">Gewicht (Weight)</p>
+                                                  <p className="text-sm text-gray-900 truncate">
+                                                    {carton.weight ? `${parseFloat(carton.weight).toFixed(2)} kg` : '-'}
+                                                  </p>
+                                                </div>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="h-8 w-8 p-0 flex-shrink-0 hover:bg-emerald-100"
+                                                  onClick={() => copyField(
+                                                    carton.weight ? parseFloat(carton.weight).toFixed(2) : '',
+                                                    'Gewicht (Weight)'
+                                                  )}
+                                                >
+                                                  <Copy className="h-3.5 w-3.5 text-emerald-700" />
+                                                </Button>
+                                              </div>
+                                            </div>
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+                                              onClick={() => {
+                                                const glsUrl = `https://www.gls-pakete.de/privatkunden/paketversand/paketkonfiguration`;
+                                                window.open(glsUrl, '_blank');
+                                              }}
+                                            >
+                                              <Truck className="h-3.5 w-3.5 mr-1.5" />
+                                              Open GLS Website
+                                            </Button>
+                                          </>
+                                        );
+                                      })()}
+                                    </CollapsibleContent>
+                                  </Collapsible>
                                 </CardContent>
                               </Card>
                             ))}
