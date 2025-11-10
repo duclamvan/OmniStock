@@ -296,6 +296,9 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
     
     // Recipient fields - try multiple selectors
     trySetValue([
+      'input[name="firstName"]',
+      'input[name="firstname"]',
+      'input[placeholder="Vorname"]',
       'input[name*="vorname" i]',
       'input[placeholder*="vorname" i]',
       'input[id*="vorname" i]',
@@ -303,14 +306,19 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
     ], firstName, 'First Name');
     
     trySetValue([
+      'input[name="lastName"]',
+      'input[name="lastname"]',
+      'input[placeholder="Nachname"]',
       'input[name*="nachname" i]',
       'input[placeholder*="nachname" i]',
       'input[id*="nachname" i]',
-      'input[name*="lastname" i]',
-      'input[name*="name" i]'
+      'input[name*="lastname" i]'
     ], lastName, 'Last Name');
     
     trySetValue([
+      'input[name="company"]',
+      'input[placeholder="Firma (optional)"]',
+      'input[placeholder="Firma"]',
       'input[name*="firma" i]',
       'input[placeholder*="firma" i]',
       'input[id*="firma" i]',
@@ -399,6 +407,34 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
           console.log('🔄 Re-validating address fields after country selection...');
           
           const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+          
+          const nameParts = data.recipient.name.split(' ');
+          const firstName = nameParts[0];
+          const lastName = nameParts.slice(1).join(' ');
+          
+          const firstNameInput = document.querySelector('input[name="firstName"]') || document.querySelector('input[placeholder="Vorname"]');
+          if (firstNameInput && !firstNameInput.value && firstName) {
+            nativeSetter.call(firstNameInput, firstName);
+            firstNameInput.dispatchEvent(new Event('input', { bubbles: true }));
+            firstNameInput.dispatchEvent(new Event('change', { bubbles: true }));
+            console.log('✅ Re-filled first name');
+          }
+          
+          const lastNameInput = document.querySelector('input[name="lastName"]') || document.querySelector('input[placeholder="Nachname"]');
+          if (lastNameInput && !lastNameInput.value && lastName) {
+            nativeSetter.call(lastNameInput, lastName);
+            lastNameInput.dispatchEvent(new Event('input', { bubbles: true }));
+            lastNameInput.dispatchEvent(new Event('change', { bubbles: true }));
+            console.log('✅ Re-filled last name');
+          }
+          
+          const companyInput = document.querySelector('input[name="company"]') || document.querySelector('input[placeholder*="Firma"]');
+          if (companyInput && !companyInput.value && data.recipient.company) {
+            nativeSetter.call(companyInput, data.recipient.company);
+            companyInput.dispatchEvent(new Event('input', { bubbles: true }));
+            companyInput.dispatchEvent(new Event('change', { bubbles: true }));
+            console.log('✅ Re-filled company');
+          }
           
           const streetInput = document.querySelector('input[name="street"]');
           if (streetInput && !streetInput.value && data.recipient.street) {
