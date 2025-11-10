@@ -21,6 +21,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
@@ -1047,6 +1052,12 @@ export default function PickPack() {
     return localStorage.getItem('pickPackExpandedImages') === 'true';
   });
   
+  // Track guide collapse state (persisted across all packing sessions)
+  const [isGuideCollapsed, setIsGuideCollapsed] = useState<boolean>(() => {
+    const saved = localStorage.getItem('pickpack-guide-collapsed');
+    return saved === 'true';
+  });
+  
   // Track orders being sent back to pick (for instant UI update)
   const [ordersSentBack, setOrdersSentBack] = useState<Set<string>>(new Set());
   
@@ -1190,6 +1201,11 @@ export default function PickPack() {
   useEffect(() => {
     localStorage.setItem('pickpack-selected-tab', selectedTab);
   }, [selectedTab]);
+
+  // Save guide collapsed state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('pickpack-guide-collapsed', isGuideCollapsed.toString());
+  }, [isGuideCollapsed]);
 
   // Load packing state when activePackingOrder changes
   useEffect(() => {
@@ -7562,7 +7578,7 @@ export default function PickPack() {
                         />
                       </div>
 
-                      {/* Mobile Instructions */}
+                      {/* Mobile Instructions - Always Visible */}
                       <div className="block md:hidden">
                         <Alert className="bg-blue-50 border-blue-300">
                           <Info className="h-4 w-4 text-blue-600" />
@@ -7572,30 +7588,48 @@ export default function PickPack() {
                         </Alert>
                       </div>
 
-                      {/* Instructions */}
-                      <Alert className="bg-emerald-50 border-emerald-300">
-                        <Info className="h-4 w-4 text-emerald-600" />
-                        <AlertDescription className="text-sm text-emerald-800">
-                          <strong>How to use:</strong>
-                          <ol className="list-decimal list-inside mt-2 space-y-1">
-                            <li>Click "Ship with GLS" to open the GLS website</li>
-                            <li>Set up the autofill bookmarklet (one-time setup)</li>
-                            <li>Use the bookmarklet to fill the form automatically</li>
-                            <li>Complete the shipment and get your tracking number</li>
-                            <li>Enter tracking numbers below after creating labels</li>
-                          </ol>
-                        </AlertDescription>
-                      </Alert>
+                      {/* Collapsible Guide/Instructions */}
+                      <Collapsible 
+                        open={!isGuideCollapsed} 
+                        onOpenChange={(open) => setIsGuideCollapsed(!open)}
+                      >
+                        <div className="bg-emerald-50 border-2 border-emerald-300 rounded-lg overflow-hidden">
+                          <CollapsibleTrigger className="w-full px-4 py-3 flex items-center justify-between hover:bg-emerald-100 transition-colors">
+                            <div className="flex items-center gap-2">
+                              <Info className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+                              <span className="text-sm font-semibold text-emerald-900">
+                                {isGuideCollapsed ? 'Show Guide (5 steps)' : 'How to use:'}
+                              </span>
+                            </div>
+                            {isGuideCollapsed ? (
+                              <ChevronDown className="h-4 w-4 text-emerald-600" />
+                            ) : (
+                              <ChevronUp className="h-4 w-4 text-emerald-600" />
+                            )}
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="px-4 pb-3">
+                              <ol className="list-decimal list-inside space-y-1.5 text-sm text-emerald-800">
+                                <li>Click "Ship with GLS" to open the GLS website</li>
+                                <li>Set up the autofill bookmarklet (one-time setup)</li>
+                                <li>Use the bookmarklet to fill the form automatically</li>
+                                <li>Complete the shipment and get your tracking number</li>
+                                <li>Enter tracking numbers below after creating labels</li>
+                              </ol>
+                            </div>
+                          </CollapsibleContent>
+                        </div>
+                      </Collapsible>
 
                       {/* Manual Tracking Number Entry for Each Carton */}
-                      <div className="space-y-3">
+                      <div className="space-y-2 md:space-y-3">
                         <div className="flex items-center gap-2">
                           <Package className="h-4 w-4 text-emerald-600" />
                           <label className="text-sm font-semibold text-emerald-900">
                             Tracking Numbers
                           </label>
                         </div>
-                        <p className="text-xs text-emerald-700">
+                        <p className="text-xs text-emerald-700 hidden md:block">
                           Enter tracking numbers after creating labels on the GLS website
                         </p>
                         
@@ -7611,7 +7645,7 @@ export default function PickPack() {
                             {cartons.map((carton, index) => (
                               <div 
                                 key={carton.id}
-                                className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 space-y-2"
+                                className="bg-emerald-50 border border-emerald-200 rounded-lg p-2 md:p-3 space-y-2"
                               >
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2">
