@@ -7765,7 +7765,9 @@ export default function PickPack() {
                                       size="sm"
                                       className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600"
                                       onClick={() => {
-                                        window.open('https://www.gls-pakete.de/privatkunden/paketversand/paketkonfiguration', '_blank');
+                                        // Pass order ID to GLS website for Tampermonkey to pick up
+                                        const glsUrl = `https://www.gls-pakete.de/privatkunden/paketversand/paketkonfiguration?davie_order_id=${activePackingOrder.id}`;
+                                        window.open(glsUrl, '_blank');
                                       }}
                                       data-testid={`button-ship-with-gls-${index + 1}`}
                                     >
