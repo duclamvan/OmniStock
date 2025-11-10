@@ -7578,44 +7578,54 @@ export default function PickPack() {
                         />
                       </div>
 
-                      {/* Mobile Instructions - Always Visible */}
-                      <div className="block md:hidden">
-                        <Alert className="bg-blue-50 border-blue-300">
-                          <Info className="h-4 w-4 text-blue-600" />
-                          <AlertDescription className="text-sm text-blue-800">
-                            <strong>Mobile Users:</strong> Install the Tampermonkey script on Kiwi Browser for automatic GLS form filling. See instructions in the Shipping Settings page.
-                          </AlertDescription>
-                        </Alert>
-                      </div>
-
-                      {/* Collapsible Guide/Instructions */}
+                      {/* Mobile Setup Guide - Collapsible */}
                       <Collapsible 
                         open={!isGuideCollapsed} 
                         onOpenChange={(open) => setIsGuideCollapsed(!open)}
+                        className="block md:hidden"
                       >
-                        <div className="bg-emerald-50 border-2 border-emerald-300 rounded-lg overflow-hidden">
-                          <CollapsibleTrigger className="w-full px-4 py-3 flex items-center justify-between hover:bg-emerald-100 transition-colors">
+                        <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-lg overflow-hidden">
+                          <CollapsibleTrigger className="w-full px-4 py-3 flex items-center justify-between hover:bg-purple-100 transition-colors">
                             <div className="flex items-center gap-2">
-                              <Info className="h-4 w-4 text-emerald-600 flex-shrink-0" />
-                              <span className="text-sm font-semibold text-emerald-900">
-                                {isGuideCollapsed ? 'Show Guide (5 steps)' : 'How to use:'}
+                              <Info className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                              <span className="text-sm font-semibold text-purple-900">
+                                {isGuideCollapsed ? 'Show Mobile Setup Guide (6 steps)' : 'Mobile Setup Guide'}
                               </span>
                             </div>
                             {isGuideCollapsed ? (
-                              <ChevronDown className="h-4 w-4 text-emerald-600" />
+                              <ChevronDown className="h-4 w-4 text-purple-600" />
                             ) : (
-                              <ChevronUp className="h-4 w-4 text-emerald-600" />
+                              <ChevronUp className="h-4 w-4 text-purple-600" />
                             )}
                           </CollapsibleTrigger>
                           <CollapsibleContent>
-                            <div className="px-4 pb-3">
-                              <ol className="list-decimal list-inside space-y-1.5 text-sm text-emerald-800">
-                                <li>Click "Ship with GLS" to open the GLS website</li>
-                                <li>Set up the autofill bookmarklet (one-time setup)</li>
-                                <li>Use the bookmarklet to fill the form automatically</li>
-                                <li>Complete the shipment and get your tracking number</li>
-                                <li>Enter tracking numbers below after creating labels</li>
+                            <div className="px-4 pb-3 space-y-3">
+                              <p className="text-xs font-semibold text-purple-900">
+                                Tampermonkey Setup for Kiwi Browser (Android):
+                              </p>
+                              <ol className="list-decimal list-inside space-y-2 text-sm text-purple-900">
+                                <li>
+                                  Install <strong>Kiwi Browser</strong> from Google Play Store (supports Chrome extensions on mobile)
+                                </li>
+                                <li>
+                                  In Kiwi Browser, install <strong>Tampermonkey</strong> extension from Chrome Web Store
+                                </li>
+                                <li>
+                                  Download the userscript: <a href="/gls-autofill-mobile.user.js" className="text-purple-600 font-semibold underline" download>gls-autofill-mobile.user.js</a>
+                                </li>
+                                <li>
+                                  Open the downloaded file in Kiwi Browser - Tampermonkey will prompt to install it
+                                </li>
+                                <li>
+                                  Edit the script and replace <code className="bg-purple-200 px-1 rounded text-xs">YOUR_REPLIT_URL</code> with your actual Davie Supply URL
+                                </li>
+                                <li>
+                                  Go to any order and click "Ship with GLS" - the form will autofill automatically
+                                </li>
                               </ol>
+                              <div className="mt-2 p-2 bg-purple-100 rounded-lg text-xs text-purple-900">
+                                <strong>Note:</strong> The mobile script works the same as desktop but runs automatically when you visit the GLS website from an order.
+                              </div>
                             </div>
                           </CollapsibleContent>
                         </div>
