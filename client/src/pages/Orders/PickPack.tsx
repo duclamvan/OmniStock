@@ -7733,12 +7733,14 @@ export default function PickPack() {
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      className="flex-1 bg-white hover:bg-blue-50 border-blue-300 text-blue-700"
-                                      onClick={() => window.print()}
-                                      data-testid={`button-print-label-${index + 1}`}
+                                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600"
+                                      onClick={() => {
+                                        window.open('https://www.gls-pakete.de/privatkunden/paketversand/paketkonfiguration', '_blank');
+                                      }}
+                                      data-testid={`button-ship-with-gls-${index + 1}`}
                                     >
-                                      <Printer className="h-3.5 w-3.5 mr-1.5" />
-                                      Print Label
+                                      <Truck className="h-3.5 w-3.5 mr-1.5" />
+                                      Ship with GLS
                                     </Button>
                                   </div>
                                 </CardContent>
