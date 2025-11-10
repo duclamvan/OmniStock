@@ -6378,122 +6378,194 @@ export default function PickPack() {
                 Shipping Information
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4">
-              {/* Unified Grid Layout - All information in consistent cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Shipping Address - Full width */}
-                <div className="sm:col-span-2 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                  <div className="flex items-center gap-2 mb-1">
-                    <MapPin className="h-4 w-4 text-purple-600 flex-shrink-0" />
-                    <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Shipping Address</span>
+            <CardContent className="p-3 md:p-4">
+              {/* GLS Shipping Details */}
+              {activePackingOrder.shippingMethod?.toUpperCase().includes('GLS') && (() => {
+                const shippingAddr = activePackingOrder.shippingAddress;
+                const recipientData = typeof shippingAddr === 'object' ? {
+                  name: [shippingAddr.firstName, shippingAddr.lastName].filter(Boolean).join(' ') || 'N/A',
+                  company: shippingAddr.company || '',
+                  street: shippingAddr.street || '',
+                  houseNumber: shippingAddr.streetNumber || '',
+                  postalCode: shippingAddr.zipCode || '',
+                  city: shippingAddr.city || '',
+                  country: shippingAddr.country || 'Germany',
+                  email: shippingAddr.email || '',
+                  phone: shippingAddr.tel || '',
+                } : {
+                  name: 'N/A',
+                  company: '',
+                  street: '',
+                  houseNumber: '',
+                  postalCode: '',
+                  city: '',
+                  country: 'Germany',
+                  email: '',
+                  phone: '',
+                };
+                
+                const senderData = glsSenderAddress ? {
+                  name: glsSenderAddress.name || '',
+                  company: glsSenderAddress.company || '',
+                  street: glsSenderAddress.street || '',
+                  houseNumber: glsSenderAddress.streetNumber || '',
+                  postalCode: glsSenderAddress.zipCode || '',
+                  city: glsSenderAddress.city || '',
+                  email: glsSenderAddress.email || '',
+                  phone: glsSenderAddress.phone || '',
+                } : undefined;
+                
+                let totalWeight = 0;
+                cartons.forEach(carton => {
+                  if (carton.weight) {
+                    totalWeight += parseFloat(carton.weight);
+                  }
+                });
+
+                const nameParts = (recipientData.name || '').trim().split(' ');
+                const firstName = nameParts[0] || '';
+                const lastName = nameParts.slice(1).join(' ') || '';
+                const germanCountry = GLS_COUNTRY_MAP[recipientData.country] || recipientData.country;
+                
+                const copyField = async (value: string, fieldName: string) => {
+                  try {
+                    await navigator.clipboard.writeText(value);
+                    toast({
+                      title: "Copied!",
+                      description: `${fieldName} copied to clipboard`,
+                      duration: 1500
+                    });
+                  } catch {
+                    toast({
+                      title: "Copy failed",
+                      description: "Please try again",
+                      variant: "destructive"
+                    });
+                  }
+                };
+
+                const fullAddress = [
+                  `${recipientData.street} ${recipientData.houseNumber}`.trim(),
+                  recipientData.postalCode,
+                  recipientData.city
+                ].filter(Boolean).join(', ');
+
+                const CompactCopyField = ({ label, value }: { label: string; value: string }) => (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-gray-700 flex-shrink-0">{label}</span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-sm font-medium text-gray-900 text-right">{value || '-'}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 hover:bg-gray-100 flex-shrink-0"
+                        onClick={() => copyField(value, label)}
+                      >
+                        <Copy className="h-3 w-3 text-gray-600" />
+                      </Button>
+                    </div>
                   </div>
-                  {(() => {
-                    const formattedAddress = formatShippingAddress(activePackingOrder.shippingAddress);
-                    return formattedAddress ? (
-                      <p className="text-sm text-gray-900 whitespace-pre-line pl-6" data-testid="text-shipping-address">
-                        {formattedAddress}
-                      </p>
-                    ) : (
-                      <div className="pl-6">
-                        <p className="text-sm text-amber-700 bg-amber-50 border border-amber-300 rounded px-3 py-2 inline-flex items-center gap-2">
-                          <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                          No shipping address provided
-                        </p>
+                );
+
+                return (
+                  <div className="space-y-3">
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Truck className="h-4 w-4 text-gray-700" />
+                        <h3 className="font-semibold text-sm text-gray-900">GLS Shipping Details</h3>
                       </div>
-                    );
-                  })()}
-                </div>
-
-                {/* Shipping Method */}
-                {activePackingOrder.shippingMethod && (
-                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Truck className="h-4 w-4 text-purple-600 flex-shrink-0" />
-                      <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Shipping Method</span>
-                    </div>
-                    <p className="text-sm font-medium text-gray-900 pl-6" data-testid="text-shipping-method">
-                      {activePackingOrder.shippingMethod}
-                      {activePackingOrder.paymentMethod === 'COD' && activePackingOrder.codAmount && Number(activePackingOrder.codAmount) > 0 && (
-                        <span className="ml-2 text-xs font-semibold text-purple-700 bg-purple-100 px-2 py-0.5 rounded">
-                          COD
-                        </span>
+                      {cartons.length > 0 && (
+                        <div className="text-xs text-gray-600">
+                          {cartons.length} {cartons.length === 1 ? 'carton' : 'cartons'}
+                          {Number.isFinite(totalWeight) && totalWeight > 0 && ` • ${totalWeight.toFixed(2)} kg`}
+                        </div>
                       )}
-                    </p>
-                  </div>
-                )}
-
-                {/* COD Amount - Unified style */}
-                {activePackingOrder.paymentMethod === 'COD' && activePackingOrder.codAmount && Number(activePackingOrder.codAmount) > 0 && (
-                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                      <DollarSign className="h-4 w-4 text-purple-600 flex-shrink-0" />
-                      <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">
-                        {(() => {
-                          const method = activePackingOrder.shippingMethod;
-                          if (method === 'DHL') return 'Nachnahme';
-                          if (method === 'PPL') return 'Dobírka';
-                          return 'COD Amount';
-                        })()}
-                      </span>
                     </div>
-                    <p className="text-sm font-medium text-gray-900 pl-6" data-testid="text-cod-amount">
-                      {formatCurrency(Number(activePackingOrder.codAmount), activePackingOrder.codCurrency || 'CZK')}
-                    </p>
-                  </div>
-                )}
 
-                {/* Shipping Cost */}
-                {activePackingOrder.shippingCost && Number(activePackingOrder.shippingCost) > 0 && (
-                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                      <DollarSign className="h-4 w-4 text-purple-600 flex-shrink-0" />
-                      <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Shipping Cost</span>
+                    {/* Max Weight Note */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+                      <p className="text-xs text-blue-800">
+                        <strong>Note:</strong> Maximum weight per carton is 40 kg for GLS shipping
+                      </p>
                     </div>
-                    <p className="text-sm font-medium text-gray-900 pl-6" data-testid="text-shipping-cost">
-                      {formatCurrency(Number(activePackingOrder.shippingCost), activePackingOrder.currency || 'CZK')}
-                    </p>
-                  </div>
-                )}
 
-                {/* Actual Shipping Cost */}
-                {activePackingOrder.actualShippingCost && Number(activePackingOrder.actualShippingCost) > 0 && (
-                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                      <DollarSign className="h-4 w-4 text-purple-600 flex-shrink-0" />
-                      <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Actual Cost</span>
+                    {/* GLS Autofill Button - Desktop Only */}
+                    <div className="hidden md:block">
+                      <GLSAutofillButton
+                        recipientData={recipientData}
+                        senderData={senderData}
+                        packageSize="S"
+                        weight={totalWeight > 0 ? totalWeight : undefined}
+                      />
                     </div>
-                    <p className="text-sm font-medium text-gray-900 pl-6" data-testid="text-actual-shipping-cost">
-                      {formatCurrency(Number(activePackingOrder.actualShippingCost), activePackingOrder.currency || 'CZK')}
-                    </p>
-                  </div>
-                )}
 
-                {/* Tracking Number */}
-                {activePackingOrder.trackingNumber && (
-                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Package className="h-4 w-4 text-purple-600 flex-shrink-0" />
-                      <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Tracking Number</span>
+                    {/* Copyable Fields */}
+                    <div className="space-y-1">
+                      <CompactCopyField label="Country:" value={germanCountry} />
+                      <CompactCopyField label="Paket size:" value="S" />
+                      <CompactCopyField label="First Name:" value={firstName} />
+                      <CompactCopyField label="Last Name:" value={lastName} />
+                      <CompactCopyField label="Full Address:" value={fullAddress} />
+                      <CompactCopyField label="E-mail:" value={recipientData.email || ''} />
                     </div>
-                    <p className="text-sm font-mono font-medium text-gray-900 pl-6" data-testid="text-tracking-number">
-                      {activePackingOrder.trackingNumber}
-                    </p>
                   </div>
-                )}
+                );
+              })()}
 
-                {/* Shipment Notes - Full width if exists */}
-                {activePackingOrder.notes && (
+              {/* Non-GLS Orders - Show original shipping information */}
+              {!activePackingOrder.shippingMethod?.toUpperCase().includes('GLS') && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Shipping Address */}
                   <div className="sm:col-span-2 p-3 bg-purple-50 border border-purple-200 rounded-lg">
                     <div className="flex items-center gap-2 mb-1">
-                      <FileText className="h-4 w-4 text-purple-600 flex-shrink-0" />
-                      <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Notes</span>
+                      <MapPin className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                      <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Shipping Address</span>
                     </div>
-                    <p className="text-sm text-gray-900 whitespace-pre-line pl-6" data-testid="text-shipment-notes">
-                      {activePackingOrder.notes}
-                    </p>
+                    {(() => {
+                      const formattedAddress = formatShippingAddress(activePackingOrder.shippingAddress);
+                      return formattedAddress ? (
+                        <p className="text-sm text-gray-900 whitespace-pre-line pl-6" data-testid="text-shipping-address">
+                          {formattedAddress}
+                        </p>
+                      ) : (
+                        <div className="pl-6">
+                          <p className="text-sm text-amber-700 bg-amber-50 border border-amber-300 rounded px-3 py-2 inline-flex items-center gap-2">
+                            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                            No shipping address provided
+                          </p>
+                        </div>
+                      );
+                    })()}
                   </div>
-                )}
-              </div>
+
+                  {/* Shipping Method */}
+                  {activePackingOrder.shippingMethod && (
+                    <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Truck className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                        <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Shipping Method</span>
+                      </div>
+                      <p className="text-sm font-medium text-gray-900 pl-6" data-testid="text-shipping-method">
+                        {activePackingOrder.shippingMethod}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Tracking Number */}
+                  {activePackingOrder.trackingNumber && (
+                    <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Package className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                        <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Tracking Number</span>
+                      </div>
+                      <p className="text-sm font-mono font-medium text-gray-900 pl-6" data-testid="text-tracking-number">
+                        {activePackingOrder.trackingNumber}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -7476,224 +7548,59 @@ export default function PickPack() {
                 </>
               )}
 
-              {/* GLS Germany - Manual Shipping Workflow */}
-              {(() => {
-                // Check if the shipping country is Germany
-                let isGermanyOrder = false;
-                if (activePackingOrder.shippingAddress) {
-                  if (typeof activePackingOrder.shippingAddress === 'string') {
-                    // Legacy string format - simple check
-                    const addressLower = activePackingOrder.shippingAddress.toLowerCase();
-                    isGermanyOrder = addressLower.includes('germany') || addressLower.includes('deutschland');
-                  } else if (typeof activePackingOrder.shippingAddress === 'object') {
-                    // Object format - check country field
-                    const country = (activePackingOrder.shippingAddress as any).country;
-                    if (country) {
-                      const countryLower = country.toLowerCase();
-                      isGermanyOrder = countryLower === 'germany' || 
-                                      countryLower === 'deutschland' || 
-                                      countryLower === 'de' ||
-                                      countryLower === 'deu';
-                    }
-                  }
-                }
-                
-                if (!isGermanyOrder) return null;
-                
-                // Prepare recipient data from shipping address
-                const shippingAddr = activePackingOrder.shippingAddress;
-                const recipientData = typeof shippingAddr === 'object' ? {
-                  name: [shippingAddr.firstName, shippingAddr.lastName].filter(Boolean).join(' ') || 'N/A',
-                  company: shippingAddr.company || '',
-                  street: shippingAddr.street || '',
-                  houseNumber: shippingAddr.streetNumber || '',
-                  postalCode: shippingAddr.zipCode || '',
-                  city: shippingAddr.city || '',
-                  country: shippingAddr.country || 'Germany',
-                  email: shippingAddr.email || '',
-                  phone: shippingAddr.tel || '',
-                } : {
-                  name: 'N/A',
-                  company: '',
-                  street: '',
-                  houseNumber: '',
-                  postalCode: '',
-                  city: '',
-                  country: 'Germany',
-                  email: '',
-                  phone: '',
-                };
-                
-                // Prepare sender data from GLS settings
-                const senderData = glsSenderAddress ? {
-                  name: glsSenderAddress.name || '',
-                  company: glsSenderAddress.company || '',
-                  street: glsSenderAddress.street || '',
-                  houseNumber: glsSenderAddress.streetNumber || '',
-                  postalCode: glsSenderAddress.zipCode || '',
-                  city: glsSenderAddress.city || '',
-                  email: glsSenderAddress.email || '',
-                  phone: glsSenderAddress.phone || '',
-                } : undefined;
-                
-                // Calculate package size and weight from cartons
-                let totalWeight = 0;
-                cartons.forEach(carton => {
-                  if (carton.weight) {
-                    totalWeight += parseFloat(carton.weight);
-                  }
-                });
-                
-                return (
-                  <Card className="border border-gray-200 bg-white">
-                    <CardContent className="p-3 md:p-4 space-y-3">
-                      {/* Header - Compact */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Truck className="h-4 w-4 text-gray-700" />
-                          <h3 className="font-semibold text-sm text-gray-900">GLS Shipping</h3>
+              {/* GLS Carton Cards with Tracking */}
+              {activePackingOrder.shippingMethod?.toUpperCase().includes('GLS') && cartons.length > 0 && (
+                <div className="space-y-2">
+                  {cartons.map((carton, index) => (
+                    <div 
+                      key={carton.id}
+                      className="border border-gray-200 rounded-lg p-3 bg-gray-50"
+                      data-testid={`carton-card-${index + 1}`}
+                    >
+                      {/* Carton Header */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                          <span className="text-white font-bold text-sm">{carton.cartonNumber}</span>
                         </div>
-                        {cartons.length > 0 && (
-                          <div className="text-xs text-gray-600">
-                            {cartons.length} {cartons.length === 1 ? 'carton' : 'cartons'}
-                            {Number.isFinite(totalWeight) && totalWeight > 0 && ` • ${totalWeight.toFixed(2)} kg`}
-                          </div>
+                        <span className="text-sm font-semibold text-gray-900">Carton #{carton.cartonNumber}</span>
+                        {carton.trackingNumber && (
+                          <CheckCircle className="h-4 w-4 text-green-600 ml-auto" />
                         )}
                       </div>
-
-                      {/* GLS Autofill Button - Desktop Only */}
-                      <div className="hidden md:block">
-                        <GLSAutofillButton
-                          recipientData={recipientData}
-                          senderData={senderData}
-                          packageSize="S"
-                          weight={totalWeight > 0 ? totalWeight : undefined}
-                        />
-                      </div>
-
-                      {/* GLS Shipping Details - Compact */}
-                      <div className="space-y-1">
-                        {(() => {
-                          const nameParts = (recipientData.name || '').trim().split(' ');
-                          const firstName = nameParts[0] || '';
-                          const lastName = nameParts.slice(1).join(' ') || '';
-                          const germanCountry = GLS_COUNTRY_MAP[recipientData.country] || recipientData.country;
-                          
-                          const copyField = async (value: string, fieldName: string) => {
-                            try {
-                              await navigator.clipboard.writeText(value);
-                              toast({
-                                title: "Copied!",
-                                description: `${fieldName} copied to clipboard`,
-                                duration: 1500
-                              });
-                            } catch {
-                              toast({
-                                title: "Copy failed",
-                                description: "Please try again",
-                                variant: "destructive"
+                      
+                      {/* Tracking Number Input */}
+                      <Input
+                        type="text"
+                        placeholder="Enter tracking number..."
+                        defaultValue={carton.trackingNumber || ''}
+                        onBlur={(e) => {
+                          const trackingNumber = e.target.value.trim();
+                          if (trackingNumber && trackingNumber !== carton.trackingNumber) {
+                            updateCartonTrackingMutation.mutate({
+                              cartonId: carton.id,
+                              trackingNumber
+                            });
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const trackingNumber = e.currentTarget.value.trim();
+                            if (trackingNumber && trackingNumber !== carton.trackingNumber) {
+                              updateCartonTrackingMutation.mutate({
+                                cartonId: carton.id,
+                                trackingNumber
                               });
                             }
-                          };
-
-                          const fullAddress = [
-                            `${recipientData.street} ${recipientData.houseNumber}`.trim(),
-                            recipientData.postalCode,
-                            recipientData.city
-                          ].filter(Boolean).join(', ');
-
-                          const CompactCopyField = ({ label, value }: { label: string; value: string }) => (
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-xs text-gray-700 flex-shrink-0">{label}</span>
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <span className="text-sm font-medium text-gray-900 text-right">{value || '-'}</span>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0 hover:bg-gray-100 flex-shrink-0"
-                                  onClick={() => copyField(value, label)}
-                                >
-                                  <Copy className="h-3 w-3 text-gray-600" />
-                                </Button>
-                              </div>
-                            </div>
-                          );
-
-                          return (
-                            <>
-                              <CompactCopyField label="Country:" value={germanCountry} />
-                              <CompactCopyField label="Paket size:" value="S" />
-                              <CompactCopyField label="First Name:" value={firstName} />
-                              <CompactCopyField label="Last Name:" value={lastName} />
-                              <CompactCopyField label="Full Address:" value={fullAddress} />
-                              <CompactCopyField label="E-mail:" value={recipientData.email || ''} />
-                            </>
-                          );
-                        })()}
-                      </div>
-
-                      {/* Cartons - Compact */}
-                      {cartons.length === 0 ? (
-                        <div className="text-xs text-gray-500 italic py-2">
-                          Add cartons to enter tracking numbers
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          {cartons.map((carton, index) => (
-                            <div 
-                              key={carton.id}
-                              className="border border-gray-200 rounded-lg p-2.5 bg-gray-50"
-                            >
-                              {/* Carton Header - Compact */}
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-white font-bold text-xs">{carton.cartonNumber}</span>
-                                </div>
-                                <span className="text-xs font-medium text-gray-900">
-                                  {carton.weight ? `${carton.weight} kg` : 'No weight'}
-                                </span>
-                                {carton.trackingNumber && (
-                                  <CheckCircle className="h-3.5 w-3.5 text-green-600 ml-auto" />
-                                )}
-                              </div>
-                              
-                              {/* Tracking Input - Compact */}
-                              <Input
-                                type="text"
-                                placeholder="Tracking number"
-                                defaultValue={carton.trackingNumber || ''}
-                                onBlur={(e) => {
-                                  const trackingNumber = e.target.value.trim();
-                                  if (trackingNumber && trackingNumber !== carton.trackingNumber) {
-                                    updateCartonTrackingMutation.mutate({
-                                      cartonId: carton.id,
-                                      trackingNumber
-                                    });
-                                  }
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    const trackingNumber = e.currentTarget.value.trim();
-                                    if (trackingNumber && trackingNumber !== carton.trackingNumber) {
-                                      updateCartonTrackingMutation.mutate({
-                                        cartonId: carton.id,
-                                        trackingNumber
-                                      });
-                                    }
-                                    e.currentTarget.blur();
-                                  }
-                                }}
-                                className="font-mono text-xs h-8"
-                                data-testid={`input-gls-tracking-carton-${index + 1}`}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })()}
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        className="font-mono text-sm"
+                        data-testid={`input-gls-tracking-carton-${index + 1}`}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Regular Shipping Labels (for non-PPL, non-DHL, non-GLS shipments) */}
               {!activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') && 
