@@ -7597,22 +7597,20 @@ export default function PickPack() {
                           };
 
                           const fullAddress = [
-                            recipientData.street,
-                            recipientData.houseNumber,
+                            `${recipientData.street} ${recipientData.houseNumber}`.trim(),
                             recipientData.postalCode,
-                            recipientData.city,
-                            germanCountry
-                          ].filter(Boolean).join(' ');
+                            recipientData.city
+                          ].filter(Boolean).join(', ');
 
                           const CompactCopyField = ({ label, value }: { label: string; value: string }) => (
                             <div className="flex items-center justify-between gap-2">
-                              <span className="text-xs text-gray-700">{label}</span>
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-sm font-medium text-gray-900">{value || '-'}</span>
+                              <span className="text-xs text-gray-700 flex-shrink-0">{label}</span>
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="text-sm font-medium text-gray-900 text-right">{value || '-'}</span>
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-6 w-6 p-0 hover:bg-gray-100"
+                                  className="h-6 w-6 p-0 hover:bg-gray-100 flex-shrink-0"
                                   onClick={() => copyField(value, label)}
                                 >
                                   <Copy className="h-3 w-3 text-gray-600" />
