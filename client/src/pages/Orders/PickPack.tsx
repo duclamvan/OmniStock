@@ -7545,54 +7545,34 @@ export default function PickPack() {
                 });
                 
                 return (
-                  <Card className="border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 to-green-50">
-                    <CardHeader>
-                      <CardTitle className="text-emerald-800 flex items-center gap-2">
-                        <Package className="h-5 w-5" />
-                        GLS Germany - Manual Shipping
-                      </CardTitle>
-                      <CardDescription className="text-emerald-700">
-                        Create labels on the GLS website and optionally enter tracking numbers here
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {/* Shipping Details Summary */}
-                      <div className="bg-emerald-100 rounded-lg p-3 space-y-2">
-                        <div className="flex items-center gap-2 text-sm">
-                          <MapPin className="h-4 w-4 text-emerald-600" />
-                          <span className="font-semibold text-emerald-900">Shipping to:</span>
-                          <span className="text-emerald-700">{recipientData.name}</span>
+                  <Card className="border border-gray-200 bg-white">
+                    <CardContent className="p-3 md:p-4 space-y-3">
+                      {/* Header - Compact */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Truck className="h-4 w-4 text-gray-700" />
+                          <h3 className="font-semibold text-sm text-gray-900">GLS Shipping</h3>
                         </div>
                         {cartons.length > 0 && (
-                          <>
-                            <div className="flex items-center gap-2 text-sm">
-                              <Box className="h-4 w-4 text-emerald-600" />
-                              <span className="font-semibold text-emerald-900">Cartons:</span>
-                              <span className="text-emerald-700">{cartons.length}</span>
-                            </div>
-                            {totalWeight > 0 && (
-                              <div className="flex items-center gap-2 text-sm">
-                                <Package className="h-4 w-4 text-emerald-600" />
-                                <span className="font-semibold text-emerald-900">Total Weight:</span>
-                                <span className="text-emerald-700">{totalWeight.toFixed(2)} kg</span>
-                              </div>
-                            )}
-                          </>
+                          <div className="text-xs text-gray-600">
+                            {cartons.length} {cartons.length === 1 ? 'carton' : 'cartons'}
+                            {Number.isFinite(totalWeight) && totalWeight > 0 && ` • ${totalWeight.toFixed(2)} kg`}
+                          </div>
                         )}
                       </div>
 
                       {/* GLS Autofill Button - Desktop Only */}
-                      <div className="hidden md:block space-y-2">
+                      <div className="hidden md:block">
                         <GLSAutofillButton
                           recipientData={recipientData}
                           senderData={senderData}
-                          packageSize="M"
+                          packageSize="S"
                           weight={totalWeight > 0 ? totalWeight : undefined}
                         />
                       </div>
 
                       {/* GLS Shipping Details - Compact */}
-                      <div className="space-y-1.5">
+                      <div className="space-y-1">
                         {(() => {
                           const nameParts = (recipientData.name || '').trim().split(' ');
                           const firstName = nameParts[0] || '';
@@ -7654,108 +7634,64 @@ export default function PickPack() {
                         })()}
                       </div>
 
-                      {/* Unified Carton & Tracking Section */}
-                      <div className="space-y-2 md:space-y-3">
-                        <div className="flex items-center gap-2">
-                          <Package className="h-4 w-4 text-emerald-600" />
-                          <label className="text-sm font-semibold text-emerald-900">
-                            Cartons & Tracking
-                          </label>
+                      {/* Cartons - Compact */}
+                      {cartons.length === 0 ? (
+                        <div className="text-xs text-gray-500 italic py-2">
+                          Add cartons to enter tracking numbers
                         </div>
-                        
-                        {cartons.length === 0 ? (
-                          <Alert className="bg-amber-50 border-amber-300">
-                            <AlertCircle className="h-4 w-4 text-amber-600" />
-                            <AlertDescription className="text-sm text-amber-800">
-                              Add cartons first to enter tracking numbers
-                            </AlertDescription>
-                          </Alert>
-                        ) : (
-                          <div className="space-y-2">
-                            {cartons.map((carton, index) => (
-                              <Card 
-                                key={carton.id}
-                                className="border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 to-green-50 shadow-sm"
-                              >
-                                <CardContent className="p-3 md:p-4 space-y-3">
-                                  {/* Carton Header */}
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
-                                        <span className="text-white font-bold text-sm">{carton.cartonNumber}</span>
-                                      </div>
-                                      <div>
-                                        <p className="font-semibold text-sm text-emerald-900">
-                                          Carton #{carton.cartonNumber}
-                                        </p>
-                                        {carton.weight && (
-                                          <p className="text-xs text-emerald-700">
-                                            Weight: {carton.weight} kg
-                                          </p>
-                                        )}
-                                      </div>
-                                    </div>
-                                    {carton.trackingNumber && (
-                                      <Badge className="bg-green-100 text-green-800 border-green-300">
-                                        <CheckCircle className="h-3 w-3 mr-1" />
-                                        Tracked
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  
-                                  {/* Tracking Number Input - REQUIRED */}
-                                  <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-emerald-900 flex items-center gap-1">
-                                      <span className="text-red-600">*</span>
-                                      GLS Tracking Number (Required)
-                                    </label>
-                                    <div className="flex items-center gap-2">
-                                      <Input
-                                        type="text"
-                                        placeholder="Enter tracking number..."
-                                        defaultValue={carton.trackingNumber || ''}
-                                        onBlur={(e) => {
-                                          const trackingNumber = e.target.value.trim();
-                                          if (trackingNumber && trackingNumber !== carton.trackingNumber) {
-                                            updateCartonTrackingMutation.mutate({
-                                              cartonId: carton.id,
-                                              trackingNumber
-                                            });
-                                          }
-                                        }}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            const trackingNumber = e.currentTarget.value.trim();
-                                            if (trackingNumber && trackingNumber !== carton.trackingNumber) {
-                                              updateCartonTrackingMutation.mutate({
-                                                cartonId: carton.id,
-                                                trackingNumber
-                                              });
-                                            }
-                                            e.currentTarget.blur();
-                                          }
-                                        }}
-                                        className={`flex-1 font-mono text-sm ${
-                                          !carton.trackingNumber 
-                                            ? 'border-red-300 focus:border-red-500' 
-                                            : 'border-emerald-300 focus:border-emerald-500'
-                                        }`}
-                                        data-testid={`input-gls-tracking-carton-${index + 1}`}
-                                      />
-                                    </div>
-                                    {carton.trackingNumber && (
-                                      <p className="text-xs text-emerald-600 flex items-center gap-1">
-                                        <CheckCircle className="h-3 w-3" />
-                                        Saved: {carton.trackingNumber}
-                                      </p>
-                                    )}
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {cartons.map((carton, index) => (
+                            <div 
+                              key={carton.id}
+                              className="border border-gray-200 rounded-lg p-2.5 bg-gray-50"
+                            >
+                              {/* Carton Header - Compact */}
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-white font-bold text-xs">{carton.cartonNumber}</span>
+                                </div>
+                                <span className="text-xs font-medium text-gray-900">
+                                  {carton.weight ? `${carton.weight} kg` : 'No weight'}
+                                </span>
+                                {carton.trackingNumber && (
+                                  <CheckCircle className="h-3.5 w-3.5 text-green-600 ml-auto" />
+                                )}
+                              </div>
+                              
+                              {/* Tracking Input - Compact */}
+                              <Input
+                                type="text"
+                                placeholder="Tracking number"
+                                defaultValue={carton.trackingNumber || ''}
+                                onBlur={(e) => {
+                                  const trackingNumber = e.target.value.trim();
+                                  if (trackingNumber && trackingNumber !== carton.trackingNumber) {
+                                    updateCartonTrackingMutation.mutate({
+                                      cartonId: carton.id,
+                                      trackingNumber
+                                    });
+                                  }
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    const trackingNumber = e.currentTarget.value.trim();
+                                    if (trackingNumber && trackingNumber !== carton.trackingNumber) {
+                                      updateCartonTrackingMutation.mutate({
+                                        cartonId: carton.id,
+                                        trackingNumber
+                                      });
+                                    }
+                                    e.currentTarget.blur();
+                                  }
+                                }}
+                                className="font-mono text-xs h-8"
+                                data-testid={`input-gls-tracking-carton-${index + 1}`}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 );
