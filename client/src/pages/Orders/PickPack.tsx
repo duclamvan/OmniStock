@@ -43,6 +43,7 @@ import { offlineQueue } from "@/lib/offlineQueue";
 import { CartonTypeAutocomplete } from "@/components/orders/CartonTypeAutocomplete";
 import { usePackingOptimization } from "@/hooks/usePackingOptimization";
 import { GLSAutofillButton } from "@/components/shipping/GLSAutofillButton";
+import { copyGLSDetailsToClipboard, type GLSRecipientData } from "@/lib/gls";
 import { 
   Dialog, 
   DialogContent, 
@@ -112,7 +113,8 @@ import {
   Book,
   Wrench,
   DollarSign,
-  Trash2
+  Trash2,
+  Copy
 } from "lucide-react";
 
 interface BundleItem {
@@ -7773,6 +7775,47 @@ export default function PickPack() {
                                     >
                                       <Truck className="h-3.5 w-3.5 mr-1.5" />
                                       Ship with GLS
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+                                      onClick={async () => {
+                                        const glsData: GLSRecipientData = {
+                                          name: recipientData.name,
+                                          company: recipientData.company,
+                                          street: recipientData.street,
+                                          houseNumber: recipientData.houseNumber,
+                                          postalCode: recipientData.postalCode,
+                                          city: recipientData.city,
+                                          country: recipientData.country,
+                                          email: recipientData.email,
+                                          phone: recipientData.phone
+                                        };
+                                        
+                                        const success = await copyGLSDetailsToClipboard({
+                                          recipientData: glsData,
+                                          packageSize: 'M',
+                                          weight: carton.weight ? parseFloat(carton.weight) : undefined
+                                        });
+                                        
+                                        if (success) {
+                                          toast({
+                                            title: "Copied to clipboard!",
+                                            description: "GLS shipping details copied. Paste each field into the GLS form (tab-separated).",
+                                          });
+                                        } else {
+                                          toast({
+                                            title: "Copy failed",
+                                            description: "Could not copy to clipboard. Please try again.",
+                                            variant: "destructive"
+                                          });
+                                        }
+                                      }}
+                                      data-testid={`button-copy-gls-details-${index + 1}`}
+                                    >
+                                      <Copy className="h-3.5 w-3.5 mr-1.5" />
+                                      Copy Details
                                     </Button>
                                   </div>
                                 </CardContent>
