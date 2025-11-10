@@ -162,6 +162,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Serve GLS autofill userscript for Tampermonkey
+  app.get('/api/download/gls-autofill-userscript', async (req, res) => {
+    try {
+      const scriptPath = path.join(process.cwd(), 'public', 'gls-autofill-mobile.user.js');
+      const scriptContent = await fs.readFile(scriptPath, 'utf-8');
+      
+      // Set headers for Tampermonkey to recognize the script
+      res.setHeader('Content-Type', 'application/x-userscript+javascript');
+      res.setHeader('Content-Disposition', 'attachment; filename="gls-autofill-mobile.user.js"');
+      res.send(scriptContent);
+    } catch (error) {
+      console.error('Error serving userscript:', error);
+      res.status(500).json({ error: 'Failed to load userscript' });
+    }
+  });
+
   // Dashboard endpoints with caching
   app.get('/api/dashboard/metrics', cacheMiddleware(60000), async (req, res) => {
     try {

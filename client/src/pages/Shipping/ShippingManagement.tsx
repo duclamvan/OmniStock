@@ -813,10 +813,11 @@ export default function ShippingManagement() {
                       <ol className="text-sm space-y-2 list-decimal list-inside">
                         <li>Install <strong>Kiwi Browser</strong> from Google Play Store (supports Chrome extensions on mobile)</li>
                         <li>In Kiwi Browser, install <strong>Tampermonkey</strong> extension from Chrome Web Store</li>
-                        <li>Download the userscript: <a href="/gls-autofill-mobile.user.js" className="text-purple-600 font-semibold underline" download>gls-autofill-mobile.user.js</a></li>
-                        <li>Open the downloaded file in Kiwi Browser - Tampermonkey will prompt to install it</li>
-                        <li>Edit the script and replace <code className="bg-purple-100 px-1 rounded">YOUR_REPLIT_URL</code> with your actual Davie Supply URL</li>
-                        <li>Go to any order and click "Ship with GLS" - the form will autofill with a button</li>
+                        <li>Download the userscript: <a href="/api/download/gls-autofill-userscript" className="text-purple-600 font-semibold underline hover:text-purple-800" download="gls-autofill-mobile.user.js">gls-autofill-mobile.user.js</a></li>
+                        <li>Tap the downloaded file to open it - Tampermonkey should detect it and show an install prompt</li>
+                        <li>If auto-detection fails: Open Tampermonkey → Utilities tab → "Import from file" → Select the downloaded .user.js file</li>
+                        <li>Edit the script ONLY if your URL doesn't contain "replit" (replace <code className="bg-purple-100 px-1 rounded">YOUR_REPLIT_URL</code>)</li>
+                        <li>Click "Ship with GLS" on any order - the GLS form will auto-fill when you arrive at their website!</li>
                       </ol>
                       <div className="mt-3 p-3 bg-purple-100 rounded-lg text-xs">
                         <strong className="text-purple-900">Note:</strong> The mobile script works the same as the desktop bookmarklet but runs automatically when you visit the GLS website from an order.
