@@ -1058,6 +1058,12 @@ export default function PickPack() {
     return saved === 'true';
   });
   
+  // Track guide dismissed state (permanently hidden until user clears localStorage)
+  const [isGuideDismissed, setIsGuideDismissed] = useState<boolean>(() => {
+    const saved = localStorage.getItem('pickpack-mobile-guide-dismissed');
+    return saved === 'true';
+  });
+  
   // Track orders being sent back to pick (for instant UI update)
   const [ordersSentBack, setOrdersSentBack] = useState<Set<string>>(new Set());
   
@@ -1206,6 +1212,11 @@ export default function PickPack() {
   useEffect(() => {
     localStorage.setItem('pickpack-guide-collapsed', isGuideCollapsed.toString());
   }, [isGuideCollapsed]);
+
+  // Save guide dismissed state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('pickpack-mobile-guide-dismissed', isGuideDismissed.toString());
+  }, [isGuideDismissed]);
 
   // Load packing state when activePackingOrder changes
   useEffect(() => {
@@ -7578,27 +7589,45 @@ export default function PickPack() {
                         />
                       </div>
 
-                      {/* Mobile Setup Guide - Collapsible */}
-                      <Collapsible 
-                        open={!isGuideCollapsed} 
-                        onOpenChange={(open) => setIsGuideCollapsed(!open)}
-                        className="block md:hidden"
-                      >
-                        <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-lg overflow-hidden">
-                          <CollapsibleTrigger className="w-full px-4 py-3 flex items-center justify-between hover:bg-purple-100 transition-colors">
-                            <div className="flex items-center gap-2">
-                              <Info className="h-4 w-4 text-purple-600 flex-shrink-0" />
-                              <span className="text-sm font-semibold text-purple-900">
-                                {isGuideCollapsed ? 'Show Mobile Setup Guide (6 steps)' : 'Mobile Setup Guide'}
-                              </span>
-                            </div>
-                            {isGuideCollapsed ? (
-                              <ChevronDown className="h-4 w-4 text-purple-600" />
-                            ) : (
-                              <ChevronUp className="h-4 w-4 text-purple-600" />
-                            )}
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
+                      {/* Mobile Setup Guide - Collapsible (Only show if not dismissed) */}
+                      {!isGuideDismissed && (
+                        <Collapsible 
+                          open={!isGuideCollapsed} 
+                          onOpenChange={(open) => setIsGuideCollapsed(!open)}
+                          className="block md:hidden"
+                        >
+                          <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-lg overflow-hidden relative">
+                            <CollapsibleTrigger className="w-full px-4 py-3 flex items-center justify-between hover:bg-purple-100 transition-colors">
+                              <div className="flex items-center gap-2">
+                                <Info className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                                <span className="text-sm font-semibold text-purple-900">
+                                  {isGuideCollapsed ? 'Show Mobile Setup Guide (6 steps)' : 'Mobile Setup Guide'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {isGuideCollapsed ? (
+                                  <ChevronDown className="h-4 w-4 text-purple-600" />
+                                ) : (
+                                  <ChevronUp className="h-4 w-4 text-purple-600" />
+                                )}
+                              </div>
+                            </CollapsibleTrigger>
+                            
+                            {/* Close Button (Always Visible) */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="absolute top-2 right-2 h-6 w-6 p-0 text-purple-600 hover:bg-purple-200 hover:text-purple-900 z-10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsGuideDismissed(true);
+                              }}
+                              title="Dismiss guide permanently"
+                              data-testid="button-dismiss-mobile-guide"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                            <CollapsibleContent>
                             <div className="px-4 pb-3 space-y-3">
                               <p className="text-xs font-semibold text-purple-900">
                                 Tampermonkey Setup for Kiwi Browser (Android):
@@ -7628,8 +7657,9 @@ export default function PickPack() {
                               </div>
                             </div>
                           </CollapsibleContent>
-                        </div>
-                      </Collapsible>
+                          </div>
+                        </Collapsible>
+                      )}
 
                       {/* Unified Carton & Tracking Section */}
                       <div className="space-y-2 md:space-y-3">
