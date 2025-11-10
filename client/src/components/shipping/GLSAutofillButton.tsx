@@ -74,22 +74,16 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
         elements.forEach(el => {
           if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
             try {
-              el.value = value;
+              const nativeSetter = Object.getOwnPropertyDescriptor(
+                el.tagName === 'INPUT' ? window.HTMLInputElement.prototype : window.HTMLTextAreaElement.prototype,
+                'value'
+              ).set;
+              nativeSetter.call(el, value);
+              
               el.dispatchEvent(new Event('input', { bubbles: true }));
               el.dispatchEvent(new Event('change', { bubbles: true }));
-              el.dispatchEvent(new Event('blur', { bubbles: true }));
-              
-              setTimeout(() => {
-                if (el.value !== value && el._valueTracker) {
-                  const nativeSetter = Object.getOwnPropertyDescriptor(
-                    el.tagName === 'INPUT' ? window.HTMLInputElement.prototype : window.HTMLTextAreaElement.prototype,
-                    'value'
-                  ).set;
-                  nativeSetter.call(el, value);
-                  el.dispatchEvent(new Event('input', { bubbles: true }));
-                  console.log('⚠️ Used native setter fallback for ' + label);
-                }
-              }, 50);
+              el.dispatchEvent(new FocusEvent('focus', { bubbles: true }));
+              el.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
             } catch (err) {
               console.error('❌ Failed to set ' + label + ':', err);
             }
@@ -380,9 +374,10 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
     ], data.recipient.city, 'City');
     
     trySetValue([
+      'input[name="email"]',
+      'input[type="email"]',
       'input[name*="email" i]',
       'input[name*="mail" i]',
-      'input[type="email"]',
       'input[placeholder*="email" i]',
       'input[id*="email" i]'
     ], data.recipient.email, 'Email');
@@ -403,32 +398,46 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
         setTimeout(() => {
           console.log('🔄 Re-validating address fields after country selection...');
           
+          const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+          
           const streetInput = document.querySelector('input[name="street"]');
           if (streetInput && !streetInput.value && data.recipient.street) {
-            streetInput.value = data.recipient.street;
+            nativeSetter.call(streetInput, data.recipient.street);
             streetInput.dispatchEvent(new Event('input', { bubbles: true }));
+            streetInput.dispatchEvent(new Event('change', { bubbles: true }));
             console.log('✅ Re-filled street');
           }
           
           const houseInput = document.querySelector('input[name="houseNumber"]') || document.querySelector('input[name="housenumber"]');
           if (houseInput && !houseInput.value && data.recipient.houseNumber) {
-            houseInput.value = data.recipient.houseNumber;
+            nativeSetter.call(houseInput, data.recipient.houseNumber);
             houseInput.dispatchEvent(new Event('input', { bubbles: true }));
+            houseInput.dispatchEvent(new Event('change', { bubbles: true }));
             console.log('✅ Re-filled house number');
           }
           
           const postalInput = document.querySelector('input[name="postcode"]');
           if (postalInput && !postalInput.value && data.recipient.postalCode) {
-            postalInput.value = data.recipient.postalCode;
+            nativeSetter.call(postalInput, data.recipient.postalCode);
             postalInput.dispatchEvent(new Event('input', { bubbles: true }));
+            postalInput.dispatchEvent(new Event('change', { bubbles: true }));
             console.log('✅ Re-filled postal code');
           }
           
           const cityInput = document.querySelector('input[name="city"]');
           if (cityInput && !cityInput.value && data.recipient.city) {
-            cityInput.value = data.recipient.city;
+            nativeSetter.call(cityInput, data.recipient.city);
             cityInput.dispatchEvent(new Event('input', { bubbles: true }));
+            cityInput.dispatchEvent(new Event('change', { bubbles: true }));
             console.log('✅ Re-filled city');
+          }
+          
+          const emailInput = document.querySelector('input[name="email"]') || document.querySelector('input[type="email"]');
+          if (emailInput && !emailInput.value && data.recipient.email) {
+            nativeSetter.call(emailInput, data.recipient.email);
+            emailInput.dispatchEvent(new Event('input', { bubbles: true }));
+            emailInput.dispatchEvent(new Event('change', { bubbles: true }));
+            console.log('✅ Re-filled email');
           }
           
           setTimeout(() => {
