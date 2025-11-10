@@ -52,7 +52,7 @@ export interface GLSCopyOptions {
 /**
  * Format GLS shipping data as tab-separated values for easy pasting
  * Order matches GLS form fields: First Name, Last Name, Company, Street, House Number, 
- * Postal Code, City, Country, Email, Phone, Package Size
+ * Postal Code, City, Country, Email, Phone, Package Size, Weight
  */
 export function formatGLSPayload(options: GLSCopyOptions): string {
   const { recipientData, packageSize = 'M', weight } = options;
@@ -66,7 +66,7 @@ export function formatGLSPayload(options: GLSCopyOptions): string {
   const germanCountry = GLS_COUNTRY_MAP[recipientData.country] || recipientData.country;
   
   // Create tab-separated payload
-  // Format: FirstName\tLastName\tCompany\tStreet\tHouseNumber\tPostalCode\tCity\tCountry\tEmail\tPhone\tPackageSize
+  // Format: FirstName\tLastName\tCompany\tStreet\tHouseNumber\tPostalCode\tCity\tCountry\tEmail\tPhone\tPackageSize\tWeight
   const fields = [
     firstName,
     lastName,
@@ -78,7 +78,8 @@ export function formatGLSPayload(options: GLSCopyOptions): string {
     germanCountry || '',
     recipientData.email || '',
     recipientData.phone || '',
-    packageSize || 'M'
+    packageSize || 'M',
+    weight ? weight.toFixed(2) : ''
   ];
   
   // Also create a readable version for display
