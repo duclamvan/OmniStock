@@ -4548,10 +4548,8 @@ export default function PickPack() {
       missingChecks.push(`Carton type for ${cartonsWithoutType.length} carton(s)`);
     }
     
-    const cartonsWithoutWeight = cartons.filter(c => !c.weight || parseFloat(c.weight) <= 0);
-    if (cartonsWithoutWeight.length > 0) {
-      missingChecks.push(`Weight for ${cartonsWithoutWeight.length} carton(s)`);
-    }
+    // Weight is now optional for packing completion
+    // It will be required later when generating shipping labels
     
     const cartonsWithoutLabel = cartons.filter(c => !c.labelPrinted);
     if (cartonsWithoutLabel.length > 0) {
@@ -5407,12 +5405,12 @@ export default function PickPack() {
               {/* Step 4: Checklist */}
               <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all ${
                 packingChecklist.itemsVerified && packingChecklist.packingSlipIncluded && 
-                packingChecklist.boxSealed && packingChecklist.weightRecorded
+                packingChecklist.boxSealed
                   ? 'bg-green-500 text-white shadow-green-200' 
                   : 'bg-white/30 text-white border border-white/40'
               }`}>
                 {packingChecklist.itemsVerified && packingChecklist.packingSlipIncluded && 
-                 packingChecklist.boxSealed && packingChecklist.weightRecorded ? (
+                 packingChecklist.boxSealed ? (
                   <CheckCircle className="h-4 w-4" />
                 ) : (
                   <Circle className="h-4 w-4" />
