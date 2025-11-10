@@ -184,6 +184,23 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
     return false;
   }
   
+  function selectPackageSize(size) {
+    const targetSize = (size === 'XS') ? 'XS' : 'S';
+    console.log('📦 Selecting package size:', targetSize);
+    
+    const sizeButton = document.querySelector('button[data-value="' + targetSize + '"][role="radio"]');
+    if (sizeButton) {
+      sizeButton.click();
+      console.log('✅ Clicked package size button:', targetSize);
+      filledCount++;
+      log.push('✅ Package Size: ' + targetSize);
+      return true;
+    }
+    
+    console.warn('❌ Package size button not found for:', targetSize);
+    return false;
+  }
+  
   function setCountry(countryValue) {
     if (!countryValue) return false;
     
@@ -414,13 +431,25 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
             console.log('✅ Re-filled city');
           }
           
-          console.log('\\n📊 Summary: Filled ' + filledCount + ' fields');
-          alert('GLS Autofill Complete\\n\\n' + log.join('\\n') + '\\n\\nFilled ' + filledCount + ' fields. Check console for details (F12).');
+          setTimeout(() => {
+            if (data.packageSize) {
+              selectPackageSize(data.packageSize);
+            }
+            
+            console.log('\\n📊 Summary: Filled ' + filledCount + ' fields');
+            alert('GLS Autofill Complete\\n\\n' + log.join('\\n') + '\\n\\nFilled ' + filledCount + ' fields. Check console for details (F12).');
+          }, 200);
         }, 500);
       }, 100);
     } else {
-      console.log('\\n📊 Summary: Filled ' + filledCount + ' fields');
-      alert('GLS Autofill Complete\\n\\n' + log.join('\\n') + '\\n\\nFilled ' + filledCount + ' fields. Check console for details (F12).');
+      setTimeout(() => {
+        if (data.packageSize) {
+          selectPackageSize(data.packageSize);
+        }
+        
+        console.log('\\n📊 Summary: Filled ' + filledCount + ' fields');
+        alert('GLS Autofill Complete\\n\\n' + log.join('\\n') + '\\n\\nFilled ' + filledCount + ' fields. Check console for details (F12).');
+      }, 200);
     }
   }, 1000);
 })();
