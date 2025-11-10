@@ -86,6 +86,7 @@ import {
   PauseCircle,
   ArrowRight,
   Volume2,
+  VolumeX,
   CheckCircle2,
   Info,
   ArrowLeft,
@@ -1483,6 +1484,40 @@ export default function PickPack() {
     }
     return () => clearInterval(interval);
   }, [isPackingTimerRunning]);
+
+  // Auto-pause/resume timer when user navigates away or returns
+  useEffect(() => {
+    if (!activePackingOrder) return;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // User navigated away - save current state and pause
+        setIsPackingTimerRunning(prev => {
+          if (prev) {
+            console.log('⏸️ Auto-paused packing timer (user navigated away)');
+          }
+          return false; // Always pause when hidden
+        });
+      } else {
+        // User returned - resume timer
+        setIsPackingTimerRunning(prev => {
+          if (!prev) {
+            console.log('▶️ Auto-resumed packing timer (user returned)');
+          }
+          return true; // Always resume when visible
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Auto-start timer when entering packing mode
+    setIsPackingTimerRunning(true);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [activePackingOrder?.id]);
 
   // Auto-calculate weight when entering pack mode
   useEffect(() => {
@@ -5302,15 +5337,16 @@ export default function PickPack() {
 
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        {/* Compact Header - Packing Mode */}
+        {/* Optimized Header - Packing Mode */}
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-lg sticky top-0 z-20">
-          <div className="px-4 lg:px-6 py-2 lg:py-3">
-            {/* Single compact row with all controls */}
-            <div className="flex items-center justify-between gap-3">
+          <div className="px-3 lg:px-6 py-2.5 lg:py-3">
+            {/* Top Row: Controls, Order Info, Timer */}
+            <div className="flex items-center justify-between gap-2 lg:gap-4">
+              {/* Left: Exit Button */}
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-9 px-3 bg-white/20 hover:bg-white/30 text-white"
+                className="h-9 px-2.5 lg:px-3 bg-white/20 hover:bg-white/30 text-white flex-shrink-0"
                 onClick={() => {
                   setActivePackingOrder(null);
                   setIsPackingTimerRunning(false);
@@ -5325,24 +5361,40 @@ export default function PickPack() {
                   setSelectedBoxSize('');
                   setPackageWeight('');
                   setVerifiedItems({});
-                  // Return to the tab the user was on when they started
                   setSelectedTab(originatingTab);
                 }}
+                data-testid="button-exit-packing"
               >
                 <ArrowLeft className="h-4 w-4" />
-                <span className="ml-1.5 text-sm hidden sm:inline">Exit</span>
+                <span className="ml-1 text-xs lg:text-sm hidden sm:inline">Exit</span>
               </Button>
               
-              {/* Order ID */}
-              <div className="flex-1 text-center">
-                <div className="text-base sm:text-lg font-bold">{activePackingOrder.orderId}</div>
+              {/* Center: Order ID + Carrier Badge */}
+              <div className="flex-1 flex flex-col items-center gap-1 min-w-0">
+                <div className="text-sm lg:text-lg font-bold tracking-wide truncate">{activePackingOrder.orderId}</div>
+                {activePackingOrder.shippingMethod && (
+                  <div className={`px-2 py-0.5 rounded text-[10px] lg:text-xs font-bold ${
+                    activePackingOrder.shippingMethod.toUpperCase().includes('GLS') 
+                      ? 'bg-emerald-500 text-white'
+                      : activePackingOrder.shippingMethod.toUpperCase().includes('PPL')
+                      ? 'bg-orange-500 text-white'
+                      : activePackingOrder.shippingMethod.toUpperCase().includes('DHL')
+                      ? 'bg-yellow-400 text-gray-900'
+                      : 'bg-white/30 text-white'
+                  }`}>
+                    {activePackingOrder.shippingMethod.toUpperCase().includes('GLS') ? 'GLS' :
+                     activePackingOrder.shippingMethod.toUpperCase().includes('PPL') ? 'PPL' :
+                     activePackingOrder.shippingMethod.toUpperCase().includes('DHL') ? 'DHL' :
+                     activePackingOrder.shippingMethod}
+                  </div>
+                )}
               </div>
               
-              {/* Timer & Progress */}
-              <div className="flex items-center gap-3">
+              {/* Right: Timer + Mute Button */}
+              <div className="flex items-center gap-2 lg:gap-3 flex-shrink-0">
                 <div className="text-right">
-                  <div className="font-mono text-sm font-bold">{formatTimer(packingTimer)}</div>
-                  <div className="text-[10px] text-purple-100 hidden sm:block">
+                  <div className="font-mono text-base lg:text-lg font-bold">{formatTimer(packingTimer)}</div>
+                  <div className="text-[9px] lg:text-[10px] text-purple-100 hidden sm:block whitespace-nowrap">
                     {activePackingOrder.items.filter(item => {
                       if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
                         return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
@@ -5353,13 +5405,16 @@ export default function PickPack() {
                 </div>
                 <Button
                   size="icon"
-                  className="h-9 w-9 bg-white/20 hover:bg-white/30"
-                  onClick={() => setIsPackingTimerRunning(!isPackingTimerRunning)}
+                  variant="ghost"
+                  className="h-8 w-8 lg:h-9 lg:w-9 bg-white/20 hover:bg-white/30 text-white"
+                  onClick={() => setAudioEnabled(!audioEnabled)}
+                  title={audioEnabled ? "Mute sounds" : "Unmute sounds"}
+                  data-testid="button-toggle-sound"
                 >
-                  {isPackingTimerRunning ? (
-                    <PauseCircle className="h-4 w-4 text-orange-300" />
+                  {audioEnabled ? (
+                    <Volume2 className="h-4 w-4" />
                   ) : (
-                    <PlayCircle className="h-4 w-4 text-green-300" />
+                    <VolumeX className="h-4 w-4" />
                   )}
                 </Button>
               </div>
