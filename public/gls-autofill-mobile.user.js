@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Davie Supply - GLS Autofill Mobile
 // @namespace    http://tampermonkey.net/
-// @version      1.1
+// @version      1.2
 // @description  Auto-fill GLS shipping form from Davie Supply (Mobile - Kiwi Browser)
 // @author       Davie Supply
 // @match        https://gls-pakete.de/*
@@ -14,7 +14,7 @@
 (function() {
     'use strict';
 
-    console.log('🚀 Davie Supply GLS Autofill script loaded');
+    console.log('[Davie Supply] GLS Autofill script loaded');
 
     // Auto-detect the Davie Supply URL from the referrer or use configured default
     function getDavieSupplyUrl() {
@@ -74,10 +74,10 @@
             element.dispatchEvent(new Event('change', { bubbles: true }));
             element.dispatchEvent(new Event('blur', { bubbles: true }));
             
-            console.log('✅ Set field:', value);
+            console.log('[Davie Supply] Set field:', value);
             return true;
         } catch (err) {
-            console.error('❌ Error setting value:', err);
+            console.error('[Davie Supply] Error setting value:', err);
             return false;
         }
     }
@@ -90,46 +90,47 @@
             const el = document.querySelector(selector);
             if (el) {
                 setInputValue(el, value);
-                console.log(`✅ Filled ${label}`);
+                console.log('[Davie Supply] Filled ' + label);
                 return;
             }
         }
-        console.warn(`⚠️ Could not find ${label}`);
+        console.warn('[Davie Supply] Could not find ' + label);
     }
 
     // Select package size button (supports XS, S, M, L, XL)
     function selectPackageSize(size) {
         if (!size) return;
         
-        console.log('📦 Selecting package size:', size);
+        console.log('[Davie Supply] Selecting package size:', size);
         
-        setTimeout(() => {
+        setTimeout(function() {
             const sizeButtons = document.querySelectorAll('button[data-value]');
             
             // Map all valid package sizes directly
             const validSizes = ['XS', 'S', 'M', 'L', 'XL'];
             const targetSize = validSizes.includes(size.toUpperCase()) ? size.toUpperCase() : 'M';
             
-            for (const button of sizeButtons) {
+            for (let i = 0; i < sizeButtons.length; i++) {
+                const button = sizeButtons[i];
                 if (button.getAttribute('data-value') === targetSize) {
                     button.click();
-                    console.log(`✅ Selected package size: ${targetSize}`);
+                    console.log('[Davie Supply] Selected package size: ' + targetSize);
                     return;
                 }
             }
-            console.warn(`⚠️ Could not find package size button for: ${targetSize}`);
+            console.warn('[Davie Supply] Could not find package size button for: ' + targetSize);
         }, 500);
     }
 
     // Main autofill function
     function autofillForm(data) {
-        console.log('📝 Autofilling form with data:', data);
+        console.log('[Davie Supply] Autofilling form with data:', data);
         
         // Wait for form to be ready
-        setTimeout(() => {
+        setTimeout(function() {
             const recipient = data.recipient;
             if (!recipient) {
-                console.error('❌ No recipient data');
+                console.error('[Davie Supply] No recipient data');
                 return;
             }
 
@@ -160,40 +161,42 @@
                 selectPackageSize(data.packageSize);
             }
 
-            console.log('✅ Form autofill complete!');
+            console.log('[Davie Supply] Form autofill complete!');
             
             // Show success message
-            showNotification('✅ Form filled from Davie Supply!', 'success');
+            showNotification('SUCCESS: Form filled from Davie Supply!', 'success');
         }, 1000);
     }
 
     // Show notification
-    function showNotification(message, type = 'info') {
+    function showNotification(message, type) {
+        type = type || 'info';
         const bgColor = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6';
         
         const notification = document.createElement('div');
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: ${bgColor};
-            color: white;
-            padding: 16px 24px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            z-index: 10000;
-            font-size: 14px;
-            font-weight: 600;
-            animation: slideIn 0.3s ease;
-        `;
+        notification.style.cssText = 
+            'position: fixed;' +
+            'top: 20px;' +
+            'right: 20px;' +
+            'background: ' + bgColor + ';' +
+            'color: white;' +
+            'padding: 16px 24px;' +
+            'border-radius: 8px;' +
+            'box-shadow: 0 4px 12px rgba(0,0,0,0.3);' +
+            'z-index: 10000;' +
+            'font-size: 14px;' +
+            'font-weight: 600;' +
+            'animation: slideIn 0.3s ease;';
         notification.textContent = message;
         
         document.body.appendChild(notification);
         
-        setTimeout(() => {
+        setTimeout(function() {
             notification.style.opacity = '0';
             notification.style.transition = 'opacity 0.3s';
-            setTimeout(() => notification.remove(), 300);
+            setTimeout(function() { 
+                notification.remove(); 
+            }, 300);
         }, 3000);
     }
 
@@ -202,33 +205,33 @@
         const davieUrl = getDavieSupplyUrl();
         
         if (davieUrl.includes('YOUR_REPLIT_URL')) {
-            showNotification('⚠️ Please edit the userscript and set your Davie Supply URL', 'error');
-            console.error('❌ Davie Supply URL not configured. Edit the userscript and replace YOUR_REPLIT_URL with your actual domain.');
+            showNotification('WARNING: Please edit the userscript and set your Davie Supply URL', 'error');
+            console.error('[Davie Supply] Davie Supply URL not configured. Edit the userscript and replace YOUR_REPLIT_URL with your actual domain.');
             return;
         }
 
-        console.log('📡 Fetching order data from:', davieUrl);
-        showNotification('📡 Loading order data...', 'info');
+        console.log('[Davie Supply] Fetching order data from:', davieUrl);
+        showNotification('Loading order data...', 'info');
 
         GM_xmlhttpRequest({
             method: 'GET',
-            url: `${davieUrl}/api/gls-autofill-data/${orderId}`,
+            url: davieUrl + '/api/gls-autofill-data/' + orderId,
             headers: {
                 'Accept': 'application/json'
             },
             onload: function(response) {
                 try {
                     const data = JSON.parse(response.responseText);
-                    console.log('✅ Order data received:', data);
+                    console.log('[Davie Supply] Order data received:', data);
                     autofillForm(data);
                 } catch (error) {
-                    console.error('❌ Parse error:', error);
-                    showNotification('❌ Invalid data from server', 'error');
+                    console.error('[Davie Supply] Parse error:', error);
+                    showNotification('ERROR: Invalid data from server', 'error');
                 }
             },
             onerror: function(error) {
-                console.error('❌ Network error:', error);
-                showNotification('❌ Could not connect to Davie Supply', 'error');
+                console.error('[Davie Supply] Network error:', error);
+                showNotification('ERROR: Could not connect to Davie Supply', 'error');
             }
         });
     }
@@ -239,13 +242,13 @@
         const orderId = params.get('davie_order_id');
         
         if (orderId) {
-            console.log('🎯 Order ID found in URL:', orderId);
+            console.log('[Davie Supply] Order ID found in URL:', orderId);
             // Wait for page to fully load
-            setTimeout(() => {
+            setTimeout(function() {
                 fetchOrderData(orderId);
             }, 1500);
         } else {
-            console.log('ℹ️ No order ID in URL - add ?davie_order_id=XXX to auto-fill');
+            console.log('[Davie Supply] No order ID in URL - add ?davie_order_id=XXX to auto-fill');
         }
     }
 
@@ -256,5 +259,5 @@
         checkForOrderId();
     }
 
-    console.log('✅ Davie Supply GLS Autofill ready');
+    console.log('[Davie Supply] GLS Autofill ready');
 })();
