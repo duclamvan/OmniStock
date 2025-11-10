@@ -7554,14 +7554,24 @@ export default function PickPack() {
                         )}
                       </div>
 
-                      {/* GLS Autofill Button */}
-                      <div className="space-y-2">
+                      {/* GLS Autofill Button - Desktop Only */}
+                      <div className="hidden md:block space-y-2">
                         <GLSAutofillButton
                           recipientData={recipientData}
                           senderData={senderData}
                           packageSize="M"
                           weight={totalWeight > 0 ? totalWeight : undefined}
                         />
+                      </div>
+
+                      {/* Mobile Instructions */}
+                      <div className="block md:hidden">
+                        <Alert className="bg-blue-50 border-blue-300">
+                          <Info className="h-4 w-4 text-blue-600" />
+                          <AlertDescription className="text-sm text-blue-800">
+                            <strong>Mobile Users:</strong> Install the Tampermonkey script on Kiwi Browser for automatic GLS form filling. See instructions in the Shipping Settings page.
+                          </AlertDescription>
+                        </Alert>
                       </div>
 
                       {/* Instructions */}

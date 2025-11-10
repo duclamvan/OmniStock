@@ -795,7 +795,7 @@ export default function ShippingManagement() {
                     <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-5 border border-blue-100">
                       <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 text-blue-600" />
-                        How to Use GLS Autofill
+                        Desktop: How to Use GLS Autofill
                       </h4>
                       <ol className="text-sm space-y-2 list-decimal list-inside">
                         <li>Save your sender address above</li>
@@ -803,6 +803,24 @@ export default function ShippingManagement() {
                         <li>Follow the one-time bookmarklet setup instructions</li>
                         <li>Use the bookmarklet to auto-fill the GLS form anytime</li>
                       </ol>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-5 border border-purple-100">
+                      <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-purple-600" />
+                        Mobile (Android): Tampermonkey Setup for Kiwi Browser
+                      </h4>
+                      <ol className="text-sm space-y-2 list-decimal list-inside">
+                        <li>Install <strong>Kiwi Browser</strong> from Google Play Store (supports Chrome extensions on mobile)</li>
+                        <li>In Kiwi Browser, install <strong>Tampermonkey</strong> extension from Chrome Web Store</li>
+                        <li>Download the userscript: <a href="/gls-autofill-mobile.user.js" className="text-purple-600 font-semibold underline" download>gls-autofill-mobile.user.js</a></li>
+                        <li>Open the downloaded file in Kiwi Browser - Tampermonkey will prompt to install it</li>
+                        <li>Edit the script and replace <code className="bg-purple-100 px-1 rounded">YOUR_REPLIT_URL</code> with your actual Davie Supply URL</li>
+                        <li>Go to any order and click "Ship with GLS" - the form will autofill with a button</li>
+                      </ol>
+                      <div className="mt-3 p-3 bg-purple-100 rounded-lg text-xs">
+                        <strong className="text-purple-900">Note:</strong> The mobile script works the same as the desktop bookmarklet but runs automatically when you visit the GLS website from an order.
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -822,7 +840,11 @@ export default function ShippingManagement() {
                           </div>
                           <div className="flex items-start gap-2 text-sm">
                             <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5" />
-                            <span>Bookmarklet autofill for fast processing</span>
+                            <span>Bookmarklet autofill for desktop</span>
+                          </div>
+                          <div className="flex items-start gap-2 text-sm">
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5" />
+                            <span>Tampermonkey script for mobile (Kiwi Browser)</span>
                           </div>
                           <div className="flex items-start gap-2 text-sm">
                             <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5" />
