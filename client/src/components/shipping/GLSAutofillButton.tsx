@@ -317,6 +317,8 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
     ], data.recipient.street, 'Street');
     
     trySetValue([
+      'input[name="houseNumber"]',
+      'input[name="housenumber"]',
       'input[name*="hausnummer" i]',
       'input[placeholder*="hausnummer" i]',
       'input[id*="hausnummer" i]',
@@ -391,7 +393,7 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
             console.log('✅ Re-filled street');
           }
           
-          const houseInput = document.querySelector('input[name="housenumber"]');
+          const houseInput = document.querySelector('input[name="houseNumber"]') || document.querySelector('input[name="housenumber"]');
           if (houseInput && !houseInput.value && data.recipient.houseNumber) {
             houseInput.value = data.recipient.houseNumber;
             houseInput.dispatchEvent(new Event('input', { bubbles: true }));
