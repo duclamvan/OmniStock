@@ -6472,8 +6472,11 @@ export default function PickPack() {
                     {/* Header */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Truck className="h-4 w-4 text-gray-700" />
-                        <h3 className="font-semibold text-sm text-gray-900">GLS Shipping Details</h3>
+                        <Truck className="h-4 w-4 text-emerald-700" />
+                        <h3 className="font-semibold text-sm text-gray-900">
+                          <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">GLS</span>
+                          <span className="ml-2">Shipping Details</span>
+                        </h3>
                       </div>
                       {cartons.length > 0 && (
                         <div className="text-xs text-gray-600">
@@ -6484,9 +6487,9 @@ export default function PickPack() {
                     </div>
 
                     {/* Max Weight Note */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
-                      <p className="text-xs text-blue-800">
-                        <strong>Note:</strong> Maximum weight per carton is 40 kg for GLS shipping
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">
+                      <p className="text-xs text-amber-800 font-medium">
+                        max 40kg/carton
                       </p>
                     </div>
 
