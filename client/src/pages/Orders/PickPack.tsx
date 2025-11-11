@@ -1510,6 +1510,9 @@ export default function PickPack() {
   const [isCartonSectionCollapsed, setIsCartonSectionCollapsed] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
   
+  // Controlled state for tracking number inputs (key: cartonId, value: tracking number)
+  const [trackingInputs, setTrackingInputs] = useState<Record<string, string>>({});
+  
   // Shipping labels state
   const [shippingLabels, setShippingLabels] = useState<Array<{ id: string; labelNumber: number }>>([]);
   
@@ -2231,6 +2234,37 @@ export default function PickPack() {
       savePackingState(activePackingOrder.id, 'cartons', orderCartons);
     }
   }, [orderCartons, activePackingOrder?.id]);
+
+  // Sync tracking number inputs from database (only when values actually change)
+  useEffect(() => {
+    if (!orderCartons || orderCartons.length === 0) {
+      setTrackingInputs(prev => Object.keys(prev).length === 0 ? prev : {});
+      return;
+    }
+    
+    // Build new inputs map
+    const newInputs: Record<string, string> = {};
+    orderCartons.forEach(carton => {
+      newInputs[carton.id] = carton.trackingNumber || '';
+    });
+    
+    // Only update if something actually changed
+    setTrackingInputs(prev => {
+      // Check if there are any differences
+      const hasChanges = orderCartons.some(carton => {
+        const prevValue = prev[carton.id] || '';
+        const newValue = newInputs[carton.id] || '';
+        return prevValue !== newValue;
+      });
+      
+      if (!hasChanges && Object.keys(prev).length === orderCartons.length) {
+        return prev; // No changes, return same reference to prevent re-render
+      }
+      
+      console.log('🔄 Syncing tracking inputs from DB (values changed):', newInputs);
+      return newInputs;
+    });
+  }, [orderCartons]);
 
   // Sync tracking number ref with server data to prevent stale locks
   useEffect(() => {
@@ -8353,21 +8387,23 @@ export default function PickPack() {
               })() && (
                 <div className="space-y-2">
                   {cartons.map((carton, index) => {
-                    // Check for duplicate tracking numbers
-                    const isDuplicate = carton.trackingNumber && carton.trackingNumber.trim() !== '' && 
-                      cartons.some((c, i) => 
-                        i !== index && 
-                        c.trackingNumber && 
-                        c.trackingNumber.trim().toUpperCase() === carton.trackingNumber?.trim().toUpperCase()
-                      );
-                    const hasTracking = !!(carton.trackingNumber && carton.trackingNumber.trim() !== '');
-                    const isValid = hasTracking && !isDuplicate;
+                    // Simple validation from controlled state
+                    const currentValue = trackingInputs[carton.id] || '';
+                    const hasValue = currentValue.trim() !== '';
                     
-                    // Debug logging
+                    // Check for duplicates (case-insensitive)
+                    const isDuplicate = hasValue && cartons.some((c, i) => 
+                      i !== index && 
+                      trackingInputs[c.id] &&
+                      trackingInputs[c.id].trim().toUpperCase() === currentValue.trim().toUpperCase()
+                    );
+                    
+                    const isValid = hasValue && !isDuplicate;
+                    
                     console.log(`🔍 Carton ${index + 1} validation:`, {
                       id: carton.id,
-                      trackingNumber: carton.trackingNumber,
-                      hasTracking,
+                      currentValue,
+                      hasValue,
                       isDuplicate,
                       isValid
                     });
@@ -8406,23 +8442,28 @@ export default function PickPack() {
                             <Input
                               type="text"
                               placeholder="Enter tracking number..."
-                              key={`tracking-${carton.id}-${carton.trackingNumber || 'empty'}`}
-                              defaultValue={carton.trackingNumber || ''}
-                              onPaste={(e) => {
-                                // Wait for paste to complete, then save
-                                setTimeout(() => {
-                                  const trackingNumber = e.currentTarget.value;
-                                  submitTrackingNumber(carton.id, trackingNumber, carton.cartonNumber, false);
-                                }, 10);
+                              value={currentValue}
+                              onChange={(e) => {
+                                // Update controlled state immediately
+                                const newValue = e.target.value;
+                                setTrackingInputs(prev => ({
+                                  ...prev,
+                                  [carton.id]: newValue
+                                }));
                               }}
                               onBlur={(e) => {
-                                const trackingNumber = e.target.value;
-                                submitTrackingNumber(carton.id, trackingNumber, carton.cartonNumber, false);
+                                // Save to backend on blur
+                                const trackingNumber = e.target.value.trim();
+                                if (trackingNumber) {
+                                  submitTrackingNumber(carton.id, trackingNumber, carton.cartonNumber, false);
+                                }
                               }}
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
-                                  const trackingNumber = e.currentTarget.value;
-                                  submitTrackingNumber(carton.id, trackingNumber, carton.cartonNumber, false);
+                                  const trackingNumber = e.currentTarget.value.trim();
+                                  if (trackingNumber) {
+                                    submitTrackingNumber(carton.id, trackingNumber, carton.cartonNumber, false);
+                                  }
                                   e.currentTarget.blur();
                                 }
                               }}
@@ -8434,7 +8475,7 @@ export default function PickPack() {
                               id={`tracking-input-${carton.id}`}
                             />
                             {/* Validation Icon inside input */}
-                            {hasTracking && (
+                            {hasValue && (
                               <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none z-10">
                                 {isDuplicate ? (
                                   <XCircle className="h-5 w-5 text-red-600 fill-red-50" />
@@ -8453,11 +8494,11 @@ export default function PickPack() {
                                 const text = await navigator.clipboard.readText();
                                 const trackingNumber = text.trim();
                                 if (trackingNumber) {
-                                  // Update the input value
-                                  const input = document.getElementById(`tracking-input-${carton.id}`) as HTMLInputElement;
-                                  if (input) {
-                                    input.value = trackingNumber;
-                                  }
+                                  // Update controlled state
+                                  setTrackingInputs(prev => ({
+                                    ...prev,
+                                    [carton.id]: trackingNumber
+                                  }));
                                   // Save to backend using unified function
                                   submitTrackingNumber(carton.id, trackingNumber, carton.cartonNumber, false);
                                 }
