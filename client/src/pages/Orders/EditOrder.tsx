@@ -1427,6 +1427,50 @@ export default function EditOrder() {
     runOptimization(items, selectedCustomer?.country || 'CZ');
   };
 
+  // Manual carton creation handler
+  const handleAddManualCarton = async () => {
+    const orderId = existingOrder?.id;
+    
+    if (!orderId) {
+      toast({
+        title: "Error",
+        description: "Please save the order first before adding cartons",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const cartonsResponse = await fetch(`/api/orders/${orderId}/cartons`);
+      if (!cartonsResponse.ok) {
+        throw new Error('Failed to fetch existing cartons');
+      }
+      
+      const existingCartons = await cartonsResponse.json();
+      const nextCartonNumber = existingCartons.length + 1;
+
+      await apiRequest('POST', `/api/orders/${orderId}/cartons`, {
+        cartonNumber: nextCartonNumber,
+        cartonType: 'non-company',
+        source: 'manual',
+        weight: null,
+        length: null,
+        width: null,
+        height: null,
+        trackingNumber: null,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['/api/orders', orderId, 'cartons'] });
+    } catch (error) {
+      console.error('Error adding manual carton:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add manual carton",
+        variant: "destructive",
+      });
+    }
+  };
+
   const addProductToOrder = async (product: any) => {
     // Check if this is a service
     if (product.isService || product.itemType === 'service') {
@@ -3712,6 +3756,7 @@ export default function EditOrder() {
           isLoading={isPackingOptimizationLoading}
           currency={form.watch('currency')}
           orderItems={orderItems}
+          onAddManualCarton={handleAddManualCarton}
         />
 
         {/* Payment Details - Mobile Optimized */}

@@ -1172,6 +1172,48 @@ export default function AddOrder() {
     runOptimization(items, shippingCountry);
   };
 
+  // Manual carton creation handler
+  const handleAddManualCarton = async () => {
+    if (!orderId) {
+      toast({
+        title: "Error",
+        description: "Please save the order first before adding cartons",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const cartonsResponse = await fetch(`/api/orders/${orderId}/cartons`);
+      if (!cartonsResponse.ok) {
+        throw new Error('Failed to fetch existing cartons');
+      }
+      
+      const existingCartons = await cartonsResponse.json();
+      const nextCartonNumber = existingCartons.length + 1;
+
+      await apiRequest('POST', `/api/orders/${orderId}/cartons`, {
+        cartonNumber: nextCartonNumber,
+        cartonType: 'non-company',
+        source: 'manual',
+        weight: null,
+        length: null,
+        width: null,
+        height: null,
+        trackingNumber: null,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['/api/orders', orderId, 'cartons'] });
+    } catch (error) {
+      console.error('Error adding manual carton:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add manual carton",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Auto-fill shipping costs when packing plan updates
   useEffect(() => {
     if (packingPlan?.estimatedShippingCost !== undefined && packingPlan?.estimatedShippingCost !== null) {
@@ -3910,6 +3952,7 @@ export default function AddOrder() {
           isLoading={isPackingOptimizationLoading}
           currency={form.watch('currency')}
           orderItems={orderItems}
+          onAddManualCarton={handleAddManualCarton}
         />
 
         {/* Files Section */}
