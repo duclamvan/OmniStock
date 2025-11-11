@@ -518,13 +518,13 @@ const CartonCard = memo(({
   
   return (
     <Card 
-      className={`border-2 ${isDraft ? 'border-amber-300 bg-amber-50 opacity-80' : 'border-amber-300 bg-white'}`} 
+      className={`border-2 ${isDraft ? 'border-purple-300 bg-purple-50 opacity-80' : 'border-purple-300 bg-white'}`} 
       data-testid={`carton-card-${index + 1}`}
     >
       <CardContent className="p-3 space-y-3">
         {/* Carton Header */}
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-amber-800 flex items-center gap-2">
+          <h3 className="text-lg font-bold text-purple-800 flex items-center gap-2">
             <Box className="h-5 w-5" />
             Carton #{carton.cartonNumber}
           </h3>
@@ -660,12 +660,12 @@ const CartonCard = memo(({
                   e.currentTarget.blur();
                 }
               }}
-              className={`text-center text-xl font-bold text-amber-800 border-2 border-amber-300 focus:border-amber-500 ${
+              className={`text-center text-xl font-bold text-purple-800 border-2 border-purple-300 focus:border-purple-500 ${
                 isGLS && localWeight && parseFloat(localWeight) > 40 ? 'border-red-500 focus:border-red-500' : ''
               }`}
               data-testid={`weight-input-${index + 1}`}
             />
-            <span className="text-xl font-bold text-amber-800">kg</span>
+            <span className="text-xl font-bold text-purple-800">kg</span>
           </div>
           {isGLS && localWeight && parseFloat(localWeight) > 40 && (
             <div className="text-xs text-red-600 flex items-center gap-1 font-semibold">
@@ -674,7 +674,7 @@ const CartonCard = memo(({
             </div>
           )}
           {carton.aiWeightCalculation && (
-            <div className="text-xs text-amber-700 flex items-center gap-1">
+            <div className="text-xs text-purple-700 flex items-center gap-1">
               <TrendingUp className="h-3 w-3" />
               AI calculated
               {carton.volumeUtilization && (
@@ -6521,8 +6521,8 @@ export default function PickPack() {
           </Card>
 
           {/* Multi-Carton Packing Section */}
-          <Card className="shadow-sm border-2 border-amber-300 overflow-hidden" id="checklist-cartons">
-            <CardHeader className="bg-gradient-to-r from-amber-600 to-amber-700 text-white px-4 py-3">
+          <Card className="shadow-sm border-2 border-purple-300 overflow-hidden" id="checklist-cartons">
+            <CardHeader className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-3 rounded-t-lg">
               <CardTitle className="text-sm sm:text-base font-bold">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -6611,7 +6611,7 @@ export default function PickPack() {
               {/* Add Another Carton Button */}
               <Button
                 variant="outline"
-                className="w-full border-2 border-dashed border-amber-400 text-amber-800 hover:bg-amber-50"
+                className="w-full border-2 border-dashed border-purple-400 text-purple-800 hover:bg-purple-50"
                 onClick={() => {
                   if (activePackingOrder) {
                     // Mark as manually modified to prevent AI recalculation
@@ -6662,14 +6662,14 @@ export default function PickPack() {
 
               {/* Total Summary */}
               {cartons.length > 0 && (
-                <div className="bg-amber-100 p-3 rounded-lg">
+                <div className="bg-purple-100 p-3 rounded-lg border-2 border-purple-200">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-semibold text-amber-800">Total Cartons:</span>
-                    <span className="font-bold text-amber-900">{cartons.length}</span>
+                    <span className="font-semibold text-purple-800">Total Cartons:</span>
+                    <span className="font-bold text-purple-900">{cartons.length}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm mt-1">
-                    <span className="font-semibold text-amber-800">Total Weight:</span>
-                    <span className="font-bold text-amber-900">
+                    <span className="font-semibold text-purple-800">Total Weight:</span>
+                    <span className="font-bold text-purple-900">
                       {cartons.reduce((sum, c) => sum + (parseFloat(c.weight || '0')), 0).toFixed(3)} kg
                     </span>
                   </div>
