@@ -2124,10 +2124,6 @@ export default function PickPack() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-      toast({
-        title: "Tracking Number Saved",
-        description: "Carton tracking number updated successfully"
-      });
     },
     onError: (error: any) => {
       toast({
@@ -7187,11 +7183,6 @@ export default function PickPack() {
                                                   
                                                   // Refresh labels
                                                   await fetchShipmentLabels();
-                                                  
-                                                  toast({
-                                                    title: "✅ Tracking Number Updated",
-                                                    description: `Label #${index + 1}: ${trackingNumber.trim()}`,
-                                                  });
                                                 } catch (error: any) {
                                                   toast({
                                                     title: "❌ Error",
@@ -7741,11 +7732,6 @@ export default function PickPack() {
                                 updateCartonTrackingMutation.mutate({
                                   cartonId: carton.id,
                                   trackingNumber
-                                });
-                                toast({
-                                  title: "Pasted!",
-                                  description: "Tracking number pasted and saved",
-                                  duration: 1500
                                 });
                               }
                             } catch (error) {
@@ -10663,10 +10649,6 @@ export default function PickPack() {
                 onClick={() => {
                   // Print shipping label
                   playSound('success');
-                  toast({
-                    title: "Printing Label",
-                    description: `Shipping label for ${previewOrder?.orderId}`,
-                  });
                 }}
                 className="text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9"
               >
@@ -10872,10 +10854,6 @@ export default function PickPack() {
                   }, 250);
                 }
                 playSound('success');
-                toast({
-                  title: "Printing Label",
-                  description: `Shipping label for ${labelPreviewData?.orderId}`,
-                });
               }}
               className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm px-6"
               size="lg"
@@ -10893,10 +10871,6 @@ export default function PickPack() {
                 link.download = `shipping-label-${labelPreviewData?.orderId}.pdf`;
                 link.click();
                 playSound('success');
-                toast({
-                  title: "Downloading Label",
-                  description: `Label saved as shipping-label-${labelPreviewData?.orderId}.pdf`,
-                });
               }}
               className="border-gray-300 hover:bg-gray-100 px-6"
             >
