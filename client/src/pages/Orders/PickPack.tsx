@@ -9015,7 +9015,7 @@ export default function PickPack() {
                             }}
                             data-testid={`button-paste-dhl-tracking-${index + 1}`}
                           >
-                            <ClipboardPaste className="h-3.5 w-3.5" />
+                            <ClipboardPaste className="h-3.5 w-3.5 -scale-x-100" />
                           </Button>
                         </div>
                         
