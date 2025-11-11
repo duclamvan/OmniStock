@@ -7133,6 +7133,50 @@ export default function PickPack() {
                   )}
                 </div>
               )}
+
+              {/* Dobírka (COD) Section - Only for PPL orders with COD */}
+              {activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') && 
+               (activePackingOrder.paymentMethod?.toUpperCase() === 'COD' || activePackingOrder.codAmount) && (
+                <div className="mt-4 pt-4 border-t-2 border-indigo-200">
+                  <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-lg">
+                    <div className="flex items-center gap-2 mb-3">
+                      <DollarSign className="h-5 w-5 text-amber-700 flex-shrink-0" />
+                      <span className="text-base font-bold text-amber-900 uppercase tracking-wide">
+                        Dobírka (Cash on Delivery)
+                      </span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3 pl-7">
+                      <div>
+                        <div className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1">
+                          COD Amount
+                        </div>
+                        <div className="text-lg font-bold text-amber-900" data-testid="text-cod-amount">
+                          {activePackingOrder.codAmount ? formatCurrency(typeof activePackingOrder.codAmount === 'string' ? parseFloat(activePackingOrder.codAmount) : activePackingOrder.codAmount, activePackingOrder.codCurrency || 'CZK') : '-'}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <div className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1">
+                          Currency
+                        </div>
+                        <div className="text-lg font-bold text-amber-900" data-testid="text-cod-currency">
+                          {activePackingOrder.codCurrency || 'CZK'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 pl-7">
+                      <Alert className="bg-amber-100 border-amber-400">
+                        <AlertCircle className="h-4 w-4 text-amber-700" />
+                        <AlertDescription className="text-sm text-amber-900">
+                          Customer will pay {activePackingOrder.codAmount ? formatCurrency(typeof activePackingOrder.codAmount === 'string' ? parseFloat(activePackingOrder.codAmount) : activePackingOrder.codAmount, activePackingOrder.codCurrency || 'CZK') : 'the specified amount'} to the courier upon delivery
+                        </AlertDescription>
+                      </Alert>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
