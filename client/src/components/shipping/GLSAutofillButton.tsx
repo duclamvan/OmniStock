@@ -37,6 +37,8 @@ interface GLSAutofillButtonProps {
   orderId?: string;
 }
 
+const BOOKMARKLET_VERSION = "1.0.0";
+
 export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M', weight, orderId }: GLSAutofillButtonProps) {
   const [showBookmarkletDialog, setShowBookmarkletDialog] = useState(false);
   const [showDebugData, setShowDebugData] = useState(false);
@@ -44,7 +46,27 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
   const { toast } = useToast();
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-  // Generate the bookmarklet code (both display and encoded versions)
+  // Check if user should see the bookmarklet dialog
+  const shouldShowBookmarkletDialog = (): boolean => {
+    try {
+      const storedVersion = localStorage.getItem('gls_bookmarklet_version');
+      
+      // Show if never seen before OR if version has changed
+      if (!storedVersion || storedVersion !== BOOKMARKLET_VERSION) {
+        // Update to current version
+        localStorage.setItem('gls_bookmarklet_version', BOOKMARKLET_VERSION);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      // If localStorage is not available, always show
+      console.warn('localStorage not available:', error);
+      return true;
+    }
+  };
+
+  // Generate the complete bookmarklet
   const generateBookmarklet = () => {
     const data = {
       recipient: recipientData,
@@ -53,10 +75,8 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
       weight,
     };
 
-    // Encoded data payload (safe from special characters)
     const encodedData = encodeURIComponent(JSON.stringify(data));
 
-    // Core bookmarklet logic (using decoded data)
     const bookmarkletLogic = `
 (function(){
   const data = JSON.parse(decodeURIComponent('${encodedData}'));
@@ -277,7 +297,6 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
   setTimeout(() => {
     console.log('🔍 Searching for form fields...');
     
-    // List all inputs on the page for debugging
     const allInputs = document.querySelectorAll('input, textarea, select');
     console.log('📋 Found ' + allInputs.length + ' form fields:');
     allInputs.forEach((el, i) => {
@@ -291,12 +310,10 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
       });
     });
     
-    // Try multiple selectors for each field
     const nameParts = data.recipient.name.split(' ');
     const firstName = nameParts[0];
     const lastName = nameParts.slice(1).join(' ');
     
-    // Recipient fields - try multiple selectors
     trySetValue([
       'input[name="firstName"]',
       'input[name="firstname"]',
@@ -346,7 +363,6 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
       'input[name*="number" i]'
     ], data.recipient.houseNumber, 'House Number');
     
-    // Fill postal code - try exact match first
     let postalFilled = trySetValue([
       'input[name="postcode"]',
       'input[name="postleitzahl"]',
@@ -369,7 +385,6 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
       ], data.recipient.postalCode, 'Postal Code');
     }
     
-    // Fill city - try exact match first
     trySetValue([
       'input[name="city"]',
       'input[id="city"]',
@@ -400,7 +415,6 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
       'input[id*="telefon" i]'
     ], data.recipient.phone, 'Phone');
     
-    // Fill country LAST (React-compatible combobox) and re-validate fields after
     if (data.recipient.country) {
       setTimeout(() => {
         setCountry(data.recipient.country);
@@ -502,10 +516,7 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
 })();
     `.trim();
 
-    // Encoded href for actual bookmarklet
     const href = `javascript:${encodeURIComponent(bookmarkletLogic)}`;
-    
-    // Pretty display version
     const displayCode = `javascript:${bookmarkletLogic}`;
 
     return { href, displayCode };
@@ -563,33 +574,46 @@ ${weight ? `Gewicht: ${weight} kg` : ''}
   };
 
   return (
-    <div className="flex flex-col sm:flex-row gap-2">
-      <Button
-        variant="default"
-        onClick={() => {
-          openGLSPage();
-          // Only show bookmarklet dialog on desktop
-          if (!isMobile) {
-            setShowBookmarkletDialog(true);
-          }
-        }}
-        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold w-full sm:flex-1"
-        data-testid="button-ship-with-gls"
-      >
-        <ExternalLink className="h-4 w-4" />
-        Ship GLS
-        {isMobile && orderId && <span className="text-xs opacity-90">(auto-fill)</span>}
-      </Button>
+    <div className="space-y-2">
+      <div className="flex flex-col sm:flex-row gap-2">
+        <Button
+          variant="default"
+          onClick={() => {
+            openGLSPage();
+            // Only show bookmarklet dialog on desktop if user hasn't seen it or script changed
+            if (!isMobile && shouldShowBookmarkletDialog()) {
+              setShowBookmarkletDialog(true);
+            }
+          }}
+          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold w-full sm:flex-1"
+          data-testid="button-ship-with-gls"
+        >
+          <ExternalLink className="h-4 w-4" />
+          Ship GLS
+          {isMobile && orderId && <span className="text-xs opacity-90">(auto-fill)</span>}
+        </Button>
 
-      <Button
-        variant="outline"
-        onClick={copyToClipboard}
-        className="flex items-center gap-2 hidden sm:flex"
-        data-testid="button-copy-gls-details"
-      >
-        <Copy className="h-4 w-4" />
-        Copy Details
-      </Button>
+        <Button
+          variant="outline"
+          onClick={copyToClipboard}
+          className="flex items-center gap-2 hidden sm:flex"
+          data-testid="button-copy-gls-details"
+        >
+          <Copy className="h-4 w-4" />
+          Copy Details
+        </Button>
+      </div>
+      
+      {/* Manual setup link for desktop users */}
+      {!isMobile && (
+        <button
+          onClick={() => setShowBookmarkletDialog(true)}
+          className="text-xs text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+          data-testid="link-view-setup"
+        >
+          View setup instructions
+        </button>
+      )}
 
       {/* Bookmarklet Setup Dialog */}
       <Dialog open={showBookmarkletDialog} onOpenChange={setShowBookmarkletDialog}>
