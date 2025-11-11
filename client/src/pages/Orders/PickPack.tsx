@@ -2652,16 +2652,6 @@ export default function PickPack() {
         trackingNumber: trimmedValue
       },
       {
-        onSuccess: () => {
-          // Show toast if requested
-          if (showToast && cartonNumber) {
-            toast({
-              title: "Tracking Number Saved",
-              description: `Carton #${cartonNumber}: ${trimmedValue}`,
-              duration: 2000
-            });
-          }
-        },
         onError: () => {
           // Restore previous value so user can retry
           lastSubmittedTrackingRef.current[cartonId] = previousValue;
