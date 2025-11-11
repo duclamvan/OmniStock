@@ -6313,6 +6313,74 @@ export default function PickPack() {
             </AccordionItem>
           </Accordion>
 
+          {/* Packing Materials Section */}
+          <Card className="shadow-sm border-2 border-amber-200 overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-4 py-3">
+              <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
+                <Package className="h-4 w-4 sm:h-5 sm:w-5" />
+                Packing Materials
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              {orderPackingMaterials.length > 0 ? (
+                <div className="space-y-3">
+                  {orderPackingMaterials.map((material) => (
+                    <div 
+                      key={material.id} 
+                      className="border border-gray-200 rounded-lg p-3 bg-white hover:bg-gray-50 cursor-pointer transition-colors"
+                      onClick={() => setPackingMaterialsApplied(prev => ({
+                        ...prev,
+                        [material.id]: !prev[material.id]
+                      }))}
+                    >
+                      <div className="flex items-start gap-3">
+                        {/* Checkbox */}
+                        <Checkbox 
+                          checked={packingMaterialsApplied[material.id] || false}
+                          onCheckedChange={(checked) => setPackingMaterialsApplied(prev => ({
+                            ...prev,
+                            [material.id]: !!checked
+                          }))}
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-1"
+                        />
+                          
+                          {/* Material Image */}
+                          {material.imageUrl && (
+                            <div className="flex-shrink-0 w-16 h-16 rounded-md overflow-hidden bg-gray-100 border border-gray-200">
+                              <img 
+                                src={material.imageUrl} 
+                                alt={material.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          
+                          {/* Material Info */}
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-semibold text-gray-900 mb-1">{material.name}</h4>
+                            {material.instruction && (
+                              <p className="text-xs text-gray-600 mb-1">{material.instruction}</p>
+                            )}
+                            <p className="text-xs text-gray-500">For: {material.productName}</p>
+                          </div>
+                          
+                          {/* Check Icon */}
+                          {packingMaterialsApplied[material.id] && (
+                            <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500 italic p-3 bg-gray-50 rounded-lg">
+                    No packing materials specified for this order
+                  </div>
+                )}
+            </CardContent>
+          </Card>
+
           {/* Multi-Carton Packing Section */}
           <Card className="shadow-sm border-2 border-emerald-200 overflow-hidden" id="checklist-cartons">
             <CardHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-3">
@@ -6512,74 +6580,6 @@ export default function PickPack() {
                 onProductFilePrinted={(fileId) => setPrintedProductFiles(prev => new Set([...Array.from(prev), fileId]))}
                 onOrderFilePrinted={(fileId) => setPrintedOrderFiles(prev => new Set([...Array.from(prev), fileId]))}
               />
-            </CardContent>
-          </Card>
-
-          {/* Packing Materials Section */}
-          <Card className="shadow-sm border-2 border-amber-200 overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-4 py-3">
-              <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
-                <Package className="h-4 w-4 sm:h-5 sm:w-5" />
-                Packing Materials
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4">
-              {orderPackingMaterials.length > 0 ? (
-                <div className="space-y-3">
-                  {orderPackingMaterials.map((material) => (
-                    <div 
-                      key={material.id} 
-                      className="border border-gray-200 rounded-lg p-3 bg-white hover:bg-gray-50 cursor-pointer transition-colors"
-                      onClick={() => setPackingMaterialsApplied(prev => ({
-                        ...prev,
-                        [material.id]: !prev[material.id]
-                      }))}
-                    >
-                      <div className="flex items-start gap-3">
-                        {/* Checkbox */}
-                        <Checkbox 
-                          checked={packingMaterialsApplied[material.id] || false}
-                          onCheckedChange={(checked) => setPackingMaterialsApplied(prev => ({
-                            ...prev,
-                            [material.id]: !!checked
-                          }))}
-                          onClick={(e) => e.stopPropagation()}
-                          className="mt-1"
-                        />
-                          
-                          {/* Material Image */}
-                          {material.imageUrl && (
-                            <div className="flex-shrink-0 w-16 h-16 rounded-md overflow-hidden bg-gray-100 border border-gray-200">
-                              <img 
-                                src={material.imageUrl} 
-                                alt={material.name}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          )}
-                          
-                          {/* Material Info */}
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-semibold text-gray-900 mb-1">{material.name}</h4>
-                            {material.instruction && (
-                              <p className="text-xs text-gray-600 mb-1">{material.instruction}</p>
-                            )}
-                            <p className="text-xs text-gray-500">For: {material.productName}</p>
-                          </div>
-                          
-                          {/* Check Icon */}
-                          {packingMaterialsApplied[material.id] && (
-                            <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-sm text-gray-500 italic p-3 bg-gray-50 rounded-lg">
-                    No packing materials specified for this order
-                  </div>
-                )}
             </CardContent>
           </Card>
 
