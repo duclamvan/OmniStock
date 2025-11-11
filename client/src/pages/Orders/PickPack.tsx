@@ -7196,7 +7196,22 @@ export default function PickPack() {
             }`}>
               <CardTitle className="text-base font-bold flex items-center gap-2">
                 <Truck className="h-5 w-5" />
-                Shipping Labels ({shipmentLabelsFromDB.length})
+                Shipping Labels ({(() => {
+                  const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
+                  const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+                  const isPPL = shippingMethod.includes('PPL');
+                  
+                  if (isPPL) {
+                    // For PPL: count cartons if they exist, otherwise count labels from DB
+                    return cartons.length > 0 ? cartons.length : shipmentLabelsFromDB.length;
+                  } else if (isGLS) {
+                    // For GLS: count cartons
+                    return cartons.length;
+                  } else {
+                    // For other methods: count labels from DB or cartons
+                    return shipmentLabelsFromDB.length > 0 ? shipmentLabelsFromDB.length : cartons.length;
+                  }
+                })()})
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-3">
