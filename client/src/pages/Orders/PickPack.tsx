@@ -499,6 +499,7 @@ const CartonCard = memo(({
 }: any) => {
   // Local state for weight input to make it responsive
   const [localWeight, setLocalWeight] = useState(carton.weight || '');
+  const [isWeightExpanded, setIsWeightExpanded] = useState(false);
   
   // Sync local state when carton weight changes from external updates
   useEffect(() => {
@@ -602,90 +603,145 @@ const CartonCard = memo(({
           )}
         </div>
 
-        {/* Weight Input with Local State */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">
-            Weight (kg) {isGLS && <span className="text-xs text-gray-500 font-normal">(optional, max 40kg)</span>}
-          </label>
-          <div className="flex items-center gap-2">
-            <Input
-              type="number"
-              step="0.001"
-              placeholder="0.000"
-              value={localWeight}
-              onChange={(e) => {
-                // Update local state immediately for responsive typing
-                const newWeight = e.target.value;
-                setLocalWeight(newWeight);
-                
-                // For GLS, show warning if weight exceeds 40kg
-                if (isGLS && newWeight && parseFloat(newWeight) > 40) {
-                  // Visual feedback in real-time
-                  e.target.classList.add('border-red-500');
-                } else {
-                  e.target.classList.remove('border-red-500');
-                }
-              }}
-              onBlur={(e) => {
-                // Save to backend when user finishes typing
-                const newWeight = e.target.value;
-                
-                // For GLS, validate max 40kg
-                if (isGLS && newWeight && parseFloat(newWeight) > 40) {
-                  toast({
-                    title: "Weight Limit Exceeded",
-                    description: "GLS shipments cannot exceed 40kg per carton. Please reduce weight or split into multiple cartons.",
-                    variant: "destructive"
-                  });
-                  return;
-                }
-                
-                saveWeight(newWeight);
-              }}
-              onKeyDown={(e) => {
-                // Save on Enter key
-                if (e.key === 'Enter') {
-                  const newWeight = localWeight;
-                  
-                  // For GLS, validate max 40kg
-                  if (isGLS && newWeight && parseFloat(newWeight) > 40) {
-                    toast({
-                      title: "Weight Limit Exceeded",
-                      description: "GLS shipments cannot exceed 40kg per carton. Please reduce weight or split into multiple cartons.",
-                      variant: "destructive"
-                    });
-                    return;
-                  }
-                  
-                  saveWeight(localWeight);
-                  e.currentTarget.blur();
-                }
-              }}
-              className={`text-center text-xl font-bold text-purple-800 border-2 border-purple-300 focus:border-purple-500 ${
-                isGLS && localWeight && parseFloat(localWeight) > 40 ? 'border-red-500 focus:border-red-500' : ''
-              }`}
-              data-testid={`weight-input-${index + 1}`}
-            />
-            <span className="text-xl font-bold text-purple-800">kg</span>
-          </div>
-          {isGLS && localWeight && parseFloat(localWeight) > 40 && (
-            <div className="text-xs text-red-600 flex items-center gap-1 font-semibold">
-              <AlertCircle className="h-3 w-3" />
-              Exceeds GLS 40kg limit
-            </div>
-          )}
-          {carton.aiWeightCalculation && (
-            <div className="text-xs text-purple-700 flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" />
-              AI calculated
-              {carton.volumeUtilization && (
-                <span className="ml-1">
-                  - {parseFloat(carton.volumeUtilization).toFixed(1)}% utilization
-                </span>
+        {/* Weight Input with Local State - Collapsible for GLS */}
+        {isGLS ? (
+          <div className="border-2 border-gray-200 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setIsWeightExpanded(!isWeightExpanded)}
+              className="w-full flex items-center justify-between p-2 hover:bg-gray-50 transition-colors"
+              data-testid={`toggle-weight-section-${index + 1}`}
+            >
+              <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Weight {localWeight && `(${parseFloat(localWeight).toFixed(3)} kg)`}
+              </span>
+              {isWeightExpanded ? (
+                <ChevronUp className="h-4 w-4 text-gray-500" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-gray-500" />
               )}
+            </button>
+            
+            {isWeightExpanded && (
+              <div className="p-3 space-y-2 border-t-2 border-gray-200">
+                <label className="text-sm font-medium text-gray-700">
+                  Weight (kg) <span className="text-xs text-gray-500 font-normal">(optional, max 40kg)</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    step="0.001"
+                    placeholder="0.000"
+                    value={localWeight}
+                    onChange={(e) => {
+                      const newWeight = e.target.value;
+                      setLocalWeight(newWeight);
+                      
+                      if (isGLS && newWeight && parseFloat(newWeight) > 40) {
+                        e.target.classList.add('border-red-500');
+                      } else {
+                        e.target.classList.remove('border-red-500');
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const newWeight = e.target.value;
+                      
+                      if (isGLS && newWeight && parseFloat(newWeight) > 40) {
+                        toast({
+                          title: "Weight Limit Exceeded",
+                          description: "GLS shipments cannot exceed 40kg per carton. Please reduce weight or split into multiple cartons.",
+                          variant: "destructive"
+                        });
+                        return;
+                      }
+                      
+                      saveWeight(newWeight);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const newWeight = localWeight;
+                        
+                        if (isGLS && newWeight && parseFloat(newWeight) > 40) {
+                          toast({
+                            title: "Weight Limit Exceeded",
+                            description: "GLS shipments cannot exceed 40kg per carton. Please reduce weight or split into multiple cartons.",
+                            variant: "destructive"
+                          });
+                          return;
+                        }
+                        
+                        saveWeight(localWeight);
+                        e.currentTarget.blur();
+                      }
+                    }}
+                    className={`text-center text-xl font-bold text-purple-800 border-2 border-purple-300 focus:border-purple-500 ${
+                      isGLS && localWeight && parseFloat(localWeight) > 40 ? 'border-red-500 focus:border-red-500' : ''
+                    }`}
+                    data-testid={`weight-input-${index + 1}`}
+                  />
+                  <span className="text-xl font-bold text-purple-800">kg</span>
+                </div>
+                {localWeight && parseFloat(localWeight) > 40 && (
+                  <div className="text-xs text-red-600 flex items-center gap-1 font-semibold">
+                    <AlertCircle className="h-3 w-3" />
+                    Exceeds GLS 40kg limit
+                  </div>
+                )}
+                {carton.aiWeightCalculation && (
+                  <div className="text-xs text-purple-700 flex items-center gap-1">
+                    <TrendingUp className="h-3 w-3" />
+                    AI calculated
+                    {carton.volumeUtilization && (
+                      <span className="ml-1">
+                        - {parseFloat(carton.volumeUtilization).toFixed(1)}% utilization
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
+              Weight (kg)
+            </label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                step="0.001"
+                placeholder="0.000"
+                value={localWeight}
+                onChange={(e) => {
+                  setLocalWeight(e.target.value);
+                }}
+                onBlur={(e) => {
+                  saveWeight(e.target.value);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    saveWeight(localWeight);
+                    e.currentTarget.blur();
+                  }
+                }}
+                className="text-center text-xl font-bold text-purple-800 border-2 border-purple-300 focus:border-purple-500"
+                data-testid={`weight-input-${index + 1}`}
+              />
+              <span className="text-xl font-bold text-purple-800">kg</span>
             </div>
-          )}
-        </div>
+            {carton.aiWeightCalculation && (
+              <div className="text-xs text-purple-700 flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" />
+                AI calculated
+                {carton.volumeUtilization && (
+                  <span className="ml-1">
+                    - {parseFloat(carton.volumeUtilization).toFixed(1)}% utilization
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -6810,7 +6866,10 @@ export default function PickPack() {
               </Button>
 
               {/* Total Summary */}
-              {cartons.length > 0 && (
+              {cartons.length > 0 && !(() => {
+                const shippingMethod = activePackingOrder?.shippingMethod?.toUpperCase() || '';
+                return shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+              })() && (
                 <div className="bg-purple-100 p-3 rounded-lg border-2 border-purple-200">
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-semibold text-purple-800">Total Cartons:</span>
