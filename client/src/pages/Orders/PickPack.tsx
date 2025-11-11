@@ -6536,10 +6536,11 @@ export default function PickPack() {
                 return (
                   <div className="space-y-3">
                     {/* Header */}
-                    <div className="text-base">
-                      <span className="font-bold text-black text-lg">GLS</span>
-                      <span className="text-gray-700"> {activePackingOrder.shippingMethod}</span>
-                      <span className="text-gray-600"> • max 40kg</span>
+                    <div>
+                      <div className="font-bold text-black text-lg">{activePackingOrder.shippingMethod}</div>
+                      <div className="text-sm text-gray-600 mt-0.5">
+                        Max. 40 kg • Circumference + longest side max. 300 cm
+                      </div>
                     </div>
 
                     {/* Ship GLS Button - Mobile & Desktop */}
