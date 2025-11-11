@@ -1211,6 +1211,7 @@ export default function PickPack() {
   const [printedPPLLabels, setPrintedPPLLabels] = useState<Set<string>>(new Set()); // Track printed PPL labels by tracking number
   const [shipmentLabelsFromDB, setShipmentLabelsFromDB] = useState<any[]>([]); // Shipment labels from database
   const [labelPreviewData, setLabelPreviewData] = useState<{ orderId: string; labelBase64: string; trackingNumbers: string[] } | null>(null);
+  const lastSubmittedTrackingRef = useRef<Record<string, string | null>>({}); // Track last submitted tracking number per carton to prevent duplicates
   
   // Loading states for shipping label operations
   const [isGeneratingAllLabels, setIsGeneratingAllLabels] = useState(false);
@@ -1976,6 +1977,17 @@ export default function PickPack() {
     }
   }, [orderCartons, activePackingOrder?.id]);
 
+  // Sync tracking number ref with server data to prevent stale locks
+  useEffect(() => {
+    if (orderCartons && orderCartons.length > 0) {
+      const newRef: Record<string, string | null> = {};
+      orderCartons.forEach(carton => {
+        newRef[carton.id] = carton.trackingNumber || null;
+      });
+      lastSubmittedTrackingRef.current = newRef;
+    }
+  }, [orderCartons]);
+
   // Auto-populate shipping labels based on carton count
   useEffect(() => {
     if (cartons.length > 0) {
@@ -2365,6 +2377,50 @@ export default function PickPack() {
       });
     }
   });
+
+  // Unified function to submit tracking number (prevents duplicate saves)
+  const submitTrackingNumber = useCallback((cartonId: string, trackingNumber: string, cartonNumber?: number, showToast: boolean = false) => {
+    const trimmedValue = trackingNumber.trim();
+    if (!trimmedValue) return;
+
+    // Check if this value has already been submitted for this carton
+    const lastSubmitted = lastSubmittedTrackingRef.current[cartonId];
+    if (lastSubmitted === trimmedValue) {
+      console.log(`⏭️ Skipping duplicate save for carton ${cartonId}: ${trimmedValue}`);
+      return;
+    }
+
+    // Store previous value in case we need to restore on error
+    const previousValue = lastSubmittedTrackingRef.current[cartonId];
+    
+    // Update ref immediately to prevent concurrent submissions
+    lastSubmittedTrackingRef.current[cartonId] = trimmedValue;
+
+    // Submit to backend with error handling
+    updateCartonTrackingMutation.mutate(
+      {
+        cartonId,
+        trackingNumber: trimmedValue
+      },
+      {
+        onSuccess: () => {
+          // Show toast if requested
+          if (showToast && cartonNumber) {
+            toast({
+              title: "Tracking Number Saved",
+              description: `Carton #${cartonNumber}: ${trimmedValue}`,
+              duration: 2000
+            });
+          }
+        },
+        onError: () => {
+          // Restore previous value so user can retry
+          lastSubmittedTrackingRef.current[cartonId] = previousValue;
+          console.log(`❌ Save failed, restored previous value for carton ${cartonId}`);
+        }
+      }
+    );
+  }, [updateCartonTrackingMutation, toast]);
 
   // PPL Label mutations
   const createPPLLabelsMutation = useMutation({
@@ -7828,24 +7884,21 @@ export default function PickPack() {
                           type="text"
                           placeholder="Enter tracking number..."
                           defaultValue={carton.trackingNumber || ''}
+                          onPaste={(e) => {
+                            // Wait for paste to complete, then save
+                            setTimeout(() => {
+                              const trackingNumber = e.currentTarget.value;
+                              submitTrackingNumber(carton.id, trackingNumber, carton.cartonNumber, true);
+                            }, 10);
+                          }}
                           onBlur={(e) => {
-                            const trackingNumber = e.target.value.trim();
-                            if (trackingNumber && trackingNumber !== carton.trackingNumber) {
-                              updateCartonTrackingMutation.mutate({
-                                cartonId: carton.id,
-                                trackingNumber
-                              });
-                            }
+                            const trackingNumber = e.target.value;
+                            submitTrackingNumber(carton.id, trackingNumber, carton.cartonNumber, false);
                           }}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
-                              const trackingNumber = e.currentTarget.value.trim();
-                              if (trackingNumber && trackingNumber !== carton.trackingNumber) {
-                                updateCartonTrackingMutation.mutate({
-                                  cartonId: carton.id,
-                                  trackingNumber
-                                });
-                              }
+                              const trackingNumber = e.currentTarget.value;
+                              submitTrackingNumber(carton.id, trackingNumber, carton.cartonNumber, false);
                               e.currentTarget.blur();
                             }
                           }}
@@ -7867,11 +7920,8 @@ export default function PickPack() {
                                 if (input) {
                                   input.value = trackingNumber;
                                 }
-                                // Save to backend
-                                updateCartonTrackingMutation.mutate({
-                                  cartonId: carton.id,
-                                  trackingNumber
-                                });
+                                // Save to backend using unified function
+                                submitTrackingNumber(carton.id, trackingNumber, carton.cartonNumber, true);
                               }
                             } catch (error) {
                               toast({
