@@ -2202,7 +2202,7 @@ export default function PickPack() {
   const { data: orderCartons = [], refetch: refetchCartons } = useQuery<OrderCarton[]>({
     queryKey: ['/api/orders', activePackingOrder?.id, 'cartons'],
     enabled: !!activePackingOrder?.id,
-    staleTime: 30 * 1000,
+    staleTime: 0, // Always refetch when invalidated (important for real-time tracking number updates)
   });
 
   // Track which orders we've done initial load for (to merge localStorage with DB on first load only)
@@ -8349,8 +8349,17 @@ export default function PickPack() {
                         c.trackingNumber && 
                         c.trackingNumber.trim().toUpperCase() === carton.trackingNumber?.trim().toUpperCase()
                       );
-                    const hasTracking = carton.trackingNumber && carton.trackingNumber.trim() !== '';
+                    const hasTracking = !!(carton.trackingNumber && carton.trackingNumber.trim() !== '');
                     const isValid = hasTracking && !isDuplicate;
+                    
+                    // Debug logging
+                    console.log(`🔍 Carton ${index + 1} validation:`, {
+                      id: carton.id,
+                      trackingNumber: carton.trackingNumber,
+                      hasTracking,
+                      isDuplicate,
+                      isValid
+                    });
                     
                     return (
                       <div 
