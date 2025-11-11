@@ -6583,20 +6583,10 @@ export default function PickPack() {
                 return (
                   <div className="space-y-3">
                     {/* Header */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Truck className="h-5 w-5 text-emerald-700" />
-                        <h3 className="font-semibold text-base text-gray-900">
-                          <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">GLS</span>
-                          <span className="ml-2">Shipping Details</span>
-                        </h3>
-                      </div>
-                      {cartons.length > 0 && (
-                        <div className="text-sm text-gray-600">
-                          {cartons.length} {cartons.length === 1 ? 'carton' : 'cartons'}
-                          <span className="text-amber-700 font-medium"> • max 40kg</span>
-                        </div>
-                      )}
+                    <div className="text-base">
+                      <span className="font-bold text-black text-lg">GLS</span>
+                      <span className="text-gray-700"> {activePackingOrder.shippingMethod}</span>
+                      <span className="text-gray-600"> • max 40kg</span>
                     </div>
 
                     {/* Ship GLS Button - Mobile & Desktop */}
