@@ -6478,7 +6478,27 @@ export default function PickPack() {
                       }))}
                     >
                       <div className="flex items-start gap-3">
-                        {/* Checkbox */}
+                        {/* Material Image */}
+                        {material.imageUrl && (
+                          <div className="flex-shrink-0 w-16 h-16 rounded-md overflow-hidden bg-gray-100 border border-gray-200">
+                            <img 
+                              src={material.imageUrl} 
+                              alt={material.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Material Info */}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-semibold text-gray-900 mb-1">{material.name}</h4>
+                          {material.instruction && (
+                            <p className="text-xs text-gray-600 mb-1">{material.instruction}</p>
+                          )}
+                          <p className="text-xs text-gray-500">For: {material.productName}</p>
+                        </div>
+                        
+                        {/* Checkbox - Right Side, Bigger */}
                         <Checkbox 
                           checked={packingMaterialsApplied[material.id] || false}
                           onCheckedChange={(checked) => setPackingMaterialsApplied(prev => ({
@@ -6486,35 +6506,10 @@ export default function PickPack() {
                             [material.id]: !!checked
                           }))}
                           onClick={(e) => e.stopPropagation()}
-                          className="mt-1"
+                          className="h-6 w-6 flex-shrink-0"
                         />
-                          
-                          {/* Material Image */}
-                          {material.imageUrl && (
-                            <div className="flex-shrink-0 w-16 h-16 rounded-md overflow-hidden bg-gray-100 border border-gray-200">
-                              <img 
-                                src={material.imageUrl} 
-                                alt={material.name}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          )}
-                          
-                          {/* Material Info */}
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-semibold text-gray-900 mb-1">{material.name}</h4>
-                            {material.instruction && (
-                              <p className="text-xs text-gray-600 mb-1">{material.instruction}</p>
-                            )}
-                            <p className="text-xs text-gray-500">For: {material.productName}</p>
-                          </div>
-                          
-                          {/* Check Icon */}
-                          {packingMaterialsApplied[material.id] && (
-                            <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                          )}
-                        </div>
                       </div>
+                    </div>
                     ))}
                   </div>
                 ) : (
