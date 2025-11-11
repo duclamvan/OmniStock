@@ -2203,6 +2203,8 @@ export default function PickPack() {
     queryKey: ['/api/orders', activePackingOrder?.id, 'cartons'],
     enabled: !!activePackingOrder?.id,
     staleTime: 0, // Always refetch when invalidated (important for real-time tracking number updates)
+    gcTime: 0, // Don't cache at all - always fetch fresh data
+    refetchOnMount: 'always', // Always refetch when component mounts
   });
 
   // Track which orders we've done initial load for (to merge localStorage with DB on first load only)
@@ -2218,8 +2220,12 @@ export default function PickPack() {
     // 2. If database query hasn't loaded yet, wait for it
     // 3. localStorage is only used as offline backup, updated after successful DB saves
     if (orderCartons) {
+      console.log(`✅ Syncing ${orderCartons.length} cartons from DATABASE:`, orderCartons.map(c => ({ 
+        id: c.id, 
+        cartonNumber: c.cartonNumber, 
+        trackingNumber: c.trackingNumber 
+      })));
       setCartons(orderCartons);
-      console.log(`✅ Loaded ${orderCartons.length} cartons from DATABASE for order ${activePackingOrder.id}`);
       
       // Also update localStorage backup after successful DB load
       savePackingState(activePackingOrder.id, 'cartons', orderCartons);
@@ -2612,19 +2618,24 @@ export default function PickPack() {
   // Update carton tracking number mutation
   const updateCartonTrackingMutation = useMutation({
     mutationFn: async ({ cartonId, trackingNumber }: { cartonId: string; trackingNumber: string }) => {
+      console.log(`📤 Saving tracking number for carton ${cartonId}:`, trackingNumber);
       return apiRequest('PATCH', `/api/cartons/${cartonId}`, { trackingNumber });
     },
-    onSuccess: async () => {
+    onSuccess: async (data, variables) => {
+      console.log(`✅ Tracking number saved successfully for carton ${variables.cartonId}`);
       // Invalidate all relevant queries to update UI
       await queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
       if (activePackingOrder?.id) {
+        console.log(`🔄 Invalidating and refetching cartons for order ${activePackingOrder.id}`);
         await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
         // Force refetch to get updated cartons immediately
-        await refetchCartons();
+        const result = await refetchCartons();
+        console.log(`📥 Refetch result:`, result.data);
       }
     },
     onError: (error: any) => {
+      console.error(`❌ Failed to save tracking number:`, error);
       toast({
         title: "Failed to Save",
         description: error.message || "Failed to update tracking number",
