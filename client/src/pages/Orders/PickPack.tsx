@@ -207,6 +207,7 @@ interface IncludedDocuments {
 interface PickPackOrder {
   id: string;
   orderId: string;
+  customerId?: string;
   customerName: string;
   shippingMethod: string;
   shippingAddress?: string;
@@ -2186,6 +2187,13 @@ export default function PickPack() {
     staleTime: 60 * 60 * 1000, // 1 hour (bank details rarely change)
     refetchInterval: false,
     refetchOnWindowFocus: false,
+  });
+
+  // Query for customer order count to determine if returning customer
+  const { data: customerOrderCount } = useQuery<{count: number}>({
+    queryKey: ['/api/customers', activePackingOrder?.customerId, 'order-count'],
+    enabled: !!activePackingOrder?.customerId,
+    staleTime: 60000, // Cache for 1 minute
   });
 
   // Filter cartons based on search
@@ -7422,7 +7430,7 @@ export default function PickPack() {
                     totalWeight += parseFloat(carton.weight);
                   }
                 });
-                
+
                 const copyField = async (value: string, fieldName: string) => {
                   try {
                     await navigator.clipboard.writeText(value);
@@ -7602,13 +7610,15 @@ export default function PickPack() {
                         <span className="text-base font-bold text-black">Empfänger (Recipient)</span>
                       </div>
 
-                      {/* Frequent Buyer Badge */}
-                      <div className="flex items-center gap-2 px-2 py-1.5 bg-yellow-50 border border-yellow-200 rounded">
-                        <Star className="h-4 w-4 text-yellow-600 fill-yellow-600" />
-                        <span className="text-xs text-black font-medium">
-                          Frequent buyer - Already in DHL addressbook
-                        </span>
-                      </div>
+                      {/* Frequent Buyer Badge - Only show for returning customers */}
+                      {customerOrderCount && customerOrderCount.count > 1 && (
+                        <div className="flex items-center gap-2 px-2 py-1.5 bg-yellow-50 border border-yellow-200 rounded">
+                          <Star className="h-4 w-4 text-yellow-600 fill-yellow-600" />
+                          <span className="text-xs text-black font-medium">
+                            Frequent buyer - Already in DHL addressbook
+                          </span>
+                        </div>
+                      )}
 
                       <div className="space-y-0.5">
                         {/* Full name - merged first and last name */}

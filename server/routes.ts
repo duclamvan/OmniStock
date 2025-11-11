@@ -3762,6 +3762,26 @@ Important:
     }
   });
 
+  // Get customer order count
+  app.get('/api/customers/:id/order-count', async (req, res) => {
+    try {
+      const customerId = req.params.id;
+      
+      if (!customerId) {
+        return res.status(400).json({ message: "Customer ID is required" });
+      }
+      
+      // Get all orders for this customer
+      const allOrders = await storage.getOrders();
+      const customerOrders = allOrders.filter(order => order.customerId === customerId);
+      
+      res.json({ count: customerOrders.length });
+    } catch (error) {
+      console.error("Error fetching customer order count:", error);
+      res.status(500).json({ message: "Failed to fetch order count" });
+    }
+  });
+
   app.post('/api/customers', async (req: any, res) => {
     try {
       const data = insertCustomerSchema.parse(req.body);
