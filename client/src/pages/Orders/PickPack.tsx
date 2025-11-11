@@ -5490,24 +5490,48 @@ export default function PickPack() {
     // Multi-carton validation: all cartons must have type and label
     // For GLS: weight is optional, but if provided must be ≤ 40kg
     // For other carriers: weight is required
-    const allCartonsValid = cartons.length > 0 && cartons.every(carton => {
-      const hasValidType = carton.cartonType === 'company' ? !!carton.cartonId : carton.cartonType === 'non-company';
-      const hasLabel = carton.labelPrinted;
+    const allCartonsValid = (() => {
+      if (cartons.length === 0) return false;
       
-      // Weight validation depends on shipping method
-      let hasValidWeight = true;
-      if (isGLSShipping) {
-        // GLS: weight is optional, but if provided must be ≤ 40kg
-        if (carton.weight && parseFloat(carton.weight) > 0) {
-          hasValidWeight = parseFloat(carton.weight) <= 40;
+      // Check basic carton properties
+      const basicValidation = cartons.every(carton => {
+        const hasValidType = carton.cartonType === 'company' ? !!carton.cartonId : carton.cartonType === 'non-company';
+        
+        // Weight validation depends on shipping method
+        let hasValidWeight = true;
+        if (isGLSShipping) {
+          // GLS: weight is optional, but if provided must be ≤ 40kg
+          if (carton.weight && parseFloat(carton.weight) > 0) {
+            hasValidWeight = parseFloat(carton.weight) <= 40;
+          }
+        } else {
+          // Other carriers: weight is required and must be > 0
+          hasValidWeight = carton.weight && parseFloat(carton.weight) > 0;
         }
+        
+        return hasValidType && hasValidWeight;
+      });
+      
+      if (!basicValidation) return false;
+      
+      // Enhanced shipping label validation based on shipping method
+      const isPPL = shippingMethod.includes('PPL');
+      const isGLS = isGLSShipping;
+      
+      if (isPPL) {
+        // PPL: Must have created shipment and all cartons must have labels from database
+        if (activePackingOrder.pplStatus !== 'created') return false;
+        if (shipmentLabelsFromDB.length < cartons.length) return false;
+      } else if (isGLS) {
+        // GLS: All cartons must have tracking numbers
+        if (cartons.some(c => !c.trackingNumber || c.trackingNumber.trim() === '')) return false;
       } else {
-        // Other carriers: weight is required and must be > 0
-        hasValidWeight = carton.weight && parseFloat(carton.weight) > 0;
+        // Other methods: All cartons must be marked as printed
+        if (cartons.some(c => !c.labelPrinted)) return false;
       }
       
-      return hasValidType && hasLabel && hasValidWeight;
-    });
+      return true;
+    })();
     
     // Packing completion check - only check what's visible in the UI
     const canCompletePacking = (packingChecklist.itemsVerified || allItemsVerified) && 
@@ -8149,8 +8173,48 @@ export default function PickPack() {
                     scrollToElement('checklist-cartons', 'Please enter the weight for all cartons.');
                   } else if (isGLSShipping && cartons.some(c => c.weight && parseFloat(c.weight) > 40)) {
                     scrollToElement('checklist-cartons', 'GLS shipments cannot exceed 40kg per carton. Please reduce weight or split into multiple cartons.');
-                  } else if (cartons.some(c => !c.labelPrinted)) {
-                    scrollToElement('checklist-shipping-labels', 'Please generate and print shipping labels for all cartons.');
+                  } else if ((() => {
+                    // Enhanced shipping label validation based on shipping method
+                    const isPPL = shippingMethod.includes('PPL');
+                    const isGLS = isGLSShipping;
+                    const isDHL = shippingMethod.includes('DHL');
+                    
+                    if (isPPL) {
+                      // PPL: Must have created shipment and labels in database
+                      if (activePackingOrder.pplStatus !== 'created') {
+                        return true; // Not created yet
+                      }
+                      // Check if all cartons have labels from database
+                      if (shipmentLabelsFromDB.length < cartons.length) {
+                        return true; // Missing labels
+                      }
+                    } else if (isGLS) {
+                      // GLS: All cartons must have tracking numbers
+                      if (cartons.some(c => !c.trackingNumber || c.trackingNumber.trim() === '')) {
+                        return true; // Missing tracking number
+                      }
+                    } else {
+                      // Other methods: Check labelPrinted flag
+                      if (cartons.some(c => !c.labelPrinted)) {
+                        return true; // Label not marked as printed
+                      }
+                    }
+                    
+                    return false; // All validations passed
+                  })()) {
+                    // Show appropriate error message based on shipping method
+                    const isPPL = shippingMethod.includes('PPL');
+                    const isGLS = isGLSShipping;
+                    
+                    if (isPPL && activePackingOrder.pplStatus !== 'created') {
+                      scrollToElement('checklist-shipping-labels', 'Please create PPL shipment labels before completing packing.');
+                    } else if (isPPL && shipmentLabelsFromDB.length < cartons.length) {
+                      scrollToElement('checklist-shipping-labels', `Missing PPL labels: ${shipmentLabelsFromDB.length} of ${cartons.length} cartons have labels. Please generate all labels.`);
+                    } else if (isGLS && cartons.some(c => !c.trackingNumber || c.trackingNumber.trim() === '')) {
+                      scrollToElement('checklist-shipping-labels', 'Please enter tracking numbers for all GLS cartons before completing packing.');
+                    } else {
+                      scrollToElement('checklist-shipping-labels', 'Please generate and print shipping labels for all cartons.');
+                    }
                   } else {
                     // Fallback - show general message
                     toast({
