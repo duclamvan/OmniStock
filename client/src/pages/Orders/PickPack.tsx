@@ -517,13 +517,13 @@ const CartonCard = memo(({
   
   return (
     <Card 
-      className={`border-2 ${isDraft ? 'border-amber-300 bg-amber-50 opacity-80' : 'border-emerald-300 bg-white'}`} 
+      className={`border-2 ${isDraft ? 'border-amber-300 bg-amber-50 opacity-80' : 'border-amber-300 bg-white'}`} 
       data-testid={`carton-card-${index + 1}`}
     >
       <CardContent className="p-3 space-y-3">
         {/* Carton Header */}
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-emerald-700 flex items-center gap-2">
+          <h3 className="text-lg font-bold text-amber-800 flex items-center gap-2">
             <Box className="h-5 w-5" />
             Carton #{carton.cartonNumber}
           </h3>
@@ -624,13 +624,13 @@ const CartonCard = memo(({
                   e.currentTarget.blur();
                 }
               }}
-              className="text-center text-xl font-bold text-emerald-700 border-2 border-emerald-300 focus:border-emerald-500"
+              className="text-center text-xl font-bold text-amber-800 border-2 border-amber-300 focus:border-amber-500"
               data-testid={`weight-input-${index + 1}`}
             />
-            <span className="text-xl font-bold text-emerald-700">kg</span>
+            <span className="text-xl font-bold text-amber-800">kg</span>
           </div>
           {carton.aiWeightCalculation && (
-            <div className="text-xs text-emerald-600 flex items-center gap-1">
+            <div className="text-xs text-amber-700 flex items-center gap-1">
               <TrendingUp className="h-3 w-3" />
               AI calculated
               {carton.volumeUtilization && (
@@ -6438,8 +6438,8 @@ export default function PickPack() {
           </Card>
 
           {/* Multi-Carton Packing Section */}
-          <Card className="shadow-sm border-2 border-emerald-200 overflow-hidden" id="checklist-cartons">
-            <CardHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-3">
+          <Card className="shadow-sm border-2 border-amber-300 overflow-hidden" id="checklist-cartons">
+            <CardHeader className="bg-gradient-to-r from-amber-700 to-orange-700 text-white px-4 py-3">
               <CardTitle className="text-sm sm:text-base font-bold">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -6527,7 +6527,7 @@ export default function PickPack() {
               {/* Add Another Carton Button */}
               <Button
                 variant="outline"
-                className="w-full border-2 border-dashed border-emerald-400 text-emerald-700 hover:bg-emerald-50"
+                className="w-full border-2 border-dashed border-amber-400 text-amber-800 hover:bg-amber-50"
                 onClick={() => {
                   if (activePackingOrder) {
                     // Mark as manually modified to prevent AI recalculation
@@ -6578,14 +6578,14 @@ export default function PickPack() {
 
               {/* Total Summary */}
               {cartons.length > 0 && (
-                <div className="bg-emerald-100 p-3 rounded-lg">
+                <div className="bg-amber-100 p-3 rounded-lg">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-semibold text-emerald-800">Total Cartons:</span>
-                    <span className="font-bold text-emerald-900">{cartons.length}</span>
+                    <span className="font-semibold text-amber-800">Total Cartons:</span>
+                    <span className="font-bold text-amber-900">{cartons.length}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm mt-1">
-                    <span className="font-semibold text-emerald-800">Total Weight:</span>
-                    <span className="font-bold text-emerald-900">
+                    <span className="font-semibold text-amber-800">Total Weight:</span>
+                    <span className="font-bold text-amber-900">
                       {cartons.reduce((sum, c) => sum + (parseFloat(c.weight || '0')), 0).toFixed(3)} kg
                     </span>
                   </div>
