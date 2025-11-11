@@ -5369,25 +5369,38 @@ export default function PickPack() {
                 <span className="ml-1 text-xs lg:text-sm hidden sm:inline">Exit</span>
               </Button>
               
-              {/* Center: Order ID + Carrier Badge */}
-              <div className="flex-1 flex flex-col items-center gap-1 min-w-0">
-                <div className="text-sm lg:text-lg font-bold tracking-wide truncate">{activePackingOrder.orderId}</div>
-                {activePackingOrder.shippingMethod && (
-                  <div className={`px-2 py-0.5 rounded text-[10px] lg:text-xs font-bold ${
-                    activePackingOrder.shippingMethod.toUpperCase().includes('GLS') 
-                      ? 'bg-emerald-500 text-white'
-                      : activePackingOrder.shippingMethod.toUpperCase().includes('PPL')
-                      ? 'bg-orange-500 text-white'
-                      : activePackingOrder.shippingMethod.toUpperCase().includes('DHL')
-                      ? 'bg-yellow-400 text-gray-900'
-                      : 'bg-white/30 text-white'
-                  }`}>
-                    {activePackingOrder.shippingMethod.toUpperCase().includes('GLS') ? 'GLS' :
-                     activePackingOrder.shippingMethod.toUpperCase().includes('PPL') ? 'PPL' :
-                     activePackingOrder.shippingMethod.toUpperCase().includes('DHL') ? 'DHL' :
-                     activePackingOrder.shippingMethod}
-                  </div>
-                )}
+              {/* Left-Aligned: Order Info */}
+              <div className="flex-1 flex flex-col items-start gap-0.5 min-w-0 ml-2">
+                <div className="text-xs lg:text-sm font-bold tracking-wide truncate w-full">{activePackingOrder.orderId}</div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] lg:text-xs text-purple-100 truncate">{activePackingOrder.customerName}</span>
+                  {(() => {
+                    const shippingAddr = activePackingOrder.shippingAddress;
+                    const country = typeof shippingAddr === 'object' ? shippingAddr.country : '';
+                    return country && (
+                      <span className="text-[10px] lg:text-xs text-purple-100">• {country}</span>
+                    );
+                  })()}
+                  {activePackingOrder.shippingMethod && (
+                    <>
+                      <span className="text-[10px] lg:text-xs text-purple-100">•</span>
+                      <div className={`px-1.5 py-0.5 rounded text-[10px] lg:text-xs font-bold ${
+                        activePackingOrder.shippingMethod.toUpperCase().includes('GLS') 
+                          ? 'bg-emerald-500 text-white'
+                          : activePackingOrder.shippingMethod.toUpperCase().includes('PPL')
+                          ? 'bg-orange-500 text-white'
+                          : activePackingOrder.shippingMethod.toUpperCase().includes('DHL')
+                          ? 'bg-yellow-400 text-gray-900'
+                          : 'bg-white/30 text-white'
+                      }`}>
+                        {activePackingOrder.shippingMethod.toUpperCase().includes('GLS') ? 'GLS' :
+                         activePackingOrder.shippingMethod.toUpperCase().includes('PPL') ? 'PPL' :
+                         activePackingOrder.shippingMethod.toUpperCase().includes('DHL') ? 'DHL' :
+                         activePackingOrder.shippingMethod}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
               
               {/* Right: Timer + Mute Button */}
