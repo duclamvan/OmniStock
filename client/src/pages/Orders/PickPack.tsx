@@ -2614,9 +2614,15 @@ export default function PickPack() {
     mutationFn: async ({ cartonId, trackingNumber }: { cartonId: string; trackingNumber: string }) => {
       return apiRequest('PATCH', `/api/cartons/${cartonId}`, { trackingNumber });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+    onSuccess: async () => {
+      // Invalidate all relevant queries to update UI
+      await queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+      if (activePackingOrder?.id) {
+        await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
+        // Force refetch to get updated cartons immediately
+        await refetchCartons();
+      }
     },
     onError: (error: any) => {
       toast({
