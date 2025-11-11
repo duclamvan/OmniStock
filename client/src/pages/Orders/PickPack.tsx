@@ -6242,10 +6242,27 @@ export default function PickPack() {
           {/* Packing Completion Card - Combined Documents + Checklist */}
           <Card className="shadow-sm border-2 border-violet-200 overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-violet-600 to-purple-600 text-white px-4 py-3">
-              <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
-                <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5" />
-                Packing Completion
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5" />
+                  Packing Completion
+                </CardTitle>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="h-8 px-3 text-xs font-semibold bg-white/20 hover:bg-white/30 text-white border-white/40"
+                  onClick={() => {
+                    // Print packing list
+                    openPDFAndPrint(`/api/orders/${activePackingOrder.id}/packing-list.pdf`);
+                    setPrintedDocuments(prev => ({ ...prev, packingList: true }));
+                    playSound('success');
+                  }}
+                  data-testid="button-print-all-documents"
+                >
+                  <Printer className="h-3.5 w-3.5 mr-1.5" />
+                  Print All
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="p-4 space-y-4">
               {/* Documents & Files - Unified Section */}
