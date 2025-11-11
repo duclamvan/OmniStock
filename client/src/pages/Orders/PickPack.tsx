@@ -65,6 +65,7 @@ import {
   ScanLine,
   Box,
   ClipboardList,
+  ClipboardPaste,
   AlertCircle,
   AlertTriangle,
   Timer,
@@ -7764,7 +7765,7 @@ export default function PickPack() {
                           }}
                           data-testid={`button-paste-tracking-${index + 1}`}
                         >
-                          <Copy className="h-3.5 w-3.5" />
+                          <ClipboardPaste className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </div>
