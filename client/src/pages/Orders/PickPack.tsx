@@ -704,22 +704,59 @@ const openPDFAndPrint = (url: string) => {
 // Function to merge multiple PDFs into one and open for printing
 const mergeAndPrintPDFs = async (pdfUrls: string[]) => {
   try {
+    if (pdfUrls.length === 0) {
+      throw new Error('No PDF files to merge');
+    }
+
+    console.log('Starting PDF merge for', pdfUrls.length, 'files:', pdfUrls);
+    
     // Create a new PDF document
     const mergedPdf = await PDFDocument.create();
     
     // Fetch and merge each PDF
-    for (const url of pdfUrls) {
-      const response = await fetch(url);
-      const pdfBytes = await response.arrayBuffer();
-      const pdf = await PDFDocument.load(pdfBytes);
-      const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-      copiedPages.forEach((page) => mergedPdf.addPage(page));
+    for (let i = 0; i < pdfUrls.length; i++) {
+      const url = pdfUrls[i];
+      try {
+        console.log(`Fetching PDF ${i + 1}/${pdfUrls.length}:`, url);
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          console.error(`Failed to fetch PDF from ${url}:`, response.status, response.statusText);
+          continue; // Skip this file and continue with others
+        }
+        
+        const contentType = response.headers.get('content-type');
+        if (!contentType?.includes('pdf')) {
+          console.warn(`Skipping non-PDF file: ${url} (${contentType})`);
+          continue;
+        }
+        
+        const pdfBytes = await response.arrayBuffer();
+        console.log(`Loaded ${pdfBytes.byteLength} bytes from ${url}`);
+        
+        const pdf = await PDFDocument.load(pdfBytes);
+        const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+        copiedPages.forEach((page) => mergedPdf.addPage(page));
+        console.log(`Merged ${copiedPages.length} pages from ${url}`);
+      } catch (fileError) {
+        console.error(`Error processing file ${url}:`, fileError);
+        // Continue with other files
+      }
     }
+    
+    const pageCount = mergedPdf.getPageCount();
+    if (pageCount === 0) {
+      throw new Error('No pages were successfully merged');
+    }
+    
+    console.log(`Saving merged PDF with ${pageCount} total pages`);
     
     // Save the merged PDF
     const mergedPdfBytes = await mergedPdf.save();
     const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
     const blobUrl = URL.createObjectURL(blob);
+    
+    console.log('Opening merged PDF for printing');
     
     // Open and print
     const printWindow = window.open(blobUrl, '_blank');
@@ -730,7 +767,7 @@ const mergeAndPrintPDFs = async (pdfUrls: string[]) => {
     }
     
     // Clean up after a delay
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
   } catch (error) {
     console.error('Error merging PDFs:', error);
     throw error;
@@ -6789,9 +6826,10 @@ export default function PickPack() {
                       });
                     } catch (error: any) {
                       console.error('Error printing merged documents:', error);
+                      const errorMsg = error?.message || 'Failed to merge and print documents';
                       toast({
-                        title: "Error",
-                        description: "Failed to merge and print documents",
+                        title: "Print Error",
+                        description: errorMsg,
                         variant: "destructive"
                       });
                     } finally {
