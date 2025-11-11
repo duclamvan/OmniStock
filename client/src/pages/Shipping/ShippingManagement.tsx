@@ -119,9 +119,30 @@ export default function ShippingManagement() {
     phone: ''
   });
 
+  // DHL default address form state (manual shipping)
+  const [dhlAddress, setDhlAddress] = useState({
+    firstName: '',
+    lastName: '',
+    addressSupplement: '',
+    street: '',
+    houseNumber: '',
+    postalCode: '',
+    city: '',
+    country: 'Deutschland',
+    email: ''
+  });
+
+  // DHL bank details form state (for COD/Nachnahme)
+  const [dhlBankDetails, setDhlBankDetails] = useState({
+    iban: '',
+    bic: '',
+    accountHolder: ''
+  });
+
   // Collapsible state
   const [isPPLOpen, setIsPPLOpen] = useState(true);
   const [isGLSOpen, setIsGLSOpen] = useState(false);
+  const [isDHLOpen, setIsDHLOpen] = useState(false);
 
   // Test PPL connection
   const { data: connectionStatus, isLoading: isTestingConnection, refetch: refetchPPL } = useQuery<PPLConnectionStatus>({
@@ -150,6 +171,20 @@ export default function ShippingManagement() {
     retry: false
   });
 
+  // Load saved DHL default address
+  const { data: savedDHLAddress } = useQuery({
+    queryKey: ['/api/settings/dhl_default_sender_address'],
+    refetchInterval: false,
+    retry: false
+  });
+
+  // Load saved DHL bank details
+  const { data: savedDHLBankDetails } = useQuery({
+    queryKey: ['/api/settings/dhl_bank_details'],
+    refetchInterval: false,
+    retry: false
+  });
+
   // Update form when saved address loads
   useEffect(() => {
     if (savedAddress && (savedAddress as any).value) {
@@ -163,6 +198,20 @@ export default function ShippingManagement() {
       setGlsAddress((savedGLSAddress as any).value);
     }
   }, [savedGLSAddress]);
+
+  // Update DHL form when saved address loads
+  useEffect(() => {
+    if (savedDHLAddress && (savedDHLAddress as any).value) {
+      setDhlAddress((savedDHLAddress as any).value);
+    }
+  }, [savedDHLAddress]);
+
+  // Update DHL bank details when saved data loads
+  useEffect(() => {
+    if (savedDHLBankDetails && (savedDHLBankDetails as any).value) {
+      setDhlBankDetails((savedDHLBankDetails as any).value);
+    }
+  }, [savedDHLBankDetails]);
 
   // Save PPL default address mutation
   const savePPLAddressMutation = useMutation({
@@ -199,15 +248,53 @@ export default function ShippingManagement() {
         description: 'Default sender address for GLS Germany shipping (manual labels)'
       }),
     onSuccess: () => {
-      toast({
-        title: "Address Saved",
-        description: "Default GLS sender address has been saved successfully"
-      });
       queryClient.invalidateQueries({ queryKey: ['/api/settings/gls_default_sender_address'] });
     },
     onError: (error: any) => {
       toast({
         title: "Failed to Save Address",
+        description: error.message || "Unknown error occurred",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Save DHL default address mutation
+  const saveDHLAddressMutation = useMutation({
+    mutationFn: async (address: typeof dhlAddress) => 
+      apiRequest('POST', '/api/settings', {
+        key: 'dhl_default_sender_address',
+        value: address,
+        category: 'shipping',
+        description: 'Default sender address for DHL Germany shipping (manual labels)'
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/settings/dhl_default_sender_address'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Save Address",
+        description: error.message || "Unknown error occurred",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Save DHL bank details mutation
+  const saveDHLBankDetailsMutation = useMutation({
+    mutationFn: async (details: typeof dhlBankDetails) => 
+      apiRequest('POST', '/api/settings', {
+        key: 'dhl_bank_details',
+        value: details,
+        category: 'shipping',
+        description: 'Bank details for DHL COD (Nachnahme) payments'
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/settings/dhl_bank_details'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Save Bank Details",
         description: error.message || "Unknown error occurred",
         variant: "destructive"
       });
@@ -264,6 +351,34 @@ export default function ShippingManagement() {
       return;
     }
     saveGLSAddressMutation.mutate(glsAddress);
+  };
+
+  // Handle saving DHL default address
+  const handleSaveDHLAddress = () => {
+    // Validate required fields
+    if (!dhlAddress.street || !dhlAddress.postalCode || !dhlAddress.city) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in street, postal code, and city",
+        variant: "destructive"
+      });
+      return;
+    }
+    saveDHLAddressMutation.mutate(dhlAddress);
+  };
+
+  // Handle saving DHL bank details
+  const handleSaveDHLBankDetails = () => {
+    // Validate required fields
+    if (!dhlBankDetails.iban || !dhlBankDetails.accountHolder) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in IBAN and Account Holder",
+        variant: "destructive"
+      });
+      return;
+    }
+    saveDHLBankDetailsMutation.mutate(dhlBankDetails);
   };
 
   // Handle PPL test connection
@@ -643,6 +758,308 @@ export default function ShippingManagement() {
                     </div>
                   </div>
                 </div>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+
+          {/* DHL Shipping Information Card */}
+          <Collapsible open={isDHLOpen} onOpenChange={setIsDHLOpen}>
+            <Card className="overflow-hidden">
+              <CollapsibleTrigger className="w-full">
+                <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50 border-b cursor-pointer hover:bg-yellow-100 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-white rounded-lg shadow-sm">
+                        <Package className="w-5 h-5 text-yellow-600" />
+                      </div>
+                      <div className="text-left">
+                        <CardTitle className="text-lg">DHL Germany - Manual Shipping</CardTitle>
+                        <CardDescription className="text-xs mt-0.5">Configure sender address and bank details for manual DHL shipping</CardDescription>
+                      </div>
+                    </div>
+                    {isDHLOpen ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
+                  </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-6 space-y-6">
+                  <div className="space-y-6">
+                    {/* Sender Address Section */}
+                    <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg p-5 border border-yellow-100">
+                      <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-yellow-600" />
+                        Default DHL Sender Address
+                      </h4>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Set the default sender address for DHL shipping labels
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="dhl-firstName">First Name</Label>
+                          <Input 
+                            id="dhl-firstName"
+                            value={dhlAddress.firstName}
+                            onChange={(e) => setDhlAddress({ ...dhlAddress, firstName: e.target.value })}
+                            placeholder="Max"
+                            data-testid="input-dhl-firstname"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="dhl-lastName">Last Name</Label>
+                          <Input 
+                            id="dhl-lastName"
+                            value={dhlAddress.lastName}
+                            onChange={(e) => setDhlAddress({ ...dhlAddress, lastName: e.target.value })}
+                            placeholder="Mustermann"
+                            data-testid="input-dhl-lastname"
+                          />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <Label htmlFor="dhl-addressSupplement">Address Supplement</Label>
+                          <Input 
+                            id="dhl-addressSupplement"
+                            value={dhlAddress.addressSupplement}
+                            onChange={(e) => setDhlAddress({ ...dhlAddress, addressSupplement: e.target.value })}
+                            placeholder="c/o Company, Building A"
+                            data-testid="input-dhl-addresssupplement"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="dhl-street">
+                            Street <span className="text-red-500">*</span>
+                          </Label>
+                          <Input 
+                            id="dhl-street"
+                            value={dhlAddress.street}
+                            onChange={(e) => setDhlAddress({ ...dhlAddress, street: e.target.value })}
+                            placeholder="Musterstraße"
+                            data-testid="input-dhl-street"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="dhl-houseNumber">House Number</Label>
+                          <Input 
+                            id="dhl-houseNumber"
+                            value={dhlAddress.houseNumber}
+                            onChange={(e) => setDhlAddress({ ...dhlAddress, houseNumber: e.target.value })}
+                            placeholder="123"
+                            data-testid="input-dhl-housenumber"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="dhl-postalCode">
+                            Postal Code <span className="text-red-500">*</span>
+                          </Label>
+                          <Input 
+                            id="dhl-postalCode"
+                            value={dhlAddress.postalCode}
+                            onChange={(e) => setDhlAddress({ ...dhlAddress, postalCode: e.target.value })}
+                            placeholder="12345"
+                            data-testid="input-dhl-postalcode"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="dhl-city">
+                            City <span className="text-red-500">*</span>
+                          </Label>
+                          <Input 
+                            id="dhl-city"
+                            value={dhlAddress.city}
+                            onChange={(e) => setDhlAddress({ ...dhlAddress, city: e.target.value })}
+                            placeholder="Berlin"
+                            data-testid="input-dhl-city"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="dhl-email">Email</Label>
+                          <Input 
+                            id="dhl-email"
+                            type="email"
+                            value={dhlAddress.email}
+                            onChange={(e) => setDhlAddress({ ...dhlAddress, email: e.target.value })}
+                            placeholder="info@example.com"
+                            data-testid="input-dhl-email"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="pt-4">
+                        <Button 
+                          onClick={handleSaveDHLAddress}
+                          className="w-full bg-yellow-600 hover:bg-yellow-700 text-black"
+                          disabled={saveDHLAddressMutation.isPending}
+                          data-testid="button-save-dhl-address"
+                        >
+                          {saveDHLAddressMutation.isPending ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                              Save DHL Sender Address
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Bank Details Section */}
+                    <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg p-5 border border-yellow-100">
+                      <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-yellow-600" />
+                        Bank Details for COD (Nachnahme)
+                      </h4>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Bank account details for cash-on-delivery payments
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2 md:col-span-2">
+                          <Label htmlFor="dhl-iban">
+                            IBAN <span className="text-red-500">*</span>
+                          </Label>
+                          <Input 
+                            id="dhl-iban"
+                            value={dhlBankDetails.iban}
+                            onChange={(e) => setDhlBankDetails({ ...dhlBankDetails, iban: e.target.value })}
+                            placeholder="DE89370400440532013000"
+                            data-testid="input-dhl-iban"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="dhl-bic">BIC</Label>
+                          <Input 
+                            id="dhl-bic"
+                            value={dhlBankDetails.bic}
+                            onChange={(e) => setDhlBankDetails({ ...dhlBankDetails, bic: e.target.value })}
+                            placeholder="COBADEFFXXX"
+                            data-testid="input-dhl-bic"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="dhl-accountHolder">
+                            Account Holder (Kontoinhaber) <span className="text-red-500">*</span>
+                          </Label>
+                          <Input 
+                            id="dhl-accountHolder"
+                            value={dhlBankDetails.accountHolder}
+                            onChange={(e) => setDhlBankDetails({ ...dhlBankDetails, accountHolder: e.target.value })}
+                            placeholder="Davie Supply GmbH"
+                            data-testid="input-dhl-accountholder"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="pt-4">
+                        <Button 
+                          onClick={handleSaveDHLBankDetails}
+                          className="w-full bg-yellow-600 hover:bg-yellow-700 text-black"
+                          disabled={saveDHLBankDetailsMutation.isPending}
+                          data-testid="button-save-dhl-bank"
+                        >
+                          {saveDHLBankDetailsMutation.isPending ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                              Save Bank Details
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Instructions Section */}
+                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-5 border border-blue-100">
+                      <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-blue-600" />
+                        How to Use DHL Manual Shipping
+                      </h4>
+                      <ol className="text-sm space-y-2 list-decimal list-inside">
+                        <li>Save your sender address and bank details above</li>
+                        <li>Go to any order in Pick & Pack mode</li>
+                        <li>Click "Ship with DHL" to see shipping information</li>
+                        <li>Copy the pre-filled shipping information to DHL's website</li>
+                        <li>Create labels manually on DHL's shipping portal</li>
+                      </ol>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-sm flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-yellow-600" />
+                          Features
+                        </h4>
+                        <div className="space-y-2">
+                          <div className="flex items-start gap-2 text-sm">
+                            <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 mt-1.5" />
+                            <span>Manual label workflow via DHL website</span>
+                          </div>
+                          <div className="flex items-start gap-2 text-sm">
+                            <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 mt-1.5" />
+                            <span>No API integration required</span>
+                          </div>
+                          <div className="flex items-start gap-2 text-sm">
+                            <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 mt-1.5" />
+                            <span>Pre-filled shipping information for copy-paste</span>
+                          </div>
+                          <div className="flex items-start gap-2 text-sm">
+                            <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 mt-1.5" />
+                            <span>COD (Nachnahme) support with bank details</span>
+                          </div>
+                          <div className="flex items-start gap-2 text-sm">
+                            <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 mt-1.5" />
+                            <span>Reliable delivery across Germany and Europe</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-sm flex items-center gap-2">
+                          <Package className="w-4 h-4 text-yellow-600" />
+                          Why This Approach?
+                        </h4>
+                        <div className="bg-white border rounded-lg p-4">
+                          <p className="text-sm text-muted-foreground">
+                            DHL manual shipping allows you to create labels through DHL's official portal while having all shipping information pre-filled in your Pick & Pack interface for quick copy-paste, reducing manual data entry errors.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-amber-600" />
+                        Important Notes
+                      </h4>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        DHL manual shipping workflow:
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div className="flex items-start gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
+                          <span>Labels created via DHL website</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
+                          <span>Shipping info pre-filled for copy-paste</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
+                          <span>Bank details stored for COD support</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
+                          <span>Suitable for domestic and international shipping</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </CollapsibleContent>
