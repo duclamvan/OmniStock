@@ -5852,7 +5852,7 @@ export default function PickPack() {
             {/* Item Verification List - Collapsible Accordion */}
             <Accordion type="single" collapsible defaultValue="items" className="w-full">
               <AccordionItem value="items" className="shadow-sm border-2 border-sky-200 rounded-lg bg-white overflow-hidden" id="checklist-items-verified">
-                <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gradient-to-r from-sky-700 to-sky-800 text-white transition-colors">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gradient-to-r from-sky-700 to-sky-800 text-white transition-colors -mt-0.5 rounded-t-lg">
                   <div className="flex items-center justify-between w-full pr-2">
                     <div className="flex items-center gap-2">
                       <div
@@ -6459,7 +6459,7 @@ export default function PickPack() {
 
           {/* Packing Materials Section */}
           <Card className="shadow-sm border-2 border-slate-300 overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-slate-700 to-slate-800 text-white px-4 py-3 rounded-t-lg">
+            <CardHeader className="bg-gradient-to-r from-slate-700 to-slate-800 text-white px-4 py-3 rounded-t-lg -mt-0.5">
               <CardTitle className="text-base font-bold flex items-center gap-2">
                 <Package className="h-5 w-5" />
                 Packing Materials
@@ -6522,7 +6522,7 @@ export default function PickPack() {
 
           {/* Multi-Carton Packing Section */}
           <Card className="shadow-sm border-2 border-purple-300 overflow-hidden" id="checklist-cartons">
-            <CardHeader className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-3 rounded-t-lg">
+            <CardHeader className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-3 rounded-t-lg -mt-0.5">
               <CardTitle className="text-base font-bold">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -6681,7 +6681,7 @@ export default function PickPack() {
 
           {/* Packing Completion Card - Combined Documents + Checklist */}
           <Card className="shadow-sm border-2 border-emerald-200 overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-4 py-3 rounded-t-lg">
+            <CardHeader className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-4 py-3 rounded-t-lg -mt-0.5">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <ClipboardList className="h-5 w-5" />
@@ -6725,7 +6725,7 @@ export default function PickPack() {
 
           {/* Shipping Information Section */}
           <Card className="shadow-sm border-2 border-indigo-200 overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-indigo-700 to-indigo-800 text-white px-4 py-3 rounded-t-lg">
+            <CardHeader className="bg-gradient-to-r from-indigo-700 to-indigo-800 text-white px-4 py-3 rounded-t-lg -mt-0.5">
               <CardTitle className="text-base font-bold flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
                 Shipping Information
@@ -6972,7 +6972,7 @@ export default function PickPack() {
               ? 'border-2 border-sky-300'
               : 'border-2 border-stone-300'
           }`}>
-            <CardHeader className={`text-white px-4 py-3 rounded-t-lg ${
+            <CardHeader className={`text-white px-4 py-3 rounded-t-lg -mt-0.5 ${
               activePackingOrder.shippingMethod?.toUpperCase().includes('PPL')
                 ? 'bg-gradient-to-r from-orange-600 to-orange-700'
                 : activePackingOrder.shippingMethod?.toUpperCase().includes('GLS')
