@@ -756,7 +756,7 @@ function UnifiedDocumentsList({
       className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
         isPrinted
           ? 'bg-green-50 border-green-300'
-          : 'bg-white border-gray-200 hover:border-violet-300'
+          : 'bg-white border-gray-200 hover:border-emerald-300'
       }`}
       data-testid={testId}
     >
@@ -764,7 +764,7 @@ function UnifiedDocumentsList({
       <div className={`flex-shrink-0 w-10 h-10 rounded-md overflow-hidden bg-gradient-to-br border flex items-center justify-center ${
         isPrinted
           ? 'from-green-50 to-emerald-50 border-green-300'
-          : 'from-violet-50 to-purple-50 border-violet-200'
+          : 'from-emerald-50 to-green-50 border-emerald-200'
       }`}>
         {icon}
       </div>
@@ -798,7 +798,7 @@ function UnifiedDocumentsList({
         className={`h-8 px-2 text-xs font-semibold flex-shrink-0 ${
           isPrinted
             ? 'bg-green-600 hover:bg-green-700 text-white'
-            : 'hover:bg-violet-50 hover:text-violet-700 hover:border-violet-300'
+            : 'hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300'
         }`}
         onClick={onPrint}
         data-testid={`${testId}-print`}
@@ -822,7 +822,7 @@ function UnifiedDocumentsList({
     <div className="space-y-2">
       {/* Packing List */}
       <DocumentRow
-        icon={<FileText className={`h-5 w-5 ${printedDocuments.packingList ? 'text-green-600' : 'text-violet-600'}`} />}
+        icon={<FileText className={`h-5 w-5 ${printedDocuments.packingList ? 'text-green-600' : 'text-emerald-600'}`} />}
         name="Packing List"
         isPrinted={printedDocuments.packingList}
         onPrint={onPackingListPrinted}
@@ -5233,7 +5233,7 @@ export default function PickPack() {
       return { label: 'Picking', color: 'bg-blue-100 text-blue-700 border-blue-300' };
     }
     if (order.packStatus === 'in_progress') {
-      return { label: 'Packing', color: 'bg-purple-100 text-purple-700 border-purple-300' };
+      return { label: 'Packing', color: 'bg-amber-100 text-amber-700 border-amber-300' };
     }
     if (order.status === 'ready_to_ship' && order.packStatus === 'completed') {
       return { label: 'Ready', color: 'bg-green-100 text-green-700 border-green-300' };
@@ -5490,7 +5490,7 @@ export default function PickPack() {
                 <div className="grid grid-cols-3 gap-2 lg:gap-4">
                   <div>
                     <p className="text-xs lg:text-sm text-gray-500">Time</p>
-                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-600">{formatTimer(packingTimer)}</p>
+                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-amber-600">{formatTimer(packingTimer)}</p>
                   </div>
                   <div>
                     <p className="text-xs lg:text-sm text-gray-500">Cartons</p>
@@ -5658,17 +5658,17 @@ export default function PickPack() {
               <div className="flex-1 flex flex-col items-start gap-1.5 min-w-0 ml-2">
                 <div className="text-base lg:text-lg font-bold tracking-wide truncate w-full">{activePackingOrder.orderId}</div>
                 <div className="flex items-center gap-2.5 flex-wrap">
-                  <span className="text-sm lg:text-base text-purple-100 font-medium truncate">{activePackingOrder.customerName}</span>
+                  <span className="text-sm lg:text-base text-white font-medium truncate">{activePackingOrder.customerName}</span>
                   {(() => {
                     const shippingAddr = activePackingOrder.shippingAddress;
                     const country = typeof shippingAddr === 'object' ? shippingAddr.country : '';
                     return country && (
-                      <span className="text-sm lg:text-base text-purple-100 font-medium">• {country}</span>
+                      <span className="text-sm lg:text-base text-white font-medium">• {country}</span>
                     );
                   })()}
                   {activePackingOrder.shippingMethod && (
                     <>
-                      <span className="text-sm lg:text-base text-purple-100">•</span>
+                      <span className="text-sm lg:text-base text-white">•</span>
                       <div className={`px-2.5 py-1 rounded text-sm lg:text-base font-bold ${
                         activePackingOrder.shippingMethod.toUpperCase().includes('GLS') 
                           ? 'bg-emerald-500 text-white'
@@ -5692,7 +5692,7 @@ export default function PickPack() {
               <div className="flex items-center gap-2 lg:gap-3 flex-shrink-0">
                 <div className="text-right">
                   <div className="font-mono text-base lg:text-lg font-bold">{formatTimer(packingTimer)}</div>
-                  <div className="text-[9px] lg:text-[10px] text-purple-100 hidden sm:block whitespace-nowrap">
+                  <div className="text-[9px] lg:text-[10px] text-white hidden sm:block whitespace-nowrap">
                     {activePackingOrder.items.filter(item => {
                       if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
                         return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
@@ -5763,8 +5763,8 @@ export default function PickPack() {
             
             {/* Item Verification List - Collapsible Accordion */}
             <Accordion type="single" collapsible defaultValue="items" className="w-full">
-              <AccordionItem value="items" className="shadow-sm border-2 border-purple-200 rounded-lg bg-white overflow-hidden" id="checklist-items-verified">
-                <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gradient-to-r from-purple-600 to-indigo-600 text-white transition-colors">
+              <AccordionItem value="items" className="shadow-sm border-2 border-sky-200 rounded-lg bg-white overflow-hidden" id="checklist-items-verified">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gradient-to-r from-sky-700 to-sky-800 text-white transition-colors">
                   <div className="flex items-center justify-between w-full pr-2">
                     <div className="flex items-center gap-2">
                       <div
@@ -5857,7 +5857,7 @@ export default function PickPack() {
                 <AccordionContent>
                   {/* Barcode Scanner Input - Collapsible */}
                   {showBarcodeScanner && (
-                    <div className="px-4 pt-3 pb-2 border-b border-gray-200 bg-purple-50">
+                    <div className="px-4 pt-3 pb-2 border-b border-gray-200 bg-sky-50">
                       <div className="flex gap-3">
                         <div className="relative flex-1">
                           <Input
@@ -6009,7 +6009,7 @@ export default function PickPack() {
                                           className={`h-7 px-2 text-xs font-bold ${
                                             isVerified || (isBundle && allBundleComponentsVerified)
                                               ? 'bg-green-500 hover:bg-green-600 text-white' 
-                                              : 'border-purple-300 text-purple-600 hover:bg-purple-50'
+                                              : 'border-sky-300 text-sky-600 hover:bg-sky-50'
                                           }`}
                                           onClick={() => {
                                             if (isBundle) {
@@ -6370,8 +6370,8 @@ export default function PickPack() {
           </Accordion>
 
           {/* Packing Materials Section */}
-          <Card className="shadow-sm border-2 border-amber-200 overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-4 py-3">
+          <Card className="shadow-sm border-2 border-slate-300 overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-slate-700 to-slate-800 text-white px-4 py-3">
               <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
                 <Package className="h-4 w-4 sm:h-5 sm:w-5" />
                 Packing Materials
@@ -6439,7 +6439,7 @@ export default function PickPack() {
 
           {/* Multi-Carton Packing Section */}
           <Card className="shadow-sm border-2 border-amber-300 overflow-hidden" id="checklist-cartons">
-            <CardHeader className="bg-gradient-to-r from-amber-700 to-orange-700 text-white px-4 py-3">
+            <CardHeader className="bg-gradient-to-r from-amber-600 to-amber-700 text-white px-4 py-3">
               <CardTitle className="text-sm sm:text-base font-bold">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -6596,8 +6596,8 @@ export default function PickPack() {
           </Card>
 
           {/* Packing Completion Card - Combined Documents + Checklist */}
-          <Card className="shadow-sm border-2 border-violet-200 overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-violet-600 to-purple-600 text-white px-4 py-3">
+          <Card className="shadow-sm border-2 border-emerald-200 overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-4 py-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
                   <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -6640,8 +6640,8 @@ export default function PickPack() {
           </Card>
 
           {/* Shipping Information Section */}
-          <Card className="shadow-sm border-2 border-purple-200 overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-3">
+          <Card className="shadow-sm border-2 border-indigo-200 overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-indigo-700 to-indigo-800 text-white px-4 py-3">
               <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
                 <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
                 Shipping Information
@@ -6883,13 +6883,17 @@ export default function PickPack() {
           {/* Unified Shipping Labels Section */}
           <Card id="checklist-shipping-labels" className={`shadow-sm bg-white ${
             activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') 
-              ? 'border border-orange-200' 
-              : 'border border-blue-200'
+              ? 'border-2 border-orange-300' 
+              : activePackingOrder.shippingMethod?.toUpperCase().includes('GLS')
+              ? 'border-2 border-sky-300'
+              : 'border-2 border-stone-300'
           }`}>
-            <CardHeader className={`text-white p-3 rounded-t-lg ${
+            <CardHeader className={`text-white px-4 py-3 ${
               activePackingOrder.shippingMethod?.toUpperCase().includes('PPL')
-                ? 'bg-gradient-to-r from-orange-600 to-red-600'
-                : 'bg-gradient-to-r from-blue-600 to-cyan-600'
+                ? 'bg-gradient-to-r from-orange-600 to-orange-700'
+                : activePackingOrder.shippingMethod?.toUpperCase().includes('GLS')
+                ? 'bg-gradient-to-r from-sky-600 to-sky-700'
+                : 'bg-gradient-to-r from-stone-600 to-stone-700'
             }`}>
               <CardTitle className="text-base flex items-center gap-2">
                 <Truck className="h-4 w-4" />
