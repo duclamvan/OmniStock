@@ -5716,8 +5716,19 @@ export default function PickPack() {
         if (activePackingOrder.pplStatus !== 'created') return false;
         if (shipmentLabelsFromDB.length < cartons.length) return false;
       } else if (isGLS) {
-        // GLS: All cartons must have tracking numbers
+        // GLS: All cartons must have tracking numbers and no duplicates
         if (cartons.some(c => !c.trackingNumber || c.trackingNumber.trim() === '')) return false;
+        
+        // Check for duplicate tracking numbers
+        const hasDuplicates = cartons.some((c, i) => 
+          c.trackingNumber && c.trackingNumber.trim() !== '' && 
+          cartons.some((other, j) => 
+            i !== j && 
+            other.trackingNumber && 
+            other.trackingNumber.trim().toUpperCase() === c.trackingNumber?.trim().toUpperCase()
+          )
+        );
+        if (hasDuplicates) return false;
       } else {
         // Other methods: All cartons must be marked as printed
         if (cartons.some(c => !c.labelPrinted)) return false;
@@ -7228,18 +7239,68 @@ export default function PickPack() {
 
           {/* Unified Shipping Labels Section */}
           <Card id="checklist-shipping-labels" className={`shadow-sm bg-white overflow-hidden ${
-            activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') 
-              ? 'border-2 border-orange-300' 
-              : activePackingOrder.shippingMethod?.toUpperCase().includes('GLS')
-              ? 'border-2 border-sky-300'
-              : 'border-2 border-stone-300'
+            (() => {
+              const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
+              const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+              
+              if (isGLS && cartons.length > 0) {
+                // Check if all tracking numbers are filled and valid
+                const allHaveTracking = cartons.every(c => c.trackingNumber && c.trackingNumber.trim() !== '');
+                const hasDuplicates = cartons.some((c, i) => 
+                  c.trackingNumber && c.trackingNumber.trim() !== '' && 
+                  cartons.some((other, j) => 
+                    i !== j && 
+                    other.trackingNumber && 
+                    other.trackingNumber.trim().toUpperCase() === c.trackingNumber?.trim().toUpperCase()
+                  )
+                );
+                
+                if (allHaveTracking && !hasDuplicates) {
+                  return 'border-2 border-green-300';
+                } else if (hasDuplicates) {
+                  return 'border-2 border-red-300';
+                } else {
+                  return 'border-2 border-sky-300';
+                }
+              }
+              
+              return activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') 
+                ? 'border-2 border-orange-300' 
+                : isGLS
+                ? 'border-2 border-sky-300'
+                : 'border-2 border-stone-300';
+            })()
           }`}>
             <CardHeader className={`text-white px-4 py-3 rounded-t-lg -mt-0.5 ${
-              activePackingOrder.shippingMethod?.toUpperCase().includes('PPL')
-                ? 'bg-gradient-to-r from-orange-600 to-orange-700'
-                : activePackingOrder.shippingMethod?.toUpperCase().includes('GLS')
-                ? 'bg-gradient-to-r from-sky-600 to-sky-700'
-                : 'bg-gradient-to-r from-stone-600 to-stone-700'
+              (() => {
+                const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
+                const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+                
+                if (isGLS && cartons.length > 0) {
+                  // Check if all tracking numbers are filled and valid
+                  const allHaveTracking = cartons.every(c => c.trackingNumber && c.trackingNumber.trim() !== '');
+                  const hasDuplicates = cartons.some((c, i) => 
+                    c.trackingNumber && c.trackingNumber.trim() !== '' && 
+                    cartons.some((other, j) => 
+                      i !== j && 
+                      other.trackingNumber && 
+                      other.trackingNumber.trim().toUpperCase() === c.trackingNumber?.trim().toUpperCase()
+                    )
+                  );
+                  
+                  if (allHaveTracking && !hasDuplicates) {
+                    return 'bg-gradient-to-r from-green-600 to-green-700';
+                  } else if (hasDuplicates) {
+                    return 'bg-gradient-to-r from-red-600 to-red-700';
+                  }
+                }
+                
+                return activePackingOrder.shippingMethod?.toUpperCase().includes('PPL')
+                  ? 'bg-gradient-to-r from-orange-600 to-orange-700'
+                  : isGLS
+                  ? 'bg-gradient-to-r from-sky-600 to-sky-700'
+                  : 'bg-gradient-to-r from-stone-600 to-stone-700';
+              })()
             }`}>
               <CardTitle className="text-base font-bold flex items-center gap-2">
                 <Truck className="h-5 w-5" />
@@ -7259,6 +7320,29 @@ export default function PickPack() {
                     return shipmentLabelsFromDB.length > 0 ? shipmentLabelsFromDB.length : cartons.length;
                   }
                 })()})
+                {(() => {
+                  const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
+                  const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+                  
+                  if (isGLS && cartons.length > 0) {
+                    const allHaveTracking = cartons.every(c => c.trackingNumber && c.trackingNumber.trim() !== '');
+                    const hasDuplicates = cartons.some((c, i) => 
+                      c.trackingNumber && c.trackingNumber.trim() !== '' && 
+                      cartons.some((other, j) => 
+                        i !== j && 
+                        other.trackingNumber && 
+                        other.trackingNumber.trim().toUpperCase() === c.trackingNumber?.trim().toUpperCase()
+                      )
+                    );
+                    
+                    if (allHaveTracking && !hasDuplicates) {
+                      return <CheckCircle className="h-5 w-5 ml-auto" />;
+                    } else if (hasDuplicates) {
+                      return <XCircle className="h-5 w-5 ml-auto" />;
+                    }
+                  }
+                  return null;
+                })()}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-3">
@@ -8226,83 +8310,129 @@ export default function PickPack() {
                 return isGLS && cartons.length > 0;
               })() && (
                 <div className="space-y-2">
-                  {cartons.map((carton, index) => (
-                    <div 
-                      key={carton.id}
-                      className="border border-gray-200 rounded-lg p-3 bg-gray-50"
-                      data-testid={`carton-card-${index + 1}`}
-                    >
-                      {/* Carton Header */}
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
-                          <span className="text-white font-bold text-sm">{carton.cartonNumber}</span>
+                  {cartons.map((carton, index) => {
+                    // Check for duplicate tracking numbers
+                    const isDuplicate = carton.trackingNumber && carton.trackingNumber.trim() !== '' && 
+                      cartons.some((c, i) => 
+                        i !== index && 
+                        c.trackingNumber && 
+                        c.trackingNumber.trim().toUpperCase() === carton.trackingNumber?.trim().toUpperCase()
+                      );
+                    const hasTracking = carton.trackingNumber && carton.trackingNumber.trim() !== '';
+                    const isValid = hasTracking && !isDuplicate;
+                    
+                    return (
+                      <div 
+                        key={carton.id}
+                        className={`border-2 rounded-lg p-3 transition-all ${
+                          isDuplicate 
+                            ? 'bg-red-50 border-red-300' 
+                            : isValid 
+                            ? 'bg-green-50 border-green-300' 
+                            : 'bg-gray-50 border-gray-200'
+                        }`}
+                        data-testid={`carton-card-${index + 1}`}
+                      >
+                        {/* Carton Header */}
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                            <span className="text-white font-bold text-sm">{carton.cartonNumber}</span>
+                          </div>
+                          <span className="text-sm font-semibold text-gray-900">Carton #{carton.cartonNumber}</span>
+                          {isDuplicate ? (
+                            <div className="flex items-center gap-1 ml-auto">
+                              <XCircle className="h-4 w-4 text-red-600" />
+                              <span className="text-xs font-medium text-red-600">Duplicate</span>
+                            </div>
+                          ) : isValid ? (
+                            <CheckCircle className="h-4 w-4 text-green-600 ml-auto" />
+                          ) : null}
                         </div>
-                        <span className="text-sm font-semibold text-gray-900">Carton #{carton.cartonNumber}</span>
-                        {carton.trackingNumber && (
-                          <CheckCircle className="h-4 w-4 text-green-600 ml-auto" />
+                        
+                        {/* Tracking Number Input with Paste Button and Validation Icon */}
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <Input
+                              type="text"
+                              placeholder="Enter tracking number..."
+                              defaultValue={carton.trackingNumber || ''}
+                              onPaste={(e) => {
+                                // Wait for paste to complete, then save
+                                setTimeout(() => {
+                                  const trackingNumber = e.currentTarget.value;
+                                  submitTrackingNumber(carton.id, trackingNumber, carton.cartonNumber, false);
+                                }, 10);
+                              }}
+                              onBlur={(e) => {
+                                const trackingNumber = e.target.value;
+                                submitTrackingNumber(carton.id, trackingNumber, carton.cartonNumber, false);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const trackingNumber = e.currentTarget.value;
+                                  submitTrackingNumber(carton.id, trackingNumber, carton.cartonNumber, false);
+                                  e.currentTarget.blur();
+                                }
+                              }}
+                              className={`font-mono text-sm pr-10 ${
+                                isDuplicate ? 'border-red-300 focus:border-red-500' : 
+                                isValid ? 'border-green-300 focus:border-green-500' : ''
+                              }`}
+                              data-testid={`input-gls-tracking-carton-${index + 1}`}
+                              id={`tracking-input-${carton.id}`}
+                            />
+                            {/* Validation Icon inside input */}
+                            {hasTracking && (
+                              <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+                                {isDuplicate ? (
+                                  <XCircle className="h-4 w-4 text-red-600" />
+                                ) : (
+                                  <CheckCircle className="h-4 w-4 text-green-600" />
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="px-3 flex-shrink-0 hover:border-emerald-300 dark:hover:border-emerald-700"
+                            onClick={async () => {
+                              try {
+                                const text = await navigator.clipboard.readText();
+                                const trackingNumber = text.trim();
+                                if (trackingNumber) {
+                                  // Update the input value
+                                  const input = document.getElementById(`tracking-input-${carton.id}`) as HTMLInputElement;
+                                  if (input) {
+                                    input.value = trackingNumber;
+                                  }
+                                  // Save to backend using unified function
+                                  submitTrackingNumber(carton.id, trackingNumber, carton.cartonNumber, false);
+                                }
+                              } catch (error) {
+                                toast({
+                                  title: "Paste failed",
+                                  description: "Please allow clipboard access or paste manually",
+                                  variant: "destructive"
+                                });
+                              }
+                            }}
+                            data-testid={`button-paste-tracking-${index + 1}`}
+                          >
+                            <ClipboardPaste className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                        
+                        {/* Duplicate Warning */}
+                        {isDuplicate && (
+                          <div className="mt-2 flex items-center gap-1 text-xs text-red-600">
+                            <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                            <span className="font-medium">This tracking number is already used by another carton</span>
+                          </div>
                         )}
                       </div>
-                      
-                      {/* Tracking Number Input with Paste Button */}
-                      <div className="flex gap-2">
-                        <Input
-                          type="text"
-                          placeholder="Enter tracking number..."
-                          defaultValue={carton.trackingNumber || ''}
-                          onPaste={(e) => {
-                            // Wait for paste to complete, then save
-                            setTimeout(() => {
-                              const trackingNumber = e.currentTarget.value;
-                              submitTrackingNumber(carton.id, trackingNumber, carton.cartonNumber, true);
-                            }, 10);
-                          }}
-                          onBlur={(e) => {
-                            const trackingNumber = e.target.value;
-                            submitTrackingNumber(carton.id, trackingNumber, carton.cartonNumber, false);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              const trackingNumber = e.currentTarget.value;
-                              submitTrackingNumber(carton.id, trackingNumber, carton.cartonNumber, false);
-                              e.currentTarget.blur();
-                            }
-                          }}
-                          className="font-mono text-sm flex-1"
-                          data-testid={`input-gls-tracking-carton-${index + 1}`}
-                          id={`tracking-input-${carton.id}`}
-                        />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="px-3 flex-shrink-0"
-                          onClick={async () => {
-                            try {
-                              const text = await navigator.clipboard.readText();
-                              const trackingNumber = text.trim();
-                              if (trackingNumber) {
-                                // Update the input value
-                                const input = document.getElementById(`tracking-input-${carton.id}`) as HTMLInputElement;
-                                if (input) {
-                                  input.value = trackingNumber;
-                                }
-                                // Save to backend using unified function
-                                submitTrackingNumber(carton.id, trackingNumber, carton.cartonNumber, true);
-                              }
-                            } catch (error) {
-                              toast({
-                                title: "Paste failed",
-                                description: "Please allow clipboard access or paste manually",
-                                variant: "destructive"
-                              });
-                            }
-                          }}
-                          data-testid={`button-paste-tracking-${index + 1}`}
-                        >
-                          <ClipboardPaste className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
@@ -8484,6 +8614,18 @@ export default function PickPack() {
                       scrollToElement('checklist-shipping-labels', `Missing PPL labels: ${shipmentLabelsFromDB.length} of ${cartons.length} cartons have labels. Please generate all labels.`);
                     } else if (isGLS && cartons.some(c => !c.trackingNumber || c.trackingNumber.trim() === '')) {
                       scrollToElement('checklist-shipping-labels', 'Please enter tracking numbers for all GLS cartons before completing packing.');
+                    } else if (isGLS && (() => {
+                      // Check for duplicate tracking numbers
+                      return cartons.some((c, i) => 
+                        c.trackingNumber && c.trackingNumber.trim() !== '' && 
+                        cartons.some((other, j) => 
+                          i !== j && 
+                          other.trackingNumber && 
+                          other.trackingNumber.trim().toUpperCase() === c.trackingNumber?.trim().toUpperCase()
+                        )
+                      );
+                    })()) {
+                      scrollToElement('checklist-shipping-labels', 'Duplicate tracking numbers detected. Each carton must have a unique tracking number.');
                     } else {
                       scrollToElement('checklist-shipping-labels', 'Please generate and print shipping labels for all cartons.');
                     }
