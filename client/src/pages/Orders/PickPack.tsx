@@ -5807,18 +5807,22 @@ export default function PickPack() {
         if (activePackingOrder.pplStatus !== 'created') return false;
         if (shipmentLabelsFromDB.length < cartons.length) return false;
       } else if (isGLS) {
-        // GLS: All cartons must have tracking numbers and no duplicates
-        if (cartons.some(c => !c.trackingNumber || c.trackingNumber.trim() === '')) return false;
+        // GLS: All cartons must have tracking numbers (check controlled state) and no duplicates
+        if (cartons.some(c => {
+          const trackingValue = trackingInputs[c.id] || '';
+          return trackingValue.trim() === '';
+        })) return false;
         
-        // Check for duplicate tracking numbers
-        const hasDuplicates = cartons.some((c, i) => 
-          c.trackingNumber && c.trackingNumber.trim() !== '' && 
-          cartons.some((other, j) => 
-            i !== j && 
-            other.trackingNumber && 
-            other.trackingNumber.trim().toUpperCase() === c.trackingNumber?.trim().toUpperCase()
-          )
-        );
+        // Check for duplicate tracking numbers in controlled state
+        const hasDuplicates = cartons.some((c, i) => {
+          const trackingValue = (trackingInputs[c.id] || '').trim();
+          if (trackingValue === '') return false;
+          return cartons.some((other, j) => {
+            if (i === j) return false;
+            const otherValue = (trackingInputs[other.id] || '').trim();
+            return otherValue !== '' && trackingValue.toUpperCase() === otherValue.toUpperCase();
+          });
+        });
         if (hasDuplicates) return false;
       } else {
         // Other methods: All cartons must be marked as printed
