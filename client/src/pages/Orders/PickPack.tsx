@@ -5763,8 +5763,8 @@ export default function PickPack() {
             
             {/* Item Verification List - Collapsible Accordion */}
             <Accordion type="single" collapsible defaultValue="items" className="w-full">
-              <AccordionItem value="items" className="border-2 rounded-lg bg-white shadow-sm overflow-hidden" id="checklist-items-verified">
-                <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 transition-colors">
+              <AccordionItem value="items" className="shadow-sm border-2 border-purple-200 rounded-lg bg-white overflow-hidden" id="checklist-items-verified">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gradient-to-r from-purple-600 to-indigo-600 text-white transition-colors">
                   <div className="flex items-center justify-between w-full pr-2">
                     <div className="flex items-center gap-2">
                       <div
@@ -5822,12 +5822,12 @@ export default function PickPack() {
                           }
                           return (verifiedItems[item.id] || 0) >= item.quantity;
                         }) ? (
-                          <CheckCircle className="h-5 w-5 text-green-600" />
+                          <CheckCircle className="h-5 w-5 text-green-400" />
                         ) : (
-                          <Circle className="h-5 w-5 text-gray-400" />
+                          <Circle className="h-5 w-5 text-white/60" />
                         )}
                       </div>
-                      <span className="text-sm sm:text-base font-bold text-gray-900">
+                      <span className="text-sm sm:text-base font-bold">
                         Items Verified ({activePackingOrder.items.filter(item => {
                           if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
                             return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
@@ -5840,7 +5840,7 @@ export default function PickPack() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className={`h-9 w-9 p-0 ${showBarcodeScanner ? 'text-purple-600 bg-purple-100' : 'text-gray-400 hover:bg-gray-100'}`}
+                      className={`h-9 w-9 p-0 ${showBarcodeScanner ? 'bg-white/30 text-white' : 'text-white/70 hover:bg-white/20 hover:text-white'}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         setShowBarcodeScanner(!showBarcodeScanner);
