@@ -5430,88 +5430,41 @@ export default function PickPack() {
               </div>
             </div>
 
-            {/* Step Indicators - Professional Progress Bar */}
-            <div className="flex items-center gap-1.5 mt-3 justify-center flex-wrap px-2">
+            {/* Minimal Progress Bar */}
+            <div className="flex gap-0.5 mt-3 mx-auto max-w-[200px]">
               {/* Step 1: Items */}
-              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all ${
+              <div className={`flex-1 h-1.5 rounded-sm transition-all ${
                 activePackingOrder.items.every(item => {
                   if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
                     return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
                   }
                   return (verifiedItems[item.id] || 0) >= item.quantity;
                 })
-                  ? 'bg-green-500 text-white shadow-green-200' 
-                  : 'bg-white/30 text-white border border-white/40'
-              }`}>
-                {activePackingOrder.items.every(item => {
-                  if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
-                    return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
-                  }
-                  return (verifiedItems[item.id] || 0) >= item.quantity;
-                }) ? (
-                  <CheckCircle className="h-4 w-4" />
-                ) : (
-                  <Circle className="h-4 w-4" />
-                )}
-                <span className="hidden sm:inline">Items</span>
-                <span className="sm:hidden">1</span>
-              </div>
-              
-              <ChevronRight className="h-4 w-4 text-purple-200" />
+                  ? 'bg-green-500' 
+                  : 'bg-gray-400/50'
+              }`} />
               
               {/* Step 2: Documents */}
-              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all ${
+              <div className={`flex-1 h-1.5 rounded-sm transition-all ${
                 printedDocuments.packingList
-                  ? 'bg-green-500 text-white shadow-green-200' 
-                  : 'bg-white/30 text-white border border-white/40'
-              }`}>
-                {printedDocuments.packingList ? (
-                  <CheckCircle className="h-4 w-4" />
-                ) : (
-                  <Circle className="h-4 w-4" />
-                )}
-                <span className="hidden sm:inline">Docs</span>
-                <span className="sm:hidden">2</span>
-              </div>
-              
-              <ChevronRight className="h-4 w-4 text-purple-200" />
+                  ? 'bg-green-500' 
+                  : 'bg-gray-400/50'
+              }`} />
               
               {/* Step 3: Cartons */}
-              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all ${
+              <div className={`flex-1 h-1.5 rounded-sm transition-all ${
                 selectedCarton 
-                  ? 'bg-green-500 text-white shadow-green-200' 
-                  : 'bg-white/30 text-white border border-white/40'
-              }`}>
-                {selectedCarton ? (
-                  <CheckCircle className="h-4 w-4" />
-                ) : (
-                  <Circle className="h-4 w-4" />
-                )}
-                <span className="hidden sm:inline">Carton</span>
-                <span className="sm:hidden">3</span>
-                {cartons.length > 0 && (
-                  <span className="ml-0.5 opacity-90">({cartons.length})</span>
-                )}
-              </div>
-              
-              <ChevronRight className="h-4 w-4 text-purple-200" />
+                  ? 'bg-green-500' 
+                  : 'bg-gray-400/50'
+              }`} />
               
               {/* Step 4: Checklist */}
-              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all ${
+              <div className={`flex-1 h-1.5 rounded-sm transition-all ${
                 packingChecklist.itemsVerified && packingChecklist.packingSlipIncluded && 
                 packingChecklist.boxSealed
-                  ? 'bg-green-500 text-white shadow-green-200' 
-                  : 'bg-white/30 text-white border border-white/40'
-              }`}>
-                {packingChecklist.itemsVerified && packingChecklist.packingSlipIncluded && 
-                 packingChecklist.boxSealed ? (
-                  <CheckCircle className="h-4 w-4" />
-                ) : (
-                  <Circle className="h-4 w-4" />
-                )}
-                <span className="hidden sm:inline">Done</span>
-                <span className="sm:hidden">4</span>
-              </div>
+                  ? 'bg-green-500' 
+                  : 'bg-gray-400/50'
+              }`} />
             </div>
           </div>
         </div>
