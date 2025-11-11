@@ -6598,7 +6598,6 @@ export default function PickPack() {
                       {cartons.length > 0 && (
                         <div className="text-xs text-gray-600">
                           {cartons.length} {cartons.length === 1 ? 'carton' : 'cartons'}
-                          {Number.isFinite(totalWeight) && totalWeight > 0 && ` • ${totalWeight.toFixed(2)} kg`}
                           <span className="text-amber-700 font-medium"> • max 40kg</span>
                         </div>
                       )}
