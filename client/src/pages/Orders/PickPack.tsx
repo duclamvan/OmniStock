@@ -5667,7 +5667,7 @@ export default function PickPack() {
     const progress = (activePackingOrder.packedItems / activePackingOrder.totalItems) * 100;
     const currentCarton = packingRecommendation?.cartons.find(c => c.id === selectedCarton);
     
-    // Check if shipping method is GLS (weight is optional for GLS)
+    // Check if shipping method is GLS
     const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
     const isGLSShipping = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
     
@@ -5683,8 +5683,8 @@ export default function PickPack() {
     });
     
     // Multi-carton validation: all cartons must have type and label
-    // For GLS: weight is optional, but if provided must be ≤ 40kg
-    // For other carriers: weight is required
+    // For GLS: weight is REQUIRED and must be > 0 and ≤ 40kg
+    // For other carriers: weight is required and must be > 0
     const allCartonsValid = (() => {
       if (cartons.length === 0) return false;
       
@@ -5695,10 +5695,8 @@ export default function PickPack() {
         // Weight validation depends on shipping method
         let hasValidWeight = true;
         if (isGLSShipping) {
-          // GLS: weight is optional, but if provided must be ≤ 40kg
-          if (carton.weight && parseFloat(carton.weight) > 0) {
-            hasValidWeight = parseFloat(carton.weight) <= 40;
-          }
+          // GLS: weight is REQUIRED and must be > 0 and ≤ 40kg
+          hasValidWeight = carton.weight && parseFloat(carton.weight) > 0 && parseFloat(carton.weight) <= 40;
         } else {
           // Other carriers: weight is required and must be > 0
           hasValidWeight = carton.weight && parseFloat(carton.weight) > 0;
@@ -8443,9 +8441,9 @@ export default function PickPack() {
                     scrollToElement('checklist-cartons', 'Please add at least one carton for this shipment.');
                   } else if (cartons.some(c => !c.cartonId && c.cartonType !== 'non-company')) {
                     scrollToElement('checklist-cartons', 'Please select a carton type for all cartons.');
-                  } else if (!isGLSShipping && cartons.some(c => !c.weight || parseFloat(c.weight) <= 0)) {
+                  } else if (cartons.some(c => !c.weight || parseFloat(c.weight) <= 0)) {
                     scrollToElement('checklist-cartons', 'Please enter the weight for all cartons.');
-                  } else if (isGLSShipping && cartons.some(c => c.weight && parseFloat(c.weight) > 40)) {
+                  } else if (isGLSShipping && cartons.some(c => parseFloat(c.weight) > 40)) {
                     scrollToElement('checklist-cartons', 'GLS shipments cannot exceed 40kg per carton. Please reduce weight or split into multiple cartons.');
                   } else if ((() => {
                     // Enhanced shipping label validation based on shipping method
