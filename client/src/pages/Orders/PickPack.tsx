@@ -5717,8 +5717,8 @@ export default function PickPack() {
         
         const newOrderCount = stats.pending - previousCountsRef.current.pending;
         toast({
-          title: "🎯 New Order" + (newOrderCount > 1 ? "s" : "") + " Arrived!",
-          description: `${newOrderCount} new order${newOrderCount > 1 ? "s" : ""} ready to pick in Pending queue`,
+          title: `${newOrderCount} New Order${newOrderCount > 1 ? "s" : ""}`,
+          description: `Ready to pack`,
           duration: 6000,
         });
       }
