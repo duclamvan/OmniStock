@@ -6970,14 +6970,14 @@ export default function PickPack() {
           </Card>
 
           {/* Unified Shipping Labels Section */}
-          <Card id="checklist-shipping-labels" className={`shadow-sm bg-white ${
+          <Card id="checklist-shipping-labels" className={`shadow-sm bg-white overflow-hidden ${
             activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') 
               ? 'border-2 border-orange-300' 
               : activePackingOrder.shippingMethod?.toUpperCase().includes('GLS')
               ? 'border-2 border-sky-300'
               : 'border-2 border-stone-300'
           }`}>
-            <CardHeader className={`text-white px-4 py-3 ${
+            <CardHeader className={`text-white px-4 py-3 rounded-t-lg ${
               activePackingOrder.shippingMethod?.toUpperCase().includes('PPL')
                 ? 'bg-gradient-to-r from-orange-600 to-orange-700'
                 : activePackingOrder.shippingMethod?.toUpperCase().includes('GLS')
