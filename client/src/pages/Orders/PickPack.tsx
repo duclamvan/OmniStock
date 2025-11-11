@@ -6818,11 +6818,35 @@ export default function PickPack() {
                     try {
                       setIsPrintingAllDocuments(true);
                       await mergeAndPrintPDFs(allDocumentUrls);
+                      
+                      // Mark all documents as printed
                       setPrintedDocuments(prev => ({ ...prev, packingList: true }));
+                      
+                      // Mark all product files as printed
+                      const productFileIds = (activePackingOrder?.items || [])
+                        .map((item: any) => item.productId)
+                        .filter(Boolean);
+                      if (productFileIds.length > 0) {
+                        const productFilesQuery = queryClient.getQueryData(['/api/product-files']) as any[];
+                        if (productFilesQuery) {
+                          const relevantProductFileIds = productFilesQuery
+                            .filter(file => productFileIds.includes(file.productId) && file.isActive && ['certificate', 'sds'].includes(file.fileType))
+                            .map(file => file.id);
+                          setPrintedProductFiles(new Set(relevantProductFileIds));
+                        }
+                      }
+                      
+                      // Mark all order files as printed
+                      const orderFilesQuery = queryClient.getQueryData(['/api/orders', activePackingOrder?.id, 'files']) as any[];
+                      if (orderFilesQuery && orderFilesQuery.length > 0) {
+                        const orderFileIds = orderFilesQuery.map((file: any, index: number) => file.id || `file-${index}`);
+                        setPrintedOrderFiles(new Set(orderFileIds));
+                      }
+                      
                       playSound('success');
                       toast({
                         title: "Documents Sent to Printer",
-                        description: `All ${documentsCount} document(s) merged into one PDF`,
+                        description: `All ${documentsCount} document(s) merged and marked as printed`,
                       });
                     } catch (error: any) {
                       console.error('Error printing merged documents:', error);
