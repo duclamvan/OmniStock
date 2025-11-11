@@ -117,7 +117,9 @@ import {
   Wrench,
   DollarSign,
   Trash2,
-  Copy
+  Copy,
+  ExternalLink,
+  Download
 } from "lucide-react";
 
 interface BundleItem {
@@ -5166,12 +5168,13 @@ export default function PickPack() {
   const completePacking = async () => {
     if (!activePackingOrder) return;
     
-    // CRITICAL: Save any unsaved GLS tracking numbers before completion
+    // CRITICAL: Save any unsaved GLS/DHL tracking numbers before completion
     const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
     const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+    const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
     
-    if (isGLS && cartons.length > 0) {
-      console.log('💾 Saving unsaved GLS tracking numbers before completion...');
+    if ((isGLS || isDHL) && cartons.length > 0) {
+      console.log('💾 Saving unsaved GLS/DHL tracking numbers before completion...');
       try {
         // Find all cartons with unsaved tracking numbers
         const unsavedUpdates = cartons.filter(carton => {
@@ -5794,9 +5797,10 @@ export default function PickPack() {
     const progress = (activePackingOrder.packedItems / activePackingOrder.totalItems) * 100;
     const currentCarton = packingRecommendation?.cartons.find(c => c.id === selectedCarton);
     
-    // Check if shipping method is GLS
+    // Check if shipping method is GLS or DHL
     const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
     const isGLSShipping = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
+    const isDHLShipping = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
     
     // Check if all items are verified, including bundle components
     // IMPORTANT: Check activePackingOrder.items (what's shown in UI), NOT currentCarton.items
@@ -7321,10 +7325,132 @@ export default function PickPack() {
                 );
               })()}
 
-              {/* Non-GLS Orders - Show original shipping information */}
+              {/* DHL Shipping Details - Only for DHL or DHL DE */}
+              {(() => {
+                const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
+                const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
+                return isDHL;
+              })() && (() => {
+                const shippingAddr = activePackingOrder.shippingAddress;
+                const recipientData = typeof shippingAddr === 'object' ? {
+                  name: [shippingAddr.firstName, shippingAddr.lastName].filter(Boolean).join(' ') || 'N/A',
+                  company: shippingAddr.company || '',
+                  street: shippingAddr.street || '',
+                  houseNumber: shippingAddr.streetNumber || '',
+                  postalCode: shippingAddr.zipCode || '',
+                  city: shippingAddr.city || '',
+                  country: shippingAddr.country || 'Germany',
+                  email: shippingAddr.email || '',
+                  phone: shippingAddr.tel || '',
+                } : {
+                  name: 'N/A',
+                  company: '',
+                  street: '',
+                  houseNumber: '',
+                  postalCode: '',
+                  city: '',
+                  country: 'Germany',
+                  email: '',
+                  phone: '',
+                };
+                
+                let totalWeight = 0;
+                cartons.forEach(carton => {
+                  if (carton.weight) {
+                    totalWeight += parseFloat(carton.weight);
+                  }
+                });
+
+                const nameParts = (recipientData.name || '').trim().split(' ');
+                const firstName = nameParts[0] || '';
+                const lastName = nameParts.slice(1).join(' ') || '';
+                
+                const copyField = async (value: string, fieldName: string) => {
+                  try {
+                    await navigator.clipboard.writeText(value);
+                  } catch {
+                    toast({
+                      title: "Copy failed",
+                      description: "Please try again",
+                      variant: "destructive"
+                    });
+                  }
+                };
+
+                const fullAddress = [
+                  `${recipientData.street} ${recipientData.houseNumber}`.trim(),
+                  recipientData.postalCode,
+                  recipientData.city
+                ].filter(Boolean).join(', ');
+
+                const CompactCopyField = ({ label, value }: { label: string; value: string }) => (
+                  <div className="flex items-center justify-between gap-2 py-1">
+                    <span className="text-sm text-black flex-shrink-0">{label}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-base font-medium text-black text-right">{value || '-'}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 hover:bg-gray-100 flex-shrink-0"
+                        onClick={() => copyField(value, label)}
+                      >
+                        <Copy className="h-3.5 w-3.5 text-gray-600" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+
+                return (
+                  <div className="space-y-3">
+                    {/* Header */}
+                    <div>
+                      <div className="font-bold text-black text-lg">{activePackingOrder.shippingMethod}</div>
+                      <div className="text-sm text-black mt-0.5">
+                        Domestic Germany shipping • Package sizes: 2kg, 5kg, 10kg, 20kg
+                      </div>
+                    </div>
+
+                    {/* DHL Link Button */}
+                    <Button
+                      variant="default"
+                      className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold"
+                      onClick={() => {
+                        window.open('https://www.dhl.de/de/privatkunden/pakete-versenden/online-frankieren.html', '_blank');
+                      }}
+                      data-testid="button-dhl-website"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Create Label on DHL Website
+                    </Button>
+
+                    {/* Copyable Fields */}
+                    <div className="space-y-0.5">
+                      <CompactCopyField label="Country:" value={recipientData.country} />
+                      <CompactCopyField label="Weight:" value={totalWeight > 0 ? `${totalWeight.toFixed(1)} kg` : 'Not set'} />
+                      
+                      {/* Divider */}
+                      <Separator className="my-3" />
+                      
+                      <CompactCopyField label="First Name:" value={firstName} />
+                      <CompactCopyField label="Last Name:" value={lastName} />
+                      <CompactCopyField label="Company:" value={recipientData.company} />
+                      <CompactCopyField label="Street:" value={recipientData.street} />
+                      <CompactCopyField label="House Number:" value={recipientData.houseNumber} />
+                      <CompactCopyField label="Postal Code:" value={recipientData.postalCode} />
+                      <CompactCopyField label="City:" value={recipientData.city} />
+                      <CompactCopyField label="E-mail:" value={recipientData.email || ''} />
+                      <CompactCopyField label="Phone:" value={recipientData.phone || ''} />
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Non-GLS/DHL Orders - Show original shipping information */}
               {!(() => {
                 const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
-                return shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+                const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+                const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
+                return isGLS || isDHL;
               })() && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Shipping Address */}
@@ -7402,6 +7528,7 @@ export default function PickPack() {
             (() => {
               const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
               const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+              const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
               
               if (isGLS && cartons.length > 0) {
                 // Check if all tracking numbers are filled and valid
@@ -7424,10 +7551,33 @@ export default function PickPack() {
                 }
               }
               
+              if (isDHL && cartons.length > 0) {
+                // Check if all tracking numbers are filled and valid
+                const allHaveTracking = cartons.every(c => c.trackingNumber && c.trackingNumber.trim() !== '');
+                const hasDuplicates = cartons.some((c, i) => 
+                  c.trackingNumber && c.trackingNumber.trim() !== '' && 
+                  cartons.some((other, j) => 
+                    i !== j && 
+                    other.trackingNumber && 
+                    other.trackingNumber.trim().toUpperCase() === c.trackingNumber?.trim().toUpperCase()
+                  )
+                );
+                
+                if (allHaveTracking && !hasDuplicates) {
+                  return 'border-2 border-green-300';
+                } else if (hasDuplicates) {
+                  return 'border-2 border-red-300';
+                } else {
+                  return 'border-2 border-yellow-400';
+                }
+              }
+              
               return activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') 
                 ? 'border-2 border-orange-300' 
                 : isGLS
                 ? 'border-2 border-sky-300'
+                : isDHL
+                ? 'border-2 border-yellow-400'
                 : 'border-2 border-stone-300';
             })()
           }`}>
@@ -7435,8 +7585,28 @@ export default function PickPack() {
               (() => {
                 const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
                 const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+                const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
                 
                 if (isGLS && cartons.length > 0) {
+                  // Check if all tracking numbers are filled and valid
+                  const allHaveTracking = cartons.every(c => c.trackingNumber && c.trackingNumber.trim() !== '');
+                  const hasDuplicates = cartons.some((c, i) => 
+                    c.trackingNumber && c.trackingNumber.trim() !== '' && 
+                    cartons.some((other, j) => 
+                      i !== j && 
+                      other.trackingNumber && 
+                      other.trackingNumber.trim().toUpperCase() === c.trackingNumber?.trim().toUpperCase()
+                    )
+                  );
+                  
+                  if (allHaveTracking && !hasDuplicates) {
+                    return 'bg-gradient-to-r from-green-600 to-green-700';
+                  } else if (hasDuplicates) {
+                    return 'bg-gradient-to-r from-red-600 to-red-700';
+                  }
+                }
+                
+                if (isDHL && cartons.length > 0) {
                   // Check if all tracking numbers are filled and valid
                   const allHaveTracking = cartons.every(c => c.trackingNumber && c.trackingNumber.trim() !== '');
                   const hasDuplicates = cartons.some((c, i) => 
@@ -7459,6 +7629,8 @@ export default function PickPack() {
                   ? 'bg-gradient-to-r from-orange-600 to-orange-700'
                   : isGLS
                   ? 'bg-gradient-to-r from-sky-600 to-sky-700'
+                  : isDHL
+                  ? 'bg-gradient-to-r from-yellow-500 to-yellow-600'
                   : 'bg-gradient-to-r from-stone-600 to-stone-700';
               })()
             }`}>
@@ -7467,13 +7639,14 @@ export default function PickPack() {
                 Shipping Labels ({(() => {
                   const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
                   const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+                  const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
                   const isPPL = shippingMethod.includes('PPL');
                   
                   if (isPPL) {
                     // For PPL: count cartons if they exist, otherwise count labels from DB
                     return cartons.length > 0 ? cartons.length : shipmentLabelsFromDB.length;
-                  } else if (isGLS) {
-                    // For GLS: count cartons
+                  } else if (isGLS || isDHL) {
+                    // For GLS/DHL: count cartons
                     return cartons.length;
                   } else {
                     // For other methods: count labels from DB or cartons
@@ -8595,6 +8768,148 @@ export default function PickPack() {
                               }
                             }}
                             data-testid={`button-paste-tracking-${index + 1}`}
+                          >
+                            <ClipboardPaste className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                        
+                        {/* Duplicate Warning */}
+                        {isDuplicate && (
+                          <div className="mt-2 flex items-center gap-1 text-xs text-red-600">
+                            <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                            <span className="font-medium">This tracking number is already used by another carton</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* DHL Carton Cards with Tracking */}
+              {(() => {
+                const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
+                const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
+                return isDHL && cartons.length > 0;
+              })() && (
+                <div className="space-y-2">
+                  {cartons.map((carton, index) => {
+                    // Simple validation from controlled state
+                    const currentValue = trackingInputs[carton.id] || '';
+                    const hasValue = currentValue.trim() !== '';
+                    
+                    // Check for duplicates (case-insensitive)
+                    const isDuplicate = hasValue && cartons.some((c, i) => 
+                      i !== index && 
+                      trackingInputs[c.id] &&
+                      trackingInputs[c.id].trim().toUpperCase() === currentValue.trim().toUpperCase()
+                    );
+                    
+                    const isValid = hasValue && !isDuplicate;
+                    
+                    return (
+                      <div 
+                        key={carton.id}
+                        className={`border-2 rounded-lg p-3 transition-all ${
+                          isDuplicate 
+                            ? 'bg-red-50 border-red-300' 
+                            : isValid 
+                            ? 'bg-green-50 border-green-300' 
+                            : 'bg-yellow-50 border-yellow-200'
+                        }`}
+                        data-testid={`dhl-carton-card-${index + 1}`}
+                      >
+                        {/* Carton Header */}
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-7 h-7 rounded-full bg-yellow-500 flex items-center justify-center flex-shrink-0">
+                            <span className="text-black font-bold text-sm">{carton.cartonNumber}</span>
+                          </div>
+                          <span className="text-sm font-semibold text-black">Carton #{carton.cartonNumber}</span>
+                          {isDuplicate ? (
+                            <div className="flex items-center gap-1 ml-auto">
+                              <XCircle className="h-4 w-4 text-red-600" />
+                              <span className="text-xs font-medium text-red-600">Duplicate</span>
+                            </div>
+                          ) : isValid ? (
+                            <CheckCircle className="h-4 w-4 text-green-600 ml-auto" />
+                          ) : null}
+                        </div>
+                        
+                        {/* Tracking Number Input with Paste Button and Validation Icon */}
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <Input
+                              type="text"
+                              placeholder="Enter DHL tracking number..."
+                              value={currentValue}
+                              onChange={(e) => {
+                                // Update controlled state immediately
+                                const newValue = e.target.value;
+                                setTrackingInputs(prev => ({
+                                  ...prev,
+                                  [carton.id]: newValue
+                                }));
+                              }}
+                              onBlur={(e) => {
+                                // Save to backend on blur
+                                const trackingNumber = e.target.value.trim();
+                                if (trackingNumber) {
+                                  submitTrackingNumber(carton.id, trackingNumber, carton.cartonNumber, false);
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const trackingNumber = e.currentTarget.value.trim();
+                                  if (trackingNumber) {
+                                    submitTrackingNumber(carton.id, trackingNumber, carton.cartonNumber, false);
+                                  }
+                                  e.currentTarget.blur();
+                                }
+                              }}
+                              className={`font-mono text-[16px] pr-10 ${
+                                isDuplicate ? 'border-red-400 focus:border-red-500' : 
+                                isValid ? 'border-green-400 focus:border-green-500' : ''
+                              }`}
+                              data-testid={`input-dhl-tracking-carton-${index + 1}`}
+                              id={`dhl-tracking-input-${carton.id}`}
+                            />
+                            {/* Validation Icon inside input */}
+                            {hasValue && (
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none z-10">
+                                {isDuplicate ? (
+                                  <XCircle className="h-5 w-5 text-red-600 fill-red-50" />
+                                ) : (
+                                  <CheckCircle className="h-5 w-5 text-green-600 fill-green-50" />
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="px-3 flex-shrink-0 hover:border-emerald-300 dark:hover:border-emerald-700"
+                            onClick={async () => {
+                              try {
+                                const text = await navigator.clipboard.readText();
+                                const trackingNumber = text.trim();
+                                if (trackingNumber) {
+                                  // Update controlled state
+                                  setTrackingInputs(prev => ({
+                                    ...prev,
+                                    [carton.id]: trackingNumber
+                                  }));
+                                  // Save to backend using unified function
+                                  submitTrackingNumber(carton.id, trackingNumber, carton.cartonNumber, false);
+                                }
+                              } catch (error) {
+                                toast({
+                                  title: "Paste failed",
+                                  description: "Please allow clipboard access or paste manually",
+                                  variant: "destructive"
+                                });
+                              }
+                            }}
+                            data-testid={`button-paste-dhl-tracking-${index + 1}`}
                           >
                             <ClipboardPaste className="h-3.5 w-3.5" />
                           </Button>
