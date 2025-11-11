@@ -7215,15 +7215,17 @@ export default function PickPack() {
                   phone: '',
                 };
                 
-                const senderData = glsSenderAddress ? {
-                  name: glsSenderAddress.name || '',
-                  company: glsSenderAddress.company || '',
-                  street: glsSenderAddress.street || '',
-                  houseNumber: glsSenderAddress.streetNumber || '',
-                  postalCode: glsSenderAddress.zipCode || '',
-                  city: glsSenderAddress.city || '',
-                  email: glsSenderAddress.email || '',
-                  phone: glsSenderAddress.phone || '',
+                // Extract .value property from settings response
+                const glsSenderData = glsSenderAddress?.value || glsSenderAddress;
+                const senderData = glsSenderData ? {
+                  name: glsSenderData.name || '',
+                  company: glsSenderData.company || '',
+                  street: glsSenderData.street || '',
+                  houseNumber: glsSenderData.houseNumber || '',
+                  postalCode: glsSenderData.postalCode || '',
+                  city: glsSenderData.city || '',
+                  email: glsSenderData.email || '',
+                  phone: glsSenderData.phone || '',
                 } : undefined;
                 
                 let totalWeight = 0;
@@ -7392,17 +7394,18 @@ export default function PickPack() {
                   phone: '',
                 };
                 
-                // Prepare sender data from DHL settings
-                const senderData = dhlSenderAddress ? {
-                  firstName: dhlSenderAddress.firstName || '',
-                  lastName: dhlSenderAddress.lastName || '',
-                  addressSupplement: dhlSenderAddress.addressSupplement || '',
-                  street: dhlSenderAddress.street || '',
-                  houseNumber: dhlSenderAddress.houseNumber || '',
-                  postalCode: dhlSenderAddress.postalCode || '',
-                  city: dhlSenderAddress.city || '',
-                  country: dhlSenderAddress.country || 'Deutschland',
-                  email: dhlSenderAddress.email || '',
+                // Prepare sender data from DHL settings - extract .value property
+                const dhlSenderData = dhlSenderAddress?.value || dhlSenderAddress;
+                const senderData = dhlSenderData ? {
+                  firstName: dhlSenderData.firstName || '',
+                  lastName: dhlSenderData.lastName || '',
+                  addressSupplement: dhlSenderData.addressSupplement || '',
+                  street: dhlSenderData.street || '',
+                  houseNumber: dhlSenderData.houseNumber || '',
+                  postalCode: dhlSenderData.postalCode || '',
+                  city: dhlSenderData.city || '',
+                  country: dhlSenderData.country || 'Deutschland',
+                  email: dhlSenderData.email || '',
                 } : null;
                 
                 // Calculate total weight from cartons
@@ -7538,13 +7541,16 @@ export default function PickPack() {
                         </p>
 
                         {/* COD Bank Details - Only show if COD is enabled */}
-                        {showCOD && (
+                        {showCOD && (() => {
+                          // Extract .value property from settings response
+                          const bankData = dhlBankDetails?.value || dhlBankDetails;
+                          return (
                           <div className="pl-6 space-y-2 pt-2 border-l-2 border-yellow-300">
-                            {dhlBankDetails ? (
+                            {bankData ? (
                               <>
-                                <CompactCopyField label="IBAN*" value={dhlBankDetails.iban || ''} />
-                                <CompactCopyField label="BIC*" value={dhlBankDetails.bic || ''} />
-                                <CompactCopyField label="Kontoinhaber*" value={dhlBankDetails.accountHolder || ''} />
+                                <CompactCopyField label="IBAN*" value={bankData.iban || ''} />
+                                <CompactCopyField label="BIC*" value={bankData.bic || ''} />
+                                <CompactCopyField label="Kontoinhaber*" value={bankData.accountHolder || ''} />
                                 <CompactCopyField 
                                   label="Betrag in EUR*" 
                                   value={codAmount > 0 ? codAmount.toFixed(2) : '0.00'} 
@@ -7570,7 +7576,7 @@ export default function PickPack() {
                               </div>
                             )}
                           </div>
-                        )}
+                        )})()}
                       </div>
                     </div>
 
