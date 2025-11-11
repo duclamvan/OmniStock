@@ -1733,6 +1733,8 @@ export default function PickPack() {
       const loadedPrintedProductFiles = loadPackingState(orderId, 'printedProductFiles', []);
       const loadedPrintedOrderFiles = loadPackingState(orderId, 'printedOrderFiles', []);
       const loadedPrintedPPLLabels = loadPackingState(orderId, 'printedPPLLabels', []);
+      const loadedPackingTimer = loadPackingState(orderId, 'packingTimer', 0);
+      const loadedTimerRunning = loadPackingState(orderId, 'isPackingTimerRunning', false);
       
       // CRITICAL: Load manual modification flag to prevent AI recalculation
       const loadedManualFlag = loadPackingState(orderId, 'hasManuallyModifiedCartons', false);
@@ -1749,6 +1751,10 @@ export default function PickPack() {
       setBundlePickedItems(bundlePickedItemsWithSets);
       
       setShowBarcodeScanner(loadedShowBarcode);
+      
+      // Restore timer state
+      setPackingTimer(loadedPackingTimer);
+      setIsPackingTimerRunning(loadedTimerRunning);
       
       // NOTE: Cartons are loaded from DATABASE via useQuery hook (see sync effect below)
       // localStorage is used as backup only, updated after successful DB saves
@@ -1798,6 +1804,18 @@ export default function PickPack() {
       savePackingState(activePackingOrder.id, 'showBarcodeScanner', showBarcodeScanner);
     }
   }, [showBarcodeScanner, activePackingOrder?.id]);
+
+  useEffect(() => {
+    if (activePackingOrder?.id) {
+      savePackingState(activePackingOrder.id, 'packingTimer', packingTimer);
+    }
+  }, [packingTimer, activePackingOrder?.id]);
+
+  useEffect(() => {
+    if (activePackingOrder?.id) {
+      savePackingState(activePackingOrder.id, 'isPackingTimerRunning', isPackingTimerRunning);
+    }
+  }, [isPackingTimerRunning, activePackingOrder?.id]);
 
   // NOTE: Cartons are NOT saved to localStorage - database is the single source of truth
   // They are automatically saved through mutations (updateCartonMutation, createCartonMutation, deleteCartonMutation)
