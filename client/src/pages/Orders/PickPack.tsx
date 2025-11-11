@@ -6599,15 +6599,14 @@ export default function PickPack() {
                       )}
                     </div>
 
-                    {/* GLS Autofill Button - Desktop Only */}
-                    <div className="hidden md:block">
-                      <GLSAutofillButton
-                        recipientData={recipientData}
-                        senderData={senderData}
-                        packageSize="S"
-                        weight={totalWeight > 0 ? totalWeight : undefined}
-                      />
-                    </div>
+                    {/* Ship GLS Button - Mobile & Desktop */}
+                    <GLSAutofillButton
+                      recipientData={recipientData}
+                      senderData={senderData}
+                      packageSize="S"
+                      weight={totalWeight > 0 ? totalWeight : undefined}
+                      orderId={activePackingOrder.orderId}
+                    />
 
                     {/* Copyable Fields */}
                     <div className="space-y-1">

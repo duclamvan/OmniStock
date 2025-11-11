@@ -178,6 +178,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GLS autofill data endpoint for Tampermonkey
+  app.get('/api/gls-autofill-data/:orderId', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      
+      // Find order by orderId
+      const orders = await storage.getOrders();
+      const order = orders.find(o => o.orderId === orderId);
+      
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+      
+      // Get shipping address if shippingAddressId exists
+      let shippingAddr: any = {};
+      if (order.shippingAddressId) {
+        const address = await storage.getAddress(order.shippingAddressId);
+        if (address) {
+          shippingAddr = address;
+        }
+      }
+      
+      // Get GLS sender address from settings
+      const settings = await storage.getAppSettings();
+      const glsSenderSetting = settings.find(s => s.key === 'gls_default_sender_address');
+      const senderData = glsSenderSetting?.value ? JSON.parse(glsSenderSetting.value) : undefined;
+      
+      const autofillData = {
+        recipient: {
+          name: [shippingAddr.firstName, shippingAddr.lastName].filter(Boolean).join(' ') || 'N/A',
+          company: shippingAddr.company || '',
+          street: shippingAddr.street || '',
+          houseNumber: shippingAddr.streetNumber || '',
+          postalCode: shippingAddr.zipCode || '',
+          city: shippingAddr.city || '',
+          country: shippingAddr.country || 'Germany',
+          email: shippingAddr.email || '',
+          phone: shippingAddr.tel || '',
+        },
+        sender: senderData ? {
+          name: senderData.name || '',
+          company: senderData.company || '',
+          street: senderData.street || '',
+          houseNumber: senderData.streetNumber || '',
+          postalCode: senderData.zipCode || '',
+          city: senderData.city || '',
+          email: senderData.email || '',
+          phone: senderData.phone || '',
+        } : undefined,
+        packageSize: 'S',
+        weight: undefined,
+      };
+      
+      // Set CORS headers to allow cross-origin requests
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      
+      res.json(autofillData);
+    } catch (error) {
+      console.error('Error serving GLS autofill data:', error);
+      res.status(500).json({ error: 'Failed to load order data' });
+    }
+  });
+
   // Dashboard endpoints with caching
   app.get('/api/dashboard/metrics', cacheMiddleware(60000), async (req, res) => {
     try {

@@ -34,13 +34,15 @@ interface GLSAutofillButtonProps {
   };
   packageSize?: 'XS' | 'S' | 'M' | 'L' | 'XL';
   weight?: number;
+  orderId?: string;
 }
 
-export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M', weight }: GLSAutofillButtonProps) {
+export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M', weight, orderId }: GLSAutofillButtonProps) {
   const [showBookmarkletDialog, setShowBookmarkletDialog] = useState(false);
   const [showDebugData, setShowDebugData] = useState(false);
   const bookmarkletRef = useRef<HTMLAnchorElement>(null);
   const { toast } = useToast();
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   // Generate the bookmarklet code (both display and encoded versions)
   const generateBookmarklet = () => {
@@ -551,30 +553,38 @@ ${weight ? `Gewicht: ${weight} kg` : ''}
     });
   };
 
-  // Open GLS page
+  // Open GLS page (with order ID for mobile Tampermonkey autofill)
   const openGLSPage = () => {
-    window.open('https://www.gls-pakete.de/privatkunden/paketversand/paketkonfiguration', '_blank');
+    let url = 'https://www.gls-pakete.de/privatkunden/paketversand/paketkonfiguration';
+    if (orderId && isMobile) {
+      url += `?davie_order_id=${orderId}`;
+    }
+    window.open(url, '_blank');
   };
 
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-col sm:flex-row gap-2">
       <Button
-        variant="outline"
+        variant="default"
         onClick={() => {
           openGLSPage();
-          setShowBookmarkletDialog(true);
+          // Only show bookmarklet dialog on desktop
+          if (!isMobile) {
+            setShowBookmarkletDialog(true);
+          }
         }}
-        className="flex items-center gap-2"
+        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold w-full sm:flex-1"
         data-testid="button-ship-with-gls"
       >
         <ExternalLink className="h-4 w-4" />
-        Ship with GLS
+        Ship GLS
+        {isMobile && orderId && <span className="text-xs opacity-90">(auto-fill)</span>}
       </Button>
 
       <Button
         variant="outline"
         onClick={copyToClipboard}
-        className="flex items-center gap-2"
+        className="flex items-center gap-2 hidden sm:flex"
         data-testid="button-copy-gls-details"
       >
         <Copy className="h-4 w-4" />
