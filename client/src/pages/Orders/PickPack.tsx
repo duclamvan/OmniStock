@@ -6434,8 +6434,12 @@ export default function PickPack() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-3 md:p-4">
-              {/* GLS Shipping Details */}
-              {activePackingOrder.shippingMethod?.toUpperCase().includes('GLS') && (() => {
+              {/* GLS Shipping Details - Only for GLS or GLS DE */}
+              {(() => {
+                const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
+                const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+                return isGLS;
+              })() && (() => {
                 const shippingAddr = activePackingOrder.shippingAddress;
                 const recipientData = typeof shippingAddr === 'object' ? {
                   name: [shippingAddr.firstName, shippingAddr.lastName].filter(Boolean).join(' ') || 'N/A',
@@ -6482,6 +6486,49 @@ export default function PickPack() {
                 const lastName = nameParts.slice(1).join(' ') || '';
                 const germanCountry = GLS_COUNTRY_MAP[recipientData.country] || recipientData.country;
                 
+                // Get country flag emoji
+                const getCountryFlag = (countryName: string) => {
+                  const countryCodeMap: { [key: string]: string } = {
+                    'Deutschland': 'DE',
+                    'Germany': 'DE',
+                    'Frankreich': 'FR',
+                    'France': 'FR',
+                    'Österreich': 'AT',
+                    'Austria': 'AT',
+                    'Schweiz': 'CH',
+                    'Switzerland': 'CH',
+                    'Polen': 'PL',
+                    'Poland': 'PL',
+                    'Tschechien': 'CZ',
+                    'Czech Republic': 'CZ',
+                    'Niederlande': 'NL',
+                    'Netherlands': 'NL',
+                    'Belgien': 'BE',
+                    'Belgium': 'BE',
+                    'Italien': 'IT',
+                    'Italy': 'IT',
+                    'Spanien': 'ES',
+                    'Spain': 'ES',
+                    'Dänemark': 'DK',
+                    'Denmark': 'DK',
+                    'Schweden': 'SE',
+                    'Sweden': 'SE',
+                    'Slowakei': 'SK',
+                    'Slovakia': 'SK',
+                  };
+                  
+                  const code = countryCodeMap[countryName] || countryCodeMap[recipientData.country];
+                  // Only return flag if we have a valid country code mapping
+                  if (!code) return '';
+                  
+                  // Convert country code to flag emoji
+                  return code
+                    .toUpperCase()
+                    .split('')
+                    .map(char => String.fromCodePoint(127397 + char.charCodeAt(0)))
+                    .join('');
+                };
+                
                 const copyField = async (value: string, fieldName: string) => {
                   try {
                     await navigator.clipboard.writeText(value);
@@ -6505,10 +6552,11 @@ export default function PickPack() {
                   recipientData.city
                 ].filter(Boolean).join(', ');
 
-                const CompactCopyField = ({ label, value }: { label: string; value: string }) => (
+                const CompactCopyField = ({ label, value, flag }: { label: string; value: string; flag?: string }) => (
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs text-gray-700 flex-shrink-0">{label}</span>
                     <div className="flex items-center gap-1.5 min-w-0">
+                      {flag && <span className="text-lg">{flag}</span>}
                       <span className="text-sm font-medium text-gray-900 text-right">{value || '-'}</span>
                       <Button
                         variant="ghost"
@@ -6560,8 +6608,12 @@ export default function PickPack() {
 
                     {/* Copyable Fields */}
                     <div className="space-y-1">
-                      <CompactCopyField label="Country:" value={germanCountry} />
+                      <CompactCopyField label="Country:" value={germanCountry} flag={getCountryFlag(germanCountry)} />
                       <CompactCopyField label="Paket size:" value="S" />
+                      
+                      {/* Divider */}
+                      <Separator className="my-2" />
+                      
                       <CompactCopyField label="First Name:" value={firstName} />
                       <CompactCopyField label="Last Name:" value={lastName} />
                       <CompactCopyField label="Full Address:" value={fullAddress} />
@@ -6572,7 +6624,10 @@ export default function PickPack() {
               })()}
 
               {/* Non-GLS Orders - Show original shipping information */}
-              {!activePackingOrder.shippingMethod?.toUpperCase().includes('GLS') && (
+              {!(() => {
+                const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
+                return shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+              })() && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Shipping Address */}
                   <div className="sm:col-span-2 p-3 bg-purple-50 border border-purple-200 rounded-lg">
@@ -7607,7 +7662,11 @@ export default function PickPack() {
               )}
 
               {/* GLS Carton Cards with Tracking */}
-              {activePackingOrder.shippingMethod?.toUpperCase().includes('GLS') && cartons.length > 0 && (
+              {(() => {
+                const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
+                const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+                return isGLS && cartons.length > 0;
+              })() && (
                 <div className="space-y-2">
                   {cartons.map((carton, index) => (
                     <div 
@@ -7661,9 +7720,13 @@ export default function PickPack() {
               )}
 
               {/* Regular Shipping Labels (for non-PPL, non-DHL, non-GLS shipments) */}
-              {!activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') && 
-               !activePackingOrder.shippingMethod?.toUpperCase().includes('DHL') && 
-               !activePackingOrder.shippingMethod?.toUpperCase().includes('GLS') && (
+              {(() => {
+                const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
+                const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+                const isPPL = shippingMethod.includes('PPL');
+                const isDHL = shippingMethod.includes('DHL');
+                return !isPPL && !isDHL && !isGLS;
+              })() && (
                 <>
                   {/* Labels Display */}
                   {shippingLabels.length > 0 ? (
