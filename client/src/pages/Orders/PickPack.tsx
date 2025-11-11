@@ -6599,15 +6599,9 @@ export default function PickPack() {
                         <div className="text-xs text-gray-600">
                           {cartons.length} {cartons.length === 1 ? 'carton' : 'cartons'}
                           {Number.isFinite(totalWeight) && totalWeight > 0 && ` • ${totalWeight.toFixed(2)} kg`}
+                          <span className="text-amber-700 font-medium"> • max 40kg</span>
                         </div>
                       )}
-                    </div>
-
-                    {/* Max Weight Note */}
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">
-                      <p className="text-xs text-amber-800 font-medium">
-                        max 40kg/carton
-                      </p>
                     </div>
 
                     {/* GLS Autofill Button - Desktop Only */}
