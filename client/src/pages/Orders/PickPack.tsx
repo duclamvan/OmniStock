@@ -6119,7 +6119,7 @@ export default function PickPack() {
                                         <div className="w-full mt-0.5">
                                           <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
                                             <div 
-                                              className="h-full bg-purple-500 transition-all duration-300"
+                                              className="h-full bg-sky-500 transition-all duration-300"
                                               style={{ width: `${((verifiedItems[item.id] || 0) / item.quantity) * 100}%` }}
                                             />
                                           </div>
@@ -6233,7 +6233,7 @@ export default function PickPack() {
                                     className={`h-8 px-3 text-sm font-bold ${
                                       isVerified || (isBundle && allBundleComponentsVerified)
                                         ? 'bg-green-500 hover:bg-green-600 text-white' 
-                                        : 'border-purple-300 text-purple-600 hover:bg-purple-50'
+                                        : 'border-sky-300 text-sky-600 hover:bg-sky-50'
                                     }`}
                                     onClick={() => {
                                       if (isBundle) {
@@ -6279,7 +6279,7 @@ export default function PickPack() {
                                   <div className="w-24 mt-1">
                                     <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
                                       <div 
-                                        className="h-full bg-purple-500 transition-all duration-300"
+                                        className="h-full bg-sky-500 transition-all duration-300"
                                         style={{ width: `${((verifiedItems[item.id] || 0) / item.quantity) * 100}%` }}
                                       />
                                     </div>
@@ -6893,10 +6893,10 @@ export default function PickPack() {
               })() && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Shipping Address */}
-                  <div className="sm:col-span-2 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                      <MapPin className="h-4 w-4 text-purple-600 flex-shrink-0" />
-                      <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Shipping Address</span>
+                  <div className="sm:col-span-2 p-4 bg-indigo-50 border-2 border-indigo-200 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <MapPin className="h-4 w-4 text-indigo-600 flex-shrink-0" />
+                      <span className="text-sm font-semibold text-indigo-900 uppercase tracking-wide">Shipping Address</span>
                     </div>
                     {(() => {
                       const formattedAddress = formatShippingAddress(activePackingOrder.shippingAddress);
@@ -6917,10 +6917,10 @@ export default function PickPack() {
 
                   {/* Shipping Method */}
                   {activePackingOrder.shippingMethod && (
-                    <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Truck className="h-4 w-4 text-purple-600 flex-shrink-0" />
-                        <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Shipping Method</span>
+                    <div className="p-4 bg-indigo-50 border-2 border-indigo-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Truck className="h-4 w-4 text-indigo-600 flex-shrink-0" />
+                        <span className="text-sm font-semibold text-indigo-900 uppercase tracking-wide">Shipping Method</span>
                       </div>
                       <p className="text-sm font-medium text-gray-900 pl-6" data-testid="text-shipping-method">
                         {activePackingOrder.shippingMethod}
@@ -6930,10 +6930,10 @@ export default function PickPack() {
 
                   {/* Tracking Number */}
                   {activePackingOrder.trackingNumber && (
-                    <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Package className="h-4 w-4 text-purple-600 flex-shrink-0" />
-                        <span className="text-xs font-semibold text-purple-900 uppercase tracking-wide">Tracking Number</span>
+                    <div className="p-4 bg-indigo-50 border-2 border-indigo-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Package className="h-4 w-4 text-indigo-600 flex-shrink-0" />
+                        <span className="text-sm font-semibold text-indigo-900 uppercase tracking-wide">Tracking Number</span>
                       </div>
                       <p className="text-sm font-mono font-medium text-gray-900 pl-6" data-testid="text-tracking-number">
                         {activePackingOrder.trackingNumber}
