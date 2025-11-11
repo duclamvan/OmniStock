@@ -119,7 +119,9 @@ import {
   Trash2,
   Copy,
   ExternalLink,
-  Download
+  Download,
+  Star,
+  BookmarkCheck
 } from "lucide-react";
 
 interface BundleItem {
@@ -7598,6 +7600,14 @@ export default function PickPack() {
                       <div className="flex items-center gap-2">
                         <MapPin className="h-5 w-5 text-yellow-700" />
                         <span className="text-base font-bold text-black">Empfänger (Recipient)</span>
+                      </div>
+
+                      {/* Frequent Buyer Badge */}
+                      <div className="flex items-center gap-2 px-2 py-1.5 bg-yellow-50 border border-yellow-200 rounded">
+                        <Star className="h-4 w-4 text-yellow-600 fill-yellow-600" />
+                        <span className="text-xs text-black font-medium">
+                          Frequent buyer - Already in DHL addressbook
+                        </span>
                       </div>
 
                       <div className="space-y-0.5">
