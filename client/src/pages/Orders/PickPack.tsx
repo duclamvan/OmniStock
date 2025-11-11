@@ -5230,9 +5230,32 @@ export default function PickPack() {
     // Weight is now optional for packing completion
     // It will be required later when generating shipping labels
     
-    const cartonsWithoutLabel = cartons.filter(c => !c.labelPrinted);
-    if (cartonsWithoutLabel.length > 0) {
-      missingChecks.push(`Label for ${cartonsWithoutLabel.length} carton(s)`);
+    // Label validation depends on shipping method
+    // GLS uses tracking numbers (validated separately), other methods use labelPrinted
+    if (!isGLS) {
+      const cartonsWithoutLabel = cartons.filter(c => !c.labelPrinted);
+      if (cartonsWithoutLabel.length > 0) {
+        missingChecks.push(`Label for ${cartonsWithoutLabel.length} carton(s)`);
+      }
+    } else {
+      // For GLS, check tracking numbers from controlled state OR database (fallback)
+      const cartonsWithoutTracking = cartons.filter(c => {
+        const trackingValue = (trackingInputs[c.id] || c.trackingNumber || '').trim();
+        return trackingValue === '';
+      });
+      if (cartonsWithoutTracking.length > 0) {
+        missingChecks.push(`Tracking number for ${cartonsWithoutTracking.length} carton(s)`);
+      }
+      
+      // Check for duplicate tracking numbers (use controlled state OR database)
+      const trackingNumbers = cartons.map(c => 
+        (trackingInputs[c.id] || c.trackingNumber || '').trim().toUpperCase()
+      ).filter(t => t !== '');
+      
+      const uniqueTracking = new Set(trackingNumbers);
+      if (trackingNumbers.length !== uniqueTracking.size) {
+        missingChecks.push('Duplicate tracking numbers');
+      }
     }
     
     if (missingChecks.length > 0) {
@@ -5807,23 +5830,19 @@ export default function PickPack() {
         if (activePackingOrder.pplStatus !== 'created') return false;
         if (shipmentLabelsFromDB.length < cartons.length) return false;
       } else if (isGLS) {
-        // GLS: All cartons must have tracking numbers (check controlled state) and no duplicates
+        // GLS: All cartons must have tracking numbers (check controlled state OR database) and no duplicates
         if (cartons.some(c => {
-          const trackingValue = trackingInputs[c.id] || '';
-          return trackingValue.trim() === '';
+          const trackingValue = (trackingInputs[c.id] || c.trackingNumber || '').trim();
+          return trackingValue === '';
         })) return false;
         
-        // Check for duplicate tracking numbers in controlled state
-        const hasDuplicates = cartons.some((c, i) => {
-          const trackingValue = (trackingInputs[c.id] || '').trim();
-          if (trackingValue === '') return false;
-          return cartons.some((other, j) => {
-            if (i === j) return false;
-            const otherValue = (trackingInputs[other.id] || '').trim();
-            return otherValue !== '' && trackingValue.toUpperCase() === otherValue.toUpperCase();
-          });
-        });
-        if (hasDuplicates) return false;
+        // Check for duplicate tracking numbers (use controlled state OR database)
+        const trackingNumbers = cartons.map(c => 
+          (trackingInputs[c.id] || c.trackingNumber || '').trim().toUpperCase()
+        ).filter(t => t !== '');
+        
+        const uniqueTracking = new Set(trackingNumbers);
+        if (trackingNumbers.length !== uniqueTracking.size) return false;
       } else {
         // Other methods: All cartons must be marked as printed
         if (cartons.some(c => !c.labelPrinted)) return false;
