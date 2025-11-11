@@ -7567,15 +7567,11 @@ export default function PickPack() {
                       </div>
 
                       <div className="space-y-0.5">
-                        {/* Name fields on same line concept - shown as grouped */}
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <CompactCopyField label="Vorname*" value={recipientData.firstName} />
-                          </div>
-                          <div>
-                            <CompactCopyField label="Nachname*" value={recipientData.lastName} />
-                          </div>
-                        </div>
+                        {/* Full name - merged first and last name */}
+                        <CompactCopyField 
+                          label="Vor- und Nachname*" 
+                          value={`${recipientData.firstName} ${recipientData.lastName}`.trim()} 
+                        />
 
                         {/* Address supplement - only if present */}
                         {recipientData.addressSupplement && (
@@ -7604,15 +7600,11 @@ export default function PickPack() {
                         </div>
 
                         <div className="space-y-0.5">
-                          {/* Name fields on same line concept - shown as grouped */}
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <CompactCopyField label="Vorname*" value={senderData.firstName} />
-                            </div>
-                            <div>
-                              <CompactCopyField label="Nachname*" value={senderData.lastName} />
-                            </div>
-                          </div>
+                          {/* Full name - merged first and last name */}
+                          <CompactCopyField 
+                            label="Vor- und Nachname*" 
+                            value={`${senderData.firstName} ${senderData.lastName}`.trim()} 
+                          />
 
                           {/* Address supplement - only if present */}
                           {senderData.addressSupplement && (
