@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, memo, useMemo, useCallback } from "react";
 import { nanoid } from "nanoid";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { PDFDocument } from 'pdf-lib';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -700,6 +701,42 @@ const openPDFAndPrint = (url: string) => {
   }
 };
 
+// Function to merge multiple PDFs into one and open for printing
+const mergeAndPrintPDFs = async (pdfUrls: string[]) => {
+  try {
+    // Create a new PDF document
+    const mergedPdf = await PDFDocument.create();
+    
+    // Fetch and merge each PDF
+    for (const url of pdfUrls) {
+      const response = await fetch(url);
+      const pdfBytes = await response.arrayBuffer();
+      const pdf = await PDFDocument.load(pdfBytes);
+      const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+      copiedPages.forEach((page) => mergedPdf.addPage(page));
+    }
+    
+    // Save the merged PDF
+    const mergedPdfBytes = await mergedPdf.save();
+    const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+    const blobUrl = URL.createObjectURL(blob);
+    
+    // Open and print
+    const printWindow = window.open(blobUrl, '_blank');
+    if (printWindow) {
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+    }
+    
+    // Clean up after a delay
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  } catch (error) {
+    console.error('Error merging PDFs:', error);
+    throw error;
+  }
+};
+
 // Unified Documents List Component
 function UnifiedDocumentsList({
   orderId,
@@ -709,7 +746,8 @@ function UnifiedDocumentsList({
   printedOrderFiles,
   onPackingListPrinted,
   onProductFilePrinted,
-  onOrderFilePrinted
+  onOrderFilePrinted,
+  onGetDocumentCount
 }: {
   orderId: string;
   orderItems: any[];
@@ -719,6 +757,7 @@ function UnifiedDocumentsList({
   onPackingListPrinted: () => void;
   onProductFilePrinted: (fileId: string) => void;
   onOrderFilePrinted: (fileId: string) => void;
+  onGetDocumentCount?: (count: number, urls: string[]) => void;
 }) {
   // Fetch product documents
   const productIds = useMemo(
@@ -867,6 +906,32 @@ function UnifiedDocumentsList({
       </div>
     </div>
   );
+
+  // Calculate total document count and collect all PDF URLs
+  const totalDocuments = 1 + productFiles.length + orderFiles.length; // 1 for packing list
+  
+  // Collect all PDF URLs for merging
+  const allPdfUrls = useMemo(() => {
+    const urls: string[] = [`/api/orders/${orderId}/packing-list.pdf`];
+    productFiles.forEach((file: any) => {
+      if (file.fileUrl || file.url) {
+        urls.push(file.fileUrl || file.url);
+      }
+    });
+    orderFiles.forEach((file: any) => {
+      if ((file.fileUrl || file.url) && !file.mimeType?.startsWith('image/')) {
+        urls.push(file.fileUrl || file.url);
+      }
+    });
+    return urls;
+  }, [orderId, productFiles, orderFiles]);
+
+  // Notify parent about document count and URLs
+  useEffect(() => {
+    if (onGetDocumentCount) {
+      onGetDocumentCount(totalDocuments, allPdfUrls);
+    }
+  }, [totalDocuments, allPdfUrls, onGetDocumentCount]);
 
   return (
     <div className="space-y-2">
@@ -1272,6 +1337,11 @@ export default function PickPack() {
   const [shipmentLabelsFromDB, setShipmentLabelsFromDB] = useState<any[]>([]); // Shipment labels from database
   const [labelPreviewData, setLabelPreviewData] = useState<{ orderId: string; labelBase64: string; trackingNumbers: string[] } | null>(null);
   const lastSubmittedTrackingRef = useRef<Record<string, string | null>>({}); // Track last submitted tracking number per carton to prevent duplicates
+  
+  // State for documents count and merging
+  const [documentsCount, setDocumentsCount] = useState(0);
+  const [allDocumentUrls, setAllDocumentUrls] = useState<string[]>([]);
+  const [isPrintingAllDocuments, setIsPrintingAllDocuments] = useState(false);
   
   // Loading states for shipping label operations
   const [isGeneratingAllLabels, setIsGeneratingAllLabels] = useState(false);
@@ -6695,28 +6765,48 @@ export default function PickPack() {
             )}
           </Card>
 
-          {/* Packing Completion Card - Combined Documents + Checklist */}
+          {/* Documents Card - Packing List + Product Files + Order Files */}
           <Card className="shadow-sm border-2 border-emerald-200 overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-4 py-3 rounded-t-lg -mt-0.5">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
-                  <ClipboardList className="h-5 w-5" />
-                  Packing Completion
+                  <FileText className="h-5 w-5" />
+                  Documents ({documentsCount})
                 </CardTitle>
                 <Button
                   variant="secondary"
                   size="sm"
                   className="h-8 px-3 text-xs font-semibold bg-white/20 hover:bg-white/30 text-white border-white/40"
-                  onClick={() => {
-                    // Print packing list
-                    openPDFAndPrint(`/api/orders/${activePackingOrder.id}/packing-list.pdf`);
-                    setPrintedDocuments(prev => ({ ...prev, packingList: true }));
-                    playSound('success');
+                  onClick={async () => {
+                    try {
+                      setIsPrintingAllDocuments(true);
+                      await mergeAndPrintPDFs(allDocumentUrls);
+                      setPrintedDocuments(prev => ({ ...prev, packingList: true }));
+                      playSound('success');
+                      toast({
+                        title: "Documents Sent to Printer",
+                        description: `All ${documentsCount} document(s) merged into one PDF`,
+                      });
+                    } catch (error: any) {
+                      console.error('Error printing merged documents:', error);
+                      toast({
+                        title: "Error",
+                        description: "Failed to merge and print documents",
+                        variant: "destructive"
+                      });
+                    } finally {
+                      setIsPrintingAllDocuments(false);
+                    }
                   }}
+                  disabled={isPrintingAllDocuments || documentsCount === 0}
                   data-testid="button-print-all-documents"
                 >
-                  <Printer className="h-3.5 w-3.5 mr-1.5" />
-                  Print All
+                  {isPrintingAllDocuments ? (
+                    <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  ) : (
+                    <Printer className="h-3.5 w-3.5 mr-1.5" />
+                  )}
+                  {isPrintingAllDocuments ? 'Printing...' : 'Print All'}
                 </Button>
               </div>
             </CardHeader>
@@ -6735,6 +6825,10 @@ export default function PickPack() {
                 }}
                 onProductFilePrinted={(fileId) => setPrintedProductFiles(prev => new Set([...Array.from(prev), fileId]))}
                 onOrderFilePrinted={(fileId) => setPrintedOrderFiles(prev => new Set([...Array.from(prev), fileId]))}
+                onGetDocumentCount={(count, urls) => {
+                  setDocumentsCount(count);
+                  setAllDocumentUrls(urls);
+                }}
               />
             </CardContent>
           </Card>
