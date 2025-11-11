@@ -7685,35 +7685,75 @@ export default function PickPack() {
                         )}
                       </div>
                       
-                      {/* Tracking Number Input */}
-                      <Input
-                        type="text"
-                        placeholder="Enter tracking number..."
-                        defaultValue={carton.trackingNumber || ''}
-                        onBlur={(e) => {
-                          const trackingNumber = e.target.value.trim();
-                          if (trackingNumber && trackingNumber !== carton.trackingNumber) {
-                            updateCartonTrackingMutation.mutate({
-                              cartonId: carton.id,
-                              trackingNumber
-                            });
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            const trackingNumber = e.currentTarget.value.trim();
+                      {/* Tracking Number Input with Paste Button */}
+                      <div className="flex gap-2">
+                        <Input
+                          type="text"
+                          placeholder="Enter tracking number..."
+                          defaultValue={carton.trackingNumber || ''}
+                          onBlur={(e) => {
+                            const trackingNumber = e.target.value.trim();
                             if (trackingNumber && trackingNumber !== carton.trackingNumber) {
                               updateCartonTrackingMutation.mutate({
                                 cartonId: carton.id,
                                 trackingNumber
                               });
                             }
-                            e.currentTarget.blur();
-                          }
-                        }}
-                        className="font-mono text-sm"
-                        data-testid={`input-gls-tracking-carton-${index + 1}`}
-                      />
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              const trackingNumber = e.currentTarget.value.trim();
+                              if (trackingNumber && trackingNumber !== carton.trackingNumber) {
+                                updateCartonTrackingMutation.mutate({
+                                  cartonId: carton.id,
+                                  trackingNumber
+                                });
+                              }
+                              e.currentTarget.blur();
+                            }
+                          }}
+                          className="font-mono text-sm flex-1"
+                          data-testid={`input-gls-tracking-carton-${index + 1}`}
+                          id={`tracking-input-${carton.id}`}
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="px-3 flex-shrink-0"
+                          onClick={async () => {
+                            try {
+                              const text = await navigator.clipboard.readText();
+                              const trackingNumber = text.trim();
+                              if (trackingNumber) {
+                                // Update the input value
+                                const input = document.getElementById(`tracking-input-${carton.id}`) as HTMLInputElement;
+                                if (input) {
+                                  input.value = trackingNumber;
+                                }
+                                // Save to backend
+                                updateCartonTrackingMutation.mutate({
+                                  cartonId: carton.id,
+                                  trackingNumber
+                                });
+                                toast({
+                                  title: "Pasted!",
+                                  description: "Tracking number pasted and saved",
+                                  duration: 1500
+                                });
+                              }
+                            } catch (error) {
+                              toast({
+                                title: "Paste failed",
+                                description: "Please allow clipboard access or paste manually",
+                                variant: "destructive"
+                              });
+                            }
+                          }}
+                          data-testid={`button-paste-tracking-${index + 1}`}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
