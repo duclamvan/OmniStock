@@ -5367,21 +5367,21 @@ export default function PickPack() {
               </Button>
               
               {/* Left-Aligned: Order Info */}
-              <div className="flex-1 flex flex-col items-start gap-1 min-w-0 ml-2">
-                <div className="text-sm lg:text-base font-bold tracking-wide truncate w-full">{activePackingOrder.orderId}</div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs lg:text-sm text-purple-100 truncate">{activePackingOrder.customerName}</span>
+              <div className="flex-1 flex flex-col items-start gap-1.5 min-w-0 ml-2">
+                <div className="text-base lg:text-lg font-bold tracking-wide truncate w-full">{activePackingOrder.orderId}</div>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <span className="text-sm lg:text-base text-purple-100 font-medium truncate">{activePackingOrder.customerName}</span>
                   {(() => {
                     const shippingAddr = activePackingOrder.shippingAddress;
                     const country = typeof shippingAddr === 'object' ? shippingAddr.country : '';
                     return country && (
-                      <span className="text-xs lg:text-sm text-purple-100">• {country}</span>
+                      <span className="text-sm lg:text-base text-purple-100 font-medium">• {country}</span>
                     );
                   })()}
                   {activePackingOrder.shippingMethod && (
                     <>
-                      <span className="text-xs lg:text-sm text-purple-100">•</span>
-                      <div className={`px-2 py-0.5 rounded text-xs lg:text-sm font-bold ${
+                      <span className="text-sm lg:text-base text-purple-100">•</span>
+                      <div className={`px-2.5 py-1 rounded text-sm lg:text-base font-bold ${
                         activePackingOrder.shippingMethod.toUpperCase().includes('GLS') 
                           ? 'bg-emerald-500 text-white'
                           : activePackingOrder.shippingMethod.toUpperCase().includes('PPL')
