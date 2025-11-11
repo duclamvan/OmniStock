@@ -6538,7 +6538,7 @@ export default function PickPack() {
                     {/* Header */}
                     <div>
                       <div className="font-bold text-black text-lg">{activePackingOrder.shippingMethod}</div>
-                      <div className="text-sm text-gray-600 mt-0.5">
+                      <div className="text-sm text-black mt-0.5">
                         Max. 40 kg • Circumference + longest side max. 300 cm
                       </div>
                     </div>
