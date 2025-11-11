@@ -5153,6 +5153,46 @@ export default function PickPack() {
   const completePacking = async () => {
     if (!activePackingOrder) return;
     
+    // CRITICAL: Save any unsaved GLS tracking numbers before completion
+    const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
+    const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+    
+    if (isGLS && cartons.length > 0) {
+      console.log('💾 Saving unsaved GLS tracking numbers before completion...');
+      try {
+        // Find all cartons with unsaved tracking numbers
+        const unsavedUpdates = cartons.filter(carton => {
+          const inputValue = (trackingInputs[carton.id] || '').trim();
+          const dbValue = (carton.trackingNumber || '').trim();
+          return inputValue !== dbValue && inputValue !== '';
+        });
+        
+        if (unsavedUpdates.length > 0) {
+          console.log(`📤 Saving ${unsavedUpdates.length} unsaved tracking number(s)...`);
+          // Save each unsaved tracking number
+          await Promise.all(
+            unsavedUpdates.map(carton => 
+              updateCartonTrackingMutation.mutateAsync({
+                cartonId: carton.id,
+                trackingNumber: trackingInputs[carton.id].trim()
+              })
+            )
+          );
+          console.log('✅ All tracking numbers saved successfully');
+        } else {
+          console.log('✅ All tracking numbers already saved');
+        }
+      } catch (error) {
+        console.error('❌ Failed to save tracking numbers:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save tracking numbers. Please try again.",
+          variant: "destructive"
+        });
+        return; // Abort completion
+      }
+    }
+    
     // Check if all items are verified, including bundle components
     // IMPORTANT: Check activePackingOrder.items (what's shown in UI), NOT currentCarton.items
     const allItemsVerified = activePackingOrder.items.every(item => {
@@ -8684,8 +8724,11 @@ export default function PickPack() {
                         return true; // Missing labels
                       }
                     } else if (isGLS) {
-                      // GLS: All cartons must have tracking numbers
-                      if (cartons.some(c => !c.trackingNumber || c.trackingNumber.trim() === '')) {
+                      // GLS: All cartons must have tracking numbers (check controlled state)
+                      if (cartons.some(c => {
+                        const trackingValue = trackingInputs[c.id] || '';
+                        return trackingValue.trim() === '';
+                      })) {
                         return true; // Missing tracking number
                       }
                     } else {
@@ -8705,18 +8748,22 @@ export default function PickPack() {
                       scrollToElement('checklist-shipping-labels', 'Please create PPL shipment labels before completing packing.');
                     } else if (isPPL && shipmentLabelsFromDB.length < cartons.length) {
                       scrollToElement('checklist-shipping-labels', `Missing PPL labels: ${shipmentLabelsFromDB.length} of ${cartons.length} cartons have labels. Please generate all labels.`);
-                    } else if (isGLS && cartons.some(c => !c.trackingNumber || c.trackingNumber.trim() === '')) {
+                    } else if (isGLS && cartons.some(c => {
+                      const trackingValue = trackingInputs[c.id] || '';
+                      return trackingValue.trim() === '';
+                    })) {
                       scrollToElement('checklist-shipping-labels', 'Please enter tracking numbers for all GLS cartons before completing packing.');
                     } else if (isGLS && (() => {
-                      // Check for duplicate tracking numbers
-                      return cartons.some((c, i) => 
-                        c.trackingNumber && c.trackingNumber.trim() !== '' && 
-                        cartons.some((other, j) => 
-                          i !== j && 
-                          other.trackingNumber && 
-                          other.trackingNumber.trim().toUpperCase() === c.trackingNumber?.trim().toUpperCase()
-                        )
-                      );
+                      // Check for duplicate tracking numbers in controlled state
+                      return cartons.some((c, i) => {
+                        const trackingValue = (trackingInputs[c.id] || '').trim();
+                        if (trackingValue === '') return false; // Skip empty values
+                        return cartons.some((other, j) => {
+                          if (i === j) return false;
+                          const otherValue = (trackingInputs[other.id] || '').trim();
+                          return otherValue !== '' && trackingValue.toUpperCase() === otherValue.toUpperCase();
+                        });
+                      });
                     })()) {
                       scrollToElement('checklist-shipping-labels', 'Duplicate tracking numbers detected. Each carton must have a unique tracking number.');
                     } else {
