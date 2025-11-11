@@ -7675,6 +7675,198 @@ export default function PickPack() {
                         </div>
                       </div>
                     )}
+
+                    {/* Multi-carton indicator for DHL Nachnahme */}
+                    {cartons.length > 1 && (
+                      <div className="mt-4">
+                        <Alert className="bg-yellow-50 border-yellow-300">
+                          <Info className="h-4 w-4 text-yellow-700" />
+                          <AlertDescription className="text-sm text-yellow-900">
+                            <strong>Carton 1 of {cartons.length}:</strong> DHL Nachnahme (with COD)
+                          </AlertDescription>
+                        </Alert>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* GLS Section for Additional Cartons (Cartons 2+) - Only for DHL Nachnahme with multiple cartons */}
+              {(() => {
+                const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
+                const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
+                const showCOD = (activePackingOrder.codAmount && parseFloat(activePackingOrder.codAmount as any) > 0) || 
+                               activePackingOrder.paymentMethod?.toUpperCase().includes('COD');
+                
+                // Only show GLS section if: DHL order + has COD + multiple cartons
+                if (!isDHL || !showCOD || cartons.length <= 1) {
+                  return null;
+                }
+
+                // Get cartons 2+ for GLS shipping
+                const glsCartons = cartons.slice(1);
+                
+                // Prepare recipient data from shipping address
+                const shippingAddr = activePackingOrder.shippingAddress;
+                const recipientData = typeof shippingAddr === 'object' ? {
+                  name: [shippingAddr.firstName, shippingAddr.lastName].filter(Boolean).join(' ') || 'N/A',
+                  company: shippingAddr.company || '',
+                  street: shippingAddr.street || '',
+                  houseNumber: shippingAddr.streetNumber || '',
+                  postalCode: shippingAddr.zipCode || '',
+                  city: shippingAddr.city || '',
+                  country: shippingAddr.country || 'Germany',
+                  email: shippingAddr.email || '',
+                  phone: shippingAddr.tel || '',
+                } : {
+                  name: 'N/A',
+                  company: '',
+                  street: '',
+                  houseNumber: '',
+                  postalCode: '',
+                  city: '',
+                  country: 'Germany',
+                  email: '',
+                  phone: '',
+                };
+
+                // Extract .value property from settings response
+                const glsSenderData = glsSenderAddress?.value || glsSenderAddress;
+                const senderData = glsSenderData ? {
+                  name: glsSenderData.name || '',
+                  company: glsSenderData.company || '',
+                  street: glsSenderData.street || '',
+                  houseNumber: glsSenderData.houseNumber || '',
+                  postalCode: glsSenderData.postalCode || '',
+                  city: glsSenderData.city || '',
+                  email: glsSenderData.email || '',
+                  phone: glsSenderData.phone || '',
+                } : undefined;
+
+                // Calculate total weight from GLS cartons only
+                let totalGLSWeight = 0;
+                glsCartons.forEach(carton => {
+                  if (carton.weight) {
+                    totalGLSWeight += parseFloat(carton.weight);
+                  }
+                });
+
+                const nameParts = (recipientData.name || '').trim().split(' ');
+                const firstName = nameParts[0] || '';
+                const lastName = nameParts.slice(1).join(' ') || '';
+                const germanCountry = GLS_COUNTRY_MAP[recipientData.country] || recipientData.country;
+
+                const copyField = async (value: string, fieldName: string) => {
+                  try {
+                    await navigator.clipboard.writeText(value);
+                    toast({
+                      title: "Copied!",
+                      description: `${fieldName} copied to clipboard`,
+                      duration: 1500
+                    });
+                  } catch {
+                    toast({
+                      title: "Copy failed",
+                      description: "Please try again",
+                      variant: "destructive"
+                    });
+                  }
+                };
+
+                const CompactCopyFieldGLS = ({ label, value }: { label: string; value: string }) => (
+                  <div className="space-y-1 py-0.5">
+                    <label className="text-sm font-medium text-black block">{label}</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={value || '-'}
+                        className="flex-1 px-2 py-1.5 text-base font-medium text-black bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-sky-400"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 hover:bg-gray-100 flex-shrink-0"
+                        onClick={() => copyField(value, label)}
+                      >
+                        <Copy className="h-4 w-4 text-gray-600" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+
+                return (
+                  <div className="space-y-4 mt-6">
+                    {/* Separator */}
+                    <Separator className="my-4 bg-gradient-to-r from-yellow-300 via-sky-300 to-sky-300 h-1" />
+
+                    {/* Info Alert */}
+                    <Alert className="bg-sky-50 border-sky-300">
+                      <Package className="h-4 w-4 text-sky-700" />
+                      <AlertDescription className="text-sm text-sky-900">
+                        <strong>Cartons 2-{cartons.length}:</strong> GLS Shipping (cost-effective for additional cartons)
+                      </AlertDescription>
+                    </Alert>
+
+                    {/* Header */}
+                    <div>
+                      <div className="font-bold text-black text-lg flex items-center gap-2">
+                        <Truck className="h-5 w-5 text-sky-600" />
+                        GLS Germany - Additional Cartons
+                      </div>
+                      <div className="text-sm text-black mt-0.5">
+                        {glsCartons.length} carton{glsCartons.length > 1 ? 's' : ''} • Total weight: {totalGLSWeight.toFixed(2)} kg
+                      </div>
+                    </div>
+
+                    {/* Ship GLS Button */}
+                    <GLSAutofillButton
+                      recipientData={recipientData}
+                      senderData={senderData}
+                      totalWeight={totalGLSWeight}
+                      cartonCount={glsCartons.length}
+                    />
+
+                    {/* Recipient Address */}
+                    <div className="space-y-2 p-3 bg-white border-2 border-sky-300 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-5 w-5 text-sky-700" />
+                        <span className="text-base font-bold text-black">Empfänger (Recipient)</span>
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <CompactCopyFieldGLS label="Vor- und Nachname*" value={`${firstName} ${lastName}`.trim()} />
+                        <CompactCopyFieldGLS label="Firma" value={recipientData.company} />
+                        <CompactCopyFieldGLS label="Straße*" value={recipientData.street} />
+                        <CompactCopyFieldGLS label="Hausnummer*" value={recipientData.houseNumber} />
+                        <CompactCopyFieldGLS label="PLZ*" value={recipientData.postalCode} />
+                        <CompactCopyFieldGLS label="Wohnort*" value={recipientData.city} />
+                        <CompactCopyFieldGLS label="Land*" value={germanCountry} />
+                        <CompactCopyFieldGLS label="E-Mail" value={recipientData.email} />
+                        <CompactCopyFieldGLS label="Telefon" value={recipientData.phone} />
+                      </div>
+                    </div>
+
+                    {/* Sender Address */}
+                    {senderData && (
+                      <div className="space-y-2 p-3 bg-white border-2 border-sky-300 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-5 w-5 text-sky-700" />
+                          <span className="text-base font-bold text-black">Absender (Sender)</span>
+                        </div>
+
+                        <div className="space-y-0.5">
+                          <CompactCopyFieldGLS label="Name*" value={senderData.name} />
+                          <CompactCopyFieldGLS label="Firma" value={senderData.company} />
+                          <CompactCopyFieldGLS label="Straße*" value={senderData.street} />
+                          <CompactCopyFieldGLS label="Hausnummer*" value={senderData.houseNumber} />
+                          <CompactCopyFieldGLS label="PLZ*" value={senderData.postalCode} />
+                          <CompactCopyFieldGLS label="Wohnort*" value={senderData.city} />
+                          <CompactCopyFieldGLS label="E-Mail" value={senderData.email} />
+                          <CompactCopyFieldGLS label="Telefon" value={senderData.phone} />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })()}
