@@ -35,11 +35,12 @@ interface GLSAutofillButtonProps {
   packageSize?: 'XS' | 'S' | 'M' | 'L' | 'XL';
   weight?: number;
   orderId?: string;
+  cartonCount?: number;
 }
 
 const BOOKMARKLET_VERSION = "1.0.0";
 
-export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M', weight, orderId }: GLSAutofillButtonProps) {
+export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M', weight, orderId, cartonCount }: GLSAutofillButtonProps) {
   const [showBookmarkletDialog, setShowBookmarkletDialog] = useState(false);
   const [showDebugData, setShowDebugData] = useState(false);
   const bookmarkletRef = useRef<HTMLAnchorElement>(null);
@@ -589,7 +590,7 @@ ${weight ? `Gewicht: ${weight} kg` : ''}
           data-testid="button-ship-with-gls"
         >
           <ExternalLink className="h-4 w-4" />
-          Ship GLS
+          Ship GLS{cartonCount && cartonCount > 0 ? ` (${cartonCount} ${cartonCount === 1 ? 'carton' : 'cartons'})` : ''}
           {isMobile && orderId && <span className="text-xs opacity-90">(auto-fill)</span>}
         </Button>
 

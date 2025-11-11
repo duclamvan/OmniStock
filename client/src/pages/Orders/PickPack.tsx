@@ -6745,6 +6745,7 @@ export default function PickPack() {
                       packageSize="S"
                       weight={totalWeight > 0 ? totalWeight : undefined}
                       orderId={activePackingOrder.orderId}
+                      cartonCount={cartons.length}
                     />
 
                     {/* Copyable Fields */}
