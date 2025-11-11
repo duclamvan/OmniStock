@@ -2662,8 +2662,11 @@ export default function PickPack() {
   // Update carton tracking number mutation
   const updateCartonTrackingMutation = useMutation({
     mutationFn: async ({ cartonId, trackingNumber }: { cartonId: string; trackingNumber: string }) => {
+      if (!activePackingOrder?.id) {
+        throw new Error('No active packing order');
+      }
       console.log(`📤 Saving tracking number for carton ${cartonId}:`, trackingNumber);
-      return apiRequest('PATCH', `/api/cartons/${cartonId}`, { trackingNumber });
+      return apiRequest('PATCH', `/api/orders/${activePackingOrder.id}/cartons/${cartonId}`, { trackingNumber });
     },
     onSuccess: async (data, variables) => {
       console.log(`✅ Tracking number saved successfully for carton ${variables.cartonId}`);
