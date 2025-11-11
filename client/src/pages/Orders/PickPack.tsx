@@ -656,6 +656,238 @@ const openPDFAndPrint = (url: string) => {
   }
 };
 
+// Unified Documents List Component
+function UnifiedDocumentsList({
+  orderId,
+  orderItems,
+  printedDocuments,
+  printedProductFiles,
+  printedOrderFiles,
+  onPackingListPrinted,
+  onProductFilePrinted,
+  onOrderFilePrinted
+}: {
+  orderId: string;
+  orderItems: any[];
+  printedDocuments: { packingList: boolean };
+  printedProductFiles: Set<string>;
+  printedOrderFiles: Set<string>;
+  onPackingListPrinted: () => void;
+  onProductFilePrinted: (fileId: string) => void;
+  onOrderFilePrinted: (fileId: string) => void;
+}) {
+  // Fetch product documents
+  const productIds = useMemo(
+    () => Array.from(new Set(orderItems.map((item: any) => item.productId))).filter(Boolean),
+    [orderItems]
+  );
+
+  const { data: allFilesRaw = [], isLoading: isLoadingProductDocs } = useQuery<any[]>({
+    queryKey: ['/api/product-files'],
+    enabled: productIds.length > 0,
+  });
+
+  const productFiles = useMemo(() => {
+    const productIdSet = new Set(productIds);
+    const packingRelevantFileTypes = ['certificate', 'sds'];
+    
+    return allFilesRaw.filter(file => 
+      productIdSet.has(file.productId) && 
+      file.isActive && 
+      packingRelevantFileTypes.includes(file.fileType)
+    );
+  }, [allFilesRaw, productIds]);
+
+  // Fetch order files
+  const { data: orderFilesData, isLoading: isLoadingOrderFiles } = useQuery({
+    queryKey: ['/api/orders', orderId, 'files'],
+    queryFn: async () => {
+      const response = await fetch(`/api/orders/${orderId}/files`);
+      if (!response.ok) throw new Error('Failed to fetch order files');
+      return response.json();
+    }
+  });
+
+  const orderFiles = orderFilesData || [];
+
+  const FILE_TYPE_ICONS: Record<string, any> = {
+    sds: Shield,
+    cpnp: Award,
+    flyer: FileImage,
+    certificate: Award,
+    manual: Book,
+    other: FileText,
+  };
+
+  const LANGUAGE_FLAGS: Record<string, string> = {
+    en: '🇬🇧',
+    de: '🇩🇪',
+    cs: '🇨🇿',
+    fr: '🇫🇷',
+    vn: '🇻🇳',
+  };
+
+  if (isLoadingProductDocs || isLoadingOrderFiles) {
+    return (
+      <div className="text-sm text-gray-500 p-2 text-center">
+        Loading documents...
+      </div>
+    );
+  }
+
+  const DocumentRow = ({ 
+    icon, 
+    name, 
+    subtitle, 
+    isPrinted, 
+    onPrint, 
+    onView, 
+    testId 
+  }: { 
+    icon: React.ReactNode; 
+    name: string; 
+    subtitle?: string; 
+    isPrinted: boolean; 
+    onPrint: () => void; 
+    onView: () => void; 
+    testId?: string;
+  }) => (
+    <div 
+      className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+        isPrinted
+          ? 'bg-green-50 border-green-300'
+          : 'bg-white border-gray-200 hover:border-violet-300'
+      }`}
+      data-testid={testId}
+    >
+      {/* Icon/Thumbnail */}
+      <div className={`flex-shrink-0 w-10 h-10 rounded-md overflow-hidden bg-gradient-to-br border flex items-center justify-center ${
+        isPrinted
+          ? 'from-green-50 to-emerald-50 border-green-300'
+          : 'from-violet-50 to-purple-50 border-violet-200'
+      }`}>
+        {icon}
+      </div>
+      
+      {/* Document Name */}
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm font-medium ${isPrinted ? 'text-green-900' : 'text-black'}`}>
+          {name}
+        </p>
+        {subtitle && (
+          <p className="text-xs text-gray-600">{subtitle}</p>
+        )}
+      </div>
+
+      {/* View Button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 px-2 text-xs font-semibold flex-shrink-0 hover:bg-gray-100"
+        onClick={onView}
+        data-testid={`${testId}-view`}
+      >
+        <Eye className="h-3.5 w-3.5 mr-1" />
+        View
+      </Button>
+
+      {/* Print Button */}
+      <Button 
+        variant={isPrinted ? "default" : "outline"}
+        size="sm"
+        className={`h-8 px-2 text-xs font-semibold flex-shrink-0 ${
+          isPrinted
+            ? 'bg-green-600 hover:bg-green-700 text-white'
+            : 'hover:bg-violet-50 hover:text-violet-700 hover:border-violet-300'
+        }`}
+        onClick={onPrint}
+        data-testid={`${testId}-print`}
+      >
+        {isPrinted ? (
+          <>
+            <CheckCircle className="h-3.5 w-3.5 mr-1" />
+            Printed
+          </>
+        ) : (
+          <>
+            <Printer className="h-3.5 w-3.5 mr-1" />
+            Print
+          </>
+        )}
+      </Button>
+    </div>
+  );
+
+  return (
+    <div className="space-y-2">
+      {/* Packing List */}
+      <DocumentRow
+        icon={<FileText className={`h-5 w-5 ${printedDocuments.packingList ? 'text-green-600' : 'text-violet-600'}`} />}
+        name="Packing List"
+        isPrinted={printedDocuments.packingList}
+        onPrint={onPackingListPrinted}
+        onView={() => window.open(`/api/orders/${orderId}/packing-list.pdf`, '_blank')}
+        testId="doc-packing-list"
+      />
+
+      {/* Product Documents */}
+      {productFiles.map((file: any) => {
+        const Icon = FILE_TYPE_ICONS[file.fileType] || FileText;
+        const flag = file.language ? (LANGUAGE_FLAGS[file.language] || '🌐') : '';
+        const isPrinted = printedProductFiles.has(file.id);
+        const subtitle = flag ? `${flag} ${file.language?.toUpperCase()}` : undefined;
+        
+        return (
+          <DocumentRow
+            key={file.id}
+            icon={<Icon className={`h-5 w-5 ${isPrinted ? 'text-green-600' : 'text-teal-600'}`} />}
+            name={file.description || file.fileName}
+            subtitle={subtitle}
+            isPrinted={isPrinted}
+            onPrint={() => {
+              openPDFAndPrint(file.fileUrl || file.url);
+              onProductFilePrinted(file.id);
+            }}
+            onView={() => window.open(file.fileUrl || file.url, '_blank')}
+            testId={`doc-product-${file.id}`}
+          />
+        );
+      })}
+
+      {/* Order Files */}
+      {orderFiles.map((file: any, index: number) => {
+        const fileId = file.id || `file-${index}`;
+        const isPrinted = printedOrderFiles.has(fileId);
+        
+        return (
+          <DocumentRow
+            key={fileId}
+            icon={
+              file.mimeType?.startsWith('image/') ? (
+                <img 
+                  src={file.fileUrl || file.url}
+                  alt={file.fileName || file.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <FileText className={`h-5 w-5 ${isPrinted ? 'text-green-600' : 'text-gray-600'}`} />
+              )
+            }
+            name={file.fileName || file.name}
+            isPrinted={isPrinted}
+            onPrint={() => {
+              openPDFAndPrint(file.fileUrl || file.url);
+              onOrderFilePrinted(fileId);
+            }}
+            onView={() => window.open(file.fileUrl || file.url, '_blank')}
+            testId={`doc-order-${index}`}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 // Component to display product documents
 function ProductDocumentsSelector({ 
   orderItems,
@@ -6264,109 +6496,56 @@ export default function PickPack() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="p-4 space-y-4">
-              {/* Documents & Files - Unified Section */}
-              <div className="space-y-3">
-                <h3 className="text-xs sm:text-sm font-bold text-gray-900 uppercase tracking-wide">Documents:</h3>
-                <div className="space-y-2">
-                  {/* Packing List - Always Shown */}
-                  <div id="checklist-packing-slip" className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-                    printedDocuments.packingList
-                      ? 'bg-green-50 border-green-300'
-                      : 'bg-white border-gray-200 hover:border-violet-300'
-                  }`}>
-                    {/* Thumbnail */}
-                    <div className={`flex-shrink-0 w-12 h-12 rounded-md overflow-hidden bg-gradient-to-br border flex items-center justify-center ${
-                      printedDocuments.packingList
-                        ? 'from-green-50 to-emerald-50 border-green-300'
-                        : 'from-violet-50 to-purple-50 border-violet-200'
-                    }`}>
-                      <FileText className={`h-6 w-6 ${printedDocuments.packingList ? 'text-green-600' : 'text-violet-600'}`} />
-                    </div>
-                    
-                    {/* Document Name */}
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium ${printedDocuments.packingList ? 'text-green-900' : 'text-gray-900'}`}>Packing List</p>
-                    </div>
+            <CardContent className="p-4">
+              {/* Unified Documents List */}
+              <UnifiedDocumentsList
+                orderId={activePackingOrder.id}
+                orderItems={activePackingOrder.items}
+                printedDocuments={printedDocuments}
+                printedProductFiles={printedProductFiles}
+                printedOrderFiles={printedOrderFiles}
+                onPackingListPrinted={() => {
+                  openPDFAndPrint(`/api/orders/${activePackingOrder.id}/packing-list.pdf`);
+                  setPrintedDocuments(prev => ({ ...prev, packingList: true }));
+                  playSound('success');
+                }}
+                onProductFilePrinted={(fileId) => setPrintedProductFiles(prev => new Set([...Array.from(prev), fileId]))}
+                onOrderFilePrinted={(fileId) => setPrintedOrderFiles(prev => new Set([...Array.from(prev), fileId]))}
+              />
+            </CardContent>
+          </Card>
 
-                    {/* Print Button */}
-                    <Button 
-                      variant={printedDocuments.packingList ? "default" : "outline"}
-                      size="sm"
-                      className={`h-9 px-3 text-xs font-semibold flex-shrink-0 ${
-                        printedDocuments.packingList
-                          ? 'bg-green-600 hover:bg-green-700 text-white'
-                          : 'hover:bg-violet-50 hover:text-violet-700 hover:border-violet-300'
-                      }`}
-                      onClick={() => {
-                        openPDFAndPrint(`/api/orders/${activePackingOrder.id}/packing-list.pdf`);
-                        setPrintedDocuments(prev => ({ ...prev, packingList: true }));
-                        playSound('success');
-                      }}
-                      data-testid="button-print-packing-list"
+          {/* Packing Materials Section */}
+          <Card className="shadow-sm border-2 border-amber-200 overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-4 py-3">
+              <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
+                <Package className="h-4 w-4 sm:h-5 sm:w-5" />
+                Packing Materials
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              {orderPackingMaterials.length > 0 ? (
+                <div className="space-y-3">
+                  {orderPackingMaterials.map((material) => (
+                    <div 
+                      key={material.id} 
+                      className="border border-gray-200 rounded-lg p-3 bg-white hover:bg-gray-50 cursor-pointer transition-colors"
+                      onClick={() => setPackingMaterialsApplied(prev => ({
+                        ...prev,
+                        [material.id]: !prev[material.id]
+                      }))}
                     >
-                      {printedDocuments.packingList ? (
-                        <>
-                          <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-                          Printed
-                        </>
-                      ) : (
-                        <>
-                          <Printer className="h-3.5 w-3.5 mr-1.5" />
-                          Print
-                        </>
-                      )}
-                    </Button>
-                  </div>
-
-                </div>
-
-                {/* Product Documents */}
-                {activePackingOrder && (
-                  <ProductDocumentsSelector
-                    orderItems={activePackingOrder.items}
-                    printedFiles={printedProductFiles}
-                    onFilePrinted={(fileId) => setPrintedProductFiles(prev => new Set([...Array.from(prev), fileId]))}
-                  />
-                )}
-
-                {/* Order Files & Documents from Database */}
-                {activePackingOrder && (
-                  <OrderFilesDisplay 
-                    orderId={activePackingOrder.id}
-                    printedFiles={printedOrderFiles}
-                    onFilePrinted={(fileId) => setPrintedOrderFiles(prev => new Set([...Array.from(prev), fileId]))}
-                  />
-                )}
-              </div>
-
-              <Separator />
-
-              {/* Section 3: Packing Materials Required */}
-              <div className="space-y-3">
-                <h3 className="text-xs sm:text-sm font-bold text-gray-900 uppercase tracking-wide">Packing Materials:</h3>
-                {orderPackingMaterials.length > 0 ? (
-                  <div className="space-y-3">
-                    {orderPackingMaterials.map((material) => (
-                      <div 
-                        key={material.id} 
-                        className="border border-gray-200 rounded-lg p-3 bg-white hover:bg-gray-50 cursor-pointer transition-colors"
-                        onClick={() => setPackingMaterialsApplied(prev => ({
-                          ...prev,
-                          [material.id]: !prev[material.id]
-                        }))}
-                      >
-                        <div className="flex items-start gap-3">
-                          {/* Checkbox */}
-                          <Checkbox 
-                            checked={packingMaterialsApplied[material.id] || false}
-                            onCheckedChange={(checked) => setPackingMaterialsApplied(prev => ({
-                              ...prev,
-                              [material.id]: !!checked
-                            }))}
-                            onClick={(e) => e.stopPropagation()}
-                            className="mt-1"
-                          />
+                      <div className="flex items-start gap-3">
+                        {/* Checkbox */}
+                        <Checkbox 
+                          checked={packingMaterialsApplied[material.id] || false}
+                          onCheckedChange={(checked) => setPackingMaterialsApplied(prev => ({
+                            ...prev,
+                            [material.id]: !!checked
+                          }))}
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-1"
+                        />
                           
                           {/* Material Image */}
                           {material.imageUrl && (
@@ -6401,7 +6580,6 @@ export default function PickPack() {
                     No packing materials specified for this order
                   </div>
                 )}
-              </div>
             </CardContent>
           </Card>
 
