@@ -701,43 +701,69 @@ const openPDFAndPrint = (url: string) => {
   }
 };
 
-// Function to merge multiple PDFs into one and open for printing
+// Function to merge multiple PDFs and images into one and open for printing
 const mergeAndPrintPDFs = async (pdfUrls: string[]) => {
   try {
     if (pdfUrls.length === 0) {
-      throw new Error('No PDF files to merge');
+      throw new Error('No files to merge');
     }
 
-    console.log('Starting PDF merge for', pdfUrls.length, 'files:', pdfUrls);
+    console.log('Starting file merge for', pdfUrls.length, 'files:', pdfUrls);
     
     // Create a new PDF document
     const mergedPdf = await PDFDocument.create();
     
-    // Fetch and merge each PDF
+    // Fetch and merge each PDF or image
     for (let i = 0; i < pdfUrls.length; i++) {
       const url = pdfUrls[i];
       try {
-        console.log(`Fetching PDF ${i + 1}/${pdfUrls.length}:`, url);
+        console.log(`Fetching file ${i + 1}/${pdfUrls.length}:`, url);
         const response = await fetch(url);
         
         if (!response.ok) {
-          console.error(`Failed to fetch PDF from ${url}:`, response.status, response.statusText);
+          console.error(`Failed to fetch file from ${url}:`, response.status, response.statusText);
           continue; // Skip this file and continue with others
         }
         
-        const contentType = response.headers.get('content-type');
-        if (!contentType?.includes('pdf')) {
-          console.warn(`Skipping non-PDF file: ${url} (${contentType})`);
+        const contentType = response.headers.get('content-type') || '';
+        const fileBytes = await response.arrayBuffer();
+        console.log(`Loaded ${fileBytes.byteLength} bytes from ${url} (${contentType})`);
+        
+        // Handle PDFs
+        if (contentType.includes('pdf')) {
+          const pdf = await PDFDocument.load(fileBytes);
+          const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+          copiedPages.forEach((page) => mergedPdf.addPage(page));
+          console.log(`Merged ${copiedPages.length} PDF pages from ${url}`);
+        }
+        // Handle images (JPG, PNG, etc.)
+        else if (contentType.includes('image')) {
+          let image;
+          
+          // Embed the appropriate image type
+          if (contentType.includes('jpeg') || contentType.includes('jpg')) {
+            image = await mergedPdf.embedJpg(fileBytes);
+          } else if (contentType.includes('png')) {
+            image = await mergedPdf.embedPng(fileBytes);
+          } else {
+            console.warn(`Unsupported image type: ${contentType} for ${url}`);
+            continue;
+          }
+          
+          // Create a page that fits the image
+          const page = mergedPdf.addPage([image.width, image.height]);
+          page.drawImage(image, {
+            x: 0,
+            y: 0,
+            width: image.width,
+            height: image.height,
+          });
+          console.log(`Added image as PDF page from ${url} (${image.width}x${image.height})`);
+        }
+        else {
+          console.warn(`Skipping unsupported file type: ${url} (${contentType})`);
           continue;
         }
-        
-        const pdfBytes = await response.arrayBuffer();
-        console.log(`Loaded ${pdfBytes.byteLength} bytes from ${url}`);
-        
-        const pdf = await PDFDocument.load(pdfBytes);
-        const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-        copiedPages.forEach((page) => mergedPdf.addPage(page));
-        console.log(`Merged ${copiedPages.length} pages from ${url}`);
       } catch (fileError) {
         console.error(`Error processing file ${url}:`, fileError);
         // Continue with other files
@@ -769,7 +795,7 @@ const mergeAndPrintPDFs = async (pdfUrls: string[]) => {
     // Clean up after a delay
     setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
   } catch (error) {
-    console.error('Error merging PDFs:', error);
+    console.error('Error merging files:', error);
     throw error;
   }
 };
