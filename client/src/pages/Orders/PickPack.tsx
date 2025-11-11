@@ -6038,12 +6038,37 @@ export default function PickPack() {
                   : 'bg-gray-400/50'
               }`} />
               
-              {/* Step 4: Checklist */}
+              {/* Step 4: Shipping Labels */}
               <div className={`flex-1 h-1.5 rounded-sm transition-all ${
-                packingChecklist.itemsVerified && packingChecklist.packingSlipIncluded && 
-                packingChecklist.boxSealed
-                  ? 'bg-green-500' 
-                  : 'bg-gray-400/50'
+                (() => {
+                  const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
+                  const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+                  const isPPL = shippingMethod.includes('PPL');
+                  
+                  if (cartons.length === 0) return 'bg-gray-400/50';
+                  
+                  if (isPPL) {
+                    // PPL: Check if shipment created and all cartons have labels
+                    return activePackingOrder.pplStatus === 'created' && shipmentLabelsFromDB.length >= cartons.length
+                      ? 'bg-green-500' 
+                      : 'bg-gray-400/50';
+                  } else if (isGLS) {
+                    // GLS: Check if all tracking numbers are entered and no duplicates
+                    const allHaveTracking = cartons.every(c => c.trackingNumber && c.trackingNumber.trim() !== '');
+                    const hasDuplicates = cartons.some((c, i) => 
+                      c.trackingNumber && c.trackingNumber.trim() !== '' && 
+                      cartons.some((other, j) => 
+                        i !== j && 
+                        other.trackingNumber && 
+                        other.trackingNumber.trim().toUpperCase() === c.trackingNumber?.trim().toUpperCase()
+                      )
+                    );
+                    return allHaveTracking && !hasDuplicates ? 'bg-green-500' : 'bg-gray-400/50';
+                  } else {
+                    // Other methods: Check if all cartons have labels printed
+                    return cartons.every(c => c.labelPrinted) ? 'bg-green-500' : 'bg-gray-400/50';
+                  }
+                })()
               }`} />
             </div>
           </div>
@@ -8355,6 +8380,7 @@ export default function PickPack() {
                             <Input
                               type="text"
                               placeholder="Enter tracking number..."
+                              key={`tracking-${carton.id}-${carton.trackingNumber || 'empty'}`}
                               defaultValue={carton.trackingNumber || ''}
                               onPaste={(e) => {
                                 // Wait for paste to complete, then save
@@ -8374,20 +8400,20 @@ export default function PickPack() {
                                   e.currentTarget.blur();
                                 }
                               }}
-                              className={`font-mono text-sm pr-10 ${
-                                isDuplicate ? 'border-red-300 focus:border-red-500' : 
-                                isValid ? 'border-green-300 focus:border-green-500' : ''
+                              className={`font-mono text-[16px] pr-10 ${
+                                isDuplicate ? 'border-red-400 focus:border-red-500' : 
+                                isValid ? 'border-green-400 focus:border-green-500' : ''
                               }`}
                               data-testid={`input-gls-tracking-carton-${index + 1}`}
                               id={`tracking-input-${carton.id}`}
                             />
                             {/* Validation Icon inside input */}
                             {hasTracking && (
-                              <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none z-10">
                                 {isDuplicate ? (
-                                  <XCircle className="h-4 w-4 text-red-600" />
+                                  <XCircle className="h-5 w-5 text-red-600 fill-red-50" />
                                 ) : (
-                                  <CheckCircle className="h-4 w-4 text-green-600" />
+                                  <CheckCircle className="h-5 w-5 text-green-600 fill-green-50" />
                                 )}
                               </div>
                             )}
