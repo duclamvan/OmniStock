@@ -493,7 +493,8 @@ const CartonCard = memo(({
   deleteCartonMutation,
   updateCartonMutation,
   incrementCartonUsageMutation,
-  calculateVolumeUtilization
+  calculateVolumeUtilization,
+  isGLS = false
 }: any) => {
   // Local state for weight input to make it responsive
   const [localWeight, setLocalWeight] = useState(carton.weight || '');
@@ -602,7 +603,9 @@ const CartonCard = memo(({
 
         {/* Weight Input with Local State */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Weight (kg)</label>
+          <label className="text-sm font-medium text-gray-700">
+            Weight (kg) {isGLS && <span className="text-xs text-gray-500 font-normal">(optional, max 40kg)</span>}
+          </label>
           <div className="flex items-center gap-2">
             <Input
               type="number"
@@ -611,24 +614,65 @@ const CartonCard = memo(({
               value={localWeight}
               onChange={(e) => {
                 // Update local state immediately for responsive typing
-                setLocalWeight(e.target.value);
+                const newWeight = e.target.value;
+                setLocalWeight(newWeight);
+                
+                // For GLS, show warning if weight exceeds 40kg
+                if (isGLS && newWeight && parseFloat(newWeight) > 40) {
+                  // Visual feedback in real-time
+                  e.target.classList.add('border-red-500');
+                } else {
+                  e.target.classList.remove('border-red-500');
+                }
               }}
               onBlur={(e) => {
                 // Save to backend when user finishes typing
-                saveWeight(e.target.value);
+                const newWeight = e.target.value;
+                
+                // For GLS, validate max 40kg
+                if (isGLS && newWeight && parseFloat(newWeight) > 40) {
+                  toast({
+                    title: "Weight Limit Exceeded",
+                    description: "GLS shipments cannot exceed 40kg per carton. Please reduce weight or split into multiple cartons.",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+                
+                saveWeight(newWeight);
               }}
               onKeyDown={(e) => {
                 // Save on Enter key
                 if (e.key === 'Enter') {
+                  const newWeight = localWeight;
+                  
+                  // For GLS, validate max 40kg
+                  if (isGLS && newWeight && parseFloat(newWeight) > 40) {
+                    toast({
+                      title: "Weight Limit Exceeded",
+                      description: "GLS shipments cannot exceed 40kg per carton. Please reduce weight or split into multiple cartons.",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
+                  
                   saveWeight(localWeight);
                   e.currentTarget.blur();
                 }
               }}
-              className="text-center text-xl font-bold text-amber-800 border-2 border-amber-300 focus:border-amber-500"
+              className={`text-center text-xl font-bold text-amber-800 border-2 border-amber-300 focus:border-amber-500 ${
+                isGLS && localWeight && parseFloat(localWeight) > 40 ? 'border-red-500 focus:border-red-500' : ''
+              }`}
               data-testid={`weight-input-${index + 1}`}
             />
             <span className="text-xl font-bold text-amber-800">kg</span>
           </div>
+          {isGLS && localWeight && parseFloat(localWeight) > 40 && (
+            <div className="text-xs text-red-600 flex items-center gap-1 font-semibold">
+              <AlertCircle className="h-3 w-3" />
+              Exceeds GLS 40kg limit
+            </div>
+          )}
           {carton.aiWeightCalculation && (
             <div className="text-xs text-amber-700 flex items-center gap-1">
               <TrendingUp className="h-3 w-3" />
@@ -5427,6 +5471,11 @@ export default function PickPack() {
   if (activePackingOrder) {
     const progress = (activePackingOrder.packedItems / activePackingOrder.totalItems) * 100;
     const currentCarton = packingRecommendation?.cartons.find(c => c.id === selectedCarton);
+    
+    // Check if shipping method is GLS (weight is optional for GLS)
+    const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
+    const isGLSShipping = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
+    
     // Check if all items are verified, including bundle components
     // IMPORTANT: Check activePackingOrder.items (what's shown in UI), NOT currentCarton.items
     const allItemsVerified = activePackingOrder.items.every(item => {
@@ -5438,12 +5487,27 @@ export default function PickPack() {
       return (verifiedItems[item.id] || 0) >= item.quantity;
     });
     
-    // Multi-carton validation: all cartons must have type, weight, and label
-    const allCartonsValid = cartons.length > 0 && cartons.every(carton => 
-      (carton.cartonType === 'company' ? !!carton.cartonId : carton.cartonType === 'non-company') &&
-      carton.weight && parseFloat(carton.weight) > 0 &&
-      carton.labelPrinted
-    );
+    // Multi-carton validation: all cartons must have type and label
+    // For GLS: weight is optional, but if provided must be ≤ 40kg
+    // For other carriers: weight is required
+    const allCartonsValid = cartons.length > 0 && cartons.every(carton => {
+      const hasValidType = carton.cartonType === 'company' ? !!carton.cartonId : carton.cartonType === 'non-company';
+      const hasLabel = carton.labelPrinted;
+      
+      // Weight validation depends on shipping method
+      let hasValidWeight = true;
+      if (isGLSShipping) {
+        // GLS: weight is optional, but if provided must be ≤ 40kg
+        if (carton.weight && parseFloat(carton.weight) > 0) {
+          hasValidWeight = parseFloat(carton.weight) <= 40;
+        }
+      } else {
+        // Other carriers: weight is required and must be > 0
+        hasValidWeight = carton.weight && parseFloat(carton.weight) > 0;
+      }
+      
+      return hasValidType && hasLabel && hasValidWeight;
+    });
     
     // Packing completion check - only check what's visible in the UI
     const canCompletePacking = (packingChecklist.itemsVerified || allItemsVerified) && 
@@ -6520,6 +6584,7 @@ export default function PickPack() {
                     updateCartonMutation={updateCartonMutation}
                     incrementCartonUsageMutation={incrementCartonUsageMutation}
                     calculateVolumeUtilization={calculateVolumeUtilization}
+                    isGLS={isGLSShipping}
                   />
                 );
               })}
@@ -8080,8 +8145,10 @@ export default function PickPack() {
                     scrollToElement('checklist-cartons', 'Please add at least one carton for this shipment.');
                   } else if (cartons.some(c => !c.cartonId && c.cartonType !== 'non-company')) {
                     scrollToElement('checklist-cartons', 'Please select a carton type for all cartons.');
-                  } else if (cartons.some(c => !c.weight || parseFloat(c.weight) <= 0)) {
+                  } else if (!isGLSShipping && cartons.some(c => !c.weight || parseFloat(c.weight) <= 0)) {
                     scrollToElement('checklist-cartons', 'Please enter the weight for all cartons.');
+                  } else if (isGLSShipping && cartons.some(c => c.weight && parseFloat(c.weight) > 40)) {
+                    scrollToElement('checklist-cartons', 'GLS shipments cannot exceed 40kg per carton. Please reduce weight or split into multiple cartons.');
                   } else if (cartons.some(c => !c.labelPrinted)) {
                     scrollToElement('checklist-shipping-labels', 'Please generate and print shipping labels for all cartons.');
                   } else {
