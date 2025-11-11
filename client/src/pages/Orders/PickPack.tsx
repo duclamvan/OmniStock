@@ -2160,6 +2160,14 @@ export default function PickPack() {
     refetchOnWindowFocus: false,
   });
 
+  // Query for DHL bank details from settings
+  const { data: dhlBankDetails } = useQuery<any>({
+    queryKey: ['/api/settings/dhl_bank_details'],
+    staleTime: 60 * 60 * 1000, // 1 hour (bank details rarely change)
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
+  });
+
   // Filter cartons based on search
   const filteredCartons = availableCartons.filter((carton: any) => {
     if (!cartonSearchFilter) return true;
@@ -7515,10 +7523,24 @@ export default function PickPack() {
                             label="COD Amount:" 
                             value={formatCurrency(codAmount, activePackingOrder.codCurrency || 'EUR')} 
                           />
-                          <div className="pt-2 px-2">
-                            <p className="text-xs text-gray-600 italic">
-                              Bank details configured in settings
-                            </p>
+                          
+                          {/* Bank Details */}
+                          <div className="pt-2">
+                            <Separator className="my-2" />
+                            {dhlBankDetails ? (
+                              <>
+                                <CompactCopyField label="Account Holder:" value={dhlBankDetails.accountHolder || ''} />
+                                <CompactCopyField label="IBAN:" value={dhlBankDetails.iban || ''} />
+                                <CompactCopyField label="BIC:" value={dhlBankDetails.bic || ''} />
+                                <CompactCopyField label="Bank:" value={dhlBankDetails.bank || ''} />
+                              </>
+                            ) : (
+                              <div className="px-2 py-1">
+                                <p className="text-sm text-gray-600 italic">
+                                  Bank details not configured
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </>
