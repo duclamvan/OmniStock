@@ -797,68 +797,74 @@ function UnifiedDocumentsList({
     testId?: string;
   }) => (
     <div 
-      className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+      className={`p-3 rounded-lg border transition-colors ${
         isPrinted
           ? 'bg-green-50 border-green-300'
           : 'bg-white border-gray-200 hover:border-emerald-300'
       }`}
       data-testid={testId}
     >
-      {/* Icon/Thumbnail */}
-      <div className={`flex-shrink-0 w-10 h-10 rounded-md overflow-hidden bg-gradient-to-br border flex items-center justify-center ${
-        isPrinted
-          ? 'from-green-50 to-emerald-50 border-green-300'
-          : 'from-emerald-50 to-green-50 border-emerald-200'
-      }`}>
-        {icon}
-      </div>
-      
-      {/* Document Name */}
-      <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium ${isPrinted ? 'text-green-900' : 'text-black'}`}>
-          {name}
-        </p>
-        {subtitle && (
-          <p className="text-xs text-gray-600">{subtitle}</p>
-        )}
-      </div>
-
-      {/* View Button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-8 px-2 text-xs font-semibold flex-shrink-0 hover:bg-gray-100"
-        onClick={onView}
-        data-testid={`${testId}-view`}
-      >
-        <Eye className="h-3.5 w-3.5 mr-1" />
-        View
-      </Button>
-
-      {/* Print Button */}
-      <Button 
-        variant={isPrinted ? "default" : "outline"}
-        size="sm"
-        className={`h-8 px-2 text-xs font-semibold flex-shrink-0 ${
+      {/* Top Row: Icon + Name */}
+      <div className="flex items-start gap-3 mb-2">
+        {/* Icon/Thumbnail */}
+        <div className={`flex-shrink-0 w-10 h-10 rounded-md overflow-hidden bg-gradient-to-br border flex items-center justify-center ${
           isPrinted
-            ? 'bg-green-600 hover:bg-green-700 text-white'
-            : 'hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300'
-        }`}
-        onClick={onPrint}
-        data-testid={`${testId}-print`}
-      >
-        {isPrinted ? (
-          <>
-            <CheckCircle className="h-3.5 w-3.5 mr-1" />
-            Printed
-          </>
-        ) : (
-          <>
-            <Printer className="h-3.5 w-3.5 mr-1" />
-            Print
-          </>
-        )}
-      </Button>
+            ? 'from-green-50 to-emerald-50 border-green-300'
+            : 'from-emerald-50 to-green-50 border-emerald-200'
+        }`}>
+          {icon}
+        </div>
+        
+        {/* Document Name - Full Width */}
+        <div className="flex-1 min-w-0">
+          <p className={`text-base font-medium leading-snug ${isPrinted ? 'text-green-900' : 'text-black'}`}>
+            {name}
+          </p>
+          {subtitle && (
+            <p className="text-xs text-gray-600 mt-0.5">{subtitle}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Bottom Row: Buttons */}
+      <div className="flex gap-2">
+        {/* View Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 px-3 text-xs font-semibold flex-1 hover:bg-gray-100"
+          onClick={onView}
+          data-testid={`${testId}-view`}
+        >
+          <Eye className="h-3.5 w-3.5 mr-1" />
+          View
+        </Button>
+
+        {/* Print Button */}
+        <Button 
+          variant={isPrinted ? "default" : "outline"}
+          size="sm"
+          className={`h-8 px-3 text-xs font-semibold flex-1 ${
+            isPrinted
+              ? 'bg-green-600 hover:bg-green-700 text-white'
+              : 'hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300'
+          }`}
+          onClick={onPrint}
+          data-testid={`${testId}-print`}
+        >
+          {isPrinted ? (
+            <>
+              <CheckCircle className="h-3.5 w-3.5 mr-1" />
+              Printed
+            </>
+          ) : (
+            <>
+              <Printer className="h-3.5 w-3.5 mr-1" />
+              Print
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   );
 
@@ -1017,56 +1023,61 @@ function ProductDocumentsSelector({
         return (
           <div
             key={file.id}
-            className={`flex items-center gap-3 p-2.5 rounded-lg border transition-colors ${
+            className={`p-3 rounded-lg border transition-colors ${
               isPrinted
                 ? 'bg-green-50 border-green-300'
                 : 'bg-white border-gray-200 hover:border-teal-200'
             }`}
             data-testid={`product-doc-${file.id}`}
           >
-            {/* Icon */}
-            <div className={`flex-shrink-0 w-12 h-12 rounded-md overflow-hidden bg-gradient-to-br ${
-              isPrinted ? 'from-green-50 to-emerald-50 border-green-300' : 'from-teal-50 to-cyan-50 border-teal-200'
-            } border flex items-center justify-center`}>
-              <Icon className={`h-6 w-6 ${isPrinted ? 'text-green-600' : 'text-teal-500'}`} />
-            </div>
-            
-            {/* Document Info */}
-            <div className="flex-1 min-w-0">
-              <p className={`text-sm font-medium truncate ${isPrinted ? 'text-green-900' : 'text-gray-900'}`}>
-                {file.description || file.fileName}
-              </p>
-              {flag && (
-                <p className="text-xs text-gray-500">
-                  {flag} {file.language?.toUpperCase()}
+            {/* Top Row: Icon + Name */}
+            <div className="flex items-start gap-3 mb-2">
+              {/* Icon */}
+              <div className={`flex-shrink-0 w-10 h-10 rounded-md overflow-hidden bg-gradient-to-br ${
+                isPrinted ? 'from-green-50 to-emerald-50 border-green-300' : 'from-teal-50 to-cyan-50 border-teal-200'
+              } border flex items-center justify-center`}>
+                <Icon className={`h-5 w-5 ${isPrinted ? 'text-green-600' : 'text-teal-500'}`} />
+              </div>
+              
+              {/* Document Info - Full Width */}
+              <div className="flex-1 min-w-0">
+                <p className={`text-base font-medium leading-snug ${isPrinted ? 'text-green-900' : 'text-black'}`}>
+                  {file.description || file.fileName}
                 </p>
-              )}
+                {flag && (
+                  <p className="text-xs text-gray-600 mt-0.5">
+                    {flag} {file.language?.toUpperCase()}
+                  </p>
+                )}
+              </div>
             </div>
 
-            {/* Print Button */}
-            <Button
-              variant={isPrinted ? "default" : "outline"}
-              size="sm"
-              className={`h-8 text-xs flex-shrink-0 ${
-                isPrinted
-                  ? 'bg-green-600 hover:bg-green-700 text-white'
-                  : 'hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300'
-              }`}
-              onClick={() => handlePrint(file.id, file.fileUrl || file.url)}
-              data-testid={`button-print-product-doc-${file.id}`}
-            >
-              {isPrinted ? (
-                <>
-                  <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-                  Printed
-                </>
-              ) : (
-                <>
-                  <Printer className="h-3.5 w-3.5 mr-1.5" />
-                  Print
-                </>
-              )}
-            </Button>
+            {/* Bottom Row: Button */}
+            <div className="flex">
+              <Button
+                variant={isPrinted ? "default" : "outline"}
+                size="sm"
+                className={`h-8 px-3 text-xs font-semibold flex-1 ${
+                  isPrinted
+                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                    : 'hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300'
+                }`}
+                onClick={() => handlePrint(file.id, file.fileUrl || file.url)}
+                data-testid={`button-print-product-doc-${file.id}`}
+              >
+                {isPrinted ? (
+                  <>
+                    <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                    Printed
+                  </>
+                ) : (
+                  <>
+                    <Printer className="h-3.5 w-3.5 mr-1.5" />
+                    Print
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         );
       })}
@@ -1131,60 +1142,65 @@ function OrderFilesDisplay({
         return (
           <div 
             key={fileId}
-            className={`flex items-center gap-3 p-2.5 rounded-lg border transition-colors ${
+            className={`p-3 rounded-lg border transition-colors ${
               isPrinted
                 ? 'bg-green-50 border-green-300'
                 : 'bg-white border-gray-200 hover:border-emerald-300'
             }`}
           >
-            {/* File Thumbnail */}
-            <div className={`flex-shrink-0 w-12 h-12 rounded-md overflow-hidden border ${
-              isPrinted ? 'bg-green-100 border-green-300' : 'bg-gray-100 border-gray-200'
-            }`}>
-              {file.mimeType?.startsWith('image/') ? (
-                <img 
-                  src={file.fileUrl || file.url}
-                  alt={file.fileName || file.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-                  <FileText className={`h-6 w-6 ${isPrinted ? 'text-green-600' : 'text-gray-500'}`} />
-                </div>
-              )}
-            </div>
-            
-            {/* File Name */}
-            <div className="flex-1 min-w-0">
-              <p className={`text-sm font-medium truncate ${isPrinted ? 'text-green-900' : 'text-gray-900'}`} title={file.fileName || file.name}>
-                {file.fileName || file.name}
-              </p>
+            {/* Top Row: Icon + Name */}
+            <div className="flex items-start gap-3 mb-2">
+              {/* File Thumbnail */}
+              <div className={`flex-shrink-0 w-10 h-10 rounded-md overflow-hidden border ${
+                isPrinted ? 'bg-green-100 border-green-300' : 'bg-gray-100 border-gray-200'
+              }`}>
+                {file.mimeType?.startsWith('image/') ? (
+                  <img 
+                    src={file.fileUrl || file.url}
+                    alt={file.fileName || file.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+                    <FileText className={`h-5 w-5 ${isPrinted ? 'text-green-600' : 'text-gray-500'}`} />
+                  </div>
+                )}
+              </div>
+              
+              {/* File Name - Full Width */}
+              <div className="flex-1 min-w-0">
+                <p className={`text-base font-medium leading-snug ${isPrinted ? 'text-green-900' : 'text-black'}`} title={file.fileName || file.name}>
+                  {file.fileName || file.name}
+                </p>
+              </div>
             </div>
 
-            {/* Print Button */}
-            <Button
-              variant={isPrinted ? "default" : "outline"}
-              size="sm"
-              className={`h-8 text-xs flex-shrink-0 ${
-                isPrinted
-                  ? 'bg-green-600 hover:bg-green-700 text-white'
-                  : 'hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300'
-              }`}
-              onClick={() => handlePrint(fileId, file.fileUrl || file.url)}
-              data-testid={`button-print-file-${index}`}
-            >
-              {isPrinted ? (
-                <>
-                  <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-                  Printed
-                </>
-              ) : (
-                <>
-                  <Printer className="h-3.5 w-3.5 mr-1.5" />
-                  Print
-                </>
-              )}
-            </Button>
+            {/* Bottom Row: Button */}
+            <div className="flex">
+              <Button
+                variant={isPrinted ? "default" : "outline"}
+                size="sm"
+                className={`h-8 px-3 text-xs font-semibold flex-1 ${
+                  isPrinted
+                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                    : 'hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300'
+                }`}
+                onClick={() => handlePrint(fileId, file.fileUrl || file.url)}
+                data-testid={`button-print-file-${index}`}
+              >
+                {isPrinted ? (
+                  <>
+                    <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                    Printed
+                  </>
+                ) : (
+                  <>
+                    <Printer className="h-3.5 w-3.5 mr-1.5" />
+                    Print
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         );
       })}
