@@ -793,6 +793,32 @@ function UnifiedDocumentsList({
 
   const orderFiles = orderFilesData || [];
 
+  // Calculate total document count and collect all PDF URLs (MUST be before early return)
+  const totalDocuments = 1 + productFiles.length + orderFiles.length; // 1 for packing list
+  
+  // Collect all PDF URLs for merging (MUST be before early return)
+  const allPdfUrls = useMemo(() => {
+    const urls: string[] = [`/api/orders/${orderId}/packing-list.pdf`];
+    productFiles.forEach((file: any) => {
+      if (file.fileUrl || file.url) {
+        urls.push(file.fileUrl || file.url);
+      }
+    });
+    orderFiles.forEach((file: any) => {
+      if ((file.fileUrl || file.url) && !file.mimeType?.startsWith('image/')) {
+        urls.push(file.fileUrl || file.url);
+      }
+    });
+    return urls;
+  }, [orderId, productFiles, orderFiles]);
+
+  // Notify parent about document count and URLs (MUST be before early return)
+  useEffect(() => {
+    if (onGetDocumentCount) {
+      onGetDocumentCount(totalDocuments, allPdfUrls);
+    }
+  }, [totalDocuments, allPdfUrls, onGetDocumentCount]);
+
   const FILE_TYPE_ICONS: Record<string, any> = {
     sds: Shield,
     cpnp: Award,
@@ -906,32 +932,6 @@ function UnifiedDocumentsList({
       </div>
     </div>
   );
-
-  // Calculate total document count and collect all PDF URLs
-  const totalDocuments = 1 + productFiles.length + orderFiles.length; // 1 for packing list
-  
-  // Collect all PDF URLs for merging
-  const allPdfUrls = useMemo(() => {
-    const urls: string[] = [`/api/orders/${orderId}/packing-list.pdf`];
-    productFiles.forEach((file: any) => {
-      if (file.fileUrl || file.url) {
-        urls.push(file.fileUrl || file.url);
-      }
-    });
-    orderFiles.forEach((file: any) => {
-      if ((file.fileUrl || file.url) && !file.mimeType?.startsWith('image/')) {
-        urls.push(file.fileUrl || file.url);
-      }
-    });
-    return urls;
-  }, [orderId, productFiles, orderFiles]);
-
-  // Notify parent about document count and URLs
-  useEffect(() => {
-    if (onGetDocumentCount) {
-      onGetDocumentCount(totalDocuments, allPdfUrls);
-    }
-  }, [totalDocuments, allPdfUrls, onGetDocumentCount]);
 
   return (
     <div className="space-y-2">
