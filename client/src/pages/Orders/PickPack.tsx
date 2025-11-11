@@ -2235,21 +2235,31 @@ export default function PickPack() {
     }
   }, [orderCartons, activePackingOrder?.id]);
 
-  // Sync tracking number inputs from database (only when values actually change)
+  // Sync tracking number inputs from database (smart merge that preserves unsaved edits)
   useEffect(() => {
     if (!orderCartons || orderCartons.length === 0) {
       setTrackingInputs(prev => Object.keys(prev).length === 0 ? prev : {});
       return;
     }
     
-    // Build new inputs map
-    const newInputs: Record<string, string> = {};
-    orderCartons.forEach(carton => {
-      newInputs[carton.id] = carton.trackingNumber || '';
-    });
-    
-    // Only update if something actually changed
     setTrackingInputs(prev => {
+      const newInputs: Record<string, string> = {};
+      
+      // Merge server values with existing inputs, preserving unsaved edits
+      orderCartons.forEach(carton => {
+        const serverValue = carton.trackingNumber || '';
+        const localValue = prev[carton.id] || '';
+        
+        // Only overwrite if local is empty OR local matches server (no unsaved edits)
+        if (localValue === '' || localValue === serverValue) {
+          newInputs[carton.id] = serverValue;
+        } else {
+          // Keep unsaved local edit
+          newInputs[carton.id] = localValue;
+          console.log(`🔒 Preserving unsaved edit for carton ${carton.id}: "${localValue}" (server has "${serverValue}")`);
+        }
+      });
+      
       // Check if there are any differences
       const hasChanges = orderCartons.some(carton => {
         const prevValue = prev[carton.id] || '';
@@ -2261,7 +2271,7 @@ export default function PickPack() {
         return prev; // No changes, return same reference to prevent re-render
       }
       
-      console.log('🔄 Syncing tracking inputs from DB (values changed):', newInputs);
+      console.log('🔄 Syncing tracking inputs from DB (smart merge with unsaved edits preserved):', newInputs);
       return newInputs;
     });
   }, [orderCartons]);
