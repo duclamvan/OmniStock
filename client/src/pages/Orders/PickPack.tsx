@@ -1014,9 +1014,9 @@ function UnifiedDocumentsList({
       <div className="flex gap-2">
         {/* View Button */}
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
-          className="h-8 px-3 text-xs font-semibold flex-1 hover:bg-gray-100"
+          className="h-8 px-3 text-xs font-semibold flex-1 hover:bg-gray-100 hover:border-gray-300"
           onClick={onView}
           data-testid={`${testId}-view`}
         >
