@@ -6563,18 +6563,18 @@ export default function PickPack() {
                 ].filter(Boolean).join(', ');
 
                 const CompactCopyField = ({ label, value, flag }: { label: string; value: string; flag?: string }) => (
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs text-gray-700 flex-shrink-0">{label}</span>
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      {flag && <span className="text-lg">{flag}</span>}
-                      <span className="text-sm font-medium text-gray-900 text-right">{value || '-'}</span>
+                  <div className="flex items-center justify-between gap-2 py-1">
+                    <span className="text-sm text-gray-700 flex-shrink-0">{label}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      {flag && <span className="text-xl">{flag}</span>}
+                      <span className="text-base font-medium text-gray-900 text-right">{value || '-'}</span>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 w-6 p-0 hover:bg-gray-100 flex-shrink-0"
+                        className="h-7 w-7 p-0 hover:bg-gray-100 flex-shrink-0"
                         onClick={() => copyField(value, label)}
                       >
-                        <Copy className="h-3 w-3 text-gray-600" />
+                        <Copy className="h-3.5 w-3.5 text-gray-600" />
                       </Button>
                     </div>
                   </div>
@@ -6585,14 +6585,14 @@ export default function PickPack() {
                     {/* Header */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Truck className="h-4 w-4 text-emerald-700" />
-                        <h3 className="font-semibold text-sm text-gray-900">
+                        <Truck className="h-5 w-5 text-emerald-700" />
+                        <h3 className="font-semibold text-base text-gray-900">
                           <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">GLS</span>
                           <span className="ml-2">Shipping Details</span>
                         </h3>
                       </div>
                       {cartons.length > 0 && (
-                        <div className="text-xs text-gray-600">
+                        <div className="text-sm text-gray-600">
                           {cartons.length} {cartons.length === 1 ? 'carton' : 'cartons'}
                           <span className="text-amber-700 font-medium"> • max 40kg</span>
                         </div>
@@ -6609,12 +6609,12 @@ export default function PickPack() {
                     />
 
                     {/* Copyable Fields */}
-                    <div className="space-y-1">
+                    <div className="space-y-0.5">
                       <CompactCopyField label="Country:" value={germanCountry} flag={getCountryFlag(germanCountry)} />
                       <CompactCopyField label="Paket size:" value="S" />
                       
                       {/* Divider */}
-                      <Separator className="my-2" />
+                      <Separator className="my-3" />
                       
                       <CompactCopyField label="First Name:" value={firstName} />
                       <CompactCopyField label="Last Name:" value={lastName} />
