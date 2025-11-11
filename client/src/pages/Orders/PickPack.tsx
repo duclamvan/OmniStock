@@ -7137,24 +7137,16 @@ export default function PickPack() {
               {/* Dobírka (COD) Section - Only for PPL orders with COD */}
               {activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') && 
                (activePackingOrder.paymentMethod?.toUpperCase() === 'COD' || activePackingOrder.codAmount) && (
-                <div className="p-4 bg-indigo-50 border-2 border-indigo-200 rounded-lg">
+                <div className="p-4 bg-indigo-50 border-2 border-indigo-200 rounded-lg mt-4">
                   <div className="flex items-center gap-2 mb-2">
                     <DollarSign className="h-4 w-4 text-indigo-600 flex-shrink-0" />
                     <span className="text-sm font-semibold text-indigo-900 uppercase tracking-wide">Dobírka (COD)</span>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-3 pl-6">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900" data-testid="text-cod-amount">
-                        {activePackingOrder.codAmount ? formatCurrency(typeof activePackingOrder.codAmount === 'string' ? parseFloat(activePackingOrder.codAmount) : activePackingOrder.codAmount, activePackingOrder.codCurrency || 'CZK') : '-'}
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <p className="text-sm font-medium text-gray-900" data-testid="text-cod-currency">
-                        {activePackingOrder.codCurrency || 'CZK'}
-                      </p>
-                    </div>
+                  <div className="pl-6">
+                    <p className="text-sm font-medium text-gray-900" data-testid="text-cod-amount">
+                      {activePackingOrder.codAmount ? formatCurrency(typeof activePackingOrder.codAmount === 'string' ? parseFloat(activePackingOrder.codAmount) : activePackingOrder.codAmount, activePackingOrder.codCurrency || 'CZK') : '-'}
+                    </p>
                   </div>
                 </div>
               )}
