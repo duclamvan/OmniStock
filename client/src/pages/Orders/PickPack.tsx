@@ -2152,6 +2152,14 @@ export default function PickPack() {
     refetchOnWindowFocus: false,
   });
 
+  // Query for DHL default sender address from settings
+  const { data: dhlSenderAddress } = useQuery<any>({
+    queryKey: ['/api/settings/dhl_default_sender_address'],
+    staleTime: 60 * 60 * 1000, // 1 hour (sender address rarely changes)
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
+  });
+
   // Filter cartons based on search
   const filteredCartons = availableCartons.filter((carton: any) => {
     if (!cartonSearchFilter) return true;
@@ -7337,6 +7345,7 @@ export default function PickPack() {
                   company: shippingAddr.company || '',
                   street: shippingAddr.street || '',
                   houseNumber: shippingAddr.streetNumber || '',
+                  addressSupplement: shippingAddr.address2 || shippingAddr.addressSupplement || '',
                   postalCode: shippingAddr.zipCode || '',
                   city: shippingAddr.city || '',
                   country: shippingAddr.country || 'Germany',
@@ -7347,12 +7356,26 @@ export default function PickPack() {
                   company: '',
                   street: '',
                   houseNumber: '',
+                  addressSupplement: '',
                   postalCode: '',
                   city: '',
                   country: 'Germany',
                   email: '',
                   phone: '',
                 };
+                
+                // Prepare sender data from DHL settings
+                const senderData = dhlSenderAddress ? {
+                  firstName: dhlSenderAddress.firstName || '',
+                  lastName: dhlSenderAddress.lastName || '',
+                  addressSupplement: dhlSenderAddress.addressSupplement || '',
+                  street: dhlSenderAddress.street || '',
+                  houseNumber: dhlSenderAddress.houseNumber || '',
+                  postalCode: dhlSenderAddress.postalCode || '',
+                  city: dhlSenderAddress.city || '',
+                  country: dhlSenderAddress.country || 'Deutschland',
+                  email: dhlSenderAddress.email || '',
+                } : null;
                 
                 let totalWeight = 0;
                 cartons.forEach(carton => {
@@ -7400,6 +7423,12 @@ export default function PickPack() {
                   </div>
                 );
 
+                // Determine if COD section should be shown
+                const codAmount = typeof activePackingOrder.codAmount === 'string' 
+                  ? parseFloat(activePackingOrder.codAmount) 
+                  : (activePackingOrder.codAmount || 0);
+                const showCOD = codAmount > 0 || activePackingOrder.paymentMethod?.toUpperCase().includes('COD');
+
                 return (
                   <div className="space-y-3">
                     {/* Header */}
@@ -7423,24 +7452,77 @@ export default function PickPack() {
                       Create Label on DHL Website
                     </Button>
 
-                    {/* Copyable Fields */}
+                    {/* Recipient (Empfänger) Section */}
                     <div className="space-y-0.5">
+                      <div className="flex items-center gap-2 py-1.5">
+                        <User className="h-4 w-4 text-yellow-600" />
+                        <span className="text-sm font-bold text-black">Empfänger (Recipient)</span>
+                      </div>
                       <CompactCopyField label="Country:" value={recipientData.country} />
                       <CompactCopyField label="Weight:" value={totalWeight > 0 ? `${totalWeight.toFixed(1)} kg` : 'Not set'} />
                       
                       {/* Divider */}
-                      <Separator className="my-3" />
+                      <Separator className="my-2" />
                       
                       <CompactCopyField label="First Name:" value={firstName} />
                       <CompactCopyField label="Last Name:" value={lastName} />
                       <CompactCopyField label="Company:" value={recipientData.company} />
                       <CompactCopyField label="Street:" value={recipientData.street} />
                       <CompactCopyField label="House Number:" value={recipientData.houseNumber} />
+                      {recipientData.addressSupplement && (
+                        <CompactCopyField label="Adresszusatz:" value={recipientData.addressSupplement} />
+                      )}
                       <CompactCopyField label="Postal Code:" value={recipientData.postalCode} />
                       <CompactCopyField label="City:" value={recipientData.city} />
                       <CompactCopyField label="E-mail:" value={recipientData.email || ''} />
                       <CompactCopyField label="Phone:" value={recipientData.phone || ''} />
                     </div>
+
+                    {/* Sender (Absender) Section */}
+                    {senderData && (
+                      <>
+                        <Separator className="my-3 bg-yellow-300" />
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2 py-1.5">
+                            <Building className="h-4 w-4 text-yellow-600" />
+                            <span className="text-sm font-bold text-black">Absender (Sender)</span>
+                          </div>
+                          <CompactCopyField label="First Name:" value={senderData.firstName} />
+                          <CompactCopyField label="Last Name:" value={senderData.lastName} />
+                          {senderData.addressSupplement && (
+                            <CompactCopyField label="Adresszusatz:" value={senderData.addressSupplement} />
+                          )}
+                          <CompactCopyField label="Street:" value={senderData.street} />
+                          <CompactCopyField label="House Number:" value={senderData.houseNumber} />
+                          <CompactCopyField label="Postal Code:" value={senderData.postalCode} />
+                          <CompactCopyField label="City:" value={senderData.city} />
+                          <CompactCopyField label="Country:" value={senderData.country} />
+                          <CompactCopyField label="E-mail:" value={senderData.email || ''} />
+                        </div>
+                      </>
+                    )}
+
+                    {/* COD (Nachnahme) Section */}
+                    {showCOD && (
+                      <>
+                        <Separator className="my-3 bg-yellow-300" />
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2 py-1.5">
+                            <DollarSign className="h-4 w-4 text-yellow-600" />
+                            <span className="text-sm font-bold text-black">Nachnahme (COD)</span>
+                          </div>
+                          <CompactCopyField 
+                            label="COD Amount:" 
+                            value={formatCurrency(codAmount, activePackingOrder.codCurrency || 'EUR')} 
+                          />
+                          <div className="pt-2 px-2">
+                            <p className="text-xs text-gray-600 italic">
+                              Bank details configured in settings
+                            </p>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 );
               })()}
