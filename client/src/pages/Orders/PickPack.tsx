@@ -7307,18 +7307,23 @@ export default function PickPack() {
                 ].filter(Boolean).join(', ');
 
                 const CompactCopyField = ({ label, value, flag }: { label: string; value: string; flag?: string }) => (
-                  <div className="flex items-center justify-between gap-2 py-1">
-                    <span className="text-sm text-gray-700 flex-shrink-0">{label}</span>
-                    <div className="flex items-center gap-2 min-w-0">
-                      {flag && <span className="text-xl">{flag}</span>}
-                      <span className="text-base font-medium text-gray-900 text-right">{value || '-'}</span>
+                  <div className="space-y-1 py-0.5">
+                    <label className="text-sm font-medium text-black block">{label}</label>
+                    <div className="flex items-center gap-2">
+                      {flag && <span className="text-xl flex-shrink-0">{flag}</span>}
+                      <input
+                        type="text"
+                        readOnly
+                        value={value || '-'}
+                        className="flex-1 px-2 py-1.5 text-base font-medium text-black bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-gray-400"
+                      />
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 w-7 p-0 hover:bg-gray-100 flex-shrink-0"
+                        className="h-8 w-8 p-0 hover:bg-gray-100 flex-shrink-0"
                         onClick={() => copyField(value, label)}
                       >
-                        <Copy className="h-3.5 w-3.5 text-gray-600" />
+                        <Copy className="h-4 w-4 text-gray-600" />
                       </Button>
                     </div>
                   </div>
@@ -7433,17 +7438,22 @@ export default function PickPack() {
                 };
 
                 const CompactCopyField = ({ label, value }: { label: string; value: string }) => (
-                  <div className="flex items-center justify-between gap-2 py-1">
-                    <span className="text-sm text-black flex-shrink-0">{label}</span>
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-base font-medium text-black text-right">{value || '-'}</span>
+                  <div className="space-y-1 py-0.5">
+                    <label className="text-sm font-medium text-black block">{label}</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={value || '-'}
+                        className="flex-1 px-2 py-1.5 text-base font-medium text-black bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                      />
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 w-7 p-0 hover:bg-gray-100 flex-shrink-0"
+                        className="h-8 w-8 p-0 hover:bg-gray-100 flex-shrink-0"
                         onClick={() => copyField(value, label)}
                       >
-                        <Copy className="h-3.5 w-3.5 text-gray-600" />
+                        <Copy className="h-4 w-4 text-gray-600" />
                       </Button>
                     </div>
                   </div>
