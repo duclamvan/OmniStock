@@ -6167,16 +6167,19 @@ export default function PickPack() {
                       ? 'bg-green-500' 
                       : 'bg-gray-400/50';
                   } else if (isGLS) {
-                    // GLS: Check if all tracking numbers are entered and no duplicates
-                    const allHaveTracking = cartons.every(c => c.trackingNumber && c.trackingNumber.trim() !== '');
-                    const hasDuplicates = cartons.some((c, i) => 
-                      c.trackingNumber && c.trackingNumber.trim() !== '' && 
-                      cartons.some((other, j) => 
-                        i !== j && 
-                        other.trackingNumber && 
-                        other.trackingNumber.trim().toUpperCase() === c.trackingNumber?.trim().toUpperCase()
-                      )
-                    );
+                    // GLS: Check if all tracking numbers are entered (from controlled state OR database) and no duplicates
+                    const allHaveTracking = cartons.every(c => {
+                      const trackingValue = (trackingInputs[c.id] || c.trackingNumber || '').trim();
+                      return trackingValue !== '';
+                    });
+                    
+                    // Check for duplicate tracking numbers using Set
+                    const trackingNumbers = cartons.map(c => 
+                      (trackingInputs[c.id] || c.trackingNumber || '').trim().toUpperCase()
+                    ).filter(t => t !== '');
+                    const uniqueTracking = new Set(trackingNumbers);
+                    const hasDuplicates = trackingNumbers.length !== uniqueTracking.size;
+                    
                     return allHaveTracking && !hasDuplicates ? 'bg-green-500' : 'bg-gray-400/50';
                   } else {
                     // Other methods: Check if all cartons have labels printed
