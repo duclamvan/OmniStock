@@ -5915,7 +5915,7 @@ export default function PickPack() {
                           <Circle className="h-5 w-5 text-white/60" />
                         )}
                       </div>
-                      <span className="text-sm sm:text-base font-bold">
+                      <span className="text-base font-bold">
                         Items Verified ({activePackingOrder.items.filter(item => {
                           if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
                             return item.bundleItems.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
@@ -5938,7 +5938,7 @@ export default function PickPack() {
                       }}
                       title={showBarcodeScanner ? "Hide barcode scanner" : "Show barcode scanner"}
                     >
-                      <ScanLine className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <ScanLine className="h-5 w-5" />
                     </Button>
                   </div>
                 </AccordionTrigger>
@@ -6459,9 +6459,9 @@ export default function PickPack() {
 
           {/* Packing Materials Section */}
           <Card className="shadow-sm border-2 border-slate-300 overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-slate-700 to-slate-800 text-white px-4 py-3">
-              <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
-                <Package className="h-4 w-4 sm:h-5 sm:w-5" />
+            <CardHeader className="bg-gradient-to-r from-slate-700 to-slate-800 text-white px-4 py-3 rounded-t-lg">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Package className="h-5 w-5" />
                 Packing Materials
               </CardTitle>
             </CardHeader>
@@ -6523,10 +6523,10 @@ export default function PickPack() {
           {/* Multi-Carton Packing Section */}
           <Card className="shadow-sm border-2 border-purple-300 overflow-hidden" id="checklist-cartons">
             <CardHeader className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-3 rounded-t-lg">
-              <CardTitle className="text-sm sm:text-base font-bold">
+              <CardTitle className="text-base font-bold">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Box className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <Box className="h-5 w-5" />
                     <span>Cartons ({cartons.length + cartonsDraft.length})</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -6681,10 +6681,10 @@ export default function PickPack() {
 
           {/* Packing Completion Card - Combined Documents + Checklist */}
           <Card className="shadow-sm border-2 border-emerald-200 overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-4 py-3">
+            <CardHeader className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-4 py-3 rounded-t-lg">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
-                  <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5" />
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <ClipboardList className="h-5 w-5" />
                   Packing Completion
                 </CardTitle>
                 <Button
@@ -6725,9 +6725,9 @@ export default function PickPack() {
 
           {/* Shipping Information Section */}
           <Card className="shadow-sm border-2 border-indigo-200 overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-indigo-700 to-indigo-800 text-white px-4 py-3">
-              <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
-                <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
+            <CardHeader className="bg-gradient-to-r from-indigo-700 to-indigo-800 text-white px-4 py-3 rounded-t-lg">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
                 Shipping Information
               </CardTitle>
             </CardHeader>
@@ -6979,8 +6979,8 @@ export default function PickPack() {
                 ? 'bg-gradient-to-r from-sky-600 to-sky-700'
                 : 'bg-gradient-to-r from-stone-600 to-stone-700'
             }`}>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Truck className="h-4 w-4" />
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Truck className="h-5 w-5" />
                 Shipping Labels {shipmentLabelsFromDB.length > 0 && `(${shipmentLabelsFromDB.length})`}
               </CardTitle>
             </CardHeader>
