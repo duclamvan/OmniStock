@@ -6966,13 +6966,18 @@ export default function PickPack() {
                     const tempId = `temp-${nanoid()}`;
                     const nextCartonNumber = cartons.length + cartonsDraft.length + 1;
                     
+                    // Check if shipping method is GLS to set default weight
+                    const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
+                    const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+                    const defaultWeight = isGLS ? '0.001' : null;
+                    
                     const draftCarton: OrderCarton = {
                       id: tempId,
                       orderId: activePackingOrder.id,
                       cartonNumber: nextCartonNumber,
                       cartonType: 'company',
                       cartonId: null,
-                      weight: null,
+                      weight: defaultWeight,
                       payloadWeightKg: null,
                       innerLengthCm: null,
                       innerWidthCm: null,
