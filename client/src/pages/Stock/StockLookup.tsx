@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { Search, Package, MapPin, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X } from "lucide-react";
+import { Search, Package, MapPin, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X, Plus, Minus } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Link } from "wouter";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import MoveInventoryDialog from "@/components/warehouse/MoveInventoryDialog";
 import StockAdjustmentDialog from "@/components/warehouse/StockAdjustmentDialog";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface Variant {
   id: string;
@@ -60,6 +62,7 @@ export default function StockLookup() {
   const [barcodeMode, setBarcodeMode] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState("");
   const isMobile = useIsMobile();
+  const { toast } = useToast();
 
   // Check for query parameter and auto-populate search
   const [isFromUnderAllocated, setIsFromUnderAllocated] = useState(false);
@@ -100,6 +103,54 @@ export default function StockLookup() {
     queryKey: ['/api/under-allocated-items'],
     staleTime: 0,
     refetchInterval: 60000, // Refresh every minute
+  });
+
+  // Quick stock adjustment mutation (+1/-1 buttons)
+  const quickAdjustMutation = useMutation({
+    mutationFn: async ({ 
+      productId, 
+      locationId, 
+      currentQuantity, 
+      adjustmentAmount 
+    }: { 
+      productId: string; 
+      locationId: string; 
+      currentQuantity: number;
+      adjustmentAmount: number;
+    }) => {
+      const adjustmentType = adjustmentAmount > 0 ? 'add' : 'remove';
+      const requestedQuantity = Math.abs(adjustmentAmount);
+      const reason = `Quick adjustment: ${adjustmentAmount > 0 ? '+' : ''}${adjustmentAmount} unit${Math.abs(adjustmentAmount) !== 1 ? 's' : ''}`;
+      
+      return await apiRequest(
+        'POST',
+        '/api/stock-adjustment-requests',
+        {
+          productId,
+          locationId,
+          requestedBy: 'test-user',
+          adjustmentType,
+          currentQuantity,
+          requestedQuantity,
+          reason
+        }
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stock-adjustment-requests'] });
+      toast({
+        title: "Request Submitted",
+        description: "Quick adjustment request sent for admin approval",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to submit adjustment request",
+        variant: "destructive",
+      });
+    },
   });
 
   // Create warehouse lookup map
@@ -671,9 +722,57 @@ export default function StockLookup() {
                                       </Badge>
                                     )}
                                   </div>
-                                  <Badge variant="secondary" className="ml-2">
-                                    {loc.quantity} units
-                                  </Badge>
+                                  <div className="flex items-center gap-1.5 ml-2">
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-7 w-7 hover:bg-red-50 hover:border-red-300 dark:hover:bg-red-900/20"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (loc.quantity <= 0) {
+                                          toast({
+                                            title: "Cannot Reduce",
+                                            description: "Stock is already at 0",
+                                            variant: "destructive"
+                                          });
+                                          return;
+                                        }
+                                        quickAdjustMutation.mutate({
+                                          productId: loc.productId,
+                                          locationId: loc.id,
+                                          currentQuantity: loc.quantity,
+                                          adjustmentAmount: -1
+                                        });
+                                      }}
+                                      disabled={quickAdjustMutation.isPending || loc.quantity <= 0}
+                                      data-testid={`button-quick-minus-${loc.id}`}
+                                      title="Quick -1 (requires admin approval)"
+                                    >
+                                      <Minus className="h-3.5 w-3.5" />
+                                    </Button>
+                                    <Badge variant="secondary" className="px-2.5">
+                                      {loc.quantity} units
+                                    </Badge>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-7 w-7 hover:bg-green-50 hover:border-green-300 dark:hover:bg-green-900/20"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        quickAdjustMutation.mutate({
+                                          productId: loc.productId,
+                                          locationId: loc.id,
+                                          currentQuantity: loc.quantity,
+                                          adjustmentAmount: 1
+                                        });
+                                      }}
+                                      disabled={quickAdjustMutation.isPending}
+                                      data-testid={`button-quick-plus-${loc.id}`}
+                                      title="Quick +1 (requires admin approval)"
+                                    >
+                                      <Plus className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </div>
                                 </div>
                                 <div className="flex gap-2 mt-3">
                                   <Button
