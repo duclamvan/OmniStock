@@ -7190,7 +7190,12 @@ export default function PickPack() {
             </CardContent>
           </Card>
 
-          {/* Shipping Information Section */}
+          {/* Shipping Information Section - Only for non-DHL orders (DHL has standalone card) */}
+          {!(() => {
+            const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
+            const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
+            return isDHL;
+          })() && (
           <Card className="shadow-sm border-2 border-indigo-200 overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-indigo-700 to-indigo-800 text-white px-4 py-3 rounded-t-lg -mt-0.5">
               <CardTitle className="text-base font-bold flex items-center gap-2">
@@ -8219,7 +8224,8 @@ export default function PickPack() {
               )}
             </CardContent>
           </Card>
-
+          )}
+          
           {/* DHL Shipping Card - Only for DHL orders */}
           {(() => {
             const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
