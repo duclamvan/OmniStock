@@ -864,6 +864,7 @@ const mergeAndPrintPDFs = async (pdfUrls: string[]) => {
 function UnifiedDocumentsList({
   orderId,
   orderItems,
+  includedDocuments,
   printedDocuments,
   printedProductFiles,
   printedOrderFiles,
@@ -874,6 +875,7 @@ function UnifiedDocumentsList({
 }: {
   orderId: string;
   orderItems: any[];
+  includedDocuments?: any; // {fileIds: string[], uploadedFiles: any[]}
   printedDocuments: { packingList: boolean };
   printedProductFiles: Set<string>;
   printedOrderFiles: Set<string>;
@@ -897,12 +899,22 @@ function UnifiedDocumentsList({
     const productIdSet = new Set(productIds);
     const packingRelevantFileTypes = ['certificate', 'sds'];
     
+    // Get the list of file IDs that should be included with this order
+    const includedFileIds = includedDocuments?.fileIds || [];
+    const includedFileIdSet = new Set(includedFileIds);
+    
+    // Only show files that are:
+    // 1. For products in this order
+    // 2. Active
+    // 3. Packing-relevant type (sds, certificate)
+    // 4. **Explicitly selected to be included with this order**
     return allFilesRaw.filter(file => 
       productIdSet.has(file.productId) && 
       file.isActive && 
-      packingRelevantFileTypes.includes(file.fileType)
+      packingRelevantFileTypes.includes(file.fileType) &&
+      includedFileIdSet.has(file.id) // Only show if selected for this order
     );
-  }, [allFilesRaw, productIds]);
+  }, [allFilesRaw, productIds, includedDocuments]);
 
   // Fetch order files
   const { data: orderFilesData, isLoading: isLoadingOrderFiles } = useQuery({
@@ -7288,6 +7300,7 @@ export default function PickPack() {
               <UnifiedDocumentsList
                 orderId={activePackingOrder.id}
                 orderItems={activePackingOrder.items}
+                includedDocuments={activePackingOrder.includedDocuments}
                 printedDocuments={printedDocuments}
                 printedProductFiles={printedProductFiles}
                 printedOrderFiles={printedOrderFiles}
