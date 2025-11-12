@@ -66,7 +66,6 @@ import {
   ScanLine,
   Box,
   ClipboardList,
-  ClipboardPaste,
   AlertCircle,
   AlertTriangle,
   Timer,
@@ -7781,7 +7780,7 @@ export default function PickPack() {
                                 }}
                                 data-testid="button-paste-dhl-tracking-1"
                               >
-                                <ClipboardPaste className="h-3.5 w-3.5" />
+                                <ArrowLeft className="h-3.5 w-3.5" />
                               </Button>
                             </div>
                           </div>
@@ -8128,7 +8127,7 @@ export default function PickPack() {
                                         }}
                                         data-testid={`button-paste-gls-tracking-${index + 1}`}
                                       >
-                                        <ClipboardPaste className="h-3.5 w-3.5" />
+                                        <ArrowLeft className="h-3.5 w-3.5" />
                                       </Button>
                                     </div>
                                   </div>
@@ -8586,7 +8585,7 @@ export default function PickPack() {
                                   }}
                                   data-testid="button-paste-dhl-tracking-1"
                                 >
-                                  <ClipboardPaste className="h-3.5 w-3.5" />
+                                  <ArrowLeft className="h-3.5 w-3.5" />
                                 </Button>
                               </div>
                             </div>
@@ -8958,7 +8957,7 @@ export default function PickPack() {
                                   }}
                                   data-testid={`button-paste-gls-tracking-${index + 1}`}
                                 >
-                                  <ClipboardPaste className="h-3.5 w-3.5" />
+                                  <ArrowLeft className="h-3.5 w-3.5" />
                                 </Button>
                               </div>
                             </div>
@@ -10227,7 +10226,7 @@ export default function PickPack() {
                             }}
                             data-testid={`button-paste-tracking-${index + 1}`}
                           >
-                            <ClipboardPaste className="h-3.5 w-3.5" />
+                            <ArrowLeft className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                         
@@ -10384,7 +10383,7 @@ export default function PickPack() {
                             }}
                             data-testid={`button-paste-dhl-tracking-${index + 1}`}
                           >
-                            <ClipboardPaste className="h-3.5 w-3.5 -scale-x-100" />
+                            <ArrowLeft className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                         
@@ -10498,7 +10497,7 @@ export default function PickPack() {
                                       }}
                                       data-testid="button-paste-dhl-tracking-1"
                                     >
-                                      <ClipboardPaste className="h-3.5 w-3.5" />
+                                      <ArrowLeft className="h-3.5 w-3.5" />
                                     </Button>
                                   </div>
                                 </div>
@@ -10618,7 +10617,7 @@ export default function PickPack() {
                                         }}
                                         data-testid={`button-paste-gls-tracking-${index + 1}`}
                                       >
-                                        <ClipboardPaste className="h-3.5 w-3.5" />
+                                        <ArrowLeft className="h-3.5 w-3.5" />
                                       </Button>
                                     </div>
                                   </div>
