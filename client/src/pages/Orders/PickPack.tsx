@@ -5262,7 +5262,7 @@ export default function PickPack() {
     
     // CRITICAL: Save any unsaved GLS/DHL tracking numbers before completion
     const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
-    const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+    const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
     const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
     
     if ((isGLS || isDHL) && cartons.length > 0) {
@@ -6300,7 +6300,7 @@ export default function PickPack() {
               <div className={`flex-1 h-1.5 rounded-sm transition-all ${
                 (() => {
                   const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
-                  const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+                  const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
                   const isPPL = shippingMethod.includes('PPL');
                   const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
                   
@@ -7133,7 +7133,7 @@ export default function PickPack() {
                     
                     // Check if shipping method is GLS to set default weight
                     const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
-                    const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+                    const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
                     const defaultWeight = isGLS ? '0.001' : null;
                     
                     // Check if DHL Nachnahme mode - if so, add to GLS cartons (carton #2+)
@@ -7321,7 +7321,7 @@ export default function PickPack() {
               {/* GLS Shipping Details - Only for GLS or GLS DE */}
               {(() => {
                 const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
-                const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+                const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
                 return isGLS;
               })() && (() => {
                 const shippingAddr = activePackingOrder.shippingAddress;
@@ -8264,7 +8264,7 @@ export default function PickPack() {
               {/* Non-GLS/DHL Orders - Show original shipping information */}
               {!(() => {
                 const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
-                const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+                const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
                 const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
                 return isGLS || isDHL;
               })() && (
@@ -9065,7 +9065,7 @@ export default function PickPack() {
           <Card id="checklist-shipping-labels" className={`shadow-sm bg-white overflow-hidden ${
             (() => {
               const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
-              const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+              const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
               const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
               
               if (isGLS && cartons.length > 0) {
@@ -9122,7 +9122,7 @@ export default function PickPack() {
             <CardHeader className={`text-white px-4 py-3 rounded-t-lg -mt-0.5 ${
               (() => {
                 const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
-                const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+                const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
                 const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
                 
                 if (isGLS && cartons.length > 0) {
@@ -9176,7 +9176,7 @@ export default function PickPack() {
                 <Truck className="h-5 w-5" />
                 Shipping Labels ({(() => {
                   const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
-                  const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+                  const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
                   const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
                   const isPPL = shippingMethod.includes('PPL');
                   
@@ -9193,7 +9193,7 @@ export default function PickPack() {
                 })()})
                 {(() => {
                   const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
-                  const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+                  const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
                   
                   if (isGLS && cartons.length > 0) {
                     const allHaveTracking = cartons.every(c => c.trackingNumber && c.trackingNumber.trim() !== '');
@@ -10177,7 +10177,7 @@ export default function PickPack() {
               {/* GLS Carton Cards with Tracking */}
               {(() => {
                 const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
-                const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+                const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
                 return isGLS && cartons.length > 0;
               })() && (
                 <div className="space-y-2">
@@ -10716,7 +10716,7 @@ export default function PickPack() {
               {/* Regular Shipping Labels (for non-PPL, non-DHL, non-GLS shipments) */}
               {(() => {
                 const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
-                const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
+                const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
                 const isPPL = shippingMethod.includes('PPL');
                 const isDHL = shippingMethod.includes('DHL');
                 return !isPPL && !isDHL && !isGLS;
