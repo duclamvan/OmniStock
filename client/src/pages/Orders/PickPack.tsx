@@ -7148,7 +7148,7 @@ export default function PickPack() {
                       id: tempId,
                       orderId: activePackingOrder.id,
                       cartonNumber: nextCartonNumber,
-                      cartonType: 'company',
+                      cartonType: 'non-company', // Default to non-company for 2nd+ cartons
                       cartonId: null,
                       weight: defaultWeight,
                       payloadWeightKg: null,
@@ -7177,7 +7177,7 @@ export default function PickPack() {
                     createCartonMutation.mutate({
                       orderId: activePackingOrder.id,
                       cartonNumber: nextCartonNumber,
-                      cartonType: 'company',
+                      cartonType: 'non-company', // Default to non-company for 2nd+ cartons
                       tempId
                     });
                   }
@@ -10860,15 +10860,6 @@ export default function PickPack() {
                   
                   // Step 4: Carton types selected
                   if (cartons.some(c => !c.cartonId && c.cartonType !== 'non-company')) {
-                    // Debug logging
-                    console.log('❌ Carton type validation failed. Cartons:', cartons.map(c => ({
-                      id: c.id,
-                      cartonNumber: c.cartonNumber,
-                      cartonType: c.cartonType,
-                      cartonId: c.cartonId,
-                      hasCartonId: !!c.cartonId,
-                      isNonCompany: c.cartonType === 'non-company'
-                    })));
                     scrollToElement('checklist-cartons', 'Please select a carton type for all cartons.');
                     return;
                   }
