@@ -8350,15 +8350,12 @@ export default function PickPack() {
                     Create Label on DHL Website
                   </Button>
 
-                  {/* Collapsible Shipping Details */}
-                  <Collapsible defaultOpen={true}>
-                    <CollapsibleTrigger asChild>
-                      <Button variant="outline" className="w-full justify-between border-yellow-400 hover:bg-yellow-50 transition-colors duration-200">
-                        <span className="font-medium text-black">Shipping Details</span>
-                        <ChevronDown className="h-4 w-4 text-black transition-transform duration-200 data-[state=open]:rotate-180" />
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-4 mt-4">
+                  {/* Shipping Details - Always visible */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 px-2 py-1 bg-yellow-100 border-l-4 border-yellow-500 rounded">
+                      <MapPin className="h-4 w-4 text-yellow-700" />
+                      <span className="text-sm font-bold text-yellow-900">Shipping Details</span>
+                    </div>
                   {/* SECTION 1: Package & Payment Details */}
                   <div className="space-y-3 p-3 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
                     <div className="flex items-center gap-2">
@@ -8515,8 +8512,7 @@ export default function PickPack() {
                       </div>
                     </div>
                   )}
-                    </CollapsibleContent>
-                  </Collapsible>
+                  </div>
 
                   {/* Multi-carton indicator + DHL Shipping Label */}
                   {cartons.length > 1 && showCOD && (
@@ -8789,43 +8785,39 @@ export default function PickPack() {
 
                   {/* Available Cartons to Add */}
                   {availableCartonsForGLS.length > 0 && (
-                    <Collapsible defaultOpen={true}>
-                      <CollapsibleTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between border-sky-400 hover:bg-sky-50 transition-colors duration-200">
-                          <span className="font-medium text-black">Available Cartons ({availableCartonsForGLS.length})</span>
-                          <ChevronDown className="h-4 w-4 text-black transition-transform duration-200 data-[state=open]:rotate-180" />
-                        </Button>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="space-y-2 mt-3">
-                        {availableCartonsForGLS.map((carton) => {
-                          const cartonIndex = cartons.findIndex(c => c.id === carton.id);
-                          return (
-                            <div
-                              key={carton.id}
-                              className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded"
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 px-2 py-1 bg-gray-100 border-l-4 border-gray-400 rounded">
+                        <Package className="h-4 w-4 text-gray-700" />
+                        <span className="text-sm font-bold text-gray-900">Available Cartons ({availableCartonsForGLS.length})</span>
+                      </div>
+                      {availableCartonsForGLS.map((carton) => {
+                        const cartonIndex = cartons.findIndex(c => c.id === carton.id);
+                        return (
+                          <div
+                            key={carton.id}
+                            className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded"
+                          >
+                            <Package className="h-4 w-4 text-gray-600 flex-shrink-0" />
+                            <span className="text-sm font-medium text-black flex-1">
+                              Carton #{cartonIndex + 1}: {carton.name || 'Unnamed'}
+                              {carton.weight && ` (${carton.weight} kg)`}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 px-2 text-xs text-sky-700 border-sky-400 hover:bg-sky-50"
+                              onClick={() => {
+                                setGlsCartonIds(prev => new Set([...prev, carton.id]));
+                              }}
+                              data-testid={`button-add-carton-${carton.id}-to-gls`}
                             >
-                              <Package className="h-4 w-4 text-gray-600 flex-shrink-0" />
-                              <span className="text-sm font-medium text-black flex-1">
-                                Carton #{cartonIndex + 1}: {carton.name || 'Unnamed'}
-                                {carton.weight && ` (${carton.weight} kg)`}
-                              </span>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-7 px-2 text-xs text-sky-700 border-sky-400 hover:bg-sky-50"
-                                onClick={() => {
-                                  setGlsCartonIds(prev => new Set([...prev, carton.id]));
-                                }}
-                                data-testid={`button-add-carton-${carton.id}-to-gls`}
-                              >
-                                <Plus className="h-3.5 w-3.5 mr-1" />
-                                Add to GLS
-                              </Button>
-                            </div>
-                          );
-                        })}
-                      </CollapsibleContent>
-                    </Collapsible>
+                              <Plus className="h-3.5 w-3.5 mr-1" />
+                              Add to GLS
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
 
                   {glsCartons.length === 0 ? (
@@ -8884,30 +8876,25 @@ export default function PickPack() {
                         cartonCount={glsCartons.length}
                       />
 
-                      {/* Collapsible Shipping Details */}
-                      <Collapsible defaultOpen={true}>
-                        <CollapsibleTrigger asChild>
-                          <Button variant="outline" className="w-full justify-between border-sky-400 hover:bg-sky-50 transition-colors duration-200">
-                            <span className="font-medium text-black">Shipping Details</span>
-                            <ChevronDown className="h-4 w-4 text-black transition-transform duration-200 data-[state=open]:rotate-180" />
-                          </Button>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent className="space-y-3 mt-3">
-                      {/* Copyable Fields - Same as regular GLS */}
-                      <div className="space-y-0.5">
-                        <CompactCopyFieldGLS label="Country:" value={germanCountry} flag={getCountryFlag(germanCountry)} />
-                        <CompactCopyFieldGLS label="Paket size:" value="S" />
-                        
-                        {/* Divider */}
-                        <Separator className="my-3" />
-                        
-                        <CompactCopyFieldGLS label="First Name:" value={firstName} />
-                        <CompactCopyFieldGLS label="Last Name:" value={lastName} />
-                        <CompactCopyFieldGLS label="Full Address:" value={fullAddress} />
-                        <CompactCopyFieldGLS label="E-mail:" value={recipientData.email || ''} />
+                      {/* Shipping Details - Always visible */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 px-2 py-1 bg-sky-100 border-l-4 border-sky-500 rounded">
+                          <MapPin className="h-4 w-4 text-sky-700" />
+                          <span className="text-sm font-bold text-sky-900">Shipping Details</span>
+                        </div>
+                        <div className="space-y-0.5">
+                          <CompactCopyFieldGLS label="Country:" value={germanCountry} flag={getCountryFlag(germanCountry)} />
+                          <CompactCopyFieldGLS label="Paket size:" value="S" />
+                          
+                          {/* Divider */}
+                          <Separator className="my-3" />
+                          
+                          <CompactCopyFieldGLS label="First Name:" value={firstName} />
+                          <CompactCopyFieldGLS label="Last Name:" value={lastName} />
+                          <CompactCopyFieldGLS label="Full Address:" value={fullAddress} />
+                          <CompactCopyFieldGLS label="E-mail:" value={recipientData.email || ''} />
+                        </div>
                       </div>
-                        </CollapsibleContent>
-                      </Collapsible>
 
                       {/* GLS Shipping Labels */}
                       <div className="space-y-2">
