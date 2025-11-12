@@ -8324,14 +8324,6 @@ export default function PickPack() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-3 md:p-4 space-y-4">
-                  {/* Header */}
-                  <div>
-                    <div className="font-bold text-black text-lg">{activePackingOrder.shippingMethod}</div>
-                    <div className="text-sm text-black mt-0.5">
-                      Domestic Germany shipping
-                    </div>
-                  </div>
-
                   {/* DHL Link Button */}
                   <Button
                     variant="default"
@@ -8345,6 +8337,15 @@ export default function PickPack() {
                     Create Label on DHL Website
                   </Button>
 
+                  {/* Collapsible Shipping Details */}
+                  <Collapsible>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="outline" className="w-full justify-between border-yellow-400 hover:bg-yellow-50">
+                        <span className="font-medium text-black">Shipping Details</span>
+                        <ChevronDown className="h-4 w-4 text-black" />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-4 mt-4">
                   {/* SECTION 1: Package & Payment Details */}
                   <div className="space-y-3 p-3 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
                     <div className="flex items-center gap-2">
@@ -8501,6 +8502,8 @@ export default function PickPack() {
                       </div>
                     </div>
                   )}
+                    </CollapsibleContent>
+                  </Collapsible>
 
                   {/* Multi-carton indicator + DHL Shipping Label */}
                   {cartons.length > 1 && showCOD && (
@@ -8833,15 +8836,7 @@ export default function PickPack() {
                         </div>
                       )}
 
-                      {/* Header - Same as regular GLS */}
-                      <div>
-                        <div className="font-bold text-black text-lg">GLS</div>
-                        <div className="text-sm text-black mt-0.5">
-                          Max. 40 kg • Circumference + longest side max. 300 cm
-                        </div>
-                      </div>
-
-                      {/* Ship GLS Button - Same as regular GLS */}
+                      {/* Ship GLS Button - Always visible */}
                       <GLSAutofillButton
                         recipientData={recipientData}
                         senderData={senderData}
@@ -8851,6 +8846,15 @@ export default function PickPack() {
                         cartonCount={glsCartons.length}
                       />
 
+                      {/* Collapsible Shipping Details */}
+                      <Collapsible>
+                        <CollapsibleTrigger asChild>
+                          <Button variant="outline" className="w-full justify-between border-sky-400 hover:bg-sky-50">
+                            <span className="font-medium text-black">Shipping Details</span>
+                            <ChevronDown className="h-4 w-4 text-black" />
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="space-y-3 mt-3">
                       {/* Copyable Fields - Same as regular GLS */}
                       <div className="space-y-0.5">
                         <CompactCopyFieldGLS label="Country:" value={germanCountry} flag={getCountryFlag(germanCountry)} />
@@ -8864,6 +8868,8 @@ export default function PickPack() {
                         <CompactCopyFieldGLS label="Full Address:" value={fullAddress} />
                         <CompactCopyFieldGLS label="E-mail:" value={recipientData.email || ''} />
                       </div>
+                        </CollapsibleContent>
+                      </Collapsible>
 
                       {/* GLS Shipping Labels */}
                       <div className="space-y-2">
