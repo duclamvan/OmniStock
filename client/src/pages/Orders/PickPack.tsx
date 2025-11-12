@@ -7156,7 +7156,7 @@ export default function PickPack() {
           </Card>
 
           {/* Documents Card - Packing List + Product Files + Order Files */}
-          <Card className="shadow-sm border-2 border-emerald-200 overflow-hidden">
+          <Card id="section-documents" className="shadow-sm border-2 border-emerald-200 overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-4 py-3 rounded-t-lg -mt-0.5">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
@@ -8374,7 +8374,7 @@ export default function PickPack() {
             );
 
             return (
-              <Card className="shadow-sm border-2 border-yellow-400 overflow-hidden">
+              <Card id="section-dhl" className="shadow-sm border-2 border-yellow-400 overflow-hidden">
                 <CardHeader className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-black px-4 py-3 rounded-t-lg -mt-0.5">
                   <CardTitle className="text-base font-bold flex items-center gap-2">
                     <Truck className="h-5 w-5" />
@@ -8824,7 +8824,7 @@ export default function PickPack() {
             );
 
             return (
-              <Card className="shadow-sm border-2 border-sky-300 overflow-hidden">
+              <Card id="section-gls" className="shadow-sm border-2 border-sky-300 overflow-hidden">
                 <CardHeader className="bg-gradient-to-r from-sky-600 to-sky-700 text-white px-4 py-3 rounded-t-lg -mt-0.5">
                   <CardTitle className="text-base font-bold flex items-center gap-2">
                     <Truck className="h-5 w-5" />
@@ -10762,7 +10762,7 @@ export default function PickPack() {
                 if (canCompletePacking) {
                   completePacking();
                 } else {
-                  // Find the first incomplete item and scroll to it
+                  // Comprehensive validation with carrier-specific checks
                   const scrollToElement = (id: string, message: string) => {
                     const element = document.getElementById(id);
                     if (element) {
@@ -10784,89 +10784,149 @@ export default function PickPack() {
                     return false;
                   };
 
-                  // Check each item in order and scroll to the first incomplete one
+                  // Step 1: Items verified
                   if (!(packingChecklist.itemsVerified || allItemsVerified)) {
                     scrollToElement('checklist-items-verified', 'Please check all items to make sure everything is correct.');
-                  } else if (!printedDocuments.packingList) {
-                    scrollToElement('checklist-packing-slip', 'Please print the packing slip to include in the shipment.');
-                  } else if (cartons.length === 0) {
+                    return;
+                  }
+                  
+                  // Step 2: Packing list printed
+                  if (!printedDocuments.packingList) {
+                    scrollToElement('section-documents', 'Please print the packing slip to include in the shipment.');
+                    return;
+                  }
+                  
+                  // Step 3: Cartons added
+                  if (cartons.length === 0) {
                     scrollToElement('checklist-cartons', 'Please add at least one carton for this shipment.');
-                  } else if (cartons.some(c => !c.cartonId && c.cartonType !== 'non-company')) {
+                    return;
+                  }
+                  
+                  // Step 4: Carton types selected
+                  if (cartons.some(c => !c.cartonId && c.cartonType !== 'non-company')) {
                     scrollToElement('checklist-cartons', 'Please select a carton type for all cartons.');
-                  } else if (cartons.some(c => !c.weight || parseFloat(c.weight) <= 0)) {
+                    return;
+                  }
+                  
+                  // Step 5: Weights entered
+                  if (cartons.some(c => !c.weight || parseFloat(c.weight) <= 0)) {
                     scrollToElement('checklist-cartons', 'Please enter the weight for all cartons.');
-                  } else if (isGLSShipping && cartons.some(c => parseFloat(c.weight) > 40)) {
+                    return;
+                  }
+                  
+                  // Step 6: Carrier-specific weight limits
+                  if (isGLSShipping && cartons.some(c => parseFloat(c.weight) > 40)) {
                     scrollToElement('checklist-cartons', 'GLS shipments cannot exceed 40kg per carton. Please reduce weight or split into multiple cartons.');
-                  } else if ((() => {
-                    // Enhanced shipping label validation based on shipping method
-                    const isPPL = shippingMethod.includes('PPL');
-                    const isGLS = isGLSShipping;
-                    const isDHL = shippingMethod.includes('DHL');
-                    
-                    if (isPPL) {
-                      // PPL: Must have created shipment and labels in database
-                      if (activePackingOrder.pplStatus !== 'created') {
-                        return true; // Not created yet
-                      }
-                      // Check if all cartons have labels from database
-                      if (shipmentLabelsFromDB.length < cartons.length) {
-                        return true; // Missing labels
-                      }
-                    } else if (isGLS) {
-                      // GLS: All cartons must have tracking numbers (check controlled state)
-                      if (cartons.some(c => {
-                        const trackingValue = trackingInputs[c.id] || '';
-                        return trackingValue.trim() === '';
-                      })) {
-                        return true; // Missing tracking number
-                      }
-                    } else {
-                      // Other methods: Check labelPrinted flag
-                      if (cartons.some(c => !c.labelPrinted)) {
-                        return true; // Label not marked as printed
-                      }
+                    return;
+                  }
+                  
+                  // Step 7: Shipping labels - Carrier-specific validation
+                  const shippingMethodUpper = shippingMethod.toUpperCase();
+                  const isPPL = shippingMethodUpper.includes('PPL');
+                  const isGLS = isGLSShipping;
+                  const isDHL = shippingMethodUpper.includes('DHL');
+                  const codAmount = typeof activePackingOrder.codAmount === 'string'
+                    ? parseFloat(activePackingOrder.codAmount) 
+                    : (activePackingOrder.codAmount || 0);
+                  const showCOD = codAmount > 0 || activePackingOrder.paymentMethod?.toUpperCase().includes('COD');
+                  
+                  // Multi-carrier scenario: DHL Nachnahme COD with multiple cartons
+                  if (isDHL && showCOD && cartons.length > 1) {
+                    // Carton #1: Must have DHL tracking number
+                    const dhlCarton = cartons[0];
+                    const dhlTrackingValue = trackingInputs[dhlCarton.id] || '';
+                    if (dhlTrackingValue.trim() === '') {
+                      scrollToElement('section-dhl', 'Please enter the DHL tracking number for Carton #1 (Nachnahme with COD).');
+                      return;
                     }
                     
-                    return false; // All validations passed
-                  })()) {
-                    // Show appropriate error message based on shipping method
-                    const isPPL = shippingMethod.includes('PPL');
-                    const isGLS = isGLSShipping;
-                    
-                    if (isPPL && activePackingOrder.pplStatus !== 'created') {
-                      scrollToElement('checklist-shipping-labels', 'Please create PPL shipment labels before completing packing.');
-                    } else if (isPPL && shipmentLabelsFromDB.length < cartons.length) {
-                      scrollToElement('checklist-shipping-labels', `Missing PPL labels: ${shipmentLabelsFromDB.length} of ${cartons.length} cartons have labels. Please generate all labels.`);
-                    } else if (isGLS && cartons.some(c => {
+                    // Cartons #2+: Must have GLS tracking numbers
+                    const glsCartons = cartons.slice(1);
+                    const missingGLSTracking = glsCartons.find(c => {
                       const trackingValue = trackingInputs[c.id] || '';
                       return trackingValue.trim() === '';
-                    })) {
-                      scrollToElement('checklist-shipping-labels', 'Please enter tracking numbers for all GLS cartons before completing packing.');
-                    } else if (isGLS && (() => {
-                      // Check for duplicate tracking numbers in controlled state
-                      return cartons.some((c, i) => {
-                        const trackingValue = (trackingInputs[c.id] || '').trim();
-                        if (trackingValue === '') return false; // Skip empty values
-                        return cartons.some((other, j) => {
-                          if (i === j) return false;
-                          const otherValue = (trackingInputs[other.id] || '').trim();
-                          return otherValue !== '' && trackingValue.toUpperCase() === otherValue.toUpperCase();
-                        });
-                      });
-                    })()) {
-                      scrollToElement('checklist-shipping-labels', 'Duplicate tracking numbers detected. Each carton must have a unique tracking number.');
-                    } else {
-                      scrollToElement('checklist-shipping-labels', 'Please generate and print shipping labels for all cartons.');
-                    }
-                  } else {
-                    // Fallback - show general message
-                    toast({
-                      title: "Almost there!",
-                      description: "Please complete all required steps before finishing packing.",
-                      duration: 5000,
                     });
-                    playSound('error');
+                    
+                    if (missingGLSTracking) {
+                      const cartonNumber = cartons.indexOf(missingGLSTracking) + 1;
+                      scrollToElement('section-gls', `Please enter the GLS tracking number for Carton #${cartonNumber}.`);
+                      return;
+                    }
+                    
+                    // Check for duplicate tracking numbers across all cartons
+                    const allTrackingNumbers = cartons.map(c => (trackingInputs[c.id] || '').trim().toUpperCase()).filter(Boolean);
+                    const uniqueTracking = new Set(allTrackingNumbers);
+                    if (allTrackingNumbers.length !== uniqueTracking.size) {
+                      scrollToElement('section-gls', 'Duplicate tracking numbers detected. Each carton must have a unique tracking number.');
+                      return;
+                    }
                   }
+                  // PPL shipping validation
+                  else if (isPPL) {
+                    if (activePackingOrder.pplStatus !== 'created') {
+                      scrollToElement('checklist-shipping-labels', 'Please create PPL shipment labels before completing packing.');
+                      return;
+                    }
+                    
+                    if (shipmentLabelsFromDB.length < cartons.length) {
+                      scrollToElement('checklist-shipping-labels', `Missing PPL labels: ${shipmentLabelsFromDB.length} of ${cartons.length} cartons have labels. Please generate all labels.`);
+                      return;
+                    }
+                  }
+                  // GLS/GLS DE shipping validation
+                  else if (isGLS) {
+                    // All cartons must have tracking numbers
+                    const missingTracking = cartons.find(c => {
+                      const trackingValue = trackingInputs[c.id] || '';
+                      return trackingValue.trim() === '';
+                    });
+                    
+                    if (missingTracking) {
+                      const cartonNumber = cartons.indexOf(missingTracking) + 1;
+                      scrollToElement('checklist-shipping-labels', `Please enter the tracking number for Carton #${cartonNumber}.`);
+                      return;
+                    }
+                    
+                    // Check for duplicate tracking numbers
+                    const trackingNumbers = cartons.map(c => (trackingInputs[c.id] || '').trim().toUpperCase()).filter(Boolean);
+                    const uniqueTracking = new Set(trackingNumbers);
+                    if (trackingNumbers.length !== uniqueTracking.size) {
+                      scrollToElement('checklist-shipping-labels', 'Duplicate tracking numbers detected. Each carton must have a unique tracking number.');
+                      return;
+                    }
+                  }
+                  // DHL (non-COD or single carton)
+                  else if (isDHL) {
+                    // Check if all cartons have tracking numbers
+                    const missingTracking = cartons.find(c => {
+                      const trackingValue = trackingInputs[c.id] || '';
+                      return trackingValue.trim() === '';
+                    });
+                    
+                    if (missingTracking) {
+                      const cartonNumber = cartons.indexOf(missingTracking) + 1;
+                      scrollToElement('section-dhl', `Please enter the DHL tracking number for Carton #${cartonNumber}.`);
+                      return;
+                    }
+                  }
+                  // Other shipping methods
+                  else {
+                    // Check labelPrinted flag for other methods
+                    const unlabeledCarton = cartons.find(c => !c.labelPrinted);
+                    if (unlabeledCarton) {
+                      const cartonNumber = cartons.indexOf(unlabeledCarton) + 1;
+                      scrollToElement('checklist-shipping-labels', `Please mark shipping label as printed for Carton #${cartonNumber}.`);
+                      return;
+                    }
+                  }
+                  
+                  // Fallback - show general message if we somehow got here
+                  toast({
+                    title: "Almost there!",
+                    description: "Please complete all required steps before finishing packing.",
+                    duration: 5000,
+                  });
+                  playSound('error');
                 }
               }}
               className={`w-full h-14 text-base font-bold shadow-lg transition-all ${
