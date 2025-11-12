@@ -8783,226 +8783,147 @@ export default function PickPack() {
                     </span>
                   </div>
 
-                  {/* Available Cartons to Add */}
-                  {availableCartonsForGLS.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 px-2 py-1 bg-gray-100 border-l-4 border-gray-400 rounded">
-                        <Package className="h-4 w-4 text-gray-700" />
-                        <span className="text-sm font-bold text-gray-900">Available Cartons ({availableCartonsForGLS.length})</span>
-                      </div>
-                      {availableCartonsForGLS.map((carton) => {
-                        const cartonIndex = cartons.findIndex(c => c.id === carton.id);
-                        return (
-                          <div
-                            key={carton.id}
-                            className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded"
-                          >
-                            <Package className="h-4 w-4 text-gray-600 flex-shrink-0" />
-                            <span className="text-sm font-medium text-black flex-1">
-                              Carton #{cartonIndex + 1}: {carton.name || 'Unnamed'}
-                              {carton.weight && ` (${carton.weight} kg)`}
-                            </span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 px-2 text-xs text-sky-700 border-sky-400 hover:bg-sky-50"
-                              onClick={() => {
-                                setGlsCartonIds(prev => new Set([...prev, carton.id]));
-                              }}
-                              data-testid={`button-add-carton-${carton.id}-to-gls`}
-                            >
-                              <Plus className="h-3.5 w-3.5 mr-1" />
-                              Add to GLS
-                            </Button>
-                          </div>
-                        );
-                      })}
+                  {totalGLSWeight > 0 && (
+                    <div className="text-sm text-sky-700 font-medium">
+                      Total weight: {totalGLSWeight.toFixed(2)} kg
                     </div>
                   )}
 
-                  {glsCartons.length === 0 ? (
-                    <Alert className="bg-sky-50 border-sky-300">
-                      <Info className="h-4 w-4 text-sky-700" />
-                      <AlertDescription className="text-sm text-sky-900">
-                        No cartons added to GLS yet. Use the button above to add cartons for cost-effective shipping.
-                      </AlertDescription>
-                    </Alert>
-                  ) : (
-                    <>
-                      {/* Assigned Cartons List */}
-                      <div className="space-y-2">
-                        {glsCartons.map((carton, index) => (
-                          <div
-                            key={carton.id}
-                            className="flex items-center gap-2 p-2 bg-white border border-sky-200 rounded"
-                          >
-                            <Package className="h-4 w-4 text-sky-600 flex-shrink-0" />
-                            <span className="text-sm font-medium text-black flex-1">
-                              Carton #{cartons.findIndex(c => c.id === carton.id) + 1}: {carton.name || 'Unnamed'}
-                              {carton.weight && ` (${carton.weight} kg)`}
-                            </span>
+                  {/* Ship GLS Button - Always visible */}
+                  <GLSAutofillButton
+                    recipientData={recipientData}
+                    senderData={senderData}
+                    packageSize="S"
+                    weight={totalGLSWeight > 0 ? totalGLSWeight : undefined}
+                    orderId={activePackingOrder.orderId}
+                    cartonCount={glsCartons.length}
+                  />
+
+                  {/* Shipping Details - Always visible */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 px-2 py-1 bg-sky-100 border-l-4 border-sky-500 rounded">
+                      <MapPin className="h-4 w-4 text-sky-700" />
+                      <span className="text-sm font-bold text-sky-900">Shipping Details</span>
+                    </div>
+                    <div className="space-y-0.5">
+                      <CompactCopyFieldGLS label="Country:" value={germanCountry} flag={getCountryFlag(germanCountry)} />
+                      <CompactCopyFieldGLS label="Paket size:" value="S" />
+                      
+                      {/* Divider */}
+                      <Separator className="my-3" />
+                      
+                      <CompactCopyFieldGLS label="First Name:" value={firstName} />
+                      <CompactCopyFieldGLS label="Last Name:" value={lastName} />
+                      <CompactCopyFieldGLS label="Full Address:" value={fullAddress} />
+                      <CompactCopyFieldGLS label="E-mail:" value={recipientData.email || ''} />
+                    </div>
+                  </div>
+
+                  {/* GLS Shipping Labels */}
+                  <div className="space-y-2">
+                    <Separator className="bg-sky-300 h-0.5" />
+                    <div className="flex items-center gap-2 px-2 py-1 bg-sky-100 border-l-4 border-sky-500 rounded">
+                      <Truck className="h-4 w-4 text-sky-700" />
+                      <span className="text-sm font-bold text-sky-900">GLS Shipping Labels ({glsCartons.length})</span>
+                    </div>
+                    {glsCartons.map((carton) => {
+                      const index = cartons.findIndex(c => c.id === carton.id);
+                      const currentValue = trackingInputs[carton.id] || '';
+                      const hasValue = currentValue.trim() !== '';
+                      const isDuplicate = hasValue && cartons.some((c, i) => 
+                        i !== index && trackingInputs[c.id]?.trim() === currentValue
+                      );
+                      const isValid = hasValue && !isDuplicate;
+                      
+                      return (
+                        <div 
+                          key={carton.id}
+                          className={`border-2 rounded-lg p-3 transition-all ${
+                            isDuplicate 
+                              ? 'bg-red-50 border-red-300' 
+                              : isValid 
+                                ? 'bg-green-50 border-green-300' 
+                                : 'bg-sky-50 border-sky-200'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-7 h-7 rounded-full bg-sky-600 flex items-center justify-center flex-shrink-0">
+                              <span className="text-white font-bold text-sm">{index + 1}</span>
+                            </div>
+                            <span className="text-sm font-semibold text-gray-900">Carton #{index + 1} (GLS)</span>
+                            {isValid && <CheckCircle className="h-4 w-4 text-green-600 ml-auto" />}
+                            {isDuplicate && (
+                              <div className="flex items-center gap-1 text-xs text-red-600 ml-auto">
+                                <AlertCircle className="h-3.5 w-3.5" />
+                                <span>Duplicate</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <div className="relative flex-1">
+                              <Input
+                                type="text"
+                                placeholder="Enter GLS tracking number..."
+                                value={currentValue}
+                                onChange={(e) => {
+                                  setTrackingInputs(prev => ({
+                                    ...prev,
+                                    [carton.id]: e.target.value
+                                  }));
+                                }}
+                                onBlur={(e) => {
+                                  const trackingNumber = e.target.value.trim();
+                                  if (trackingNumber) {
+                                    submitTrackingNumber(carton.id, trackingNumber, index + 1, isDuplicate);
+                                  }
+                                }}
+                                className={`font-mono text-[16px] ${
+                                  isDuplicate 
+                                    ? 'border-red-400' 
+                                    : isValid 
+                                      ? 'border-green-400' 
+                                      : ''
+                                }`}
+                                data-testid={`input-gls-tracking-carton-${index + 1}`}
+                              />
+                              {hasValue && isValid && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                  <CheckCircle className="h-5 w-5 text-green-600" />
+                                </div>
+                              )}
+                            </div>
                             <Button
-                              variant="ghost"
+                              variant="outline"
                               size="sm"
-                              className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                              onClick={() => {
-                                setGlsCartonIds(prev => {
-                                  const next = new Set(prev);
-                                  next.delete(carton.id);
-                                  return next;
-                                });
+                              className="px-3"
+                              onClick={async () => {
+                                try {
+                                  const text = await navigator.clipboard.readText();
+                                  const trackingNumber = text.trim();
+                                  if (trackingNumber) {
+                                    setTrackingInputs(prev => ({
+                                      ...prev,
+                                      [carton.id]: trackingNumber
+                                    }));
+                                    const isDup = cartons.some((c, i) => 
+                                      carton.id !== c.id && trackingInputs[c.id]?.trim() === trackingNumber
+                                    );
+                                    submitTrackingNumber(carton.id, trackingNumber, index + 1, isDup);
+                                  }
+                                } catch (error) {
+                                  // Silent error
+                                }
                               }}
-                              data-testid={`button-remove-gls-carton-${carton.id}`}
+                              data-testid={`button-paste-gls-tracking-${index + 1}`}
                             >
-                              <X className="h-4 w-4" />
+                              <ArrowLeft className="h-3.5 w-3.5" />
                             </Button>
                           </div>
-                        ))}
-                      </div>
-
-                      {totalGLSWeight > 0 && (
-                        <div className="text-sm text-sky-700 font-medium">
-                          Total weight: {totalGLSWeight.toFixed(2)} kg
                         </div>
-                      )}
-
-                      {/* Ship GLS Button - Always visible */}
-                      <GLSAutofillButton
-                        recipientData={recipientData}
-                        senderData={senderData}
-                        packageSize="S"
-                        weight={totalGLSWeight > 0 ? totalGLSWeight : undefined}
-                        orderId={activePackingOrder.orderId}
-                        cartonCount={glsCartons.length}
-                      />
-
-                      {/* Shipping Details - Always visible */}
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 px-2 py-1 bg-sky-100 border-l-4 border-sky-500 rounded">
-                          <MapPin className="h-4 w-4 text-sky-700" />
-                          <span className="text-sm font-bold text-sky-900">Shipping Details</span>
-                        </div>
-                        <div className="space-y-0.5">
-                          <CompactCopyFieldGLS label="Country:" value={germanCountry} flag={getCountryFlag(germanCountry)} />
-                          <CompactCopyFieldGLS label="Paket size:" value="S" />
-                          
-                          {/* Divider */}
-                          <Separator className="my-3" />
-                          
-                          <CompactCopyFieldGLS label="First Name:" value={firstName} />
-                          <CompactCopyFieldGLS label="Last Name:" value={lastName} />
-                          <CompactCopyFieldGLS label="Full Address:" value={fullAddress} />
-                          <CompactCopyFieldGLS label="E-mail:" value={recipientData.email || ''} />
-                        </div>
-                      </div>
-
-                      {/* GLS Shipping Labels */}
-                      <div className="space-y-2">
-                        <Separator className="bg-sky-300 h-0.5" />
-                        <div className="flex items-center gap-2 px-2 py-1 bg-sky-100 border-l-4 border-sky-500 rounded">
-                          <Truck className="h-4 w-4 text-sky-700" />
-                          <span className="text-sm font-bold text-sky-900">GLS Shipping Labels ({glsCartons.length})</span>
-                        </div>
-                        {glsCartons.map((carton) => {
-                          const index = cartons.findIndex(c => c.id === carton.id);
-                          const currentValue = trackingInputs[carton.id] || '';
-                          const hasValue = currentValue.trim() !== '';
-                          const isDuplicate = hasValue && cartons.some((c, i) => 
-                            i !== index && trackingInputs[c.id]?.trim() === currentValue
-                          );
-                          const isValid = hasValue && !isDuplicate;
-                          
-                          return (
-                            <div 
-                              key={carton.id}
-                              className={`border-2 rounded-lg p-3 transition-all ${
-                                isDuplicate 
-                                  ? 'bg-red-50 border-red-300' 
-                                  : isValid 
-                                    ? 'bg-green-50 border-green-300' 
-                                    : 'bg-sky-50 border-sky-200'
-                              }`}
-                            >
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="w-7 h-7 rounded-full bg-sky-600 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-white font-bold text-sm">{index + 1}</span>
-                                </div>
-                                <span className="text-sm font-semibold text-gray-900">Carton #{index + 1} (GLS)</span>
-                                {isValid && <CheckCircle className="h-4 w-4 text-green-600 ml-auto" />}
-                                {isDuplicate && (
-                                  <div className="flex items-center gap-1 text-xs text-red-600 ml-auto">
-                                    <AlertCircle className="h-3.5 w-3.5" />
-                                    <span>Duplicate</span>
-                                  </div>
-                                )}
-                              </div>
-                              
-                              <div className="flex gap-2">
-                                <div className="relative flex-1">
-                                  <Input
-                                    type="text"
-                                    placeholder="Enter GLS tracking number..."
-                                    value={currentValue}
-                                    onChange={(e) => {
-                                      setTrackingInputs(prev => ({
-                                        ...prev,
-                                        [carton.id]: e.target.value
-                                      }));
-                                    }}
-                                    onBlur={(e) => {
-                                      const trackingNumber = e.target.value.trim();
-                                      if (trackingNumber) {
-                                        submitTrackingNumber(carton.id, trackingNumber, index + 1, isDuplicate);
-                                      }
-                                    }}
-                                    className={`font-mono text-[16px] ${
-                                      isDuplicate 
-                                        ? 'border-red-400' 
-                                        : isValid 
-                                          ? 'border-green-400' 
-                                          : ''
-                                    }`}
-                                    data-testid={`input-gls-tracking-carton-${index + 1}`}
-                                  />
-                                  {hasValue && isValid && (
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                                      <CheckCircle className="h-5 w-5 text-green-600" />
-                                    </div>
-                                  )}
-                                </div>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="px-3"
-                                  onClick={async () => {
-                                    try {
-                                      const text = await navigator.clipboard.readText();
-                                      const trackingNumber = text.trim();
-                                      if (trackingNumber) {
-                                        setTrackingInputs(prev => ({
-                                          ...prev,
-                                          [carton.id]: trackingNumber
-                                        }));
-                                        const isDup = cartons.some((c, i) => 
-                                          carton.id !== c.id && trackingInputs[c.id]?.trim() === trackingNumber
-                                        );
-                                        submitTrackingNumber(carton.id, trackingNumber, index + 1, isDup);
-                                      }
-                                    } catch (error) {
-                                      // Silent error
-                                    }
-                                  }}
-                                  data-testid={`button-paste-gls-tracking-${index + 1}`}
-                                >
-                                  <ArrowLeft className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
+                      );
+                    })}
+                  </div>
                 </CardContent>
               </Card>
             );
