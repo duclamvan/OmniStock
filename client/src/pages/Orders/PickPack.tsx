@@ -2291,6 +2291,44 @@ export default function PickPack() {
     }
   }, [orderCartons, activePackingOrder?.id]);
 
+  // Auto-populate GLS cartons for DHL Nachnahme multi-carton orders
+  useEffect(() => {
+    if (!activePackingOrder?.id || cartons.length <= 1) {
+      // Clear GLS cartons if conditions no longer met
+      if (glsCartonIds.size > 0) {
+        setGlsCartonIds(new Set());
+      }
+      return;
+    }
+
+    const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
+    const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
+    const showCOD = (activePackingOrder.codAmount && parseFloat(activePackingOrder.codAmount as any) > 0) || 
+                   activePackingOrder.paymentMethod?.toUpperCase().includes('COD');
+
+    if (isDHL && showCOD && cartons.length > 1) {
+      // Auto-add all cartons except the first to GLS
+      const newGlsIds = new Set(glsCartonIds);
+      let hasChanges = false;
+      
+      cartons.slice(1).forEach(carton => {
+        if (!newGlsIds.has(carton.id)) {
+          newGlsIds.add(carton.id);
+          hasChanges = true;
+        }
+      });
+      
+      if (hasChanges) {
+        setGlsCartonIds(newGlsIds);
+      }
+    } else {
+      // Clear GLS cartons if not DHL COD multi-carton
+      if (glsCartonIds.size > 0) {
+        setGlsCartonIds(new Set());
+      }
+    }
+  }, [activePackingOrder?.id, activePackingOrder?.shippingMethod, activePackingOrder?.codAmount, activePackingOrder?.paymentMethod, cartons, glsCartonIds]);
+
   // Sync tracking number inputs from database (smart merge that preserves unsaved edits)
   useEffect(() => {
     if (!orderCartons || orderCartons.length === 0) {
