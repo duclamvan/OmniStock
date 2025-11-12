@@ -9894,24 +9894,14 @@ export default function PickPack() {
                                     </Button>
                                   ) : null}
                                   
-                                  {/* Delete button for each shipment */}
-                                  {!isCancelled && label && (
+                                  {/* Delete button for single-label shipments only (PPL doesn't support deleting individual labels from multi-label shipments) */}
+                                  {!isCancelled && label && shipmentLabelsFromDB.length === 1 && (
                                     <Button
                                       variant="ghost"
                                       size="sm"
                                       className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
                                       onClick={async () => {
-                                        // Check if this is a multi-carton shipment
-                                        const totalLabels = shipmentLabelsFromDB.length;
-                                        let confirmMessage = `Delete label #${index + 1}?`;
-                                        
-                                        if (totalLabels > 1) {
-                                          confirmMessage = `Delete label #${index + 1}?\n\n⚠️ WARNING: This is a ${totalLabels}-label shipment. After deletion, the remaining labels will show incorrect numbering (e.g., "1/${totalLabels}" instead of "1/${totalLabels - 1}").\n\nTo get proper label numbering, you'll need to delete ALL labels and regenerate the entire shipment.\n\nYour carton data will be preserved.\n\nContinue with deletion anyway?`;
-                                        } else {
-                                          confirmMessage = `Delete this label?\n\nThis will cancel the shipment with PPL. Your carton data will be preserved.`;
-                                        }
-                                        
-                                        if (confirm(confirmMessage)) {
+                                        if (confirm(`Delete this label?\n\nThis will cancel the shipment with PPL. Your carton data will be preserved.`)) {
                                           try {
                                             setDeletingShipment(prev => ({ ...prev, [label.id]: true }));
                                             await apiRequest('DELETE', `/api/shipment-labels/${label.id}`, {});
@@ -9928,7 +9918,7 @@ export default function PickPack() {
                                             
                                             toast({ 
                                               title: "Label Deleted",
-                                              description: totalLabels > 1 ? "Carton data preserved. Label numbering may be incorrect - consider regenerating all labels." : "Carton data preserved. You can regenerate the label if needed."
+                                              description: "Carton data preserved. You can regenerate the label if needed."
                                             });
                                           } catch (error) {
                                             toast({
@@ -10055,8 +10045,8 @@ export default function PickPack() {
                                     </Button>
                                   )}
                                   
-                                  {/* Delete button */}
-                                  {!isCancelled && (
+                                  {/* Delete button for single-label shipments only */}
+                                  {!isCancelled && shipmentLabelsFromDB.length === 1 && (
                                     <Button
                                       variant="ghost"
                                       size="sm"
