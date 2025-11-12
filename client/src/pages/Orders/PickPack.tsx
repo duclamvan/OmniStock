@@ -5340,15 +5340,17 @@ export default function PickPack() {
     
     // Label validation depends on shipping method
     // GLS uses tracking numbers (validated separately), other methods use labelPrinted
-    if (!isGLS) {
+    console.log('🔍 Label validation - isGLS:', isGLS, 'shippingMethod:', shippingMethod, 'cartons:', cartons.length);
+    if (!isGLS && !isDHL) {
       const cartonsWithoutLabel = cartons.filter(c => !c.labelPrinted);
       if (cartonsWithoutLabel.length > 0) {
         missingChecks.push(`Label for ${cartonsWithoutLabel.length} carton(s)`);
       }
     } else {
-      // For GLS, check tracking numbers from controlled state OR database (fallback)
+      // For GLS/DHL, check tracking numbers from controlled state OR database (fallback)
       const cartonsWithoutTracking = cartons.filter(c => {
         const trackingValue = (trackingInputs[c.id] || c.trackingNumber || '').trim();
+        console.log('🔍 Carton', c.cartonNumber, 'tracking:', trackingValue, 'from input:', trackingInputs[c.id], 'from DB:', c.trackingNumber);
         return trackingValue === '';
       });
       if (cartonsWithoutTracking.length > 0) {
