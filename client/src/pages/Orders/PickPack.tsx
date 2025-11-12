@@ -8211,6 +8211,717 @@ export default function PickPack() {
             </CardContent>
           </Card>
 
+          {/* DHL Shipping Card - Only for DHL orders */}
+          {(() => {
+            const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
+            const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
+            if (!isDHL) return null;
+
+            const shippingAddr = activePackingOrder.shippingAddress;
+            const recipientData = typeof shippingAddr === 'object' ? {
+              firstName: shippingAddr.firstName || '',
+              lastName: shippingAddr.lastName || '',
+              addressSupplement: shippingAddr.addressSupplement || '',
+              street: shippingAddr.street || '',
+              houseNumber: shippingAddr.streetNumber || '',
+              postalCode: shippingAddr.zipCode || '',
+              city: shippingAddr.city || '',
+              country: shippingAddr.country || 'Germany',
+              email: shippingAddr.email || '',
+            } : {
+              firstName: '',
+              lastName: '',
+              addressSupplement: '',
+              street: '',
+              houseNumber: '',
+              postalCode: '',
+              city: '',
+              country: 'Germany',
+              email: '',
+            };
+
+            const dhlSenderData = dhlSenderAddress?.value || dhlSenderAddress;
+            const senderData = dhlSenderData ? {
+              firstName: dhlSenderData.firstName || '',
+              lastName: dhlSenderData.lastName || '',
+              addressSupplement: dhlSenderData.addressSupplement || '',
+              street: dhlSenderData.street || '',
+              houseNumber: dhlSenderData.houseNumber || '',
+              postalCode: dhlSenderData.postalCode || '',
+              city: dhlSenderData.city || '',
+              country: dhlSenderData.country || 'Germany',
+              email: dhlSenderData.email || '',
+            } : undefined;
+
+            const totalWeight = cartons.reduce((sum, carton) => {
+              if (carton.weight) {
+                return sum + parseFloat(carton.weight);
+              }
+              return sum;
+            }, 0);
+
+            const highlightedSize = totalWeight <= 2 ? '2kg'
+              : totalWeight <= 5 ? '5kg'
+              : totalWeight <= 10 ? '10kg'
+              : '20kg';
+
+            const codAmount = typeof activePackingOrder.codAmount === 'string'
+              ? parseFloat(activePackingOrder.codAmount) 
+              : (activePackingOrder.codAmount || 0);
+            const showCOD = codAmount > 0 || activePackingOrder.paymentMethod?.toUpperCase().includes('COD');
+
+            const copyField = async (value: string, fieldName: string) => {
+              try {
+                await navigator.clipboard.writeText(value);
+              } catch {
+                // Silent error
+              }
+            };
+
+            const CompactCopyField = ({ label, value }: { label: string; value: string }) => (
+              <div className="space-y-1 py-0.5">
+                <label className="text-sm font-medium text-black block">{label}</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={value || '-'}
+                    className="flex-1 px-2 py-1.5 text-base font-medium text-black bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 hover:bg-gray-100 flex-shrink-0"
+                    onClick={() => copyField(value, label)}
+                  >
+                    <Copy className="h-4 w-4 text-gray-600" />
+                  </Button>
+                </div>
+              </div>
+            );
+
+            return (
+              <Card className="shadow-sm border-2 border-yellow-400 overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-black px-4 py-3 rounded-t-lg -mt-0.5">
+                  <CardTitle className="text-base font-bold flex items-center gap-2">
+                    <Truck className="h-5 w-5" />
+                    DHL Shipping
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-3 md:p-4 space-y-4">
+                  {/* Header */}
+                  <div>
+                    <div className="font-bold text-black text-lg">{activePackingOrder.shippingMethod}</div>
+                    <div className="text-sm text-black mt-0.5">
+                      Domestic Germany shipping
+                    </div>
+                  </div>
+
+                  {/* DHL Link Button */}
+                  <Button
+                    variant="default"
+                    className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold"
+                    onClick={() => {
+                      window.open('https://www.dhl.de/de/privatkunden/pakete-versenden/online-frankieren.html', '_blank');
+                    }}
+                    data-testid="button-dhl-website"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Create Label on DHL Website
+                  </Button>
+
+                  {/* SECTION 1: Package & Payment Details */}
+                  <div className="space-y-3 p-3 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Package className="h-5 w-5 text-yellow-700" />
+                      <span className="text-base font-bold text-black">Paket & Zahlungsdetails</span>
+                    </div>
+
+                    {/* Country */}
+                    <CompactCopyField label="Land*" value={recipientData.country} />
+
+                    {/* Package Size Selection */}
+                    <div className="space-y-2 pt-2">
+                      <label className="text-sm font-semibold text-black">Paketgröße*</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {['2kg', '5kg', '10kg', '20kg'].map((size) => (
+                          <div
+                            key={size}
+                            className={`p-3 rounded-lg border-2 text-center font-semibold transition-all ${
+                              highlightedSize === size
+                                ? 'bg-yellow-500 border-yellow-600 text-black shadow-md'
+                                : 'bg-white border-gray-300 text-gray-700 hover:border-yellow-400'
+                            }`}
+                            data-testid={`package-size-${size}`}
+                          >
+                            <div className="text-lg">{size}</div>
+                            <div className="text-xs mt-1">Paket</div>
+                          </div>
+                        ))}
+                      </div>
+                      {totalWeight > 0 && (
+                        <p className="text-xs text-gray-600 mt-1">
+                          Total weight: {totalWeight.toFixed(2)} kg → Recommended: {highlightedSize} Paket
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Nachnahme (COD) Section */}
+                    <div className="pt-2 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Checkbox 
+                          checked={showCOD} 
+                          disabled 
+                          className="border-2 border-yellow-600"
+                        />
+                        <label className="text-sm font-semibold text-black">
+                          Nachnahme (+8,99€)
+                        </label>
+                      </div>
+                      <p className="text-xs text-gray-600 pl-6">
+                        Soll die Zahlung der Ware beim Empfang erfolgen?
+                      </p>
+
+                      {/* COD Bank Details - Only show if COD is enabled */}
+                      {showCOD && (() => {
+                        const bankData = dhlBankDetails?.value || dhlBankDetails;
+                        return (
+                        <div className="pl-6 space-y-2 pt-2 border-l-2 border-yellow-300">
+                          {bankData ? (
+                            <>
+                              <CompactCopyField label="IBAN*" value={bankData.iban || ''} />
+                              <CompactCopyField label="BIC*" value={bankData.bic || ''} />
+                              <CompactCopyField label="Kontoinhaber*" value={bankData.accountHolder || ''} />
+                              <CompactCopyField 
+                                label="Betrag in EUR*" 
+                                value={codAmount > 0 ? codAmount.toFixed(2) : '0.00'} 
+                              />
+                              <CompactCopyField 
+                                label="Verwendungszweck*" 
+                                value={activePackingOrder.orderId || ''} 
+                              />
+                              <div className="pt-2">
+                                <Alert className="bg-amber-50 border-amber-300">
+                                  <AlertCircle className="h-4 w-4 text-amber-600" />
+                                  <AlertDescription className="text-xs text-amber-800">
+                                    Wichtig: Bitte BIC und IBAN in Großbuchstaben (A-Z) und Ziffern (0-9) angeben.
+                                  </AlertDescription>
+                                </Alert>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="px-2 py-1">
+                              <p className="text-sm text-gray-600 italic">
+                                Bank details not configured in settings
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )})()}
+                    </div>
+                  </div>
+
+                  {/* Yellow Separator */}
+                  <Separator className="my-4 bg-yellow-300 h-1" />
+
+                  {/* SECTION 2: Recipient Address (Empfänger) */}
+                  <div className="space-y-2 p-3 bg-white border-2 border-yellow-300 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-5 w-5 text-yellow-700" />
+                      <span className="text-base font-bold text-black">Empfänger (Recipient)</span>
+                    </div>
+
+                    {/* Frequent Buyer Badge - Only show for returning customers */}
+                    {customerOrderCount && customerOrderCount.count > 1 && (
+                      <div className="flex items-center gap-2 px-2 py-1.5 bg-yellow-50 border border-yellow-200 rounded">
+                        <Star className="h-4 w-4 text-yellow-600 fill-yellow-600" />
+                        <span className="text-xs text-black font-medium">
+                          Frequent buyer - Already in DHL addressbook
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="space-y-0.5">
+                      <CompactCopyField 
+                        label="Vor- und Nachname*" 
+                        value={`${recipientData.firstName} ${recipientData.lastName}`.trim()} 
+                      />
+                      {recipientData.addressSupplement && (
+                        <CompactCopyField label="Adresszusatz" value={recipientData.addressSupplement} />
+                      )}
+                      <CompactCopyField label="PLZ*" value={recipientData.postalCode} />
+                      <CompactCopyField label="Wohnort*" value={recipientData.city} />
+                      <CompactCopyField label="Straße*" value={recipientData.street} />
+                      <CompactCopyField label="Hausnummer*" value={recipientData.houseNumber} />
+                      <CompactCopyField label="Land" value={recipientData.country} />
+                      <CompactCopyField label="E-Mail des Empfängers*" value={recipientData.email || ''} />
+                    </div>
+                  </div>
+
+                  {/* Yellow Separator */}
+                  <Separator className="my-4 bg-yellow-300 h-1" />
+
+                  {/* SECTION 3: Sender Address (Absender) */}
+                  {senderData && (
+                    <div className="space-y-2 p-3 bg-white border-2 border-yellow-300 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-5 w-5 text-yellow-700" />
+                        <span className="text-base font-bold text-black">Absender (Sender)</span>
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <CompactCopyField 
+                          label="Vor- und Nachname*" 
+                          value={`${senderData.firstName} ${senderData.lastName}`.trim()} 
+                        />
+                        {senderData.addressSupplement && (
+                          <CompactCopyField label="Adresszusatz" value={senderData.addressSupplement} />
+                        )}
+                        <CompactCopyField label="PLZ*" value={senderData.postalCode} />
+                        <CompactCopyField label="Wohnort*" value={senderData.city} />
+                        <CompactCopyField label="Straße*" value={senderData.street} />
+                        <CompactCopyField label="Hausnummer*" value={senderData.houseNumber} />
+                        <CompactCopyField label="Land" value={senderData.country} />
+                        <CompactCopyField label="E-Mail des Absenders*" value={senderData.email || ''} />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Multi-carton indicator + DHL Shipping Label */}
+                  {cartons.length > 1 && showCOD && (
+                    <>
+                      <Alert className="bg-yellow-50 border-yellow-300">
+                        <Info className="h-4 w-4 text-yellow-700" />
+                        <AlertDescription className="text-sm text-yellow-900">
+                          <strong>Carton 1 of {cartons.length}:</strong> DHL Nachnahme (with COD)
+                        </AlertDescription>
+                      </Alert>
+
+                      {/* DHL Shipping Label */}
+                      <div className="space-y-2">
+                        <Separator className="bg-yellow-300 h-0.5" />
+                        <div className="flex items-center gap-2 px-2 py-1 bg-yellow-100 border-l-4 border-yellow-500 rounded">
+                          <Truck className="h-4 w-4 text-yellow-700" />
+                          <span className="text-sm font-bold text-yellow-900">DHL Shipping Label</span>
+                        </div>
+                        {(() => {
+                          const dhlCarton = cartons[0];
+                          const currentValue = trackingInputs[dhlCarton.id] || '';
+                          const hasValue = currentValue.trim() !== '';
+                          const isValid = hasValue;
+                          
+                          return (
+                            <div 
+                              className={`border-2 rounded-lg p-3 transition-all ${
+                                isValid 
+                                  ? 'bg-green-50 border-green-300' 
+                                  : 'bg-yellow-50 border-yellow-200'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="w-7 h-7 rounded-full bg-yellow-600 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-white font-bold text-sm">1</span>
+                                </div>
+                                <span className="text-sm font-semibold text-gray-900">Carton #1 (DHL)</span>
+                                {isValid && <CheckCircle className="h-4 w-4 text-green-600 ml-auto" />}
+                              </div>
+                              
+                              <div className="flex gap-2">
+                                <div className="relative flex-1">
+                                  <Input
+                                    type="text"
+                                    placeholder="Enter DHL tracking number..."
+                                    value={currentValue}
+                                    onChange={(e) => {
+                                      setTrackingInputs(prev => ({
+                                        ...prev,
+                                        [dhlCarton.id]: e.target.value
+                                      }));
+                                    }}
+                                    onBlur={(e) => {
+                                      const trackingNumber = e.target.value.trim();
+                                      if (trackingNumber) {
+                                        submitTrackingNumber(dhlCarton.id, trackingNumber, 1, false);
+                                      }
+                                    }}
+                                    className={`font-mono text-[16px] ${
+                                      isValid ? 'border-green-400' : ''
+                                    }`}
+                                    data-testid="input-dhl-tracking-carton-1"
+                                  />
+                                  {hasValue && isValid && (
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                      <CheckCircle className="h-5 w-5 text-green-600" />
+                                    </div>
+                                  )}
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="px-3"
+                                  onClick={async () => {
+                                    try {
+                                      const text = await navigator.clipboard.readText();
+                                      const trackingNumber = text.trim();
+                                      if (trackingNumber) {
+                                        setTrackingInputs(prev => ({
+                                          ...prev,
+                                          [dhlCarton.id]: trackingNumber
+                                        }));
+                                        submitTrackingNumber(dhlCarton.id, trackingNumber, 1, false);
+                                      }
+                                    } catch (error) {
+                                      // Silent error
+                                    }
+                                  }}
+                                  data-testid="button-paste-dhl-tracking-1"
+                                >
+                                  <ClipboardPaste className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
+
+          {/* GLS Shipping Card - Only for GLS orders or DHL Nachnahme multi-carton */}
+          {(() => {
+            const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
+            const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
+            const showCOD = (activePackingOrder.codAmount && parseFloat(activePackingOrder.codAmount as any) > 0) || 
+                           activePackingOrder.paymentMethod?.toUpperCase().includes('COD');
+            
+            // Show GLS card if: DHL order + has COD + multiple cartons
+            if (!isDHL || !showCOD || cartons.length <= 1) {
+              return null;
+            }
+
+            const glsCartons = cartons.filter(c => glsCartonIds.has(c.id));
+            const availableCartonsForGLS = cartons.slice(1).filter(c => !glsCartonIds.has(c.id));
+            
+            const shippingAddr = activePackingOrder.shippingAddress;
+            const recipientData = typeof shippingAddr === 'object' ? {
+              name: [shippingAddr.firstName, shippingAddr.lastName].filter(Boolean).join(' ') || 'N/A',
+              company: shippingAddr.company || '',
+              street: shippingAddr.street || '',
+              houseNumber: shippingAddr.streetNumber || '',
+              postalCode: shippingAddr.zipCode || '',
+              city: shippingAddr.city || '',
+              country: shippingAddr.country || 'Germany',
+              email: shippingAddr.email || '',
+              phone: shippingAddr.tel || '',
+            } : {
+              name: 'N/A',
+              company: '',
+              street: '',
+              houseNumber: '',
+              postalCode: '',
+              city: '',
+              country: 'Germany',
+              email: '',
+              phone: '',
+            };
+
+            const glsSenderData = glsSenderAddress?.value || glsSenderAddress;
+            const senderData = glsSenderData ? {
+              name: glsSenderData.name || '',
+              company: glsSenderData.company || '',
+              street: glsSenderData.street || '',
+              houseNumber: glsSenderData.houseNumber || '',
+              postalCode: glsSenderData.postalCode || '',
+              city: glsSenderData.city || '',
+              email: glsSenderData.email || '',
+              phone: glsSenderData.phone || '',
+            } : undefined;
+
+            let totalGLSWeight = 0;
+            glsCartons.forEach(carton => {
+              if (carton.weight) {
+                totalGLSWeight += parseFloat(carton.weight);
+              }
+            });
+
+            const nameParts = (recipientData.name || '').trim().split(' ');
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
+            const germanCountry = GLS_COUNTRY_MAP[recipientData.country] || recipientData.country;
+
+            const copyField = async (value: string, fieldName: string) => {
+              try {
+                await navigator.clipboard.writeText(value);
+              } catch {
+                // Silent error
+              }
+            };
+
+            const CompactCopyFieldGLS = ({ label, value }: { label: string; value: string }) => (
+              <div className="space-y-1 py-0.5">
+                <label className="text-sm font-medium text-black block">{label}</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={value || '-'}
+                    className="flex-1 px-2 py-1.5 text-base font-medium text-black bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-sky-400"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 hover:bg-gray-100 flex-shrink-0"
+                    onClick={() => copyField(value, label)}
+                  >
+                    <Copy className="h-4 w-4 text-gray-600" />
+                  </Button>
+                </div>
+              </div>
+            );
+
+            return (
+              <Card className="shadow-sm border-2 border-sky-300 overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-sky-600 to-sky-700 text-white px-4 py-3 rounded-t-lg -mt-0.5">
+                  <CardTitle className="text-base font-bold flex items-center gap-2">
+                    <Truck className="h-5 w-5" />
+                    GLS Shipping ({glsCartons.length} {glsCartons.length === 1 ? 'carton' : 'cartons'})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-3 md:p-4 space-y-4">
+                  {/* Separator */}
+                  <div className="flex items-center gap-2 px-2 py-1 bg-sky-50 border-l-4 border-sky-500 rounded">
+                    <Info className="h-4 w-4 text-sky-700" />
+                    <span className="text-sm text-sky-900">
+                      Additional cartons shipped via GLS for cost savings
+                    </span>
+                  </div>
+
+                  {/* Add Carton to GLS Button */}
+                  {availableCartonsForGLS.length > 0 && (
+                    <Button
+                      variant="outline"
+                      className="w-full border-sky-400 text-sky-700 hover:bg-sky-50 font-medium"
+                      onClick={() => {
+                        const nextCarton = availableCartonsForGLS[0];
+                        setGlsCartonIds(prev => new Set([...prev, nextCarton.id]));
+                      }}
+                      data-testid="button-add-carton-to-gls"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Carton to GLS ({availableCartonsForGLS.length} available)
+                    </Button>
+                  )}
+
+                  {glsCartons.length === 0 ? (
+                    <Alert className="bg-sky-50 border-sky-300">
+                      <Info className="h-4 w-4 text-sky-700" />
+                      <AlertDescription className="text-sm text-sky-900">
+                        No cartons added to GLS yet. Use the button above to add cartons for cost-effective shipping.
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <>
+                      {/* Assigned Cartons List */}
+                      <div className="space-y-2">
+                        {glsCartons.map((carton, index) => (
+                          <div
+                            key={carton.id}
+                            className="flex items-center gap-2 p-2 bg-white border border-sky-200 rounded"
+                          >
+                            <Package className="h-4 w-4 text-sky-600 flex-shrink-0" />
+                            <span className="text-sm font-medium text-black flex-1">
+                              Carton #{cartons.findIndex(c => c.id === carton.id) + 1}: {carton.name || 'Unnamed'}
+                              {carton.weight && ` (${carton.weight} kg)`}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => {
+                                setGlsCartonIds(prev => {
+                                  const next = new Set(prev);
+                                  next.delete(carton.id);
+                                  return next;
+                                });
+                              }}
+                              data-testid={`button-remove-gls-carton-${carton.id}`}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {totalGLSWeight > 0 && (
+                        <div className="text-sm text-sky-700 font-medium">
+                          Total weight: {totalGLSWeight.toFixed(2)} kg
+                        </div>
+                      )}
+
+                      {/* Ship GLS Button */}
+                      <GLSAutofillButton
+                        recipientData={recipientData}
+                        senderData={senderData}
+                        totalWeight={totalGLSWeight}
+                        cartonCount={glsCartons.length}
+                      />
+
+                      {/* Recipient Address */}
+                      <div className="space-y-2 p-3 bg-white border-2 border-sky-300 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-5 w-5 text-sky-700" />
+                          <span className="text-base font-bold text-black">Empfänger (Recipient)</span>
+                        </div>
+
+                        <div className="space-y-0.5">
+                          <CompactCopyFieldGLS label="Vor- und Nachname*" value={`${firstName} ${lastName}`.trim()} />
+                          <CompactCopyFieldGLS label="Firma" value={recipientData.company} />
+                          <CompactCopyFieldGLS label="Straße*" value={recipientData.street} />
+                          <CompactCopyFieldGLS label="Hausnummer*" value={recipientData.houseNumber} />
+                          <CompactCopyFieldGLS label="PLZ*" value={recipientData.postalCode} />
+                          <CompactCopyFieldGLS label="Wohnort*" value={recipientData.city} />
+                          <CompactCopyFieldGLS label="Land*" value={germanCountry} />
+                          <CompactCopyFieldGLS label="E-Mail" value={recipientData.email} />
+                          <CompactCopyFieldGLS label="Telefon" value={recipientData.phone} />
+                        </div>
+                      </div>
+
+                      {/* Sender Address */}
+                      {senderData && (
+                        <div className="space-y-2 p-3 bg-white border-2 border-sky-300 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-5 w-5 text-sky-700" />
+                            <span className="text-base font-bold text-black">Absender (Sender)</span>
+                          </div>
+
+                          <div className="space-y-0.5">
+                            <CompactCopyFieldGLS label="Name*" value={senderData.name} />
+                            <CompactCopyFieldGLS label="Firma" value={senderData.company} />
+                            <CompactCopyFieldGLS label="Straße*" value={senderData.street} />
+                            <CompactCopyFieldGLS label="Hausnummer*" value={senderData.houseNumber} />
+                            <CompactCopyFieldGLS label="PLZ*" value={senderData.postalCode} />
+                            <CompactCopyFieldGLS label="Wohnort*" value={senderData.city} />
+                            <CompactCopyFieldGLS label="E-Mail" value={senderData.email} />
+                            <CompactCopyFieldGLS label="Telefon" value={senderData.phone} />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* GLS Shipping Labels */}
+                      <div className="space-y-2">
+                        <Separator className="bg-sky-300 h-0.5" />
+                        <div className="flex items-center gap-2 px-2 py-1 bg-sky-100 border-l-4 border-sky-500 rounded">
+                          <Truck className="h-4 w-4 text-sky-700" />
+                          <span className="text-sm font-bold text-sky-900">GLS Shipping Labels ({glsCartons.length})</span>
+                        </div>
+                        {glsCartons.map((carton) => {
+                          const index = cartons.findIndex(c => c.id === carton.id);
+                          const currentValue = trackingInputs[carton.id] || '';
+                          const hasValue = currentValue.trim() !== '';
+                          const isDuplicate = hasValue && cartons.some((c, i) => 
+                            i !== index && trackingInputs[c.id]?.trim() === currentValue
+                          );
+                          const isValid = hasValue && !isDuplicate;
+                          
+                          return (
+                            <div 
+                              key={carton.id}
+                              className={`border-2 rounded-lg p-3 transition-all ${
+                                isDuplicate 
+                                  ? 'bg-red-50 border-red-300' 
+                                  : isValid 
+                                    ? 'bg-green-50 border-green-300' 
+                                    : 'bg-sky-50 border-sky-200'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="w-7 h-7 rounded-full bg-sky-600 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-white font-bold text-sm">{index + 1}</span>
+                                </div>
+                                <span className="text-sm font-semibold text-gray-900">Carton #{index + 1} (GLS)</span>
+                                {isValid && <CheckCircle className="h-4 w-4 text-green-600 ml-auto" />}
+                                {isDuplicate && (
+                                  <div className="flex items-center gap-1 text-xs text-red-600 ml-auto">
+                                    <AlertCircle className="h-3.5 w-3.5" />
+                                    <span>Duplicate</span>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <div className="flex gap-2">
+                                <div className="relative flex-1">
+                                  <Input
+                                    type="text"
+                                    placeholder="Enter GLS tracking number..."
+                                    value={currentValue}
+                                    onChange={(e) => {
+                                      setTrackingInputs(prev => ({
+                                        ...prev,
+                                        [carton.id]: e.target.value
+                                      }));
+                                    }}
+                                    onBlur={(e) => {
+                                      const trackingNumber = e.target.value.trim();
+                                      if (trackingNumber) {
+                                        submitTrackingNumber(carton.id, trackingNumber, index + 1, isDuplicate);
+                                      }
+                                    }}
+                                    className={`font-mono text-[16px] ${
+                                      isDuplicate 
+                                        ? 'border-red-400' 
+                                        : isValid 
+                                          ? 'border-green-400' 
+                                          : ''
+                                    }`}
+                                    data-testid={`input-gls-tracking-carton-${index + 1}`}
+                                  />
+                                  {hasValue && isValid && (
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                      <CheckCircle className="h-5 w-5 text-green-600" />
+                                    </div>
+                                  )}
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="px-3"
+                                  onClick={async () => {
+                                    try {
+                                      const text = await navigator.clipboard.readText();
+                                      const trackingNumber = text.trim();
+                                      if (trackingNumber) {
+                                        setTrackingInputs(prev => ({
+                                          ...prev,
+                                          [carton.id]: trackingNumber
+                                        }));
+                                        const isDup = cartons.some((c, i) => 
+                                          carton.id !== c.id && trackingInputs[c.id]?.trim() === trackingNumber
+                                        );
+                                        submitTrackingNumber(carton.id, trackingNumber, index + 1, isDup);
+                                      }
+                                    } catch (error) {
+                                      // Silent error
+                                    }
+                                  }}
+                                  data-testid={`button-paste-gls-tracking-${index + 1}`}
+                                >
+                                  <ClipboardPaste className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
+
           {/* Unified Shipping Labels Section - Hide for DHL Nachnahme multi-carton orders */}
           {!(() => {
             const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
