@@ -8351,14 +8351,14 @@ export default function PickPack() {
                   </Button>
 
                   {/* Collapsible Shipping Details */}
-                  <Collapsible>
+                  <Collapsible defaultOpen={true}>
                     <CollapsibleTrigger asChild>
                       <Button variant="outline" className="w-full justify-between border-yellow-400 hover:bg-yellow-50">
                         <span className="font-medium text-black">Shipping Details</span>
-                        <ChevronDown className="h-4 w-4 text-black" />
+                        <ChevronDown className="h-4 w-4 text-black transition-transform duration-200 data-[state=open]:rotate-180" />
                       </Button>
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-4 mt-4">
+                    <CollapsibleContent className="space-y-4 mt-4 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
                   {/* SECTION 1: Package & Payment Details */}
                   <div className="space-y-3 p-3 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
                     <div className="flex items-center gap-2">
@@ -8860,14 +8860,14 @@ export default function PickPack() {
                       />
 
                       {/* Collapsible Shipping Details */}
-                      <Collapsible>
+                      <Collapsible defaultOpen={true}>
                         <CollapsibleTrigger asChild>
                           <Button variant="outline" className="w-full justify-between border-sky-400 hover:bg-sky-50">
                             <span className="font-medium text-black">Shipping Details</span>
-                            <ChevronDown className="h-4 w-4 text-black" />
+                            <ChevronDown className="h-4 w-4 text-black transition-transform duration-200 data-[state=open]:rotate-180" />
                           </Button>
                         </CollapsibleTrigger>
-                        <CollapsibleContent className="space-y-3 mt-3">
+                        <CollapsibleContent className="space-y-3 mt-3 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
                       {/* Copyable Fields - Same as regular GLS */}
                       <div className="space-y-0.5">
                         <CompactCopyFieldGLS label="Country:" value={germanCountry} flag={getCountryFlag(germanCountry)} />
