@@ -7691,6 +7691,93 @@ export default function PickPack() {
                         </Alert>
                       </div>
                     )}
+
+                    {/* DHL Shipping Labels - Only for Multi-carton Nachnahme */}
+                    {cartons.length > 1 && (() => {
+                      const dhlCarton = cartons[0];
+                      const currentValue = trackingInputs[dhlCarton.id] || '';
+                      const hasValue = currentValue.trim() !== '';
+                      const isValid = hasValue;
+                      
+                      return (
+                        <div className="mt-4 space-y-2">
+                          <Separator className="bg-yellow-300 h-0.5" />
+                          <div className="flex items-center gap-2 px-2 py-1 bg-yellow-100 border-l-4 border-yellow-500 rounded">
+                            <Truck className="h-4 w-4 text-yellow-700" />
+                            <span className="text-sm font-bold text-yellow-900">DHL Shipping Label</span>
+                          </div>
+                          <div 
+                            className={`border-2 rounded-lg p-3 transition-all ${
+                              isValid 
+                                ? 'bg-green-50 border-green-300' 
+                                : 'bg-yellow-50 border-yellow-200'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-7 h-7 rounded-full bg-yellow-600 flex items-center justify-center flex-shrink-0">
+                                <span className="text-white font-bold text-sm">1</span>
+                              </div>
+                              <span className="text-sm font-semibold text-gray-900">Carton #1 (DHL)</span>
+                              {isValid && <CheckCircle className="h-4 w-4 text-green-600 ml-auto" />}
+                            </div>
+                            
+                            <div className="flex gap-2">
+                              <div className="relative flex-1">
+                                <Input
+                                  type="text"
+                                  placeholder="Enter DHL tracking number..."
+                                  value={currentValue}
+                                  onChange={(e) => {
+                                    setTrackingInputs(prev => ({
+                                      ...prev,
+                                      [dhlCarton.id]: e.target.value
+                                    }));
+                                  }}
+                                  onBlur={(e) => {
+                                    const trackingNumber = e.target.value.trim();
+                                    if (trackingNumber) {
+                                      submitTrackingNumber(dhlCarton.id, trackingNumber, 1, false);
+                                    }
+                                  }}
+                                  className={`font-mono text-[16px] ${
+                                    isValid ? 'border-green-400' : ''
+                                  }`}
+                                  data-testid="input-dhl-tracking-carton-1"
+                                />
+                                {hasValue && isValid && (
+                                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                    <CheckCircle className="h-5 w-5 text-green-600" />
+                                  </div>
+                                )}
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="px-3"
+                                onClick={async () => {
+                                  try {
+                                    const text = await navigator.clipboard.readText();
+                                    const trackingNumber = text.trim();
+                                    if (trackingNumber) {
+                                      setTrackingInputs(prev => ({
+                                        ...prev,
+                                        [dhlCarton.id]: trackingNumber
+                                      }));
+                                      submitTrackingNumber(dhlCarton.id, trackingNumber, 1, false);
+                                    }
+                                  } catch (error) {
+                                    // Silent error
+                                  }
+                                }}
+                                data-testid="button-paste-dhl-tracking-1"
+                              >
+                                <ClipboardPaste className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })()}
@@ -7932,6 +8019,112 @@ export default function PickPack() {
                                 </div>
                               </div>
                             )}
+
+                            {/* GLS Shipping Labels */}
+                            <div className="mt-4 space-y-2">
+                              <Separator className="bg-sky-300 h-0.5" />
+                              <div className="flex items-center gap-2 px-2 py-1 bg-sky-100 border-l-4 border-sky-500 rounded">
+                                <Truck className="h-4 w-4 text-sky-700" />
+                                <span className="text-sm font-bold text-sky-900">GLS Shipping Labels ({glsCartons.length})</span>
+                              </div>
+                              {glsCartons.map((carton) => {
+                                const index = cartons.findIndex(c => c.id === carton.id);
+                                const currentValue = trackingInputs[carton.id] || '';
+                                const hasValue = currentValue.trim() !== '';
+                                const isDuplicate = hasValue && cartons.some((c, i) => 
+                                  i !== index && trackingInputs[c.id]?.trim() === currentValue
+                                );
+                                const isValid = hasValue && !isDuplicate;
+                                
+                                return (
+                                  <div 
+                                    key={carton.id}
+                                    className={`border-2 rounded-lg p-3 transition-all ${
+                                      isDuplicate 
+                                        ? 'bg-red-50 border-red-300' 
+                                        : isValid 
+                                          ? 'bg-green-50 border-green-300' 
+                                          : 'bg-sky-50 border-sky-200'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <div className="w-7 h-7 rounded-full bg-sky-600 flex items-center justify-center flex-shrink-0">
+                                        <span className="text-white font-bold text-sm">{index + 1}</span>
+                                      </div>
+                                      <span className="text-sm font-semibold text-gray-900">Carton #{index + 1} (GLS)</span>
+                                      {isValid && <CheckCircle className="h-4 w-4 text-green-600 ml-auto" />}
+                                      {isDuplicate && (
+                                        <div className="flex items-center gap-1 text-xs text-red-600 ml-auto">
+                                          <AlertCircle className="h-3.5 w-3.5" />
+                                          <span>Duplicate</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    
+                                    <div className="flex gap-2">
+                                      <div className="relative flex-1">
+                                        <Input
+                                          type="text"
+                                          placeholder="Enter GLS tracking number..."
+                                          value={currentValue}
+                                          onChange={(e) => {
+                                            setTrackingInputs(prev => ({
+                                              ...prev,
+                                              [carton.id]: e.target.value
+                                            }));
+                                          }}
+                                          onBlur={(e) => {
+                                            const trackingNumber = e.target.value.trim();
+                                            if (trackingNumber) {
+                                              submitTrackingNumber(carton.id, trackingNumber, index + 1, isDuplicate);
+                                            }
+                                          }}
+                                          className={`font-mono text-[16px] ${
+                                            isDuplicate 
+                                              ? 'border-red-400' 
+                                              : isValid 
+                                                ? 'border-green-400' 
+                                                : ''
+                                          }`}
+                                          data-testid={`input-gls-tracking-carton-${index + 1}`}
+                                        />
+                                        {hasValue && isValid && (
+                                          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                            <CheckCircle className="h-5 w-5 text-green-600" />
+                                          </div>
+                                        )}
+                                      </div>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="px-3"
+                                        onClick={async () => {
+                                          try {
+                                            const text = await navigator.clipboard.readText();
+                                            const trackingNumber = text.trim();
+                                            if (trackingNumber) {
+                                              setTrackingInputs(prev => ({
+                                                ...prev,
+                                                [carton.id]: trackingNumber
+                                              }));
+                                              const isDup = cartons.some((c, i) => 
+                                                carton.id !== c.id && trackingInputs[c.id]?.trim() === trackingNumber
+                                              );
+                                              submitTrackingNumber(carton.id, trackingNumber, index + 1, isDup);
+                                            }
+                                          } catch (error) {
+                                            // Silent error
+                                          }
+                                        }}
+                                        data-testid={`button-paste-gls-tracking-${index + 1}`}
+                                      >
+                                        <ClipboardPaste className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </>
                         )}
                       </CollapsibleContent>
@@ -8018,7 +8211,16 @@ export default function PickPack() {
             </CardContent>
           </Card>
 
-          {/* Unified Shipping Labels Section */}
+          {/* Unified Shipping Labels Section - Hide for DHL Nachnahme multi-carton orders */}
+          {!(() => {
+            const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
+            const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
+            const showCOD = (activePackingOrder.codAmount && parseFloat(activePackingOrder.codAmount as any) > 0) || 
+                           activePackingOrder.paymentMethod?.toUpperCase().includes('COD');
+            
+            // Hide unified section for DHL Nachnahme with multiple cartons (they have dedicated sections above)
+            return isDHL && showCOD && cartons.length > 1;
+          })() && (
           <Card id="checklist-shipping-labels" className={`shadow-sm bg-white overflow-hidden ${
             (() => {
               const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
@@ -9765,6 +9967,7 @@ export default function PickPack() {
               )}
             </CardContent>
           </Card>
+          )}
 
           {/* Complete Packing Button - Large, Prominent */}
           <div className="sticky bottom-0 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent pt-4 pb-2">
