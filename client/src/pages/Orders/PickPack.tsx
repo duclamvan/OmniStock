@@ -8652,23 +8652,80 @@ export default function PickPack() {
             const lastName = nameParts.slice(1).join(' ') || '';
             const germanCountry = GLS_COUNTRY_MAP[recipientData.country] || recipientData.country;
 
+            // Get country flag emoji
+            const getCountryFlag = (countryName: string) => {
+              const countryCodeMap: { [key: string]: string } = {
+                'Deutschland': 'DE',
+                'Germany': 'DE',
+                'Frankreich': 'FR',
+                'France': 'FR',
+                'Österreich': 'AT',
+                'Austria': 'AT',
+                'Schweiz': 'CH',
+                'Switzerland': 'CH',
+                'Polen': 'PL',
+                'Poland': 'PL',
+                'Tschechien': 'CZ',
+                'Czech Republic': 'CZ',
+                'Niederlande': 'NL',
+                'Netherlands': 'NL',
+                'Belgien': 'BE',
+                'Belgium': 'BE',
+                'Italien': 'IT',
+                'Italy': 'IT',
+                'Spanien': 'ES',
+                'Spain': 'ES',
+                'Dänemark': 'DK',
+                'Denmark': 'DK',
+                'Schweden': 'SE',
+                'Sweden': 'SE',
+                'Slowakei': 'SK',
+                'Slovakia': 'SK',
+              };
+              
+              const code = countryCodeMap[countryName] || countryCodeMap[recipientData.country];
+              if (!code) return '';
+              
+              return code
+                .toUpperCase()
+                .split('')
+                .map(char => String.fromCodePoint(127397 + char.charCodeAt(0)))
+                .join('');
+            };
+
             const copyField = async (value: string, fieldName: string) => {
               try {
                 await navigator.clipboard.writeText(value);
+                toast({
+                  title: "Copied!",
+                  description: `${fieldName} copied to clipboard`,
+                  duration: 1500
+                });
               } catch {
-                // Silent error
+                toast({
+                  title: "Copy failed",
+                  description: "Please try again",
+                  variant: "destructive"
+                });
               }
             };
 
-            const CompactCopyFieldGLS = ({ label, value }: { label: string; value: string }) => (
+            const fullAddress = [
+              `${recipientData.street} ${recipientData.houseNumber}`.trim(),
+              recipientData.postalCode,
+              recipientData.city
+            ].filter(Boolean).join(', ');
+
+            const CompactCopyFieldGLS = ({ label, value, flag }: { label: string; value: string; flag?: string }) => (
               <div className="space-y-1 py-0.5">
                 <label className="text-sm font-medium text-black block">{label}</label>
                 <div className="flex items-center gap-2">
+                  {flag && <span className="text-xl flex-shrink-0">{flag}</span>}
                   <input
                     type="text"
                     readOnly
                     value={value || '-'}
-                    className="flex-1 px-2 py-1.5 text-base font-medium text-black bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-sky-400"
+                    className="flex-1 px-2 py-1.5 text-base font-medium text-black bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-gray-400"
                   />
                   <Button
                     variant="ghost"
@@ -8761,54 +8818,37 @@ export default function PickPack() {
                         </div>
                       )}
 
-                      {/* Ship GLS Button */}
-                      <GLSAutofillButton
-                        recipientData={recipientData}
-                        senderData={senderData}
-                        totalWeight={totalGLSWeight}
-                        cartonCount={glsCartons.length}
-                      />
-
-                      {/* Recipient Address */}
-                      <div className="space-y-2 p-3 bg-white border-2 border-sky-300 rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-5 w-5 text-sky-700" />
-                          <span className="text-base font-bold text-black">Empfänger (Recipient)</span>
-                        </div>
-
-                        <div className="space-y-0.5">
-                          <CompactCopyFieldGLS label="Vor- und Nachname*" value={`${firstName} ${lastName}`.trim()} />
-                          <CompactCopyFieldGLS label="Firma" value={recipientData.company} />
-                          <CompactCopyFieldGLS label="Straße*" value={recipientData.street} />
-                          <CompactCopyFieldGLS label="Hausnummer*" value={recipientData.houseNumber} />
-                          <CompactCopyFieldGLS label="PLZ*" value={recipientData.postalCode} />
-                          <CompactCopyFieldGLS label="Wohnort*" value={recipientData.city} />
-                          <CompactCopyFieldGLS label="Land*" value={germanCountry} />
-                          <CompactCopyFieldGLS label="E-Mail" value={recipientData.email} />
-                          <CompactCopyFieldGLS label="Telefon" value={recipientData.phone} />
+                      {/* Header - Same as regular GLS */}
+                      <div>
+                        <div className="font-bold text-black text-lg">GLS</div>
+                        <div className="text-sm text-black mt-0.5">
+                          Max. 40 kg • Circumference + longest side max. 300 cm
                         </div>
                       </div>
 
-                      {/* Sender Address */}
-                      {senderData && (
-                        <div className="space-y-2 p-3 bg-white border-2 border-sky-300 rounded-lg">
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-5 w-5 text-sky-700" />
-                            <span className="text-base font-bold text-black">Absender (Sender)</span>
-                          </div>
+                      {/* Ship GLS Button - Same as regular GLS */}
+                      <GLSAutofillButton
+                        recipientData={recipientData}
+                        senderData={senderData}
+                        packageSize="S"
+                        weight={totalGLSWeight > 0 ? totalGLSWeight : undefined}
+                        orderId={activePackingOrder.orderId}
+                        cartonCount={glsCartons.length}
+                      />
 
-                          <div className="space-y-0.5">
-                            <CompactCopyFieldGLS label="Name*" value={senderData.name} />
-                            <CompactCopyFieldGLS label="Firma" value={senderData.company} />
-                            <CompactCopyFieldGLS label="Straße*" value={senderData.street} />
-                            <CompactCopyFieldGLS label="Hausnummer*" value={senderData.houseNumber} />
-                            <CompactCopyFieldGLS label="PLZ*" value={senderData.postalCode} />
-                            <CompactCopyFieldGLS label="Wohnort*" value={senderData.city} />
-                            <CompactCopyFieldGLS label="E-Mail" value={senderData.email} />
-                            <CompactCopyFieldGLS label="Telefon" value={senderData.phone} />
-                          </div>
-                        </div>
-                      )}
+                      {/* Copyable Fields - Same as regular GLS */}
+                      <div className="space-y-0.5">
+                        <CompactCopyFieldGLS label="Country:" value={germanCountry} flag={getCountryFlag(germanCountry)} />
+                        <CompactCopyFieldGLS label="Paket size:" value="S" />
+                        
+                        {/* Divider */}
+                        <Separator className="my-3" />
+                        
+                        <CompactCopyFieldGLS label="First Name:" value={firstName} />
+                        <CompactCopyFieldGLS label="Last Name:" value={lastName} />
+                        <CompactCopyFieldGLS label="Full Address:" value={fullAddress} />
+                        <CompactCopyFieldGLS label="E-mail:" value={recipientData.email || ''} />
+                      </div>
 
                       {/* GLS Shipping Labels */}
                       <div className="space-y-2">
