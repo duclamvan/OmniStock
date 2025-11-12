@@ -7380,10 +7380,20 @@ export default function PickPack() {
                 );
               })()}
 
-              {/* DHL Shipping Details - Only for DHL or DHL DE */}
+              {/* DHL Shipping Details - Only for DHL or DHL DE (but not multi-carton Nachnahme - that has its own card) */}
               {(() => {
                 const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
                 const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
+                const codAmount = typeof activePackingOrder.codAmount === 'string' 
+                  ? parseFloat(activePackingOrder.codAmount) 
+                  : (activePackingOrder.codAmount || 0);
+                const hasCOD = codAmount > 0 || activePackingOrder.paymentMethod?.toUpperCase().includes('COD');
+                
+                // Hide this section if it's a multi-carton DHL Nachnahme order (it has its own standalone card)
+                if (isDHL && hasCOD && cartons.length > 1) {
+                  return false;
+                }
+                
                 return isDHL;
               })() && (() => {
                 const shippingAddr = activePackingOrder.shippingAddress;
