@@ -7936,24 +7936,6 @@ export default function PickPack() {
                         )}
                       </CollapsibleContent>
                     </Collapsible>
-
-                    {/* Add Carton to GLS Button */}
-                    {availableCartonsForGLS.length > 0 && (
-                      <Button
-                        variant="outline"
-                        className="w-full border-sky-400 text-sky-700 hover:bg-sky-50 font-medium"
-                        onClick={() => {
-                          // Add next available carton
-                          const nextCarton = availableCartonsForGLS[0];
-                          setGlsCartonIds(prev => new Set([...prev, nextCarton.id]));
-                          setIsGlsSectionExpanded(true);
-                        }}
-                        data-testid="button-add-carton-to-gls"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Carton to GLS ({availableCartonsForGLS.length} available)
-                      </Button>
-                    )}
                   </div>
                 );
               })()}
@@ -9560,6 +9542,26 @@ export default function PickPack() {
                               );
                             })()}
                           </div>
+
+                          {/* Add Carton to GLS Button */}
+                          {(() => {
+                            const availableCartonsForGLS = cartons.slice(1).filter(c => !glsCartonIds.has(c.id));
+                            return availableCartonsForGLS.length > 0 && (
+                              <Button
+                                variant="outline"
+                                className="w-full border-sky-400 text-sky-700 hover:bg-sky-50 font-medium mt-3"
+                                onClick={() => {
+                                  // Add next available carton
+                                  const nextCarton = availableCartonsForGLS[0];
+                                  setGlsCartonIds(prev => new Set([...prev, nextCarton.id]));
+                                }}
+                                data-testid="button-add-carton-to-gls"
+                              >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Carton to GLS ({availableCartonsForGLS.length} available)
+                              </Button>
+                            );
+                          })()}
 
                           {/* GLS Section */}
                           {glsCartons.length > 0 && (
