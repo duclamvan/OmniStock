@@ -6267,6 +6267,7 @@ export default function PickPack() {
                   const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
                   const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
                   const isPPL = shippingMethod.includes('PPL');
+                  const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
                   
                   if (cartons.length === 0) return 'bg-gray-400/50';
                   
@@ -6283,6 +6284,26 @@ export default function PickPack() {
                     });
                     
                     // Check for duplicate tracking numbers using Set
+                    const trackingNumbers = cartons.map(c => 
+                      (trackingInputs[c.id] || c.trackingNumber || '').trim().toUpperCase()
+                    ).filter(t => t !== '');
+                    const uniqueTracking = new Set(trackingNumbers);
+                    const hasDuplicates = trackingNumbers.length !== uniqueTracking.size;
+                    
+                    return allHaveTracking && !hasDuplicates ? 'bg-green-500' : 'bg-gray-400/50';
+                  } else if (isDHL) {
+                    // DHL: Check if all cartons have tracking numbers (multi-carrier COD scenario included)
+                    const codAmount = typeof activePackingOrder.codAmount === 'string'
+                      ? parseFloat(activePackingOrder.codAmount) 
+                      : (activePackingOrder.codAmount || 0);
+                    const showCOD = codAmount > 0 || activePackingOrder.paymentMethod?.toUpperCase().includes('COD');
+                    
+                    const allHaveTracking = cartons.every(c => {
+                      const trackingValue = (trackingInputs[c.id] || c.trackingNumber || '').trim();
+                      return trackingValue !== '';
+                    });
+                    
+                    // Check for duplicate tracking numbers
                     const trackingNumbers = cartons.map(c => 
                       (trackingInputs[c.id] || c.trackingNumber || '').trim().toUpperCase()
                     ).filter(t => t !== '');
@@ -10808,14 +10829,30 @@ export default function PickPack() {
                     return;
                   }
                   
-                  // Step 5: Weights entered
-                  if (cartons.some(c => !c.weight || parseFloat(c.weight) <= 0)) {
-                    scrollToElement('checklist-cartons', 'Please enter the weight for all cartons.');
+                  // Step 5: Weights entered (with smart validation for non-company cartons)
+                  const cartonMissingWeight = cartons.find((c, index) => {
+                    // First carton always requires weight
+                    if (index === 0) {
+                      return !c.weight || parseFloat(c.weight) <= 0;
+                    }
+                    
+                    // Company cartons always require weight
+                    if (c.cartonType !== 'non-company') {
+                      return !c.weight || parseFloat(c.weight) <= 0;
+                    }
+                    
+                    // Non-company cartons (2nd+) don't require weight
+                    return false;
+                  });
+                  
+                  if (cartonMissingWeight) {
+                    const cartonNumber = cartons.indexOf(cartonMissingWeight) + 1;
+                    scrollToElement('checklist-cartons', `Please enter the weight for Carton #${cartonNumber}.`);
                     return;
                   }
                   
-                  // Step 6: Carrier-specific weight limits
-                  if (isGLSShipping && cartons.some(c => parseFloat(c.weight) > 40)) {
+                  // Step 6: Carrier-specific weight limits (only check cartons with weight)
+                  if (isGLSShipping && cartons.some(c => c.weight && parseFloat(c.weight) > 40)) {
                     scrollToElement('checklist-cartons', 'GLS shipments cannot exceed 40kg per carton. Please reduce weight or split into multiple cartons.');
                     return;
                   }
