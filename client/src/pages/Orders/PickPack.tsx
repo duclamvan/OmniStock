@@ -7035,6 +7035,14 @@ export default function PickPack() {
                     const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY';
                     const defaultWeight = isGLS ? '0.001' : null;
                     
+                    // Check if DHL Nachnahme mode - if so, add to GLS cartons (carton #2+)
+                    const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
+                    const codAmount = typeof activePackingOrder.codAmount === 'string'
+                      ? parseFloat(activePackingOrder.codAmount)
+                      : (activePackingOrder.codAmount || 0);
+                    const hasCOD = codAmount > 0 || activePackingOrder.paymentMethod?.toUpperCase().includes('COD');
+                    const isDHLNachnahme = isDHL && hasCOD;
+                    
                     const draftCarton: OrderCarton = {
                       id: tempId,
                       orderId: activePackingOrder.id,
@@ -7059,6 +7067,11 @@ export default function PickPack() {
                     };
                     
                     setCartonsDraft(prev => [...prev, draftCarton]);
+                    
+                    // If DHL Nachnahme and this is carton #2+, automatically add to GLS
+                    if (isDHLNachnahme && nextCartonNumber > 1) {
+                      setGlsCartonIds(prev => new Set([...prev, tempId]));
+                    }
                     
                     createCartonMutation.mutate({
                       orderId: activePackingOrder.id,
