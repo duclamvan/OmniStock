@@ -5906,23 +5906,39 @@ export default function PickPack() {
     });
     
     // Multi-carton validation: all cartons must have type and label
-    // For GLS: weight is REQUIRED and must be > 0 and ≤ 40kg
-    // For other carriers: weight is required and must be > 0
+    // Smart weight validation: 1st carton always requires weight, company cartons require weight, non-company 2nd+ optional
     const allCartonsValid = (() => {
       if (cartons.length === 0) return false;
       
-      // Check basic carton properties
-      const basicValidation = cartons.every(carton => {
+      // Check basic carton properties with smart validation
+      const basicValidation = cartons.every((carton, index) => {
         const hasValidType = carton.cartonType === 'company' ? !!carton.cartonId : carton.cartonType === 'non-company';
         
-        // Weight validation depends on shipping method
+        // Smart weight validation
         let hasValidWeight = true;
-        if (isGLSShipping) {
-          // GLS: weight is REQUIRED and must be > 0 and ≤ 40kg
-          hasValidWeight = carton.weight && parseFloat(carton.weight) > 0 && parseFloat(carton.weight) <= 40;
-        } else {
-          // Other carriers: weight is required and must be > 0
-          hasValidWeight = carton.weight && parseFloat(carton.weight) > 0;
+        
+        // First carton always requires weight
+        if (index === 0) {
+          if (isGLSShipping) {
+            hasValidWeight = carton.weight && parseFloat(carton.weight) > 0 && parseFloat(carton.weight) <= 40;
+          } else {
+            hasValidWeight = carton.weight && parseFloat(carton.weight) > 0;
+          }
+        }
+        // Company cartons always require weight
+        else if (carton.cartonType !== 'non-company') {
+          if (isGLSShipping) {
+            hasValidWeight = carton.weight && parseFloat(carton.weight) > 0 && parseFloat(carton.weight) <= 40;
+          } else {
+            hasValidWeight = carton.weight && parseFloat(carton.weight) > 0;
+          }
+        }
+        // Non-company cartons (2nd+) don't require weight, but if they have it, validate GLS limit
+        else {
+          if (isGLSShipping && carton.weight) {
+            hasValidWeight = parseFloat(carton.weight) <= 40;
+          }
+          // Non-company 2nd+ cartons don't require weight
         }
         
         return hasValidType && hasValidWeight;
@@ -5933,6 +5949,11 @@ export default function PickPack() {
       // Enhanced shipping label validation based on shipping method
       const isPPL = shippingMethod.includes('PPL');
       const isGLS = isGLSShipping;
+      const isDHL = isDHLShipping;
+      const codAmount = typeof activePackingOrder.codAmount === 'string'
+        ? parseFloat(activePackingOrder.codAmount) 
+        : (activePackingOrder.codAmount || 0);
+      const showCOD = codAmount > 0 || activePackingOrder.paymentMethod?.toUpperCase().includes('COD');
       
       if (isPPL) {
         // PPL: Must have created shipment and all cartons must have labels from database
@@ -5946,6 +5967,20 @@ export default function PickPack() {
         })) return false;
         
         // Check for duplicate tracking numbers (use controlled state OR database)
+        const trackingNumbers = cartons.map(c => 
+          (trackingInputs[c.id] || c.trackingNumber || '').trim().toUpperCase()
+        ).filter(t => t !== '');
+        
+        const uniqueTracking = new Set(trackingNumbers);
+        if (trackingNumbers.length !== uniqueTracking.size) return false;
+      } else if (isDHL) {
+        // DHL: All cartons must have tracking numbers (multi-carrier COD scenario included)
+        if (cartons.some(c => {
+          const trackingValue = (trackingInputs[c.id] || c.trackingNumber || '').trim();
+          return trackingValue === '';
+        })) return false;
+        
+        // Check for duplicate tracking numbers
         const trackingNumbers = cartons.map(c => 
           (trackingInputs[c.id] || c.trackingNumber || '').trim().toUpperCase()
         ).filter(t => t !== '');
