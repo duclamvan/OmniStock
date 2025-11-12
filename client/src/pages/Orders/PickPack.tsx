@@ -8787,20 +8787,45 @@ export default function PickPack() {
                     </span>
                   </div>
 
-                  {/* Add Carton to GLS Button */}
+                  {/* Available Cartons to Add */}
                   {availableCartonsForGLS.length > 0 && (
-                    <Button
-                      variant="outline"
-                      className="w-full border-sky-400 text-sky-700 hover:bg-sky-50 font-medium"
-                      onClick={() => {
-                        const nextCarton = availableCartonsForGLS[0];
-                        setGlsCartonIds(prev => new Set([...prev, nextCarton.id]));
-                      }}
-                      data-testid="button-add-carton-to-gls"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Carton to GLS ({availableCartonsForGLS.length} available)
-                    </Button>
+                    <Collapsible defaultOpen={true}>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="outline" className="w-full justify-between border-sky-400 hover:bg-sky-50 transition-colors duration-200">
+                          <span className="font-medium text-black">Available Cartons ({availableCartonsForGLS.length})</span>
+                          <ChevronDown className="h-4 w-4 text-black transition-transform duration-200 data-[state=open]:rotate-180" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="space-y-2 mt-3">
+                        {availableCartonsForGLS.map((carton) => {
+                          const cartonIndex = cartons.findIndex(c => c.id === carton.id);
+                          return (
+                            <div
+                              key={carton.id}
+                              className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded"
+                            >
+                              <Package className="h-4 w-4 text-gray-600 flex-shrink-0" />
+                              <span className="text-sm font-medium text-black flex-1">
+                                Carton #{cartonIndex + 1}: {carton.name || 'Unnamed'}
+                                {carton.weight && ` (${carton.weight} kg)`}
+                              </span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 px-2 text-xs text-sky-700 border-sky-400 hover:bg-sky-50"
+                                onClick={() => {
+                                  setGlsCartonIds(prev => new Set([...prev, carton.id]));
+                                }}
+                                data-testid={`button-add-carton-${carton.id}-to-gls`}
+                              >
+                                <Plus className="h-3.5 w-3.5 mr-1" />
+                                Add to GLS
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </CollapsibleContent>
+                    </Collapsible>
                   )}
 
                   {glsCartons.length === 0 ? (
