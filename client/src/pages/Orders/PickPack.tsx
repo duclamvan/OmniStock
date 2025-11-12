@@ -9220,16 +9220,30 @@ export default function PickPack() {
             </CardHeader>
             <CardContent className="p-4 space-y-3">
               {/* PPL-Specific Actions */}
-              {activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') && (
+              {activePackingOrder.shippingMethod?.toUpperCase().includes('PPL') && (() => {
+                // Check if shipping address is provided
+                const shippingAddr = activePackingOrder.shippingAddress;
+                const hasShippingAddress = shippingAddr && 
+                  (typeof shippingAddr === 'object' && shippingAddr !== null 
+                    ? (shippingAddr.street || shippingAddr.city || shippingAddr.zipCode)
+                    : shippingAddr.trim() !== '');
+                
+                const isButtonDisabled = createPPLLabelsMutation.isPending || cartons.length === 0 || !hasShippingAddress;
+                
+                return (
                 <>
                   {/* Generate/Cancel PPL Labels Button */}
                   {activePackingOrder.pplStatus !== 'created' ? (
                     <>
                       <Button
                         variant="default"
-                        className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold"
+                        className={`w-full font-semibold transition-all ${
+                          !hasShippingAddress 
+                            ? 'bg-yellow-500/50 hover:bg-yellow-500/50 text-gray-700 opacity-60 cursor-not-allowed' 
+                            : 'bg-orange-600 hover:bg-orange-700 text-white'
+                        }`}
                         onClick={() => createPPLLabelsMutation.mutate(activePackingOrder.id)}
-                        disabled={createPPLLabelsMutation.isPending || cartons.length === 0}
+                        disabled={isButtonDisabled}
                         data-testid="button-generate-ppl-labels"
                       >
                         {createPPLLabelsMutation.isPending ? (
@@ -10164,7 +10178,8 @@ export default function PickPack() {
                     </Button>
                   )}
                 </>
-              )}
+                );
+              })()}
 
               {/* GLS Carton Cards with Tracking */}
               {(() => {
