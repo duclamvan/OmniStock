@@ -1492,6 +1492,13 @@ export default function PickPack() {
   });
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [packingRecommendation, setPackingRecommendation] = useState<PackingRecommendation | null>(null);
+  
+  // State for tracking expanded/collapsed shipping details sections (default all expanded)
+  const [shippingDetailsExpanded, setShippingDetailsExpanded] = useState({
+    dhlNachnahme: true,  // DHL Nachnahme section
+    gls: true,           // GLS section
+    unified: true        // Unified shipping labels section
+  });
   const [selectedCartons, setSelectedCartons] = useState<Array<{
     id: string;
     cartonId: string;
@@ -8350,12 +8357,22 @@ export default function PickPack() {
                     Create Label on DHL Website
                   </Button>
 
-                  {/* Shipping Details - Always visible */}
+                  {/* Shipping Details - Collapsible */}
                   <div className="space-y-4">
-                    <div className="flex items-center gap-2 px-2 py-1 bg-yellow-100 border-l-4 border-yellow-500 rounded">
+                    <button
+                      onClick={() => setShippingDetailsExpanded(prev => ({ ...prev, dhlNachnahme: !prev.dhlNachnahme }))}
+                      className="w-full flex items-center gap-2 px-2 py-1 bg-yellow-100 border-l-4 border-yellow-500 rounded hover:bg-yellow-200 transition-colors"
+                    >
                       <MapPin className="h-4 w-4 text-yellow-700" />
                       <span className="text-sm font-bold text-yellow-900">Shipping Details</span>
-                    </div>
+                      {shippingDetailsExpanded.dhlNachnahme ? (
+                        <ChevronUp className="h-4 w-4 text-yellow-700 ml-auto" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-yellow-700 ml-auto" />
+                      )}
+                    </button>
+                    {shippingDetailsExpanded.dhlNachnahme && (
+                    <div className="space-y-4">
                   {/* SECTION 1: Package & Payment Details */}
                   <div className="space-y-3 p-3 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
                     <div className="flex items-center gap-2">
@@ -8511,6 +8528,8 @@ export default function PickPack() {
                         <CompactCopyField label="E-Mail des Absenders*" value={senderData.email || ''} />
                       </div>
                     </div>
+                  )}
+                  </div>
                   )}
                   </div>
 
@@ -8799,12 +8818,21 @@ export default function PickPack() {
                     cartonCount={glsCartons.length}
                   />
 
-                  {/* Shipping Details - Always visible */}
+                  {/* Shipping Details - Collapsible */}
                   <div className="space-y-3">
-                    <div className="flex items-center gap-2 px-2 py-1 bg-sky-100 border-l-4 border-sky-500 rounded">
+                    <button
+                      onClick={() => setShippingDetailsExpanded(prev => ({ ...prev, gls: !prev.gls }))}
+                      className="w-full flex items-center gap-2 px-2 py-1 bg-sky-100 border-l-4 border-sky-500 rounded hover:bg-sky-200 transition-colors"
+                    >
                       <MapPin className="h-4 w-4 text-sky-700" />
                       <span className="text-sm font-bold text-sky-900">Shipping Details</span>
-                    </div>
+                      {shippingDetailsExpanded.gls ? (
+                        <ChevronUp className="h-4 w-4 text-sky-700 ml-auto" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-sky-700 ml-auto" />
+                      )}
+                    </button>
+                    {shippingDetailsExpanded.gls && (
                     <div className="space-y-0.5">
                       <CompactCopyFieldGLS label="Country:" value={germanCountry} flag={getCountryFlag(germanCountry)} />
                       <CompactCopyFieldGLS label="Paket size:" value="S" />
@@ -8817,6 +8845,7 @@ export default function PickPack() {
                       <CompactCopyFieldGLS label="Full Address:" value={fullAddress} />
                       <CompactCopyFieldGLS label="E-mail:" value={recipientData.email || ''} />
                     </div>
+                    )}
                   </div>
 
                   {/* GLS Shipping Labels */}
