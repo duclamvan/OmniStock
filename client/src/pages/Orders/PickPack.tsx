@@ -6213,7 +6213,7 @@ export default function PickPack() {
                   <span className="text-sm lg:text-base text-white font-medium truncate">{activePackingOrder.customerName}</span>
                   {(() => {
                     const shippingAddr = activePackingOrder.shippingAddress;
-                    const country = typeof shippingAddr === 'object' ? shippingAddr.country : '';
+                    const country = typeof shippingAddr === 'object' && shippingAddr !== null ? shippingAddr.country : '';
                     return country && (
                       <span className="text-sm lg:text-base text-white font-medium">• {country}</span>
                     );
