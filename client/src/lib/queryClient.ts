@@ -50,7 +50,26 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    let url = queryKey[0] as string;
+    
+    // Build URL from remaining segments
+    for (let i = 1; i < queryKey.length; i++) {
+      const segment = queryKey[i];
+      
+      // If segment is an object, treat it as query parameters
+      if (segment && typeof segment === 'object' && !Array.isArray(segment)) {
+        const params = new URLSearchParams(segment as Record<string, string>);
+        const queryString = params.toString();
+        if (queryString) {
+          url = `${url}?${queryString}`;
+        }
+      } else if (segment !== null && segment !== undefined) {
+        // Otherwise, append as path segment
+        url = `${url}/${segment}`;
+      }
+    }
+    
+    const res = await fetch(url, {
       credentials: "include",
     });
 

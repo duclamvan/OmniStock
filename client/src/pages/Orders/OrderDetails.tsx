@@ -74,6 +74,7 @@ import {
   Upload
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
+import { CustomerBadges } from '@/components/CustomerBadges';
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { useToast } from "@/hooks/use-toast";
@@ -134,7 +135,7 @@ export default function OrderDetails() {
     },
     onSuccess: () => {
       // Invalidate all order-related caches for real-time updates
-      queryClient.invalidateQueries({ queryKey: [`/api/orders/${id}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders', id] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] }); // Real-time Pick & Pack sync
       toast({
@@ -157,7 +158,7 @@ export default function OrderDetails() {
     },
     onSuccess: () => {
       // Invalidate all order-related caches for real-time updates
-      queryClient.invalidateQueries({ queryKey: [`/api/orders/${id}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders', id] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] }); // Real-time Pick & Pack sync
       toast({
@@ -180,7 +181,7 @@ export default function OrderDetails() {
     },
     onSuccess: () => {
       // Invalidate all order-related caches for real-time updates
-      queryClient.invalidateQueries({ queryKey: [`/api/orders/${id}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders', id] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] }); // Real-time Pick & Pack sync
       toast({
@@ -199,7 +200,7 @@ export default function OrderDetails() {
 
   // Fetch order data with optimized caching
   const { data: order, isLoading } = useQuery<any>({
-    queryKey: [`/api/orders/${id}`],
+    queryKey: ['/api/orders', id, { includeBadges: true }],
     enabled: !!id && !['add', 'to-fulfill', 'shipped', 'pay-later', 'pre-orders', 'pick-pack'].includes(id || ''),
     refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
     refetchOnWindowFocus: true, // Refetch when user returns to the tab
@@ -717,6 +718,16 @@ export default function OrderDetails() {
                         Pay Later
                       </Badge>
                     )}
+                  </div>
+                )}
+
+                {/* Customer Badges */}
+                {order.customer?.badges && (
+                  <div className="mb-2">
+                    <CustomerBadges 
+                      badges={order.customer.badges} 
+                      currency={order.currency || 'EUR'} 
+                    />
                   </div>
                 )}
                 
@@ -1910,255 +1921,12 @@ export default function OrderDetails() {
                     </Button>
                   </div>
                   
-                  {/* Customer Badges with Popovers */}
-                  {showBadges && (
-                  <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    {/* VIP Badge */}
-                    {order.customer.type === 'vip' && (
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Badge className="bg-purple-50 text-purple-700 border-purple-300 text-xs cursor-pointer">
-                              <Crown className="h-3 w-3 mr-1" />
-                              VIP
-                            </Badge>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-2" side="top">
-                            <p className="text-xs">Manually marked as VIP customer</p>
-                          </PopoverContent>
-                        </Popover>
-                      )}
-
-                      {/* Spending Tier Badges */}
-                      {(() => {
-                        const lifetimeSpending = parseFloat(order.customer?.lifetimeSpending || '0');
-                        
-                        if (lifetimeSpending >= 100000) {
-                          return (
-                            <Popover key="diamond">
-                              <PopoverTrigger asChild>
-                                <Badge className="bg-cyan-50 text-cyan-700 border-cyan-300 text-xs cursor-pointer">
-                                  <TrendingUp className="h-3 w-3 mr-1" />
-                                  Diamond
-                                </Badge>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-2" side="top">
-                                <p className="text-xs">Lifetime spending ≥ {formatCurrency(100000, order.currency || 'EUR')}</p>
-                              </PopoverContent>
-                            </Popover>
-                          );
-                        } else if (lifetimeSpending >= 50000) {
-                          return (
-                            <Popover key="platinum">
-                              <PopoverTrigger asChild>
-                                <Badge className="bg-slate-50 text-slate-700 border-slate-300 text-xs cursor-pointer">
-                                  <TrendingUp className="h-3 w-3 mr-1" />
-                                  Platinum
-                                </Badge>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-2" side="top">
-                                <p className="text-xs">Lifetime spending ≥ {formatCurrency(50000, order.currency || 'EUR')}</p>
-                              </PopoverContent>
-                            </Popover>
-                          );
-                        } else if (lifetimeSpending >= 25000) {
-                          return (
-                            <Popover key="gold">
-                              <PopoverTrigger asChild>
-                                <Badge className="bg-amber-50 text-amber-700 border-amber-300 text-xs cursor-pointer">
-                                  <TrendingUp className="h-3 w-3 mr-1" />
-                                  Gold
-                                </Badge>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-2" side="top">
-                                <p className="text-xs">Lifetime spending ≥ {formatCurrency(25000, order.currency || 'EUR')}</p>
-                              </PopoverContent>
-                            </Popover>
-                          );
-                        }
-                        return null;
-                      })()}
-
-                      {/* TOP Rankings */}
-                      {(() => {
-                        const badges = [];
-                        const topRank = order.customer?.topRank;
-                        const topRankCountry = order.customer?.topRankCountry;
-                        
-                        // General TOP badge
-                        if (topRank && topRank <= 100) {
-                          const rankText = topRank <= 10 ? 'TOP 10' : topRank <= 50 ? 'TOP 50' : 'TOP 100';
-                          const bgColor = topRank <= 10 ? 'bg-yellow-50' : topRank <= 50 ? 'bg-orange-50' : 'bg-red-50';
-                          const textColor = topRank <= 10 ? 'text-yellow-700' : topRank <= 50 ? 'text-orange-700' : 'text-red-700';
-                          const borderColor = topRank <= 10 ? 'border-yellow-300' : topRank <= 50 ? 'border-orange-300' : 'border-red-300';
-                          
-                          badges.push(
-                            <Popover key="toprank">
-                              <PopoverTrigger asChild>
-                                <Badge className={`${bgColor} ${textColor} ${borderColor} text-xs cursor-pointer`}>
-                                  <Trophy className="h-3 w-3 mr-1" />
-                                  {rankText}
-                                </Badge>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-2" side="top">
-                                <p className="text-xs">Top {topRank} customer by revenue</p>
-                              </PopoverContent>
-                            </Popover>
-                          );
-                        }
-                        
-                        // Country-specific TOP badge
-                        if (topRankCountry && order.customer?.country) {
-                          const countryRank = topRankCountry <= 10 ? 'TOP 10' : topRankCountry <= 50 ? 'TOP 50' : 'TOP 100';
-                          badges.push(
-                            <Popover key="topcountry">
-                              <PopoverTrigger asChild>
-                                <Badge className="bg-blue-50 text-blue-700 border-blue-300 text-xs cursor-pointer">
-                                  <Trophy className="h-3 w-3 mr-1" />
-                                  {countryRank} in {order.customer.country}
-                                </Badge>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-2" side="top">
-                                <p className="text-xs">Top {topRankCountry} customer by revenue in {order.customer.country}</p>
-                              </PopoverContent>
-                            </Popover>
-                          );
-                        }
-                        
-                        return badges;
-                      })()}
-
-                      {/* Pay Later Badge */}
-                      {order.paymentStatus === 'pay_later' && (
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Badge className="bg-purple-50 text-purple-700 border-purple-300 text-xs cursor-pointer">
-                              <Clock className="h-3 w-3 mr-1" />
-                              Pay Later
-                            </Badge>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-2" side="top">
-                            <p className="text-xs">Payment scheduled for later</p>
-                          </PopoverContent>
-                        </Popover>
-                      )}
-
-                      {/* Customer Behavior Badges */}
-                      {(() => {
-                        const totalOrders = order.customer?.totalOrders || 0;
-                        const firstOrderDate = order.customer?.firstOrderDate ? new Date(order.customer.firstOrderDate) : null;
-                        const lastOrderDate = order.customer?.lastOrderDate ? new Date(order.customer.lastOrderDate) : null;
-                        const avgOrderValue = parseFloat(order.customer?.averageOrderValue || '0');
-                        const now = new Date();
-                        const daysSinceFirstOrder = firstOrderDate ? Math.floor((now.getTime() - firstOrderDate.getTime()) / (1000 * 60 * 60 * 24)) : null;
-                        const daysSinceLastOrder = lastOrderDate ? Math.floor((now.getTime() - lastOrderDate.getTime()) / (1000 * 60 * 60 * 24)) : null;
-                        
-                        const badges = [];
-                        
-                        // New Customer (first order within 30 days)
-                        if (daysSinceFirstOrder !== null && daysSinceFirstOrder <= 30) {
-                          badges.push(
-                            <Popover key="new">
-                              <PopoverTrigger asChild>
-                                <Badge className="bg-green-50 text-green-700 border-green-300 text-xs cursor-pointer">
-                                  <Sparkles className="h-3 w-3 mr-1" />
-                                  New Customer
-                                </Badge>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-2" side="top">
-                                <p className="text-xs">First order placed within the last 30 days</p>
-                              </PopoverContent>
-                            </Popover>
-                          );
-                        }
-                        
-                        // First Timer (only 1 order)
-                        if (totalOrders === 1) {
-                          badges.push(
-                            <Popover key="first">
-                              <PopoverTrigger asChild>
-                                <Badge className="bg-cyan-50 text-cyan-700 border-cyan-300 text-xs cursor-pointer">
-                                  <Sparkles className="h-3 w-3 mr-1" />
-                                  First Timer
-                                </Badge>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-2" side="top">
-                                <p className="text-xs">Has placed only 1 order so far</p>
-                              </PopoverContent>
-                            </Popover>
-                          );
-                        }
-                        
-                        // Super Loyal (10+ orders)
-                        if (totalOrders >= 10) {
-                          badges.push(
-                            <Popover key="superloyal">
-                              <PopoverTrigger asChild>
-                                <Badge className="bg-rose-50 text-rose-700 border-rose-300 text-xs cursor-pointer">
-                                  <Heart className="h-3 w-3 mr-1" />
-                                  Super Loyal
-                                </Badge>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-2" side="top">
-                                <p className="text-xs">Has placed 10+ orders ({totalOrders} orders total)</p>
-                              </PopoverContent>
-                            </Popover>
-                          );
-                        } 
-                        // Loyal Customer (2-9 orders)
-                        else if (totalOrders > 1) {
-                          badges.push(
-                            <Popover key="loyal">
-                              <PopoverTrigger asChild>
-                                <Badge className="bg-indigo-50 text-indigo-700 border-indigo-300 text-xs cursor-pointer">
-                                  <RefreshCw className="h-3 w-3 mr-1" />
-                                  Loyal Customer
-                                </Badge>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-2" side="top">
-                                <p className="text-xs">Has placed {totalOrders} orders - coming back for more!</p>
-                              </PopoverContent>
-                            </Popover>
-                          );
-                        }
-                        
-                        // At Risk (no order in 90+ days, but has ordered before)
-                        if (daysSinceLastOrder !== null && daysSinceLastOrder > 90 && totalOrders > 0) {
-                          badges.push(
-                            <Popover key="risk">
-                              <PopoverTrigger asChild>
-                                <Badge className="bg-orange-50 text-orange-700 border-orange-300 text-xs cursor-pointer">
-                                  <AlertTriangle className="h-3 w-3 mr-1" />
-                                  At Risk
-                                </Badge>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-2" side="top">
-                                <p className="text-xs">No orders in {daysSinceLastOrder} days - may need re-engagement</p>
-                              </PopoverContent>
-                            </Popover>
-                          );
-                        }
-                        
-                        // High Value (avg order > 500)
-                        if (avgOrderValue > 500) {
-                          badges.push(
-                            <Popover key="highvalue">
-                              <PopoverTrigger asChild>
-                                <Badge className="bg-emerald-50 text-emerald-700 border-emerald-300 text-xs cursor-pointer">
-                                  <TrendingUp className="h-3 w-3 mr-1" />
-                                  High Value
-                                </Badge>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-2" side="top">
-                                <p className="text-xs">Average order value: {formatCurrency(avgOrderValue, order.currency || 'EUR')}</p>
-                              </PopoverContent>
-                            </Popover>
-                          );
-                        }
-                        
-                        return badges;
-                      })()}
-                  </div>
-                  )}
+                  {/* Customer Badges - Database Persisted */}
+                  {showBadges && order.customer?.badges ? (
+                    <div className="mt-2">
+                      <CustomerBadges badges={order.customer.badges} currency={order.currency || 'EUR'} />
+                    </div>
+                  ) : null}
                 </div>
                 
                 <div className="space-y-2 text-sm">
@@ -2805,7 +2573,7 @@ export default function OrderDetails() {
                   setPriceValidTo("");
 
                   // Refresh the page to show updated data
-                  queryClient.invalidateQueries({ queryKey: [`/api/orders/${id}`] });
+                  queryClient.invalidateQueries({ queryKey: ['/api/orders', id] });
                 } catch (error) {
                   console.error('Error creating custom price:', error);
                   toast({

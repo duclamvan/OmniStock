@@ -3703,6 +3703,7 @@ Important:
   app.get('/api/customers', async (req, res) => {
     try {
       const search = req.query.search as string;
+      const includeBadges = req.query.includeBadges === 'true';
       let customers;
       
       if (search) {
@@ -3735,6 +3736,17 @@ Important:
           totalOrders: customerOrders.length
         };
       });
+      
+      // If includeBadges=true, fetch badges for each customer
+      if (includeBadges) {
+        const customersWithBadges = await Promise.all(
+          customersWithPayLaterBadge.map(async (customer) => {
+            const badges = await storage.getCustomerBadges(customer.id);
+            return { ...customer, badges };
+          })
+        );
+        return res.json(customersWithBadges);
+      }
       
       res.json(customersWithPayLaterBadge);
     } catch (error) {
@@ -3829,12 +3841,18 @@ Important:
       // Add Pay Later badge if customer has >= 50% Pay Later orders and at least 2 orders
       const hasPayLaterBadge = customerOrders.length >= 2 && payLaterPercentage >= 50;
       
-      const customerWithBadge = {
+      const customerWithBadge: any = {
         ...customer,
         hasPayLaterBadge,
         payLaterPercentage: Math.round(payLaterPercentage),
         totalOrders: customerOrders.length
       };
+      
+      // Include badges if requested via query parameter
+      if (req.query.includeBadges === 'true') {
+        const badges = await storage.getCustomerBadges(req.params.id);
+        customerWithBadge.badges = badges;
+      }
       
       res.json(customerWithBadge);
     } catch (error) {
@@ -3896,6 +3914,27 @@ Important:
       }
       
       res.status(500).json({ message: "Failed to delete customer" });
+    }
+  });
+
+  // Customer Badge endpoints
+  app.get('/api/customers/:id/badges', async (req, res) => {
+    try {
+      const badges = await storage.getCustomerBadges(req.params.id);
+      res.json(badges);
+    } catch (error) {
+      console.error("Error fetching customer badges:", error);
+      res.status(500).json({ error: 'Failed to fetch badges' });
+    }
+  });
+
+  app.post('/api/customers/:id/badges/refresh', async (req, res) => {
+    try {
+      await storage.refreshCustomerBadges(req.params.id);
+      res.json({ success: true, message: 'Badges refreshed' });
+    } catch (error) {
+      console.error("Error refreshing customer badges:", error);
+      res.status(500).json({ error: 'Failed to refresh badges' });
     }
   });
 
@@ -5345,6 +5384,7 @@ Important:
         'Surrogate-Control': 'no-store'
       });
       
+      const includeBadges = req.query.includeBadges === 'true';
       const order = await storage.getOrderById(req.params.id);
       if (!order) {
         return res.status(404).json({ message: "Order not found" });
@@ -5407,10 +5447,27 @@ Important:
         order.items = itemsWithEnhancements;
       }
       
+      // If includeBadges=true and order has a customer, fetch customer badges
+      if (includeBadges && order.customer && order.customer.id) {
+        const badges = await storage.getCustomerBadges(order.customer.id);
+        order.customer = { ...order.customer, badges };
+      }
+      
       res.json(order);
     } catch (error) {
       console.error("Error fetching order:", error);
       res.status(500).json({ message: "Failed to fetch order" });
+    }
+  });
+
+  // Order Badge endpoints
+  app.post('/api/orders/:id/badges/refresh', async (req, res) => {
+    try {
+      await storage.refreshOrderBadges(req.params.id);
+      res.json({ success: true, message: 'Badges refreshed' });
+    } catch (error) {
+      console.error("Error refreshing order badges:", error);
+      res.status(500).json({ error: 'Failed to refresh badges' });
     }
   });
 

@@ -1311,6 +1311,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                             <ChevronDown className={`h-4 w-4 transition-transform ${showBadges ? '' : 'rotate-180'}`} />
                           </Button>
                         </div>
+                        {/* TODO: Migrate to persisted badges from database instead of calculating on-the-fly */}
+                        {/* Use CustomerBadges component with order.customer.badges from ?includeBadges=true API param */}
                         {showBadges && (
                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                             {/* VIP Badge */}

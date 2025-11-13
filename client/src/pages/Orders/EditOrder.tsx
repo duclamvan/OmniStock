@@ -24,6 +24,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import OrderDocumentSelector from "@/components/OrderDocumentSelector";
 import { ShippingAddressModal } from "@/components/ShippingAddressModal";
+import { CustomerBadges } from '@/components/CustomerBadges';
 import { 
   Plus, 
   Search, 
@@ -565,10 +566,10 @@ export default function EditOrder() {
 
   // Fetch existing order data - force fresh fetch on every mount
   const { data: existingOrder, isLoading: isLoadingOrder, dataUpdatedAt } = useQuery({
-    queryKey: ['EDIT_ORDER_ISOLATED', id], // Stable key
+    queryKey: ['/api/orders', id, { includeBadges: true }], // Structured key for proper cache matching
     queryFn: async () => {
       console.log('🔵 EditOrder: Loading fresh data from database');
-      const response = await fetch(`/api/orders/${id}`, {
+      const response = await fetch(`/api/orders/${id}?includeBadges=true`, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -2635,6 +2636,16 @@ export default function EditOrder() {
                           </div>
                         )}
                       </div>
+
+                      {/* Customer Badges */}
+                      {!selectedCustomer.id?.startsWith('temp-') && selectedCustomer.badges && (
+                        <div className="mt-2">
+                          <CustomerBadges 
+                            badges={selectedCustomer.badges} 
+                            currency={form.watch('currency') || 'EUR'} 
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>

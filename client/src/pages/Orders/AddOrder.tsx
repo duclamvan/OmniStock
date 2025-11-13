@@ -27,6 +27,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import OrderDocumentSelector from "@/components/OrderDocumentSelector";
 import { ShippingAddressModal } from "@/components/ShippingAddressModal";
+import { CustomerBadges } from '@/components/CustomerBadges';
 import { 
   Plus, 
   Search, 
@@ -637,7 +638,7 @@ export default function AddOrder() {
 
   // Fetch all customers for real-time filtering
   const { data: allCustomers } = useQuery({
-    queryKey: ['/api/customers'],
+    queryKey: ['/api/customers', { includeBadges: true }],
     staleTime: 5 * 60 * 1000, // 5 minutes - customers don't change frequently
   });
 
@@ -2382,6 +2383,16 @@ export default function AddOrder() {
                               <span className="text-xs text-slate-500">total</span>
                             </div>
                           )}
+                        </div>
+                      )}
+
+                      {/* Customer Badges */}
+                      {!selectedCustomer.id?.startsWith('temp-') && selectedCustomer.badges && (
+                        <div className="mt-2">
+                          <CustomerBadges 
+                            badges={selectedCustomer.badges} 
+                            currency={form.watch('currency') || 'EUR'} 
+                          />
                         </div>
                       )}
                     </div>
