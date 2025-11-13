@@ -2731,21 +2731,18 @@ export default function EditOrder() {
                                   <div className="text-slate-700 font-medium">
                                     {address.country}
                                   </div>
-                                  {/* Contact Info */}
-                                  {(address.tel || address.email) && (
-                                    <div className="pt-2 space-y-1 border-t border-slate-200 mt-2">
-                                      {address.tel && (
-                                        <div className="flex items-center gap-2 text-slate-600">
-                                          <Phone className="h-3.5 w-3.5 text-slate-400" />
-                                          <span className="text-xs">{address.tel}</span>
-                                        </div>
-                                      )}
-                                      {address.email && (
-                                        <div className="flex items-center gap-2 text-slate-600">
-                                          <Mail className="h-3.5 w-3.5 text-slate-400" />
-                                          <span className="text-xs">{address.email}</span>
-                                        </div>
-                                      )}
+                                  {/* Phone */}
+                                  {address.tel && (
+                                    <div className="flex items-center gap-1.5 mt-1">
+                                      <Phone className="h-3 w-3 text-slate-400" />
+                                      <span>{address.tel}</span>
+                                    </div>
+                                  )}
+                                  {/* Email */}
+                                  {address.email && (
+                                    <div className="flex items-center gap-1.5">
+                                      <Mail className="h-3 w-3 text-slate-400" />
+                                      <span>{address.email}</span>
                                     </div>
                                   )}
                                 </div>

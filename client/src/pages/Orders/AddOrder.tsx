@@ -2458,6 +2458,18 @@ export default function AddOrder() {
                                     <div className="mt-1">{address.street}</div>
                                     <div>{address.city}, {address.zipCode}</div>
                                     <div>{address.country}</div>
+                                    {address.tel && (
+                                      <div className="flex items-center gap-1.5 mt-1">
+                                        <Phone className="h-3 w-3 text-slate-400" />
+                                        <span>{address.tel}</span>
+                                      </div>
+                                    )}
+                                    {address.email && (
+                                      <div className="flex items-center gap-1.5">
+                                        <Mail className="h-3 w-3 text-slate-400" />
+                                        <span>{address.email}</span>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -2499,36 +2511,6 @@ export default function AddOrder() {
                                   </Button>
                                 )}
                               </div>
-                            </div>
-
-                            {/* Contact Details */}
-                            <div 
-                              className="px-4 pb-4 pt-0 space-y-2 cursor-pointer select-none"
-                              onClick={() => {
-                                if (selectedShippingAddress?.id === address.id) {
-                                  setSelectedShippingAddress(null);
-                                } else {
-                                  setSelectedShippingAddress(address);
-                                }
-                              }}
-                            >
-
-                              {(address.tel || address.email) && (
-                                <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
-                                  {address.tel && (
-                                    <div className="flex items-center gap-2">
-                                      <Phone className="h-3.5 w-3.5 text-slate-400" />
-                                      <span className="text-sm text-slate-600">{address.tel}</span>
-                                    </div>
-                                  )}
-                                  {address.email && (
-                                    <div className="flex items-center gap-2">
-                                      <Mail className="h-3.5 w-3.5 text-slate-400" />
-                                      <span className="text-sm text-slate-600">{address.email}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
                             </div>
                           </div>
                       ))}
