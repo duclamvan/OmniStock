@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, decimal, boolean, jsonb, varchar, serial, date, json } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, timestamp, decimal, boolean, jsonb, varchar, serial, date, json, unique } from 'drizzle-orm/pg-core';
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { relations, sql } from 'drizzle-orm';
@@ -321,6 +321,19 @@ export const customerBillingAddresses = pgTable('customer_billing_addresses', {
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
+
+export const customerBadges = pgTable('customer_badges', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar('customer_id').notNull().references(() => customers.id, { onDelete: 'cascade' }),
+  orderId: varchar('order_id').references(() => orders.id, { onDelete: 'cascade' }),
+  badgeType: varchar('badge_type').notNull(),
+  scope: varchar('scope').notNull().default('customer'),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => ({
+  uniqueBadge: unique().on(table.customerId, table.badgeType, table.scope, table.orderId),
+}));
 
 export const suppliers = pgTable('suppliers', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
@@ -1080,7 +1093,19 @@ export const landedCostsRelations = relations(landedCosts, ({ one }) => ({
 
 // Core business relations
 export const customersRelations = relations(customers, ({ many }) => ({
-  orders: many(orders)
+  orders: many(orders),
+  badges: many(customerBadges)
+}));
+
+export const customerBadgesRelations = relations(customerBadges, ({ one }) => ({
+  customer: one(customers, {
+    fields: [customerBadges.customerId],
+    references: [customers.id]
+  }),
+  order: one(orders, {
+    fields: [customerBadges.orderId],
+    references: [orders.id]
+  })
 }));
 
 export const suppliersRelations = relations(suppliers, ({ many }) => ({
@@ -1224,6 +1249,7 @@ export const insertLandedCostSchema = createInsertSchema(landedCosts).omit({ id:
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCustomerShippingAddressSchema = createInsertSchema(customerShippingAddresses).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCustomerBillingAddressSchema = createInsertSchema(customerBillingAddresses).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCustomerBadgeSchema = createInsertSchema(customerBadges).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
 export const insertWarehouseSchema = createInsertSchema(warehouses).omit({ createdAt: true });
 export const insertWarehouseFileSchema = createInsertSchema(warehouseFiles).omit({ id: true, createdAt: true });
@@ -1316,6 +1342,8 @@ export type CustomerShippingAddress = typeof customerShippingAddresses.$inferSel
 export type InsertCustomerShippingAddress = z.infer<typeof insertCustomerShippingAddressSchema>;
 export type CustomerBillingAddress = typeof customerBillingAddresses.$inferSelect;
 export type InsertCustomerBillingAddress = z.infer<typeof insertCustomerBillingAddressSchema>;
+export type CustomerBadge = typeof customerBadges.$inferSelect;
+export type InsertCustomerBadge = z.infer<typeof insertCustomerBadgeSchema>;
 export type Supplier = typeof suppliers.$inferSelect;
 export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
 export type Warehouse = typeof warehouses.$inferSelect;
