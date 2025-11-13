@@ -1522,21 +1522,8 @@ router.post("/shipments/search-by-tracking", async (req, res) => {
           matchedTrackingNumbers.add(shipment.endTrackingNumber);
         }
         
-        // Check trackingNumbers JSONB field (array of tracking numbers)
-        if (shipment.trackingNumbers) {
-          const shipmentTrackingNumbers = Array.isArray(shipment.trackingNumbers) 
-            ? shipment.trackingNumbers 
-            : typeof shipment.trackingNumbers === 'string' 
-              ? JSON.parse(shipment.trackingNumbers)
-              : [];
-          
-          for (const tn of shipmentTrackingNumbers) {
-            if (typeof tn === 'string' && trackingSet.has(tn.toLowerCase())) {
-              matchCount++;
-              matchedTrackingNumbers.add(tn);
-            }
-          }
-        }
+        // Note: shipments table doesn't have a trackingNumbers JSONB field
+        // Main tracking is in trackingNumber field, end tracking in endTrackingNumbers array
         
         // Get related items if consolidation exists
         let relatedItemMatches = 0;
@@ -1547,10 +1534,10 @@ router.post("/shipments/search-by-tracking", async (req, res) => {
               trackingNumber: purchaseItems.trackingNumber
             })
             .from(consolidationItems)
-            .innerJoin(purchaseItems, eq(consolidationItems.purchaseItemId, purchaseItems.id))
+            .innerJoin(purchaseItems, eq(consolidationItems.itemId, purchaseItems.id))
             .where(and(
               eq(consolidationItems.consolidationId, shipment.consolidationId),
-              isNull(consolidationItems.customItemId)
+              eq(consolidationItems.itemType, 'purchase')
             ));
           
           // Get custom items through consolidation
@@ -1559,10 +1546,10 @@ router.post("/shipments/search-by-tracking", async (req, res) => {
               trackingNumber: customItems.trackingNumber
             })
             .from(consolidationItems)
-            .innerJoin(customItems, eq(consolidationItems.customItemId, customItems.id))
+            .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
             .where(and(
               eq(consolidationItems.consolidationId, shipment.consolidationId),
-              isNull(consolidationItems.purchaseItemId)
+              eq(consolidationItems.itemType, 'custom')
             ));
           
           // Check matches in related items
@@ -1583,7 +1570,7 @@ router.post("/shipments/search-by-tracking", async (req, res) => {
             id: shipment.id,
             status: shipment.status,
             carrier: shipment.carrier,
-            trackingNumbers: shipment.trackingNumbers || [],
+            trackingNumbers: shipment.endTrackingNumbers || [],
             mainTrackingNumber: shipment.trackingNumber,
             endTrackingNumber: shipment.endTrackingNumber, // Legacy field for backward compatibility
             endTrackingNumbers: shipment.endTrackingNumbers || [],
@@ -1675,7 +1662,7 @@ const generateCategoryWord = async (itemsList: any[]): Promise<string> => {
     // Convert to PascalCase single word
     return itemName
       .split(/[\s\-_]+/)
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join('')
       .replace(/[^a-zA-Z]/g, '')
       .substring(0, 20);
@@ -3320,8 +3307,8 @@ router.get("/receipts/storage", async (req, res) => {
       .filter(item => item.productId)
       .map(item => item.productId as string);
     
-    let productsInfo = [];
-    let productLocationsInfo = [];
+    let productsInfo: any[] = [];
+    let productLocationsInfo: any[] = [];
     
     if (productIds.length > 0) {
       // Get product details
@@ -3359,8 +3346,8 @@ router.get("/receipts/storage", async (req, res) => {
       .filter(item => item.itemType === 'custom')
       .map(item => item.itemId);
     
-    let originalPurchaseItems = [];
-    let originalCustomItems = [];
+    let originalPurchaseItems: any[] = [];
+    let originalCustomItems: any[] = [];
     
     if (purchaseItemIds.length > 0) {
       originalPurchaseItems = await db
@@ -4094,7 +4081,7 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
             // Record cost history
             await tx.insert(productCostHistory).values({
               productId: updatedProduct.id,
-              purchaseItemId: item.itemType === 'purchase' ? item.itemId : null,
+              customItemId: item.itemType === 'custom' ? item.itemId : null,
               landingCostUnitBase: (landingCostPerUnit > 0 ? landingCostPerUnit : avgCostUsd).toFixed(4),
               method: 'weighted_average',
               computedAt: new Date()
@@ -4192,7 +4179,7 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
             // Record initial cost history
             await tx.insert(productCostHistory).values({
               productId: createdProduct.id,
-              purchaseItemId: item.itemType === 'purchase' ? item.itemId : null,
+              customItemId: item.itemType === 'custom' ? item.itemId : null,
               landingCostUnitBase: (landingCostPerUnit > 0 ? landingCostPerUnit : parseFloat(newProduct.importCostUsd)).toFixed(4),
               method: 'initial_import',
               computedAt: new Date()
@@ -5035,7 +5022,7 @@ router.post("/receipts/auto-save", async (req, res) => {
       .from(receipts)
       .where(eq(receipts.shipmentId, shipmentId));
 
-    let receipt;
+    let receipt: any;
     
     if (existingReceipt) {
       // Update existing receipt with scannedParcels stored in trackingNumbers JSON
@@ -5552,7 +5539,7 @@ router.delete("/receipts/:receiptId/photos/:photoId", async (req, res) => {
       const photos = currentReceipt.photos || [];
       
       // Find the photo with the given ID
-      const photoIndex = photos.findIndex((photo) => {
+      const photoIndex = photos.findIndex((photo: any) => {
         // Handle both string (legacy) and object formats
         if (typeof photo === 'string') {
           // For legacy strings, use hash of the string as ID
@@ -5571,7 +5558,7 @@ router.delete("/receipts/:receiptId/photos/:photoId", async (req, res) => {
       const originalPosition = photoIndex;
       
       // Remove the photo with the matching ID
-      const updatedPhotos = photos.filter((photo, index) => index !== photoIndex);
+      const updatedPhotos = photos.filter((photo: any, index: number) => index !== photoIndex);
       
       // Update only the photos field (fast operation)
       await tx
@@ -5807,7 +5794,7 @@ router.get('/receipts/:id/storage-items', async (req, res) => {
     // For each item, get product details and existing locations
     const itemsWithDetails = await Promise.all(receiptItemsList.map(async (item) => {
       let productInfo = null;
-      let existingLocations = [];
+      let existingLocations: any[] = [];
       
       if (item.itemType === 'purchase') {
         // Get purchase item details
@@ -6460,7 +6447,6 @@ router.post("/shipments/:id/cartons", async (req, res) => {
           widthCm: carton.widthCm.toString(),
           heightCm: carton.heightCm.toString(),
           grossWeightKg: carton.grossWeightKg.toString(),
-          notes: carton.notes || null,
           createdAt: new Date(),
           updatedAt: new Date()
         }).returning();
@@ -6502,7 +6488,7 @@ router.get("/shipments/:id/cartons", async (req, res) => {
       .where(eq(shipmentCartons.shipmentId, shipmentId));
     
     // Fetch item details separately if needed
-    const itemIds = [...new Set(cartonsList.map(c => c.customItemId).filter(id => id !== null))];
+    const itemIds = Array.from(new Set(cartonsList.map(c => c.customItemId).filter(id => id !== null)));
     let itemMap: Record<number, any> = {};
     
     if (itemIds.length > 0) {
@@ -6527,7 +6513,6 @@ router.get("/shipments/:id/cartons", async (req, res) => {
       widthCm: carton.widthCm,
       heightCm: carton.heightCm,
       grossWeightKg: carton.grossWeightKg,
-      notes: carton.notes,
       item: carton.customItemId ? itemMap[carton.customItemId] : null
     }));
     
@@ -6845,7 +6830,6 @@ async function getItemAllocationBreakdown(shipmentId: number, costsByType: Recor
       items.push({
         purchaseItemId: item.id,  // Frontend expects purchaseItemId
         customItemId: item.id,
-        sku: item.sku,
         name: item.name,
         quantity: item.quantity,
         unitPrice,  // Add unit price for purchase price column
@@ -7026,7 +7010,6 @@ async function getItemAllocationBreakdownWithMethod(
       results.push({
         purchaseItemId: item.id,  // Frontend expects purchaseItemId
         customItemId: item.id,
-        sku: item.sku,
         name: item.name,
         quantity: item.quantity,
         unitPrice: itemAllocation.unitPrice,  // Changed from unitValue to unitPrice for consistency
@@ -7090,18 +7073,18 @@ router.get("/shipments/:id/landing-cost-summary", async (req, res) => {
     
     // Get the actual calculated data using the landing cost service
     try {
-      const summary = await landingCostService.getLandingCostSummary(shipmentId);
+      const summary: any = await landingCostService.getLandingCostSummary(shipmentId);
       
       res.json({
         shipmentId,
-        items: summary.items || [],
-        totals: summary.totals || {},
-        grandTotal: summary.grandTotal || 0,
-        baseCurrency: summary.baseCurrency || 'EUR',
+        items: summary?.items || [],
+        totals: summary?.totals || {},
+        grandTotal: summary?.grandTotal || 0,
+        baseCurrency: summary?.baseCurrency || 'EUR',
         hasAllocations: true,
         lastCalculated: allocations[0]?.createdAt || new Date(),
         status: 'calculated',
-        itemCount: summary.items?.length || 0
+        itemCount: summary?.items?.length || 0
       });
     } catch (summaryError) {
       console.error("Error getting landing cost summary:", summaryError);
