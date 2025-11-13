@@ -251,7 +251,7 @@ export default function EditReturn() {
         <Card>
           <CardContent className="space-y-6 pt-6">
             {/* Return ID and Customer */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Return ID</Label>
                 <Input value={returnData.returnId || ""} disabled className="bg-gray-50" />
@@ -306,7 +306,7 @@ export default function EditReturn() {
             </div>
 
             {/* Order Number and Return Date */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Order Number</Label>
                 <Popover open={orderSearchOpen} onOpenChange={setOrderSearchOpen}>
@@ -364,7 +364,7 @@ export default function EditReturn() {
             </div>
 
             {/* Return Type and Status */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Return Type</Label>
                 <Select
@@ -411,7 +411,7 @@ export default function EditReturn() {
             </div>
 
             {/* Tracking Number and Shipping Carrier */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Tracking Number</Label>
                 <Input 
@@ -459,7 +459,7 @@ export default function EditReturn() {
               {fields.map((field, index) => (
                 <div key={field.id} className="border rounded-lg p-4 space-y-4">
                   <div className="flex justify-between items-start">
-                    <div className="grid grid-cols-2 gap-4 flex-1">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
                       <div>
                         <Label>Item Name</Label>
                         <Popover open={productSearchOpen === index} onOpenChange={(open) => setProductSearchOpen(open ? index : null)}>

@@ -226,6 +226,99 @@ function PricingTableRow({ item, index, qty, unitCost, shippingCost, landingCost
   );
 }
 
+// Mobile Pricing Card Component for small screens
+function PricingMobileCard({ item, index, qty, unitCost, shippingCost, landingCost, defaultRetailPrice, defaultMargin, currency, displayCurrency }: {
+  item: any;
+  index: number;
+  qty: number;
+  unitCost: number;
+  shippingCost: number;
+  landingCost: number;
+  defaultRetailPrice: number;
+  defaultMargin: number;
+  currency: string;
+  displayCurrency: 'EUR' | 'CZK';
+}) {
+  const safeRetailPrice = !isNaN(defaultRetailPrice) && isFinite(defaultRetailPrice) ? defaultRetailPrice : 0;
+  const [retailPrice, setRetailPrice] = useState(safeRetailPrice);
+  const landingCostConverted = convertCurrency(landingCost, currency as Currency, displayCurrency);
+  const retailPriceConverted = convertCurrency(retailPrice, currency as Currency, displayCurrency);
+
+  return (
+    <Card className="mb-3">
+      <CardContent className="p-4">
+        {/* Header with image and name */}
+        <div className="flex items-center gap-3 mb-3">
+          {item.imageUrl ? (
+            <img 
+              src={item.imageUrl} 
+              alt={item.productName}
+              className="w-16 h-16 rounded object-contain border bg-slate-50 shrink-0"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded bg-gray-100 flex items-center justify-center shrink-0">
+              <Package className="h-6 w-6 text-gray-400" />
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-sm mb-1">{item.productName || `Item ${index + 1}`}</p>
+            {item.sku && (
+              <p className="text-xs text-muted-foreground font-mono">{item.sku}</p>
+            )}
+            <Badge variant="outline" className="mt-1">Qty: {qty}</Badge>
+          </div>
+        </div>
+
+        {/* Pricing Grid */}
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Unit Cost</p>
+            <p className="font-mono font-medium">{formatCurrency(unitCost, currency)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Shipping</p>
+            <p className="font-mono font-medium text-blue-600">{formatCurrency(shippingCost, currency)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Landing Cost</p>
+            <p className="font-mono font-semibold">{formatCurrency(landingCost, currency)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Landing ({displayCurrency})</p>
+            <p className="font-mono font-semibold text-amber-700 dark:text-amber-400">
+              {displayCurrency === 'EUR' ? `€${landingCostConverted.toFixed(2)}` : `${landingCostConverted.toFixed(0)} Kč`}
+            </p>
+          </div>
+        </div>
+
+        {/* Retail Price Input */}
+        <div className="mt-3 pt-3 border-t">
+          <Label htmlFor={`retail-price-mobile-${index}`} className="text-xs text-muted-foreground mb-2 block">
+            Set Retail Price
+          </Label>
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              id={`retail-price-mobile-${index}`}
+              type="number"
+              step="0.01"
+              defaultValue={safeRetailPrice.toFixed(2)}
+              onChange={(e) => setRetailPrice(parseFloat(e.target.value) || 0)}
+              className="h-11 text-right font-mono"
+              data-testid={`input-retail-price-mobile-${index}`}
+            />
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Retail ({displayCurrency})</p>
+              <p className="font-mono font-semibold text-amber-700 dark:text-amber-400 mt-1">
+                {displayCurrency === 'EUR' ? `€${retailPriceConverted.toFixed(2)}` : `${retailPriceConverted.toFixed(0)} Kč`}
+              </p>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // Generate suggested location for new items based on product characteristics
 function generateSuggestedLocation(item: StorageItem): string {
   // Use product characteristics to generate a smart suggestion
@@ -2182,15 +2275,15 @@ export default function ItemsToStore() {
                 {/* Comprehensive Pricing Table */}
                 {receiptData.items && receiptData.items.length > 0 && (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
                       <h3 className="font-semibold text-sm flex items-center gap-2">
                         <TrendingUp className="h-4 w-4 text-amber-600" />
                         Item Pricing & Landing Cost
                       </h3>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Display Currency:</span>
+                        <span className="text-xs text-muted-foreground hidden sm:inline">Display Currency:</span>
                         <Select value={displayCurrency} onValueChange={(value: 'EUR' | 'CZK') => setDisplayCurrency(value)}>
-                          <SelectTrigger className="h-7 w-[90px] text-xs">
+                          <SelectTrigger className="h-8 w-[100px] text-xs">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -2200,7 +2293,9 @@ export default function ItemsToStore() {
                         </Select>
                       </div>
                     </div>
-                    <div className="border rounded-lg overflow-hidden">
+                    
+                    {/* Desktop Table - Hidden on Mobile */}
+                    <div className="hidden md:block border rounded-lg overflow-hidden">
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-slate-50 dark:bg-slate-900/50">
@@ -2282,6 +2377,90 @@ export default function ItemsToStore() {
                         </TableBody>
                       </Table>
                     </div>
+
+                    {/* Mobile Cards - Shown on Mobile Only */}
+                    <div className="block md:hidden space-y-3">
+                      {receiptData.items.map((item: any, index: number) => {
+                        const qty = item.receivedQuantity || 0;
+                        const unitCost = item.landingCostUnitBase ? parseFloat(item.landingCostUnitBase) : parseFloat(item.unitPrice || 0);
+                        const shippingCost = shippingPerUnit;
+                        const landingCost = unitCost + shippingCost;
+                        const defaultRetailPrice = landingCost * 1.5;
+                        const defaultMargin = defaultRetailPrice > 0 ? ((defaultRetailPrice - landingCost) / defaultRetailPrice * 100) : 0;
+
+                        return (
+                          <PricingMobileCard
+                            key={index}
+                            item={item}
+                            index={index}
+                            qty={qty}
+                            unitCost={unitCost}
+                            shippingCost={shippingCost}
+                            landingCost={landingCost}
+                            defaultRetailPrice={defaultRetailPrice}
+                            defaultMargin={defaultMargin}
+                            currency={currency}
+                            displayCurrency={displayCurrency}
+                          />
+                        );
+                      })}
+                      
+                      {/* Mobile Totals Summary */}
+                      <Card className="bg-slate-50 dark:bg-slate-900/30">
+                        <CardContent className="p-4">
+                          <h4 className="font-semibold text-sm mb-3">Totals</h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Total Unit Cost:</span>
+                              <span className="font-mono font-medium">
+                                {formatCurrency(
+                                  receiptData.items.reduce((sum: number, item: any) => {
+                                    const unitCost = item.landingCostUnitBase ? parseFloat(item.landingCostUnitBase) : parseFloat(item.unitPrice || 0);
+                                    return sum + (unitCost * (item.receivedQuantity || 0));
+                                  }, 0),
+                                  currency
+                                )}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Total Shipping:</span>
+                              <span className="font-mono font-medium text-blue-600">
+                                {formatCurrency(totalShipping, currency)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between pt-2 border-t">
+                              <span className="font-medium">Total Landing Cost:</span>
+                              <span className="font-mono font-semibold">
+                                {formatCurrency(
+                                  receiptData.items.reduce((sum: number, item: any) => {
+                                    const unitCost = item.landingCostUnitBase ? parseFloat(item.landingCostUnitBase) : parseFloat(item.unitPrice || 0);
+                                    return sum + (unitCost * (item.receivedQuantity || 0));
+                                  }, 0) + totalShipping,
+                                  currency
+                                )}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="font-medium">Landing ({displayCurrency}):</span>
+                              <span className="font-mono font-semibold text-amber-700 dark:text-amber-400">
+                                {(() => {
+                                  const totalLandingConverted = receiptData.items.reduce((sum: number, item: any) => {
+                                    const qty = item.receivedQuantity || 0;
+                                    const unitCost = item.landingCostUnitBase ? parseFloat(item.landingCostUnitBase) : parseFloat(item.unitPrice || 0);
+                                    const shippingCost = shippingPerUnit;
+                                    const landingCost = unitCost + shippingCost;
+                                    const converted = convertCurrency(landingCost, currency as Currency, displayCurrency);
+                                    return sum + (converted * qty);
+                                  }, 0);
+                                  return displayCurrency === 'EUR' ? `€${totalLandingConverted.toFixed(2)}` : `${totalLandingConverted.toFixed(0)} Kč`;
+                                })()}
+                              </span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                    
                     <p className="text-xs text-muted-foreground px-1">
                       💡 Shipping cost allocated proportionally across {totalItems} units. Retail prices default to 50% markup (editable).
                     </p>

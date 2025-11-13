@@ -285,7 +285,7 @@ export default function ServiceDetails() {
             </div>
 
             {/* Bill To & Date Info */}
-            <div className="grid grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Bill To */}
               <div>
                 <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wide mb-3">Bill To</h3>

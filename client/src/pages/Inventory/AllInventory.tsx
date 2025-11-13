@@ -1423,20 +1423,20 @@ export default function AllInventory() {
           {/* Mobile Card View */}
           <div className="sm:hidden space-y-3 p-3">
             {filteredProducts?.map((product: any) => (
-              <div key={product.id} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+              <div key={product.id} className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-100 dark:border-slate-800 p-4">
                 <div className="space-y-3">
                   {/* Top Row - Product, Stock Status, Actions */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <Avatar className="h-12 w-12 flex-shrink-0">
                         <AvatarImage src={product.imageUrl} />
-                        <AvatarFallback className="text-sm bg-gray-100">{product.name?.charAt(0) || 'P'}</AvatarFallback>
+                        <AvatarFallback className="text-sm bg-gray-100 dark:bg-gray-800 dark:text-gray-300">{product.name?.charAt(0) || 'P'}</AvatarFallback>
                       </Avatar>
                       <div className="min-w-0 flex-1">
                         <Link href={`/inventory/products/${product.id}`}>
-                          <p className={`font-semibold truncate cursor-pointer ${product.isActive ? 'text-gray-900 hover:text-blue-600' : 'text-gray-400 line-through'}`}>{product.name}</p>
+                          <p className={`font-semibold truncate cursor-pointer ${product.isActive ? 'text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400' : 'text-gray-400 dark:text-gray-500 line-through'}`}>{product.name}</p>
                         </Link>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
                           SKU: {product.sku}
                           {!product.isActive && <span className="text-amber-600 font-medium ml-2">(Inactive)</span>}
                         </p>
@@ -1447,13 +1447,13 @@ export default function AllInventory() {
                         <>
                           {getStockStatus(product.quantity, product.lowStockAlert)}
                           <Link href={`/inventory/${product.id}/edit`}>
-                            <Button size="icon" variant="ghost" className="h-8 w-8">
+                            <Button size="icon" variant="ghost" className="h-11 w-11 sm:h-8 sm:w-8">
                               <Edit className="h-4 w-4" />
                             </Button>
                           </Link>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button size="icon" variant="ghost" className="h-8 w-8 text-red-600 hover:text-red-700">
+                              <Button size="icon" variant="ghost" className="h-11 w-11 sm:h-8 sm:w-8 text-red-600 hover:text-red-700">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </AlertDialogTrigger>
@@ -1498,31 +1498,31 @@ export default function AllInventory() {
                   {/* Middle Row - Key Details */}
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-gray-500">Category</p>
-                      <p className="font-medium text-gray-900">
+                      <p className="text-gray-500 dark:text-gray-400">Category</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">
                         {(categories as any[])?.find((c: any) => String(c.id) === product.categoryId)?.name || 'N/A'}
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-500">Stock</p>
-                      <p className="font-medium text-gray-900">{product.quantity} units</p>
+                      <p className="text-gray-500 dark:text-gray-400">Stock</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{product.quantity} units</p>
                     </div>
                   </div>
                   
                   {/* Bottom Row - Pricing */}
                   <div className="flex items-end justify-between">
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">Sell Price / Import Cost</p>
-                      <p className="text-lg font-bold text-gray-900">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Sell Price / Import Cost</p>
+                      <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                         {formatCurrency(parseFloat(product.priceEur || '0'), 'EUR')}
                       </p>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
                         Cost: {formatCurrency(parseFloat(product.importCostEur || '0'), 'EUR')}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-gray-500">Supplier</p>
-                      <p className="text-sm font-medium text-gray-900">{product.supplier?.name || 'N/A'}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Supplier</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{product.supplier?.name || 'N/A'}</p>
                     </div>
                   </div>
                 </div>

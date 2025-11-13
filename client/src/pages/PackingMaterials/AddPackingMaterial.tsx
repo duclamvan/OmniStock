@@ -347,7 +347,7 @@ export default function AddPackingMaterial() {
                   {/* Dimensions */}
                   <div>
                     <FormLabel className="text-base mb-3 block">Dimensions</FormLabel>
-                    <div className="grid grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <FormField
                         control={form.control}
                         name="length"

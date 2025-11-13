@@ -346,7 +346,7 @@ export default function PreOrderDetails() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 pt-2 border-t text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t text-sm">
                       <div>
                         <p className="text-muted-foreground">Ordered Quantity</p>
                         <p className="font-medium" data-testid={`text-quantity-${item.id}`}>

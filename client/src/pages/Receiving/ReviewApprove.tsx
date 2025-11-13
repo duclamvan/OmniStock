@@ -359,7 +359,8 @@ export default function ReviewApprove() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="rounded-lg border overflow-hidden">
+              {/* Desktop Table - Hidden on Mobile */}
+              <div className="hidden md:block rounded-lg border overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
@@ -522,6 +523,155 @@ export default function ReviewApprove() {
                     )}
                   </TableBody>
                 </Table>
+              </div>
+
+              {/* Mobile Cards - Shown on Mobile Only */}
+              <div className="block md:hidden space-y-3">
+                {items && items.length > 0 ? (
+                  items.map((item: any, index: number) => {
+                    // Determine item name and SKU based on item type
+                    const itemName = item.itemType === 'purchase' && item.purchaseItem
+                      ? item.purchaseItem.name
+                      : item.itemType === 'consolidation' && item.consolidationItem
+                      ? item.consolidationItem.name
+                      : item.itemName || 'Unknown Item';
+                    
+                    const itemSku = item.itemType === 'purchase' && item.purchaseItem
+                      ? item.purchaseItem.sku
+                      : item.itemType === 'consolidation' && item.consolidationItem
+                      ? item.consolidationItem.sku
+                      : item.barcode || '-';
+                    
+                    const expectedQty = item.expectedQuantity || 0;
+                    const receivedQty = item.receivedQuantity || 0;
+                    const damagedQty = item.damagedQuantity || 0;
+                    const missingQty = item.missingQuantity || 0;
+                    
+                    // Determine status based on quantities
+                    let status = 'complete';
+                    if (receivedQty === 0 && missingQty > 0) {
+                      status = 'missing';
+                    } else if (damagedQty > 0 && receivedQty === 0) {
+                      status = 'damaged';
+                    } else if (receivedQty < expectedQty) {
+                      if (damagedQty > 0) status = 'partial_damaged';
+                      else if (missingQty > 0) status = 'partial_missing';
+                      else status = 'partial';
+                    } else if (damagedQty > 0) {
+                      status = 'damaged';
+                    }
+                    
+                    // Get product image or use placeholder based on item type
+                    const itemImage = item.purchaseItem?.imageUrl || null;
+                    
+                    return (
+                      <Card key={item.id || index} className="overflow-hidden">
+                        <CardContent className="p-4">
+                          {/* Header with image and name */}
+                          <div className="flex items-start gap-3 mb-3">
+                            {itemImage ? (
+                              <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0">
+                                <img 
+                                  src={itemImage} 
+                                  alt={itemName}
+                                  className="w-full h-full object-contain bg-slate-50 dark:bg-slate-900"
+                                  data-testid={`img-item-mobile-${index}`}
+                                />
+                              </div>
+                            ) : (
+                              <div className="shrink-0">
+                                <ImagePlaceholder size="sm" variant="subtle" data-testid={`placeholder-item-mobile-${index}`} />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-sm mb-1">{itemName}</p>
+                              <p className="text-xs text-muted-foreground font-mono mb-2">{itemSku}</p>
+                              <div className="flex items-center gap-2">
+                                {getStatusIcon(status, "h-4 w-4")}
+                                <Badge 
+                                  variant={getStatusColor(status)} 
+                                  className="text-xs font-medium"
+                                >
+                                  {status.replace(/_/g, ' ')}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Quantities Grid */}
+                          <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div className="text-center p-3 bg-muted/30 rounded-lg">
+                              <p className="text-xs text-muted-foreground mb-1">Expected</p>
+                              <p className="font-bold text-lg">{expectedQty}</p>
+                            </div>
+                            <div className="text-center p-3 bg-muted/30 rounded-lg">
+                              <p className="text-xs text-muted-foreground mb-1">Received</p>
+                              <p className={
+                                receivedQty < expectedQty 
+                                  ? "font-bold text-lg text-amber-600" 
+                                  : receivedQty > expectedQty
+                                  ? "font-bold text-lg text-blue-600"
+                                  : "font-bold text-lg text-green-600"
+                              }>
+                                {receivedQty}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Damaged/Missing Details */}
+                          {(damagedQty > 0 || missingQty > 0) && (
+                            <div className="flex gap-2 mb-3">
+                              {damagedQty > 0 && (
+                                <div className="flex-1 text-center p-2 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-900">
+                                  <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+                                    -{damagedQty} damaged
+                                  </p>
+                                </div>
+                              )}
+                              {missingQty > 0 && (
+                                <div className="flex-1 text-center p-2 bg-gray-50 dark:bg-gray-950/20 rounded-lg border border-gray-200 dark:border-gray-800">
+                                  <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+                                    -{missingQty} missing
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Location */}
+                          {item.warehouseLocation && (
+                            <div className="pt-3 border-t">
+                              <div className="flex items-start gap-2">
+                                <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                  <p className="text-xs text-muted-foreground mb-0.5">Location</p>
+                                  <p className="font-mono text-sm font-medium">{item.warehouseLocation}</p>
+                                  {item.additionalLocation && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {item.additionalLocation}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Notes */}
+                          {item.notes && (
+                            <div className="pt-3 border-t mt-3">
+                              <p className="text-xs text-muted-foreground italic">{item.notes}</p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })
+                ) : (
+                  <div className="flex flex-col items-center gap-2 py-8">
+                    <Package className="h-8 w-8 text-muted-foreground" />
+                    <p className="text-muted-foreground text-sm">No items found for this shipment</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

@@ -2368,7 +2368,7 @@ export default function StartReceiving() {
               
               {/* Progress Summary */}
               {receivingItems.length > 0 && (
-                <div className="grid grid-cols-4 gap-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-600">
                       {receivingItems.filter(i => i.status === 'complete').length}

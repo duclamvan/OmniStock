@@ -181,52 +181,67 @@ export default function ReceiveImport() {
   const progressPercentage = totalItems > 0 ? (checkedCount / totalItems) * 100 : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6 pb-20 md:pb-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href={`/imports/orders/${id}`}>
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Order
+      <div className="sticky top-0 z-10 bg-background border-b md:relative md:border-0">
+        <div className="p-4 md:p-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 md:gap-4">
+              <Link href={`/imports/orders/${id}`}>
+                <Button variant="ghost" size="icon" className="md:hidden">
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+                <Button variant="ghost" size="sm" className="hidden md:flex">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Order
+                </Button>
+              </Link>
+              <div>
+                <h1 className="text-lg md:text-2xl font-semibold">Receive Import Order</h1>
+                <p className="text-xs md:text-sm text-muted-foreground">Order #{order.orderNumber}</p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => receiveItemsMutation.mutate()}
+              disabled={checkedCount === 0}
+              className="md:hidden"
+            >
+              <CheckCircle className="h-4 w-4" />
             </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-semibold">Receive Import Order</h1>
-            <p className="text-gray-500">Order #{order.orderNumber}</p>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => navigate(`/imports/orders/${id}`)}
-          >
-            <X className="h-4 w-4 mr-2" />
-            Cancel
-          </Button>
-          <Button
-            onClick={() => receiveItemsMutation.mutate()}
-            disabled={checkedCount === 0}
-          >
-            <CheckCircle className="h-4 w-4 mr-2" />
-            Mark {checkedCount} Items Received
-          </Button>
+          <div className="hidden md:flex items-center gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/imports/orders/${id}`)}
+            >
+              <X className="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
+            <Button
+              onClick={() => receiveItemsMutation.mutate()}
+              disabled={checkedCount === 0}
+            >
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Mark {checkedCount} Items Received
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Progress Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Receiving Progress</CardTitle>
-          <CardDescription>
+      <Card className="mx-4 md:mx-0">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base md:text-lg">Receiving Progress</CardTitle>
+          <CardDescription className="text-xs md:text-sm">
             Select items that have been physically received
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-xs md:text-sm">
               <span>{checkedCount} of {totalItems} items selected</span>
-              <span>{Math.round(progressPercentage)}%</span>
+              <span className="font-medium">{Math.round(progressPercentage)}%</span>
             </div>
             <Progress value={progressPercentage} className="h-2" />
           </div>
@@ -234,25 +249,27 @@ export default function ReceiveImport() {
       </Card>
 
       {/* Quick Actions */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+      <Card className="mx-4 md:mx-0">
+        <CardContent className="p-4 md:pt-6">
+          <div className="space-y-3 md:space-y-0 md:flex md:items-center md:justify-between">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4">
               <Button
                 variant="outline"
                 onClick={toggleAll}
+                className="w-full md:w-auto"
+                size="sm"
               >
                 <ClipboardCheck className="h-4 w-4 mr-2" />
                 {selectAll ? 'Unselect All' : 'Select All'}
               </Button>
-              <span className="text-sm text-gray-500">
+              <span className="text-xs md:text-sm text-muted-foreground">
                 Mark all items as received with full quantities
               </span>
             </div>
             {order.calculation && (
-              <div className="text-right">
-                <p className="text-sm text-gray-500">Landed Cost Ready</p>
-                <p className="text-sm font-medium text-green-600">
+              <div className="text-left md:text-right p-2 md:p-0 bg-green-50 dark:bg-green-950 md:bg-transparent rounded-md">
+                <p className="text-xs md:text-sm text-muted-foreground">Landed Cost Ready</p>
+                <p className="text-xs md:text-sm font-medium text-green-600">
                   ✓ Unit costs will be updated automatically
                 </p>
               </div>
@@ -262,65 +279,71 @@ export default function ReceiveImport() {
       </Card>
 
       {/* Receiving Checklist */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Receiving Checklist</CardTitle>
+      <Card className="mx-4 md:mx-0">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base md:text-lg">Receiving Checklist</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">
-                  <Checkbox
-                    checked={selectAll}
-                    onCheckedChange={toggleAll}
-                  />
-                </TableHead>
-                <TableHead>Product</TableHead>
-                <TableHead>SKU</TableHead>
-                <TableHead className="text-center">Ordered</TableHead>
-                <TableHead className="text-center">Received</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Notes</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {receivingItems.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    <Checkbox
-                      checked={item.checked}
-                      onCheckedChange={() => toggleItem(item.id)}
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {item.productName}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Hash className="h-3 w-3 text-gray-400" />
-                      {item.sku || '-'}
+        <CardContent className="p-0 md:p-6">
+          {/* Mobile Card Layout */}
+          <div className="md:hidden space-y-3 p-4">
+            {receivingItems.map((item) => (
+              <Card key={item.id} className="border-2">
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    {/* Header with checkbox and status */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3 flex-1">
+                        <Checkbox
+                          checked={item.checked}
+                          onCheckedChange={() => toggleItem(item.id)}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <h4 className="font-medium text-sm">{item.productName}</h4>
+                          {item.sku && (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                              <Hash className="h-3 w-3" />
+                              {item.sku}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {item.receivedQuantity === item.quantity ? (
+                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">Full</Badge>
+                      ) : item.receivedQuantity > 0 ? (
+                        <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-xs">Partial</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">Pending</Badge>
+                      )}
                     </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {item.quantity}
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      value={item.receivedQuantity}
-                      onChange={(e) => updateReceivedQuantity(item.id, parseInt(e.target.value) || 0)}
-                      className="w-20 mx-auto"
-                      min="0"
-                      max={item.quantity}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3 text-gray-400" />
+
+                    {/* Quantities */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Ordered Qty</Label>
+                        <div className="text-sm font-medium mt-1">{item.quantity}</div>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Received Qty</Label>
+                        <Input
+                          type="number"
+                          value={item.receivedQuantity}
+                          onChange={(e) => updateReceivedQuantity(item.id, parseInt(e.target.value) || 0)}
+                          className="h-9 text-sm mt-1"
+                          min="0"
+                          max={item.quantity}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Location */}
+                    <div>
+                      <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        Storage Location
+                      </Label>
                       <Input
-                        placeholder="A1-R1-S1"
+                        placeholder="e.g., A1-R1-S1"
                         value={item.locationId}
                         onChange={(e) => {
                           setReceivingItems(items =>
@@ -329,40 +352,125 @@ export default function ReceiveImport() {
                             )
                           );
                         }}
-                        className="w-24"
+                        className="h-9 text-sm mt-1"
                       />
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      placeholder="Quality notes..."
-                      value={item.notes}
-                      onChange={(e) => updateNotes(item.id, e.target.value)}
-                      className="w-32"
+
+                    {/* Notes */}
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Quality Notes</Label>
+                      <Input
+                        placeholder="Optional notes..."
+                        value={item.notes}
+                        onChange={(e) => updateNotes(item.id, e.target.value)}
+                        className="h-9 text-sm mt-1"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Desktop Table Layout */}
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={selectAll}
+                      onCheckedChange={toggleAll}
                     />
-                  </TableCell>
-                  <TableCell>
-                    {item.receivedQuantity === item.quantity ? (
-                      <Badge className="bg-green-100 text-green-800">Full</Badge>
-                    ) : item.receivedQuantity > 0 ? (
-                      <Badge className="bg-yellow-100 text-yellow-800">Partial</Badge>
-                    ) : (
-                      <Badge variant="outline">Pending</Badge>
-                    )}
-                  </TableCell>
+                  </TableHead>
+                  <TableHead>Product</TableHead>
+                  <TableHead>SKU</TableHead>
+                  <TableHead className="text-center">Ordered</TableHead>
+                  <TableHead className="text-center">Received</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Notes</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {receivingItems.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={item.checked}
+                        onCheckedChange={() => toggleItem(item.id)}
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {item.productName}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Hash className="h-3 w-3 text-gray-400" />
+                        {item.sku || '-'}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {item.quantity}
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={item.receivedQuantity}
+                        onChange={(e) => updateReceivedQuantity(item.id, parseInt(e.target.value) || 0)}
+                        className="w-20 mx-auto"
+                        min="0"
+                        max={item.quantity}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3 text-gray-400" />
+                        <Input
+                          placeholder="A1-R1-S1"
+                          value={item.locationId}
+                          onChange={(e) => {
+                            setReceivingItems(items =>
+                              items.map(i =>
+                                i.id === item.id ? { ...i, locationId: e.target.value } : i
+                              )
+                            );
+                          }}
+                          className="w-24"
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        placeholder="Quality notes..."
+                        value={item.notes}
+                        onChange={(e) => updateNotes(item.id, e.target.value)}
+                        className="w-32"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {item.receivedQuantity === item.quantity ? (
+                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Full</Badge>
+                      ) : item.receivedQuantity > 0 ? (
+                        <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">Partial</Badge>
+                      ) : (
+                        <Badge variant="outline">Pending</Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
       {/* Inventory Impact Preview */}
       {checkedCount > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Inventory Impact Preview</CardTitle>
-            <CardDescription>
+        <Card className="mx-4 md:mx-0">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base md:text-lg">Inventory Impact Preview</CardTitle>
+            <CardDescription className="text-xs md:text-sm">
               The following changes will be applied when items are added to inventory
             </CardDescription>
           </CardHeader>
@@ -370,8 +478,8 @@ export default function ReceiveImport() {
             <div className="space-y-4">
               <Alert>
                 <BarChart3 className="h-4 w-4" />
-                <AlertTitle>Automatic Updates</AlertTitle>
-                <AlertDescription>
+                <AlertTitle className="text-sm">Automatic Updates</AlertTitle>
+                <AlertDescription className="text-xs">
                   <ul className="list-disc list-inside mt-2 space-y-1">
                     <li>Product quantities will increase by received amounts</li>
                     <li>Unit costs will be updated with landed costs</li>
@@ -381,24 +489,24 @@ export default function ReceiveImport() {
                 </AlertDescription>
               </Alert>
               
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-2xl font-bold text-blue-600">{checkedCount}</p>
-                  <p className="text-sm text-gray-500">Items to Add</p>
+              <div className="grid grid-cols-3 gap-3 md:gap-4 text-center">
+                <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                  <p className="text-xl md:text-2xl font-bold text-blue-600">{checkedCount}</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">Items to Add</p>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-green-600">
+                <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg">
+                  <p className="text-xl md:text-2xl font-bold text-green-600">
                     {receivingItems
                       .filter(item => item.checked)
                       .reduce((sum, item) => sum + item.receivedQuantity, 0)}
                   </p>
-                  <p className="text-sm text-gray-500">Total Units</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">Total Units</p>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-purple-600">
+                <div className="p-3 bg-purple-50 dark:bg-purple-950 rounded-lg">
+                  <p className="text-xl md:text-2xl font-bold text-purple-600">
                     {order.calculation ? '✓' : '○'}
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-xs md:text-sm text-muted-foreground">
                     {order.calculation ? 'Costs Updated' : 'Original Costs'}
                   </p>
                 </div>
@@ -407,6 +515,27 @@ export default function ReceiveImport() {
           </CardContent>
         </Card>
       )}
+
+      {/* Mobile Fixed Bottom Action Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t p-4 shadow-lg">
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => navigate(`/imports/orders/${id}`)}
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => receiveItemsMutation.mutate()}
+            disabled={checkedCount === 0}
+            className="flex-1"
+          >
+            <CheckCircle className="h-4 w-4 mr-2" />
+            Receive ({checkedCount})
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

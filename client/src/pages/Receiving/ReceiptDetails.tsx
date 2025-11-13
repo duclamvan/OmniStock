@@ -671,7 +671,7 @@ export default function ReceiptDetails() {
               Download
             </Button>
           </div>
-          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-8 lg:grid-cols-10 gap-2">
             {receipt.photos.map((photo: any, index: number) => {
               const photoSrc = typeof photo === 'string' ? photo : (photo.url || photo.dataUrl || photo.compressed);
               
@@ -868,7 +868,7 @@ export default function ReceiptDetails() {
                       </div>
 
                       {/* Quantities Grid */}
-                      <div className="grid grid-cols-4 gap-2 mb-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
                         <div>
                           <p className="text-[10px] text-muted-foreground">Expected</p>
                           <p className="text-xs font-medium">{item.expectedQuantity}</p>
@@ -1163,10 +1163,10 @@ export default function ReceiptDetails() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <Label>Expected Quantity</Label>
-                  <Input value={selectedItem.expectedQuantity} disabled />
+                  <Input value={selectedItem.expectedQuantity} disabled className="h-11" />
                 </div>
                 <div>
                   <Label>Received Quantity</Label>
@@ -1178,6 +1178,7 @@ export default function ReceiptDetails() {
                         ...selectedItem,
                         receivedQuantity: Math.max(0, selectedItem.receivedQuantity - 1)
                       })}
+                      className="h-11 w-11"
                     >
                       <Minus className="h-4 w-4" />
                     </Button>
@@ -1188,7 +1189,7 @@ export default function ReceiptDetails() {
                         ...selectedItem,
                         receivedQuantity: parseInt(e.target.value) || 0
                       })}
-                      className="text-center"
+                      className="text-center h-11"
                     />
                     <Button
                       size="icon"
@@ -1197,6 +1198,7 @@ export default function ReceiptDetails() {
                         ...selectedItem,
                         receivedQuantity: selectedItem.receivedQuantity + 1
                       })}
+                      className="h-11 w-11"
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -1207,6 +1209,7 @@ export default function ReceiptDetails() {
                   <Input
                     type="number"
                     value={selectedItem.damagedQuantity}
+                    className="h-11"
                     onChange={(e) => setSelectedItem({
                       ...selectedItem,
                       damagedQuantity: parseInt(e.target.value) || 0

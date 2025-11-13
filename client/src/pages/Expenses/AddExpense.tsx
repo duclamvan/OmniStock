@@ -509,7 +509,7 @@ export default function AddExpense() {
                             <Label htmlFor="recurringType" className="text-sm font-medium mb-2">
                               Repeat Every *
                             </Label>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <Input
                                 id="recurringInterval"
                                 type="number"
@@ -585,7 +585,7 @@ export default function AddExpense() {
 
                           {/* Month and Day - For Yearly */}
                           {form.watch("recurringType") === 'yearly' && (
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <div>
                                 <Label htmlFor="recurringMonth" className="text-sm font-medium mb-2">
                                   Month
@@ -761,7 +761,7 @@ export default function AddExpense() {
                   <CardContent className="p-6 bg-slate-50 dark:bg-slate-900">
                     {/* Document Info Section */}
                     <div className="bg-white dark:bg-slate-800 rounded-lg p-4 mb-4 border-2 border-slate-200 dark:border-slate-700 shadow-sm">
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Bill Number</p>
                           <p className="font-mono text-sm font-bold text-slate-900 dark:text-white">{expenseId}</p>

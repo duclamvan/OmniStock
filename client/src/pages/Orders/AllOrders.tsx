@@ -1203,12 +1203,12 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <Link href={`/orders/${order.id}`}>
-                        <Button size="icon" variant="ghost" className="h-8 w-8" data-testid={`button-view-${order.id}`}>
+                        <Button size="icon" variant="ghost" className="h-11 w-11 sm:h-8 sm:w-8" data-testid={`button-view-${order.id}`}>
                           <Eye className="h-4 w-4" />
                         </Button>
                       </Link>
                       <Link href={`/orders/${order.id}/edit`}>
-                        <Button size="icon" variant="ghost" className="h-8 w-8" data-testid={`button-edit-${order.id}`}>
+                        <Button size="icon" variant="ghost" className="h-11 w-11 sm:h-8 sm:w-8" data-testid={`button-edit-${order.id}`}>
                           <Edit className="h-4 w-4" />
                         </Button>
                       </Link>

@@ -1591,34 +1591,36 @@ export default function AtWarehouse() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="pb-20 md:pb-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Consolidation</h1>
-          <p className="text-muted-foreground">Process incoming orders and manage warehouse items</p>
-        </div>
-        <div className="flex items-center gap-4">
-          {/* Location Filter */}
-          <Select value={locationFilter} onValueChange={setLocationFilter}>
-            <SelectTrigger className="w-[150px]" data-testid="select-location-filter">
-              <SelectValue placeholder="All Locations" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Locations</SelectItem>
-              <SelectItem value="China">🇨🇳 China</SelectItem>
-              <SelectItem value="USA">🇺🇸 USA</SelectItem>
-              <SelectItem value="Vietnam">🇻🇳 Vietnam</SelectItem>
-              <SelectItem value="Europe">🇪🇺 Europe</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <div className="flex space-x-2">
+      <div className="sticky top-0 z-10 bg-background border-b md:relative md:border-0 mb-4 md:mb-6">
+        <div className="p-4 md:p-6 space-y-3 md:space-y-0">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+            <div>
+              <h1 className="text-xl md:text-3xl font-bold">Consolidation</h1>
+              <p className="text-xs md:text-sm text-muted-foreground">Process incoming orders and manage warehouse items</p>
+            </div>
+            <div className="flex items-center gap-2 md:gap-4 flex-wrap">
+              {/* Location Filter */}
+              <Select value={locationFilter} onValueChange={setLocationFilter}>
+                <SelectTrigger className="w-[140px] md:w-[150px] h-9" data-testid="select-location-filter">
+                  <SelectValue placeholder="All Locations" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Locations</SelectItem>
+                  <SelectItem value="China">🇨🇳 China</SelectItem>
+                  <SelectItem value="USA">🇺🇸 USA</SelectItem>
+                  <SelectItem value="Vietnam">🇻🇳 Vietnam</SelectItem>
+                  <SelectItem value="Europe">🇪🇺 Europe</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <div className="flex gap-2">
           <Dialog open={isAddCustomItemOpen} onOpenChange={setIsAddCustomItemOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" data-testid="button-add-custom-item">
-                <ShoppingCart className="h-4 w-4 mr-2" />
-                Add Custom Item
+              <Button variant="outline" size="sm" data-testid="button-add-custom-item" className="h-9">
+                <ShoppingCart className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Add Custom Item</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
@@ -1880,9 +1882,9 @@ export default function AtWarehouse() {
 
           <Dialog open={isCreateConsolidationOpen} onOpenChange={setIsCreateConsolidationOpen}>
             <DialogTrigger asChild>
-              <Button data-testid="button-create-consolidation">
-                <Plus className="h-4 w-4 mr-2" />
-                Create Consolidation
+              <Button data-testid="button-create-consolidation" size="sm" className="h-9">
+                <Plus className="h-4 w-4 md:mr-2" />
+                <span className="hidden sm:inline">Create Consolidation</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]">
@@ -2092,10 +2094,13 @@ export default function AtWarehouse() {
             </DialogContent>
           </Dialog>
         </div>
+          </div>
         </div>
+      </div>
       </div>
 
       {/* Stats Cards */}
+      <div className="px-4 md:px-6 space-y-4 md:space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {(isLoadingOrders || isLoadingItems || isLoadingConsolidations) ? (
           <>
@@ -3992,6 +3997,7 @@ export default function AtWarehouse() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }

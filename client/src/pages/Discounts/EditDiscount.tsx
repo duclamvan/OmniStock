@@ -310,7 +310,7 @@ export default function EditDiscount() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Discount ID</Label>
                     <Input value={discountId || "Auto-generated"} disabled className="bg-gray-50" />
@@ -338,7 +338,7 @@ export default function EditDiscount() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Start Date *</Label>
                     <Input 
@@ -488,7 +488,7 @@ export default function EditDiscount() {
                 {watchDiscountType === 'fixed_amount' && (
                   <div className="space-y-3">
                     <Label>Discount Amount *</Label>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label className="text-sm text-gray-600">CZK</Label>
                         <div className="flex items-center gap-2">
@@ -568,7 +568,7 @@ export default function EditDiscount() {
 
                 {watchDiscountType === 'buy_x_get_y' && (
                   <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label>Buy Quantity *</Label>
                         <Input 

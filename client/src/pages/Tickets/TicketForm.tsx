@@ -557,7 +557,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
                             <PopoverContent className="w-auto p-0" align="start">
                               <div className="p-3 border-b space-y-2">
                                 <p className="text-sm font-medium">Quick Options</p>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                   {notifyDateOptions.map((option) => (
                                     <Button
                                       key={option.value}
