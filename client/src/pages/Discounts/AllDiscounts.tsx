@@ -184,10 +184,10 @@ export default function AllDiscounts() {
       cell: (sale) => {
         const types: Record<string, { label: string; color: string }> = {
           'percentage': { label: 'Percentage', color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300' },
-          'fixed_amount': { label: 'Fixed Amount', color: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300' },
+          'fixed': { label: 'Fixed Amount', color: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300' },
           'buy_x_get_y': { label: 'Buy X Get Y', color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300' },
         };
-        const type = types[sale.discountType] || { label: sale.discountType, color: 'bg-slate-50 text-slate-700' };
+        const type = types[sale.type] || { label: sale.type || '-', color: 'bg-slate-50 text-slate-700 border-slate-200' };
         return (
           <Badge className={`${type.color} text-xs`} variant="outline">
             {type.label}
@@ -201,11 +201,11 @@ export default function AllDiscounts() {
       sortable: true,
       className: "text-right",
       cell: (sale) => {
-        if (sale.discountType === 'percentage') {
+        if (sale.type === 'percentage') {
           return <span className="font-medium text-xs lg:text-sm">{sale.percentage}%</span>;
-        } else if (sale.discountType === 'fixed_amount') {
-          return <span className="font-medium text-xs lg:text-sm">${sale.fixedAmount}</span>;
-        } else if (sale.discountType === 'buy_x_get_y') {
+        } else if (sale.type === 'fixed') {
+          return <span className="font-medium text-xs lg:text-sm">${sale.value}</span>;
+        } else if (sale.type === 'buy_x_get_y') {
           return <span className="font-medium text-xs">B{sale.buyQuantity}G{sale.getQuantity}</span>;
         }
         return <span className="text-slate-500 text-xs">-</span>;
@@ -343,13 +343,13 @@ export default function AllDiscounts() {
       const exportData = filteredSales.map(sale => ({
         'Code': sale.discountId || '-',
         'Description': sale.name || '-',
-        'Type': sale.discountType === 'percentage' ? 'Percentage' 
-          : sale.discountType === 'fixed_amount' ? 'Fixed Amount' 
-          : sale.discountType === 'buy_x_get_y' ? 'Buy X Get Y' 
-          : sale.discountType || '-',
-        'Value': sale.discountType === 'percentage' ? `${sale.percentage}%`
-          : sale.discountType === 'fixed_amount' ? `$${sale.fixedAmount}`
-          : sale.discountType === 'buy_x_get_y' ? `B${sale.buyQuantity}G${sale.getQuantity}`
+        'Type': sale.type === 'percentage' ? 'Percentage' 
+          : sale.type === 'fixed' ? 'Fixed Amount' 
+          : sale.type === 'buy_x_get_y' ? 'Buy X Get Y' 
+          : sale.type || '-',
+        'Value': sale.type === 'percentage' ? `${sale.percentage}%`
+          : sale.type === 'fixed' ? `$${sale.value}`
+          : sale.type === 'buy_x_get_y' ? `B${sale.buyQuantity}G${sale.getQuantity}`
           : '-',
         'Min Purchase': sale.minPurchaseAmount ? `$${sale.minPurchaseAmount}` : '-',
         'Max Uses': sale.maxUses || 'Unlimited',
@@ -382,13 +382,13 @@ export default function AllDiscounts() {
       const exportData = filteredSales.map(sale => ({
         code: sale.discountId || '-',
         description: sale.name || '-',
-        type: sale.discountType === 'percentage' ? 'Percentage' 
-          : sale.discountType === 'fixed_amount' ? 'Fixed Amount' 
-          : sale.discountType === 'buy_x_get_y' ? 'Buy X Get Y' 
-          : sale.discountType || '-',
-        value: sale.discountType === 'percentage' ? `${sale.percentage}%`
-          : sale.discountType === 'fixed_amount' ? `$${sale.fixedAmount}`
-          : sale.discountType === 'buy_x_get_y' ? `B${sale.buyQuantity}G${sale.getQuantity}`
+        type: sale.type === 'percentage' ? 'Percentage' 
+          : sale.type === 'fixed' ? 'Fixed Amount' 
+          : sale.type === 'buy_x_get_y' ? 'Buy X Get Y' 
+          : sale.type || '-',
+        value: sale.type === 'percentage' ? `${sale.percentage}%`
+          : sale.type === 'fixed' ? `$${sale.value}`
+          : sale.type === 'buy_x_get_y' ? `B${sale.buyQuantity}G${sale.getQuantity}`
           : '-',
         minPurchase: sale.minPurchaseAmount ? `$${sale.minPurchaseAmount}` : '-',
         maxUses: sale.maxUses || 'Unlimited',
@@ -661,18 +661,18 @@ export default function AllDiscounts() {
               const getTypeInfo = () => {
                 const types: Record<string, { label: string; color: string }> = {
                   'percentage': { label: 'Percentage', color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300' },
-                  'fixed_amount': { label: 'Fixed', color: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300' },
+                  'fixed': { label: 'Fixed', color: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300' },
                   'buy_x_get_y': { label: 'Buy X Get Y', color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300' },
                 };
-                return types[sale.discountType] || { label: sale.discountType, color: 'bg-slate-50 text-slate-700' };
+                return types[sale.type] || { label: sale.type || '-', color: 'bg-slate-50 text-slate-700 border-slate-200' };
               };
 
               const getValueDisplay = () => {
-                if (sale.discountType === 'percentage') {
+                if (sale.type === 'percentage') {
                   return `${sale.percentage}%`;
-                } else if (sale.discountType === 'fixed_amount') {
-                  return `$${sale.fixedAmount}`;
-                } else if (sale.discountType === 'buy_x_get_y') {
+                } else if (sale.type === 'fixed') {
+                  return `$${sale.value}`;
+                } else if (sale.type === 'buy_x_get_y') {
                   return `Buy ${sale.buyQuantity} Get ${sale.getQuantity}`;
                 }
                 return '-';
