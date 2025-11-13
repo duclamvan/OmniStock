@@ -49,6 +49,12 @@ interface StockAdjustmentDialogProps {
   productName: string;
   location: ProductLocation | null;
   onSuccess?: () => void;
+  initialValues?: {
+    type: 'add' | 'remove';
+    quantity: number;
+    reason: string;
+  };
+  onValuesChange?: (values: { type: 'add' | 'remove'; quantity: number; reason: string }) => void;
 }
 
 export default function StockAdjustmentDialog({
@@ -58,6 +64,8 @@ export default function StockAdjustmentDialog({
   productName,
   location,
   onSuccess,
+  initialValues,
+  onValuesChange,
 }: StockAdjustmentDialogProps) {
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -73,14 +81,27 @@ export default function StockAdjustmentDialog({
   useEffect(() => {
     if (open && location) {
       setNewQuantity(location.quantity);
-      setAdjustmentAmount(0);
-      setAdjustmentType("set");
-      setNotes("");
       setBarcodeScanMode(false);
       setBarcodeInput("");
       setScanCount(0);
+      
+      // Use initial values if provided
+      if (initialValues) {
+        if (initialValues.type === 'add') {
+          setAdjustmentType("increment");
+          setAdjustmentAmount(initialValues.quantity);
+        } else {
+          setAdjustmentType("decrement");
+          setAdjustmentAmount(initialValues.quantity);
+        }
+        setNotes(initialValues.reason);
+      } else {
+        setAdjustmentAmount(0);
+        setAdjustmentType("set");
+        setNotes("");
+      }
     }
-  }, [open, location]);
+  }, [open, location, initialValues]);
 
   // Auto-focus barcode input when scan mode is enabled
   useEffect(() => {
@@ -173,6 +194,15 @@ export default function StockAdjustmentDialog({
         variant: "destructive",
       });
       return;
+    }
+
+    // Save the adjustment values for next time
+    if (onValuesChange && (backendAdjustmentType === 'add' || backendAdjustmentType === 'remove')) {
+      onValuesChange({
+        type: backendAdjustmentType,
+        quantity: finalQuantity,
+        reason: notes,
+      });
     }
 
     createRequestMutation.mutate({

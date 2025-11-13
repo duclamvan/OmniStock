@@ -64,44 +64,37 @@ export default function StockLookup() {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   
-  // Quick adjustment amount with localStorage persistence
-  const [quickAdjustAmount, setQuickAdjustAmount] = useState<number>(() => {
-    // Browser guard to prevent SSR/test environment crashes
-    if (typeof window === 'undefined') return 1;
+  // Remember last adjustment details for quick access
+  const [lastAdjustment, setLastAdjustment] = useState<{
+    type: 'add' | 'remove';
+    quantity: number;
+    reason: string;
+  } | null>(() => {
+    // Load from localStorage on init
+    if (typeof window === 'undefined') return null;
     
     try {
-      const saved = localStorage.getItem('stockLookupQuickAdjustAmount');
-      if (!saved) return 1;
-      
-      const parsed = parseInt(saved, 10);
-      // Validate and clamp to safe range (1-999)
-      if (isNaN(parsed) || parsed < 1 || parsed > 999) {
-        console.warn('Invalid quick adjust amount in storage, resetting to 1');
-        return 1;
-      }
-      return parsed;
+      const saved = localStorage.getItem('stockLookupLastAdjustment');
+      return saved ? JSON.parse(saved) : null;
     } catch (error) {
-      console.error('Error reading quick adjust amount from storage:', error);
-      return 1;
+      console.error('Error loading last adjustment:', error);
+      return null;
     }
   });
   
-  // Save to localStorage when amount changes (with validation)
+  // Track which quick button (+/-) was clicked
+  const [quickButtonType, setQuickButtonType] = useState<'add' | 'remove' | null>(null);
+  
+  // Save last adjustment to localStorage when it changes
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
-    // Validate before saving
-    if (isNaN(quickAdjustAmount) || quickAdjustAmount < 1 || quickAdjustAmount > 999) {
-      console.warn('Invalid quick adjust amount, not saving to storage');
-      return;
-    }
+    if (typeof window === 'undefined' || !lastAdjustment) return;
     
     try {
-      localStorage.setItem('stockLookupQuickAdjustAmount', quickAdjustAmount.toString());
+      localStorage.setItem('stockLookupLastAdjustment', JSON.stringify(lastAdjustment));
     } catch (error) {
-      console.error('Error saving quick adjust amount to storage:', error);
+      console.error('Error saving last adjustment:', error);
     }
-  }, [quickAdjustAmount]);
+  }, [lastAdjustment]);
 
   // Check for query parameter and auto-populate search
   const [isFromUnderAllocated, setIsFromUnderAllocated] = useState(false);
@@ -144,53 +137,6 @@ export default function StockLookup() {
     refetchInterval: 60000, // Refresh every minute
   });
 
-  // Quick stock adjustment mutation (+1/-1 buttons)
-  const quickAdjustMutation = useMutation({
-    mutationFn: async ({ 
-      productId, 
-      locationId, 
-      currentQuantity, 
-      adjustmentAmount 
-    }: { 
-      productId: string; 
-      locationId: string; 
-      currentQuantity: number;
-      adjustmentAmount: number;
-    }) => {
-      const adjustmentType = adjustmentAmount > 0 ? 'add' : 'remove';
-      const requestedQuantity = Math.abs(adjustmentAmount);
-      const reason = `Quick adjustment: ${adjustmentAmount > 0 ? '+' : ''}${adjustmentAmount} unit${Math.abs(adjustmentAmount) !== 1 ? 's' : ''}`;
-      
-      return await apiRequest(
-        'POST',
-        '/api/stock-adjustment-requests',
-        {
-          productId,
-          locationId,
-          requestedBy: 'test-user',
-          adjustmentType,
-          currentQuantity,
-          requestedQuantity,
-          reason
-        }
-      );
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/stock-adjustment-requests'] });
-      toast({
-        title: "Request Submitted",
-        description: "Quick adjustment request sent for admin approval",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to submit adjustment request",
-        variant: "destructive",
-      });
-    },
-  });
 
   // Create warehouse lookup map
   const warehouseMap = useMemo(() => {
@@ -743,46 +689,6 @@ export default function StockLookup() {
                               </Button>
                             </Link>
                           </div>
-                          <div className="mb-3 flex items-center gap-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-2.5">
-                            <span className="text-xs font-medium text-blue-900 dark:text-blue-100 whitespace-nowrap">
-                              Quick adjust:
-                            </span>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-6 w-6 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/40"
-                                onClick={() => setQuickAdjustAmount(Math.max(1, quickAdjustAmount - 1))}
-                                data-testid="button-decrease-adjust-amount"
-                              >
-                                <Minus className="h-3 w-3" />
-                              </Button>
-                              <Input
-                                type="number"
-                                min="1"
-                                max="999"
-                                value={quickAdjustAmount}
-                                onChange={(e) => {
-                                  const val = parseInt(e.target.value, 10);
-                                  if (!isNaN(val) && val >= 1 && val <= 999) {
-                                    setQuickAdjustAmount(val);
-                                  }
-                                }}
-                                className="h-6 w-14 text-center text-xs px-1 font-medium border-blue-300 dark:border-blue-700"
-                                data-testid="input-quick-adjust-amount"
-                              />
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-6 w-6 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/40"
-                                onClick={() => setQuickAdjustAmount(Math.min(999, quickAdjustAmount + 1))}
-                                data-testid="button-increase-adjust-amount"
-                              >
-                                <Plus className="h-3 w-3" />
-                              </Button>
-                            </div>
-                            <span className="text-xs text-blue-700 dark:text-blue-300">units</span>
-                          </div>
                           <div className="space-y-2">
                             {selectedProductData.locations.map((loc) => (
                               <div
@@ -816,16 +722,13 @@ export default function StockLookup() {
                                           });
                                           return;
                                         }
-                                        quickAdjustMutation.mutate({
-                                          productId: loc.productId,
-                                          locationId: loc.id,
-                                          currentQuantity: loc.quantity,
-                                          adjustmentAmount: -quickAdjustAmount
-                                        });
+                                        setSelectedLocation(loc);
+                                        setQuickButtonType('remove');
+                                        setAdjustDialogOpen(true);
                                       }}
-                                      disabled={quickAdjustMutation.isPending || loc.quantity <= 0}
+                                      disabled={loc.quantity <= 0}
                                       data-testid={`button-quick-minus-${loc.id}`}
-                                      title={`Quick -${quickAdjustAmount} (requires admin approval)`}
+                                      title="Quick remove stock (uses last adjustment values)"
                                     >
                                       <Minus className="h-3.5 w-3.5" />
                                     </Button>
@@ -838,16 +741,12 @@ export default function StockLookup() {
                                       className="h-7 w-7 hover:bg-green-50 hover:border-green-300 dark:hover:bg-green-900/20"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        quickAdjustMutation.mutate({
-                                          productId: loc.productId,
-                                          locationId: loc.id,
-                                          currentQuantity: loc.quantity,
-                                          adjustmentAmount: quickAdjustAmount
-                                        });
+                                        setSelectedLocation(loc);
+                                        setQuickButtonType('add');
+                                        setAdjustDialogOpen(true);
                                       }}
-                                      disabled={quickAdjustMutation.isPending}
                                       data-testid={`button-quick-plus-${loc.id}`}
-                                      title={`Quick +${quickAdjustAmount} (requires admin approval)`}
+                                      title="Quick add stock (uses last adjustment values)"
                                     >
                                       <Plus className="h-3.5 w-3.5" />
                                     </Button>
@@ -875,6 +774,7 @@ export default function StockLookup() {
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setSelectedLocation(loc);
+                                      setQuickButtonType(null); // Clear quick button type for manual adjust
                                       setAdjustDialogOpen(true);
                                     }}
                                     data-testid={`button-adjust-${loc.id}`}
@@ -1016,12 +916,34 @@ export default function StockLookup() {
           />
           <StockAdjustmentDialog
             open={adjustDialogOpen}
-            onOpenChange={setAdjustDialogOpen}
+            onOpenChange={(open) => {
+              setAdjustDialogOpen(open);
+              if (!open) {
+                setQuickButtonType(null); // Clear quick button type when closing
+              }
+            }}
             productId={selectedProduct}
             productName={selectedProductData.name}
             location={selectedLocation}
+            initialValues={
+              quickButtonType && lastAdjustment
+                ? { ...lastAdjustment, type: quickButtonType }
+                : quickButtonType
+                ? { type: quickButtonType, quantity: 1, reason: '' }
+                : undefined
+            }
+            onValuesChange={(values) => {
+              // Only save 'add' or 'remove' adjustments
+              // Clear saved values if user chose 'set'
+              if (values.type === 'add' || values.type === 'remove') {
+                setLastAdjustment(values);
+              } else {
+                setLastAdjustment(null);
+              }
+            }}
             onSuccess={() => {
               setSelectedLocation(null);
+              setQuickButtonType(null);
             }}
           />
         </>
