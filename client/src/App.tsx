@@ -83,7 +83,7 @@ import ReviewApprove from "@/pages/Receiving/ReviewApprove";
 import ItemsToStore from "@/pages/Receiving/ItemsToStore";
 import Login from "@/pages/Auth/Login";
 import Register from "@/pages/Auth/Register";
-import Reports from "@/pages/Reports/Reports";
+import ReportsIndex from "@/pages/Reports";
 import CustomReport from "@/pages/Reports/CustomReport";
 import Settings from "@/pages/Settings";
 import StockLookup from "@/pages/Stock/StockLookup";
@@ -208,8 +208,15 @@ function Router() {
         <Route path="/receiving/receipt/:id" component={ContinueReceiving} />
         <Route path="/receiving/details/:id" component={ReceiptDetails} />
         <Route path="/receiving/approve/:id" component={ReviewApprove} />
+        {/* Reports Routes */}
         <Route path="/reports/custom" component={CustomReport} />
-        <Route path="/reports" component={Reports} />
+        <Route path="/reports/financial" component={ReportsIndex} />
+        <Route path="/reports/sales" component={ReportsIndex} />
+        <Route path="/reports/inventory" component={ReportsIndex} />
+        <Route path="/reports/customers" component={ReportsIndex} />
+        <Route path="/reports/orders" component={ReportsIndex} />
+        <Route path="/reports/expenses" component={ReportsIndex} />
+        <Route path="/reports" component={ReportsIndex} />
         {/* Settings Routes */}
         <Route path="/settings" component={Settings} />
         <Route path="/settings/general" component={Settings} />
