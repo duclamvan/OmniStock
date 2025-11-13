@@ -719,10 +719,13 @@ export const orderCartonPlans = pgTable('order_carton_plans', {
   orderId: varchar('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
   totalCartons: integer('total_cartons').notNull(),
   totalWeightKg: decimal('total_weight_kg', { precision: 10, scale: 2 }).notNull(),
+  avgUtilization: decimal('avg_utilization', { precision: 5, scale: 2 }),
+  suggestions: jsonb('suggestions'),
   totalShippingCost: decimal('total_shipping_cost', { precision: 10, scale: 2 }),
   shippingCurrency: varchar('shipping_currency'),
   aiConfidenceScore: decimal('ai_confidence_score', { precision: 3, scale: 2 }),
   status: varchar('status').notNull().default('draft'),
+  checksum: varchar('checksum'), // Stable JSON hash for efficient change detection
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow()
 });
@@ -1479,3 +1482,188 @@ export const appSettings = pgTable('app_settings', {
 export const insertAppSettingSchema = createInsertSchema(appSettings);
 export type AppSetting = typeof appSettings.$inferSelect;
 export type InsertAppSetting = z.infer<typeof insertAppSettingSchema>;
+
+// Packing Plan Serializers - Convert between UI and DB formats
+export interface UIPackingPlan {
+  totalCartons: number;
+  totalWeight: number;
+  avgUtilization: number;
+  estimatedShippingCost: number;
+  suggestions: string[];
+  cartons: Array<{
+    cartonName: string;
+    cartonId?: string;
+    cartonNumber?: number;
+    dimensions: string;
+    weight: number;
+    utilization: number;
+    items: Array<{
+      productId?: string;
+      productName: string;
+      name?: string;
+      quantity: number;
+      weight: number;
+      isEstimated: boolean;
+    }>;
+    fillingWeight?: number;
+    unusedVolume?: number;
+  }>;
+}
+
+export function serializePackingPlanToDB(uiPlan: UIPackingPlan, orderId: string) {
+  return {
+    orderId,
+    totalCartons: uiPlan.totalCartons,
+    totalWeightKg: uiPlan.totalWeight.toString(),
+    avgUtilization: uiPlan.avgUtilization.toString(),
+    suggestions: uiPlan.suggestions,
+    totalShippingCost: uiPlan.estimatedShippingCost.toString(),
+    status: 'draft' as const,
+  };
+}
+
+export function serializePackingPlanItems(uiPlan: UIPackingPlan, planId: string) {
+  const items: Array<{
+    planId: string;
+    cartonNumber: number;
+    cartonId: string | null;
+    productId: string | null;
+    quantity: number;
+    itemWeightKg: string;
+    aiEstimated: boolean;
+  }> = [];
+
+  uiPlan.cartons.forEach((carton, cartonIndex) => {
+    carton.items.forEach((item) => {
+      items.push({
+        planId,
+        cartonNumber: carton.cartonNumber ?? cartonIndex + 1,
+        cartonId: carton.cartonId || null,
+        productId: item.productId || null,
+        quantity: item.quantity,
+        itemWeightKg: item.weight.toString(),
+        aiEstimated: item.isEstimated,
+      });
+    });
+  });
+
+  return items;
+}
+
+export function deserializePackingPlanFromDB(
+  dbPlan: OrderCartonPlan,
+  dbItems: Array<OrderCartonItem & { productName?: string; sku?: string }>,
+  cartonDetails: Array<{ id: string; name: string; innerLengthCm: string; innerWidthCm: string; innerHeightCm: string; tareWeightKg: string }>
+): UIPackingPlan {
+  // Group items by carton number
+  const cartonMap = new Map<number, typeof dbItems>();
+  
+  dbItems.forEach(item => {
+    const cartonNum = item.cartonNumber;
+    if (!cartonMap.has(cartonNum)) {
+      cartonMap.set(cartonNum, []);
+    }
+    cartonMap.get(cartonNum)!.push(item);
+  });
+
+  // Build cartons with items explicitly attached
+  const cartons = Array.from(cartonMap.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([cartonNumber, cartonItems]) => {
+      // Find carton details
+      const cartonDetail = cartonItems[0]?.cartonId 
+        ? cartonDetails.find(c => c.id === cartonItems[0].cartonId)
+        : null;
+
+      // Calculate weights
+      const totalWeight = cartonItems.reduce((sum, item) => sum + parseFloat(item.itemWeightKg || '0'), 0);
+      const tareWeight = cartonDetail ? parseFloat(cartonDetail.tareWeightKg || '0') : 0;
+      const fillingWeight = totalWeight + tareWeight;
+
+      // Get dimensions
+      const dimensions = cartonDetail
+        ? `${cartonDetail.innerLengthCm}×${cartonDetail.innerWidthCm}×${cartonDetail.innerHeightCm} cm`
+        : 'Unknown';
+
+      // Calculate volume and utilization
+      const cartonVolume = cartonDetail
+        ? parseFloat(cartonDetail.innerLengthCm) * parseFloat(cartonDetail.innerWidthCm) * parseFloat(cartonDetail.innerHeightCm)
+        : 0;
+
+      const itemsVolume = cartonItems.reduce((sum, item) => sum + parseFloat(item.itemWeightKg || '0') * 1000, 0);
+      const utilization = cartonVolume > 0 ? (itemsVolume / cartonVolume) * 100 : 0;
+
+      // CRITICAL: Map all items for this carton - items MUST be included
+      const mappedItems = cartonItems.map(item => ({
+        productId: item.productId || undefined,
+        productName: item.productName || 'Unknown Product',
+        quantity: item.quantity,
+        weight: parseFloat(item.itemWeightKg || '0'),
+        isEstimated: item.aiEstimated || false,
+      }));
+
+      // Build and return carton with items explicitly included
+      return {
+        cartonName: cartonDetail?.name || `Carton ${cartonNumber}`,
+        cartonId: cartonItems[0]?.cartonId || undefined,
+        cartonNumber,
+        dimensions,
+        weight: totalWeight,
+        utilization: Math.min(utilization, 100),
+        items: mappedItems, // CRITICAL: Items are attached here
+        fillingWeight,
+        unusedVolume: cartonVolume > 0 ? cartonVolume - itemsVolume : undefined,
+      };
+    });
+
+  // Return complete plan with cartons that include items
+  return {
+    totalCartons: dbPlan.totalCartons,
+    totalWeight: parseFloat(dbPlan.totalWeightKg || '0'),
+    avgUtilization: parseFloat(dbPlan.avgUtilization || '0'),
+    estimatedShippingCost: parseFloat(dbPlan.totalShippingCost || '0'),
+    suggestions: Array.isArray(dbPlan.suggestions) ? dbPlan.suggestions as string[] : [],
+    cartons, // Cartons with items attached
+  };
+}
+
+// Compute stable checksum for efficient change detection
+export function computePlanChecksum(plan: UIPackingPlan): string {
+  // Create normalized version for stable comparison
+  const normalized = {
+    totalCartons: plan.totalCartons,
+    totalWeight: Number(plan.totalWeight.toFixed(2)),
+    avgUtilization: Number(plan.avgUtilization.toFixed(2)),
+    estimatedShippingCost: Number(plan.estimatedShippingCost.toFixed(2)),
+    suggestions: [...plan.suggestions].sort(),
+    cartons: [...plan.cartons]
+      .sort((a, b) => (a.cartonNumber || 0) - (b.cartonNumber || 0))
+      .map(carton => ({
+        cartonId: carton.cartonId || null,
+        cartonNumber: carton.cartonNumber || 0,
+        cartonName: carton.cartonName,
+        dimensions: carton.dimensions,
+        weight: Number(carton.weight.toFixed(2)),
+        utilization: Number(carton.utilization.toFixed(2)),
+        items: [...carton.items]
+          .sort((a, b) => (a.productId || '').localeCompare(b.productId || ''))
+          .map(item => ({
+            productId: item.productId || null,
+            productName: item.productName,
+            quantity: item.quantity,
+            weight: Number(item.weight.toFixed(2)),
+            isEstimated: item.isEstimated,
+          }))
+      }))
+  };
+  
+  // Simple hash function using JSON stringify
+  const jsonString = JSON.stringify(normalized);
+  let hash = 0;
+  for (let i = 0; i < jsonString.length; i++) {
+    const char = jsonString.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return hash.toString(36);
+}

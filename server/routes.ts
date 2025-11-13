@@ -48,8 +48,15 @@ import {
   customerShippingAddresses,
   productFiles,
   orderCartons,
+  orderCartonPlans,
   appSettings,
+  serializePackingPlanToDB,
+  serializePackingPlanItems,
+  deserializePackingPlanFromDB,
+  computePlanChecksum,
+  type UIPackingPlan,
 } from "@shared/schema";
+import { createInsertSchema } from 'drizzle-zod';
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -10269,81 +10276,90 @@ Return ONLY the subject line without quotes or extra formatting.`,
   app.post('/api/orders/:orderId/packing-plan', async (req, res) => {
     try {
       const { orderId } = req.params;
+      const planData = req.body as UIPackingPlan;
       
-      // Fetch order items
-      const orderItems = await storage.getOrderItems(orderId);
-      if (!orderItems || orderItems.length === 0) {
-        return res.status(400).json({ message: 'No order items found for this order' });
+      // Validate the plan data structure
+      if (!planData || typeof planData !== 'object') {
+        return res.status(400).json({ message: 'Invalid packing plan data' });
+      }
+      
+      if (typeof planData.totalCartons !== 'number' || planData.totalCartons < 0) {
+        return res.status(400).json({ message: 'Invalid totalCartons' });
+      }
+      
+      if (!Array.isArray(planData.cartons)) {
+        return res.status(400).json({ message: 'Invalid cartons array' });
       }
 
-      // Enrich order items with product information
-      const enrichedOrderItems = await Promise.all(
-        orderItems.map(async (item) => {
-          const product = await storage.getProductById(item.productId);
-          return {
-            ...item,
-            product
-          };
-        })
-      );
-
-      // Fetch all packing cartons
+      // Fetch all packing cartons for reference
       const cartons = await storage.getPackingCartons();
       if (!cartons || cartons.length === 0) {
         return res.status(400).json({ message: 'No packing cartons configured' });
       }
 
-      // Call optimization service
-      console.log(`Optimizing carton packing for order ${orderId} with ${enrichedOrderItems.length} items`);
-      const packingPlan = await optimizeCartonPacking(enrichedOrderItems, cartons);
-
-      // Save the plan to database
-      const createdPlan = await storage.createOrderCartonPlan({
-        orderId,
-        status: 'draft',
-        totalCartons: packingPlan.totalCartons,
-        totalWeightKg: packingPlan.totalWeightKg.toString(),
-        avgUtilization: packingPlan.avgUtilization.toString(),
-        suggestions: JSON.stringify(packingPlan.suggestions)
+      console.log(`Saving packing plan for order ${orderId}:`, {
+        totalCartons: planData.totalCartons,
+        totalWeight: planData.totalWeight,
+        avgUtilization: planData.avgUtilization
       });
 
-      // Save each carton's items
+      // Compute checksum for efficient change detection
+      const checksum = computePlanChecksum(planData);
+
+      // Delete existing plans for this order to avoid duplicates
+      await storage.deleteOrderCartonPlansByOrderId(orderId);
+
+      // Use serializer to convert UI format to DB format
+      const serializedData = serializePackingPlanToDB(planData, orderId);
+      
+      // Validate with Zod schema before inserting
+      const insertSchema = createInsertSchema(orderCartonPlans);
+      const validatedData = insertSchema.parse({
+        ...serializedData,
+        checksum
+      });
+      
+      // Use validated data for DB insertion
+      const dbPlanData = validatedData;
+      
+      // Save the plan to database
+      const createdPlan = await storage.createOrderCartonPlan(dbPlanData);
+
+      // Use serializer to convert items
+      const itemsToCreate = serializePackingPlanItems(planData, createdPlan.id);
+      
+      // Save each item to database
       const createdItems = [];
-      for (const carton of packingPlan.cartons) {
-        for (const item of carton.items) {
-          const createdItem = await storage.createOrderCartonItem({
-            planId: createdPlan.id,
-            cartonId: carton.cartonId,
-            cartonNumber: carton.cartonNumber,
-            productId: item.productId,
-            quantity: item.quantity,
-            weightKg: item.weightKg.toString(),
-            aiEstimated: item.aiEstimated
-          });
-          createdItems.push(createdItem);
-        }
+      for (const itemData of itemsToCreate) {
+        // Find the matching carton from database by checking carton names in planData
+        const planCarton = planData.cartons.find((c, idx) => 
+          (c.cartonNumber ?? idx + 1) === itemData.cartonNumber
+        );
+        const cartonInfo = planCarton?.cartonName 
+          ? cartons.find(c => c.name === planCarton.cartonName)
+          : null;
+        
+        const createdItem = await storage.createOrderCartonItem({
+          planId: itemData.planId,
+          cartonId: cartonInfo?.id || itemData.cartonId,
+          cartonNumber: itemData.cartonNumber,
+          productId: itemData.productId,
+          quantity: itemData.quantity,
+          itemWeightKg: itemData.itemWeightKg,
+          aiEstimated: itemData.aiEstimated
+        });
+        createdItems.push(createdItem);
       }
 
-      console.log(`Created packing plan ${createdPlan.id} with ${createdItems.length} items across ${packingPlan.totalCartons} cartons`);
+      console.log(`Created packing plan ${createdPlan.id} with ${createdItems.length} items across ${planData.totalCartons} cartons`);
 
-      // Return the created plan with items and mapped field names
+      // Return the created plan with checksum
       res.status(201).json({
-        ...createdPlan,
-        items: createdItems,
-        cartons: packingPlan.cartons.map(carton => {
-          const cartonInfo = cartons.find(c => c.id === carton.cartonId);
-          return {
-            cartonNumber: carton.cartonNumber,
-            cartonId: carton.cartonId,
-            cartonName: cartonInfo?.name || 'Unknown',
-            dimensions: cartonInfo ? `${cartonInfo.innerLengthCm}x${cartonInfo.innerWidthCm}x${cartonInfo.innerHeightCm}` : '',
-            weight: carton.totalWeightKg,
-            utilization: carton.volumeUtilization,
-            fillingWeight: carton.fillingWeightKg,
-            unusedVolume: carton.unusedVolumeCm3,
-            items: carton.items
-          };
-        })
+        id: createdPlan.id,
+        orderId: createdPlan.orderId,
+        totalCartons: createdPlan.totalCartons,
+        checksum,
+        message: 'Packing plan saved successfully'
       });
     } catch (error) {
       console.error('Error creating packing plan:', error);
@@ -10367,76 +10383,75 @@ Return ONLY the subject line without quotes or extra formatting.`,
 
       // Fetch carton items for this plan
       const items = await storage.getOrderCartonItems(plan.id);
+      console.log(`Loading packing plan ${plan.id} for order ${orderId}: found ${items.length} items`);
       
-      // Fetch all packing cartons for calculating filling weight
+      // Fetch all packing cartons for reference
       const allCartons = await storage.getPackingCartons();
 
-      // Group items by carton number and calculate filling weight
-      const cartonMap = new Map();
-      for (const item of items) {
-        if (!cartonMap.has(item.cartonNumber)) {
-          cartonMap.set(item.cartonNumber, {
-            cartonId: item.cartonId,
-            cartonNumber: item.cartonNumber,
-            items: [],
-            totalWeightKg: 0,
-            totalVolumeCm3: 0
-          });
-        }
-        const carton = cartonMap.get(item.cartonNumber);
-        carton.items.push({
-          productId: item.productId,
-          quantity: item.quantity,
-          weightKg: parseFloat(item.weightKg || item.itemWeightKg || 0),
-          aiEstimated: item.aiEstimated
-        });
-        carton.totalWeightKg += parseFloat(item.weightKg || item.itemWeightKg || 0);
-        
-        // Estimate item volume for filling calculation (rough estimate)
-        // Assuming average density of 0.5 kg per liter (500 kg/m³)
-        const itemVolumeCm3 = (parseFloat(item.weightKg || item.itemWeightKg || 0) / 0.5) * 1000;
-        carton.totalVolumeCm3 += itemVolumeCm3;
-      }
-
-      // Calculate filling weight and format response
-      const formattedCartons = Array.from(cartonMap.values()).map(carton => {
-        const cartonInfo = allCartons.find(c => c.id === carton.cartonId);
-        let fillingWeight = 0;
-        let unusedVolume = 0;
-        let utilization = 0;
-        let totalWeight = carton.totalWeightKg;
-        
-        if (cartonInfo) {
-          const cartonVolume = parseFloat(cartonInfo.innerLengthCm.toString()) *
-                              parseFloat(cartonInfo.innerWidthCm.toString()) *
-                              parseFloat(cartonInfo.innerHeightCm.toString());
-          unusedVolume = Math.max(0, cartonVolume - carton.totalVolumeCm3);
-          fillingWeight = (unusedVolume / 1000) * 0.015;
-          utilization = (carton.totalVolumeCm3 / cartonVolume) * 100;
+      // Enrich items with product names by joining with products table
+      const enrichedItems = await Promise.all(
+        items.map(async (item) => {
+          let productName = 'Unknown Product';
+          let sku = '';
           
-          // Calculate total weight (items + tare + filling)
-          const tareWeight = parseFloat(cartonInfo.tareWeightKg.toString());
-          totalWeight = carton.totalWeightKg + tareWeight + fillingWeight;
+          if (item.productId) {
+            try {
+              const product = await db.query.products.findFirst({
+                where: eq(products.id, item.productId),
+                columns: { name: true, sku: true }
+              });
+              
+              if (product) {
+                productName = product.name;
+                sku = product.sku || '';
+              }
+            } catch (err) {
+              console.error(`Failed to fetch product ${item.productId}:`, err);
+            }
+          }
+          
+          return {
+            ...item,
+            productName,
+            sku
+          };
+        })
+      );
+
+      // Prepare carton details for deserializer
+      const cartonDetails = allCartons.map(c => ({
+        id: c.id,
+        name: c.name,
+        innerLengthCm: c.innerLengthCm.toString(),
+        innerWidthCm: c.innerWidthCm.toString(),
+        innerHeightCm: c.innerHeightCm.toString(),
+        tareWeightKg: c.tareWeightKg.toString()
+      }));
+
+      // Use deserializer to convert DB format to UI format
+      // This function takes the enrichedItems and includes them in the cartons
+      const uiPackingPlan = deserializePackingPlanFromDB(plan, enrichedItems, cartonDetails);
+      
+      // CRITICAL: Verify items are included in ALL cartons
+      const totalItemsInPlan = uiPackingPlan.cartons.reduce((sum, c) => sum + (c.items?.length || 0), 0);
+      console.log(`Deserialized plan has ${uiPackingPlan.cartons.length} cartons with ${totalItemsInPlan} total items (from ${enrichedItems.length} DB items)`);
+      
+      // Explicitly verify each carton has items array
+      uiPackingPlan.cartons.forEach((carton, idx) => {
+        if (!carton.items) {
+          console.error(`ERROR: Carton ${idx} is missing items array!`);
+        } else {
+          console.log(`Carton ${idx} (${carton.cartonName}): ${carton.items.length} items`);
         }
-        
-        return {
-          cartonNumber: carton.cartonNumber,
-          cartonId: carton.cartonId,
-          cartonName: cartonInfo?.name || 'Unknown',
-          dimensions: cartonInfo ? `${cartonInfo.innerLengthCm}x${cartonInfo.innerWidthCm}x${cartonInfo.innerHeightCm}` : '',
-          weight: totalWeight,
-          utilization: Math.round(utilization * 100) / 100,
-          fillingWeight: Math.round(fillingWeight * 1000) / 1000,
-          unusedVolume: Math.round(unusedVolume),
-          items: carton.items
-        };
       });
 
-      // Return plan with nested carton items
+      // Compute fresh checksum for the deserialized plan (or use stored checksum if available)
+      const checksum = plan.checksum || computePlanChecksum(uiPackingPlan);
+
+      // Return the UI-ready format with checksum - items MUST be included
       res.json({
-        ...plan,
-        cartons: formattedCartons,
-        items
+        plan: uiPackingPlan,
+        checksum
       });
     } catch (error) {
       console.error('Error fetching packing plan:', error);

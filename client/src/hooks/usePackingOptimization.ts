@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { computePlanChecksum } from '@shared/schema';
 
 interface PackingItem {
   productId: string;
@@ -19,12 +20,15 @@ interface PackingPlan {
   suggestions: string[];
   cartons: Array<{
     cartonName: string;
+    cartonId?: string;
+    cartonNumber?: number;
     dimensions: string;
     weight: number;
     utilization: number;
     items: Array<{
+      productId?: string;
       productName: string;
-      name: string;
+      name?: string;
       quantity: number;
       weight: number;
       isEstimated: boolean;
@@ -34,10 +38,64 @@ interface PackingPlan {
   }>;
 }
 
-export function usePackingOptimization() {
+export function usePackingOptimization(orderId?: string) {
   const { toast } = useToast();
   const [packingPlan, setPackingPlan] = useState<PackingPlan | null>(null);
+  const serverChecksumRef = useRef<string | null>(null);
+  const hydratingRef = useRef(false);
 
+  // Load saved plan via useQuery
+  const queryResult = useQuery({
+    queryKey: ['/api/orders', orderId, 'packing-plan'],
+    enabled: !!orderId,
+  });
+  
+  const { data: savedPlan, isFetching } = queryResult;
+  // Detect restore cycles: when data is from cache (not actively fetching)
+  const isRestoring = queryResult.isLoading === false && queryResult.isFetching === false && queryResult.isRefetching === false;
+
+  // Hydration with restore cycle detection
+  useLayoutEffect(() => {
+    if (!savedPlan || isFetching) return;
+    
+    if (!packingPlan) {
+      // Initial load
+      hydratingRef.current = true;
+      setPackingPlan(savedPlan.plan);
+      serverChecksumRef.current = savedPlan.checksum;
+      hydratingRef.current = false;
+    } else {
+      // Query refreshed - just update checksum if it matches
+      const currentChecksum = computePlanChecksum(packingPlan);
+      if (currentChecksum === savedPlan.checksum) {
+        serverChecksumRef.current = savedPlan.checksum;
+      }
+    }
+  }, [savedPlan, isFetching, isRestoring, packingPlan]);
+
+  // Auto-save mutation
+  const savePackingPlanMutation = useMutation({
+    mutationFn: async (params: PackingPlan | { planData: PackingPlan; orderIdOverride: string }) => {
+      // Check if params has planData and orderIdOverride
+      const plan = 'planData' in params ? params.planData : params;
+      const targetOrderId = 'orderIdOverride' in params ? params.orderIdOverride : orderId;
+      
+      if (!targetOrderId) {
+        throw new Error('Order ID is required to save packing plan');
+      }
+      const response = await apiRequest('POST', `/api/orders/${targetOrderId}/packing-plan`, plan);
+      return response.json();
+    },
+    onSuccess: (data, variables) => {
+      const targetOrderId = 'orderIdOverride' in variables ? variables.orderIdOverride : orderId;
+      serverChecksumRef.current = data.checksum;
+      if (targetOrderId) {
+        queryClient.invalidateQueries({ queryKey: ['/api/orders', targetOrderId, 'packing-plan'] });
+      }
+    },
+  });
+
+  // Optimization mutation
   const packingOptimizationMutation = useMutation({
     mutationFn: async ({ items, shippingCountry }: { items: PackingItem[]; shippingCountry: string }) => {
       if (items.length === 0) {
@@ -52,6 +110,15 @@ export function usePackingOptimization() {
     },
     onSuccess: (data) => {
       setPackingPlan(data);
+      
+      // Auto-save if: orderId exists AND not hydrating AND checksum differs
+      if (orderId && !hydratingRef.current) {
+        const newChecksum = computePlanChecksum(data);
+        if (newChecksum !== serverChecksumRef.current) {
+          savePackingPlanMutation.mutate(data);
+        }
+      }
+      
       toast({
         title: "Success",
         description: "Packing plan optimized successfully",
@@ -80,14 +147,34 @@ export function usePackingOptimization() {
 
   const clearPackingPlan = () => {
     setPackingPlan(null);
+    serverChecksumRef.current = null;
+  };
+
+  // Method to manually save (for external triggers)
+  const manualSave = () => {
+    if (packingPlan && orderId) {
+      const newChecksum = computePlanChecksum(packingPlan);
+      if (newChecksum !== serverChecksumRef.current) {
+        savePackingPlanMutation.mutate(packingPlan);
+      }
+    }
+  };
+
+  // Expose method to set hydrating state (for external use if needed)
+  const setIsHydrating = (hydrating: boolean) => {
+    hydratingRef.current = hydrating;
   };
 
   return {
     packingPlan,
     setPackingPlan,
     clearPackingPlan,
+    setIsHydrating,
+    manualSave,
     packingOptimizationMutation,
+    savePackingPlanMutation,
     runPackingOptimization,
-    isLoading: packingOptimizationMutation.isPending,
+    isLoading: packingOptimizationMutation.isPending || savePackingPlanMutation.isPending,
+    isFetchingSaved: isFetching,
   };
 }

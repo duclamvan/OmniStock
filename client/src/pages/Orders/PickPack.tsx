@@ -1589,10 +1589,11 @@ export default function PickPack() {
   // Packing optimization hook
   const { 
     packingPlan, 
-    setPackingPlan, 
+    setPackingPlan,
+    setIsHydrating,
     runPackingOptimization: runOptimization,
     isLoading: isPackingOptimizationLoading 
-  } = usePackingOptimization();
+  } = usePackingOptimization(activePackingOrder?.id);
   
   // Workflow management state
   const [orderToHold, setOrderToHold] = useState<PickPackOrder | null>(null);

@@ -488,6 +488,7 @@ export interface IStorage {
   getOrderCartonItems(planId: string): Promise<OrderCartonItem[]>;
   createOrderCartonItem(item: InsertOrderCartonItem): Promise<OrderCartonItem>;
   deleteOrderCartonPlan(planId: string): Promise<boolean>;
+  deleteOrderCartonPlansByOrderId(orderId: string): Promise<boolean>;
   
   // Order Cartons (actual cartons used during packing)
   getOrderCartons(orderId: string): Promise<OrderCarton[]>;
@@ -4649,6 +4650,19 @@ export class DatabaseStorage implements IStorage {
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error('Error deleting order carton plan:', error);
+      return false;
+    }
+  }
+
+  async deleteOrderCartonPlansByOrderId(orderId: string): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(orderCartonPlans)
+        .where(eq(orderCartonPlans.orderId, orderId));
+      console.log(`Deleted ${result.rowCount ?? 0} existing packing plan(s) for order ${orderId}`);
+      return true;
+    } catch (error) {
+      console.error('Error deleting order carton plans by orderId:', error);
       return false;
     }
   }

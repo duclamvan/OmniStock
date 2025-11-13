@@ -318,8 +318,9 @@ export default function AddOrder() {
     packingPlan, 
     setPackingPlan, 
     runPackingOptimization: runOptimization,
+    savePackingPlanMutation,
     isLoading: isPackingOptimizationLoading 
-  } = usePackingOptimization();
+  } = usePackingOptimization(orderId ?? undefined);
 
   // File upload state
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -1040,9 +1041,19 @@ export default function AddOrder() {
       // Set the order ID so packing optimization can be run
       setOrderId(createdOrder.id);
       
+      // Save packing plan if one was generated before order creation
+      if (packingPlan) {
+        savePackingPlanMutation.mutate({ 
+          planData: packingPlan, 
+          orderIdOverride: createdOrder.id 
+        });
+      }
+      
       toast({
         title: "Success",
-        description: "Order created successfully. You can now run AI packing optimization.",
+        description: packingPlan 
+          ? "Order created successfully. Packing plan saved."
+          : "Order created successfully. You can now run AI packing optimization.",
       });
     },
     onError: (error) => {
