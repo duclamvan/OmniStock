@@ -1000,13 +1000,13 @@ export default function ImportKanbanView() {
       {viewMode === "kanban" ? (
         /* Kanban View */
         <ScrollArea className="w-full px-4 md:px-0">
-          <div className="flex gap-3 pb-4">
+          <div className="flex flex-col md:flex-row gap-3 pb-4">
             {columns.map((column) => {
               const filteredItems = filterItems(column.items || []);
               return (
                 <div
                   key={column.id}
-                  className="flex-shrink-0 w-64"
+                  className="flex-shrink-0 w-full md:w-64"
                   onDragOver={(e) => handleDragOver(e, column.id)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, column.id)}
@@ -1204,7 +1204,7 @@ export default function ImportKanbanView() {
                         </div>
                       )}
                       
-                      <ScrollArea className="h-[calc(100vh-22rem)]">
+                      <ScrollArea className="h-[400px] md:h-[calc(100vh-22rem)]">
                         {filteredItems.length === 0 ? (
                           <div className={`
                             flex flex-col items-center justify-center py-8 text-center rounded-md

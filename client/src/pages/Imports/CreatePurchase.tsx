@@ -1074,43 +1074,79 @@ export default function CreatePurchase() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => navigate('/purchase-orders')}
-            data-testid="button-back"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-semibold">{isEditMode ? 'Edit Purchase Order' : 'Create Purchase Order'}</h1>
-            <p className="text-muted-foreground">{isEditMode ? 'Update purchase details' : 'Add supplier purchase with multiple items'}</p>
+    <div className="space-y-4 md:space-y-6 pb-20 md:pb-6">
+      {/* Mobile-First Sticky Header */}
+      <div className="sticky top-0 z-10 bg-background border-b md:relative md:border-0">
+        <div className="flex items-center justify-between p-4 md:p-0">
+          <div className="flex items-center gap-2 md:gap-4">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate('/purchase-orders')}
+              data-testid="button-back"
+              className="md:hidden"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate('/purchase-orders')}
+              className="hidden md:flex"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Purchase Orders
+            </Button>
+            <div>
+              <h1 className="text-lg md:text-2xl font-semibold">{isEditMode ? 'Edit Purchase' : 'Create Purchase'}</h1>
+              <p className="text-xs md:text-sm text-muted-foreground hidden md:block">{isEditMode ? 'Update purchase details' : 'Add supplier purchase with multiple items'}</p>
+            </div>
+          </div>
+          <div className="hidden md:flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/purchase-orders')}
+              data-testid="button-cancel"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSubmit}
+              disabled={createPurchaseMutation.isPending || updatePurchaseMutation.isPending}
+              data-testid="button-save-purchase"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {(createPurchaseMutation.isPending || updatePurchaseMutation.isPending) ? (isEditMode ? "Updating..." : "Creating...") : (isEditMode ? "Update" : "Create")}
+            </Button>
           </div>
         </div>
+      </div>
+
+      {/* Fixed Bottom Actions for Mobile */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 md:hidden z-10">
         <div className="flex gap-2">
           <Button 
             variant="outline" 
             onClick={() => navigate('/purchase-orders')}
-            data-testid="button-cancel"
+            data-testid="button-cancel-mobile"
+            className="flex-1"
           >
             Cancel
           </Button>
           <Button 
             onClick={handleSubmit}
             disabled={createPurchaseMutation.isPending || updatePurchaseMutation.isPending}
-            data-testid="button-save-purchase"
+            data-testid="button-save-purchase-mobile"
+            className="flex-1"
           >
             <Save className="h-4 w-4 mr-2" />
-            {(createPurchaseMutation.isPending || updatePurchaseMutation.isPending) ? (isEditMode ? "Updating..." : "Creating...") : (isEditMode ? "Update Purchase" : "Create Purchase")}
+            {(createPurchaseMutation.isPending || updatePurchaseMutation.isPending) ? (isEditMode ? "Updating..." : "Creating...") : (isEditMode ? "Update" : "Create")}
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-8">
+      <div className="px-4 md:px-6 max-w-7xl mx-auto space-y-4 md:space-y-6">
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-8">
         {/* Left Column - Form */}
         <div className="space-y-6">
           {/* Supplier Information */}
@@ -2816,6 +2852,7 @@ export default function CreatePurchase() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }

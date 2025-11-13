@@ -2273,7 +2273,108 @@ export default function InternationalTransit() {
                         </Select>
                       </div>
                     </div>
-                    <div className="border rounded-lg overflow-hidden">
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-3">
+                      {viewShipmentDetails.items.map((item: any, index: number) => {
+                        const qty = item.quantity || 1;
+                        const unitCost = parseFloat(item.unitPrice || 0);
+                        const itemShippingCost = calculateShippingCost(item);
+                        const shippingCostPerUnit = qty > 0 ? itemShippingCost / qty : 0;
+                        const landingCost = unitCost + shippingCostPerUnit;
+                        const landingCostEUR = convertCurrency(landingCost, currency as Currency, 'EUR');
+                        const landingCostCZK = convertCurrency(landingCost, currency as Currency, 'CZK');
+                        
+                        return (
+                          <div key={index} className="border rounded-lg p-3 space-y-2 bg-card">
+                            <div className="flex justify-between items-start">
+                              <p className="font-medium text-sm">{item.name || `Item ${index + 1}`}</p>
+                              <Badge variant="outline" className="text-xs">Qty: {qty}</Badge>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <p className="text-muted-foreground">Unit Cost</p>
+                                <p className="font-mono">{currency} {unitCost.toFixed(2)}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Shipping/Unit</p>
+                                <p className="font-mono text-blue-600">{currency} {shippingCostPerUnit.toFixed(2)}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Landing Cost</p>
+                                <p className="font-mono font-semibold">{currency} {landingCost.toFixed(2)}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Landing (EUR)</p>
+                                <p className="font-mono text-cyan-700 dark:text-cyan-400">€{landingCostEUR.toFixed(2)}</p>
+                              </div>
+                            </div>
+                            
+                            <div className="pt-2 border-t">
+                              <p className="text-xs text-muted-foreground">Landing (CZK)</p>
+                              <p className="font-mono text-sm text-cyan-700 dark:text-cyan-400">{landingCostCZK.toFixed(0)} Kč</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      
+                      {/* Mobile Totals Card */}
+                      <div className="border-2 border-primary/20 rounded-lg p-3 bg-slate-50 dark:bg-slate-900/30">
+                        <p className="font-semibold mb-3">Totals</p>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <p className="text-muted-foreground">Total Cost</p>
+                            <p className="font-mono font-semibold">
+                              {currency} {viewShipmentDetails.items.reduce((sum: number, item: any) => 
+                                sum + (parseFloat(item.unitPrice || 0) * (item.quantity || 1)), 0
+                              ).toFixed(2)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Total Shipping</p>
+                            <p className="font-mono font-semibold text-blue-600">
+                              {currency} {totalShipping.toFixed(2)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Total Landing</p>
+                            <p className="font-mono font-semibold">
+                              {currency} {(() => {
+                                const totalLanding = viewShipmentDetails.items.reduce((sum: number, item: any) => 
+                                  sum + (parseFloat(item.unitPrice || 0) * (item.quantity || 1)), 0
+                                ) + totalShipping;
+                                return totalLanding.toFixed(2);
+                              })()}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Landing (EUR)</p>
+                            <p className="font-mono font-semibold text-cyan-700 dark:text-cyan-400">
+                              €{(() => {
+                                const totalLanding = viewShipmentDetails.items.reduce((sum: number, item: any) => 
+                                  sum + (parseFloat(item.unitPrice || 0) * (item.quantity || 1)), 0
+                                ) + totalShipping;
+                                return convertCurrency(totalLanding, currency as Currency, 'EUR').toFixed(2);
+                              })()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-2 pt-2 border-t">
+                          <p className="text-xs text-muted-foreground">Total Landing (CZK)</p>
+                          <p className="font-mono text-base font-semibold text-cyan-700 dark:text-cyan-400">
+                            {(() => {
+                              const totalLanding = viewShipmentDetails.items.reduce((sum: number, item: any) => 
+                                sum + (parseFloat(item.unitPrice || 0) * (item.quantity || 1)), 0
+                              ) + totalShipping;
+                              return convertCurrency(totalLanding, currency as Currency, 'CZK').toFixed(0);
+                            })()} Kč
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block border rounded-lg overflow-hidden">
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-slate-50 dark:bg-slate-900/50">
