@@ -346,9 +346,9 @@ export default function Categories() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6">
           {filteredCategories.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="text-center py-12 px-4">
               <FolderOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No categories found</h3>
               <p className="text-muted-foreground mb-4">
@@ -366,12 +366,121 @@ export default function Categories() {
               )}
             </div>
           ) : (
-            <DataTable
-              data={filteredCategories}
-              columns={columns}
-              getRowKey={(row) => row.id.toString()}
-              onRowClick={handleRowClick}
-            />
+            <>
+              {/* Mobile Card View */}
+              <div className="sm:hidden space-y-3 p-3">
+                {filteredCategories.map((category) => {
+                  const productCount = category.productCount || 0;
+                  const hasProducts = productCount > 0;
+                  
+                  return (
+                    <div 
+                      key={category.id} 
+                      className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-100 dark:border-slate-700 p-4"
+                      onClick={() => handleRowClick(category)}
+                    >
+                      <div className="space-y-3">
+                        {/* Top Row - Category Name, Icon, Actions */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-3 flex-1 min-w-0">
+                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-950 flex items-center justify-center">
+                              <FolderOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p 
+                                className="font-semibold text-gray-900 dark:text-gray-100 truncate cursor-pointer hover:text-blue-600"
+                                data-testid={`category-name-${category.id}`}
+                              >
+                                {category.name}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                                {category.description || 'No description'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            {hasProducts ? (
+                              <Badge className="bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300 text-xs">
+                                Active
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-gray-500 text-xs">
+                                Empty
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Middle Row - Key Details */}
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <p className="text-gray-500 dark:text-gray-400 text-xs">Products</p>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <Package className={`h-4 w-4 ${hasProducts ? 'text-green-500' : 'text-gray-400'}`} />
+                              <span className={`font-semibold ${hasProducts ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400'}`}>
+                                {productCount}
+                              </span>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 dark:text-gray-400 text-xs">Created</p>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <Calendar className="h-4 w-4 text-gray-500" />
+                              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                {format(new Date(category.created_at), 'MMM dd, yyyy')}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Bottom Row - Actions */}
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-slate-700">
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            Updated: {format(new Date(category.updated_at), 'MMM dd, yyyy')}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Link href={`/inventory/categories/${category.id}/edit`}>
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                className="h-8 w-8 p-0"
+                                onClick={(e) => e.stopPropagation()}
+                                data-testid={`edit-category-${category.id}`}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 disabled:opacity-30"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(category.id);
+                              }}
+                              disabled={productCount > 0}
+                              data-testid={`delete-category-${category.id}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Desktop Table View */}
+              <div className="hidden sm:block">
+                <DataTable
+                  data={filteredCategories}
+                  columns={columns}
+                  getRowKey={(row) => row.id.toString()}
+                  onRowClick={handleRowClick}
+                />
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

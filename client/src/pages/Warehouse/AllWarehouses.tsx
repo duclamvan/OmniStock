@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCompactNumber } from "@/lib/currencyUtils";
-import { Plus, Search, Edit, Trash2, Warehouse, MapPin, Package, Ruler, Building2, User, Settings, Check, MoreVertical, Activity, TrendingUp, Grid3x3, Filter } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Warehouse, MapPin, Package, Ruler, Building2, User, Settings, Check, MoreVertical, Activity, TrendingUp, Grid3x3, Filter, Eye, Phone } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -34,6 +34,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   Select,
@@ -606,8 +607,217 @@ export default function AllWarehouses() {
 
       {/* Warehouses Table */}
       <Card className="border-slate-200 dark:border-slate-800">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">All Warehouses ({filteredWarehouses?.length || 0})</CardTitle>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="border-slate-300 dark:border-slate-700" data-testid="button-column-settings">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Columns
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {columns
+                  .filter(col => col.key !== 'actions')
+                  .map((column) => (
+                    <DropdownMenuItem
+                      key={column.key}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        toggleColumnVisibility(column.key);
+                      }}
+                      className="cursor-pointer"
+                      data-testid={`toggle-column-${column.key}`}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span>{column.header}</span>
+                        {visibleColumns[column.key] !== false && (
+                          <Check className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                        )}
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </CardHeader>
         <CardContent className="p-0 sm:p-6">
-          <div className="overflow-x-auto">
+          {/* Mobile Card View */}
+          <div className="sm:hidden space-y-3 p-3">
+            {filteredWarehouses?.map((warehouse: any) => {
+              const statusConfig = {
+                'active': { 
+                  label: 'Active', 
+                  icon: Activity,
+                  color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800' 
+                },
+                'inactive': { 
+                  label: 'Inactive', 
+                  icon: Activity,
+                  color: 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' 
+                },
+                'maintenance': { 
+                  label: 'Maintenance', 
+                  icon: Settings,
+                  color: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800' 
+                },
+                'rented': { 
+                  label: 'Rented', 
+                  icon: Building2,
+                  color: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-400 dark:border-indigo-800' 
+                },
+              };
+
+              const status = warehouse.status && statusConfig[warehouse.status as keyof typeof statusConfig] 
+                ? statusConfig[warehouse.status as keyof typeof statusConfig]
+                : null;
+              const StatusIcon = status?.icon;
+
+              return (
+                <div key={warehouse.id} className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-100 dark:border-slate-800 p-4">
+                  <div className="space-y-3">
+                    {/* Top Row - Warehouse Name, Status, Actions */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="p-2 rounded-lg bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950 flex-shrink-0">
+                          <Warehouse className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <Link href={`/warehouses/${warehouse.id}`}>
+                            <p className="font-semibold text-gray-900 dark:text-gray-100 truncate cursor-pointer hover:text-cyan-600 dark:hover:text-cyan-400">
+                              {warehouse.name}
+                            </p>
+                          </Link>
+                          {warehouse.location && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {warehouse.city || warehouse.location}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {status && StatusIcon && (
+                          <Badge className={`${status.color} font-medium text-xs px-2 py-0.5`} variant="outline">
+                            <StatusIcon className="h-3 w-3 mr-1" />
+                            {status.label}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Middle Row - Key Details (2 columns) */}
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">Location</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1">
+                          <MapPin className="h-3.5 w-3.5 text-gray-400" />
+                          {warehouse.address || warehouse.city || 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">Manager</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1">
+                          <User className="h-3.5 w-3.5 text-gray-400" />
+                          {warehouse.manager || 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">Products Stored</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1">
+                          <Package className="h-3.5 w-3.5 text-gray-400" />
+                          {(warehouse.itemCount || 0).toLocaleString()} units
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">Floor Area</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1">
+                          <Ruler className="h-3.5 w-3.5 text-gray-400" />
+                          {warehouse.floorArea || warehouse.floor_area ? 
+                            `${(warehouse.floorArea || warehouse.floor_area).toLocaleString()} m²` : 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Storage Capacity Indicator */}
+                    {warehouse.capacity && (
+                      <div className="pt-2 border-t border-gray-100 dark:border-slate-800">
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="text-gray-500 dark:text-gray-400">Storage Capacity</span>
+                          <span className="font-medium text-gray-900 dark:text-gray-100">
+                            {((warehouse.itemCount / warehouse.capacity) * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
+                          <div 
+                            className="bg-gradient-to-r from-cyan-500 to-blue-600 h-2 rounded-full transition-all"
+                            style={{ width: `${Math.min(((warehouse.itemCount / warehouse.capacity) * 100), 100)}%` }}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {warehouse.itemCount.toLocaleString()} / {warehouse.capacity.toLocaleString()} capacity
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Contact Information */}
+                    {warehouse.phone && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <Phone className="h-3.5 w-3.5" />
+                        <span>{warehouse.phone}</span>
+                      </div>
+                    )}
+                    
+                    {/* Bottom Row - Action Buttons */}
+                    <div className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-slate-800">
+                      <Link href={`/warehouses/${warehouse.id}`} className="flex-1">
+                        <Button size="sm" variant="outline" className="w-full" data-testid={`button-view-${warehouse.id}`}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          View
+                        </Button>
+                      </Link>
+                      <Link href={`/warehouses/${warehouse.id}/edit`} className="flex-1">
+                        <Button size="sm" variant="outline" className="w-full" data-testid={`button-edit-mobile-${warehouse.id}`}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+                      </Link>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950" data-testid={`button-delete-mobile-${warehouse.id}`}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Warehouse</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete "{warehouse.name}"? This action cannot be undone and may affect existing inventory records.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => deleteWarehouseMutation.mutate([warehouse.id])}
+                              className="bg-red-600 hover:bg-red-700 text-white"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Desktop Table View */}
+          <div className="hidden sm:block">
             <DataTable
               data={filteredWarehouses}
               columns={visibleColumnsFiltered}
@@ -616,81 +826,32 @@ export default function AllWarehouses() {
               itemsPerPageOptions={[10, 20, 50, 100]}
               defaultItemsPerPage={20}
               renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
-                <div className="px-4 sm:px-0 pb-4">
-                  <div className="flex items-center justify-between gap-3">
+                selectedRows.size > 0 && (
+                  <div className="px-4 sm:px-0 pb-4">
                     <div className="flex items-center gap-3 flex-wrap">
-                      <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                        Warehouses
-                      </h2>
-                      <Badge variant="secondary" className="text-xs font-normal">
-                        {filteredWarehouses?.length || 0} {filteredWarehouses?.length === 1 ? 'facility' : 'facilities'}
+                      <Badge className="bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300 border-cyan-300 dark:border-cyan-700">
+                        {selectedRows.size} selected
                       </Badge>
-                      {selectedRows.size > 0 && (
-                        <>
-                          <Badge className="bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300 border-cyan-300 dark:border-cyan-700">
-                            {selectedRows.size} selected
-                          </Badge>
-                          {actions.map((action, index) => {
-                            if (action.type === "button") {
-                              return (
-                                <Button
-                                  key={index}
-                                  size="sm"
-                                  variant={action.variant || "ghost"}
-                                  onClick={() => action.action(selectedItems)}
-                                  className="h-8"
-                                  data-testid={`button-${action.label.toLowerCase().replace(' ', '-')}`}
-                                >
-                                  {action.label}
-                                </Button>
-                              );
-                            }
-                            return null;
-                          })}
-                        </>
-                      )}
-                    </div>
-                    
-                    {/* Column Visibility Settings */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 border-slate-300 dark:border-slate-700"
-                          data-testid="button-column-settings"
-                        >
-                          <Settings className="h-4 w-4 mr-2" />
-                          Columns
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {columns
-                          .filter(col => col.key !== 'actions')
-                          .map((column) => (
-                            <DropdownMenuItem
-                              key={column.key}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                toggleColumnVisibility(column.key);
-                              }}
-                              className="cursor-pointer"
-                              data-testid={`toggle-column-${column.key}`}
+                      {actions.map((action, index) => {
+                        if (action.type === "button") {
+                          return (
+                            <Button
+                              key={index}
+                              size="sm"
+                              variant={action.variant || "ghost"}
+                              onClick={() => action.action(selectedItems)}
+                              className="h-8"
+                              data-testid={`button-${action.label.toLowerCase().replace(' ', '-')}`}
                             >
-                              <div className="flex items-center justify-between w-full">
-                                <span>{column.header}</span>
-                                {visibleColumns[column.key] !== false && (
-                                  <Check className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-                                )}
-                              </div>
-                            </DropdownMenuItem>
-                          ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                              {action.label}
+                            </Button>
+                          );
+                        }
+                        return null;
+                      })}
+                    </div>
                   </div>
-                </div>
+                )
               )}
             />
           </div>

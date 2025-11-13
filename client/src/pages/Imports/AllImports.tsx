@@ -25,7 +25,9 @@ import {
   Ship,
   FileText,
   BarChart3,
-  Columns
+  Columns,
+  Edit,
+  Eye
 } from "lucide-react";
 
 export default function AllImports() {
@@ -41,6 +43,25 @@ export default function AllImports() {
       const response = await fetch('/api/import-orders');
       if (!response.ok) throw new Error('Failed to fetch import orders');
       return response.json();
+    }
+  });
+
+  // Fetch import items to count items per order
+  const { data: importItems = [] } = useQuery({
+    queryKey: ['/api/import-items'],
+    queryFn: async () => {
+      const response = await fetch('/api/import-items');
+      if (!response.ok) return [];
+      return response.json();
+    }
+  });
+
+  // Calculate item count per order
+  const itemCountByOrder: { [orderId: string]: number } = {};
+  (importItems as any[])?.forEach((item: any) => {
+    const orderId = item.importOrderId;
+    if (orderId) {
+      itemCountByOrder[orderId] = (itemCountByOrder[orderId] || 0) + 1;
     }
   });
 
@@ -68,6 +89,36 @@ export default function AllImports() {
     )
   };
 
+  // Helper function to get status badge
+  const getStatusBadge = (order: any) => {
+    const statusColors: Record<string, string> = {
+      pending: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+      ordered: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+      shipped: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200',
+      delivered: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+      received: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+      cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+    };
+    
+    const statusIcons: Record<string, any> = {
+      pending: Clock,
+      ordered: FileText,
+      shipped: Ship,
+      delivered: Truck,
+      received: CheckCircle,
+      cancelled: AlertCircle
+    };
+    
+    const Icon = statusIcons[order.status] || Clock;
+    
+    return (
+      <Badge className={`${statusColors[order.status]} flex items-center gap-1`}>
+        <Icon className="h-3 w-3" />
+        {order.status}
+      </Badge>
+    );
+  };
+
   // Define table columns
   const columns: DataTableColumn<any>[] = [
     {
@@ -86,34 +137,7 @@ export default function AllImports() {
       key: "status",
       header: "Status",
       sortable: true,
-      cell: (order) => {
-        const statusColors: Record<string, string> = {
-          pending: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
-          ordered: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-          shipped: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200',
-          delivered: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-          received: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-          cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-        };
-        
-        const statusIcons: Record<string, any> = {
-          pending: Clock,
-          ordered: FileText,
-          shipped: Ship,
-          delivered: Truck,
-          received: CheckCircle,
-          cancelled: AlertCircle
-        };
-        
-        const Icon = statusIcons[order.status] || Clock;
-        
-        return (
-          <Badge className={`${statusColors[order.status]} flex items-center gap-1`}>
-            <Icon className="h-3 w-3" />
-            {order.status}
-          </Badge>
-        );
-      },
+      cell: (order) => getStatusBadge(order),
     },
     {
       key: "supplier",
@@ -362,14 +386,123 @@ export default function AllImports() {
         <CardHeader>
           <CardTitle>Import Orders</CardTitle>
         </CardHeader>
-        <CardContent>
-          <DataTable
-            data={filteredOrders}
-            columns={columns}
-            getRowKey={(order) => order.id}
-            itemsPerPageOptions={[10, 20, 50, 100]}
-            defaultItemsPerPage={20}
-          />
+        <CardContent className="p-0 sm:p-6">
+          {/* Mobile Card View */}
+          <div className="sm:hidden space-y-3 p-3">
+            {filteredOrders?.map((order: any) => (
+              <div key={order.id} className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+                <div className="space-y-3">
+                  {/* Top Row - Order Number, Status, Actions */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <Link href={`/imports/orders/${order.id}`}>
+                        <p className="font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer">
+                          {order.orderNumber}
+                        </p>
+                      </Link>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {order.supplier?.name || 'No supplier'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {getStatusBadge(order)}
+                    </div>
+                  </div>
+                  
+                  {/* Middle Row - Key Details (2 columns) */}
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-500 dark:text-gray-400 text-xs">Import Date</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">
+                        {order.orderDate ? formatDate(order.orderDate) : formatDate(order.createdAt)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 dark:text-gray-400 text-xs">Items</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1">
+                        <Package className="h-3.5 w-3.5" />
+                        {itemCountByOrder[order.id] || 0}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 dark:text-gray-400 text-xs">Total Cost</p>
+                      <p className="font-semibold text-gray-900 dark:text-gray-100">
+                        {formatCurrency(
+                          parseFloat(order.totalLandedCost || order.productValue || '0'),
+                          order.currency
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 dark:text-gray-400 text-xs">Region</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1">
+                        <Globe className="h-3.5 w-3.5" />
+                        {order.region || '-'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Expected Arrival / Tracking */}
+                  {(order.estimatedArrival || order.trackingNumber) && (
+                    <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t border-gray-100 dark:border-slate-700">
+                      {order.estimatedArrival && (
+                        <div>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">Expected Arrival</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5" />
+                            {formatDate(order.estimatedArrival)}
+                          </p>
+                        </div>
+                      )}
+                      {order.trackingNumber && (
+                        <div>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">Tracking</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-100 text-xs truncate">
+                            {order.trackingNumber}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Bottom Row - Action Buttons */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-slate-700">
+                    <Link href={`/imports/orders/${order.id}`} className="flex-1">
+                      <Button size="sm" variant="outline" className="w-full">
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </Button>
+                    </Link>
+                    <Link href={`/imports/orders/${order.id}/edit`} className="flex-1">
+                      <Button size="sm" variant="outline" className="w-full">
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                    </Link>
+                    {order.status === 'delivered' && (
+                      <Link href={`/imports/orders/${order.id}/receive`} className="flex-1">
+                        <Button size="sm" variant="default" className="w-full bg-green-600 hover:bg-green-700">
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Process
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Desktop Table View */}
+          <div className="hidden sm:block">
+            <DataTable
+              data={filteredOrders}
+              columns={columns}
+              getRowKey={(order) => order.id}
+              itemsPerPageOptions={[10, 20, 50, 100]}
+              defaultItemsPerPage={20}
+            />
+          </div>
         </CardContent>
       </Card>
     </div>

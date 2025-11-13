@@ -27,6 +27,8 @@ import {
   Download,
   FileSpreadsheet,
   FileText,
+  Edit,
+  Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -256,7 +258,7 @@ export default function AllExpenses() {
           'Date': formatDate(expense.date),
           'Status': expense.status || 'pending',
           'Payment Method': expense.paymentMethod ? 
-            expense.paymentMethod.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : '-',
+            expense.paymentMethod.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : '-',
         };
       });
 
@@ -316,7 +318,7 @@ export default function AllExpenses() {
           date: formatDate(expense.date),
           status: expense.status ? expense.status.charAt(0).toUpperCase() + expense.status.slice(1) : 'Pending',
           paymentMethod: expense.paymentMethod ? 
-            expense.paymentMethod.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : '-',
+            expense.paymentMethod.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : '-',
         };
       });
 
@@ -734,14 +736,147 @@ export default function AllExpenses() {
           </div>
         </CardHeader>
         <CardContent className="p-0 sm:p-6">
-          <DataTable
-            columns={visibleColumnsFiltered}
-            data={filteredExpenses}
-            bulkActions={bulkActions}
-            getRowKey={(expense) => expense.id}
-            itemsPerPageOptions={[10, 20, 50, 100]}
-            defaultItemsPerPage={20}
-          />
+          {/* Mobile Card View */}
+          <div className="sm:hidden space-y-3 p-3">
+            {filteredExpenses?.map((expense: any) => {
+              const amount = parseFloat(expense.amount || '0') || 0;
+              const symbol = getCurrencySymbol(expense.currency || 'USD');
+              const status = expense.status || 'pending';
+              
+              const statusConfig = {
+                'paid': { label: 'Paid', icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800' },
+                'pending': { label: 'Pending', icon: Clock, color: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800' },
+                'overdue': { label: 'Overdue', icon: TrendingUp, color: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800' },
+              };
+              
+              const methodConfig = {
+                'cash': { label: 'Cash', icon: DollarSign, color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800' },
+                'card': { label: 'Card', icon: CreditCard, color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800' },
+                'bank_transfer': { label: 'Transfer', icon: Receipt, color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-400 dark:border-purple-800' },
+                'check': { label: 'Check', icon: Receipt, color: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-400 dark:border-orange-800' },
+              };
+              
+              const statusInfo = statusConfig[status as keyof typeof statusConfig] || statusConfig['pending'];
+              const StatusIcon = statusInfo.icon;
+              
+              return (
+                <div key={expense.id} className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4">
+                  <div className="space-y-3">
+                    {/* Top Row - Title, Status, Actions */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <Link href={`/expenses/${expense.id}`}>
+                          <p className="font-semibold text-slate-900 dark:text-slate-100 truncate cursor-pointer hover:text-cyan-600 dark:hover:text-cyan-400">
+                            {expense.description || expense.name || expense.expenseId || 'Expense'}
+                          </p>
+                        </Link>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                          {expense.expenseId || expense.name || 'N/A'}
+                          {expense.vendor && <span className="ml-2">• {expense.vendor}</span>}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Badge className={`${statusInfo.color} font-medium px-2 py-0.5 text-xs`} variant="outline">
+                          <StatusIcon className="h-3 w-3 mr-1" />
+                          {statusInfo.label}
+                        </Badge>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost" className="h-8 w-8" data-testid={`button-actions-${expense.id}`}>
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link href={`/expenses/${expense.id}`} className="flex items-center cursor-pointer">
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link href={`/expenses/${expense.id}/edit`} className="flex items-center cursor-pointer">
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedExpenses([expense]);
+                                setShowDeleteDialog(true);
+                              }}
+                              className="text-red-600 dark:text-red-400"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                    
+                    {/* Middle Row - Key Details */}
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs mb-1">Category</p>
+                        <Badge variant="outline" className="border-slate-200 dark:border-slate-700 text-xs">
+                          {expense.category || 'General'}
+                        </Badge>
+                      </div>
+                      <div>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs mb-1">Date</p>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3 text-slate-400" />
+                          <p className="font-medium text-slate-900 dark:text-slate-100 text-xs">
+                            {formatDate(expense.date)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Bottom Row - Amount & Payment Method */}
+                    <div className="flex items-end justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                      <div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Amount</p>
+                        <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                          {symbol}{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {expense.currency || 'USD'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Payment</p>
+                        {expense.paymentMethod && methodConfig[expense.paymentMethod as keyof typeof methodConfig] ? (() => {
+                          const PaymentIcon = methodConfig[expense.paymentMethod as keyof typeof methodConfig].icon;
+                          return (
+                            <Badge className={`${methodConfig[expense.paymentMethod as keyof typeof methodConfig].color} font-medium px-2 py-0.5 text-xs`} variant="outline">
+                              <PaymentIcon className="h-3 w-3 mr-1" />
+                              {methodConfig[expense.paymentMethod as keyof typeof methodConfig].label}
+                            </Badge>
+                          );
+                        })() : (
+                          <span className="text-xs text-slate-400">-</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Desktop Table View */}
+          <div className="hidden sm:block">
+            <DataTable
+              columns={visibleColumnsFiltered}
+              data={filteredExpenses}
+              bulkActions={bulkActions}
+              getRowKey={(expense) => expense.id}
+              itemsPerPageOptions={[10, 20, 50, 100]}
+              defaultItemsPerPage={20}
+            />
+          </div>
         </CardContent>
       </Card>
 

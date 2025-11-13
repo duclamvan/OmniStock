@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   Plus, 
   Search, 
@@ -118,6 +119,11 @@ export default function AllSuppliers() {
 
   const { data: purchases = [] } = useQuery<any[]>({
     queryKey: ["/api/purchases"],
+    retry: false,
+  });
+
+  const { data: products = [] } = useQuery<any[]>({
+    queryKey: ["/api/products"],
     retry: false,
   });
 
@@ -266,6 +272,14 @@ export default function AllSuppliers() {
         vietnameseNormalization: true,
       }).map(r => r.item)
     : suppliers;
+
+  // Calculate products count per supplier
+  const productCountBySupplier: { [supplierId: string]: number } = {};
+  products.forEach((product: any) => {
+    if (product.supplierId) {
+      productCountBySupplier[product.supplierId] = (productCountBySupplier[product.supplierId] || 0) + 1;
+    }
+  });
 
   // Calculate stats
   const totalSuppliers = suppliers.length;
@@ -696,6 +710,153 @@ export default function AllSuppliers() {
       {/* Suppliers Table */}
       <Card className="border-slate-200 dark:border-slate-800">
         <CardContent className="p-0 sm:p-6">
+          {/* Mobile Card View */}
+          <div className="sm:hidden space-y-3 p-3">
+            {filteredSuppliers?.map((supplier: Supplier) => (
+              <div key={supplier.id} className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4">
+                <div className="space-y-3">
+                  {/* Top Row - Supplier Name, Status, Actions */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <Avatar className="h-12 w-12 flex-shrink-0">
+                        <AvatarFallback className="text-sm bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950 text-cyan-600 dark:text-cyan-400 font-semibold">
+                          {supplier.name?.charAt(0) || 'S'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <Link href={`/suppliers/${supplier.id}`}>
+                          <p className="font-semibold text-slate-900 dark:text-slate-100 hover:text-cyan-600 dark:hover:text-cyan-400 cursor-pointer truncate">
+                            {supplier.name}
+                          </p>
+                        </Link>
+                        {supplier.contactPerson && (
+                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                            {supplier.contactPerson}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {getStatusBadge(supplier)}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="icon" variant="ghost" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => navigate(`/suppliers/${supplier.id}`)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(`/suppliers/${supplier.id}/edit`)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit Supplier
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setDeleteSupplier(supplier);
+                              setShowDeleteDialog(true);
+                            }}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+
+                  {/* Middle Row - Contact & Location */}
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-slate-500 dark:text-slate-400 text-xs mb-1">Contact</p>
+                      {supplier.email && (
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <Mail className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                          <a 
+                            href={`mailto:${supplier.email}`}
+                            className="text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 truncate text-xs"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {supplier.email}
+                          </a>
+                        </div>
+                      )}
+                      {supplier.phone && (
+                        <div className="flex items-center gap-1.5">
+                          <Phone className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                          <a 
+                            href={`tel:${supplier.phone}`}
+                            className="text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 text-xs"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {supplier.phone}
+                          </a>
+                        </div>
+                      )}
+                      {!supplier.email && !supplier.phone && (
+                        <p className="text-slate-400 dark:text-slate-500 text-xs">No contact info</p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-slate-500 dark:text-slate-400 text-xs mb-1">Location</p>
+                      {supplier.country ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-lg">{getCountryFlag(supplier.country)}</span>
+                          <p className="font-medium text-slate-700 dark:text-slate-300 text-xs truncate">
+                            {supplier.country}
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-slate-400 dark:text-slate-500 text-xs">Not specified</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Bottom Row - Stats */}
+                  <div className="grid grid-cols-2 gap-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Products Supplied</p>
+                      <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                        {productCountBySupplier[supplier.id] || 0}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Total Purchases</p>
+                      <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                        ${parseFloat(supplier.totalPurchased || '0').toLocaleString('en-US', { 
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0 
+                        })}
+                      </p>
+                      {supplier.lastPurchaseDate && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                          {formatDate(supplier.lastPurchaseDate)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            {filteredSuppliers.length === 0 && (
+              <div className="text-center py-12">
+                <Building2 className="h-12 w-12 text-slate-300 dark:text-slate-700 mx-auto mb-4" />
+                <p className="text-slate-500 dark:text-slate-400 font-medium">No suppliers found</p>
+                <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">
+                  Try adjusting your search criteria
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Header & Controls - Always Visible */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 sm:px-0 py-4 sm:py-0 sm:pb-4">
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">All Suppliers</h2>
@@ -704,10 +865,10 @@ export default function AllSuppliers() {
               </Badge>
             </div>
             
-            {/* Column Visibility Toggle */}
+            {/* Column Visibility Toggle - Desktop only */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9">
+                <Button variant="outline" size="sm" className="h-9 hidden sm:flex">
                   <MoreVertical className="h-4 w-4 mr-2" />
                   Columns
                 </Button>
@@ -736,14 +897,17 @@ export default function AllSuppliers() {
             </DropdownMenu>
           </div>
 
-          <DataTable
-            columns={visibleColumnsFiltered}
-            data={filteredSuppliers}
-            bulkActions={bulkActions}
-            getRowKey={(supplier) => supplier.id}
-            itemsPerPageOptions={[10, 20, 50, 100]}
-            defaultItemsPerPage={20}
-          />
+          {/* Desktop Table View */}
+          <div className="hidden sm:block">
+            <DataTable
+              columns={visibleColumnsFiltered}
+              data={filteredSuppliers}
+              bulkActions={bulkActions}
+              getRowKey={(supplier) => supplier.id}
+              itemsPerPageOptions={[10, 20, 50, 100]}
+              defaultItemsPerPage={20}
+            />
+          </div>
         </CardContent>
       </Card>
 

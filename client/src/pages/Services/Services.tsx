@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCompactNumber } from "@/lib/currencyUtils";
-import { Plus, Search, Edit, Wrench, Clock, PlayCircle, CheckCircle2, Filter, Settings, Check, Calendar, FileDown, FileText } from "lucide-react";
+import { Plus, Search, Edit, Wrench, Clock, PlayCircle, CheckCircle2, Filter, Settings, Check, Calendar, FileDown, FileText, Trash2 } from "lucide-react";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import {
   Tooltip,
@@ -35,6 +35,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   Select,
@@ -677,7 +678,152 @@ export default function Services() {
       {/* Services Table */}
       <Card className="border-slate-200 dark:border-slate-800">
         <CardContent className="p-0 sm:p-6">
-          <div className="overflow-x-auto">
+          {/* Mobile Card View */}
+          <div className="sm:hidden space-y-3 p-3">
+            {filteredServices?.map((service) => {
+              const statusConfig = {
+                'pending': { 
+                  label: 'Pending', 
+                  icon: Clock,
+                  color: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800' 
+                },
+                'in_progress': { 
+                  label: 'In Progress', 
+                  icon: PlayCircle,
+                  color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800' 
+                },
+                'completed': { 
+                  label: 'Completed', 
+                  icon: CheckCircle2,
+                  color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800' 
+                },
+                'cancelled': { 
+                  label: 'Cancelled', 
+                  icon: CheckCircle2,
+                  color: 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' 
+                },
+              };
+              
+              const status = statusConfig[service.status as keyof typeof statusConfig];
+              const StatusIcon = status?.icon;
+
+              return (
+                <div key={service.id} className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4">
+                  <div className="space-y-3">
+                    {/* Top Row - Service Name, Icon, Status, Actions */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="p-2 rounded-lg bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950 flex-shrink-0">
+                          <Wrench className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <Link href={`/services/${service.id}`}>
+                            <p className="font-semibold text-slate-900 dark:text-slate-100 truncate cursor-pointer hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
+                              {service.name}
+                            </p>
+                          </Link>
+                          {service.description && (
+                            <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">
+                              {service.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {status && (
+                          <Badge className={`${status.color} font-medium px-2 py-1 text-xs`} variant="outline">
+                            {StatusIcon && <StatusIcon className="h-3 w-3 mr-1" />}
+                            {status.label}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Middle Row - Key Details (grid-cols-2) */}
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs">Customer</p>
+                        <p className="font-medium text-slate-900 dark:text-slate-100 truncate">
+                          {service.customer?.name || 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs">Created</p>
+                        <p className="font-medium text-slate-900 dark:text-slate-100">
+                          {formatDate(service.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Cost Details (grid-cols-2) */}
+                    <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t border-slate-100 dark:border-slate-800">
+                      <div>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs">Service Cost</p>
+                        <p className="font-medium text-slate-900 dark:text-slate-100">
+                          {formatCurrency(service.serviceCost)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs">Parts Cost</p>
+                        <p className="font-medium text-slate-900 dark:text-slate-100">
+                          {formatCurrency(service.partsCost)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Bottom Row - Total Cost and Actions */}
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                      <div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Total Cost</p>
+                        <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                          {formatCurrency(service.totalCost)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Link href={`/services/${service.id}`}>
+                          <Button size="sm" variant="outline" className="h-8 border-cyan-300 dark:border-cyan-700 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-950" data-testid={`button-view-${service.id}`}>
+                            View
+                          </Button>
+                        </Link>
+                        <Link href={`/services/${service.id}/edit`}>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-slate-100 dark:hover:bg-slate-800" data-testid={`button-edit-${service.id}`}>
+                            <Edit className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                          </Button>
+                        </Link>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950" data-testid={`button-delete-${service.id}`}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Service</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete "{service.name}"? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => deleteServiceMutation.mutate([service.id])}
+                                className="bg-red-600 hover:bg-red-700 text-white"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden sm:block overflow-x-auto">
             <DataTable
               data={filteredServices}
               columns={visibleColumnsFiltered}

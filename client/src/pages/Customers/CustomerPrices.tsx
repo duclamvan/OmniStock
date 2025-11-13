@@ -23,7 +23,23 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import type { CustomerPrice, Product, ProductVariant } from '@shared/schema';
+import type { Product, ProductVariant } from '@shared/schema';
+
+interface CustomerPrice {
+  id: string;
+  customerId: string;
+  productId: string;
+  variantId?: string | null;
+  price: string;
+  currency: string;
+  validFrom: string;
+  validTo?: string | null;
+  isActive: boolean;
+  notes?: string | null;
+  createdAt: string;
+  product?: Product;
+  variant?: ProductVariant | null;
+}
 
 const createCustomerPriceSchema = z.object({
   productId: z.string().min(1, 'Product is required'),
@@ -592,7 +608,102 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
       ) : (
         <Card className="overflow-hidden">
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
+            {/* Mobile Card View */}
+            <div className="sm:hidden space-y-3 p-3">
+              {prices.map((price: any) => {
+                const product = products.find(p => p.id === price.productId);
+                const standardPrice = product ? parseFloat(product.priceEur || product.priceCzk || '0') : 0;
+                const customPrice = parseFloat(price.price || '0');
+                const discount = standardPrice > 0 ? Math.round(((standardPrice - customPrice) / standardPrice) * 100) : 0;
+                const isExpired = price.validTo && new Date(price.validTo) < new Date();
+                const isActive = price.isActive && !isExpired;
+
+                return (
+                  <div key={price.id} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+                    <div className="space-y-3">
+                      {/* Top Row - Product Name and Status */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 truncate">
+                            {product?.name || 'Unknown Product'}
+                          </p>
+                          {price.variantId && (
+                            <p className="text-xs text-gray-500">
+                              Variant: {price.variantId}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Badge 
+                            variant={isActive ? 'default' : 'secondary'}
+                            className="text-xs px-2 py-0.5"
+                          >
+                            {isExpired ? 'Expired' : price.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-red-600 hover:text-red-700"
+                            onClick={() => deletePriceMutation.mutate(price.id)}
+                            data-testid={`button-delete-${price.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Middle Row - Price Comparison */}
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-500 text-xs">Custom Price</p>
+                          <p className="font-bold text-lg text-gray-900">
+                            {customPrice.toFixed(2)} {price.currency}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-xs">Standard Price</p>
+                          <p className="font-medium text-gray-600">
+                            {standardPrice.toFixed(2)} {price.currency}
+                          </p>
+                          {discount > 0 && (
+                            <Badge variant="outline" className="text-xs mt-1 bg-green-50 text-green-700 border-green-200">
+                              -{discount}% discount
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Bottom Row - Valid Dates */}
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-500 text-xs">Valid From</p>
+                          <p className="font-medium text-gray-900">
+                            {format(new Date(price.validFrom), 'dd/MM/yyyy')}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-xs">Valid To</p>
+                          <p className="font-medium text-gray-900">
+                            {price.validTo ? format(new Date(price.validTo), 'dd/MM/yyyy') : 'No expiry'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Notes if available */}
+                      {price.notes && (
+                        <div className="pt-2 border-t border-gray-100">
+                          <p className="text-xs text-gray-500">Notes</p>
+                          <p className="text-sm text-gray-700">{price.notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden sm:block overflow-x-auto">
               <DataTable
                 columns={columns}
                 data={prices}

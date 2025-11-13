@@ -672,184 +672,277 @@ export default function AllTickets() {
 
       {/* Tickets View */}
       <Card className="border-slate-200 dark:border-slate-800">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>All Tickets</CardTitle>
-            <CardDescription>
-              Showing {filteredTickets.length} ticket{filteredTickets.length !== 1 ? 's' : ''}
-            </CardDescription>
-          </div>
-          <div className="flex items-center gap-2">
-            {/* View Mode Toggle */}
-            <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-lg p-1 bg-slate-50 dark:bg-slate-900">
-              <Button
-                variant={viewMode === 'card' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('card')}
-                className={cn(
-                  "h-7 px-3",
-                  viewMode === 'card' 
-                    ? "shadow-sm" 
-                    : "hover:bg-slate-100 dark:hover:bg-slate-800"
-                )}
-                data-testid="button-view-card"
-              >
-                <LayoutGrid className="h-4 w-4 mr-1.5" />
-                Cards
-              </Button>
-              <Button
-                variant={viewMode === 'table' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('table')}
-                className={cn(
-                  "h-7 px-3",
-                  viewMode === 'table' 
-                    ? "shadow-sm" 
-                    : "hover:bg-slate-100 dark:hover:bg-slate-800"
-                )}
-                data-testid="button-view-table"
-              >
-                <LayoutList className="h-4 w-4 mr-1.5" />
-                Table
-              </Button>
+        <CardHeader className="pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-lg">All Tickets</CardTitle>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                Showing {filteredTickets.length} ticket{filteredTickets.length !== 1 ? 's' : ''}
+              </p>
             </div>
-            {viewMode === 'table' && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="h-8 w-8">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-[200px]">
-                  <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuCheckboxItem
-                    checked={visibleColumns.ticketNumber !== false}
-                    onCheckedChange={() => toggleColumnVisibility('ticketNumber')}
-                  >
-                    Ticket #
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={visibleColumns.customer !== false}
-                    onCheckedChange={() => toggleColumnVisibility('customer')}
-                  >
-                    Customer
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={visibleColumns.subject !== false}
-                    onCheckedChange={() => toggleColumnVisibility('subject')}
-                  >
-                    Subject
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={visibleColumns.priority !== false}
-                    onCheckedChange={() => toggleColumnVisibility('priority')}
-                  >
-                    Priority
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={visibleColumns.status !== false}
-                    onCheckedChange={() => toggleColumnVisibility('status')}
-                  >
-                    Status
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={visibleColumns.createdAt !== false}
-                    onCheckedChange={() => toggleColumnVisibility('createdAt')}
-                  >
-                    Created
-                  </DropdownMenuCheckboxItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+            <div className="flex items-center gap-2">
+              {/* View Mode Toggle - Mobile & Desktop */}
+              <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-lg p-1 bg-slate-50 dark:bg-slate-900">
+                <Button
+                  variant={viewMode === 'card' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('card')}
+                  className={cn(
+                    "h-7 px-3",
+                    viewMode === 'card' 
+                      ? "shadow-sm" 
+                      : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                  )}
+                  data-testid="button-view-card"
+                >
+                  <LayoutGrid className="h-4 w-4 mr-1.5" />
+                  Cards
+                </Button>
+                <Button
+                  variant={viewMode === 'table' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('table')}
+                  className={cn(
+                    "h-7 px-3",
+                    viewMode === 'table' 
+                      ? "shadow-sm" 
+                      : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                  )}
+                  data-testid="button-view-table"
+                >
+                  <LayoutList className="h-4 w-4 mr-1.5" />
+                  Table
+                </Button>
+              </div>
+              {/* Column Toggle - only shown for table view on desktop */}
+              {viewMode === 'table' && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-8 w-8 hidden sm:flex">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-[200px]">
+                    <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuCheckboxItem
+                      checked={visibleColumns.ticketNumber !== false}
+                      onCheckedChange={() => toggleColumnVisibility('ticketNumber')}
+                    >
+                      Ticket #
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem
+                      checked={visibleColumns.customer !== false}
+                      onCheckedChange={() => toggleColumnVisibility('customer')}
+                    >
+                      Customer
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem
+                      checked={visibleColumns.subject !== false}
+                      onCheckedChange={() => toggleColumnVisibility('subject')}
+                    >
+                      Subject
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem
+                      checked={visibleColumns.priority !== false}
+                      onCheckedChange={() => toggleColumnVisibility('priority')}
+                    >
+                      Priority
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem
+                      checked={visibleColumns.status !== false}
+                      onCheckedChange={() => toggleColumnVisibility('status')}
+                    >
+                      Status
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem
+                      checked={visibleColumns.createdAt !== false}
+                      onCheckedChange={() => toggleColumnVisibility('createdAt')}
+                    >
+                      Created
+                    </DropdownMenuCheckboxItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
           </div>
         </CardHeader>
-        <CardContent>
-          {viewMode === 'table' ? (
-            <DataTable
-              data={filteredTickets}
-              columns={visibleColumnsFiltered}
-              bulkActions={bulkActions}
-              getRowKey={(ticket) => ticket.id}
-            />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredTickets.length === 0 ? (
-                <div className="col-span-full text-center py-12">
-                  <TicketIcon className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-700 mb-4" />
-                  <p className="text-slate-500 dark:text-slate-400">No tickets found</p>
-                </div>
-              ) : (
-                filteredTickets.map((ticket: any) => (
-                  <Card 
-                    key={ticket.id} 
-                    className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-all hover:border-cyan-300 dark:hover:border-cyan-700 cursor-pointer group"
-                    onClick={() => navigate(`/tickets/${ticket.id}`)}
-                    data-testid={`card-ticket-${ticket.id}`}
-                  >
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className="p-2 rounded-lg bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950 group-hover:from-cyan-100 group-hover:to-blue-100 dark:group-hover:from-cyan-900 dark:group-hover:to-blue-900 transition-colors">
-                            <TicketIcon className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-slate-900 dark:text-slate-100 truncate group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
+        <CardContent className="p-0 sm:p-6">
+          {/* Mobile Card View */}
+          <div className="sm:hidden space-y-3 p-3">
+            {filteredTickets.length === 0 ? (
+              <div className="text-center py-12">
+                <TicketIcon className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-700 mb-4" />
+                <p className="text-slate-500 dark:text-slate-400">No tickets found</p>
+              </div>
+            ) : (
+              filteredTickets.map((ticket: any) => (
+                <div 
+                  key={ticket.id} 
+                  className="bg-white dark:bg-slate-950 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 p-4"
+                  data-testid={`card-mobile-ticket-${ticket.id}`}
+                >
+                  <div className="space-y-3">
+                    {/* Top Row - Ticket ID, Title, Actions */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div className="p-2 rounded-lg bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950 flex-shrink-0">
+                          <TicketIcon className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <Link href={`/tickets/${ticket.id}`}>
+                            <p className="font-semibold text-slate-900 dark:text-slate-100 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors cursor-pointer">
                               {ticket.ticketId || `#${ticket.id.substring(0, 8)}`}
                             </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                              {format(new Date(ticket.createdAt), 'MMM d, yyyy')}
-                            </p>
-                          </div>
+                          </Link>
+                          <p className="text-sm text-slate-900 dark:text-slate-100 mt-1 line-clamp-2">
+                            {ticket.title}
+                          </p>
                         </div>
-                        <Link 
-                          href={`/tickets/edit/${ticket.id}`}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Button 
-                            size="icon" 
-                            variant="ghost" 
-                            className="h-8 w-8 hover:bg-cyan-50 dark:hover:bg-cyan-950"
-                            data-testid={`button-edit-card-${ticket.id}`}
-                          >
-                            <Edit className="h-4 w-4" />
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <Link href={`/tickets/${ticket.id}`}>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" data-testid={`button-view-${ticket.id}`}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <Link href={`/tickets/edit/${ticket.id}`}>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" data-testid={`button-respond-${ticket.id}`}>
+                            <MessageSquare className="h-4 w-4" />
                           </Button>
                         </Link>
                       </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
+                    </div>
+
+                    {/* Middle Row - Key Details in 2 columns */}
+                    <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-1 line-clamp-2">
-                          {ticket.title}
-                        </h4>
-                        {ticket.description && (
-                          <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2">
-                            {ticket.description}
-                          </p>
-                        )}
+                        <p className="text-slate-500 dark:text-slate-400 text-xs">Customer</p>
+                        <p className="font-medium text-slate-900 dark:text-slate-100 truncate">
+                          {ticket.customer?.name || '-'}
+                        </p>
                       </div>
-                      {ticket.customer && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <div className="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800">
-                            <User className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
+                      <div>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs">Category</p>
+                        <p className="font-medium text-slate-900 dark:text-slate-100 capitalize truncate">
+                          {ticket.category?.replace(/_/g, ' ') || '-'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs">Created</p>
+                        <p className="font-medium text-slate-900 dark:text-slate-100">
+                          {format(new Date(ticket.createdAt), 'MMM d, yyyy')}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs">Updated</p>
+                        <p className="font-medium text-slate-900 dark:text-slate-100">
+                          {format(new Date(ticket.updatedAt || ticket.createdAt), 'MMM d, HH:mm')}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Bottom Row - Status Badges */}
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center gap-2">
+                        {getPriorityBadge(ticket.priority)}
+                        {getStatusBadge(ticket.status)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop View */}
+          <div className="hidden sm:block">
+            {viewMode === 'table' ? (
+              <DataTable
+                data={filteredTickets}
+                columns={visibleColumnsFiltered}
+                bulkActions={bulkActions}
+                getRowKey={(ticket) => ticket.id}
+              />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredTickets.length === 0 ? (
+                  <div className="col-span-full text-center py-12">
+                    <TicketIcon className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-700 mb-4" />
+                    <p className="text-slate-500 dark:text-slate-400">No tickets found</p>
+                  </div>
+                ) : (
+                  filteredTickets.map((ticket: any) => (
+                    <Card 
+                      key={ticket.id} 
+                      className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-all hover:border-cyan-300 dark:hover:border-cyan-700 cursor-pointer group"
+                      onClick={() => navigate(`/tickets/${ticket.id}`)}
+                      data-testid={`card-ticket-${ticket.id}`}
+                    >
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="p-2 rounded-lg bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950 group-hover:from-cyan-100 group-hover:to-blue-100 dark:group-hover:from-cyan-900 dark:group-hover:to-blue-900 transition-colors">
+                              <TicketIcon className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-slate-900 dark:text-slate-100 truncate group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
+                                {ticket.ticketId || `#${ticket.id.substring(0, 8)}`}
+                              </p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">
+                                {format(new Date(ticket.createdAt), 'MMM d, yyyy')}
+                              </p>
+                            </div>
                           </div>
-                          <span className="text-slate-700 dark:text-slate-300 truncate">
-                            {ticket.customer.name}
-                          </span>
+                          <Link 
+                            href={`/tickets/edit/${ticket.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Button 
+                              size="icon" 
+                              variant="ghost" 
+                              className="h-8 w-8 hover:bg-cyan-50 dark:hover:bg-cyan-950"
+                              data-testid={`button-edit-card-${ticket.id}`}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
                         </div>
-                      )}
-                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                        <div className="flex items-center gap-2">
-                          {getPriorityBadge(ticket.priority)}
-                          {getStatusBadge(ticket.status)}
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div>
+                          <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-1 line-clamp-2">
+                            {ticket.title}
+                          </h4>
+                          {ticket.description && (
+                            <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2">
+                              {ticket.description}
+                            </p>
+                          )}
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                        {ticket.customer && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <div className="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800">
+                              <User className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
+                            </div>
+                            <span className="text-slate-700 dark:text-slate-300 truncate">
+                              {ticket.customer.name}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                          <div className="flex items-center gap-2">
+                            {getPriorityBadge(ticket.priority)}
+                            {getStatusBadge(ticket.status)}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                 ))
               )}
             </div>
           )}
+          </div>
         </CardContent>
       </Card>
 

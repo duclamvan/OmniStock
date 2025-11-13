@@ -625,8 +625,197 @@ export default function AllDiscounts() {
 
       {/* Discounts Table */}
       <Card className="overflow-hidden border-slate-200 dark:border-slate-800">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">All Discounts ({filteredSales?.length || 0})</CardTitle>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="hidden sm:flex">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {allColumns.filter(col => col.key !== 'actions').map((col) => (
+                  <DropdownMenuItem
+                    key={col.key}
+                    onClick={() => toggleColumnVisibility(col.key)}
+                    className="flex items-center justify-between"
+                  >
+                    <span>{col.header}</span>
+                    {visibleColumns[col.key] !== false && (
+                      <Check className="h-4 w-4" />
+                    )}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </CardHeader>
         <CardContent className="p-0 sm:p-6">
-          <div className="overflow-x-auto">
+          {/* Mobile Card View */}
+          <div className="sm:hidden space-y-3 p-3">
+            {filteredSales?.map((sale: any) => {
+              // Helper functions for mobile view
+              const getTypeInfo = () => {
+                const types: Record<string, { label: string; color: string }> = {
+                  'percentage': { label: 'Percentage', color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300' },
+                  'fixed_amount': { label: 'Fixed', color: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300' },
+                  'buy_x_get_y': { label: 'Buy X Get Y', color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300' },
+                };
+                return types[sale.discountType] || { label: sale.discountType, color: 'bg-slate-50 text-slate-700' };
+              };
+
+              const getValueDisplay = () => {
+                if (sale.discountType === 'percentage') {
+                  return `${sale.percentage}%`;
+                } else if (sale.discountType === 'fixed_amount') {
+                  return `$${sale.fixedAmount}`;
+                } else if (sale.discountType === 'buy_x_get_y') {
+                  return `Buy ${sale.buyQuantity} Get ${sale.getQuantity}`;
+                }
+                return '-';
+              };
+
+              const getStatusInfo = () => {
+                const statusMap: Record<string, { label: string; color: string }> = {
+                  'active': { label: 'Active', color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300' },
+                  'inactive': { label: 'Inactive', color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300' },
+                  'finished': { label: 'Finished', color: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300' },
+                };
+                const status = statusMap[sale.status] || { label: sale.status, color: 'bg-slate-100 text-slate-800' };
+                
+                // Check if expired
+                if (isSaleExpired(sale)) {
+                  return { label: 'Expired', color: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' };
+                }
+                
+                return status;
+              };
+
+              const typeInfo = getTypeInfo();
+              const statusInfo = getStatusInfo();
+
+              return (
+                <div key={sale.id} className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-100 dark:border-slate-800 p-4">
+                  <div className="space-y-3">
+                    {/* Top Row - Name, Type Badge, Status, Actions */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Link href={`/discounts/${sale.id}/edit`}>
+                            <p className="font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer truncate">
+                              {sale.name}
+                            </p>
+                          </Link>
+                          <Badge className={`${typeInfo.color} text-xs px-1.5 py-0 h-5 flex-shrink-0`} variant="outline">
+                            {typeInfo.label}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                          {sale.discountId || 'No Code'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Badge className={`${statusInfo.color} text-xs px-1.5 py-0 h-5`}>
+                          {statusInfo.label}
+                        </Badge>
+                        <Link href={`/discounts/${sale.id}/edit`}>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" data-testid={`button-edit-mobile-${sale.id}`}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+
+                    {/* Discount Value Display */}
+                    <div className="bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950/30 dark:to-blue-950/30 rounded-lg p-3 border border-cyan-100 dark:border-cyan-900">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Discount Value</p>
+                      <p className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">
+                        {getValueDisplay()}
+                      </p>
+                    </div>
+
+                    {/* Middle Row - Key Details */}
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">Valid From</p>
+                        <div className="flex items-center gap-1 mt-1">
+                          <Calendar className="h-3 w-3 text-gray-400" />
+                          <p className="font-medium text-gray-900 dark:text-gray-100 text-xs">
+                            {format(new Date(sale.startDate), 'dd/MM/yy')}
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">Valid To</p>
+                        <div className="flex items-center gap-1 mt-1">
+                          <Calendar className="h-3 w-3 text-gray-400" />
+                          <p className="font-medium text-gray-900 dark:text-gray-100 text-xs">
+                            {format(new Date(sale.endDate), 'dd/MM/yy')}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Additional Details */}
+                    <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t border-gray-100 dark:border-slate-800">
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">Usage Limit</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100 text-sm mt-1">
+                          {sale.maxUses ? `${sale.maxUses} uses` : 'Unlimited'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">Min Purchase</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100 text-sm mt-1">
+                          {sale.minPurchaseAmount ? `$${sale.minPurchaseAmount}` : 'None'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Scope and Restrictions */}
+                    {(sale.applicationScope || sale.customerRestrictions) && (
+                      <div className="text-xs bg-slate-50 dark:bg-slate-800/50 rounded p-2">
+                        {sale.applicationScope && (
+                          <div className="flex items-center gap-1">
+                            <Tag className="h-3 w-3 text-slate-400" />
+                            <span className="text-gray-600 dark:text-gray-400">Scope:</span>
+                            <span className="font-medium text-gray-900 dark:text-gray-100">
+                              {sale.applicationScope === 'all_products' ? 'All Products' :
+                               sale.applicationScope === 'specific_product' ? 'Specific Product' :
+                               sale.applicationScope === 'specific_category' ? 'Specific Category' :
+                               sale.applicationScope === 'selected_products' ? 'Selected Products' :
+                               sale.applicationScope}
+                            </span>
+                          </div>
+                        )}
+                        {sale.customerRestrictions && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className="text-gray-600 dark:text-gray-400">Restrictions:</span>
+                            <span className="font-medium text-gray-900 dark:text-gray-100">
+                              {sale.customerRestrictions}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            {filteredSales.length === 0 && (
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <Tag className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="font-medium">No discounts found</p>
+                <p className="text-sm mt-1">Try adjusting your search criteria</p>
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden sm:block">
             <DataTable
               data={filteredSales}
               columns={columns}
@@ -635,59 +824,31 @@ export default function AllDiscounts() {
               itemsPerPageOptions={[10, 20, 50, 100]}
               defaultItemsPerPage={20}
               renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
-                <div className="px-4 sm:px-0 pb-3">
-                  <div className="flex items-center justify-between gap-3">
+                selectedRows.size > 0 && (
+                  <div className="px-4 sm:px-0 pb-3">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="text-mobile-lg font-semibold">Discounts ({filteredSales?.length || 0})</h2>
-                      {selectedRows.size > 0 && (
-                        <>
-                          <Badge variant="secondary" className="text-xs h-6 px-2">
-                            {selectedRows.size}
-                          </Badge>
-                          {actions.map((action, index) => {
-                            if (action.type === "button") {
-                              return (
-                                <Button
-                                  key={index}
-                                  size="sm"
-                                  variant={action.variant || "ghost"}
-                                  onClick={() => action.action(selectedItems)}
-                                  className="h-6 px-2 text-xs"
-                                >
-                                  {action.label}
-                                </Button>
-                              );
-                            }
-                            return null;
-                          })}
-                        </>
-                      )}
+                      <Badge variant="secondary" className="text-xs h-6 px-2">
+                        {selectedRows.size}
+                      </Badge>
+                      {actions.map((action, index) => {
+                        if (action.type === "button") {
+                          return (
+                            <Button
+                              key={index}
+                              size="sm"
+                              variant={action.variant || "ghost"}
+                              onClick={() => action.action(selectedItems)}
+                              className="h-6 px-2 text-xs"
+                            >
+                              {action.label}
+                            </Button>
+                          );
+                        }
+                        return null;
+                      })}
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {allColumns.filter(col => col.key !== 'actions').map((col) => (
-                          <DropdownMenuItem
-                            key={col.key}
-                            onClick={() => toggleColumnVisibility(col.key)}
-                            className="flex items-center justify-between"
-                          >
-                            <span>{col.header}</span>
-                            {visibleColumns[col.key] !== false && (
-                              <Check className="h-4 w-4" />
-                            )}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                   </div>
-                </div>
+                )
               )}
             />
           </div>

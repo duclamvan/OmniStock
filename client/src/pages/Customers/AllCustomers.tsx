@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -572,88 +573,200 @@ export default function AllCustomers() {
       {/* Customers Table */}
       <Card className="overflow-hidden border-slate-200 dark:border-slate-800">
         <CardContent className="p-0 sm:p-6">
-          <div className="overflow-x-auto">
-            <DataTable
-              data={filteredCustomers}
-              columns={visibleColumnsFiltered}
-              bulkActions={bulkActions}
-              getRowKey={(customer) => customer.id}
-              itemsPerPageOptions={[10, 20, 50, 100]}
-              defaultItemsPerPage={20}
-              renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
-                <div className="px-4 sm:px-0 pb-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="text-mobile-lg font-semibold">Customers ({filteredCustomers?.length || 0})</h2>
-                      {selectedRows.size > 0 && (
-                        <>
-                          <Badge variant="secondary" className="text-xs h-6 px-2">
-                            {selectedRows.size}
-                          </Badge>
-                          {actions.map((action, index) => {
-                            if (action.type === "button") {
-                              return (
-                                <Button
-                                  key={index}
-                                  size="sm"
-                                  variant={action.variant || "ghost"}
-                                  onClick={() => action.action(selectedItems)}
-                                  className="h-6 px-2 text-xs"
-                                >
-                                  {action.label}
-                                </Button>
-                              );
-                            }
-                            return null;
-                          })}
-                        </>
-                      )}
+          {/* Mobile Card View */}
+          <div className="sm:hidden space-y-3 p-3">
+            {filteredCustomers?.map((customer: any) => {
+              const getFacebookId = (fbId: string | null, fbName: string | null) => {
+                if (!fbId && !fbName) return null;
+                if (fbId) return fbId;
+                return fbName;
+              };
+              
+              const facebookId = getFacebookId(customer.facebookId, customer.facebookName);
+              
+              return (
+                <div key={customer.id} className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-100 dark:border-slate-800 p-4" data-testid={`card-customer-${customer.id}`}>
+                  <div className="space-y-3">
+                    {/* Top Row - Avatar, Name, Type Badge, Actions */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <Avatar className="h-12 w-12 flex-shrink-0">
+                          <AvatarImage src={customer.imageUrl} />
+                          <AvatarFallback className="text-sm bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-cyan-900 dark:to-blue-900 text-cyan-700 dark:text-cyan-300">
+                            {customer.name?.charAt(0)?.toUpperCase() || 'C'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <Link href={`/customers/${customer.id}`}>
+                            <p className="font-semibold text-gray-900 dark:text-gray-100 truncate cursor-pointer hover:text-blue-600 dark:hover:text-blue-400" data-testid={`text-customer-name-${customer.id}`}>
+                              {customer.name}
+                            </p>
+                          </Link>
+                          <div className="flex items-center gap-2 mt-1">
+                            {customer.type === 'vip' ? (
+                              <Badge variant="default" className="text-xs px-2 py-0 h-5 bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700">
+                                <Star className="h-3 w-3 mr-1" />
+                                VIP
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs px-2 py-0 h-5 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+                                Regular
+                              </Badge>
+                            )}
+                            {customer.hasPayLaterBadge && (
+                              <Badge variant="outline" className="text-xs px-2 py-0 h-5 bg-yellow-50 dark:bg-yellow-900 border-yellow-300 dark:border-yellow-700 text-yellow-700 dark:text-yellow-300">
+                                Pay Later
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        {facebookId && (
+                          <a
+                            href={`https://m.me/${facebookId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Button size="icon" variant="ghost" className="h-8 w-8" data-testid={`button-messenger-${customer.id}`}>
+                              <MessageCircle className="h-4 w-4" />
+                            </Button>
+                          </a>
+                        )}
+                        <Link href={`/customers/${customer.id}/edit`}>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" data-testid={`button-edit-${customer.id}`}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <Link href={`/customers/${customer.id}`}>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" data-testid={`button-view-${customer.id}`}>
+                            <User className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="icon" variant="ghost" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuCheckboxItem
-                          checked={visibleColumns.name !== false}
-                          onCheckedChange={() => toggleColumnVisibility('name')}
-                        >
-                          Customer
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                          checked={visibleColumns.country !== false}
-                          onCheckedChange={() => toggleColumnVisibility('country')}
-                        >
-                          Country
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                          checked={visibleColumns.lastOrderDate !== false}
-                          onCheckedChange={() => toggleColumnVisibility('lastOrderDate')}
-                        >
-                          Last Purchase
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                          checked={visibleColumns.orderCount !== false}
-                          onCheckedChange={() => toggleColumnVisibility('orderCount')}
-                        >
-                          Orders
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                          checked={visibleColumns.totalSpent !== false}
-                          onCheckedChange={() => toggleColumnVisibility('totalSpent')}
-                        >
-                          Sales
-                        </DropdownMenuCheckboxItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    
+                    {/* Middle Row - Contact Details */}
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="space-y-2">
+                        {customer.email && (
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                            <span className="text-gray-600 dark:text-gray-400 truncate text-xs" data-testid={`text-email-${customer.id}`}>
+                              {customer.email}
+                            </span>
+                          </div>
+                        )}
+                        {customer.phone && (
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                            <span className="text-gray-600 dark:text-gray-400 truncate text-xs" data-testid={`text-phone-${customer.id}`}>
+                              {customer.phone}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        {customer.country && (
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                            <span className="text-gray-600 dark:text-gray-400 truncate text-xs" data-testid={`text-country-${customer.id}`}>
+                              {customer.country}
+                            </span>
+                          </div>
+                        )}
+                        {customer.lastOrderDate && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            Last: {formatDate(customer.lastOrderDate)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Bottom Row - Orders & Spending */}
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-slate-700">
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Orders</p>
+                        <p className="text-lg font-bold text-gray-900 dark:text-gray-100" data-testid={`text-order-count-${customer.id}`}>
+                          {customer.orderCount || 0}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Lifetime Spending</p>
+                        <p className="text-lg font-bold text-cyan-600 dark:text-cyan-400" data-testid={`text-total-spent-${customer.id}`}>
+                          {formatCurrency(parseFloat(customer.totalSpent || '0'), 'EUR')}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              )}
-            />
+              );
+            })}
+          </div>
+          
+          {/* Header & Controls - Always Visible */}
+          <div className="flex items-center justify-between gap-3 px-4 sm:px-0 py-4 sm:py-0 sm:pb-4">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Customers</h2>
+              <Badge variant="secondary" className="text-sm">
+                {filteredCustomers?.length || 0}
+              </Badge>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" variant="ghost" className="h-8 w-8">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem
+                  checked={visibleColumns.name !== false}
+                  onCheckedChange={() => toggleColumnVisibility('name')}
+                >
+                  Customer
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={visibleColumns.country !== false}
+                  onCheckedChange={() => toggleColumnVisibility('country')}
+                >
+                  Country
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={visibleColumns.lastOrderDate !== false}
+                  onCheckedChange={() => toggleColumnVisibility('lastOrderDate')}
+                >
+                  Last Purchase
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={visibleColumns.orderCount !== false}
+                  onCheckedChange={() => toggleColumnVisibility('orderCount')}
+                >
+                  Orders
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={visibleColumns.totalSpent !== false}
+                  onCheckedChange={() => toggleColumnVisibility('totalSpent')}
+                >
+                  Sales
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          
+          {/* Desktop Table View */}
+          <div className="hidden sm:block">
+            <div className="overflow-x-auto">
+              <DataTable
+                data={filteredCustomers}
+                columns={visibleColumnsFiltered}
+                bulkActions={bulkActions}
+                getRowKey={(customer) => customer.id}
+                itemsPerPageOptions={[10, 20, 50, 100]}
+                defaultItemsPerPage={20}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>

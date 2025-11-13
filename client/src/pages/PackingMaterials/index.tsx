@@ -643,7 +643,7 @@ export default function PackingMaterials() {
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="hidden sm:flex">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -710,14 +710,150 @@ export default function PackingMaterials() {
         </CardContent>
       </Card>
 
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
-        <DataTable
-          columns={columns}
-          data={materials}
-          getRowKey={(material: PackingMaterial) => material.id}
-          bulkActions={bulkActions}
-        />
-      </div>
+      <Card className="border-slate-200 dark:border-slate-800">
+        <CardContent className="p-0 sm:p-6">
+          {/* Mobile Card View */}
+          <div className="sm:hidden space-y-3 p-3">
+            {materials?.map((material) => {
+              const stockQty = material.stockQuantity || 0;
+              const minStock = material.minStockLevel || 10;
+              const isLowStock = stockQty <= minStock;
+              const urlInfo = getDisplayUrl(material.supplier);
+              const categoryLabels: Record<string, string> = {
+                cartons: "Cartons & Boxes",
+                filling: "Filling Materials",
+                protective: "Protective Materials",
+                supplies: "General Supplies",
+                packaging: "Product Packaging"
+              };
+
+              return (
+                <div key={material.id} className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-100 dark:border-slate-800 p-4">
+                  <div className="space-y-3">
+                    {/* Top Row - Material Image, Name, Status, Actions */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                          {material.imageUrl ? (
+                            <img 
+                              src={material.imageUrl} 
+                              alt={material.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Package2 className="h-6 w-6 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                            {material.name}
+                          </p>
+                          {material.code && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              Code: {material.code}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {isLowStock ? (
+                          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800">
+                            Low Stock
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800">
+                            In Stock
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Middle Row - Key Details (grid-cols-2) */}
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400">Category</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">
+                          {material.category ? categoryLabels[material.category] || material.category : 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400">Stock</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">
+                          {stockQty.toLocaleString()} units
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400">Unit Cost</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">
+                          {material.cost ? formatCurrency(parseFloat(material.cost), 'EUR') : 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400">Dimensions</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">
+                          {material.dimensions || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Bottom Row - Supplier & Actions */}
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-slate-800">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Supplier</p>
+                        {urlInfo ? (
+                          <a 
+                            href={urlInfo.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 truncate"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {urlInfo.display}
+                            <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                          </a>
+                        ) : (
+                          <p className="text-sm text-gray-500 dark:text-gray-400">No supplier</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {urlInfo && (
+                          <a 
+                            href={urlInfo.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 h-8">
+                              <ShoppingCart className="h-3 w-3 mr-1" />
+                              Buy
+                            </Button>
+                          </a>
+                        )}
+                        <Link href={`/packing-materials/edit/${material.id}`}>
+                          <Button size="sm" variant="outline" className="h-8">
+                            <Edit className="h-3 w-3 mr-1" />
+                            Edit
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Desktop Table View */}
+          <div className="hidden sm:block">
+            <DataTable
+              columns={columns}
+              data={materials}
+              getRowKey={(material: PackingMaterial) => material.id}
+              bulkActions={bulkActions}
+            />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

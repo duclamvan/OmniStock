@@ -602,45 +602,166 @@ export default function AllReturns() {
           </div>
         </CardHeader>
         <CardContent className="p-0 sm:p-6">
-          <DataTable
-            data={filteredReturns}
-            columns={visibleColumnsFiltered}
-            bulkActions={bulkActions}
-            getRowKey={(returnItem) => returnItem.id}
-            itemsPerPageOptions={[10, 20, 50, 100]}
-            defaultItemsPerPage={20}
-            renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
-              <div className="px-4 sm:px-0 pb-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {selectedRows.size > 0 && (
-                      <>
-                        <Badge variant="secondary" className="text-xs h-6 px-2">
-                          {selectedRows.size}
-                        </Badge>
-                        {actions.map((action, index) => {
-                          if (action.type === "button") {
-                            return (
-                              <Button
-                                key={index}
-                                size="sm"
-                                variant={action.variant || "ghost"}
-                                onClick={() => action.action(selectedItems)}
-                                className="h-6 px-2 text-xs"
-                              >
-                                {action.label}
-                              </Button>
-                            );
-                          }
-                          return null;
-                        })}
-                      </>
+          {/* Mobile Card View */}
+          <div className="sm:hidden space-y-3 p-3">
+            {filteredReturns?.map((returnItem: any) => {
+              const statusMap: Record<string, { label: string; color: string }> = {
+                'awaiting': { label: 'Awaiting', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300' },
+                'processing': { label: 'Processing', color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' },
+                'completed': { label: 'Completed', color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300' },
+                'cancelled': { label: 'Cancelled', color: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300' },
+              };
+              const status = statusMap[returnItem.status] || { label: returnItem.status, color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300' };
+
+              const returnTypeMap: Record<string, { label: string; color: string }> = {
+                'exchange': { label: 'Exchange', color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' },
+                'refund': { label: 'Refund', color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300' },
+                'store_credit': { label: 'Store Credit', color: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300' },
+              };
+              const returnType = returnTypeMap[returnItem.returnType] || { label: returnItem.returnType, color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300' };
+
+              return (
+                <div key={returnItem.id} className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 p-4">
+                  <div className="space-y-3">
+                    {/* Top Row - Return ID, Date, Status */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <Link href={`/returns/${returnItem.id}`}>
+                          <p className="font-mono text-sm font-semibold text-cyan-600 dark:text-cyan-400 hover:text-cyan-800 dark:hover:text-cyan-300 cursor-pointer">
+                            {returnItem.returnId || returnItem.id}
+                          </p>
+                        </Link>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                          {format(new Date(returnItem.returnDate), 'dd MMM yyyy')}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Badge className={status.color}>{status.label}</Badge>
+                      </div>
+                    </div>
+
+                    {/* Customer & Order Reference */}
+                    <div className="space-y-1">
+                      {returnItem.customer ? (
+                        <div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">Customer</p>
+                          <Link href={`/returns/${returnItem.id}`}>
+                            <p className="font-medium text-slate-900 dark:text-slate-100 hover:text-cyan-600 dark:hover:text-cyan-400 cursor-pointer">
+                              {returnItem.customer.name}
+                            </p>
+                          </Link>
+                          {returnItem.customer.fbName && (
+                            <p className="text-xs text-slate-500 dark:text-slate-400">{returnItem.customer.fbName}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-slate-400">No customer</p>
+                      )}
+                    </div>
+
+                    {/* Grid - Order Reference & Return Type */}
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Order Reference</p>
+                        <p className="font-mono text-sm font-medium text-slate-900 dark:text-slate-100">
+                          {returnItem.orderId || '-'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Return Type</p>
+                        <Badge className={returnType.color}>{returnType.label}</Badge>
+                      </div>
+                    </div>
+
+                    {/* Return Reason */}
+                    {returnItem.notes && (
+                      <div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Reason</p>
+                        <p className="text-sm text-slate-700 dark:text-slate-300 line-clamp-2">
+                          {returnItem.notes}
+                        </p>
+                      </div>
                     )}
+
+                    {/* Grid - Items & Total */}
+                    <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t border-slate-200 dark:border-slate-700">
+                      <div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Items Returned</p>
+                        <p className="font-medium text-slate-900 dark:text-slate-100">
+                          {returnItem.items?.length || 0} item(s)
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Total Refund</p>
+                        <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                          {returnItem.total ? `$${returnItem.total.toFixed(2)}` : '-'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 pt-2">
+                      <Link href={`/returns/${returnItem.id}`} className="flex-1">
+                        <Button variant="outline" size="sm" className="w-full" data-testid={`button-view-return-${returnItem.id}`}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          View
+                        </Button>
+                      </Link>
+                      <Link href={`/returns/${returnItem.id}/edit`} className="flex-1">
+                        <Button variant="default" size="sm" className="w-full" data-testid={`button-process-return-${returnItem.id}`}>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Process
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          />
+              );
+            })}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden sm:block">
+            <DataTable
+              data={filteredReturns}
+              columns={visibleColumnsFiltered}
+              bulkActions={bulkActions}
+              getRowKey={(returnItem) => returnItem.id}
+              itemsPerPageOptions={[10, 20, 50, 100]}
+              defaultItemsPerPage={20}
+              renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
+                <div className="px-4 sm:px-0 pb-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {selectedRows.size > 0 && (
+                        <>
+                          <Badge variant="secondary" className="text-xs h-6 px-2">
+                            {selectedRows.size}
+                          </Badge>
+                          {actions.map((action, index) => {
+                            if (action.type === "button") {
+                              return (
+                                <Button
+                                  key={index}
+                                  size="sm"
+                                  variant={action.variant || "ghost"}
+                                  onClick={() => action.action(selectedItems)}
+                                  className="h-6 px-2 text-xs"
+                                >
+                                  {action.label}
+                                </Button>
+                              );
+                            }
+                            return null;
+                          })}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            />
+          </div>
         </CardContent>
       </Card>
 

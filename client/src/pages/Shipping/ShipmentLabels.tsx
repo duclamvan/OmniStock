@@ -429,7 +429,7 @@ export default function ShipmentLabels() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="p-0 sm:p-6">
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground" data-testid="loading-labels">
               Loading labels...
@@ -439,12 +439,144 @@ export default function ShipmentLabels() {
               No shipment labels found
             </div>
           ) : (
-            <DataTable
-              data={filteredLabels}
-              columns={columns}
-              getRowKey={(label) => label.id}
-              data-testid="table-shipment-labels"
-            />
+            <>
+              {/* Mobile Card View */}
+              <div className="sm:hidden space-y-3 p-3">
+                {filteredLabels.map((label) => (
+                  <div
+                    key={label.id}
+                    className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-100 dark:border-slate-800 p-4"
+                    data-testid={`card-label-${label.id}`}
+                  >
+                    <div className="space-y-3">
+                      {/* Top Row - Order, Status, and Carrier */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <a
+                            href={`/orders/${label.orderId}`}
+                            className="text-blue-600 dark:text-blue-400 hover:underline font-semibold flex items-center gap-1"
+                            data-testid={`link-order-mobile-${label.id}`}
+                          >
+                            {label.customOrderId || label.orderId}
+                            <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                          </a>
+                          {label.customerName && (
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
+                              {label.customerName}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Badge variant="outline" data-testid={`badge-carrier-mobile-${label.id}`}>
+                            {label.carrier}
+                          </Badge>
+                          <Badge
+                            variant={label.status === 'active' ? 'default' : 'secondary'}
+                            className={
+                              label.status === 'cancelled'
+                                ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
+                                : ''
+                            }
+                            data-testid={`badge-status-mobile-${label.id}`}
+                          >
+                            {label.status}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {/* Middle Row - Tracking and Details */}
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">Tracking Number</p>
+                          <div className="font-mono text-xs mt-0.5">
+                            {label.trackingNumbers.map((tn, index) => (
+                              <div key={index} className="font-medium text-gray-900 dark:text-gray-100">
+                                {tn}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">Created</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-100 mt-0.5">
+                            {formatDate(label.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Additional Details Row */}
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        {label.shipmentCount && (
+                          <div>
+                            <p className="text-gray-500 dark:text-gray-400 text-xs">Packages</p>
+                            <p className="font-medium text-gray-900 dark:text-gray-100 mt-0.5">
+                              {label.shipmentCount}
+                            </p>
+                          </div>
+                        )}
+                        {label.batchId && (
+                          <div>
+                            <p className="text-gray-500 dark:text-gray-400 text-xs">Batch ID</p>
+                            <p className="font-medium text-gray-900 dark:text-gray-100 mt-0.5 truncate">
+                              {label.batchId}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-slate-800">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => {
+                            // Convert base64 to blob for proper PDF display
+                            const byteCharacters = atob(label.labelBase64);
+                            const byteNumbers = new Array(byteCharacters.length);
+                            for (let i = 0; i < byteCharacters.length; i++) {
+                              byteNumbers[i] = byteCharacters.charCodeAt(i);
+                            }
+                            const byteArray = new Uint8Array(byteNumbers);
+                            const blob = new Blob([byteArray], { type: 'application/pdf' });
+                            const url = URL.createObjectURL(blob);
+                            window.open(url, '_blank');
+                            // Clean up the URL after a delay
+                            setTimeout(() => URL.revokeObjectURL(url), 100);
+                          }}
+                          data-testid={`button-view-label-mobile-${label.id}`}
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          View Label
+                        </Button>
+                        {label.status === 'active' && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => handleCancelClick(label)}
+                            data-testid={`button-cancel-mobile-${label.id}`}
+                          >
+                            <XCircle className="w-4 h-4 mr-1" />
+                            Cancel
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden sm:block">
+                <DataTable
+                  data={filteredLabels}
+                  columns={columns}
+                  getRowKey={(label) => label.id}
+                  data-testid="table-shipment-labels"
+                />
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

@@ -848,7 +848,182 @@ export default function SupplierProcessing() {
               )}
             </div>
           ) : (
-            <div className="space-y-4">
+            <>
+              {/* Mobile Card View */}
+              <div className="sm:hidden space-y-3">
+                {filteredPurchases.map((purchase) => (
+                  <div key={purchase.id} className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-4">
+                    <div className="space-y-3">
+                      {/* Top Row - Supplier, Status, Actions */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                              {purchase.location === 'Europe' && '🇪🇺 '}
+                              {purchase.location === 'USA' && '🇺🇸 '}
+                              {purchase.location === 'China' && '🇨🇳 '}
+                              {purchase.location === 'Vietnam' && '🇻🇳 '}
+                              {purchase.supplier}
+                            </p>
+                          </div>
+                          {purchase.trackingNumber && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                              {purchase.trackingNumber}
+                            </p>
+                          )}
+                        </div>
+                        <Badge className={cn("text-[10px] h-5 px-2 flex-shrink-0", statusColors[purchase.status] || "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200")}>
+                          {purchase.status.replace('_', ' ').toUpperCase()}
+                        </Badge>
+                      </div>
+
+                      {/* Middle Row - Key Details (grid-cols-2) */}
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">Items</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1">
+                            <Package2 className="h-3.5 w-3.5" />
+                            {purchase.itemCount} items
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">Date Initiated</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-100">
+                            {format(new Date(purchase.createdAt), 'MMM dd, yyyy')}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">Expected Arrival</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5" />
+                            {purchase.estimatedArrival 
+                              ? format(new Date(purchase.estimatedArrival), 'MMM dd, yyyy')
+                              : 'TBD'
+                            }
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">Total Cost</p>
+                          <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                            {purchase.purchaseCurrency || 'USD'} {purchase.totalCost}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Priority/Notes */}
+                      {purchase.notes && (
+                        <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded p-2">
+                          <p className="text-xs text-amber-800 dark:text-amber-200">
+                            <span className="font-medium">Note:</span> {purchase.notes}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Bottom Row - Actions */}
+                      <div className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                        <Select
+                          value={purchase.status}
+                          onValueChange={(status) => updateStatusMutation.mutate({ purchaseId: purchase.id, status })}
+                        >
+                          <SelectTrigger className="flex-1 h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="processing">Processing</SelectItem>
+                            <SelectItem value="at_warehouse">Consolidation</SelectItem>
+                            <SelectItem value="shipped">Shipped</SelectItem>
+                            <SelectItem value="delivered">Delivered</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Link href={`/purchase-orders/edit/${purchase.id}`}>
+                          <Button size="sm" variant="outline" className="h-8">
+                            <Edit className="h-3.5 w-3.5 mr-1" />
+                            Edit
+                          </Button>
+                        </Link>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8"
+                          onClick={() => {
+                            setSelectedPurchase(purchase);
+                            setIsAddItemModalOpen(true);
+                          }}
+                        >
+                          <Plus className="h-3.5 w-3.5 mr-1" />
+                          Add
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost" className="h-8 w-8">
+                              <MoreHorizontal className="h-3.5 w-3.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteClick(purchase)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete Purchase
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+
+                      {/* Expandable Items Section */}
+                      {purchase.items.length > 0 && (
+                        <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full h-7 text-xs"
+                            onClick={() => {
+                              const newExpanded = new Set(expandedPurchases);
+                              if (expandedPurchases.has(purchase.id)) {
+                                newExpanded.delete(purchase.id);
+                              } else {
+                                newExpanded.add(purchase.id);
+                              }
+                              setExpandedPurchases(newExpanded);
+                            }}
+                          >
+                            {expandedPurchases.has(purchase.id) ? (
+                              <>
+                                <ChevronUp className="h-3.5 w-3.5 mr-1" />
+                                Hide Items ({purchase.items.length})
+                              </>
+                            ) : (
+                              <>
+                                <ChevronDown className="h-3.5 w-3.5 mr-1" />
+                                View Items ({purchase.items.length})
+                              </>
+                            )}
+                          </Button>
+                          {expandedPurchases.has(purchase.id) && (
+                            <div className="mt-2 space-y-2">
+                              {purchase.items.map((item) => (
+                                <div key={item.id} className="bg-gray-50 dark:bg-gray-800/50 rounded p-2 text-xs">
+                                  <p className="font-medium text-gray-900 dark:text-gray-100">{item.name}</p>
+                                  {item.sku && <p className="text-gray-500 dark:text-gray-400">SKU: {item.sku}</p>}
+                                  <div className="flex justify-between mt-1">
+                                    <span className="text-gray-600 dark:text-gray-300">Qty: {item.quantity}</span>
+                                    <span className="font-medium text-gray-900 dark:text-gray-100">${item.unitPrice}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden sm:block space-y-4">
               {filteredPurchases.map((purchase) => {
                 const isExpanded = expandedPurchases.has(purchase.id);
                 
@@ -1040,7 +1215,8 @@ export default function SupplierProcessing() {
                   </Card>
                 );
               })}
-            </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

@@ -429,7 +429,7 @@ export default function StockAdjustmentApprovals() {
 
       {/* Requests Table */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="p-0 sm:p-6">
           {isLoading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
@@ -446,13 +446,147 @@ export default function StockAdjustmentApprovals() {
               )}
             </div>
           ) : (
-            <DataTable
-              columns={columns}
-              data={filteredRequests}
-              searchable={false}
-              filterable={false}
-              getRowKey={(request) => request.id}
-            />
+            <>
+              {/* Mobile Card View */}
+              <div className="sm:hidden space-y-3 p-3">
+                {filteredRequests.map((request) => {
+                  const getNewQuantity = () => {
+                    if (request.adjustmentType === 'set') return request.requestedQuantity;
+                    if (request.adjustmentType === 'add') return request.currentQuantity + request.requestedQuantity;
+                    if (request.adjustmentType === 'remove') return request.currentQuantity - request.requestedQuantity;
+                    return request.currentQuantity;
+                  };
+
+                  const newQty = getNewQuantity();
+                  const diff = newQty - request.currentQuantity;
+
+                  return (
+                    <div 
+                      key={request.id} 
+                      className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+                      data-testid={`card-request-${request.id}`}
+                    >
+                      <div className="space-y-3">
+                        {/* Top Row - Request ID, Status */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Request ID</p>
+                            <p className="font-mono text-sm text-gray-900 dark:text-white truncate">
+                              {request.id.slice(0, 8)}
+                            </p>
+                          </div>
+                          <div className="flex-shrink-0">
+                            {getStatusBadgeVariant(request.status)}
+                          </div>
+                        </div>
+
+                        {/* Product Name & Type Badge */}
+                        <div className="space-y-2">
+                          <div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Product</p>
+                            <p className="font-semibold text-gray-900 dark:text-white">
+                              {getProductName(request.productId)}
+                            </p>
+                          </div>
+                          <div>
+                            <Badge className={getAdjustmentTypeColor(request.adjustmentType)}>
+                              {getAdjustmentTypeIcon(request.adjustmentType)}
+                              <span className="ml-1 capitalize">{request.adjustmentType}</span>
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {/* Grid Details */}
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Quantity Change</p>
+                            <div className="flex items-center gap-1 mt-1">
+                              <span className="text-gray-600 dark:text-gray-400">{request.currentQuantity}</span>
+                              <span className="text-gray-400">→</span>
+                              <span className="font-semibold text-gray-900 dark:text-white">{newQty}</span>
+                              {diff !== 0 && (
+                                <span className={`text-xs ${diff > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                  ({diff > 0 ? '+' : ''}{diff})
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Requested By</p>
+                            <p className="font-medium text-gray-900 dark:text-white mt-1">
+                              {request.requestedBy}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Request Date */}
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Request Date</p>
+                          <p className="text-sm text-gray-900 dark:text-white mt-1">
+                            {format(new Date(request.createdAt), 'MMM d, yyyy')} at {format(new Date(request.createdAt), 'h:mm a')}
+                          </p>
+                        </div>
+
+                        {/* Reason */}
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Reason</p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                            {request.reason}
+                          </p>
+                        </div>
+
+                        {/* Rejection Reason if applicable */}
+                        {request.status === 'rejected' && request.rejectionReason && (
+                          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+                            <p className="text-xs text-red-700 dark:text-red-400 font-medium">Rejection Reason</p>
+                            <p className="text-sm text-red-600 dark:text-red-300 mt-1">
+                              {request.rejectionReason}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        {request.status === 'pending' && (
+                          <div className="flex gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                            <Button
+                              className="flex-1 text-green-600 hover:text-green-700 border-green-200 hover:border-green-300 dark:border-green-800 dark:hover:border-green-700"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleApprove(request)}
+                              disabled={approveMutation.isPending}
+                              data-testid={`button-approve-mobile-${request.id}`}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Approve
+                            </Button>
+                            <Button
+                              className="flex-1 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 dark:border-red-800 dark:hover:border-red-700"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleReject(request)}
+                              disabled={rejectMutation.isPending}
+                              data-testid={`button-reject-mobile-${request.id}`}
+                            >
+                              <XCircle className="h-4 w-4 mr-1" />
+                              Reject
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden sm:block">
+                <DataTable
+                  columns={columns}
+                  data={filteredRequests}
+                  getRowKey={(request) => request.id}
+                />
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

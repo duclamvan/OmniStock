@@ -11,7 +11,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCompactNumber } from "@/lib/currencyUtils";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
-import { Plus, Eye, Edit, Trash2, MoreVertical, ShoppingCart, Filter, Package, Clock, CheckCircle, Activity, Calendar, Search, FileDown, FileText } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, MoreVertical, ShoppingCart, Filter, Package, Clock, CheckCircle, Activity, Calendar, Search, FileDown, FileText, User } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -603,10 +603,10 @@ export default function AllPreOrders() {
               {filteredPreOrders.length} {filteredPreOrders.length === 1 ? 'pre-order' : 'pre-orders'} found
             </CardDescription>
           </div>
-          {/* Column Visibility Menu */}
+          {/* Column Visibility Menu - Desktop Only */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="h-8 w-8">
+              <Button variant="outline" size="icon" className="h-8 w-8 hidden sm:flex">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -634,9 +634,9 @@ export default function AllPreOrders() {
             </DropdownMenuContent>
           </DropdownMenu>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6">
           {!filteredPreOrders || filteredPreOrders.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12">
+            <div className="flex flex-col items-center justify-center py-12 px-4">
               <ShoppingCart className="h-12 w-12 text-slate-400 mb-4" />
               <p className="text-slate-500 text-center" data-testid="text-no-pre-orders">
                 {searchQuery || statusFilter !== "all" 
@@ -645,14 +645,172 @@ export default function AllPreOrders() {
               </p>
             </div>
           ) : (
-            <DataTable
-              data={filteredPreOrders}
-              columns={visibleColumnsFiltered}
-              getRowKey={(preOrder) => preOrder.id}
-              showPagination={true}
-              defaultItemsPerPage={20}
-              itemsPerPageOptions={[10, 20, 50, 100]}
-            />
+            <>
+              {/* Mobile Card View */}
+              <div className="sm:hidden space-y-3 p-3">
+                {filteredPreOrders.map((preOrder) => {
+                  const config = statusConfig[preOrder.status as keyof typeof statusConfig] || statusConfig.pending;
+                  return (
+                    <div 
+                      key={preOrder.id} 
+                      className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4"
+                      data-testid={`card-pre-order-${preOrder.id}`}
+                    >
+                      <div className="space-y-3">
+                        {/* Top Row - Pre-Order ID, Date, Status, Actions */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div 
+                              className="font-semibold text-slate-900 dark:text-slate-100 cursor-pointer hover:text-cyan-600 dark:hover:text-cyan-400 truncate"
+                              onClick={() => setLocation(`/orders/pre-orders/${preOrder.id}`)}
+                              data-testid={`text-pre-order-id-${preOrder.id}`}
+                            >
+                              {preOrder.id.slice(0, 8).toUpperCase()}
+                            </div>
+                            <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                              <Clock className="h-3 w-3" />
+                              {formatDate(preOrder.createdAt)}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <Badge 
+                              variant="outline" 
+                              className={`${config.className} font-medium text-xs px-2 py-0.5`}
+                              data-testid={`badge-status-mobile-${preOrder.id}`}
+                            >
+                              {config.label}
+                            </Badge>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  data-testid={`button-actions-mobile-${preOrder.id}`}
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => setLocation(`/orders/pre-orders/${preOrder.id}`)}
+                                  data-testid={`action-view-mobile-${preOrder.id}`}
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => setLocation(`/orders/pre-orders/edit/${preOrder.id}`)}
+                                  data-testid={`action-edit-mobile-${preOrder.id}`}
+                                >
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => setDeletePreOrderId(preOrder.id)}
+                                  className="text-red-600 focus:text-red-600"
+                                  data-testid={`action-delete-mobile-${preOrder.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+
+                        {/* Customer Info */}
+                        <div 
+                          className="flex items-center gap-2 p-2 bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950/30 dark:to-blue-950/30 rounded-lg cursor-pointer hover:shadow-sm transition-shadow"
+                          onClick={() => setLocation(`/orders/pre-orders/${preOrder.id}`)}
+                        >
+                          <div className="p-1.5 rounded bg-white dark:bg-slate-800">
+                            <User className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-slate-600 dark:text-slate-400">Customer</p>
+                            <p className="font-semibold text-slate-900 dark:text-slate-100 truncate" data-testid={`text-customer-mobile-${preOrder.id}`}>
+                              {preOrder.customer?.name || "Unknown Customer"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Key Details Grid */}
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="bg-slate-50 dark:bg-slate-800/50 p-2 rounded">
+                            <div className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400 mb-1">
+                              <Package className="h-3 w-3" />
+                              Items Ordered
+                            </div>
+                            <p className="font-semibold text-slate-900 dark:text-slate-100" data-testid={`text-items-mobile-${preOrder.id}`}>
+                              {preOrder.itemsCount} {preOrder.itemsCount === 1 ? 'item' : 'items'}
+                            </p>
+                          </div>
+                          
+                          <div className="bg-slate-50 dark:bg-slate-800/50 p-2 rounded">
+                            <div className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400 mb-1">
+                              <Calendar className="h-3 w-3" />
+                              Expected Date
+                            </div>
+                            <p className="font-semibold text-slate-900 dark:text-slate-100" data-testid={`text-expected-mobile-${preOrder.id}`}>
+                              {preOrder.expectedDate ? formatDate(preOrder.expectedDate) : "Not set"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Notes Preview (if any) */}
+                        {preOrder.notes && (
+                          <div className="text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-2 rounded border-l-2 border-slate-300 dark:border-slate-600">
+                            <div className="flex items-center gap-1 mb-1">
+                              <FileText className="h-3 w-3" />
+                              <span className="font-medium">Notes:</span>
+                            </div>
+                            <p className="line-clamp-2">{preOrder.notes}</p>
+                          </div>
+                        )}
+
+                        {/* Quick Actions */}
+                        <div className="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1"
+                            onClick={() => setLocation(`/orders/pre-orders/${preOrder.id}`)}
+                            data-testid={`button-view-mobile-${preOrder.id}`}
+                          >
+                            <Eye className="h-3.5 w-3.5 mr-1.5" />
+                            View
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1"
+                            onClick={() => setLocation(`/orders/pre-orders/edit/${preOrder.id}`)}
+                            data-testid={`button-edit-mobile-${preOrder.id}`}
+                          >
+                            <Edit className="h-3.5 w-3.5 mr-1.5" />
+                            Edit
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden sm:block">
+                <DataTable
+                  data={filteredPreOrders}
+                  columns={visibleColumnsFiltered}
+                  getRowKey={(preOrder) => preOrder.id}
+                  showPagination={true}
+                  defaultItemsPerPage={20}
+                  itemsPerPageOptions={[10, 20, 50, 100]}
+                />
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

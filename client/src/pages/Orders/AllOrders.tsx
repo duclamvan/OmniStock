@@ -1181,7 +1181,98 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       {/* Orders Table */}
       <Card className="border-slate-200 dark:border-slate-800">
         <CardContent className="p-0 sm:p-6">
-          {/* Header with view toggle - always visible */}
+          {/* Mobile Card View */}
+          <div className="sm:hidden space-y-3 p-3">
+            {filteredOrders?.map((order: any) => (
+              <div key={order.id} className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-100 dark:border-slate-800 p-4">
+                <div className="space-y-3">
+                  {/* Top Row - Order ID, Status Badges, Actions */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Link href={`/orders/${order.id}`}>
+                          <p className="font-bold text-base cursor-pointer text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 truncate">
+                            {order.orderId}
+                          </p>
+                        </Link>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {getStatusBadge(order.orderStatus)}
+                        {getPaymentStatusBadge(order.paymentStatus)}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Link href={`/orders/${order.id}`}>
+                        <Button size="icon" variant="ghost" className="h-8 w-8" data-testid={`button-view-${order.id}`}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                      <Link href={`/orders/${order.id}/edit`}>
+                        <Button size="icon" variant="ghost" className="h-8 w-8" data-testid={`button-edit-${order.id}`}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                  
+                  {/* Customer Info with Avatar */}
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10 flex-shrink-0">
+                      <AvatarImage src={order.customer?.imageUrl} />
+                      <AvatarFallback className="text-sm bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
+                        {order.customer?.name?.charAt(0) || 'C'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
+                        {order.customer?.name || 'Walk-in Customer'}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {formatDate(order.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Order Details Grid */}
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-gray-500 dark:text-gray-400 text-xs">Items</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">
+                        {order.items?.length || 0} item(s)
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 dark:text-gray-400 text-xs">Total Amount</p>
+                      <p className="font-bold text-gray-900 dark:text-gray-100">
+                        {formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'EUR')}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Order Items Summary (if available) */}
+                  {order.items && order.items.length > 0 && (
+                    <div className="border-t border-gray-100 dark:border-slate-800 pt-2">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Items:</p>
+                      <div className="space-y-1">
+                        {order.items.slice(0, 2).map((item: any, idx: number) => (
+                          <p key={idx} className="text-xs text-gray-700 dark:text-gray-300 truncate">
+                            <span className="font-medium text-blue-600 dark:text-blue-400">{item.quantity}×</span> {item.productName}
+                          </p>
+                        ))}
+                        {order.items.length > 2 && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                            +{order.items.length - 2} more item(s)
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Header with view toggle - Always Visible */}
           <div className="px-4 sm:px-0 pb-4 pt-4 sm:pt-0">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <h2 className="text-mobile-lg font-semibold">Orders ({filteredOrders?.length || 0})</h2>
@@ -1267,7 +1358,9 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             </div>
           </div>
 
-          {viewMode === 'normal' ? (
+          {/* Desktop Table View - Hidden on mobile */}
+          <div className="hidden sm:block">
+            {viewMode === 'normal' ? (
             <DataTable
               data={filteredOrders}
               columns={visibleColumnsFiltered}
@@ -1787,6 +1880,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                 ))}
               </div>
           )}
+          </div>
         </CardContent>
       </Card>
 
