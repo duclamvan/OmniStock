@@ -25,7 +25,14 @@ Utilizes PostgreSQL with Neon serverless driver and Drizzle ORM. The schema supp
 - **Financial & Discount Management**: Advanced discount system, customer-specific pricing, multi-currency support (CZK/EUR/USD) with automatic exchange rate conversion, landing cost engine with volumetric weight and automatic cost allocation, and expense tracking.
 - **Fulfillment & Logistics**: **Synchronized AI-powered carton packing optimization** across all order pages (EditOrder, AddOrder, PickPack) using shared `usePackingOptimization` hook and `AICartonPackingPanel` component. Uses DeepSeek AI for weight/dimension inference and best-fit algorithms, automatic shipping cost estimation, comprehensive country-to-ISO mapping (50+ country name variants), and real-time packing plan visualization. Separate fulfillment sub-status tracking (`fulfillmentStage`), and performance analytics with precise time predictions. Returns management system with auto-selection and barcode scanning. Packing materials management with dynamic, product-specific checklists. Automated carton creation and pre-population based on AI recommendations. **Carton & Label state persistence**: Database is the primary source of truth - all changes save to database first, then localStorage is updated only after successful database save. This ensures data integrity when connection is good, with localStorage serving as offline backup. Labels are stored in `shipment_labels` table and load automatically when returning to packing mode.
 - **Point of Sale (POS)**: Full-featured system with thermal printer support, multi-currency, real-time cart, VAT calculation, and receipt generation.
-- **System Utilities**: Comprehensive files management, automatic lossless image compression to WebP, robust fuzzy search with diacritics normalization, generic DataTable component, reporting, and extensive settings management (6 categories).
+- **System Utilities**: Comprehensive files management, automatic lossless image compression to WebP, robust fuzzy search with diacritics normalization, generic DataTable component, reporting, and **comprehensive settings management system** with 6 categories covering all configurable aspects:
+  - **GeneralSettings** (28 fields): Company Information (10), Localization (5), Regional Settings (7), Notification Preferences (6)
+  - **OrderSettings** (29 fields): Order Defaults (6), Fulfillment Settings (7), Order Validation (6), Automation (5), COD Settings (5)
+  - **InventorySettings** (37 fields): Product Defaults (7), Stock Management (7), Warehouse Operations (7), Product Quality (5), Measurement Units (5), Catalog Settings (6)
+  - **ShippingSettings**: Carrier Configuration, Label Generation, Tracking & Notifications, Shipping Rules
+  - **FinancialSettings**: Pricing & Margins, Tax Configuration, Currency & Exchange, Invoicing & Billing, Accounting
+  - **SystemSettings**: System Preferences, Data Management, Security, Integrations, Automation & AI
+  - All settings persist via key-value pairs in `app_settings` table with category scoping, comprehensive Zod validation, and mobile-responsive Card-based UI organization.
 
 # External Dependencies
 
