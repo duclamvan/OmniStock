@@ -10,7 +10,7 @@ import InventorySettings from "./InventorySettings";
 import SystemSettings from "./SystemSettings";
 
 export default function Settings() {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const tab = location.split("/")[2] || "general";
 
   return (
@@ -22,7 +22,7 @@ export default function Settings() {
         </p>
       </div>
 
-      <Tabs value={tab} className="space-y-4">
+      <Tabs value={tab} onValueChange={(value) => navigate(`/settings/${value}`)} className="space-y-4">
         <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-2 h-auto p-1.5 sm:p-2">
           <TabsTrigger value="general" className="gap-2" data-testid="tab-general">
             <SettingsIcon className="h-4 w-4" />
