@@ -137,10 +137,17 @@ import {
   type OrderFulfillmentLog,
   type InsertOrderFulfillmentLog,
   type AppSetting,
-  type InsertAppSetting
+  type InsertAppSetting,
+  type CustomerBadge,
+  type InsertCustomerBadge,
+  customerBadges
 } from "@shared/schema";
-import { db } from "./db";
+import { db as database } from "./db";
 import { eq, desc, and, or, like, ilike, sql, gte, lte, inArray, ne, asc, isNull, notInArray, not } from "drizzle-orm";
+import * as badgeService from './services/badgeService';
+
+// Re-export db for backward compatibility with methods still using global db
+const db = database;
 
 // Define types for missing entities (these should match what the app expects)
 export type Return = any;
@@ -314,6 +321,11 @@ export interface IStorage {
   updateCustomerBillingAddress(id: string, address: Partial<InsertCustomerBillingAddress>): Promise<CustomerBillingAddress | undefined>;
   deleteCustomerBillingAddress(id: string): Promise<boolean>;
   setPrimaryBillingAddress(customerId: string, addressId: string): Promise<void>;
+  
+  // Customer Badges
+  getCustomerBadges(customerId: string): Promise<CustomerBadge[]>;
+  refreshCustomerBadges(customerId: string): Promise<void>;
+  refreshOrderBadges(orderId: string): Promise<void>;
   
   // Discounts
   getDiscounts(): Promise<Discount[]>;
@@ -519,6 +531,8 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  private db = database;
+
   // Users
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -2710,6 +2724,22 @@ export class DatabaseStorage implements IStorage {
       console.error('Error setting primary billing address:', error);
       throw error;
     }
+  }
+
+  // Customer Badges
+  async getCustomerBadges(customerId: string): Promise<CustomerBadge[]> {
+    return await this.db
+      .select()
+      .from(customerBadges)
+      .where(eq(customerBadges.customerId, customerId));
+  }
+
+  async refreshCustomerBadges(customerId: string): Promise<void> {
+    await badgeService.refreshCustomerBadges(customerId, this.db);
+  }
+
+  async refreshOrderBadges(orderId: string): Promise<void> {
+    await badgeService.refreshOrderBadges(orderId, this.db);
   }
 
   // Discounts
