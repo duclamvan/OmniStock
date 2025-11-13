@@ -89,6 +89,7 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="h-11"
                 data-testid="input-email"
               />
             </div>
@@ -101,12 +102,13 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                className="h-11"
                 data-testid="input-password"
               />
             </div>
             <Button
               type="submit"
-              className="w-full"
+              className="w-full h-11"
               disabled={isLoading}
               data-testid="button-login"
             >
@@ -126,7 +128,7 @@ export default function Login() {
           <Button
             type="button"
             variant="outline"
-            className="w-full"
+            className="w-full h-11"
             onClick={() => {
               window.location.href = "/api/auth/facebook";
             }}

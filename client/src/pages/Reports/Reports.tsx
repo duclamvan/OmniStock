@@ -340,20 +340,20 @@ export default function Reports() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-0">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
             Business Reports
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
             Comprehensive analytics for growth and financial insights
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-[180px]" data-testid="select-date-range">
+            <SelectTrigger className="w-full sm:w-[180px]" data-testid="select-date-range">
               <Calendar className="h-4 w-4 mr-2" />
               <SelectValue />
             </SelectTrigger>
@@ -368,7 +368,7 @@ export default function Reports() {
           </Select>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" data-testid="button-export">
+              <Button variant="outline" className="w-full sm:w-auto" data-testid="button-export">
                 <FileDown className="h-4 w-4 mr-2" />
                 Export
               </Button>
@@ -391,23 +391,23 @@ export default function Reports() {
 
       {/* Financial Overview */}
       <div>
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-          <BarChart3 className="h-5 w-5 text-emerald-600" />
+        <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3 sm:mb-4 flex items-center gap-2">
+          <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
           Financial Overview
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Total Revenue CZK */}
           <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between gap-3">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                     Revenue (CZK)
                   </p>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help" data-testid="stat-revenue-czk">
+                        <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help" data-testid="stat-revenue-czk">
                           {formatCompactNumber(financialMetrics.totalRevenueCZK)} Kč
                         </p>
                       </TooltipTrigger>
@@ -426,16 +426,16 @@ export default function Reports() {
 
           {/* Total Revenue EUR */}
           <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between gap-3">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                     Revenue (EUR)
                   </p>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help" data-testid="stat-revenue-eur">
+                        <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help" data-testid="stat-revenue-eur">
                           €{formatCompactNumber(financialMetrics.totalRevenueEUR)}
                         </p>
                       </TooltipTrigger>
@@ -445,8 +445,8 @@ export default function Reports() {
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
-                  <DollarSign className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                <div className="flex-shrink-0 p-2 sm:p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
+                  <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
             </CardContent>
@@ -454,16 +454,16 @@ export default function Reports() {
 
           {/* Profit */}
           <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between gap-3">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                     Profit (Est.)
                   </p>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <p className={`text-2xl font-bold truncate cursor-help ${financialMetrics.profitCZK >= 0 ? 'text-emerald-600' : 'text-red-600'}`} data-testid="stat-profit">
+                        <p className={`text-xl sm:text-2xl font-bold truncate cursor-help ${financialMetrics.profitCZK >= 0 ? 'text-emerald-600' : 'text-red-600'}`} data-testid="stat-profit">
                           {formatCompactNumber(financialMetrics.profitCZK)} Kč
                         </p>
                       </TooltipTrigger>
@@ -486,13 +486,13 @@ export default function Reports() {
 
           {/* Profit Margin */}
           <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between gap-3">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                     Profit Margin
                   </p>
-                  <p className={`text-2xl font-bold truncate ${financialMetrics.profitMargin >= 0 ? 'text-emerald-600' : 'text-red-600'}`} data-testid="stat-margin">
+                  <p className={`text-xl sm:text-2xl font-bold truncate ${financialMetrics.profitMargin >= 0 ? 'text-emerald-600' : 'text-red-600'}`} data-testid="stat-margin">
                     {financialMetrics.profitMargin.toFixed(1)}%
                   </p>
                 </div>
@@ -507,20 +507,20 @@ export default function Reports() {
 
       {/* Sales & Orders Overview */}
       <div>
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-          <ShoppingCart className="h-5 w-5 text-cyan-600" />
+        <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3 sm:mb-4 flex items-center gap-2">
+          <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-cyan-600" />
           Sales & Orders
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Total Orders */}
           <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between gap-3">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                     Total Orders
                   </p>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-total-orders">
+                  <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-total-orders">
                     {formatCompactNumber(financialMetrics.totalOrders)}
                   </p>
                 </div>
@@ -533,13 +533,13 @@ export default function Reports() {
 
           {/* Units Sold */}
           <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between gap-3">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                     Units Sold
                   </p>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-units-sold">
+                  <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-units-sold">
                     {formatCompactNumber(productPerformance.totalUnitsSold)}
                   </p>
                 </div>
@@ -552,13 +552,13 @@ export default function Reports() {
 
           {/* Avg Order Value CZK */}
           <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between gap-3">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                     Avg Order (CZK)
                   </p>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-avg-order-czk">
+                  <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-avg-order-czk">
                     {formatCompactNumber(financialMetrics.avgOrderValueCZK)} Kč
                   </p>
                 </div>
@@ -571,13 +571,13 @@ export default function Reports() {
 
           {/* Active Customers */}
           <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between gap-3">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                     Active Customers
                   </p>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-active-customers">
+                  <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-active-customers">
                     {formatCompactNumber(customerAnalytics.activeCustomers)}
                   </p>
                 </div>
@@ -591,7 +591,7 @@ export default function Reports() {
       </div>
 
       {/* Product Performance */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Top Selling Products */}
         <Card className="border-slate-200 dark:border-slate-800">
           <CardHeader>

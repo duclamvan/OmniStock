@@ -14,16 +14,16 @@ export default function Settings() {
   const tab = location.split("/")[2] || "general";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Settings</h1>
-        <p className="text-slate-600 dark:text-slate-400 mt-1">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">Settings</h1>
+        <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
           Configure your WMS system preferences
         </p>
       </div>
 
       <Tabs value={tab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 gap-2 h-auto p-2">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-2 h-auto p-1.5 sm:p-2">
           <TabsTrigger value="general" className="gap-2" data-testid="tab-general">
             <SettingsIcon className="h-4 w-4" />
             <span className="hidden sm:inline">General</span>

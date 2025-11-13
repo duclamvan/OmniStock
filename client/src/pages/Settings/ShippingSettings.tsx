@@ -98,7 +98,7 @@ export default function ShippingSettings() {
   if (isLoading) {
     return (
       <Card>
-        <CardContent className="flex items-center justify-center py-12">
+        <CardContent className="flex items-center justify-center py-8 sm:py-12">
           <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
         </CardContent>
       </Card>
@@ -107,16 +107,16 @@ export default function ShippingSettings() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Truck className="h-5 w-5" />
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Truck className="h-4 w-4 sm:h-5 sm:w-5" />
               Shipping Configuration
             </CardTitle>
-            <CardDescription>Configure shipping methods and default addresses</CardDescription>
+            <CardDescription className="text-sm">Configure shipping methods and default addresses</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
             <FormField
               control={form.control}
               name="default_shipping_method"
@@ -175,11 +175,11 @@ export default function ShippingSettings() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Default Sender Addresses</CardTitle>
-            <CardDescription>Default sender addresses for shipping labels (JSON format)</CardDescription>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">Default Sender Addresses</CardTitle>
+            <CardDescription className="text-sm">Default sender addresses for shipping labels (JSON format)</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
             <FormField
               control={form.control}
               name="ppl_default_sender_address"
@@ -225,7 +225,7 @@ export default function ShippingSettings() {
         </Card>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={saveMutation.isPending} data-testid="button-save">
+          <Button type="submit" disabled={saveMutation.isPending} className="w-full sm:w-auto" data-testid="button-save">
             {saveMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

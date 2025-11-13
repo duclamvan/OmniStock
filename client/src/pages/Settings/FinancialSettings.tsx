@@ -85,7 +85,7 @@ export default function FinancialSettings() {
   if (isLoading) {
     return (
       <Card>
-        <CardContent className="flex items-center justify-center py-12">
+        <CardContent className="flex items-center justify-center py-8 sm:py-12">
           <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
         </CardContent>
       </Card>
@@ -94,16 +94,16 @@ export default function FinancialSettings() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
               Tax Configuration
             </CardTitle>
-            <CardDescription>Default tax rates and settings</CardDescription>
+            <CardDescription className="text-sm">Default tax rates and settings</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -177,11 +177,11 @@ export default function FinancialSettings() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Exchange Rate Configuration</CardTitle>
-            <CardDescription>Currency exchange rate data source</CardDescription>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">Exchange Rate Configuration</CardTitle>
+            <CardDescription className="text-sm">Currency exchange rate data source</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6">
             <FormField
               control={form.control}
               name="exchange_rate_source"
@@ -207,7 +207,7 @@ export default function FinancialSettings() {
         </Card>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={saveMutation.isPending} data-testid="button-save">
+          <Button type="submit" disabled={saveMutation.isPending} className="w-full sm:w-auto" data-testid="button-save">
             {saveMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

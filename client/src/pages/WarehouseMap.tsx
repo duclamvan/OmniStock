@@ -356,29 +356,29 @@ export default function WarehouseMap() {
   const isLoading = warehousesLoading || configLoading || locationsLoading;
 
   return (
-    <div className="container mx-auto p-4 space-y-4">
+    <div className="container mx-auto p-3 md:p-4 space-y-3 md:space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-lg bg-amber-100 dark:bg-amber-950 flex items-center justify-center">
-            <Warehouse className="h-6 w-6 text-amber-700 dark:text-amber-400" />
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 md:gap-3 min-w-0">
+          <div className="h-10 w-10 md:h-12 md:w-12 rounded-lg bg-amber-100 dark:bg-amber-950 flex items-center justify-center shrink-0">
+            <Warehouse className="h-5 w-5 md:h-6 md:w-6 text-amber-700 dark:text-amber-400" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-amber-900 dark:text-amber-100">Warehouse Space Map</h1>
-            <p className="text-sm text-muted-foreground">Visual overview of storage capacity and occupancy</p>
+          <div className="min-w-0">
+            <h1 className="text-lg md:text-2xl font-bold text-amber-900 dark:text-amber-100 truncate">Warehouse Space Map</h1>
+            <p className="text-xs md:text-sm text-muted-foreground">Visual overview of storage capacity and occupancy</p>
           </div>
         </div>
       </div>
 
       {/* Warehouse Selection */}
       <Card className="border-amber-200 dark:border-amber-800">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
+        <CardHeader className="pb-2 md:pb-3 p-3 md:p-6">
+          <CardTitle className="text-sm md:text-base flex items-center gap-2">
             <Warehouse className="h-4 w-4 text-amber-600" />
             Warehouse Selection
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 md:p-6 pt-0">
           {warehousesLoading ? (
             <Skeleton className="h-10 w-full" />
           ) : (
@@ -408,13 +408,13 @@ export default function WarehouseMap() {
       {/* Configuration Panel - Per Aisle */}
       {selectedWarehouseId && (
         <Card className="border-amber-200 dark:border-amber-800">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
+          <CardHeader className="pb-2 md:pb-3 p-3 md:p-6">
+            <CardTitle className="text-sm md:text-base flex items-center gap-2">
               <Layers className="h-4 w-4 text-amber-600" />
               Aisle Configuration
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-3 md:p-6 pt-0">
             {configLoading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
@@ -430,9 +430,9 @@ export default function WarehouseMap() {
                   const isSaving = savingAisles.has(aisleId);
 
                   return (
-                    <div key={aisleId} className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-slate-50 dark:bg-slate-900/50">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+                    <div key={aisleId} className="border border-slate-200 dark:border-slate-700 rounded-lg p-2 md:p-3 bg-slate-50 dark:bg-slate-900/50">
+                      <div className="flex items-center justify-between mb-2 md:mb-3">
+                        <h4 className="text-xs md:text-sm font-semibold text-amber-700 dark:text-amber-400">
                           Aisle {aisleId}
                         </h4>
                         {isSaving && (
@@ -441,7 +441,7 @@ export default function WarehouseMap() {
                           </Badge>
                         )}
                       </div>
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-3 gap-2 md:gap-3">
                         <div>
                           <Label htmlFor={`${aisleId}-racks`} className="text-xs">Racks</Label>
                           <Select 
@@ -507,21 +507,21 @@ export default function WarehouseMap() {
 
       {/* Statistics Cards */}
       {selectedWarehouseId && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
           <Card className="border-amber-200 dark:border-amber-800">
-            <CardContent className="p-4">
+            <CardContent className="p-3 md:p-4">
               <div className="flex items-center justify-between">
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">Total Locations</p>
                   {isLoading ? (
-                    <Skeleton className="h-8 w-16 mt-1" />
+                    <Skeleton className="h-6 md:h-8 w-12 md:w-16 mt-1" />
                   ) : (
-                    <p className="text-2xl font-bold text-amber-700 dark:text-amber-400" data-testid="stat-total-locations">
+                    <p className="text-xl md:text-2xl font-bold text-amber-700 dark:text-amber-400 truncate" data-testid="stat-total-locations">
                       {stats.totalLocations}
                     </p>
                   )}
                 </div>
-                <MapPin className="h-8 w-8 text-amber-300 dark:text-amber-700" />
+                <MapPin className="h-6 w-6 md:h-8 md:w-8 text-amber-300 dark:text-amber-700 shrink-0" />
               </div>
             </CardContent>
           </Card>
@@ -585,8 +585,8 @@ export default function WarehouseMap() {
       {/* Legend */}
       {selectedWarehouseId && (
         <Card className="border-amber-200 dark:border-amber-800">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-6 flex-wrap">
+          <CardContent className="p-3 md:p-4">
+            <div className="flex items-center gap-3 md:gap-6 flex-wrap">
               <div className="flex items-center gap-2">
                 <div className="h-4 w-4 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
                 <span className="text-xs text-muted-foreground">Empty (0%)</span>
@@ -615,13 +615,13 @@ export default function WarehouseMap() {
       {/* Warehouse Grid */}
       {selectedWarehouseId && (
         <Card className="border-amber-200 dark:border-amber-800">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
+          <CardHeader className="pb-2 md:pb-3 p-3 md:p-6">
+            <CardTitle className="text-sm md:text-base flex items-center gap-2">
               <Warehouse className="h-4 w-4 text-amber-600" />
-              {warehouses?.find(w => w.id === selectedWarehouseId)?.name} - Aisle & Rack Map
+              <span className="truncate">{warehouses?.find(w => w.id === selectedWarehouseId)?.name} - Aisle & Rack Map</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-3 md:p-6 pt-0">
             {isLoading ? (
               <div className="space-y-2">
                 {[1, 2, 3, 4, 5].map((i) => (

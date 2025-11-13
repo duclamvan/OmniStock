@@ -87,6 +87,7 @@ export default function Register() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
+                className="h-11"
                 data-testid="input-name"
               />
             </div>
@@ -99,6 +100,7 @@ export default function Register() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="h-11"
                 data-testid="input-email"
               />
             </div>
@@ -112,6 +114,7 @@ export default function Register() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
+                className="h-11"
                 data-testid="input-password"
               />
             </div>
@@ -125,12 +128,13 @@ export default function Register() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 minLength={6}
+                className="h-11"
                 data-testid="input-confirmPassword"
               />
             </div>
             <Button
               type="submit"
-              className="w-full"
+              className="w-full h-11"
               disabled={isLoading}
               data-testid="button-register"
             >
@@ -150,7 +154,7 @@ export default function Register() {
           <Button
             type="button"
             variant="outline"
-            className="w-full"
+            className="w-full h-11"
             onClick={() => {
               window.location.href = "/api/auth/facebook";
             }}

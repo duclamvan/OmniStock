@@ -417,30 +417,36 @@ export default function ShippingManagement() {
   };
 
   return (
-    <div className="p-6 space-y-8" data-testid="shipping-management">
+    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 md:space-y-8" data-testid="shipping-management">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight" data-testid="title-shipping">Shipping Management</h1>
-        <p className="text-muted-foreground">Manage multi-carrier shipping integrations and test API connections</p>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight" data-testid="title-shipping">Shipping Management</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">Manage multi-carrier shipping integrations and test API connections</p>
       </div>
 
-      <Tabs defaultValue="connection" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="connection" data-testid="tab-connection">Connection Status</TabsTrigger>
-          <TabsTrigger value="info" data-testid="tab-info">Shipping Information</TabsTrigger>
+      <Tabs defaultValue="connection" className="space-y-4 sm:space-y-6">
+        <TabsList className="w-full grid grid-cols-2">
+          <TabsTrigger value="connection" data-testid="tab-connection" className="text-xs sm:text-sm">
+            <span className="hidden sm:inline">Connection Status</span>
+            <span className="sm:hidden">Connection</span>
+          </TabsTrigger>
+          <TabsTrigger value="info" data-testid="tab-info" className="text-xs sm:text-sm">
+            <span className="hidden sm:inline">Shipping Information</span>
+            <span className="sm:hidden">Shipping Info</span>
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="connection" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TabsContent value="connection" className="space-y-4 sm:space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* PPL Connection Card */}
             <Card className="overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b p-4 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white rounded-lg shadow-sm">
-                      <Truck className="w-5 h-5 text-blue-600" />
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    <div className="p-1.5 sm:p-2 bg-white rounded-lg shadow-sm flex-shrink-0">
+                      <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                     </div>
-                    <div>
-                      <CardTitle className="text-lg">PPL CZ</CardTitle>
+                    <div className="min-w-0">
+                      <CardTitle className="text-base sm:text-lg truncate">PPL CZ</CardTitle>
                       <CardDescription className="text-xs mt-0.5">Czech Parcel Service</CardDescription>
                     </div>
                   </div>
@@ -458,9 +464,9 @@ export default function ShippingManagement() {
                   )}
                 </div>
               </CardHeader>
-              <CardContent className="pt-6 space-y-4">
+              <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 {isTestingConnection ? (
-                  <div className="flex items-center justify-center py-8" data-testid="status-testing">
+                  <div className="flex items-center justify-center py-6 sm:py-8" data-testid="status-testing">
                     <div className="flex flex-col items-center gap-3">
                       <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
                       <span className="text-sm text-muted-foreground">Testing connection...</span>
@@ -533,28 +539,28 @@ export default function ShippingManagement() {
           </div>
         </TabsContent>
 
-        <TabsContent value="info" className="space-y-6">
+        <TabsContent value="info" className="space-y-4 sm:space-y-6">
           {/* PPL Shipping Information Card */}
           <Collapsible open={isPPLOpen} onOpenChange={setIsPPLOpen}>
             <Card className="overflow-hidden">
               <CollapsibleTrigger className="w-full">
-                <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 border-b cursor-pointer hover:bg-slate-100 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-white rounded-lg shadow-sm">
-                        <Truck className="w-5 h-5 text-slate-700" />
+                <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 border-b cursor-pointer hover:bg-slate-100 transition-colors p-4 sm:p-6">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                      <div className="p-1.5 sm:p-2 bg-white rounded-lg shadow-sm flex-shrink-0">
+                        <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700" />
                       </div>
-                      <div className="text-left">
-                        <CardTitle className="text-lg">PPL Shipping Information</CardTitle>
-                        <CardDescription className="text-xs mt-0.5">Test label generation and view integration details</CardDescription>
+                      <div className="text-left min-w-0">
+                        <CardTitle className="text-base sm:text-lg truncate">PPL Shipping</CardTitle>
+                        <CardDescription className="text-xs mt-0.5 hidden sm:block">Test label generation and view integration details</CardDescription>
                       </div>
                     </div>
-                    {isPPLOpen ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
+                    {isPPLOpen ? <ChevronUp className="w-5 h-5 text-muted-foreground flex-shrink-0" /> : <ChevronDown className="w-5 h-5 text-muted-foreground flex-shrink-0" />}
                   </div>
                 </CardHeader>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <CardContent className="pt-6 space-y-6">
+                <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
                   <div className="space-y-6">
                     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-5 border border-blue-100">
                   <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
@@ -768,23 +774,23 @@ export default function ShippingManagement() {
           <Collapsible open={isDHLOpen} onOpenChange={setIsDHLOpen}>
             <Card className="overflow-hidden">
               <CollapsibleTrigger className="w-full">
-                <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50 border-b cursor-pointer hover:bg-yellow-100 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-white rounded-lg shadow-sm">
-                        <Package className="w-5 h-5 text-yellow-600" />
+                <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50 border-b cursor-pointer hover:bg-yellow-100 transition-colors p-4 sm:p-6">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                      <div className="p-1.5 sm:p-2 bg-white rounded-lg shadow-sm flex-shrink-0">
+                        <Package className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600" />
                       </div>
-                      <div className="text-left">
-                        <CardTitle className="text-lg">DHL Germany - Manual Shipping</CardTitle>
-                        <CardDescription className="text-xs mt-0.5">Configure sender address and bank details for manual DHL shipping</CardDescription>
+                      <div className="text-left min-w-0">
+                        <CardTitle className="text-base sm:text-lg truncate">DHL Germany</CardTitle>
+                        <CardDescription className="text-xs mt-0.5 hidden sm:block">Configure sender address and bank details for manual DHL shipping</CardDescription>
                       </div>
                     </div>
-                    {isDHLOpen ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
+                    {isDHLOpen ? <ChevronUp className="w-5 h-5 text-muted-foreground flex-shrink-0" /> : <ChevronDown className="w-5 h-5 text-muted-foreground flex-shrink-0" />}
                   </div>
                 </CardHeader>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <CardContent className="pt-6 space-y-6">
+                <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
                   <div className="space-y-6">
                     {/* Sender Address Section */}
                     <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg p-5 border border-yellow-100">
@@ -1070,23 +1076,23 @@ export default function ShippingManagement() {
           <Collapsible open={isGLSOpen} onOpenChange={setIsGLSOpen}>
             <Card className="overflow-hidden">
               <CollapsibleTrigger className="w-full">
-                <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b cursor-pointer hover:bg-green-100 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-white rounded-lg shadow-sm">
-                        <Package className="w-5 h-5 text-green-600" />
+                <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b cursor-pointer hover:bg-green-100 transition-colors p-4 sm:p-6">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                      <div className="p-1.5 sm:p-2 bg-white rounded-lg shadow-sm flex-shrink-0">
+                        <Package className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                       </div>
-                      <div className="text-left">
-                        <CardTitle className="text-lg">GLS Germany - Manual Shipping</CardTitle>
-                        <CardDescription className="text-xs mt-0.5">Configure sender address for manual GLS label workflow</CardDescription>
+                      <div className="text-left min-w-0">
+                        <CardTitle className="text-base sm:text-lg truncate">GLS Germany</CardTitle>
+                        <CardDescription className="text-xs mt-0.5 hidden sm:block">Configure sender address for manual GLS label workflow</CardDescription>
                       </div>
                     </div>
-                    {isGLSOpen ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
+                    {isGLSOpen ? <ChevronUp className="w-5 h-5 text-muted-foreground flex-shrink-0" /> : <ChevronDown className="w-5 h-5 text-muted-foreground flex-shrink-0" />}
                   </div>
                 </CardHeader>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <CardContent className="pt-6 space-y-6">
+                <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
                   <div className="space-y-6">
                     <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-5 border border-green-100">
                       <h4 className="font-semibold text-base mb-2 flex items-center gap-2">

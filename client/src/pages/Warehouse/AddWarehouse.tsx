@@ -124,44 +124,45 @@ export default function AddWarehouse() {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between border-b pb-4">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b pb-3 md:pb-4 gap-3">
+        <div className="flex items-center gap-2 md:gap-4">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => window.history.back()}
+            className="shrink-0"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Warehouses
+            <ArrowLeft className="h-4 w-4 md:mr-2" />
+            <span className="hidden md:inline">Back to Warehouses</span>
           </Button>
         </div>
-        <Badge variant="outline" className="text-green-600 border-green-600">
+        <Badge variant="outline" className="text-green-600 border-green-600 w-fit">
           <Plus className="h-3 w-3 mr-1" />
           New Warehouse
         </Badge>
       </div>
 
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Add New Warehouse</h1>
-        <p className="text-slate-600 mt-1">Create a new warehouse location and configure its details</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Add New Warehouse</h1>
+        <p className="text-sm md:text-base text-slate-600 mt-1">Create a new warehouse location and configure its details</p>
       </div>
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Main Column - 2/3 width */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 md:space-y-6">
             {/* Basic Information */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-blue-600" />
+              <CardHeader className="p-4 md:p-6">
+                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                  <Building2 className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
                   Basic Information
                 </CardTitle>
-                <CardDescription>Essential warehouse details and identification</CardDescription>
+                <CardDescription className="text-xs md:text-sm">Essential warehouse details and identification</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 md:space-y-4 p-4 md:p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="name">Warehouse Name *</Label>
@@ -275,14 +276,14 @@ export default function AddWarehouse() {
 
             {/* Location Details */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-green-600" />
+              <CardHeader className="p-4 md:p-6">
+                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                  <MapPin className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
                   Location & Address
                 </CardTitle>
-                <CardDescription>Physical location and contact information</CardDescription>
+                <CardDescription className="text-xs md:text-sm">Physical location and contact information</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 md:space-y-4 p-4 md:p-6">
                 <div>
                   <Label htmlFor="address">Street Address</Label>
                   <Input
@@ -373,14 +374,14 @@ export default function AddWarehouse() {
 
             {/* Financial & Notes */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Banknote className="h-5 w-5 text-orange-600" />
+              <CardHeader className="p-4 md:p-6">
+                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                  <Banknote className="h-4 w-4 md:h-5 md:w-5 text-orange-600" />
                   Financial & Additional Info
                 </CardTitle>
-                <CardDescription>Rental details, expenses, and notes</CardDescription>
+                <CardDescription className="text-xs md:text-sm">Rental details, expenses, and notes</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 md:space-y-4 p-4 md:p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="rentedFromDate">Rental Start Date</Label>
@@ -430,17 +431,17 @@ export default function AddWarehouse() {
           </div>
 
           {/* Sidebar - 1/3 width */}
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             {/* File Upload Card */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-purple-600" />
+              <CardHeader className="p-4 md:p-6">
+                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                  <FileText className="h-4 w-4 md:h-5 md:w-5 text-purple-600" />
                   Documents
                 </CardTitle>
-                <CardDescription>Upload contracts, photos, or documents</CardDescription>
+                <CardDescription className="text-xs md:text-sm">Upload contracts, photos, or documents</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4 md:p-6">
                 <ObjectUploader
                   maxNumberOfFiles={10}
                   maxFileSize={50 * 1024 * 1024} // 50MB
@@ -459,13 +460,13 @@ export default function AddWarehouse() {
 
             {/* Quick Actions Card */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5 text-gray-600" />
+              <CardHeader className="p-4 md:p-6">
+                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                  <Settings className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />
                   Actions
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-3 p-4 md:p-6">
                 <Button 
                   type="submit" 
                   className="w-full"

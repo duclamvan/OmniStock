@@ -100,7 +100,7 @@ export default function SystemSettings() {
   if (isLoading) {
     return (
       <Card>
-        <CardContent className="flex items-center justify-center py-12">
+        <CardContent className="flex items-center justify-center py-8 sm:py-12">
           <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
         </CardContent>
       </Card>
@@ -109,16 +109,16 @@ export default function SystemSettings() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <SettingsIcon className="h-5 w-5" />
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <SettingsIcon className="h-4 w-4 sm:h-5 sm:w-5" />
               System Configuration
             </CardTitle>
-            <CardDescription>Application-wide system settings</CardDescription>
+            <CardDescription className="text-sm">Application-wide system settings</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
             <FormField
               control={form.control}
               name="app_name"
@@ -211,7 +211,7 @@ export default function SystemSettings() {
         </Card>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={saveMutation.isPending} data-testid="button-save">
+          <Button type="submit" disabled={saveMutation.isPending} className="w-full sm:w-auto" data-testid="button-save">
             {saveMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

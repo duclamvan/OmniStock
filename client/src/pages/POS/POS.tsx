@@ -992,7 +992,7 @@ export default function POS() {
 
           {/* Products Grid */}
           <ScrollArea className="flex-1">
-            <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 sm:gap-4 p-3 sm:p-6">
               {displayProducts.map((product: any) => {
                 const cartItem = cart.find(item => item.id === product.id);
                 const isInCart = !!cartItem;
@@ -1081,7 +1081,7 @@ export default function POS() {
         </div>
 
         {/* Right Panel - Cart */}
-        <div className="w-[420px] border-l flex flex-col bg-card">
+        <div className="w-full lg:w-[380px] xl:w-[420px] border-l flex flex-col bg-card">
           <div className="px-4 py-3 border-b">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold flex items-center gap-2">
@@ -1240,55 +1240,55 @@ export default function POS() {
           {cart.length > 0 && (
             <div className="border-t p-4 space-y-3">
               <div className="space-y-1.5">
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span>Subtotal:</span>
                   <span className="font-semibold">{currency} {subtotal.toFixed(2)}</span>
                 </div>
                 {actualVatRate > 0 && (
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-xs sm:text-sm">
                     <span>VAT ({actualVatRate.toFixed(2)}%):</span>
                     <span className="font-semibold">{currency} {tax.toFixed(2)}</span>
                   </div>
                 )}
-                <div className="flex justify-between items-center bg-primary/10 rounded-lg p-3 mt-2">
-                  <span className="text-base font-bold">Total:</span>
-                  <span className="text-xl font-bold text-primary">{currency} {total.toFixed(2)}</span>
+                <div className="flex justify-between items-center bg-primary/10 rounded-lg p-2 sm:p-3 mt-2">
+                  <span className="text-sm sm:text-base font-bold">Total:</span>
+                  <span className="text-lg sm:text-xl font-bold text-primary">{currency} {total.toFixed(2)}</span>
                 </div>
               </div>
 
               {/* Payment Method */}
               <div>
                 <p className="text-xs font-semibold mb-2">Payment Method</p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-1 sm:gap-2">
                   <Button
                     size="sm"
                     variant={paymentMethod === 'cash' ? 'default' : 'outline'}
                     onClick={() => setPaymentMethod('cash')}
-                    className="flex flex-col gap-1.5 h-auto py-2.5"
+                    className="flex flex-col gap-1 sm:gap-1.5 h-auto py-2 sm:py-2.5"
                     data-testid="button-payment-cash"
                   >
-                    <Banknote className="h-4 w-4" />
-                    <span className="text-xs font-medium">Cash</span>
+                    <Banknote className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="text-[10px] sm:text-xs font-medium">Cash</span>
                   </Button>
                   <Button
                     size="sm"
                     variant={paymentMethod === 'pay_later' ? 'default' : 'outline'}
                     onClick={() => setPaymentMethod('pay_later')}
-                    className="flex flex-col gap-1.5 h-auto py-2.5"
+                    className="flex flex-col gap-1 sm:gap-1.5 h-auto py-2 sm:py-2.5"
                     data-testid="button-payment-later"
                   >
-                    <CreditCard className="h-4 w-4" />
-                    <span className="text-xs font-medium">Pay Later</span>
+                    <CreditCard className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="text-[10px] sm:text-xs font-medium">Later</span>
                   </Button>
                   <Button
                     size="sm"
                     variant={paymentMethod === 'bank_transfer' ? 'default' : 'outline'}
                     onClick={() => setPaymentMethod('bank_transfer')}
-                    className="flex flex-col gap-1.5 h-auto py-2.5"
+                    className="flex flex-col gap-1 sm:gap-1.5 h-auto py-2 sm:py-2.5"
                     data-testid="button-payment-bank"
                   >
-                    <Building className="h-4 w-4" />
-                    <span className="text-xs font-medium">Bank</span>
+                    <Building className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="text-[10px] sm:text-xs font-medium">Bank</span>
                   </Button>
                 </div>
               </div>

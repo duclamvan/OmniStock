@@ -9,26 +9,26 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-slate-100">
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-4 py-8 sm:py-16">
         {/* Header */}
-        <div className="text-center mb-16">
-          <h1 className="text-6xl font-bold text-slate-900 mb-4">
+        <div className="text-center mb-8 sm:mb-16">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 mb-3 sm:mb-4">
             <span className="text-primary">Davie</span> Supply
           </h1>
-          <p className="text-xl text-slate-600 mb-8">
+          <p className="text-base sm:text-lg md:text-xl text-slate-600 mb-6 sm:mb-8 px-4">
             Complete Warehouse & Order Management System
           </p>
           <Button 
             onClick={handleLogin}
             size="lg"
-            className="bg-primary hover:bg-primary/90 text-white px-8 py-3 text-lg"
+            className="bg-primary hover:bg-primary/90 text-white px-6 sm:px-8 py-2.5 sm:py-3 text-base sm:text-lg w-full sm:w-auto"
           >
             Login to Get Started
           </Button>
         </div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 mb-8 sm:mb-16">
           <Card className="text-center">
             <CardHeader>
               <div className="mx-auto w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-4">
@@ -87,9 +87,9 @@ export default function Landing() {
         </div>
 
         {/* Key Features */}
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <h2 className="text-3xl font-bold text-center mb-8">Key Features</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8">Key Features</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <div className="flex items-start space-x-3">
               <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
               <div>
@@ -136,7 +136,7 @@ export default function Landing() {
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-16 text-slate-500">
+        <div className="text-center mt-8 sm:mt-16 text-slate-500 text-sm sm:text-base px-4">
           <p>&copy; 2024 Davie Supply Management System. All rights reserved.</p>
         </div>
       </div>

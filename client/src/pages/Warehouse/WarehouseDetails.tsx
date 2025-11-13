@@ -267,39 +267,40 @@ export default function WarehouseDetails() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6 p-4 md:p-0">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-3 md:gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => window.history.back()}
             data-testid="button-back"
+            className="shrink-0"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            <ArrowLeft className="h-4 w-4 md:mr-2" />
+            <span className="hidden md:inline">Back</span>
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100" data-testid="text-warehouse-name">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate" data-testid="text-warehouse-name">
               {warehouse.name}
             </h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+            <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mt-1">
               Warehouse Management & Operations
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Link href={`/warehouses/${warehouse.id}/mapping`}>
-            <Button variant="outline" size="sm" data-testid="button-warehouse-mapping">
-              <MapPin className="h-4 w-4 mr-2" />
-              Mapping
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Link href={`/warehouses/${warehouse.id}/mapping`} className="flex-1 sm:flex-initial">
+            <Button variant="outline" size="sm" data-testid="button-warehouse-mapping" className="w-full sm:w-auto">
+              <MapPin className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Mapping</span>
             </Button>
           </Link>
-          <Link href={`/warehouses/${warehouse.id}/edit`}>
-            <Button size="sm" data-testid="button-edit">
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
+          <Link href={`/warehouses/${warehouse.id}/edit`} className="flex-1 sm:flex-initial">
+            <Button size="sm" data-testid="button-edit" className="w-full sm:w-auto">
+              <Edit className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Edit</span>
             </Button>
           </Link>
         </div>
@@ -370,35 +371,39 @@ export default function WarehouseDetails() {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="details" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="details" data-testid="tab-details">Details</TabsTrigger>
-          <TabsTrigger value="inventory" data-testid="tab-inventory">
-            Inventory
-            <Badge variant="secondary" className="ml-2">{totalProducts}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="files" data-testid="tab-files">
-            Files
-            <Badge variant="secondary" className="ml-2">{files.length}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="contracts" data-testid="tab-contracts">
-            Contracts
-            <Badge variant="secondary" className="ml-2">{financialContracts.length}</Badge>
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+          <TabsList className="inline-flex w-auto min-w-full md:min-w-0">
+            <TabsTrigger value="details" data-testid="tab-details" className="flex-1 md:flex-initial">
+              <span className="text-xs md:text-sm">Details</span>
+            </TabsTrigger>
+            <TabsTrigger value="inventory" data-testid="tab-inventory" className="flex-1 md:flex-initial">
+              <span className="text-xs md:text-sm">Inventory</span>
+              <Badge variant="secondary" className="ml-1 md:ml-2 text-xs">{totalProducts}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="files" data-testid="tab-files" className="flex-1 md:flex-initial">
+              <span className="text-xs md:text-sm">Files</span>
+              <Badge variant="secondary" className="ml-1 md:ml-2 text-xs">{files.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="contracts" data-testid="tab-contracts" className="flex-1 md:flex-initial">
+              <span className="text-xs md:text-sm">Contracts</span>
+              <Badge variant="secondary" className="ml-1 md:ml-2 text-xs">{financialContracts.length}</Badge>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Details Tab */}
-        <TabsContent value="details" className="space-y-4 mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <TabsContent value="details" className="space-y-4 mt-4 md:mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
             {/* Basic Information */}
             <Card className="border-slate-200 dark:border-slate-800">
-              <CardHeader className="border-b border-slate-100 dark:border-slate-800">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Building className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+              <CardHeader className="border-b border-slate-100 dark:border-slate-800 p-4 md:p-6">
+                <CardTitle className="text-base md:text-lg flex items-center gap-2">
+                  <Building className="h-4 w-4 md:h-5 md:w-5 text-cyan-600 dark:text-cyan-400" />
                   Basic Information
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <CardContent className="p-4 md:p-6 space-y-3 md:space-y-4">
+                <div className="grid grid-cols-2 gap-3 md:gap-4">
                   <div>
                     <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Warehouse ID</p>
                     <p className="text-sm font-mono text-slate-900 dark:text-slate-100" data-testid="text-warehouse-id">{warehouse.id}</p>
@@ -440,13 +445,13 @@ export default function WarehouseDetails() {
 
             {/* Contact Information */}
             <Card className="border-slate-200 dark:border-slate-800">
-              <CardHeader className="border-b border-slate-100 dark:border-slate-800">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+              <CardHeader className="border-b border-slate-100 dark:border-slate-800 p-4 md:p-6">
+                <CardTitle className="text-base md:text-lg flex items-center gap-2">
+                  <MapPin className="h-4 w-4 md:h-5 md:w-5 text-cyan-600 dark:text-cyan-400" />
                   Contact & Location
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 space-y-4">
+              <CardContent className="p-4 md:p-6 space-y-3 md:space-y-4">
                 {warehouse.address && (
                   <div className="flex items-start gap-2">
                     <MapPin className="h-4 w-4 text-slate-500 mt-0.5" />
@@ -492,20 +497,20 @@ export default function WarehouseDetails() {
         </TabsContent>
 
         {/* Inventory Tab */}
-        <TabsContent value="inventory" className="space-y-4 mt-6">
+        <TabsContent value="inventory" className="space-y-4 mt-4 md:mt-6">
           <Card className="border-slate-200 dark:border-slate-800">
-            <CardHeader className="border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Box className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+            <CardHeader className="border-b border-slate-100 dark:border-slate-800 p-4 md:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <CardTitle className="text-base md:text-lg flex items-center gap-2">
+                  <Box className="h-4 w-4 md:h-5 md:w-5 text-cyan-600 dark:text-cyan-400" />
                   Warehouse Inventory
                 </CardTitle>
-                <Badge variant="outline" className="font-mono">{filteredProducts.length} items</Badge>
+                <Badge variant="outline" className="font-mono text-xs w-fit">{filteredProducts.length} items</Badge>
               </div>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="p-4 md:p-6">
               {/* Search */}
-              <div className="mb-4">
+              <div className="mb-3 md:mb-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
@@ -528,25 +533,25 @@ export default function WarehouseDetails() {
                   {filteredProducts.map((product) => (
                     <div
                       key={product.id}
-                      className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-cyan-300 dark:hover:border-cyan-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all group"
+                      className="flex items-center justify-between p-3 md:p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-cyan-300 dark:hover:border-cyan-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all group touch-manipulation"
                       data-testid={`product-item-${product.id}`}
                     >
-                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
                         {product.imageUrl ? (
                           <img 
                             src={product.imageUrl} 
                             alt={product.name}
-                            className="w-12 h-12 object-cover rounded border border-slate-200 dark:border-slate-700"
+                            className="w-10 h-10 md:w-12 md:h-12 object-cover rounded border border-slate-200 dark:border-slate-700 shrink-0"
                           />
                         ) : (
-                          <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 flex items-center justify-center">
-                            <Package className="h-6 w-6 text-slate-400" />
+                          <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
+                            <Package className="h-5 w-5 md:h-6 md:w-6 text-slate-400" />
                           </div>
                         )}
                         
                         <div className="flex-1 min-w-0">
                           <Link href={`/products/${product.id}`}>
-                            <h4 className="font-semibold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors truncate" data-testid={`text-product-name-${product.id}`}>
+                            <h4 className="font-semibold text-sm md:text-base text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors truncate" data-testid={`text-product-name-${product.id}`}>
                               {product.name}
                             </h4>
                           </Link>

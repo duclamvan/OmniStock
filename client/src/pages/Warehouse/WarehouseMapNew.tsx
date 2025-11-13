@@ -90,27 +90,28 @@ export default function WarehouseMapNew() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4">
+        <div className="flex items-center gap-2 md:gap-4 min-w-0">
           <Link href="/warehouses">
-            <Button variant="ghost" size="icon" data-testid="button-back">
+            <Button variant="ghost" size="icon" data-testid="button-back" className="shrink-0">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold" data-testid="text-warehouse-name">{warehouse.name}</h1>
-            <p className="text-sm text-muted-foreground" data-testid="text-warehouse-location">{warehouse.location}</p>
+          <div className="min-w-0">
+            <h1 className="text-xl md:text-2xl font-bold truncate" data-testid="text-warehouse-name">{warehouse.name}</h1>
+            <p className="text-xs md:text-sm text-muted-foreground truncate" data-testid="text-warehouse-location">{warehouse.location}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           {!layout && (
             <Button 
               onClick={() => setShowLayoutGenerator(true)} 
               data-testid="button-generate-layout"
+              className="flex-1 sm:flex-initial"
             >
               <Plus className="mr-2 h-4 w-4" />
-              Generate Layout
+              <span className="sm:inline">Generate Layout</span>
             </Button>
           )}
           {layout && (
@@ -118,9 +119,10 @@ export default function WarehouseMapNew() {
               variant="outline" 
               onClick={() => setShowLayoutGenerator(true)}
               data-testid="button-regenerate-layout"
+              className="flex-1 sm:flex-initial"
             >
               <Grid3x3 className="mr-2 h-4 w-4" />
-              Regenerate Layout
+              <span className="sm:inline">Regenerate Layout</span>
             </Button>
           )}
         </div>
@@ -128,53 +130,53 @@ export default function WarehouseMapNew() {
 
       {layout && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             <Card data-testid="card-total-bins">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Bins</CardTitle>
+              <CardHeader className="pb-2 p-3 md:p-6">
+                <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Total Bins</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="text-total-bins">
-                  {statsLoading ? <Skeleton className="h-8 w-16" /> : stats?.totalBins || 0}
+              <CardContent className="p-3 md:p-6 pt-0">
+                <div className="text-xl md:text-2xl font-bold" data-testid="text-total-bins">
+                  {statsLoading ? <Skeleton className="h-6 md:h-8 w-12 md:w-16" /> : stats?.totalBins || 0}
                 </div>
               </CardContent>
             </Card>
 
             <Card data-testid="card-empty-bins">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Empty Bins</CardTitle>
+              <CardHeader className="pb-2 p-3 md:p-6">
+                <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Empty Bins</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600" data-testid="text-empty-bins">
-                  {statsLoading ? <Skeleton className="h-8 w-16" /> : stats?.emptyBins || 0}
+              <CardContent className="p-3 md:p-6 pt-0">
+                <div className="text-xl md:text-2xl font-bold text-green-600" data-testid="text-empty-bins">
+                  {statsLoading ? <Skeleton className="h-6 md:h-8 w-12 md:w-16" /> : stats?.emptyBins || 0}
                 </div>
               </CardContent>
             </Card>
 
             <Card data-testid="card-occupied-bins">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Occupied Bins</CardTitle>
+              <CardHeader className="pb-2 p-3 md:p-6">
+                <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Occupied Bins</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600" data-testid="text-occupied-bins">
-                  {statsLoading ? <Skeleton className="h-8 w-16" /> : stats?.occupiedBins || 0}
+              <CardContent className="p-3 md:p-6 pt-0">
+                <div className="text-xl md:text-2xl font-bold text-blue-600" data-testid="text-occupied-bins">
+                  {statsLoading ? <Skeleton className="h-6 md:h-8 w-12 md:w-16" /> : stats?.occupiedBins || 0}
                 </div>
               </CardContent>
             </Card>
 
             <Card data-testid="card-utilization">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Utilization</CardTitle>
+              <CardHeader className="pb-2 p-3 md:p-6">
+                <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Utilization</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-orange-600" data-testid="text-utilization">
-                  {statsLoading ? <Skeleton className="h-8 w-20" /> : `${stats?.utilizationRate || 0}%`}
+              <CardContent className="p-3 md:p-6 pt-0">
+                <div className="text-xl md:text-2xl font-bold text-orange-600" data-testid="text-utilization">
+                  {statsLoading ? <Skeleton className="h-6 md:h-8 w-16 md:w-20" /> : `${stats?.utilizationRate || 0}%`}
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -185,34 +187,34 @@ export default function WarehouseMapNew() {
                 data-testid="input-search-bins"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                <div className="w-3 h-3 rounded-full bg-green-500 mr-2" />
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-green-500 mr-1 md:mr-2" />
                 Empty
               </Badge>
-              <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2" />
+              <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 text-xs">
+                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-yellow-500 mr-1 md:mr-2" />
                 Partial
               </Badge>
-              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                <div className="w-3 h-3 rounded-full bg-red-500 mr-2" />
+              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs">
+                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-500 mr-1 md:mr-2" />
                 Full
               </Badge>
-              <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
-                <div className="w-3 h-3 rounded-full bg-gray-500 mr-2" />
+              <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 text-xs">
+                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-gray-500 mr-1 md:mr-2" />
                 Inactive
               </Badge>
             </div>
           </div>
 
           <Card data-testid="card-bin-grid">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Map className="h-5 w-5" />
+            <CardHeader className="p-4 md:p-6">
+              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                <Map className="h-4 w-4 md:h-5 md:w-5" />
                 Warehouse Map
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 md:p-6">
               {binsLoading ? (
                 <Skeleton className="h-96 w-full" />
               ) : (

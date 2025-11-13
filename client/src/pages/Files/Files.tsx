@@ -173,19 +173,19 @@ export default function Files() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
       <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-2xl font-bold">Files Management</CardTitle>
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+            <CardTitle className="text-xl sm:text-2xl font-bold">Files Management</CardTitle>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="w-full sm:w-auto">
                   <Upload className="mr-2 h-4 w-4" />
                   Add File
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>
                     {editingFile ? "Edit File" : "Add New File"}
@@ -293,9 +293,9 @@ export default function Files() {
             </Dialog>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6">
           {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 sm:mb-6">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -303,12 +303,12 @@ export default function Files() {
                   placeholder="Search files..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-10 sm:h-9"
                 />
               </div>
             </div>
             <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectTrigger className="w-full sm:w-[200px] h-10 sm:h-9">
                 <Filter className="mr-2 h-4 w-4" />
                 <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
@@ -323,83 +323,33 @@ export default function Files() {
             </Select>
           </div>
 
-          {/* Files Table */}
+          {/* Files Table/Cards */}
           {isLoading ? (
-            <div className="text-center py-8">Loading files...</div>
+            <div className="text-center py-8 text-sm sm:text-base">Loading files...</div>
           ) : filteredFiles.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-500 text-sm sm:text-base">
               No files found. Add your first file to get started.
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>File Name</TableHead>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Uploaded</TableHead>
-                    <TableHead>Tags</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredFiles.map((file: any) => (
-                    <TableRow key={file.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
+            <>
+              {/* Mobile Card View */}
+              <div className="block md:hidden space-y-3">
+                {filteredFiles.map((file: any) => (
+                  <Card key={file.id} className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
                           {getFileIcon(file.fileType)}
-                          <span className="text-sm font-medium">
-                            {file.fileType}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {file.fileName}
-                      </TableCell>
-                      <TableCell>
-                        {file.products ? (
-                          <span className="text-sm">
-                            {file.products.name}
-                          </span>
-                        ) : (
-                          <span className="text-sm text-gray-400">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-gray-600 line-clamp-2">
-                          {file.description || "-"}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-gray-500">
-                          {formatDistanceToNow(new Date(file.uploadedAt), {
-                            addSuffix: true,
-                          })}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {file.tags?.length > 0 ? (
-                          <div className="flex gap-1 flex-wrap">
-                            {file.tags.map((tag: string, index: number) => (
-                              <span
-                                key={index}
-                                className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded"
-                              >
-                                {tag}
-                              </span>
-                            ))}
+                          <div className="min-w-0 flex-1">
+                            <h3 className="font-medium text-sm truncate">{file.fileName}</h3>
+                            <p className="text-xs text-gray-500">{file.fileType}</p>
                           </div>
-                        ) : (
-                          <span className="text-sm text-gray-400">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        </div>
+                        <div className="flex gap-1 flex-shrink-0">
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="h-8 w-8 p-0"
                             onClick={() => window.open(file.fileUrl, "_blank")}
                           >
                             <Download className="h-4 w-4" />
@@ -407,6 +357,7 @@ export default function Files() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="h-8 w-8 p-0"
                             onClick={() => {
                               setEditingFile(file);
                               setIsAddDialogOpen(true);
@@ -417,6 +368,7 @@ export default function Files() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="h-8 w-8 p-0"
                             onClick={() => {
                               if (confirm("Are you sure you want to delete this file?")) {
                                 deleteFileMutation.mutate(file.id);
@@ -426,12 +378,141 @@ export default function Files() {
                             <Trash2 className="h-4 w-4 text-red-500" />
                           </Button>
                         </div>
-                      </TableCell>
+                      </div>
+                      {file.products && (
+                        <div className="text-xs">
+                          <span className="text-gray-500">Product: </span>
+                          <span className="font-medium">{file.products.name}</span>
+                        </div>
+                      )}
+                      {file.description && (
+                        <p className="text-xs text-gray-600 line-clamp-2">{file.description}</p>
+                      )}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs text-gray-500">
+                          {formatDistanceToNow(new Date(file.uploadedAt), { addSuffix: true })}
+                        </span>
+                        {file.tags?.length > 0 && (
+                          <div className="flex gap-1 flex-wrap">
+                            {file.tags.map((tag: string, index: number) => (
+                              <span
+                                key={index}
+                                className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+              
+              {/* Desktop Table View */}
+              <div className="hidden md:block rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Type</TableHead>
+                      <TableHead>File Name</TableHead>
+                      <TableHead>Product</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Uploaded</TableHead>
+                      <TableHead>Tags</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredFiles.map((file: any) => (
+                      <TableRow key={file.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getFileIcon(file.fileType)}
+                            <span className="text-sm font-medium">
+                              {file.fileType}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {file.fileName}
+                        </TableCell>
+                        <TableCell>
+                          {file.products ? (
+                            <span className="text-sm">
+                              {file.products.name}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-gray-400">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-gray-600 line-clamp-2">
+                            {file.description || "-"}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-gray-500">
+                            {formatDistanceToNow(new Date(file.uploadedAt), {
+                              addSuffix: true,
+                            })}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {file.tags?.length > 0 ? (
+                            <div className="flex gap-1 flex-wrap">
+                              {file.tags.map((tag: string, index: number) => (
+                                <span
+                                  key={index}
+                                  className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-400">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => window.open(file.fileUrl, "_blank")}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingFile(file);
+                                setIsAddDialogOpen(true);
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                if (confirm("Are you sure you want to delete this file?")) {
+                                  deleteFileMutation.mutate(file.id);
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
