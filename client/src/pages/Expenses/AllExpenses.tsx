@@ -541,19 +541,19 @@ export default function AllExpenses() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
         {/* Total Expenses */}
         <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                   Total Expenses
                 </p>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
+                      <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
                         ${formatCompactNumber(totalExpenses)}
                       </p>
                     </TooltipTrigger>
@@ -564,8 +564,8 @@ export default function AllExpenses() {
                 </TooltipProvider>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">All time</p>
               </div>
-              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
-                <DollarSign className="h-7 w-7 text-cyan-600 dark:text-cyan-400" />
+              <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
+                <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-cyan-600 dark:text-cyan-400" />
               </div>
             </div>
           </CardContent>
@@ -573,16 +573,16 @@ export default function AllExpenses() {
 
         {/* This Month */}
         <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                   This Month
                 </p>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
+                      <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
                         ${formatCompactNumber(thisMonthTotal)}
                       </p>
                     </TooltipTrigger>
@@ -593,8 +593,8 @@ export default function AllExpenses() {
                 </TooltipProvider>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{thisMonthExpenses.length} expenses</p>
               </div>
-              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950">
-                <Calendar className="h-7 w-7 text-amber-600 dark:text-amber-400" />
+              <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950">
+                <Calendar className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-amber-600 dark:text-amber-400" />
               </div>
             </div>
           </CardContent>
@@ -602,16 +602,16 @@ export default function AllExpenses() {
 
         {/* Pending */}
         <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                   Pending
                 </p>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
+                      <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
                         ${formatCompactNumber(pendingTotal)}
                       </p>
                     </TooltipTrigger>
@@ -622,8 +622,8 @@ export default function AllExpenses() {
                 </TooltipProvider>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{pendingExpenses.length} expenses</p>
               </div>
-              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
-                <Clock className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+              <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
+                <Clock className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-emerald-600 dark:text-emerald-400" />
               </div>
             </div>
           </CardContent>
@@ -631,16 +631,16 @@ export default function AllExpenses() {
 
         {/* Paid */}
         <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                   Paid
                 </p>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
+                      <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
                         ${formatCompactNumber(paidTotal)}
                       </p>
                     </TooltipTrigger>
@@ -651,8 +651,8 @@ export default function AllExpenses() {
                 </TooltipProvider>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{paidExpenses.length} expenses</p>
               </div>
-              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
-                <CheckCircle2 className="h-7 w-7 text-purple-600 dark:text-purple-400" />
+              <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
+                <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
           </CardContent>

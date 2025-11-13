@@ -1108,19 +1108,19 @@ export default function AllInventory() {
 
       {/* Stats Cards */}
       {!showArchive && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
           {/* Total Products */}
           <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
+            <CardContent className="p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                     Total Products
                   </p>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
+                        <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
                           {formatCompactNumber(filteredProducts?.length || 0)}
                         </p>
                       </TooltipTrigger>
@@ -1130,8 +1130,8 @@ export default function AllInventory() {
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
-                  <Package className="h-7 w-7 text-cyan-600 dark:text-cyan-400" />
+                <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
+                  <Package className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-cyan-600 dark:text-cyan-400" />
                 </div>
               </div>
             </CardContent>
@@ -1139,16 +1139,16 @@ export default function AllInventory() {
 
           {/* Low Stock */}
           <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
+            <CardContent className="p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                     Low Stock
                   </p>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <p className="text-3xl font-bold text-amber-600 dark:text-amber-400 truncate cursor-help">
+                        <p className="text-xl sm:text-2xl md:text-3xl font-bold text-amber-600 dark:text-amber-400 truncate cursor-help">
                           {formatCompactNumber(filteredProducts?.filter((p: any) => p.quantity > 0 && p.quantity <= p.lowStockAlert).length || 0)}
                         </p>
                       </TooltipTrigger>
@@ -1158,8 +1158,8 @@ export default function AllInventory() {
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950">
-                  <AlertTriangle className="h-7 w-7 text-amber-600 dark:text-amber-400" />
+                <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950">
+                  <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-amber-600 dark:text-amber-400" />
                 </div>
               </div>
             </CardContent>
@@ -1167,16 +1167,16 @@ export default function AllInventory() {
 
           {/* Out of Stock */}
           <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
+            <CardContent className="p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                     Out of Stock
                   </p>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <p className="text-3xl font-bold text-red-600 dark:text-red-400 truncate cursor-help">
+                        <p className="text-xl sm:text-2xl md:text-3xl font-bold text-red-600 dark:text-red-400 truncate cursor-help">
                           {formatCompactNumber(filteredProducts?.filter((p: any) => p.quantity === 0).length || 0)}
                         </p>
                       </TooltipTrigger>
@@ -1186,8 +1186,8 @@ export default function AllInventory() {
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950">
-                  <PackageX className="h-7 w-7 text-red-600 dark:text-red-400" />
+                <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950">
+                  <PackageX className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-red-600 dark:text-red-400" />
                 </div>
               </div>
             </CardContent>
@@ -1195,16 +1195,16 @@ export default function AllInventory() {
 
           {/* Total Value */}
           <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
+            <CardContent className="p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                     Total Value
                   </p>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <p className="text-2xl font-bold text-purple-600 dark:text-purple-400 truncate cursor-help">
+                        <p className="text-lg sm:text-xl md:text-2xl font-bold text-purple-600 dark:text-purple-400 truncate cursor-help">
                           {formatCurrency(
                             filteredProducts?.reduce((sum: number, p: any) => 
                               sum + (parseFloat(p.priceEur || '0') * p.quantity), 0) || 0, 
@@ -1224,8 +1224,8 @@ export default function AllInventory() {
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
-                  <DollarSign className="h-7 w-7 text-purple-600 dark:text-purple-400" />
+                <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
+                  <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-purple-600 dark:text-purple-400" />
                 </div>
               </div>
             </CardContent>

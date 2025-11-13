@@ -485,19 +485,19 @@ export default function AllDiscounts() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
         {/* Total Discounts */}
         <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                   Total Discounts
                 </p>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
+                      <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
                         {formatCompactNumber(sales?.length || 0)}
                       </p>
                     </TooltipTrigger>
@@ -507,8 +507,8 @@ export default function AllDiscounts() {
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
-                <Tag className="h-7 w-7 text-cyan-600 dark:text-cyan-400" />
+              <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
+                <Tag className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-cyan-600 dark:text-cyan-400" />
               </div>
             </div>
           </CardContent>
@@ -516,16 +516,16 @@ export default function AllDiscounts() {
 
         {/* Active Discounts */}
         <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                   Active
                 </p>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 truncate cursor-help">
+                      <p className="text-xl sm:text-2xl md:text-3xl font-bold text-emerald-600 dark:text-emerald-400 truncate cursor-help">
                         {formatCompactNumber(activeDiscounts)}
                       </p>
                     </TooltipTrigger>
@@ -535,8 +535,8 @@ export default function AllDiscounts() {
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
-                <Check className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+              <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
+                <Check className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-emerald-600 dark:text-emerald-400" />
               </div>
             </div>
           </CardContent>
@@ -544,16 +544,16 @@ export default function AllDiscounts() {
 
         {/* Expired Discounts */}
         <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                   Expired
                 </p>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <p className="text-3xl font-bold text-red-600 dark:text-red-400 truncate cursor-help">
+                      <p className="text-xl sm:text-2xl md:text-3xl font-bold text-red-600 dark:text-red-400 truncate cursor-help">
                         {formatCompactNumber(expiredDiscounts)}
                       </p>
                     </TooltipTrigger>
@@ -563,8 +563,8 @@ export default function AllDiscounts() {
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950">
-                <TrendingDown className="h-7 w-7 text-red-600 dark:text-red-400" />
+              <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950">
+                <TrendingDown className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-red-600 dark:text-red-400" />
               </div>
             </div>
           </CardContent>
@@ -572,16 +572,16 @@ export default function AllDiscounts() {
 
         {/* Total Savings */}
         <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                   Wide-Scope Offers
                 </p>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <p className="text-3xl font-bold text-purple-600 dark:text-purple-400 truncate cursor-help">
+                      <p className="text-xl sm:text-2xl md:text-3xl font-bold text-purple-600 dark:text-purple-400 truncate cursor-help">
                         {formatCompactNumber(totalSavings)}
                       </p>
                     </TooltipTrigger>
@@ -591,8 +591,8 @@ export default function AllDiscounts() {
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
-                <DollarSign className="h-7 w-7 text-purple-600 dark:text-purple-400" />
+              <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
+                <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
           </CardContent>

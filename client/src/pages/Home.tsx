@@ -241,10 +241,10 @@ export default function Home() {
       )}
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
         {/* Today's Orders */}
         <Card className="border-emerald-200 dark:border-emerald-800">
-          <CardContent className="p-4 sm:p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             {metricsLoading ? (
               <div className="space-y-2">
                 <Skeleton className="h-4 w-20" />
@@ -253,11 +253,11 @@ export default function Home() {
             ) : (
               <>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-medium text-muted-foreground">Today's Orders</p>
-                  <ShoppingCart className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Today's Orders</p>
+                  <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{metrics?.totalOrdersToday || 0}</p>
+                  <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">{metrics?.totalOrdersToday || 0}</p>
                   <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
                     {metrics?.fulfillOrdersToday || 0} to fulfill
                   </p>
@@ -269,7 +269,7 @@ export default function Home() {
 
         {/* Today's Revenue */}
         <Card className="border-blue-200 dark:border-blue-800">
-          <CardContent className="p-4 sm:p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             {metricsLoading ? (
               <div className="space-y-2">
                 <Skeleton className="h-4 w-20" />
@@ -278,11 +278,11 @@ export default function Home() {
             ) : (
               <>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-medium text-muted-foreground">Today's Revenue</p>
-                  <DollarSign className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Today's Revenue</p>
+                  <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                  <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">
                     {formatCurrency(metrics?.totalRevenueToday || 0, 'EUR')}
                   </p>
                 </div>
@@ -296,7 +296,7 @@ export default function Home() {
 
         {/* Low Stock Alerts */}
         <Card className="border-amber-200 dark:border-amber-800">
-          <CardContent className="p-4 sm:p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             {stockLoading ? (
               <div className="space-y-2">
                 <Skeleton className="h-4 w-20" />
@@ -305,11 +305,11 @@ export default function Home() {
             ) : (
               <>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-medium text-muted-foreground">Low Stock</p>
-                  <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Low Stock</p>
+                  <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{lowStockProducts.length}</p>
+                  <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">{lowStockProducts.length}</p>
                   <p className="text-sm text-muted-foreground">products</p>
                 </div>
                 {lowStockProducts.length > 0 && (
@@ -326,13 +326,13 @@ export default function Home() {
 
         {/* Pending Payments */}
         <Card className="border-red-200 dark:border-red-800">
-          <CardContent className="p-4 sm:p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-muted-foreground">Pending Payments</p>
-              <Clock className="h-5 w-5 text-red-600 dark:text-red-400" />
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground">Pending Payments</p>
+              <Clock className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-red-600 dark:text-red-400" />
             </div>
             <div className="flex items-baseline gap-2">
-              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">
                 {Array.isArray(unpaidOrders) ? unpaidOrders.length : 0}
               </p>
               <p className="text-sm text-muted-foreground">orders</p>

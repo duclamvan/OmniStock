@@ -459,21 +459,21 @@ export default function AllCustomers() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
         {/* Total Customers */}
         <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                   Total Customers
                 </p>
-                <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
                   {filteredCustomers?.length || 0}
                 </p>
               </div>
-              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
-                <Users className="h-7 w-7 text-cyan-600 dark:text-cyan-400" />
+              <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
+                <Users className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-cyan-600 dark:text-cyan-400" />
               </div>
             </div>
           </CardContent>
@@ -481,18 +481,18 @@ export default function AllCustomers() {
 
         {/* VIP Customers */}
         <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                   VIP Customers
                 </p>
-                <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
                   {filteredCustomers?.filter((c: any) => c.type === 'vip').length || 0}
                 </p>
               </div>
-              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950">
-                <Star className="h-7 w-7 text-amber-600 dark:text-amber-400" />
+              <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950">
+                <Star className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-amber-600 dark:text-amber-400" />
               </div>
             </div>
           </CardContent>
@@ -500,18 +500,18 @@ export default function AllCustomers() {
 
         {/* Regular Customers */}
         <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                   Regular Customers
                 </p>
-                <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
                   {filteredCustomers?.filter((c: any) => c.type === 'regular').length || 0}
                 </p>
               </div>
-              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
-                <User className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+              <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
+                <User className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-emerald-600 dark:text-emerald-400" />
               </div>
             </div>
           </CardContent>
@@ -519,16 +519,16 @@ export default function AllCustomers() {
 
         {/* Total Revenue */}
         <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                   Total Revenue
                 </p>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 cursor-help truncate">
+                      <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 cursor-help truncate">
                         €{formatCompactNumber(totalRevenue)}
                       </p>
                     </TooltipTrigger>
@@ -538,8 +538,8 @@ export default function AllCustomers() {
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
-                <DollarSign className="h-7 w-7 text-purple-600 dark:text-purple-400" />
+              <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
+                <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
           </CardContent>

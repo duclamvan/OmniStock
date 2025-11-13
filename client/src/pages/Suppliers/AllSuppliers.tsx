@@ -562,21 +562,21 @@ export default function AllSuppliers() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
         {/* Total Suppliers */}
         <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                   Total Suppliers
                 </p>
-                <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
                   {totalSuppliers}
                 </p>
               </div>
-              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
-                <Building2 className="h-7 w-7 text-cyan-600 dark:text-cyan-400" />
+              <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
+                <Building2 className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-cyan-600 dark:text-cyan-400" />
               </div>
             </div>
           </CardContent>
@@ -584,18 +584,18 @@ export default function AllSuppliers() {
 
         {/* Active Suppliers */}
         <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                   Active
                 </p>
-                <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 truncate">
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-emerald-600 dark:text-emerald-400 truncate">
                   {activeSuppliers.length}
                 </p>
               </div>
-              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
-                <TrendingUp className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+              <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
+                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-emerald-600 dark:text-emerald-400" />
               </div>
             </div>
           </CardContent>
@@ -603,16 +603,16 @@ export default function AllSuppliers() {
 
         {/* Total Purchases */}
         <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                   Total Purchases
                 </p>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 cursor-help truncate">
+                      <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 cursor-help truncate">
                         ${formatCompactNumber(totalPurchaseValue)}
                       </p>
                     </TooltipTrigger>
@@ -622,8 +622,8 @@ export default function AllSuppliers() {
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
-                <ShoppingBag className="h-7 w-7 text-purple-600 dark:text-purple-400" />
+              <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
+                <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
           </CardContent>
@@ -631,16 +631,16 @@ export default function AllSuppliers() {
 
         {/* Top Supplier */}
         <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                   Top Supplier
                 </p>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 cursor-help truncate">
+                      <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 cursor-help truncate">
                         ${formatCompactNumber(topSupplierValue)}
                       </p>
                     </TooltipTrigger>
@@ -656,8 +656,8 @@ export default function AllSuppliers() {
                   </p>
                 )}
               </div>
-              <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950">
-                <Calendar className="h-7 w-7 text-orange-600 dark:text-orange-400" />
+              <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950">
+                <Calendar className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-orange-600 dark:text-orange-400" />
               </div>
             </div>
           </CardContent>
