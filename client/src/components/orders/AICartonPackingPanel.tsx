@@ -95,36 +95,51 @@ export function AICartonPackingPanel({
               </div>
               <div className="space-y-1.5">
                 {packingPlan.cartons.map((carton: any, index: number) => (
-                  <div 
-                    key={index}
-                    className="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-gray-800 rounded-lg border"
-                    data-testid={`carton-summary-${index + 1}`}
-                  >
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
-                        <span className="text-white font-bold text-xs">{index + 1}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
-                          {carton.cartonName || 'Standard Box'}
-                        </div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400">
-                          {carton.weight ? `${carton.weight.toFixed(2)} kg` : '0 kg'}
-                        </div>
-                      </div>
-                    </div>
-                    <Badge 
-                      variant="outline" 
-                      className={`flex-shrink-0 ${
-                        (carton.utilization || 0) > 80 
-                          ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' 
-                          : (carton.utilization || 0) > 70 
-                          ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700' 
-                          : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-300 dark:border-red-700'
-                      }`}
+                  <div key={index}>
+                    <div 
+                      className="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-gray-800 rounded-lg border"
+                      data-testid={`carton-summary-${index + 1}`}
                     >
-                      {carton.utilization ? `${carton.utilization.toFixed(0)}%` : '0%'}
-                    </Badge>
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+                          <span className="text-white font-bold text-xs">{index + 1}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
+                            {carton.cartonName || 'Standard Box'}
+                          </div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">
+                            {carton.weight ? `${carton.weight.toFixed(2)} kg` : '0 kg'}
+                          </div>
+                        </div>
+                      </div>
+                      <Badge 
+                        variant="outline" 
+                        className={`flex-shrink-0 ${
+                          (carton.utilization || 0) > 80 
+                            ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' 
+                            : (carton.utilization || 0) > 70 
+                            ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700' 
+                            : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-300 dark:border-red-700'
+                        }`}
+                      >
+                        {carton.utilization ? `${carton.utilization.toFixed(0)}%` : '0%'}
+                      </Badge>
+                    </div>
+                    {/* Show items inside this carton */}
+                    {carton.items && carton.items.length > 0 && (
+                      <div className="mt-2 pl-8 space-y-1">
+                        {carton.items.map((item: any, itemIdx: number) => (
+                          <div key={itemIdx} className="text-xs text-gray-600 dark:text-gray-400 flex justify-between">
+                            <span>{item.productName || item.name}</span>
+                            <span>
+                              {item.quantity}x ({item.weight?.toFixed(2) || item.weightKg?.toFixed(2) || '0'} kg)
+                              {item.isEstimated && <span className="ml-1 text-yellow-600">*</span>}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

@@ -63,7 +63,6 @@ export function usePackingOptimization(orderId?: string) {
       hydratingRef.current = true;
       setPackingPlan(savedPlan.plan);
       serverChecksumRef.current = savedPlan.checksum;
-      hydratingRef.current = false;
     } else {
       // Query refreshed - just update checksum if it matches
       const currentChecksum = computePlanChecksum(packingPlan);
@@ -72,6 +71,14 @@ export function usePackingOptimization(orderId?: string) {
       }
     }
   }, [savedPlan, isFetching, isRestoring, packingPlan]);
+
+  // Separate effect to clear hydrating flag AFTER state commits
+  useEffect(() => {
+    if (packingPlan && hydratingRef.current) {
+      // State has committed, safe to clear flag
+      hydratingRef.current = false;
+    }
+  }, [packingPlan]);
 
   // Auto-save mutation
   const savePackingPlanMutation = useMutation({
