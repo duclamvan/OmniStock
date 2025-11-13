@@ -3389,7 +3389,7 @@ export default function EditOrder() {
             {orderItems.length > 0 ? (
               <>
               {/* Desktop Table View - Hidden on Mobile */}
-              <div className="hidden sm:block overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto">
                 <div className="inline-block min-w-full align-middle">
                   <div className="overflow-hidden border border-slate-200 dark:border-slate-700 rounded-lg">
                     <Table>
@@ -3714,29 +3714,48 @@ export default function EditOrder() {
               </div>
               
               {/* Mobile Card View - Visible only on Mobile */}
-              <div className="sm:hidden space-y-3">
+              <div className="md:hidden space-y-3">
                 {orderItems.map((item, index) => (
-                  <Card key={item.id} className="overflow-hidden">
-                    <CardContent className="p-3">
-                      <div className="flex items-start gap-3 mb-3">
-                        {/* Product Image */}
+                  <Card key={item.id} className="overflow-hidden border-slate-200 shadow-sm" data-testid={`mobile-order-item-${item.id}`}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3 mb-4">
+                        {/* Product Image - Larger on mobile */}
                         <div className="flex-shrink-0">
                           {item.image ? (
                             <img 
                               src={item.image} 
                               alt={item.productName}
-                              className="w-16 h-16 object-contain rounded border border-slate-200 bg-slate-50"
+                              className="w-20 h-20 object-contain rounded border border-slate-200 bg-slate-50"
                             />
                           ) : (
-                            <div className="w-16 h-16 bg-slate-100 rounded border border-slate-200 flex items-center justify-center">
-                              <Package className="h-8 w-8 text-slate-300" />
+                            <div className="w-20 h-20 bg-slate-100 rounded border border-slate-200 flex items-center justify-center">
+                              <Package className="h-10 w-10 text-slate-300" />
                             </div>
                           )}
                         </div>
                         
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-slate-900 mb-1">{item.productName}</h4>
-                          <p className="text-xs text-slate-500">SKU: {item.sku}</p>
+                          <h4 className="font-semibold text-slate-900 dark:text-slate-100 text-base mb-1">{item.productName}</h4>
+                          <div className="flex flex-wrap gap-1.5 mb-1">
+                            {item.variantName && (
+                              <Badge className="text-xs px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-300">
+                                {item.variantName}
+                              </Badge>
+                            )}
+                            {item.bundleId && (
+                              <Badge className="text-xs px-1.5 py-0 bg-purple-100 text-purple-700 border-purple-300">
+                                Bundle
+                              </Badge>
+                            )}
+                            {item.serviceId && (
+                              <Badge variant="outline" className="text-xs px-1.5 py-0 border-orange-500 text-orange-600">
+                                Service
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            {item.serviceId ? 'Service Item' : `SKU: ${item.sku}`}
+                          </p>
                         </div>
                         
                         <Button
@@ -3744,41 +3763,133 @@ export default function EditOrder() {
                           variant="ghost"
                           size="icon"
                           onClick={() => removeOrderItem(item.id)}
-                          className="h-9 w-9 text-red-600 hover:bg-red-50"
+                          className="h-11 w-11 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 dark:hover:text-red-400 flex-shrink-0"
+                          data-testid={`mobile-button-remove-${item.id}`}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-5 w-5" />
                         </Button>
                       </div>
                       
                       {/* Mobile form fields */}
-                      <div className="space-y-2">
-                        <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-3">
+                        {/* Quantity & Price Row */}
+                        <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <Label className="text-xs">Quantity</Label>
+                            <Label htmlFor={`mobile-qty-${item.id}`} className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
+                              Quantity
+                            </Label>
                             <Input
+                              id={`mobile-qty-${item.id}`}
                               type="number"
                               min="1"
                               value={item.quantity}
                               onChange={(e) => updateOrderItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
-                              className="h-11"
+                              className="h-11 text-base"
+                              data-testid={`mobile-input-quantity-${item.id}`}
                             />
                           </div>
                           <div>
-                            <Label className="text-xs">Price</Label>
+                            <Label htmlFor={`mobile-price-${item.id}`} className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
+                              Price ({form.watch('currency')})
+                            </Label>
                             <Input
+                              id={`mobile-price-${item.id}`}
                               type="number"
                               step="0.01"
                               value={item.price}
                               onChange={(e) => updateOrderItem(item.id, 'price', parseFloat(e.target.value) || 0)}
-                              className="h-11"
+                              className="h-11 text-base"
+                              data-testid={`mobile-input-price-${item.id}`}
                             />
                           </div>
                         </div>
                         
-                        <div className="flex justify-between items-center pt-2 border-t">
-                          <span className="text-sm font-medium text-slate-700">Total:</span>
-                          <span className="text-base font-bold text-slate-900">
-                            {formatCurrency(item.quantity * item.price, form.watch('currency'))}
+                        {/* Discount & VAT Row - Conditional */}
+                        {(showDiscountColumn || showVatColumn) && (
+                          <div className="grid grid-cols-2 gap-3">
+                            {showDiscountColumn && (
+                              <div>
+                                <Label htmlFor={`mobile-discount-${item.id}`} className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
+                                  Discount ({form.watch('currency')})
+                                </Label>
+                                <Input
+                                  id={`mobile-discount-${item.id}`}
+                                  type="number"
+                                  step="0.01"
+                                  value={item.discount}
+                                  onChange={(e) => updateOrderItem(item.id, 'discount', parseFloat(e.target.value) || 0)}
+                                  className="h-11 text-base"
+                                  data-testid={`mobile-input-discount-${item.id}`}
+                                />
+                              </div>
+                            )}
+                            {showVatColumn && (
+                              <div>
+                                <Label htmlFor={`mobile-vat-${item.id}`} className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
+                                  VAT ({form.watch('currency')})
+                                </Label>
+                                <Input
+                                  id={`mobile-vat-${item.id}`}
+                                  type="number"
+                                  step="0.01"
+                                  value={item.tax}
+                                  onChange={(e) => updateOrderItem(item.id, 'tax', parseFloat(e.target.value) || 0)}
+                                  className="h-11 text-base"
+                                  data-testid={`mobile-input-vat-${item.id}`}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Notes Section */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <Label htmlFor={`mobile-notes-${item.id}`} className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                              <StickyNote className="h-3.5 w-3.5" />
+                              Shipping Notes (Optional)
+                            </Label>
+                            {/* Quick note templates dropdown */}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs text-blue-600 dark:text-blue-400"
+                                >
+                                  Templates
+                                  <ChevronDown className="h-3 w-3 ml-1" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-56">
+                                {QUICK_NOTE_TEMPLATES.map((template, idx) => (
+                                  <DropdownMenuItem
+                                    key={idx}
+                                    onClick={() => updateOrderItem(item.id, 'notes', template)}
+                                    className="text-xs"
+                                  >
+                                    {template}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                          <Textarea
+                            id={`mobile-notes-${item.id}`}
+                            placeholder="Add special instructions for packing or shipping..."
+                            value={item.notes || ''}
+                            onChange={(e) => updateOrderItem(item.id, 'notes', e.target.value)}
+                            className="min-h-[80px] text-sm resize-none"
+                            data-testid={`mobile-textarea-notes-${item.id}`}
+                          />
+                        </div>
+                        
+                        {/* Total Display */}
+                        <div className="flex justify-between items-center pt-3 border-t border-slate-200 dark:border-slate-700">
+                          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Item Total:</span>
+                          <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                            {formatCurrency(item.total, form.watch('currency'))}
                           </span>
                         </div>
                       </div>

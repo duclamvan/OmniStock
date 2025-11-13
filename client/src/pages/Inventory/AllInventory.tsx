@@ -1419,41 +1419,109 @@ export default function AllInventory() {
 
       {/* Products Table */}
       <Card className="border-slate-200 dark:border-slate-800">
-        <CardContent className="p-0 sm:p-6">
+        <CardContent className="p-0 md:p-6">
           {/* Mobile Card View */}
-          <div className="sm:hidden space-y-3 p-3">
-            {filteredProducts?.map((product: any) => (
-              <div key={product.id} className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-100 dark:border-slate-800 p-4">
-                <div className="space-y-3">
-                  {/* Top Row - Product, Stock Status, Actions */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <Avatar className="h-12 w-12 flex-shrink-0">
-                        <AvatarImage src={product.imageUrl} />
-                        <AvatarFallback className="text-sm bg-gray-100 dark:bg-gray-800 dark:text-gray-300">{product.name?.charAt(0) || 'P'}</AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <Link href={`/inventory/products/${product.id}`}>
-                          <p className={`font-semibold truncate cursor-pointer ${product.isActive ? 'text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400' : 'text-gray-400 dark:text-gray-500 line-through'}`}>{product.name}</p>
-                        </Link>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          SKU: {product.sku}
-                          {!product.isActive && <span className="text-amber-600 font-medium ml-2">(Inactive)</span>}
+          <div className="md:hidden space-y-3 p-3">
+            {filteredProducts?.map((product: any) => {
+              const warehouse = (warehouses as any[])?.find((w: any) => w.id === product.warehouseId);
+              const unitsSold = unitsSoldByProduct[product.id] || 0;
+              
+              return (
+                <div key={product.id} className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-100 dark:border-slate-800 p-4">
+                  <div className="space-y-3">
+                    {/* Top Row - Product, Stock Status, Actions */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <Avatar className="h-12 w-12 flex-shrink-0">
+                          <AvatarImage src={product.imageUrl} />
+                          <AvatarFallback className="text-sm bg-gray-100 dark:bg-gray-800 dark:text-gray-300">{product.name?.charAt(0) || 'P'}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <Link href={`/inventory/products/${product.id}`}>
+                            <p className={`font-semibold truncate cursor-pointer ${product.isActive ? 'text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400' : 'text-gray-400 dark:text-gray-500 line-through'}`}>
+                              {product.name}
+                              {product.isActive && getProductStatusBadge(product)}
+                            </p>
+                          </Link>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            SKU: {product.sku}
+                            {!product.isActive && <span className="text-amber-600 font-medium ml-2">(Inactive)</span>}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {getStockStatus(product.quantity, product.lowStockAlert)}
+                      </div>
+                    </div>
+                    
+                    {/* Middle Row - Key Details */}
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400">Category</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">
+                          {(categories as any[])?.find((c: any) => String(c.id) === product.categoryId)?.name || 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400">Quantity</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">{product.quantity} units</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400">Location</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">
+                          {warehouse?.name || 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400">Units Sold</p>
+                        <div className="flex items-center gap-1.5">
+                          <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
+                          <p className="font-semibold text-emerald-700">{unitsSold.toLocaleString()}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Pricing Section */}
+                    <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t border-gray-100 dark:border-gray-800">
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Sell Price</p>
+                        <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                          {formatCurrency(parseFloat(product.priceEur || '0'), 'EUR')}
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          {formatCurrency(parseFloat(product.priceCzk || '0'), 'CZK')}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Import Cost</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {formatCurrency(parseFloat(product.importCostEur || '0'), 'EUR')}
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          {formatCurrency(parseFloat(product.importCostCzk || '0'), 'CZK')}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    
+                    {/* Action Buttons - Full Width, Touch-Friendly */}
+                    <div className="flex items-center gap-2 pt-2">
                       {product.isActive ? (
                         <>
-                          {getStockStatus(product.quantity, product.lowStockAlert)}
-                          <Link href={`/inventory/${product.id}/edit`}>
-                            <Button size="icon" variant="ghost" className="h-11 w-11 sm:h-8 sm:w-8">
-                              <Edit className="h-4 w-4" />
+                          <Link href={`/inventory/products/${product.id}`} className="flex-1">
+                            <Button variant="outline" className="w-full h-11 touch-target" data-testid="button-view-details">
+                              <Package className="h-4 w-4 mr-2" />
+                              View Details
+                            </Button>
+                          </Link>
+                          <Link href={`/inventory/${product.id}/edit`} className="flex-1">
+                            <Button variant="outline" className="w-full h-11 touch-target" data-testid="button-edit">
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit
                             </Button>
                           </Link>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button size="icon" variant="ghost" className="h-11 w-11 sm:h-8 sm:w-8 text-red-600 hover:text-red-700">
+                              <Button size="icon" variant="ghost" className="h-11 w-11 touch-target text-red-600 hover:text-red-700 flex-shrink-0" data-testid="button-delete">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </AlertDialogTrigger>
@@ -1484,54 +1552,23 @@ export default function AllInventory() {
                         </>
                       ) : (
                         <Button 
-                          size="sm" 
                           variant="outline" 
-                          className="text-green-600 border-green-600 hover:bg-green-50"
+                          className="w-full h-11 touch-target text-green-600 border-green-600 hover:bg-green-50"
                           onClick={() => restoreProductMutation.mutate(product.id)}
+                          data-testid="button-restore"
                         >
                           Restore
                         </Button>
                       )}
                     </div>
                   </div>
-                  
-                  {/* Middle Row - Key Details */}
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-gray-500 dark:text-gray-400">Category</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100">
-                        {(categories as any[])?.find((c: any) => String(c.id) === product.categoryId)?.name || 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 dark:text-gray-400">Stock</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100">{product.quantity} units</p>
-                    </div>
-                  </div>
-                  
-                  {/* Bottom Row - Pricing */}
-                  <div className="flex items-end justify-between">
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Sell Price / Import Cost</p>
-                      <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                        {formatCurrency(parseFloat(product.priceEur || '0'), 'EUR')}
-                      </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Cost: {formatCurrency(parseFloat(product.importCostEur || '0'), 'EUR')}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Supplier</p>
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{product.supplier?.name || 'N/A'}</p>
-                    </div>
-                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           
           {/* Desktop Table View */}
-          <div className="hidden sm:block">
+          <div className="hidden md:block">
             <DataTable
               key={visibleColumns.map(col => col.key).join(',')}
               data={filteredProducts}
