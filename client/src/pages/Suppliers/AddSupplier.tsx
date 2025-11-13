@@ -145,18 +145,19 @@ export default function AddSupplier() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-8">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
         <Button 
           variant="outline" 
           size="icon" 
           onClick={() => window.history.back()}
           data-testid="button-back"
+          className="shrink-0"
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Add New Supplier</h1>
-          <p className="text-slate-600 mt-1">Create a new supplier profile with contact and business details</p>
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Add New Supplier</h1>
+          <p className="text-sm sm:text-base text-slate-600 mt-1 hidden sm:block">Create a new supplier profile with contact and business details</p>
         </div>
       </div>
 

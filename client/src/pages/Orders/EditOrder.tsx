@@ -3387,7 +3387,9 @@ export default function EditOrder() {
           </CardHeader>
           <CardContent className="p-3">
             {orderItems.length > 0 ? (
-              <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <>
+              {/* Desktop Table View - Hidden on Mobile */}
+              <div className="hidden sm:block overflow-x-auto">
                 <div className="inline-block min-w-full align-middle">
                   <div className="overflow-hidden border border-slate-200 dark:border-slate-700 rounded-lg">
                     <Table>
@@ -3710,6 +3712,81 @@ export default function EditOrder() {
                   </div>
                 </div>
               </div>
+              
+              {/* Mobile Card View - Visible only on Mobile */}
+              <div className="sm:hidden space-y-3">
+                {orderItems.map((item, index) => (
+                  <Card key={item.id} className="overflow-hidden">
+                    <CardContent className="p-3">
+                      <div className="flex items-start gap-3 mb-3">
+                        {/* Product Image */}
+                        <div className="flex-shrink-0">
+                          {item.image ? (
+                            <img 
+                              src={item.image} 
+                              alt={item.productName}
+                              className="w-16 h-16 object-contain rounded border border-slate-200 bg-slate-50"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 bg-slate-100 rounded border border-slate-200 flex items-center justify-center">
+                              <Package className="h-8 w-8 text-slate-300" />
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-slate-900 mb-1">{item.productName}</h4>
+                          <p className="text-xs text-slate-500">SKU: {item.sku}</p>
+                        </div>
+                        
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeOrderItem(item.id)}
+                          className="h-9 w-9 text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      {/* Mobile form fields */}
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-xs">Quantity</Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(e) => updateOrderItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
+                              className="h-11"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Price</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={item.price}
+                              onChange={(e) => updateOrderItem(item.id, 'price', parseFloat(e.target.value) || 0)}
+                              className="h-11"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-between items-center pt-2 border-t">
+                          <span className="text-sm font-medium text-slate-700">Total:</span>
+                          <span className="text-base font-bold text-slate-900">
+                            {formatCurrency(item.quantity * item.price, form.watch('currency'))}
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              </>
             ) : (
               <div className="text-center py-12 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/20 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700">
                 <ShoppingCart className="mx-auto h-12 w-12 mb-4 text-slate-400 dark:text-slate-600" />

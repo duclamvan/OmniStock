@@ -11506,7 +11506,7 @@ export default function PickPack() {
               </div>
               
               <div className="border-t p-3 sm:p-4 bg-gray-50 space-y-2 sm:space-y-3 flex-shrink-0">
-                {/* Barcode Scanner */}
+                {/* Barcode Scanner - Mobile Optimized */}
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <Input
@@ -11519,21 +11519,22 @@ export default function PickPack() {
                           handleOverviewBarcodeScan();
                         }
                       }}
-                      className="text-sm sm:text-base h-10 sm:h-11 bg-white border-2 border-gray-300 placeholder:text-gray-400 font-mono"
+                      className="text-sm sm:text-base h-12 bg-white border-2 border-gray-300 placeholder:text-gray-400 font-mono touch-manipulation"
                     />
                   </div>
                   <Button 
                     onClick={handleOverviewBarcodeScan}
-                    className="h-10 sm:h-11 px-3 sm:px-5 bg-green-600 hover:bg-green-700 text-white font-bold shadow-md text-sm sm:text-base"
+                    className="h-12 min-w-[48px] px-3 sm:px-5 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-bold shadow-md text-sm sm:text-base touch-manipulation"
+                    data-testid="button-overview-scan"
                   >
-                    <ScanLine className="h-4 w-4 sm:mr-2" />
+                    <ScanLine className="h-5 w-5 sm:mr-2" />
                     <span className="hidden sm:inline">Scan</span>
                   </Button>
                 </div>
                 
                 {/* Continue Picking Button */}
                 <Button 
-                  className="w-full h-10 sm:h-12 text-sm sm:text-base font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                  className="w-full h-12 text-sm sm:text-base font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:from-blue-800 active:to-indigo-800 text-white touch-manipulation"
                   onClick={() => setShowItemOverviewModal(false)}
                   data-testid="button-close-overview-bottom"
                 >
@@ -11890,24 +11891,25 @@ export default function PickPack() {
                       </div>
                     </div>
                   
-                  {/* Barcode Scanner - Fixed to Bottom */}
-                  <div className="sticky bottom-0 bg-white border-t-2 border-gray-300">
+                  {/* Barcode Scanner - Fixed to Bottom - Mobile Optimized */}
+                  <div className="sticky bottom-0 bg-white border-t-2 border-gray-300 shadow-lg">
                     <div className="p-3 lg:p-4">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 lg:gap-3">
                         <div className="relative flex-1">
                           <Input
                             ref={barcodeInputRef}
                             placeholder="Ready to scan..."
                             value={barcodeInput}
-                            className="text-base lg:text-lg h-11 lg:h-12 bg-gray-50 border-2 border-gray-300 placeholder:text-gray-400 font-mono cursor-default rounded-lg"
+                            className="text-base lg:text-lg h-12 lg:h-14 bg-gray-50 border-2 border-gray-300 placeholder:text-gray-400 font-mono cursor-default rounded-lg touch-manipulation"
                             readOnly
                           />
                         </div>
                         <Button 
                           onClick={handleBarcodeScan}
-                          className="h-11 lg:h-12 px-5 lg:px-7 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md touch-manipulation rounded-lg"
+                          className="h-12 lg:h-14 min-w-[48px] px-3 sm:px-5 lg:px-7 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold shadow-md touch-manipulation rounded-lg"
+                          data-testid="button-barcode-scan"
                         >
-                          <ScanLine className="h-4 w-4 lg:h-5 lg:w-5 sm:mr-2" />
+                          <ScanLine className="h-5 w-5 lg:h-6 lg:w-6 sm:mr-2" />
                           <span className="hidden sm:inline text-base">Scan</span>
                         </Button>
                       </div>
@@ -12299,30 +12301,45 @@ export default function PickPack() {
       {/* Main Content - Mobile Optimized */}
       <div className="px-3 sm:px-6 pb-6 pt-4">
         <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v as any)}>
-          <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
-            <TabsList className="grid grid-cols-5 w-full min-w-[400px] sm:max-w-3xl bg-white border border-gray-200 p-2 gap-2 shadow-sm rounded-lg h-auto">
-              <TabsTrigger value="overview" className="flex flex-col items-center justify-center gap-1.5 py-4 px-3 text-xs sm:text-sm font-semibold bg-gray-50 data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm data-[state=active]:border-b-3 data-[state=active]:border-blue-500 rounded-lg transition-all hover:bg-gray-100 data-[state=active]:hover:bg-white">
-                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                <span className="text-center">Overview</span>
-              </TabsTrigger>
-              <TabsTrigger value="pending" className="flex flex-col items-center justify-center gap-1.5 py-4 px-3 text-xs sm:text-sm font-semibold bg-gray-50 data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-sm data-[state=active]:border-b-3 data-[state=active]:border-orange-500 rounded-lg transition-all hover:bg-gray-100 data-[state=active]:hover:bg-white">
-                <Clock className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                <span className="text-center">Pending (<span className={animatingCounters.has('pending') ? 'animate-bounce-count' : ''}>{stats.pending}</span>)</span>
-              </TabsTrigger>
-              <TabsTrigger value="picking" className="flex flex-col items-center justify-center gap-1.5 py-4 px-3 text-xs sm:text-sm font-semibold bg-gray-50 data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm data-[state=active]:border-b-3 data-[state=active]:border-blue-500 rounded-lg transition-all hover:bg-gray-100 data-[state=active]:hover:bg-white">
-                <Package className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                <span className="text-center">Picking (<span className={animatingCounters.has('picking') ? 'animate-bounce-count' : ''}>{stats.picking}</span>)</span>
-              </TabsTrigger>
-              <TabsTrigger value="packing" className="flex flex-col items-center justify-center gap-1.5 py-4 px-3 text-xs sm:text-sm font-semibold bg-gray-50 data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-sm data-[state=active]:border-b-3 data-[state=active]:border-purple-500 rounded-lg transition-all hover:bg-gray-100 data-[state=active]:hover:bg-white">
-                <Box className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                <span className="text-center">Packing (<span className={animatingCounters.has('packing') ? 'animate-bounce-count' : ''}>{stats.packing}</span>)</span>
-              </TabsTrigger>
-              <TabsTrigger value="ready" className="flex flex-col items-center justify-center gap-1.5 py-4 px-3 text-xs sm:text-sm font-semibold bg-gray-50 data-[state=active]:bg-white data-[state=active]:text-green-600 data-[state=active]:shadow-sm data-[state=active]:border-b-3 data-[state=active]:border-green-500 rounded-lg transition-all hover:bg-gray-100 data-[state=active]:hover:bg-white">
-                <Truck className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                <span className="text-center">Ready (<span className={animatingCounters.has('ready') ? 'animate-bounce-count' : ''}>{stats.ready}</span>)</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
+          {/* Fully responsive tabs - no horizontal scroll */}
+          <TabsList className="grid grid-cols-5 w-full bg-white border border-gray-200 p-1.5 sm:p-2 gap-1 sm:gap-2 shadow-sm rounded-lg h-auto max-w-full mx-auto sm:max-w-3xl">
+            <TabsTrigger value="overview" className="flex flex-col items-center justify-center gap-1 py-2 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 data-[state=active]:hover:bg-white touch-manipulation">
+              <BarChart3 className="h-5 w-5 sm:h-5 sm:w-5 flex-shrink-0" />
+              <span className="text-center leading-tight hidden sm:inline">Overview</span>
+            </TabsTrigger>
+            <TabsTrigger value="pending" className="flex flex-col items-center justify-center gap-1 py-2 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-orange-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 data-[state=active]:hover:bg-white touch-manipulation">
+              <Clock className="h-5 w-5 sm:h-5 sm:w-5 flex-shrink-0" />
+              <span className="text-center leading-tight">
+                <span className="hidden sm:inline">Pending (</span>
+                <span className={animatingCounters.has('pending') ? 'animate-bounce-count' : ''}>{stats.pending}</span>
+                <span className="hidden sm:inline">)</span>
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="picking" className="flex flex-col items-center justify-center gap-1 py-2 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 data-[state=active]:hover:bg-white touch-manipulation">
+              <Package className="h-5 w-5 sm:h-5 sm:w-5 flex-shrink-0" />
+              <span className="text-center leading-tight">
+                <span className="hidden sm:inline">Picking (</span>
+                <span className={animatingCounters.has('picking') ? 'animate-bounce-count' : ''}>{stats.picking}</span>
+                <span className="hidden sm:inline">)</span>
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="packing" className="flex flex-col items-center justify-center gap-1 py-2 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-purple-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 data-[state=active]:hover:bg-white touch-manipulation">
+              <Box className="h-5 w-5 sm:h-5 sm:w-5 flex-shrink-0" />
+              <span className="text-center leading-tight">
+                <span className="hidden sm:inline">Packing (</span>
+                <span className={animatingCounters.has('packing') ? 'animate-bounce-count' : ''}>{stats.packing}</span>
+                <span className="hidden sm:inline">)</span>
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="ready" className="flex flex-col items-center justify-center gap-1 py-2 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 data-[state=active]:bg-white data-[state=active]:text-green-600 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-green-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 data-[state=active]:hover:bg-white touch-manipulation">
+              <Truck className="h-5 w-5 sm:h-5 sm:w-5 flex-shrink-0" />
+              <span className="text-center leading-tight">
+                <span className="hidden sm:inline">Ready (</span>
+                <span className={animatingCounters.has('ready') ? 'animate-bounce-count' : ''}>{stats.ready}</span>
+                <span className="hidden sm:inline">)</span>
+              </span>
+            </TabsTrigger>
+          </TabsList>
 
           {/* Overview Tab - Mobile Optimized */}
           <TabsContent value="overview" className="mt-4 sm:mt-6">

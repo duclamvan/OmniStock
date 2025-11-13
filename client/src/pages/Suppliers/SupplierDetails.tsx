@@ -155,16 +155,16 @@ export default function SupplierDetails() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => window.history.back()}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+          <Button variant="ghost" size="icon" onClick={() => window.history.back()} className="shrink-0">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-3xl font-bold">{supplier.name}</h1>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold truncate">{supplier.name}</h1>
         </div>
-        <Button onClick={() => setLocation(`/suppliers/${id}/edit`)}>
-          <Pencil className="mr-2 h-4 w-4" />
-          Edit Supplier
+        <Button onClick={() => setLocation(`/suppliers/${id}/edit`)} className="shrink-0">
+          <Pencil className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Edit Supplier</span>
         </Button>
       </div>
 

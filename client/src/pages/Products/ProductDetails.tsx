@@ -156,20 +156,20 @@ export default function ProductDetails() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => window.history.back()}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+          <Button variant="ghost" size="icon" onClick={() => window.history.back()} className="shrink-0">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold">{product.name}</h1>
-            <p className="text-sm text-muted-foreground">SKU: {product.sku}</p>
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold truncate">{product.name}</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">SKU: {product.sku}</p>
           </div>
         </div>
         <Link href={`/inventory/${id}/edit`}>
-          <Button>
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Product
+          <Button className="shrink-0">
+            <Edit className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Edit Product</span>
           </Button>
         </Link>
       </div>
@@ -187,7 +187,7 @@ export default function ProductDetails() {
               )}
             </div>
             {productImages.length > 1 && (
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
                 {productImages.map((img, idx) => {
                   const config = IMAGE_PURPOSE_CONFIG[img.purpose as keyof typeof IMAGE_PURPOSE_CONFIG];
                   const Icon = config?.icon || ImageIcon;

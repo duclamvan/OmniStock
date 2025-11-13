@@ -107,22 +107,26 @@ export default function Home() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Warehouse Management Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">Real-time overview of your operations</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">
+            Warehouse Management Dashboard
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+            Real-time overview of your operations
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link href="/orders/add">
-            <Button size="sm">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
+          <Link href="/orders/add" className="flex-1 sm:flex-initial min-w-[140px]">
+            <Button size="sm" className="w-full sm:w-auto min-h-[44px]">
               <Plus className="h-4 w-4 mr-2" />
               New Order
             </Button>
           </Link>
-          <Link href="/inventory/add">
-            <Button size="sm" variant="outline">
+          <Link href="/inventory/add" className="flex-1 sm:flex-initial min-w-[140px]">
+            <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[44px]">
               <Plus className="h-4 w-4 mr-2" />
               Add Product
             </Button>
@@ -134,22 +138,22 @@ export default function Home() {
       {pendingAdjustments.length > 0 && (
         <Card className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20 border-orange-300 dark:border-orange-700">
           <CardContent className="p-4 sm:p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-orange-100 dark:bg-orange-900/50 rounded-lg">
+            <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+                <div className="p-2 bg-orange-100 dark:bg-orange-900/50 rounded-lg shrink-0">
                   <ClipboardCheck className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1 text-sm sm:text-base">
                     Pending Stock Adjustment Approvals
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-3">
                     <span className="font-bold text-orange-600 dark:text-orange-400">{pendingAdjustments.length}</span> stock adjustment {pendingAdjustments.length === 1 ? 'request' : 'requests'} waiting for admin approval
                   </p>
                   <Link href="/stock/approvals">
                     <Button 
                       size="sm" 
-                      className="bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-800 text-white"
+                      className="bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-800 text-white min-h-[44px]"
                       data-testid="button-view-pending-approvals"
                     >
                       Review Approvals
@@ -158,7 +162,7 @@ export default function Home() {
                   </Link>
                 </div>
               </div>
-              <Badge variant="destructive" className="text-sm font-bold flex-shrink-0">
+              <Badge variant="destructive" className="text-xs sm:text-sm font-bold shrink-0 self-start">
                 {pendingAdjustments.length} Pending
               </Badge>
             </div>
@@ -170,22 +174,22 @@ export default function Home() {
       {overAllocatedItems.length > 0 && (
         <Card className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 border-red-300 dark:border-red-700">
           <CardContent className="p-4 sm:p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-red-100 dark:bg-red-900/50 rounded-lg">
+            <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+                <div className="p-2 bg-red-100 dark:bg-red-900/50 rounded-lg shrink-0">
                   <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-red-900 dark:text-red-100 mb-1">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-red-900 dark:text-red-100 mb-1 text-sm sm:text-base">
                     Over-Allocated Inventory
                   </h3>
-                  <p className="text-sm text-red-800 dark:text-red-200 mb-3">
+                  <p className="text-xs sm:text-sm text-red-800 dark:text-red-200 mb-3">
                     <span className="font-bold">{overAllocatedItems.length}</span> {overAllocatedItems.length === 1 ? 'item has' : 'items have'} more quantity ordered than available in stock
                   </p>
                   <Link href="/stock/over-allocated">
                     <Button 
                       size="sm" 
-                      className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white"
+                      className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white min-h-[44px]"
                       data-testid="button-view-over-allocated"
                     >
                       View & Resolve Issues
@@ -193,7 +197,7 @@ export default function Home() {
                   </Link>
                 </div>
               </div>
-              <Badge variant="destructive" className="text-sm font-bold flex-shrink-0">
+              <Badge variant="destructive" className="text-xs sm:text-sm font-bold shrink-0 self-start">
                 {overAllocatedItems.length}
               </Badge>
             </div>
@@ -205,22 +209,22 @@ export default function Home() {
       {underAllocatedItems.length > 0 && (
         <Card className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20 border-yellow-300 dark:border-yellow-700">
           <CardContent className="p-4 sm:p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg">
+            <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+                <div className="p-2 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg shrink-0">
                   <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1 text-sm sm:text-base">
                     Under-Allocated Inventory
                   </h3>
-                  <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-3">
+                  <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200 mb-3">
                     <span className="font-bold">{underAllocatedItems.length}</span> {underAllocatedItems.length === 1 ? 'item has' : 'items have'} more quantity in record than in stock locations
                   </p>
                   <Link href="/stock/under-allocated">
                     <Button 
                       size="sm" 
-                      className="bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-800 text-white"
+                      className="bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-800 text-white min-h-[44px]"
                       data-testid="button-view-under-allocated"
                     >
                       View & Resolve Issues
@@ -228,7 +232,7 @@ export default function Home() {
                   </Link>
                 </div>
               </div>
-              <Badge className="bg-yellow-600 text-white text-sm font-bold flex-shrink-0">
+              <Badge className="bg-yellow-600 text-white text-xs sm:text-sm font-bold shrink-0 self-start">
                 {underAllocatedItems.length}
               </Badge>
             </div>
@@ -240,7 +244,7 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Today's Orders */}
         <Card className="border-emerald-200 dark:border-emerald-800">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             {metricsLoading ? (
               <div className="space-y-2">
                 <Skeleton className="h-4 w-20" />
@@ -265,7 +269,7 @@ export default function Home() {
 
         {/* Today's Revenue */}
         <Card className="border-blue-200 dark:border-blue-800">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             {metricsLoading ? (
               <div className="space-y-2">
                 <Skeleton className="h-4 w-20" />
@@ -292,7 +296,7 @@ export default function Home() {
 
         {/* Low Stock Alerts */}
         <Card className="border-amber-200 dark:border-amber-800">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             {stockLoading ? (
               <div className="space-y-2">
                 <Skeleton className="h-4 w-20" />
@@ -322,7 +326,7 @@ export default function Home() {
 
         {/* Pending Payments */}
         <Card className="border-red-200 dark:border-red-800">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium text-muted-foreground">Pending Payments</p>
               <Clock className="h-5 w-5 text-red-600 dark:text-red-400" />
@@ -346,45 +350,45 @@ export default function Home() {
 
       {/* Quick Actions */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Quick Actions</CardTitle>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg">Quick Actions</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
             <Link href="/orders/add">
-              <Button variant="outline" className="w-full justify-start">
-                <Plus className="h-4 w-4 mr-2" />
-                New Order
+              <Button variant="outline" className="w-full justify-start h-auto min-h-[44px] px-3 py-2 text-xs sm:text-sm">
+                <Plus className="h-4 w-4 mr-1 sm:mr-2 shrink-0" />
+                <span className="truncate">New Order</span>
               </Button>
             </Link>
             <Link href="/orders/pick-pack">
-              <Button variant="outline" className="w-full justify-start">
-                <PackageCheck className="h-4 w-4 mr-2" />
-                Pick & Pack
+              <Button variant="outline" className="w-full justify-start h-auto min-h-[44px] px-3 py-2 text-xs sm:text-sm">
+                <PackageCheck className="h-4 w-4 mr-1 sm:mr-2 shrink-0" />
+                <span className="truncate">Pick & Pack</span>
               </Button>
             </Link>
             <Link href="/inventory/add">
-              <Button variant="outline" className="w-full justify-start">
-                <Package className="h-4 w-4 mr-2" />
-                Add Product
+              <Button variant="outline" className="w-full justify-start h-auto min-h-[44px] px-3 py-2 text-xs sm:text-sm">
+                <Package className="h-4 w-4 mr-1 sm:mr-2 shrink-0" />
+                <span className="truncate">Add Product</span>
               </Button>
             </Link>
             <Link href="/customers/add">
-              <Button variant="outline" className="w-full justify-start">
-                <Users className="h-4 w-4 mr-2" />
-                Add Customer
+              <Button variant="outline" className="w-full justify-start h-auto min-h-[44px] px-3 py-2 text-xs sm:text-sm">
+                <Users className="h-4 w-4 mr-1 sm:mr-2 shrink-0" />
+                <span className="truncate">Add Customer</span>
               </Button>
             </Link>
             <Link href="/receiving">
-              <Button variant="outline" className="w-full justify-start">
-                <Truck className="h-4 w-4 mr-2" />
-                Receive Goods
+              <Button variant="outline" className="w-full justify-start h-auto min-h-[44px] px-3 py-2 text-xs sm:text-sm">
+                <Truck className="h-4 w-4 mr-1 sm:mr-2 shrink-0" />
+                <span className="truncate">Receive Goods</span>
               </Button>
             </Link>
             <Link href="/warehouses">
-              <Button variant="outline" className="w-full justify-start">
-                <Warehouse className="h-4 w-4 mr-2" />
-                Warehouses
+              <Button variant="outline" className="w-full justify-start h-auto min-h-[44px] px-3 py-2 text-xs sm:text-sm">
+                <Warehouse className="h-4 w-4 mr-1 sm:mr-2 shrink-0" />
+                <span className="truncate">Warehouses</span>
               </Button>
             </Link>
           </div>
@@ -392,21 +396,21 @@ export default function Home() {
       </Card>
 
       {/* Two-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Low Stock Products */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-600" />
-              Low Stock Alert
+          <CardHeader className="flex flex-row items-center justify-between p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2 min-w-0">
+              <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600 shrink-0" />
+              <span className="truncate">Low Stock Alert</span>
             </CardTitle>
-            <Link href="/inventory">
-              <Button variant="ghost" size="sm">
+            <Link href="/inventory" className="shrink-0">
+              <Button variant="ghost" size="sm" className="min-h-[44px]">
                 View All
               </Button>
             </Link>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
             {stockLoading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full" />)}
@@ -415,24 +419,22 @@ export default function Home() {
               <div className="space-y-2 max-h-[400px] overflow-y-auto">
                 {lowStockProducts.slice(0, 5).map((product) => (
                   <Link key={product.id} href={`/inventory/${product.id}/edit`}>
-                    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <div className="flex items-center justify-between gap-3 p-3 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors min-h-[60px]">
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{product.name}</p>
-                        <p className="text-xs text-muted-foreground">{product.sku}</p>
+                        <p className="font-medium text-xs sm:text-sm truncate">{product.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{product.sku}</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="destructive" className="text-xs">
-                          {product.quantity} left
-                        </Badge>
-                      </div>
+                      <Badge variant="destructive" className="text-xs shrink-0 whitespace-nowrap">
+                        {product.quantity} left
+                      </Badge>
                     </div>
                   </Link>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12">
-                <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">All products are well stocked</p>
+              <div className="text-center py-8 sm:py-12">
+                <CheckCircle2 className="h-10 w-10 sm:h-12 sm:w-12 text-green-500 mx-auto mb-3" />
+                <p className="text-xs sm:text-sm text-muted-foreground">All products are well stocked</p>
               </div>
             )}
           </CardContent>
@@ -440,18 +442,18 @@ export default function Home() {
 
         {/* Recent Orders */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5 text-emerald-600" />
-              Recent Orders
+          <CardHeader className="flex flex-row items-center justify-between p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2 min-w-0">
+              <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600 shrink-0" />
+              <span className="truncate">Recent Orders</span>
             </CardTitle>
-            <Link href="/orders">
-              <Button variant="ghost" size="sm">
+            <Link href="/orders" className="shrink-0">
+              <Button variant="ghost" size="sm" className="min-h-[44px]">
                 View All
               </Button>
             </Link>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
             {ordersLoading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full" />)}
@@ -460,18 +462,18 @@ export default function Home() {
               <div className="space-y-2 max-h-[400px] overflow-y-auto">
                 {recentOrders.slice(0, 5).map((order) => (
                   <Link key={order.id} href={`/orders/${order.id}`}>
-                    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 p-3 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors min-h-[60px]">
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm font-mono">{order.orderId}</p>
+                        <p className="font-medium text-xs sm:text-sm font-mono truncate">{order.orderId}</p>
                         <p className="text-xs text-muted-foreground truncate">
                           {order.customer?.name || 'Walk-in'}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className={getStatusColor(order.status)} variant="secondary">
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge className={`${getStatusColor(order.status)} text-xs`} variant="secondary">
                           {order.status}
                         </Badge>
-                        <p className="text-sm font-semibold whitespace-nowrap">
+                        <p className="text-xs sm:text-sm font-semibold whitespace-nowrap">
                           {formatCurrency(parseFloat(order.grandTotal), order.currency as any)}
                         </p>
                       </div>
@@ -480,11 +482,11 @@ export default function Home() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12">
-                <XCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">No recent orders</p>
+              <div className="text-center py-8 sm:py-12">
+                <XCircle className="h-10 w-10 sm:h-12 sm:w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-xs sm:text-sm text-muted-foreground">No recent orders</p>
                 <Link href="/orders/add">
-                  <Button variant="outline" size="sm" className="mt-3">
+                  <Button variant="outline" size="sm" className="mt-3 min-h-[44px]">
                     <Plus className="h-4 w-4 mr-2" />
                     Create Order
                   </Button>
@@ -498,23 +500,23 @@ export default function Home() {
       {/* Month Performance */}
       {metrics && (
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-cyan-600" />
-              This Month Performance
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-cyan-600 shrink-0" />
+              <span className="truncate">This Month Performance</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Revenue</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <p className="text-xs sm:text-sm text-muted-foreground mb-1">Revenue</p>
+                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 break-all">
                   {formatCurrency(metrics.thisMonthRevenue || 0, 'EUR')}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Profit</p>
-                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                <p className="text-xs sm:text-sm text-muted-foreground mb-1">Profit</p>
+                <p className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400 break-all">
                   {formatCurrency(metrics.thisMonthProfit || 0, 'EUR')}
                 </p>
               </div>

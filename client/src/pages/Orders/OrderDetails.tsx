@@ -653,23 +653,23 @@ export default function OrderDetails() {
     'Low Priority';
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto px-3 sm:px-0">
       {/* Clean Header */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
           {/* Breadcrumb Navigation */}
-          <div className="mb-4">
-            <nav className="flex items-center text-sm text-slate-600">
+          <div className="mb-3 sm:mb-4">
+            <nav className="flex items-center text-xs sm:text-sm text-slate-600">
               <Link href="/orders">
                 <span className="hover:text-slate-900 cursor-pointer font-medium">Orders</span>
               </Link>
-              <ChevronRight className="h-4 w-4 mx-2 text-slate-400" />
+              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 mx-1 sm:mx-2 text-slate-400" />
               <span className="text-slate-900 font-semibold">Order Details</span>
             </nav>
           </div>
 
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
+          <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+            <div className="flex-1 w-full sm:w-auto">
                 <div className="flex items-center gap-3 mb-2">
                   <h1 className="text-xl font-bold text-slate-900">#{order.orderId}</h1>
                   <Button
@@ -950,11 +950,12 @@ export default function OrderDetails() {
               </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="min-h-[44px] sm:min-h-[36px]">
                     <MoreVertical className="h-4 w-4" />
+                    <span className="ml-2 sm:hidden">More</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -989,7 +990,7 @@ export default function OrderDetails() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button size="sm" onClick={() => navigate(`/orders/${id}/edit`)}>
+              <Button size="sm" onClick={() => navigate(`/orders/${id}/edit`)} className="min-h-[44px] sm:min-h-[36px] flex-1 sm:flex-initial">
                 <Edit className="mr-2 h-4 w-4" />
                 Edit
               </Button>
@@ -999,16 +1000,17 @@ export default function OrderDetails() {
       </Card>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Left Column - Order Items and Pricing */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           {/* Action Buttons - Above Invoice */}
-          <div className="flex items-center gap-2 justify-end">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 justify-end">
             <Button
               variant="outline"
               size="sm"
               onClick={handleDownloadInvoice}
               data-testid="button-download-invoice"
+              className="min-h-[44px] sm:min-h-[36px] w-full sm:w-auto"
             >
               <Download className="mr-2 h-4 w-4" />
               Download Invoice
@@ -1018,6 +1020,7 @@ export default function OrderDetails() {
                 variant={showPickingMode ? "default" : "outline"}
                 size="sm"
                 onClick={() => setShowPickingMode(!showPickingMode)}
+                className="min-h-[44px] sm:min-h-[36px] w-full sm:w-auto"
               >
                 <CheckCircle2 className="mr-2 h-4 w-4" />
                 {showPickingMode ? "Exit Picking Mode" : "Start Picking"}
@@ -1027,9 +1030,9 @@ export default function OrderDetails() {
 
           {/* Invoice - Order Items & Pricing */}
           <Card ref={invoiceCardRef} className="overflow-hidden">
-            <CardHeader className="border-b border-slate-200">
-              <CardTitle className="flex items-center gap-2 text-lg font-bold">
-                <Package className="h-5 w-5" />
+            <CardHeader className="border-b border-slate-200 px-3 sm:px-6 py-3 sm:py-4">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-bold">
+                <Package className="h-4 w-4 sm:h-5 sm:w-5" />
                 Invoice
               </CardTitle>
             </CardHeader>
@@ -1037,7 +1040,7 @@ export default function OrderDetails() {
               {/* Order Items - Professional Invoice Layout */}
               <div className="divide-y divide-slate-200 dark:divide-slate-700">
                 {order.items?.map((item: any, index: number) => (
-                  <div key={item.id || index} className="px-6 py-4">
+                  <div key={item.id || index} className="px-3 sm:px-6 py-3 sm:py-4">
                     <div className="flex items-start gap-3">
                       {showPickingMode && (
                         <div data-hide-in-screenshot>
@@ -1227,7 +1230,7 @@ export default function OrderDetails() {
                   )}
                   
                   {/* Action Buttons */}
-                  <div className="flex flex-wrap gap-2 mt-4">
+                  <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 mt-4">
                     <Button
                       size="sm"
                       variant="outline"
@@ -1238,6 +1241,7 @@ export default function OrderDetails() {
                         });
                         setPickedItems(allItems);
                       }}
+                      className="min-h-[44px] sm:min-h-[36px] w-full sm:w-auto"
                     >
                       <CheckCircle2 className="mr-2 h-4 w-4" />
                       Mark All Picked
@@ -1246,6 +1250,7 @@ export default function OrderDetails() {
                       size="sm"
                       variant="outline"
                       onClick={() => setPickedItems(new Set())}
+                      className="min-h-[44px] sm:min-h-[36px] w-full sm:w-auto"
                     >
                       <XCircle className="mr-2 h-4 w-4" />
                       Clear All
@@ -1278,6 +1283,7 @@ export default function OrderDetails() {
                             });
                           }
                         }}
+                        className="min-h-[44px] sm:min-h-[36px] w-full sm:w-auto"
                       >
                         <RotateCcw className="mr-2 h-4 w-4" />
                         Return Unpicked Items
@@ -1288,7 +1294,7 @@ export default function OrderDetails() {
               )}
 
               {/* Pricing Breakdown - Integrated */}
-              <div className="mt-6 pt-6 px-6 border-t-2 border-slate-200">
+              <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 px-3 sm:px-6 border-t-2 border-slate-200">
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-slate-700 font-medium">Subtotal</span>
