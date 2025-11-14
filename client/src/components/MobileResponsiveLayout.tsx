@@ -558,14 +558,14 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                     className={cn(
                       "w-full justify-center p-3 rounded-lg transition-all duration-200 group relative",
                       "hover:bg-gray-100 dark:hover:bg-gray-800",
-                      isActive && "bg-white shadow-sm border border-gray-200"
+                      isActive && "bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-gray-700"
                     )}
                   >
                     <item.icon className={cn("h-5 w-5 transition-colors", item.color)} />
-                    <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-50 shadow-lg">
+                    <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 dark:bg-slate-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-50 shadow-lg">
                       <div className="flex flex-col">
                         <span className="font-medium">{item.name}</span>
-                        <span className="text-xs text-gray-300">{item.description}</span>
+                        <span className="text-xs text-gray-300 dark:text-gray-400">{item.description}</span>
                       </div>
                     </div>
                   </Button>
@@ -782,14 +782,14 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                   className={cn(
                     "w-full justify-center p-3 rounded-lg transition-all duration-200 group relative",
                     "hover:bg-gray-100 dark:hover:bg-gray-800",
-                    isActive && "bg-white shadow-sm border border-gray-200"
+                    isActive && "bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-gray-700"
                   )}
                 >
                   <item.icon className={cn("h-5 w-5 transition-colors", item.color)} />
-                  <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-50 shadow-lg">
+                  <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 dark:bg-slate-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-50 shadow-lg">
                     <div className="flex flex-col">
                       <span className="font-medium">{item.name}</span>
-                      <span className="text-xs text-gray-300">{item.description}</span>
+                      <span className="text-xs text-gray-300 dark:text-gray-400">{item.description}</span>
                     </div>
                   </div>
                 </Button>
@@ -854,7 +854,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Mobile Header - Smart scroll-aware header */}
       <MobileHeader
         isMobileMenuOpen={isMobileMenuOpen}
@@ -871,7 +871,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
 
       {/* Desktop Sidebar */}
       <aside className={cn(
-        "hidden lg:flex fixed inset-y-0 left-0 bg-white border-r border-gray-200 flex-col transition-all duration-300",
+        "hidden lg:flex fixed inset-y-0 left-0 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-gray-700 flex-col transition-all duration-300",
         isCollapsed ? "w-16" : "w-64"
       )}>
         <div className={cn(
