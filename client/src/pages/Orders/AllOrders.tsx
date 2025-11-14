@@ -1032,15 +1032,16 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
           {/* Total Orders */}
           <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-3 sm:p-4 md:p-6">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex-1 min-w-0">
+            <CardContent className="p-3 sm:p-4 md:p-6 h-full">
+              <div className="flex items-start justify-between gap-3 h-full">
+                <div className="flex-1 min-w-0 flex flex-col">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                     Total Orders
                   </p>
                   <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
                     {formatCompactNumber(statistics.totalOrders)}
                   </p>
+                  <div className="flex-grow"></div>
                   {highScores.totalOrders > 0 && (
                     <div className="flex items-center gap-1 mt-2 text-xs text-amber-600 dark:text-amber-400">
                       <Zap className="h-3 w-3" />
@@ -1057,15 +1058,16 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
           {/* Total Revenue */}
           <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-3 sm:p-4 md:p-6">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex-1 min-w-0">
+            <CardContent className="p-3 sm:p-4 md:p-6 h-full">
+              <div className="flex items-start justify-between gap-3 h-full">
+                <div className="flex-1 min-w-0 flex flex-col">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                     Total Revenue
                   </p>
                   <p className="text-xl sm:text-2xl md:text-3xl font-bold text-purple-600 dark:text-purple-400 truncate">
                     {formatCompactNumber(statistics.totalRevenue)}
                   </p>
+                  <div className="flex-grow"></div>
                   {highScores.totalRevenue > 0 && (
                     <div className="flex items-center gap-1 mt-2 text-xs text-amber-600 dark:text-amber-400">
                       <Zap className="h-3 w-3" />
@@ -1082,15 +1084,16 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
           {/* Total Profit */}
           <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-3 sm:p-4 md:p-6">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex-1 min-w-0">
+            <CardContent className="p-3 sm:p-4 md:p-6 h-full">
+              <div className="flex items-start justify-between gap-3 h-full">
+                <div className="flex-1 min-w-0 flex flex-col">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                     Total Profit
                   </p>
                   <p className={`text-xl sm:text-2xl md:text-3xl font-bold truncate ${statistics.totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                     {formatCompactNumber(statistics.totalProfit)}
                   </p>
+                  <div className="flex-grow"></div>
                   {highScores.totalProfit > 0 && (
                     <div className="flex items-center gap-1 mt-2 text-xs text-amber-600 dark:text-amber-400">
                       <Zap className="h-3 w-3" />
@@ -1107,9 +1110,9 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
           {/* Customers */}
           <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-3 sm:p-4 md:p-6">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex-1 min-w-0">
+            <CardContent className="p-3 sm:p-4 md:p-6 h-full">
+              <div className="flex items-start justify-between gap-3 h-full">
+                <div className="flex-1 min-w-0 flex flex-col">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                     Customers
                   </p>
@@ -1121,8 +1124,9 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     {' • '}
                     <span className="text-slate-600 dark:text-slate-400">{statistics.returningCustomers} returning</span>
                   </p>
+                  <div className="flex-grow"></div>
                   {highScores.totalCustomers > 0 && (
-                    <div className="flex items-center gap-1 mt-1 text-xs text-amber-600 dark:text-amber-400">
+                    <div className="flex items-center gap-1 mt-2 text-xs text-amber-600 dark:text-amber-400">
                       <Zap className="h-3 w-3" />
                       <span>Record: {formatCompactNumber(highScores.totalCustomers)}</span>
                     </div>
