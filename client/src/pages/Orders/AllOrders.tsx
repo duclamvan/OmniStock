@@ -229,6 +229,22 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     localStorage.setItem('orderDetailsBadgesVisible', String(newValue));
   };
 
+  // Expanded items state for mobile view (track which orders have expanded item lists)
+  const [expandedItemsOrders, setExpandedItemsOrders] = useState<Set<string>>(new Set());
+
+  // Toggle expanded items for an order
+  const toggleExpandedItems = (orderId: string) => {
+    setExpandedItemsOrders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId);
+      } else {
+        newSet.add(orderId);
+      }
+      return newSet;
+    });
+  };
+
   // Scroll navigation for expanded orders
   const scrollToExpandedOrder = useCallback((direction: 'next' | 'prev') => {
     // Get all expanded order rows by data attribute
@@ -1344,15 +1360,24 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     <div className="border-t border-gray-100 dark:border-slate-800 pt-2">
                       <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Items:</p>
                       <div className="space-y-1">
-                        {order.items.slice(0, 2).map((item: any, idx: number) => (
+                        {(expandedItemsOrders.has(order.id) ? order.items : order.items.slice(0, 5)).map((item: any, idx: number) => (
                           <p key={idx} className="text-xs text-gray-700 dark:text-gray-300 truncate">
                             <span className="font-medium text-blue-600 dark:text-blue-400">{item.quantity}×</span> {item.productName}
                           </p>
                         ))}
-                        {order.items.length > 2 && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 italic">
-                            +{order.items.length - 2} more item(s)
-                          </p>
+                        {order.items.length > 5 && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleExpandedItems(order.id);
+                            }}
+                            className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium cursor-pointer hover:underline transition-colors"
+                            data-testid={`button-toggle-items-${order.id}`}
+                          >
+                            {expandedItemsOrders.has(order.id) 
+                              ? "Show less" 
+                              : `+${order.items.length - 5} more item(s)`}
+                          </button>
                         )}
                       </div>
                     </div>
