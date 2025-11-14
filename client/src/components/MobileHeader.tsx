@@ -14,6 +14,7 @@ import {
 import { GlobalSearch } from '@/components/GlobalSearch';
 import { cn } from '@/lib/utils';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
+import { useQuery } from '@tanstack/react-query';
 import logoPath from '@assets/logo_1754349267160.png';
 
 interface MobileHeaderProps {
@@ -37,6 +38,13 @@ export function MobileHeader({
   const { scrollDir, isPastThreshold, isAtTop } = useScrollDirection();
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024);
+  
+  // Fetch unread notifications count
+  const { data: unreadData } = useQuery<{ count: number }>({
+    queryKey: ['/api/notifications/unread-count'],
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+  const unreadCount = unreadData?.count || 0;
   
   // Determine if header should be collapsed
   const isCollapsed = scrollDir === 'down' && isPastThreshold && !isAtTop && !isSearchExpanded;
@@ -153,7 +161,7 @@ export function MobileHeader({
         {/* Right: Actions */}
         <div className="flex items-center gap-1 flex-shrink-0">
           {/* Notifications */}
-          <Link href="/tickets">
+          <Link href="/notifications">
             <Button 
               variant="ghost" 
               size="icon" 
@@ -161,9 +169,9 @@ export function MobileHeader({
               data-testid="button-notifications"
             >
               <Bell className="h-5 w-5" />
-              {dueTicketsCount > 0 && (
+              {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-semibold">
-                  {dueTicketsCount}
+                  {unreadCount}
                 </span>
               )}
             </Button>

@@ -52,6 +52,7 @@ import AllTickets from "@/pages/Tickets/AllTickets";
 import AddTicket from "@/pages/Tickets/AddTicket";
 import EditTicket from "@/pages/Tickets/EditTicket";
 import TicketDetails from "@/pages/Tickets/TicketDetails";
+import Notifications from "@/pages/Notifications";
 import POS from "@/pages/POS/POS";
 import AllPreOrders from "@/pages/PreOrders/AllPreOrders";
 import AddPreOrder from "@/pages/PreOrders/AddPreOrder";
@@ -183,6 +184,7 @@ function Router() {
         <Route path="/tickets/add" component={AddTicket} />
         <Route path="/tickets/edit/:id" component={EditTicket} />
         <Route path="/tickets/:id" component={TicketDetails} />
+        <Route path="/notifications" component={Notifications} />
         <Route path="/stock" component={StockLookup} />
         <Route path="/stock/approvals" component={StockAdjustmentApprovals} />
         <Route path="/stock/over-allocated" component={OverAllocated} />

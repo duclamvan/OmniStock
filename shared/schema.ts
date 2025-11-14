@@ -1695,3 +1695,36 @@ export function computePlanChecksum(plan: UIPackingPlan): string {
   }
   return hash.toString(36);
 }
+
+// Notifications table
+export const notifications = pgTable('notifications', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id').notNull().references(() => users.id),
+  title: text('title').notNull(),
+  description: text('description'),
+  type: text('type').notNull().default('info'), // success, error, warning, info
+  isRead: boolean('is_read').notNull().default(false),
+  actionUrl: text('action_url'),
+  actionLabel: text('action_label'),
+  metadata: jsonb('metadata'), // Optional additional data
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications, {
+  type: z.enum(['success', 'error', 'warning', 'info']),
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().optional(),
+  actionUrl: z.union([
+    z.string().url(), // Absolute URLs
+    z.string().regex(/^\//, 'Must be a relative path starting with /'), // Relative paths
+    z.literal(''),
+  ]).optional(),
+  actionLabel: z.string().optional(),
+  metadata: z.record(z.any()).optional(),
+}).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Notification = typeof notifications.$inferSelect;

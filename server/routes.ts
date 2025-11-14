@@ -33,6 +33,7 @@ import {
   insertTicketCommentSchema,
   insertOrderCartonSchema,
   insertAppSettingSchema,
+  insertNotificationSchema,
   productCostHistory,
   products,
   productBundles,
@@ -50,6 +51,7 @@ import {
   orderCartons,
   orderCartonPlans,
   appSettings,
+  notifications,
   serializePackingPlanToDB,
   serializePackingPlanItems,
   deserializePackingPlanFromDB,
@@ -6465,6 +6467,118 @@ Return ONLY the subject line without quotes or extra formatting.`,
     } catch (error) {
       console.error("Error adding ticket comment:", error);
       res.status(500).json({ message: "Failed to add ticket comment" });
+    }
+  });
+
+  // Notifications endpoints
+  app.get('/api/notifications', async (req: any, res) => {
+    try {
+      const userId = req.user?.id || "test-user";
+      const status = req.query.status as string | undefined;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      let query = db
+        .select()
+        .from(notifications)
+        .where(eq(notifications.userId, userId))
+        .orderBy(desc(notifications.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      // Apply status filter
+      if (status === 'unread') {
+        query = db
+          .select()
+          .from(notifications)
+          .where(and(
+            eq(notifications.userId, userId),
+            eq(notifications.isRead, false)
+          ))
+          .orderBy(desc(notifications.createdAt))
+          .limit(limit)
+          .offset(offset);
+      }
+
+      const result = await query;
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.get('/api/notifications/unread-count', async (req: any, res) => {
+    try {
+      const userId = req.user?.id || "test-user";
+      
+      const result = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(notifications)
+        .where(and(
+          eq(notifications.userId, userId),
+          eq(notifications.isRead, false)
+        ));
+
+      res.json({ count: result[0]?.count || 0 });
+    } catch (error) {
+      console.error("Error fetching unread count:", error);
+      res.status(500).json({ message: "Failed to fetch unread count" });
+    }
+  });
+
+  app.post('/api/notifications', async (req: any, res) => {
+    try {
+      const userId = req.user?.id || "test-user";
+      const data = insertNotificationSchema.parse({
+        ...req.body,
+        userId
+      });
+
+      const result = await db
+        .insert(notifications)
+        .values(data)
+        .returning();
+
+      res.status(201).json(result[0]);
+    } catch (error) {
+      console.error("Error creating notification:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create notification" });
+    }
+  });
+
+  app.patch('/api/notifications/:id/read', async (req: any, res) => {
+    try {
+      const userId = req.user?.id || "test-user";
+      const notificationId = parseInt(req.params.id);
+
+      // Verify notification belongs to user
+      const existing = await db
+        .select()
+        .from(notifications)
+        .where(and(
+          eq(notifications.id, notificationId),
+          eq(notifications.userId, userId)
+        ))
+        .limit(1);
+
+      if (!existing || existing.length === 0) {
+        return res.status(404).json({ message: "Notification not found" });
+      }
+
+      const result = await db
+        .update(notifications)
+        .set({ isRead: true })
+        .where(eq(notifications.id, notificationId))
+        .returning();
+
+      res.json(result[0]);
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Failed to mark notification as read" });
     }
   });
 

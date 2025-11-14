@@ -161,6 +161,38 @@ function toast({ ...props }: Toast) {
     },
   })
 
+  // Persist notification to database (fire-and-forget)
+  void (async () => {
+    try {
+      // Map toast variant to notification type
+      const typeMap: Record<string, 'success' | 'error' | 'warning' | 'info'> = {
+        destructive: 'error',
+        default: 'info',
+      };
+      const type = typeMap[props.variant || 'default'] || 'info';
+
+      // Extract title and description
+      const title = typeof props.title === 'string' ? props.title : 'Notification';
+      const description = typeof props.description === 'string' ? props.description : undefined;
+
+      await fetch('/api/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          type,
+          userId: 'test-user',
+        }),
+      });
+    } catch (error) {
+      // Silent fail - don't throw errors for notification persistence
+      console.error('Failed to persist notification:', error);
+    }
+  })();
+
   return {
     id: id,
     dismiss,
