@@ -177,28 +177,6 @@ export function MobileHeader({
             </Button>
           </Link>
 
-          {/* Dark Mode Toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              setIsDarkMode(!isDarkMode);
-              if (isDarkMode) {
-                document.documentElement.classList.remove('dark');
-              } else {
-                document.documentElement.classList.add('dark');
-              }
-            }}
-            className="h-10 w-10 hover:bg-gray-100 dark:hover:bg-gray-800"
-            data-testid="button-dark-mode"
-          >
-            {isDarkMode ? (
-              <Sun className="h-5 w-5 text-orange-500 dark:text-orange-400" />
-            ) : (
-              <Moon className="h-5 w-5 text-slate-700 dark:text-slate-300" />
-            )}
-          </Button>
-
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -233,6 +211,29 @@ export function MobileHeader({
                   <span className="text-gray-900 dark:text-gray-100">Settings</span>
                 </DropdownMenuItem>
               </Link>
+              <DropdownMenuItem 
+                onClick={() => {
+                  setIsDarkMode(!isDarkMode);
+                  if (isDarkMode) {
+                    document.documentElement.classList.remove('dark');
+                  } else {
+                    document.documentElement.classList.add('dark');
+                  }
+                }}
+                className="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+              >
+                {isDarkMode ? (
+                  <>
+                    <Sun className="mr-2 h-4 w-4 text-orange-500 dark:text-orange-400" />
+                    <span className="text-gray-900 dark:text-gray-100">Light Mode</span>
+                  </>
+                ) : (
+                  <>
+                    <Moon className="mr-2 h-4 w-4 text-slate-700 dark:text-slate-300" />
+                    <span className="text-gray-900 dark:text-gray-100">Dark Mode</span>
+                  </>
+                )}
+              </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
               <DropdownMenuItem className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700">
                 <LogOut className="mr-2 h-4 w-4" />
