@@ -6187,7 +6187,7 @@ export default function PickPack() {
     }
 
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
         {/* Optimized Header - Packing Mode */}
         <div className="bg-gradient-to-r from-purple-600 dark:from-purple-800 to-purple-700 dark:to-purple-900 text-white shadow-lg sticky top-0 z-20">
           <div className="px-3 lg:px-6 py-2.5 lg:py-3">
@@ -11059,9 +11059,9 @@ export default function PickPack() {
     const allItemsPicked = activePickingOrder.items.every(item => item.pickedQuantity >= item.quantity);
 
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
         {/* Header - Ultra Compact for Mobile */}
-        <div className="bg-gradient-to-r from-blue-50 dark:from-blue-900/300 to-blue-600 text-white shadow-lg z-20">
+        <div className="bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-blue-600 dark:to-blue-700 text-white shadow-lg z-20">
           <div className="px-3 lg:px-6 py-2 lg:py-4">
             {/* Mobile Layout - Ultra Compact */}
             <div className="lg:hidden">
@@ -12262,18 +12262,18 @@ export default function PickPack() {
 
   // Main Dashboard View
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50 dark:bg-gray-900">
       {/* Header with Navigation and Overview */}
-      <div className="bg-white border-b shadow-sm">
+      <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="px-3 sm:px-6 py-4">
           {/* Page Title and Brief Overview */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                 <Package className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 dark:text-blue-400" />
                 Pick & Pack Workflow
               </h1>
-              <p className="text-sm text-gray-600 mt-1">Manage order fulfillment from picking to shipping</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage order fulfillment from picking to shipping</p>
             </div>
 
             {/* Quick Stats Overview */}
@@ -12303,10 +12303,10 @@ export default function PickPack() {
       <div className="px-3 sm:px-6 pb-6 pt-4">
         <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v as any)}>
           {/* Optimized responsive tabs - consistent height with labels and counts */}
-          <TabsList className="grid grid-cols-5 w-full bg-white border border-gray-200 p-1.5 sm:p-2 gap-1 sm:gap-2 shadow-sm rounded-lg max-w-full mx-auto sm:max-w-3xl">
+          <TabsList className="grid grid-cols-5 w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-700 p-1.5 sm:p-2 gap-1 sm:gap-2 shadow-sm rounded-lg max-w-full mx-auto sm:max-w-3xl">
             <TabsTrigger 
               value="overview" 
-              className="flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 data-[state=active]:bg-white data-[state=active]:text-blue-600 dark:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 data-[state=active]:hover:bg-white touch-manipulation min-h-[60px] sm:min-h-[72px]"
+              className="flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation min-h-[60px] sm:min-h-[72px]"
               data-testid="tab-overview"
             >
               <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
@@ -12322,7 +12322,7 @@ export default function PickPack() {
             </TabsTrigger>
             <TabsTrigger 
               value="pending" 
-              className="flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 data-[state=active]:bg-white data-[state=active]:text-orange-600 dark:text-orange-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-orange-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 data-[state=active]:hover:bg-white touch-manipulation min-h-[60px] sm:min-h-[72px]"
+              className="flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-orange-600 dark:data-[state=active]:text-orange-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-orange-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation min-h-[60px] sm:min-h-[72px]"
               data-testid="tab-pending"
             >
               <Clock className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
@@ -12338,7 +12338,7 @@ export default function PickPack() {
             </TabsTrigger>
             <TabsTrigger 
               value="picking" 
-              className="flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 data-[state=active]:bg-white data-[state=active]:text-blue-600 dark:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 data-[state=active]:hover:bg-white touch-manipulation min-h-[60px] sm:min-h-[72px]"
+              className="flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation min-h-[60px] sm:min-h-[72px]"
               data-testid="tab-picking"
             >
               <Package className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
@@ -12354,7 +12354,7 @@ export default function PickPack() {
             </TabsTrigger>
             <TabsTrigger 
               value="packing" 
-              className="flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 data-[state=active]:bg-white data-[state=active]:text-purple-600 dark:text-purple-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-purple-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 data-[state=active]:hover:bg-white touch-manipulation min-h-[60px] sm:min-h-[72px]"
+              className="flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-purple-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation min-h-[60px] sm:min-h-[72px]"
               data-testid="tab-packing"
             >
               <Box className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
@@ -12370,7 +12370,7 @@ export default function PickPack() {
             </TabsTrigger>
             <TabsTrigger 
               value="ready" 
-              className="flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 data-[state=active]:bg-white data-[state=active]:text-green-600 dark:text-green-400 dark:text-green-300 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-green-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 data-[state=active]:hover:bg-white touch-manipulation min-h-[60px] sm:min-h-[72px]"
+              className="flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-green-600 dark:data-[state=active]:text-green-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-green-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation min-h-[60px] sm:min-h-[72px]"
               data-testid="tab-ready"
             >
               <Truck className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
