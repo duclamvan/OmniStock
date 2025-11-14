@@ -1018,10 +1018,39 @@ export default function AllOrders({ filter }: AllOrdersProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Export Dropdown - Mobile Only */}
+          <div className="sm:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  data-testid="button-export-menu"
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleExportXLSX} data-testid="menu-export-xlsx">
+                  <FileDown className="h-4 w-4 mr-2" />
+                  Export XLSX
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportPDF} data-testid="menu-export-pdf">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Export PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          
+          {/* Export Buttons - Desktop Only */}
           <Button 
             variant="outline" 
             onClick={handleExportXLSX}
             data-testid="button-export-xlsx"
+            className="hidden sm:inline-flex"
           >
             <FileDown className="h-4 w-4 mr-2" />
             Export XLSX
@@ -1030,14 +1059,18 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             variant="outline" 
             onClick={handleExportPDF}
             data-testid="button-export-pdf"
+            className="hidden sm:inline-flex"
           >
             <FileText className="h-4 w-4 mr-2" />
             Export PDF
           </Button>
+          
+          {/* Add Order Button - Always Visible */}
           <Link href="/orders/add">
-            <Button data-testid="button-add-order">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Order
+            <Button data-testid="button-add-order" className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              <span className="hidden xs:inline sm:inline">Add Order</span>
+              <span className="inline xs:hidden sm:hidden">Add</span>
             </Button>
           </Link>
         </div>
