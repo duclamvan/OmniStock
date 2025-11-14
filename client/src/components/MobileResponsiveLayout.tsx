@@ -61,6 +61,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { GlobalSearch } from '@/components/GlobalSearch';
+import { MobileHeader } from '@/components/MobileHeader';
 import { ChevronRight as BreadcrumbChevron, Home } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -176,6 +177,21 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
   const [openSections, setOpenSections] = useState<string[]>(() => 
     getLocalStorageArray<string>('sidebarOpenSections', ['Warehouse Operations', 'Admin & Management'])
   );
+  
+  // Set CSS variable to 0px on desktop to prevent padding override
+  useEffect(() => {
+    const updateHeaderHeight = () => {
+      const isDesktop = window.innerWidth >= 1024;
+      if (isDesktop) {
+        document.documentElement.style.setProperty('--mobile-header-height-current', '0px');
+      }
+      // Mobile header will set its own value via MobileHeader component
+    };
+    
+    updateHeaderHeight();
+    window.addEventListener('resize', updateHeaderHeight);
+    return () => window.removeEventListener('resize', updateHeaderHeight);
+  }, []);
   
   // Fetch tickets to count due/overdue notifications
   const { data: tickets = [] } = useQuery<any[]>({
@@ -839,29 +855,19 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile Header - Hidden only during active picking/packing mode */}
-      {!(location.includes('/orders/pick-pack') && sessionStorage.getItem('pickpack-active-mode') === 'true') && (
-        <header className="lg:hidden sticky top-0 z-40 bg-white border-b border-gray-200">
-          <div className="flex items-center justify-between px-4 py-3">
-            <img src={logoPath} alt="Davie Professional" className="h-8" />
-            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="touch-target">
-                  <Menu className="h-6 w-6" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-72 p-0 flex flex-col h-full">
-                <div className="p-4 border-b flex-shrink-0">
-                  <h2 className="text-lg font-semibold">Menu</h2>
-                </div>
-                <nav className="p-4 space-y-2 overflow-y-auto flex-1" ref={mobileNavRef}>
-                  <NavLinks />
-                </nav>
-              </SheetContent>
-            </Sheet>
-          </div>
-        </header>
-      )}
+      {/* Mobile Header - Smart scroll-aware header */}
+      <MobileHeader
+        isMobileMenuOpen={isMobileMenuOpen}
+        setIsMobileMenuOpen={setIsMobileMenuOpen}
+        navContent={
+          <nav className="p-4 space-y-2" ref={mobileNavRef}>
+            <NavLinks />
+          </nav>
+        }
+        dueTicketsCount={dueTicketsCount}
+        isDarkMode={isDarkMode}
+        setIsDarkMode={setIsDarkMode}
+      />
 
       {/* Desktop Sidebar */}
       <aside className={cn(
@@ -900,10 +906,15 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       </aside>
 
       {/* Main Content */}
-      <main className={cn(
-        "transition-all duration-300",
-        isCollapsed ? "lg:ml-16" : "lg:ml-64"
-      )}>
+      <main 
+        className={cn(
+          "transition-all duration-300 lg:pt-0",
+          isCollapsed ? "lg:ml-16" : "lg:ml-64"
+        )}
+        style={{
+          paddingTop: 'calc(var(--mobile-header-height-current, 3.5rem) + env(safe-area-inset-top, 0px))',
+        }}
+      >
         {/* Top Navigation Bar - Desktop Only - Hidden during active picking/packing */}
         {!(location.includes('/orders/pick-pack') && sessionStorage.getItem('pickpack-active-mode') === 'true') && (
           <header className="hidden lg:block sticky top-0 z-30 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-700">

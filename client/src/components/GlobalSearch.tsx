@@ -51,12 +51,26 @@ interface SearchResult {
   }>;
 }
 
-export function GlobalSearch() {
+interface GlobalSearchProps {
+  onFocus?: () => void;
+  onBlur?: () => void;
+  autoFocus?: boolean;
+}
+
+export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps = {}) {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [, setLocation] = useLocation();
   const searchRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Auto-focus when requested
+  useEffect(() => {
+    if (autoFocus && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [autoFocus]);
 
   // Debounce search query - wait 150ms after user stops typing (reduced for snappier feel)
   useEffect(() => {
@@ -122,6 +136,7 @@ export function GlobalSearch() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
+          ref={inputRef}
           type="text"
           placeholder="Search items, shipments, or customers..."
           value={searchQuery}
@@ -130,6 +145,13 @@ export function GlobalSearch() {
             if (searchQuery.trim().length > 0 && results) {
               setShowResults(true);
             }
+            onFocus?.();
+          }}
+          onBlur={() => {
+            // Delay blur to allow clicking on results
+            setTimeout(() => {
+              onBlur?.();
+            }, 200);
           }}
           className="pl-10 pr-4"
           data-testid="input-global-search"
