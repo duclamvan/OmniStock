@@ -1,8 +1,8 @@
-import { useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Settings as SettingsIcon, Save, Loader2, Database, Shield, Plug, Bot } from "lucide-react";
+import { useSettings } from "@/contexts/SettingsContext";
+import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
 
 const formSchema = z.object({
   app_name: z.string().default('Davie Supply'),
@@ -65,69 +67,88 @@ const timezones = [
 
 export default function SystemSettings() {
   const { toast } = useToast();
-
-  const { data: settings = [], isLoading } = useQuery<any[]>({
-    queryKey: ['/api/settings'],
-  });
+  const { systemSettings, isLoading } = useSettings();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      app_name: 'Davie Supply',
-      timezone: 'Europe/Prague',
-      date_format: 'DD/MM/YYYY',
-      enable_dark_mode: false,
+      app_name: systemSettings.appName || 'Davie Supply',
+      timezone: systemSettings.timezone || 'Europe/Prague',
+      date_format: systemSettings.dateFormat || 'DD/MM/YYYY',
+      enable_dark_mode: systemSettings.enableDarkMode ?? false,
       
-      session_timeout_minutes: 60,
-      auto_save_interval_seconds: 30,
-      compact_view: false,
+      session_timeout_minutes: systemSettings.sessionTimeoutMinutes ?? 60,
+      auto_save_interval_seconds: systemSettings.autoSaveIntervalSeconds ?? 30,
+      compact_view: systemSettings.compactView ?? false,
       
-      auto_backup_enabled: false,
-      backup_frequency: 'weekly',
-      data_retention_period_days: 365,
-      archive_old_orders: false,
-      archive_after_days: 90,
+      auto_backup_enabled: systemSettings.autoBackupEnabled ?? false,
+      backup_frequency: systemSettings.backupFrequency || 'weekly',
+      data_retention_period_days: systemSettings.dataRetentionPeriodDays ?? 365,
+      archive_old_orders: systemSettings.archiveOldOrders ?? false,
+      archive_after_days: systemSettings.archiveAfterDays ?? 90,
       
-      require_strong_passwords: true,
-      password_expiry_days: 90,
-      two_factor_authentication: false,
-      session_logging: true,
-      ip_whitelist_enabled: false,
+      require_strong_passwords: systemSettings.requireStrongPasswords ?? true,
+      password_expiry_days: systemSettings.passwordExpiryDays ?? 90,
+      two_factor_authentication: systemSettings.twoFactorAuthentication ?? false,
+      session_logging: systemSettings.sessionLogging ?? true,
+      ip_whitelist_enabled: systemSettings.ipWhitelistEnabled ?? false,
       
-      facebook_integration_enabled: false,
-      openai_integration_enabled: false,
-      deepseek_ai_enabled: false,
-      nominatim_geocoding_enabled: false,
-      frankfurter_exchange_rates_enabled: true,
+      facebook_integration_enabled: systemSettings.facebookIntegrationEnabled ?? false,
+      openai_integration_enabled: systemSettings.openaiIntegrationEnabled ?? false,
+      deepseek_ai_enabled: systemSettings.deepseekAiEnabled ?? false,
+      nominatim_geocoding_enabled: systemSettings.nominatimGeocodingEnabled ?? false,
+      frankfurter_exchange_rates_enabled: systemSettings.frankfurterExchangeRatesEnabled ?? true,
       
-      enable_ai_address_parsing: false,
-      enable_ai_carton_packing: false,
-      enable_ai_weight_estimation: false,
-      auto_optimize_warehouse_locations: false,
+      enable_ai_address_parsing: systemSettings.enableAiAddressParsing ?? false,
+      enable_ai_carton_packing: systemSettings.enableAiCartonPacking ?? false,
+      enable_ai_weight_estimation: systemSettings.enableAiWeightEstimation ?? false,
+      auto_optimize_warehouse_locations: systemSettings.autoOptimizeWarehouseLocations ?? false,
     },
   });
 
-  // Update form when settings are loaded
+  // Reset form when settings load
   useEffect(() => {
-    if (settings.length > 0 && !isLoading) {
-      const settingsMap = settings.reduce((acc, setting) => {
-        acc[setting.key] = setting.value;
-        return acc;
-      }, {} as Record<string, any>);
-
-      const keys = Object.keys(formSchema.shape);
-      keys.forEach((key) => {
-        if (settingsMap[key] !== undefined) {
-          form.setValue(key as keyof FormValues, settingsMap[key], { shouldDirty: false });
-        }
+    if (!isLoading) {
+      form.reset({
+        app_name: systemSettings.appName || 'Davie Supply',
+        timezone: systemSettings.timezone || 'Europe/Prague',
+        date_format: systemSettings.dateFormat || 'DD/MM/YYYY',
+        enable_dark_mode: systemSettings.enableDarkMode ?? false,
+        
+        session_timeout_minutes: systemSettings.sessionTimeoutMinutes ?? 60,
+        auto_save_interval_seconds: systemSettings.autoSaveIntervalSeconds ?? 30,
+        compact_view: systemSettings.compactView ?? false,
+        
+        auto_backup_enabled: systemSettings.autoBackupEnabled ?? false,
+        backup_frequency: systemSettings.backupFrequency || 'weekly',
+        data_retention_period_days: systemSettings.dataRetentionPeriodDays ?? 365,
+        archive_old_orders: systemSettings.archiveOldOrders ?? false,
+        archive_after_days: systemSettings.archiveAfterDays ?? 90,
+        
+        require_strong_passwords: systemSettings.requireStrongPasswords ?? true,
+        password_expiry_days: systemSettings.passwordExpiryDays ?? 90,
+        two_factor_authentication: systemSettings.twoFactorAuthentication ?? false,
+        session_logging: systemSettings.sessionLogging ?? true,
+        ip_whitelist_enabled: systemSettings.ipWhitelistEnabled ?? false,
+        
+        facebook_integration_enabled: systemSettings.facebookIntegrationEnabled ?? false,
+        openai_integration_enabled: systemSettings.openaiIntegrationEnabled ?? false,
+        deepseek_ai_enabled: systemSettings.deepseekAiEnabled ?? false,
+        nominatim_geocoding_enabled: systemSettings.nominatimGeocodingEnabled ?? false,
+        frankfurter_exchange_rates_enabled: systemSettings.frankfurterExchangeRatesEnabled ?? true,
+        
+        enable_ai_address_parsing: systemSettings.enableAiAddressParsing ?? false,
+        enable_ai_carton_packing: systemSettings.enableAiCartonPacking ?? false,
+        enable_ai_weight_estimation: systemSettings.enableAiWeightEstimation ?? false,
+        auto_optimize_warehouse_locations: systemSettings.autoOptimizeWarehouseLocations ?? false,
       });
     }
-  }, [settings, isLoading]);
+  }, [isLoading, form, systemSettings]);
 
   const saveMutation = useMutation({
     mutationFn: async (values: FormValues) => {
       const savePromises = Object.entries(values).map(([key, value]) =>
-        apiRequest('POST', `/api/settings`, { key, value, category: 'system' })
+        apiRequest('POST', `/api/settings`, { key: camelToSnake(key), value: deepCamelToSnake(value), category: 'system' })
       );
       await Promise.all(savePromises);
     },

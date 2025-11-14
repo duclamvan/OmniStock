@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency, convertCurrency, type Currency } from "@/lib/currencyUtils";
+import { useInventoryDefaults } from "@/hooks/useAppSettings";
 import { Separator } from "@/components/ui/separator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -204,6 +205,7 @@ export default function ProductForm() {
   const isEditMode = !!id;
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { lowStockThreshold, defaultWarehouse } = useInventoryDefaults();
   
   // State management
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
@@ -338,8 +340,9 @@ export default function ProductForm() {
     resolver: zodResolver(productSchema),
     defaultValues: {
       quantity: 0,
-      lowStockAlert: 5,
+      lowStockAlert: lowStockThreshold,
       categoryId: isEditMode ? undefined : (categoryIdFromUrl || undefined),
+      warehouseId: isEditMode ? undefined : (defaultWarehouse || undefined),
     },
   });
 

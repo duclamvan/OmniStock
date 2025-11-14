@@ -19,6 +19,7 @@ import { formatCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { calculateShippingCost } from "@/lib/shippingCosts";
 import { getCustomerBadges } from "@/lib/customerBadges";
+import { useOrderDefaults, useFinancialDefaults } from "@/hooks/useAppSettings";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -243,6 +244,8 @@ export default function AddOrder() {
   const [showTaxInvoice, setShowTaxInvoice] = useState(false);
   const [showDiscount, setShowDiscount] = useState(false);
   const { toast } = useToast();
+  const { defaultCurrency, defaultPaymentMethod, defaultCarrier, enableCod } = useOrderDefaults();
+  const { vatRate } = useFinancialDefaults();
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [productSearch, setProductSearch] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
@@ -515,12 +518,14 @@ export default function AddOrder() {
     resolver: zodResolver(addOrderSchema),
     defaultValues: {
       orderType: 'ord',
-      currency: 'EUR',
+      currency: defaultCurrency as any,
       priority: 'medium',
       orderStatus: 'pending',
       paymentStatus: 'pending',
+      paymentMethod: defaultPaymentMethod as any,
+      shippingMethod: defaultCarrier as any,
       discountValue: 0,
-      taxRate: 0,
+      taxRate: vatRate,
       shippingCost: 0,
       actualShippingCost: 0,
       adjustment: 0,

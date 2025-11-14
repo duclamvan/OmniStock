@@ -15,6 +15,7 @@ import MoveInventoryDialog from "@/components/warehouse/MoveInventoryDialog";
 import StockAdjustmentDialog from "@/components/warehouse/StockAdjustmentDialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useInventoryDefaults } from "@/hooks/useAppSettings";
 
 interface Variant {
   id: string;
@@ -63,6 +64,7 @@ export default function StockLookup() {
   const [barcodeInput, setBarcodeInput] = useState("");
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  const { lowStockThreshold, enableBarcodeScanning } = useInventoryDefaults();
   
   // Remember last adjustment details for quick access
   const [lastAdjustment, setLastAdjustment] = useState<{
@@ -254,10 +256,11 @@ export default function StockLookup() {
     };
   }, [selectedProduct, products, selectedVariants, selectedLocations]);
 
-  const getStockStatus = (stock: number, lowStockThreshold: number = 5) => {
+  const getStockStatus = (stock: number, customThreshold?: number) => {
+    const threshold = customThreshold ?? lowStockThreshold;
     if (stock === 0) return { label: "Out of Stock", color: "bg-red-500", icon: AlertCircle };
-    if (stock <= lowStockThreshold) return { label: "Low Stock", color: "bg-yellow-500", icon: TrendingDown };
-    if (stock <= lowStockThreshold * 2) return { label: "Medium Stock", color: "bg-blue-500", icon: TrendingUp };
+    if (stock <= threshold) return { label: "Low Stock", color: "bg-yellow-500", icon: TrendingDown };
+    if (stock <= threshold * 2) return { label: "Medium Stock", color: "bg-blue-500", icon: TrendingUp };
     return { label: "In Stock", color: "bg-green-500", icon: TrendingUp };
   };
 

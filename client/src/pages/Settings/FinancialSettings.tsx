@@ -1,8 +1,8 @@
-import { useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { DollarSign, Save, Loader2, Percent, CreditCard, Receipt, BookOpen } from "lucide-react";
+import { useSettings } from "@/contexts/SettingsContext";
+import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
 
 const formSchema = z.object({
   default_tax_rate_czk: z.coerce.number().min(0).max(100).default(21),
@@ -51,69 +53,88 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function FinancialSettings() {
   const { toast } = useToast();
-
-  const { data: settings = [], isLoading } = useQuery<any[]>({
-    queryKey: ['/api/settings'],
-  });
+  const { financialSettings, isLoading } = useSettings();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      default_tax_rate_czk: 21,
-      default_tax_rate_eur: 19,
-      auto_apply_tax: false,
-      exchange_rate_source: "Fawaz Ahmed's free currency API",
+      default_tax_rate_czk: financialSettings.defaultTaxRateCzk ?? 21,
+      default_tax_rate_eur: financialSettings.defaultTaxRateEur ?? 19,
+      auto_apply_tax: financialSettings.autoApplyTax ?? false,
+      exchange_rate_source: financialSettings.exchangeRateSource || "Fawaz Ahmed's free currency API",
       
-      default_markup_percentage: 30,
-      minimum_margin_percentage: 10,
-      price_rounding: 'none',
-      show_prices_with_vat: true,
-      default_vat_rate: 21,
+      default_markup_percentage: financialSettings.defaultMarkupPercentage ?? 30,
+      minimum_margin_percentage: financialSettings.minimumMarginPercentage ?? 10,
+      price_rounding: financialSettings.priceRounding || 'none',
+      show_prices_with_vat: financialSettings.showPricesWithVat ?? true,
+      default_vat_rate: financialSettings.defaultVatRate ?? 21,
       
-      enable_vat: true,
-      vat_registration_number: '',
-      reverse_charge_mechanism: false,
-      oss_scheme_enabled: false,
+      enable_vat: financialSettings.enableVat ?? true,
+      vat_registration_number: financialSettings.vatRegistrationNumber || '',
+      reverse_charge_mechanism: financialSettings.reverseChargeMechanism ?? false,
+      oss_scheme_enabled: financialSettings.ossSchemeEnabled ?? false,
       
-      base_currency: 'CZK',
-      auto_update_exchange_rates: true,
-      exchange_rate_api_source: 'Frankfurter',
-      exchange_rate_update_frequency: 'daily',
+      base_currency: financialSettings.baseCurrency || 'CZK',
+      auto_update_exchange_rates: financialSettings.autoUpdateExchangeRates ?? true,
+      exchange_rate_api_source: financialSettings.exchangeRateApiSource || 'Frankfurter',
+      exchange_rate_update_frequency: financialSettings.exchangeRateUpdateFrequency || 'daily',
       
-      invoice_number_prefix: 'INV-',
-      invoice_number_format: 'INV-0001',
-      next_invoice_number: 1,
-      payment_terms_days: 14,
-      late_payment_fee_percentage: 0,
+      invoice_number_prefix: financialSettings.invoiceNumberPrefix || 'INV-',
+      invoice_number_format: financialSettings.invoiceNumberFormat || 'INV-0001',
+      next_invoice_number: financialSettings.nextInvoiceNumber ?? 1,
+      payment_terms_days: financialSettings.paymentTermsDays ?? 14,
+      late_payment_fee_percentage: financialSettings.latePaymentFeePercentage ?? 0,
       
-      fiscal_year_start: 'January',
-      cost_calculation_method: 'FIFO',
-      include_shipping_in_cogs: true,
-      track_expenses_by_category: true,
+      fiscal_year_start: financialSettings.fiscalYearStart || 'January',
+      cost_calculation_method: financialSettings.costCalculationMethod || 'FIFO',
+      include_shipping_in_cogs: financialSettings.includeShippingInCogs ?? true,
+      track_expenses_by_category: financialSettings.trackExpensesByCategory ?? true,
     },
   });
 
-  // Update form when settings are loaded
+  // Reset form when settings load
   useEffect(() => {
-    if (settings.length > 0 && !isLoading) {
-      const settingsMap = settings.reduce((acc, setting) => {
-        acc[setting.key] = setting.value;
-        return acc;
-      }, {} as Record<string, any>);
-
-      const keys = Object.keys(formSchema.shape);
-      keys.forEach((key) => {
-        if (settingsMap[key] !== undefined) {
-          form.setValue(key as keyof FormValues, settingsMap[key], { shouldDirty: false });
-        }
+    if (!isLoading) {
+      form.reset({
+        default_tax_rate_czk: financialSettings.defaultTaxRateCzk ?? 21,
+        default_tax_rate_eur: financialSettings.defaultTaxRateEur ?? 19,
+        auto_apply_tax: financialSettings.autoApplyTax ?? false,
+        exchange_rate_source: financialSettings.exchangeRateSource || "Fawaz Ahmed's free currency API",
+        
+        default_markup_percentage: financialSettings.defaultMarkupPercentage ?? 30,
+        minimum_margin_percentage: financialSettings.minimumMarginPercentage ?? 10,
+        price_rounding: financialSettings.priceRounding || 'none',
+        show_prices_with_vat: financialSettings.showPricesWithVat ?? true,
+        default_vat_rate: financialSettings.defaultVatRate ?? 21,
+        
+        enable_vat: financialSettings.enableVat ?? true,
+        vat_registration_number: financialSettings.vatRegistrationNumber || '',
+        reverse_charge_mechanism: financialSettings.reverseChargeMechanism ?? false,
+        oss_scheme_enabled: financialSettings.ossSchemeEnabled ?? false,
+        
+        base_currency: financialSettings.baseCurrency || 'CZK',
+        auto_update_exchange_rates: financialSettings.autoUpdateExchangeRates ?? true,
+        exchange_rate_api_source: financialSettings.exchangeRateApiSource || 'Frankfurter',
+        exchange_rate_update_frequency: financialSettings.exchangeRateUpdateFrequency || 'daily',
+        
+        invoice_number_prefix: financialSettings.invoiceNumberPrefix || 'INV-',
+        invoice_number_format: financialSettings.invoiceNumberFormat || 'INV-0001',
+        next_invoice_number: financialSettings.nextInvoiceNumber ?? 1,
+        payment_terms_days: financialSettings.paymentTermsDays ?? 14,
+        late_payment_fee_percentage: financialSettings.latePaymentFeePercentage ?? 0,
+        
+        fiscal_year_start: financialSettings.fiscalYearStart || 'January',
+        cost_calculation_method: financialSettings.costCalculationMethod || 'FIFO',
+        include_shipping_in_cogs: financialSettings.includeShippingInCogs ?? true,
+        track_expenses_by_category: financialSettings.trackExpensesByCategory ?? true,
       });
     }
-  }, [settings, isLoading]);
+  }, [isLoading, form, financialSettings]);
 
   const saveMutation = useMutation({
     mutationFn: async (values: FormValues) => {
       const savePromises = Object.entries(values).map(([key, value]) =>
-        apiRequest('POST', `/api/settings`, { key, value, category: 'financial' })
+        apiRequest('POST', `/api/settings`, { key: camelToSnake(key), value: deepCamelToSnake(value), category: 'financial' })
       );
       await Promise.all(savePromises);
     },

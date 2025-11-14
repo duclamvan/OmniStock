@@ -1,8 +1,8 @@
-import { useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Truck, Save, Loader2, Package, Tag, Bell, DollarSign } from "lucide-react";
+import { useSettings } from "@/contexts/SettingsContext";
+import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
 
 const formSchema = z.object({
   quick_select_czk: z.string().default('0,100,150,250'),
@@ -50,63 +52,87 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function ShippingSettings() {
   const { toast } = useToast();
-
-  const { data: settings = [], isLoading } = useQuery<any[]>({
-    queryKey: ['/api/settings'],
-  });
+  const { shippingSettings, isLoading } = useSettings();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      quick_select_czk: '0,100,150,250',
-      quick_select_eur: '0,5,10,13,15,20',
-      default_shipping_method: 'PPL',
-      ppl_default_sender_address: '',
-      dhl_default_sender_address: '',
+      quick_select_czk: shippingSettings.quickSelectCzk || '0,100,150,250',
+      quick_select_eur: shippingSettings.quickSelectEur || '0,5,10,13,15,20',
+      default_shipping_method: shippingSettings.defaultShippingMethod || 'PPL',
+      ppl_default_sender_address: typeof shippingSettings.pplDefaultSenderAddress === 'object' 
+        ? JSON.stringify(shippingSettings.pplDefaultSenderAddress, null, 2) 
+        : shippingSettings.pplDefaultSenderAddress || '',
+      dhl_default_sender_address: typeof shippingSettings.dhlDefaultSenderAddress === 'object'
+        ? JSON.stringify(shippingSettings.dhlDefaultSenderAddress, null, 2)
+        : shippingSettings.dhlDefaultSenderAddress || '',
       
-      available_carriers: 'GLS,PPL,DHL',
-      default_carrier: 'PPL',
-      enable_carrier_rate_shopping: false,
-      auto_select_cheapest_carrier: false,
+      available_carriers: shippingSettings.availableCarriers || 'GLS,PPL,DHL',
+      default_carrier: shippingSettings.defaultCarrier || 'PPL',
+      enable_carrier_rate_shopping: shippingSettings.enableCarrierRateShopping ?? false,
+      auto_select_cheapest_carrier: shippingSettings.autoSelectCheapestCarrier ?? false,
       
-      default_label_size: 'A4',
-      label_format: 'PDF',
-      auto_print_labels: false,
-      include_packing_slip: true,
-      include_invoice: false,
+      default_label_size: shippingSettings.defaultLabelSize || 'A4',
+      label_format: shippingSettings.labelFormat || 'PDF',
+      auto_print_labels: shippingSettings.autoPrintLabels ?? false,
+      include_packing_slip: shippingSettings.includePackingSlip ?? true,
+      include_invoice: shippingSettings.includeInvoice ?? false,
       
-      enable_tracking: true,
-      auto_update_tracking_status: true,
-      tracking_update_frequency_hours: 6,
-      send_tracking_email_to_customer: true,
-      include_estimated_delivery: true,
+      enable_tracking: shippingSettings.enableTracking ?? true,
+      auto_update_tracking_status: shippingSettings.autoUpdateTrackingStatus ?? true,
+      tracking_update_frequency_hours: shippingSettings.trackingUpdateFrequencyHours ?? 6,
+      send_tracking_email_to_customer: shippingSettings.sendTrackingEmailToCustomer ?? true,
+      include_estimated_delivery: shippingSettings.includeEstimatedDelivery ?? true,
       
-      free_shipping_threshold: 0,
-      default_shipping_cost: 0,
-      shipping_cost_currency: 'CZK',
-      volumetric_weight_divisor: 5000,
-      max_package_weight_kg: 30,
-      max_package_dimensions_cm: '120x80x80',
+      free_shipping_threshold: shippingSettings.freeShippingThreshold ?? 0,
+      default_shipping_cost: shippingSettings.defaultShippingCost ?? 0,
+      shipping_cost_currency: shippingSettings.shippingCostCurrency || 'CZK',
+      volumetric_weight_divisor: shippingSettings.volumetricWeightDivisor ?? 5000,
+      max_package_weight_kg: shippingSettings.maxPackageWeightKg ?? 30,
+      max_package_dimensions_cm: shippingSettings.maxPackageDimensionsCm || '120x80x80',
     },
   });
 
-  // Update form when settings are loaded
+  // Reset form when settings load
   useEffect(() => {
-    if (settings.length > 0 && !isLoading) {
-      const settingsMap = settings.reduce((acc, setting) => {
-        acc[setting.key] = setting.value;
-        return acc;
-      }, {} as Record<string, any>);
-
-      const keys = Object.keys(formSchema.shape);
-      keys.forEach((key) => {
-        if (settingsMap[key] !== undefined) {
-          const value = key.includes('address') ? JSON.stringify(settingsMap[key], null, 2) : settingsMap[key];
-          form.setValue(key as keyof FormValues, value, { shouldDirty: false });
-        }
+    if (!isLoading) {
+      form.reset({
+        quick_select_czk: shippingSettings.quickSelectCzk || '0,100,150,250',
+        quick_select_eur: shippingSettings.quickSelectEur || '0,5,10,13,15,20',
+        default_shipping_method: shippingSettings.defaultShippingMethod || 'PPL',
+        ppl_default_sender_address: typeof shippingSettings.pplDefaultSenderAddress === 'object' 
+          ? JSON.stringify(shippingSettings.pplDefaultSenderAddress, null, 2) 
+          : shippingSettings.pplDefaultSenderAddress || '',
+        dhl_default_sender_address: typeof shippingSettings.dhlDefaultSenderAddress === 'object'
+          ? JSON.stringify(shippingSettings.dhlDefaultSenderAddress, null, 2)
+          : shippingSettings.dhlDefaultSenderAddress || '',
+        
+        available_carriers: shippingSettings.availableCarriers || 'GLS,PPL,DHL',
+        default_carrier: shippingSettings.defaultCarrier || 'PPL',
+        enable_carrier_rate_shopping: shippingSettings.enableCarrierRateShopping ?? false,
+        auto_select_cheapest_carrier: shippingSettings.autoSelectCheapestCarrier ?? false,
+        
+        default_label_size: shippingSettings.defaultLabelSize || 'A4',
+        label_format: shippingSettings.labelFormat || 'PDF',
+        auto_print_labels: shippingSettings.autoPrintLabels ?? false,
+        include_packing_slip: shippingSettings.includePackingSlip ?? true,
+        include_invoice: shippingSettings.includeInvoice ?? false,
+        
+        enable_tracking: shippingSettings.enableTracking ?? true,
+        auto_update_tracking_status: shippingSettings.autoUpdateTrackingStatus ?? true,
+        tracking_update_frequency_hours: shippingSettings.trackingUpdateFrequencyHours ?? 6,
+        send_tracking_email_to_customer: shippingSettings.sendTrackingEmailToCustomer ?? true,
+        include_estimated_delivery: shippingSettings.includeEstimatedDelivery ?? true,
+        
+        free_shipping_threshold: shippingSettings.freeShippingThreshold ?? 0,
+        default_shipping_cost: shippingSettings.defaultShippingCost ?? 0,
+        shipping_cost_currency: shippingSettings.shippingCostCurrency || 'CZK',
+        volumetric_weight_divisor: shippingSettings.volumetricWeightDivisor ?? 5000,
+        max_package_weight_kg: shippingSettings.maxPackageWeightKg ?? 30,
+        max_package_dimensions_cm: shippingSettings.maxPackageDimensionsCm || '120x80x80',
       });
     }
-  }, [settings, isLoading]);
+  }, [isLoading, form, shippingSettings]);
 
   const saveMutation = useMutation({
     mutationFn: async (values: FormValues) => {
@@ -120,7 +146,7 @@ export default function ShippingSettings() {
             throw new Error(`Invalid JSON format for ${key}`);
           }
         }
-        return apiRequest('POST', `/api/settings`, { key, value: processedValue, category: 'shipping' });
+        return apiRequest('POST', `/api/settings`, { key: camelToSnake(key), value: deepCamelToSnake(processedValue), category: 'shipping' });
       });
       await Promise.all(savePromises);
     },

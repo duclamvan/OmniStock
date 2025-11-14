@@ -7,6 +7,7 @@ import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 // Removed auth imports
 import { Layout } from "@/components/Layout";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { SettingsProvider } from "@/contexts/SettingsContext";
 import NotFound from "@/pages/not-found";
 // Removed Landing page import
 import Home from "@/pages/Home";
@@ -247,9 +248,11 @@ function AppContent() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AppContent />
-      </TooltipProvider>
+      <SettingsProvider>
+        <TooltipProvider>
+          <AppContent />
+        </TooltipProvider>
+      </SettingsProvider>
     </QueryClientProvider>
   );
 }

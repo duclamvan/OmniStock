@@ -1,8 +1,8 @@
-import { useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Building2, Save, Loader2, Globe, MapPin, Bell } from "lucide-react";
+import { useSettings } from "@/contexts/SettingsContext";
+import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
 
 const formSchema = z.object({
   company_name: z.string().default('Davie Supply'),
@@ -70,68 +72,88 @@ const TIMEZONES = [
 
 export default function GeneralSettings() {
   const { toast } = useToast();
-
-  const { data: settings = [], isLoading } = useQuery<any[]>({
-    queryKey: ['/api/settings'],
-  });
+  const { generalSettings, isLoading } = useSettings();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      company_name: 'Davie Supply',
-      company_email: '',
-      company_phone: '',
-      company_address: '',
-      company_city: '',
-      company_zip: '',
-      company_country: '',
-      company_website: '',
-      company_vat_id: '',
-      company_logo_url: '',
+      company_name: generalSettings.companyName || 'Davie Supply',
+      company_email: generalSettings.companyEmail || '',
+      company_phone: generalSettings.companyPhone || '',
+      company_address: generalSettings.companyAddress || '',
+      company_city: generalSettings.companyCity || '',
+      company_zip: generalSettings.companyZip || '',
+      company_country: generalSettings.companyCountry || '',
+      company_website: generalSettings.companyWebsite || '',
+      company_vat_id: generalSettings.companyVatId || '',
+      company_logo_url: generalSettings.companyLogoUrl || '',
 
-      default_language: 'en',
-      default_date_format: 'DD/MM/YYYY',
-      default_time_format: '24-hour',
-      default_timezone: 'Europe/Prague',
-      number_format: '1,000.00',
+      default_language: generalSettings.defaultLanguage || 'en',
+      default_date_format: generalSettings.defaultDateFormat || 'DD/MM/YYYY',
+      default_time_format: generalSettings.defaultTimeFormat || '24-hour',
+      default_timezone: generalSettings.defaultTimezone || 'Europe/Prague',
+      number_format: generalSettings.numberFormat || '1,000.00',
 
-      default_currency: 'CZK',
-      currency_display: 'symbol',
-      default_priority: 'medium',
-      default_order_location: '',
-      working_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-      business_hours_start: '09:00',
-      business_hours_end: '17:00',
+      default_currency: generalSettings.defaultCurrency || 'CZK',
+      currency_display: generalSettings.currencyDisplay || 'symbol',
+      default_priority: generalSettings.defaultPriority || 'medium',
+      default_order_location: generalSettings.defaultOrderLocation || '',
+      working_days: generalSettings.workingDays || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+      business_hours_start: generalSettings.businessHoursStart || '09:00',
+      business_hours_end: generalSettings.businessHoursEnd || '17:00',
 
-      enable_email_notifications: true,
-      enable_sms_notifications: false,
-      low_stock_alert_email: true,
-      order_status_change_notifications: true,
-      daily_summary_report_email: false,
-      weekly_report_email: true,
+      enable_email_notifications: generalSettings.enableEmailNotifications ?? true,
+      enable_sms_notifications: generalSettings.enableSmsNotifications ?? false,
+      low_stock_alert_email: generalSettings.lowStockAlertEmail ?? true,
+      order_status_change_notifications: generalSettings.orderStatusChangeNotifications ?? true,
+      daily_summary_report_email: generalSettings.dailySummaryReportEmail ?? false,
+      weekly_report_email: generalSettings.weeklyReportEmail ?? true,
     },
   });
 
+  // Reset form when settings load
   useEffect(() => {
-    if (settings.length > 0 && !isLoading) {
-      const settingsMap = settings.reduce((acc, setting) => {
-        acc[setting.key] = setting.value;
-        return acc;
-      }, {} as Record<string, any>);
+    if (!isLoading) {
+      form.reset({
+        company_name: generalSettings.companyName || 'Davie Supply',
+        company_email: generalSettings.companyEmail || '',
+        company_phone: generalSettings.companyPhone || '',
+        company_address: generalSettings.companyAddress || '',
+        company_city: generalSettings.companyCity || '',
+        company_zip: generalSettings.companyZip || '',
+        company_country: generalSettings.companyCountry || '',
+        company_website: generalSettings.companyWebsite || '',
+        company_vat_id: generalSettings.companyVatId || '',
+        company_logo_url: generalSettings.companyLogoUrl || '',
 
-      const keys = Object.keys(formSchema.shape);
-      keys.forEach((key) => {
-        if (settingsMap[key] !== undefined) {
-          form.setValue(key as keyof FormValues, settingsMap[key], { shouldDirty: false });
-        }
+        default_language: generalSettings.defaultLanguage || 'en',
+        default_date_format: generalSettings.defaultDateFormat || 'DD/MM/YYYY',
+        default_time_format: generalSettings.defaultTimeFormat || '24-hour',
+        default_timezone: generalSettings.defaultTimezone || 'Europe/Prague',
+        number_format: generalSettings.numberFormat || '1,000.00',
+
+        default_currency: generalSettings.defaultCurrency || 'CZK',
+        currency_display: generalSettings.currencyDisplay || 'symbol',
+        default_priority: generalSettings.defaultPriority || 'medium',
+        default_order_location: generalSettings.defaultOrderLocation || '',
+        working_days: generalSettings.workingDays || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+        business_hours_start: generalSettings.businessHoursStart || '09:00',
+        business_hours_end: generalSettings.businessHoursEnd || '17:00',
+
+        enable_email_notifications: generalSettings.enableEmailNotifications ?? true,
+        enable_sms_notifications: generalSettings.enableSmsNotifications ?? false,
+        low_stock_alert_email: generalSettings.lowStockAlertEmail ?? true,
+        order_status_change_notifications: generalSettings.orderStatusChangeNotifications ?? true,
+        daily_summary_report_email: generalSettings.dailySummaryReportEmail ?? false,
+        weekly_report_email: generalSettings.weeklyReportEmail ?? true,
       });
     }
-  }, [settings, isLoading]);
+  }, [isLoading, form, generalSettings]);
 
   const saveMutation = useMutation({
     mutationFn: async (values: FormValues) => {
       const savePromises = Object.entries(values).map(([key, value]) =>
-        apiRequest('POST', `/api/settings`, { key, value, category: 'general' })
+        apiRequest('POST', `/api/settings`, { key: camelToSnake(key), value: deepCamelToSnake(value), category: 'general' })
       );
       await Promise.all(savePromises);
     },

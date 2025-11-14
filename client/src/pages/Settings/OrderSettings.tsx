@@ -1,8 +1,8 @@
-import { useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ShoppingCart, Save, Loader2, Package, CheckCircle2, Zap, DollarSign } from "lucide-react";
+import { useSettings } from "@/contexts/SettingsContext";
+import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
 
 const formSchema = z.object({
   // Order Defaults
@@ -58,66 +60,84 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function OrderSettings() {
   const { toast } = useToast();
-
-  const { data: settings = [], isLoading } = useQuery<any[]>({
-    queryKey: ['/api/settings'],
-  });
+  const { orderSettings, isLoading } = useSettings();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      default_payment_method: 'Transfer',
-      default_order_status: 'pending',
-      default_payment_status: 'pending',
-      default_carrier: 'GLS',
-      default_communication_channel: 'E-mail',
-      default_discount_type: 'flat',
-      default_fulfillment_stage: 'pending',
-      auto_assign_orders_to_warehouse: false,
-      auto_create_packing_lists: false,
-      auto_calculate_shipping: false,
-      require_barcode_scan_for_picking: false,
-      enable_ai_carton_packing: false,
-      pick_pack_time_sla_hours: 24,
-      require_customer_email: false,
-      require_shipping_address: true,
-      require_phone_number: false,
-      allow_negative_stock: false,
-      minimum_order_value: 0,
-      block_duplicate_orders_hours: 0,
-      auto_send_order_confirmation_email: false,
-      auto_send_shipping_notification: false,
-      auto_send_delivery_notification: false,
-      auto_update_stock_on_order: true,
-      auto_create_return_request: false,
-      enable_cod: true,
-      default_cod_currency: 'CZK',
-      cod_fee_percentage: 0,
-      cod_fee_fixed_amount: 0,
-      require_cod_signature: true,
+      default_payment_method: orderSettings.defaultPaymentMethod || 'Transfer',
+      default_order_status: orderSettings.defaultOrderStatus || 'pending',
+      default_payment_status: orderSettings.defaultPaymentStatus || 'pending',
+      default_carrier: orderSettings.defaultCarrier || 'GLS',
+      default_communication_channel: orderSettings.defaultCommunicationChannel || 'E-mail',
+      default_discount_type: orderSettings.defaultDiscountType || 'flat',
+      default_fulfillment_stage: orderSettings.defaultFulfillmentStage || 'pending',
+      auto_assign_orders_to_warehouse: orderSettings.autoAssignOrdersToWarehouse ?? false,
+      auto_create_packing_lists: orderSettings.autoCreatePackingLists ?? false,
+      auto_calculate_shipping: orderSettings.autoCalculateShipping ?? false,
+      require_barcode_scan_for_picking: orderSettings.requireBarcodeScanForPicking ?? false,
+      enable_ai_carton_packing: orderSettings.enableAiCartonPacking ?? false,
+      pick_pack_time_sla_hours: orderSettings.pickPackTimeSlaHours ?? 24,
+      require_customer_email: orderSettings.requireCustomerEmail ?? false,
+      require_shipping_address: orderSettings.requireShippingAddress ?? true,
+      require_phone_number: orderSettings.requirePhoneNumber ?? false,
+      allow_negative_stock: orderSettings.allowNegativeStock ?? false,
+      minimum_order_value: orderSettings.minimumOrderValue ?? 0,
+      block_duplicate_orders_hours: orderSettings.blockDuplicateOrdersHours ?? 0,
+      auto_send_order_confirmation_email: orderSettings.autoSendOrderConfirmationEmail ?? false,
+      auto_send_shipping_notification: orderSettings.autoSendShippingNotification ?? false,
+      auto_send_delivery_notification: orderSettings.autoSendDeliveryNotification ?? false,
+      auto_update_stock_on_order: orderSettings.autoUpdateStockOnOrder ?? true,
+      auto_create_return_request: orderSettings.autoCreateReturnRequest ?? false,
+      enable_cod: orderSettings.enableCod ?? true,
+      default_cod_currency: orderSettings.defaultCodCurrency || 'CZK',
+      cod_fee_percentage: orderSettings.codFeePercentage ?? 0,
+      cod_fee_fixed_amount: orderSettings.codFeeFixedAmount ?? 0,
+      require_cod_signature: orderSettings.requireCodSignature ?? true,
     },
   });
 
+  // Reset form when settings load
   useEffect(() => {
-    if (settings.length > 0 && !isLoading) {
-      const settingsMap = settings.reduce((acc, setting) => {
-        acc[setting.key] = setting.value;
-        return acc;
-      }, {} as Record<string, any>);
-
-      const keys = Object.keys(formSchema.shape);
-      keys.forEach((key) => {
-        if (settingsMap[key] !== undefined) {
-          form.setValue(key as keyof FormValues, settingsMap[key], { shouldDirty: false });
-        }
+    if (!isLoading) {
+      form.reset({
+        default_payment_method: orderSettings.defaultPaymentMethod || 'Transfer',
+        default_order_status: orderSettings.defaultOrderStatus || 'pending',
+        default_payment_status: orderSettings.defaultPaymentStatus || 'pending',
+        default_carrier: orderSettings.defaultCarrier || 'GLS',
+        default_communication_channel: orderSettings.defaultCommunicationChannel || 'E-mail',
+        default_discount_type: orderSettings.defaultDiscountType || 'flat',
+        default_fulfillment_stage: orderSettings.defaultFulfillmentStage || 'pending',
+        auto_assign_orders_to_warehouse: orderSettings.autoAssignOrdersToWarehouse ?? false,
+        auto_create_packing_lists: orderSettings.autoCreatePackingLists ?? false,
+        auto_calculate_shipping: orderSettings.autoCalculateShipping ?? false,
+        require_barcode_scan_for_picking: orderSettings.requireBarcodeScanForPicking ?? false,
+        enable_ai_carton_packing: orderSettings.enableAiCartonPacking ?? false,
+        pick_pack_time_sla_hours: orderSettings.pickPackTimeSlaHours ?? 24,
+        require_customer_email: orderSettings.requireCustomerEmail ?? false,
+        require_shipping_address: orderSettings.requireShippingAddress ?? true,
+        require_phone_number: orderSettings.requirePhoneNumber ?? false,
+        allow_negative_stock: orderSettings.allowNegativeStock ?? false,
+        minimum_order_value: orderSettings.minimumOrderValue ?? 0,
+        block_duplicate_orders_hours: orderSettings.blockDuplicateOrdersHours ?? 0,
+        auto_send_order_confirmation_email: orderSettings.autoSendOrderConfirmationEmail ?? false,
+        auto_send_shipping_notification: orderSettings.autoSendShippingNotification ?? false,
+        auto_send_delivery_notification: orderSettings.autoSendDeliveryNotification ?? false,
+        auto_update_stock_on_order: orderSettings.autoUpdateStockOnOrder ?? true,
+        auto_create_return_request: orderSettings.autoCreateReturnRequest ?? false,
+        enable_cod: orderSettings.enableCod ?? true,
+        default_cod_currency: orderSettings.defaultCodCurrency || 'CZK',
+        cod_fee_percentage: orderSettings.codFeePercentage ?? 0,
+        cod_fee_fixed_amount: orderSettings.codFeeFixedAmount ?? 0,
+        require_cod_signature: orderSettings.requireCodSignature ?? true,
       });
     }
-  }, [settings, isLoading]);
+  }, [isLoading, form, orderSettings]);
 
   const saveMutation = useMutation({
     mutationFn: async (values: FormValues) => {
       const savePromises = Object.entries(values).map(([key, value]) =>
-        apiRequest('POST', `/api/settings`, { key, value, category: 'orders' })
+        apiRequest('POST', `/api/settings`, { key: camelToSnake(key), value: deepCamelToSnake(value), category: 'orders' })
       );
       await Promise.all(savePromises);
     },

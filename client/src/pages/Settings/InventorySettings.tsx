@@ -1,8 +1,8 @@
-import { useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Package, Save, Loader2, ClipboardCheck, Warehouse, ShieldCheck, Ruler, Image } from "lucide-react";
+import { useSettings } from "@/contexts/SettingsContext";
+import { useQuery } from "@tanstack/react-query";
+import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
 
 const formSchema = z.object({
   // Product Defaults
@@ -34,7 +37,7 @@ const formSchema = z.object({
   enable_expiration_date_tracking: z.boolean().default(false),
 
   // Warehouse Operations
-  default_warehouse: z.string().default(''),
+  default_warehouse: z.string().default('none'),
   enable_multi_warehouse: z.boolean().default(false),
   auto_assign_warehouse_location: z.boolean().default(false),
   location_format: z.enum(['A-01-01', 'A01-R01-S01', 'Zone-Rack-Bin', 'Custom']).default('A-01-01'),
@@ -69,10 +72,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function InventorySettings() {
   const { toast } = useToast();
-
-  const { data: settings = [], isLoading } = useQuery<any[]>({
-    queryKey: ['/api/settings'],
-  });
+  const { inventorySettings, isLoading } = useSettings();
 
   const { data: warehouses = [] } = useQuery<any[]>({
     queryKey: ['/api/warehouses'],
@@ -82,76 +82,116 @@ export default function InventorySettings() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       // Product Defaults
-      low_stock_threshold: 10,
-      default_product_type: 'regular',
-      enable_barcode_scanning: true,
-      default_packaging_requirement: 'carton',
-      auto_generate_sku: false,
-      sku_prefix: '',
-      track_serial_numbers: false,
+      low_stock_threshold: inventorySettings.lowStockThreshold ?? 10,
+      default_product_type: inventorySettings.defaultProductType || 'regular',
+      enable_barcode_scanning: inventorySettings.enableBarcodeScanning ?? true,
+      default_packaging_requirement: inventorySettings.defaultPackagingRequirement || 'carton',
+      auto_generate_sku: inventorySettings.autoGenerateSku ?? false,
+      sku_prefix: inventorySettings.skuPrefix || '',
+      track_serial_numbers: inventorySettings.trackSerialNumbers ?? false,
 
       // Stock Management
-      stock_adjustment_approval_required: false,
-      allow_negative_stock: false,
-      auto_reorder_point: 5,
-      safety_stock_level: 10,
-      stock_count_frequency_days: 30,
-      enable_batch_lot_tracking: false,
-      enable_expiration_date_tracking: false,
+      stock_adjustment_approval_required: inventorySettings.stockAdjustmentApprovalRequired ?? false,
+      allow_negative_stock: inventorySettings.allowNegativeStock ?? false,
+      auto_reorder_point: inventorySettings.autoReorderPoint ?? 5,
+      safety_stock_level: inventorySettings.safetyStockLevel ?? 10,
+      stock_count_frequency_days: inventorySettings.stockCountFrequencyDays ?? 30,
+      enable_batch_lot_tracking: inventorySettings.enableBatchLotTracking ?? false,
+      enable_expiration_date_tracking: inventorySettings.enableExpirationDateTracking ?? false,
 
       // Warehouse Operations
-      default_warehouse: '',
-      enable_multi_warehouse: false,
-      auto_assign_warehouse_location: false,
-      location_format: 'A-01-01',
-      enable_bin_management: false,
-      enable_zone_management: false,
-      temperature_control_zones: false,
+      default_warehouse: inventorySettings.defaultWarehouse || 'none',
+      enable_multi_warehouse: inventorySettings.enableMultiWarehouse ?? false,
+      auto_assign_warehouse_location: inventorySettings.autoAssignWarehouseLocation ?? false,
+      location_format: inventorySettings.locationFormat || 'A-01-01',
+      enable_bin_management: inventorySettings.enableBinManagement ?? false,
+      enable_zone_management: inventorySettings.enableZoneManagement ?? false,
+      temperature_control_zones: inventorySettings.temperatureControlZones ?? false,
 
       // Product Quality
-      enable_quality_control: false,
-      qc_sampling_rate: 10,
-      damage_report_required: false,
-      photo_evidence_required: false,
-      condition_tracking: 'good',
+      enable_quality_control: inventorySettings.enableQualityControl ?? false,
+      qc_sampling_rate: inventorySettings.qcSamplingRate ?? 10,
+      damage_report_required: inventorySettings.damageReportRequired ?? false,
+      photo_evidence_required: inventorySettings.photoEvidenceRequired ?? false,
+      condition_tracking: inventorySettings.conditionTracking || 'good',
 
       // Measurement Units
-      default_length_unit: 'cm',
-      default_weight_unit: 'kg',
-      default_volume_unit: 'L',
-      decimal_places_weight: 2,
-      decimal_places_dimensions: 2,
+      default_length_unit: inventorySettings.defaultLengthUnit || 'cm',
+      default_weight_unit: inventorySettings.defaultWeightUnit || 'kg',
+      default_volume_unit: inventorySettings.defaultVolumeUnit || 'L',
+      decimal_places_weight: inventorySettings.decimalPlacesWeight ?? 2,
+      decimal_places_dimensions: inventorySettings.decimalPlacesDimensions ?? 2,
 
       // Catalog Settings
-      enable_product_variants: true,
-      enable_bundles: true,
-      enable_services: true,
-      max_images_per_product: 10,
-      auto_compress_images: true,
-      image_quality: 80,
+      enable_product_variants: inventorySettings.enableProductVariants ?? true,
+      enable_bundles: inventorySettings.enableBundles ?? true,
+      enable_services: inventorySettings.enableServices ?? true,
+      max_images_per_product: inventorySettings.maxImagesPerProduct ?? 10,
+      auto_compress_images: inventorySettings.autoCompressImages ?? true,
+      image_quality: inventorySettings.imageQuality ?? 80,
     },
   });
 
+  // Reset form when settings load
   useEffect(() => {
-    if (settings.length > 0 && !isLoading) {
-      const settingsMap = settings.reduce((acc, setting) => {
-        acc[setting.key] = setting.value;
-        return acc;
-      }, {} as Record<string, any>);
+    if (!isLoading) {
+      form.reset({
+        // Product Defaults
+        low_stock_threshold: inventorySettings.lowStockThreshold ?? 10,
+        default_product_type: inventorySettings.defaultProductType || 'regular',
+        enable_barcode_scanning: inventorySettings.enableBarcodeScanning ?? true,
+        default_packaging_requirement: inventorySettings.defaultPackagingRequirement || 'carton',
+        auto_generate_sku: inventorySettings.autoGenerateSku ?? false,
+        sku_prefix: inventorySettings.skuPrefix || '',
+        track_serial_numbers: inventorySettings.trackSerialNumbers ?? false,
 
-      const keys = Object.keys(formSchema.shape);
-      keys.forEach((key) => {
-        if (settingsMap[key] !== undefined) {
-          form.setValue(key as keyof FormValues, settingsMap[key], { shouldDirty: false });
-        }
+        // Stock Management
+        stock_adjustment_approval_required: inventorySettings.stockAdjustmentApprovalRequired ?? false,
+        allow_negative_stock: inventorySettings.allowNegativeStock ?? false,
+        auto_reorder_point: inventorySettings.autoReorderPoint ?? 5,
+        safety_stock_level: inventorySettings.safetyStockLevel ?? 10,
+        stock_count_frequency_days: inventorySettings.stockCountFrequencyDays ?? 30,
+        enable_batch_lot_tracking: inventorySettings.enableBatchLotTracking ?? false,
+        enable_expiration_date_tracking: inventorySettings.enableExpirationDateTracking ?? false,
+
+        // Warehouse Operations
+        default_warehouse: inventorySettings.defaultWarehouse || 'none',
+        enable_multi_warehouse: inventorySettings.enableMultiWarehouse ?? false,
+        auto_assign_warehouse_location: inventorySettings.autoAssignWarehouseLocation ?? false,
+        location_format: inventorySettings.locationFormat || 'A-01-01',
+        enable_bin_management: inventorySettings.enableBinManagement ?? false,
+        enable_zone_management: inventorySettings.enableZoneManagement ?? false,
+        temperature_control_zones: inventorySettings.temperatureControlZones ?? false,
+
+        // Product Quality
+        enable_quality_control: inventorySettings.enableQualityControl ?? false,
+        qc_sampling_rate: inventorySettings.qcSamplingRate ?? 10,
+        damage_report_required: inventorySettings.damageReportRequired ?? false,
+        photo_evidence_required: inventorySettings.photoEvidenceRequired ?? false,
+        condition_tracking: inventorySettings.conditionTracking || 'good',
+
+        // Measurement Units
+        default_length_unit: inventorySettings.defaultLengthUnit || 'cm',
+        default_weight_unit: inventorySettings.defaultWeightUnit || 'kg',
+        default_volume_unit: inventorySettings.defaultVolumeUnit || 'L',
+        decimal_places_weight: inventorySettings.decimalPlacesWeight ?? 2,
+        decimal_places_dimensions: inventorySettings.decimalPlacesDimensions ?? 2,
+
+        // Catalog Settings
+        enable_product_variants: inventorySettings.enableProductVariants ?? true,
+        enable_bundles: inventorySettings.enableBundles ?? true,
+        enable_services: inventorySettings.enableServices ?? true,
+        max_images_per_product: inventorySettings.maxImagesPerProduct ?? 10,
+        auto_compress_images: inventorySettings.autoCompressImages ?? true,
+        image_quality: inventorySettings.imageQuality ?? 80,
       });
     }
-  }, [settings, isLoading]);
+  }, [isLoading, form, inventorySettings]);
 
   const saveMutation = useMutation({
     mutationFn: async (values: FormValues) => {
       const savePromises = Object.entries(values).map(([key, value]) =>
-        apiRequest('POST', `/api/settings`, { key, value, category: 'inventory' })
+        apiRequest('POST', `/api/settings`, { key: camelToSnake(key), value: deepCamelToSnake(value), category: 'inventory' })
       );
       await Promise.all(savePromises);
     },
@@ -549,7 +589,7 @@ export default function InventorySettings() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {warehouses.map((warehouse: any) => (
                           <SelectItem key={warehouse.id} value={warehouse.id.toString()}>
                             {warehouse.name}
