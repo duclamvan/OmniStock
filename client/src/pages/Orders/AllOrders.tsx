@@ -746,13 +746,13 @@ export default function AllOrders({ filter }: AllOrdersProps) {
           <Badge
             className={cn(
               "text-xs font-medium",
-              order.orderStatus === 'pending' ? 'bg-amber-100 text-amber-700 border-amber-200' :
-              order.orderStatus === 'awaiting_stock' ? 'bg-orange-100 text-orange-700 border-orange-200' :
-              order.orderStatus === 'to_fulfill' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-              order.orderStatus === 'ready_to_ship' ? 'bg-cyan-100 text-cyan-700 border-cyan-200' :
-              order.orderStatus === 'shipped' ? 'bg-purple-100 text-purple-700 border-purple-200' :
-              order.orderStatus === 'delivered' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
-              order.orderStatus === 'cancelled' ? 'bg-red-100 text-red-700 border-red-200' :
+              order.orderStatus === 'pending' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-200 border-amber-200 dark:border-amber-700' :
+              order.orderStatus === 'awaiting_stock' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200 border-orange-200 dark:border-orange-700' :
+              order.orderStatus === 'to_fulfill' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 border-blue-200 dark:border-blue-700' :
+              order.orderStatus === 'ready_to_ship' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-200 border-cyan-200 dark:border-cyan-700' :
+              order.orderStatus === 'shipped' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-200 border-purple-200 dark:border-purple-700' :
+              order.orderStatus === 'delivered' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-200 border-emerald-200 dark:border-emerald-700' :
+              order.orderStatus === 'cancelled' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-200 border-red-200 dark:border-red-700' :
               'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
             )}
           >
@@ -770,9 +770,9 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         <Badge
           className={cn(
             "text-xs font-medium",
-            order.paymentStatus === 'paid' ? 'bg-green-100 text-green-700 border-green-200' :
-            order.paymentStatus === 'pending' ? 'bg-amber-100 text-amber-700 border-amber-200' :
-            order.paymentStatus === 'pay_later' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+            order.paymentStatus === 'paid' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-200 border-green-200 dark:border-green-700' :
+            order.paymentStatus === 'pending' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-200 border-amber-200 dark:border-amber-700' :
+            order.paymentStatus === 'pay_later' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 border-blue-200 dark:border-blue-700' :
             'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
           )}
         >
@@ -812,7 +812,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         return (
           <span className={cn(
             "font-medium",
-            profit >= 0 ? 'text-green-600' : 'text-red-600'
+            profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
           )}>
             {formatCurrency(profit, order.currency)}
           </span>
@@ -1474,7 +1474,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                             {order.customer?.type === 'vip' && (
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 text-xs cursor-pointer">
+                                  <Badge className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700 text-xs cursor-pointer">
                                     <Star className="h-3 w-3 mr-1" />
                                     VIP
                                   </Badge>
@@ -1492,7 +1492,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                 return (
                                   <Popover>
                                     <PopoverTrigger asChild>
-                                      <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-900 border-purple-300 text-xs cursor-pointer">
+                                      <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 text-purple-900 dark:text-purple-200 border-purple-300 dark:border-purple-700 text-xs cursor-pointer">
                                         <Gem className="h-3 w-3 mr-1" />
                                         Diamond
                                       </Badge>
@@ -1520,7 +1520,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                 return (
                                   <Popover>
                                     <PopoverTrigger asChild>
-                                      <Badge className="bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border-amber-300 text-xs cursor-pointer">
+                                      <Badge className="bg-gradient-to-r from-amber-100 to-yellow-100 dark:from-amber-900/30 dark:to-yellow-900/30 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700 text-xs cursor-pointer">
                                         <Medal className="h-3 w-3 mr-1" />
                                         Gold
                                       </Badge>
@@ -1538,7 +1538,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                             {order.customer?.customerRank === 'TOP10' && (
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <Badge className="bg-yellow-50 text-yellow-700 border-yellow-300 text-xs cursor-pointer">
+                                  <Badge className="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700 text-xs cursor-pointer">
                                     <Trophy className="h-3 w-3 mr-1" />
                                     TOP 10{order.customer?.country ? ` in ${order.customer.country}` : ''}
                                   </Badge>
@@ -1551,7 +1551,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                             {order.customer?.customerRank === 'TOP50' && (
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <Badge className="bg-blue-50 text-blue-700 border-blue-300 text-xs cursor-pointer">
+                                  <Badge className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 border-blue-300 dark:border-blue-700 text-xs cursor-pointer">
                                     <Award className="h-3 w-3 mr-1" />
                                     TOP 50{order.customer?.country ? ` in ${order.customer.country}` : ''}
                                   </Badge>
@@ -1579,7 +1579,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                             {order.paymentStatus === 'pay_later' && (
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <Badge className="bg-purple-50 text-purple-700 border-purple-300 text-xs cursor-pointer">
+                                  <Badge className="bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-200 border-purple-300 dark:border-purple-700 text-xs cursor-pointer">
                                     <Clock className="h-3 w-3 mr-1" />
                                     Pay Later
                                   </Badge>
@@ -1607,7 +1607,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                               badges.push(
                                 <Popover key="new">
                                   <PopoverTrigger asChild>
-                                    <Badge className="bg-green-50 text-green-700 border-green-300 text-xs cursor-pointer">
+                                    <Badge className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-200 border-green-300 dark:border-green-700 text-xs cursor-pointer">
                                       <Sparkles className="h-3 w-3 mr-1" />
                                       New Customer
                                     </Badge>
@@ -1624,7 +1624,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                               badges.push(
                                 <Popover key="first">
                                   <PopoverTrigger asChild>
-                                    <Badge className="bg-cyan-50 text-cyan-700 border-cyan-300 text-xs cursor-pointer">
+                                    <Badge className="bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-200 border-cyan-300 dark:border-cyan-700 text-xs cursor-pointer">
                                       <Sparkles className="h-3 w-3 mr-1" />
                                       First Timer
                                     </Badge>
@@ -1641,7 +1641,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                               badges.push(
                                 <Popover key="superloyal">
                                   <PopoverTrigger asChild>
-                                    <Badge className="bg-rose-50 text-rose-700 border-rose-300 text-xs cursor-pointer">
+                                    <Badge className="bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-200 border-rose-300 dark:border-rose-700 text-xs cursor-pointer">
                                       <Heart className="h-3 w-3 mr-1" />
                                       Super Loyal
                                     </Badge>
@@ -1657,7 +1657,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                               badges.push(
                                 <Popover key="loyal">
                                   <PopoverTrigger asChild>
-                                    <Badge className="bg-indigo-50 text-indigo-700 border-indigo-300 text-xs cursor-pointer">
+                                    <Badge className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-200 border-indigo-300 dark:border-indigo-700 text-xs cursor-pointer">
                                       <RefreshCw className="h-3 w-3 mr-1" />
                                       Loyal Customer
                                     </Badge>
@@ -1674,7 +1674,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                               badges.push(
                                 <Popover key="risk">
                                   <PopoverTrigger asChild>
-                                    <Badge className="bg-orange-50 text-orange-700 border-orange-300 text-xs cursor-pointer">
+                                    <Badge className="bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200 border-orange-300 dark:border-orange-700 text-xs cursor-pointer">
                                       <AlertTriangle className="h-3 w-3 mr-1" />
                                       At Risk
                                     </Badge>
@@ -1691,7 +1691,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                               badges.push(
                                 <Popover key="highvalue">
                                   <PopoverTrigger asChild>
-                                    <Badge className="bg-emerald-50 text-emerald-700 border-emerald-300 text-xs cursor-pointer">
+                                    <Badge className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700 text-xs cursor-pointer">
                                       <TrendingUp className="h-3 w-3 mr-1" />
                                       High Value
                                     </Badge>
@@ -1852,11 +1852,11 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                             {(() => {
                               // Color based on order status (matching Add/Edit Order colors)
                               const statusColors: Record<string, string> = {
-                                'pending': 'bg-amber-500',        // Amber - Waiting
-                                'to_fulfill': 'bg-blue-500',      // Blue - Action needed
-                                'ready_to_ship': 'bg-blue-500',   // Blue - Ready (same as to_fulfill)
-                                'shipped': 'bg-green-500',        // Green - Completed
-                                'cancelled': 'bg-red-500',        // Red - Cancelled
+                                'pending': 'bg-amber-500 dark:bg-amber-400',        // Amber - Waiting
+                                'to_fulfill': 'bg-blue-500 dark:bg-blue-400',      // Blue - Action needed
+                                'ready_to_ship': 'bg-blue-500 dark:bg-blue-400',   // Blue - Ready (same as to_fulfill)
+                                'shipped': 'bg-green-500 dark:bg-green-400',        // Green - Completed
+                                'cancelled': 'bg-red-500 dark:bg-red-400',        // Red - Cancelled
                               };
                               const bulletColor = statusColors[order.orderStatus] || 'bg-slate-500';
                               
@@ -1870,11 +1870,11 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                             <Badge
                               className={cn(
                                 "text-xs h-5 px-1.5 border",
-                                order.orderStatus === 'pending' ? 'bg-amber-100 text-amber-800 border-amber-200' :
-                                order.orderStatus === 'to_fulfill' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                                order.orderStatus === 'ready_to_ship' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                                order.orderStatus === 'shipped' ? 'bg-green-100 text-green-800 border-green-200' :
-                                order.orderStatus === 'cancelled' ? 'bg-red-100 text-red-800 border-red-200' :
+                                order.orderStatus === 'pending' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-700' :
+                                order.orderStatus === 'to_fulfill' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700' :
+                                order.orderStatus === 'ready_to_ship' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700' :
+                                order.orderStatus === 'shipped' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border-green-200 dark:border-green-700' :
+                                order.orderStatus === 'cancelled' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 border-red-200 dark:border-red-700' :
                                 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                               )}
                             >
@@ -1883,9 +1883,9 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                             <Badge
                               className={cn(
                                 "text-xs h-5 px-1.5 border",
-                                order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800 border-green-200' :
-                                order.paymentStatus === 'pending' ? 'bg-amber-100 text-amber-800 border-amber-200' :
-                                order.paymentStatus === 'pay_later' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                order.paymentStatus === 'paid' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border-green-200 dark:border-green-700' :
+                                order.paymentStatus === 'pending' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-700' :
+                                order.paymentStatus === 'pay_later' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700' :
                                 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                               )}
                             >
@@ -1898,14 +1898,14 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                               // Generate consistent color based on customer name hash
                               const hash = customerName.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
                               const colors = [
-                                'text-blue-600',
-                                'text-emerald-600', 
-                                'text-violet-600',
-                                'text-rose-600',
-                                'text-amber-600',
-                                'text-cyan-600',
-                                'text-pink-600',
-                                'text-indigo-600',
+                                'text-blue-600 dark:text-blue-400',
+                                'text-emerald-600 dark:text-emerald-400', 
+                                'text-violet-600 dark:text-violet-400',
+                                'text-rose-600 dark:text-rose-400',
+                                'text-amber-600 dark:text-amber-400',
+                                'text-cyan-600 dark:text-cyan-400',
+                                'text-pink-600 dark:text-pink-400',
+                                'text-indigo-600 dark:text-indigo-400',
                               ];
                               const colorClass = colors[hash % colors.length];
                               
