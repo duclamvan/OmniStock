@@ -130,7 +130,10 @@ export function MobileHeader({
         </div>
 
         {/* Center: Search (expandable) */}
-        <div className="flex-1 mx-2 flex items-center justify-center">
+        <div className={cn(
+          "mx-2 flex items-center justify-center transition-all duration-300",
+          isCollapsed && !isSearchExpanded ? "flex-1" : "flex-1 min-w-0"
+        )}>
           {isCollapsed && !isSearchExpanded ? (
             // Collapsed: Show search button
             <Button
@@ -144,8 +147,8 @@ export function MobileHeader({
               <span className="text-sm text-gray-700 dark:text-gray-300">Search</span>
             </Button>
           ) : (
-            // Expanded: Show full search input
-            <div className="w-full max-w-md transition-all duration-300">
+            // Expanded: Show full search input - constrained to not overflow
+            <div className="w-full max-w-[200px] sm:max-w-xs transition-all duration-300">
               <GlobalSearch 
                 onFocus={() => setIsSearchExpanded(true)}
                 onBlur={() => setIsSearchExpanded(false)}
