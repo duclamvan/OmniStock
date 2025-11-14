@@ -189,11 +189,11 @@ export function Sidebar() {
   };
 
   return (
-    <div className="w-64 bg-white shadow-lg border-r border-slate-200 flex flex-col">
+    <div className="w-64 bg-white dark:bg-slate-900 shadow-lg dark:shadow-gray-900/50 border-r border-slate-200 dark:border-gray-700 flex flex-col">
       {/* Logo/Brand */}
-      <div className="p-6 border-b border-slate-200">
-        <h1 className="text-2xl font-bold text-primary">Davie</h1>
-        <p className="text-sm text-slate-500">Supply Management</p>
+      <div className="p-6 border-b border-slate-200 dark:border-gray-700">
+        <h1 className="text-2xl font-bold text-primary dark:text-primary">Davie</h1>
+        <p className="text-sm text-slate-500 dark:text-gray-400">Supply Management</p>
       </div>
 
       {/* Navigation */}
@@ -221,8 +221,8 @@ export function Sidebar() {
                       <Button
                         variant="ghost"
                         className={cn(
-                          "w-full justify-between text-left font-medium",
-                          isActive && "bg-emerald-50 text-primary border-r-2 border-primary"
+                          "w-full justify-between text-left font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
+                          isActive && "bg-emerald-50 dark:bg-emerald-900/20 text-primary dark:text-primary border-r-2 border-primary dark:border-primary"
                         )}
                       >
                       <div className="flex items-center">
@@ -253,8 +253,8 @@ export function Sidebar() {
                                 variant="ghost"
                                 size="sm"
                                 className={cn(
-                                  "w-full justify-start text-slate-600",
-                                  isChildActive && "bg-slate-100 text-slate-900"
+                                  "w-full justify-start text-slate-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800",
+                                  isChildActive && "bg-slate-100 dark:bg-gray-800 text-slate-900 dark:text-gray-100"
                                 )}
                               >
                                 {child.name}
@@ -285,8 +285,8 @@ export function Sidebar() {
                   <Button
                     variant="ghost"
                     className={cn(
-                      "w-full justify-start font-medium",
-                      isActive && "bg-emerald-50 text-primary border-r-2 border-primary"
+                      "w-full justify-start font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
+                      isActive && "bg-emerald-50 dark:bg-emerald-900/20 text-primary dark:text-primary border-r-2 border-primary dark:border-primary"
                     )}
                   >
                     <item.icon className="mr-3 h-5 w-5" />

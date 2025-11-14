@@ -556,13 +556,13 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge className="bg-amber-100 text-amber-800">Pending</Badge>;
+        return <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-700">Pending</Badge>;
       case 'to_fulfill':
-        return <Badge className="bg-blue-100 text-blue-800">To Fulfill</Badge>;
+        return <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700">To Fulfill</Badge>;
       case 'ready_to_ship':
-        return <Badge className="bg-blue-100 text-blue-800">Ready to Ship</Badge>;
+        return <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700">Ready to Ship</Badge>;
       case 'shipped':
-        return <Badge className="bg-green-100 text-green-800">Shipped</Badge>;
+        return <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border-green-200 dark:border-green-700">Shipped</Badge>;
       case 'cancelled':
         return <Badge variant="destructive">Cancelled</Badge>;
       default:
@@ -573,11 +573,11 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const getPaymentStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge className="bg-amber-100 text-amber-800">Pending</Badge>;
+        return <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-700">Pending</Badge>;
       case 'paid':
-        return <Badge className="bg-green-100 text-green-800">Paid</Badge>;
+        return <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border-green-200 dark:border-green-700">Paid</Badge>;
       case 'pay_later':
-        return <Badge className="bg-blue-100 text-blue-800">Pay Later</Badge>;
+        return <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700">Pay Later</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -1436,20 +1436,20 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                 render: (order) => (
                   <div className="space-y-4 max-w-4xl" data-expanded-order={order.id}>
                     {/* Customer Info Header */}
-                    <div className="flex items-center gap-3 pb-3 border-b border-slate-200">
+                    <div className="flex items-center gap-3 pb-3 border-b border-slate-200 dark:border-slate-700">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           {order.customerId ? (
                             <Link 
                               href={`/customers/${order.customerId}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="group text-base font-semibold text-slate-900 hover:text-blue-600 transition-colors inline-flex items-center gap-1"
+                              className="group text-base font-semibold text-slate-900 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-flex items-center gap-1"
                             >
                               {order.customer?.name || 'Unknown Customer'}
                               <ExternalLink className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </Link>
                           ) : (
-                            <h3 className="text-base font-semibold text-slate-900">
+                            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
                               {order.customer?.name || 'Unknown Customer'}
                             </h3>
                           )}
@@ -1460,7 +1460,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                               e.stopPropagation();
                               toggleBadges();
                             }}
-                            className="h-6 w-6 p-0 text-slate-300 hover:text-slate-700 transition-all opacity-50 hover:opacity-100"
+                            className="h-6 w-6 p-0 text-slate-300 dark:text-slate-600 hover:text-slate-700 dark:hover:text-slate-300 transition-all opacity-50 hover:opacity-100"
                             data-testid="button-toggle-badges"
                           >
                             <ChevronDown className={`h-4 w-4 transition-transform ${showBadges ? '' : 'rotate-180'}`} />
@@ -1713,26 +1713,26 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     {/* Order Items */}
                     {order.items && order.items.length > 0 && (
                       <div>
-                        <h4 className="text-sm font-semibold text-slate-900 mb-3">Order Items</h4>
+                        <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Order Items</h4>
                         <div className="space-y-2">
                           {order.items.map((item: any, index: number) => (
                             <div
                               key={item.id || index}
-                              className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
+                              className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-800 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                             >
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm text-slate-900">
-                                  <span className="text-blue-600">{item.quantity}×</span> {item.productName}
+                                <p className="font-medium text-sm text-slate-900 dark:text-slate-100">
+                                  <span className="text-blue-600 dark:text-blue-400">{item.quantity}×</span> {item.productName}
                                 </p>
                                 {item.sku && (
-                                  <p className="text-xs text-slate-500 mt-0.5">SKU: {item.sku}</p>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">SKU: {item.sku}</p>
                                 )}
                               </div>
                               <div className="text-right ml-4">
-                                <p className="font-semibold text-sm text-slate-900">
+                                <p className="font-semibold text-sm text-slate-900 dark:text-slate-100">
                                   {formatCurrency(item.total || 0, order.currency || 'EUR')}
                                 </p>
-                                <p className="text-xs text-slate-500">
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
                                   {formatCurrency(item.price || 0, order.currency || 'EUR')} each
                                 </p>
                               </div>
@@ -1743,19 +1743,19 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     )}
 
                     {/* Order Summary */}
-                    <div className="bg-gradient-to-br from-blue-50 to-slate-50 rounded-lg p-4">
-                      <h4 className="text-sm font-semibold text-slate-900 mb-3">Order Summary</h4>
+                    <div className="bg-gradient-to-br from-blue-50 to-slate-50 dark:from-blue-950/30 dark:to-slate-800/30 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+                      <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Order Summary</h4>
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-slate-600">Subtotal</span>
-                          <span className="font-medium text-slate-900">
+                          <span className="text-slate-600 dark:text-slate-400">Subtotal</span>
+                          <span className="font-medium text-slate-900 dark:text-slate-100">
                             {formatCurrency(order.subtotal || 0, order.currency || 'EUR')}
                           </span>
                         </div>
                         {order.discountValue > 0 && (
                           <div className="flex justify-between text-sm">
-                            <span className="text-slate-600">Discount</span>
-                            <span className="font-medium text-green-600">
+                            <span className="text-slate-600 dark:text-slate-400">Discount</span>
+                            <span className="font-medium text-green-600 dark:text-green-400">
                               -{formatCurrency(
                                 order.discountType === 'rate' 
                                   ? (order.subtotal * order.discountValue / 100) 
@@ -1767,15 +1767,15 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                         )}
                         {order.shippingCost > 0 && (
                           <div className="flex justify-between text-sm">
-                            <span className="text-slate-600">Shipping</span>
-                            <span className="font-medium text-slate-900">
+                            <span className="text-slate-600 dark:text-slate-400">Shipping</span>
+                            <span className="font-medium text-slate-900 dark:text-slate-100">
                               {formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}
                             </span>
                           </div>
                         )}
-                        <div className="flex justify-between text-base font-bold border-t border-slate-300 pt-2 mt-2">
-                          <span className="text-slate-900">Total</span>
-                          <span className="text-blue-600">
+                        <div className="flex justify-between text-base font-bold border-t border-slate-300 dark:border-slate-600 pt-2 mt-2">
+                          <span className="text-slate-900 dark:text-slate-100">Total</span>
+                          <span className="text-blue-600 dark:text-blue-400">
                             {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
                           </span>
                         </div>

@@ -159,8 +159,39 @@
 }
 
 :root {
+  /* ===== Light Mode - Base Colors ===== */
+  /* Foundation layer - Used as document background and primary text */
   --background: hsl(0, 0%, 100%);
   --foreground: hsl(222, 84%, 4.9%);
+  
+  /* ===== Surface Colors ===== */
+  /* Used for cards, panels, and elevated content to create visual hierarchy */
+  --surface-primary: hsl(0, 0%, 100%);        /* Main background for cards */
+  --surface-secondary: hsl(210, 40%, 98%);    /* Secondary surfaces, subtle backgrounds */
+  --surface-elevated: hsl(0, 0%, 100%);       /* Elevated surfaces with higher shadows */
+  
+  /* ===== Text Hierarchy ===== */
+  /* Ordered by prominence - maintain contrast ratios for accessibility */
+  --text-primary: hsl(222, 84%, 4.9%);        /* Primary text, headings (AA+ contrast) */
+  --text-secondary: hsl(215, 25%, 26.7%);     /* Secondary text, descriptions */
+  --text-muted: hsl(215, 16%, 46.9%);         /* Muted text, placeholders */
+  --text-subtle: hsl(215, 16%, 60%);          /* Very subtle text, disabled states */
+  
+  /* ===== Border Colors ===== */
+  /* For dividers, outlines, and separators */
+  --border-default: hsl(214, 32%, 91%);       /* Standard borders */
+  --border-subtle: hsl(210, 40%, 95%);        /* Subtle borders, light dividers */
+  --border-emphasis: hsl(214, 32%, 85%);      /* Emphasized borders, focus rings */
+  
+  /* ===== Interactive State Colors ===== */
+  /* Consistent hover, active, and disabled states across components */
+  --state-hover: hsl(210, 40%, 96%);          /* Hover background */
+  --state-active: hsl(210, 40%, 92%);         /* Active/pressed background */
+  --state-disabled: hsl(210, 40%, 98%);       /* Disabled background */
+  --state-disabled-text: hsl(215, 16%, 60%);  /* Disabled text */
+  
+  /* ===== Legacy Shadcn Variables ===== */
+  /* Maintained for backwards compatibility with existing components */
   --muted: hsl(210, 40%, 98%);
   --muted-foreground: hsl(215, 16%, 46.9%);
   --popover: hsl(0, 0%, 100%);
@@ -185,7 +216,7 @@
   --chart-4: hsl(200, 85%, 45%);
   --chart-5: hsl(175, 70%, 50%);
   
-  /* Mobile Header Heights */
+  /* ===== Mobile Header Configuration ===== */
   --mobile-header-height-expanded: 3.5rem; /* 56px - 14 units */
   --mobile-header-height-collapsed: 3rem; /* 48px - 12 units */
   --mobile-header-height-current: var(--mobile-header-height-expanded);
@@ -193,21 +224,52 @@
 }
 
 .dark {
+  /* ===== Dark Mode - Base Colors ===== */
+  /* Foundation layer - Dark backgrounds with high contrast text */
   --background: hsl(222, 84%, 4.9%);
   --foreground: hsl(210, 40%, 98%);
+  
+  /* ===== Surface Colors ===== */
+  /* Elevated surfaces create depth with lighter backgrounds in dark mode */
+  --surface-primary: hsl(220, 26%, 14%);      /* Main background for cards - elevated from page bg */
+  --surface-secondary: hsl(217, 32%, 17%);    /* Secondary surfaces, subtle backgrounds */
+  --surface-elevated: hsl(220, 26%, 18%);     /* Elevated surfaces with higher shadows */
+  
+  /* ===== Text Hierarchy ===== */
+  /* Reversed brightness - lighter text on dark backgrounds */
+  --text-primary: hsl(210, 40%, 98%);         /* Primary text, headings (AA+ contrast) */
+  --text-secondary: hsl(214, 32%, 80%);       /* Secondary text, descriptions */
+  --text-muted: hsl(215, 16%, 65%);           /* Muted text, placeholders */
+  --text-subtle: hsl(215, 16%, 50%);          /* Very subtle text, disabled states */
+  
+  /* ===== Border Colors ===== */
+  /* Lighter borders create subtle separation in dark mode */
+  --border-default: hsl(217, 32%, 24%);       /* Standard borders */
+  --border-subtle: hsl(217, 32%, 20%);        /* Subtle borders, light dividers */
+  --border-emphasis: hsl(217, 32%, 30%);      /* Emphasized borders, focus rings */
+  
+  /* ===== Interactive State Colors ===== */
+  /* Lighter backgrounds indicate interactive states */
+  --state-hover: hsl(217, 32%, 20%);          /* Hover background */
+  --state-active: hsl(217, 32%, 24%);         /* Active/pressed background */
+  --state-disabled: hsl(217, 32%, 12%);       /* Disabled background */
+  --state-disabled-text: hsl(215, 16%, 40%);  /* Disabled text */
+  
+  /* ===== Legacy Shadcn Variables ===== */
+  /* Maintained for backwards compatibility with existing components */
   --muted: hsl(217, 32%, 17%);
   --muted-foreground: hsl(215, 16%, 46.9%);
-  --popover: hsl(222, 84%, 4.9%);
+  --popover: hsl(220, 26%, 14%);
   --popover-foreground: hsl(210, 40%, 98%);
-  --card: hsl(222, 84%, 4.9%);
+  --card: hsl(220, 26%, 14%);
   --card-foreground: hsl(210, 40%, 98%);
-  --border: hsl(217, 32%, 17%);
-  --input: hsl(217, 32%, 17%);
+  --border: hsl(217, 32%, 24%);
+  --input: hsl(217, 32%, 24%);
   --primary: hsl(188, 78%, 50%);
   --primary-foreground: hsl(0, 0%, 100%);
   --secondary: hsl(217, 32%, 17%);
   --secondary-foreground: hsl(210, 40%, 98%);
-  --accent: hsl(217, 32%, 17%);
+  --accent: hsl(217, 32%, 20%);
   --accent-foreground: hsl(210, 40%, 98%);
   --destructive: hsl(0, 62%, 30%);
   --destructive-foreground: hsl(210, 40%, 98%);

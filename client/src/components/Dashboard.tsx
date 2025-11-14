@@ -274,15 +274,15 @@ export function Dashboard() {
   return (
     <div className="space-y-4 sm:space-y-6 lg:space-y-8">
       {/* Test Notification System - Remove in production */}
-      <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+      <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-blue-200 dark:border-blue-800">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Bell className="h-5 w-5" />
+          <CardTitle className="text-lg flex items-center gap-2 text-gray-900 dark:text-gray-100">
+            <Bell className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             Test Notification System
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-gray-600 mb-4">Click buttons to test the stacked notification system (max 3 visible)</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Click buttons to test the stacked notification system (max 3 visible)</p>
           <div className="flex flex-wrap gap-2">
             <Button
               onClick={triggerSuccessToast}
@@ -367,14 +367,14 @@ export function Dashboard() {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-mobile-sm font-medium text-slate-600">Orders to Fulfill</p>
-                <p className="text-mobile-2xl font-bold text-slate-900 mt-1">
+                <p className="text-mobile-sm font-medium text-slate-600 dark:text-gray-400">Orders to Fulfill</p>
+                <p className="text-mobile-2xl font-bold text-slate-900 dark:text-gray-100 mt-1">
                   {metrics?.fulfillOrdersToday || 0}+
                 </p>
-                <p className="text-xs text-slate-500 mt-1">Orders to fulfill</p>
+                <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">Orders to fulfill</p>
               </div>
-              <div className="p-2 sm:p-3 bg-emerald-100 rounded-lg ml-4">
-                <Truck className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
+              <div className="p-2 sm:p-3 bg-emerald-100 dark:bg-emerald-900/20 rounded-lg ml-4">
+                <Truck className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600 dark:text-emerald-400" />
               </div>
             </div>
           </CardContent>
@@ -385,14 +385,14 @@ export function Dashboard() {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-mobile-sm font-medium text-slate-600">Total Orders</p>
-                <p className="text-mobile-2xl font-bold text-slate-900 mt-1">
+                <p className="text-mobile-sm font-medium text-slate-600 dark:text-gray-400">Total Orders</p>
+                <p className="text-mobile-2xl font-bold text-slate-900 dark:text-gray-100 mt-1">
                   {metrics?.totalOrdersToday || 0}+
                 </p>
-                <p className="text-xs text-slate-500 mt-1">Shipped today</p>
+                <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">Shipped today</p>
               </div>
-              <div className="p-2 sm:p-3 bg-blue-100 rounded-lg ml-4">
-                <Package className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+              <div className="p-2 sm:p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg ml-4">
+                <Package className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
           </CardContent>
@@ -403,14 +403,14 @@ export function Dashboard() {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-mobile-sm font-medium text-slate-600">Total Revenue</p>
-                <p className="text-mobile-xl font-bold text-slate-900 mt-1 break-all">
+                <p className="text-mobile-sm font-medium text-slate-600 dark:text-gray-400">Total Revenue</p>
+                <p className="text-mobile-xl font-bold text-slate-900 dark:text-gray-100 mt-1 break-all">
                   {formatCurrency(metrics?.totalRevenueToday || 0, 'EUR')}
                 </p>
-                <p className="text-xs text-emerald-600 mt-1">Today +10%</p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">Today +10%</p>
               </div>
-              <div className="p-2 sm:p-3 bg-green-100 rounded-lg ml-4">
-                <Euro className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+              <div className="p-2 sm:p-3 bg-green-100 dark:bg-green-900/20 rounded-lg ml-4">
+                <Euro className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400" />
               </div>
             </div>
           </CardContent>
@@ -421,14 +421,14 @@ export function Dashboard() {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-mobile-sm font-medium text-slate-600">Total Profit</p>
-                <p className="text-mobile-xl font-bold text-slate-900 mt-1 break-all">
+                <p className="text-mobile-sm font-medium text-slate-600 dark:text-gray-400">Total Profit</p>
+                <p className="text-mobile-xl font-bold text-slate-900 dark:text-gray-100 mt-1 break-all">
                   {formatCurrency(metrics?.totalProfitToday || 0, 'EUR')}
                 </p>
-                <p className="text-xs text-emerald-600 mt-1">Today +15% 🏆</p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">Today +15% 🏆</p>
               </div>
-              <div className="p-2 sm:p-3 bg-yellow-100 rounded-lg ml-4">
-                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
+              <div className="p-2 sm:p-3 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg ml-4">
+                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600 dark:text-yellow-400" />
               </div>
             </div>
           </CardContent>
@@ -438,38 +438,38 @@ export function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         <Card>
           <CardContent className="p-4 sm:p-6">
-            <p className="text-mobile-sm font-medium text-slate-600">This Month's Total Revenue</p>
-            <p className="text-mobile-xl font-bold text-slate-900 mt-1 break-all">
+            <p className="text-mobile-sm font-medium text-slate-600 dark:text-gray-400">This Month's Total Revenue</p>
+            <p className="text-mobile-xl font-bold text-slate-900 dark:text-gray-100 mt-1 break-all">
               {formatCurrency(metrics?.thisMonthRevenue || 0, 'EUR')}
             </p>
-            <p className="text-xs text-slate-500 mt-1">All currencies converted to EUR</p>
+            <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">All currencies converted to EUR</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm font-medium text-slate-600">This Month's Total Profit</p>
-            <p className="text-2xl font-bold text-slate-900">
+            <p className="text-sm font-medium text-slate-600 dark:text-gray-400">This Month's Total Profit</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-gray-100">
               {formatCurrency(metrics?.thisMonthProfit || 0, 'EUR')}
             </p>
-            <p className="text-xs text-slate-500 mt-1">All currencies converted to EUR</p>
+            <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">All currencies converted to EUR</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm font-medium text-slate-600">Last Month's Total Revenue</p>
-            <p className="text-2xl font-bold text-slate-900">
+            <p className="text-sm font-medium text-slate-600 dark:text-gray-400">Last Month's Total Revenue</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-gray-100">
               {formatCurrency(metrics?.lastMonthRevenue || 0, 'EUR')}
             </p>
-            <p className="text-xs text-slate-500 mt-1">All currencies converted to EUR</p>
+            <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">All currencies converted to EUR</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm font-medium text-slate-600">Last Month's Total Profit</p>
-            <p className="text-2xl font-bold text-slate-900">
+            <p className="text-sm font-medium text-slate-600 dark:text-gray-400">Last Month's Total Profit</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-gray-100">
               {formatCurrency(metrics?.lastMonthProfit || 0, 'EUR')}
             </p>
-            <p className="text-xs text-slate-500 mt-1">All currencies converted to EUR</p>
+            <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">All currencies converted to EUR</p>
           </CardContent>
         </Card>
       </div>
@@ -477,8 +477,8 @@ export function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Revenue and Profit</CardTitle>
-            <select className="text-sm border border-slate-300 rounded px-3 py-1">
+            <CardTitle className="text-gray-900 dark:text-gray-100">Revenue and Profit</CardTitle>
+            <select className="text-sm border border-slate-300 dark:border-gray-600 rounded px-3 py-1 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100">
               <option>Year</option>
               <option>Month</option>
               <option>Week</option>
@@ -493,8 +493,8 @@ export function Dashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Total Expenses</CardTitle>
-            <select className="text-sm border border-slate-300 rounded px-3 py-1">
+            <CardTitle className="text-gray-900 dark:text-gray-100">Total Expenses</CardTitle>
+            <select className="text-sm border border-slate-300 dark:border-gray-600 rounded px-3 py-1 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100">
               <option>This Year</option>
               <option>Last Year</option>
             </select>
@@ -509,15 +509,15 @@ export function Dashboard() {
       {/* Yearly Report Chart */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Yearly Report</CardTitle>
+          <CardTitle className="text-gray-900 dark:text-gray-100">Yearly Report</CardTitle>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-blue-800 rounded"></div>
-              <span className="text-sm text-slate-600">Purchased</span>
+              <div className="w-3 h-3 bg-blue-800 dark:bg-blue-600 rounded"></div>
+              <span className="text-sm text-slate-600 dark:text-gray-400">Purchased</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-blue-400 rounded"></div>
-              <span className="text-sm text-slate-600">Sold Amount</span>
+              <div className="w-3 h-3 bg-blue-400 dark:bg-blue-300 rounded"></div>
+              <span className="text-sm text-slate-600 dark:text-gray-400">Sold Amount</span>
             </div>
           </div>
         </CardHeader>
@@ -532,7 +532,7 @@ export function Dashboard() {
         {/* Unpaid Orders */}
         <Card>
           <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="text-mobile-lg">Unpaid Orders</CardTitle>
+            <CardTitle className="text-mobile-lg text-gray-900 dark:text-gray-100">Unpaid Orders</CardTitle>
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
             {unpaidLoading ? (
@@ -580,11 +580,11 @@ export function Dashboard() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           <Avatar className="h-8 w-8">
-                            <AvatarFallback className="text-xs">
+                            <AvatarFallback className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                               {order.customer?.name?.[0] || 'U'}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="font-medium text-mobile-base">{order.customer?.name || 'Unknown'}</span>
+                          <span className="font-medium text-mobile-base text-gray-900 dark:text-gray-100">{order.customer?.name || 'Unknown'}</span>
                         </div>
                         <Badge variant={order.paymentStatus === 'pay_later' ? 'default' : 'secondary'} className="text-xs">
                           {order.paymentStatus === 'pay_later' ? 'Pay Later' : 'Pending'}
@@ -592,17 +592,17 @@ export function Dashboard() {
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-mobile-sm">
                         <div>
-                          <span className="text-gray-500">Order ID:</span>
-                          <p className="font-medium">{order.orderId}</p>
+                          <span className="text-gray-500 dark:text-gray-400">Order ID:</span>
+                          <p className="font-medium text-gray-900 dark:text-gray-100">{order.orderId}</p>
                         </div>
                         <div>
-                          <span className="text-gray-500">Date:</span>
-                          <p className="font-medium">{formatDate(order.createdAt)}</p>
+                          <span className="text-gray-500 dark:text-gray-400">Date:</span>
+                          <p className="font-medium text-gray-900 dark:text-gray-100">{formatDate(order.createdAt)}</p>
                         </div>
                       </div>
-                      <div className="pt-2 border-t">
-                        <span className="text-gray-500 text-mobile-sm">Order Value:</span>
-                        <p className="font-semibold text-mobile-lg">{formatCurrency(parseFloat(order.grandTotal), order.currency)}</p>
+                      <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <span className="text-gray-500 dark:text-gray-400 text-mobile-sm">Order Value:</span>
+                        <p className="font-semibold text-mobile-lg text-gray-900 dark:text-gray-100">{formatCurrency(parseFloat(order.grandTotal), order.currency)}</p>
                       </div>
                     </div>
                   )}
@@ -624,11 +624,11 @@ export function Dashboard() {
                         <TableRow key={order.id}>
                           <TableCell className="flex items-center space-x-2">
                             <Avatar className="h-6 w-6">
-                              <AvatarFallback className="text-xs">
+                              <AvatarFallback className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                                 {order.customer?.name?.[0] || 'U'}
                               </AvatarFallback>
                             </Avatar>
-                            <span>{order.customer?.name || 'Unknown'}</span>
+                            <span className="text-gray-900 dark:text-gray-100">{order.customer?.name || 'Unknown'}</span>
                           </TableCell>
                           <TableCell>{order.orderId}</TableCell>
                           <TableCell>
@@ -655,7 +655,7 @@ export function Dashboard() {
         {/* User Activities */}
         <Card>
           <CardHeader>
-            <CardTitle>User Activities</CardTitle>
+            <CardTitle className="text-gray-900 dark:text-gray-100">User Activities</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -669,17 +669,17 @@ export function Dashboard() {
                 activities?.map((activity) => (
                   <div key={activity.id} className="flex items-center space-x-3">
                     <Avatar className="h-8 w-8">
-                      <AvatarFallback className="text-xs">
+                      <AvatarFallback className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                         {activity.user?.firstName?.[0]}{activity.user?.lastName?.[0]}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-900">
+                      <p className="text-sm font-medium text-slate-900 dark:text-gray-100">
                         {activity.user?.firstName} {activity.user?.lastName}
                       </p>
-                      <p className="text-xs text-slate-500">{activity.description}</p>
+                      <p className="text-xs text-slate-500 dark:text-gray-400">{activity.description}</p>
                     </div>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-slate-400 dark:text-gray-500">
                       {new Date(activity.createdAt).toLocaleTimeString()}
                     </span>
                   </div>
@@ -692,9 +692,9 @@ export function Dashboard() {
       {/* Low in Stock Table */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Low in Stock</CardTitle>
+          <CardTitle className="text-gray-900 dark:text-gray-100">Low in Stock</CardTitle>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-slate-600">View All Products</span>
+            <span className="text-sm text-slate-600 dark:text-gray-400">View All Products</span>
             <Button variant="outline" size="sm">
               <Filter className="mr-1 h-4 w-4" />
               Filter
@@ -776,9 +776,9 @@ export function Dashboard() {
       {/* Monthly Financial Summary Table */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Monthly Financial Summary</CardTitle>
+          <CardTitle className="text-gray-900 dark:text-gray-100">Monthly Financial Summary</CardTitle>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-slate-600">All amounts in EUR</span>
+            <span className="text-sm text-slate-600 dark:text-gray-400">All amounts in EUR</span>
             <Button variant="outline" size="sm">
               <Filter className="mr-1 h-4 w-4" />
               Filter

@@ -892,7 +892,7 @@ export default function EditOrder() {
 
   // Get unique product IDs from cart items
   const uniqueProductIds = useMemo(() => {
-    return Array.from(new Set(orderItems.map(item => item.productId)));
+    return Array.from(new Set(orderItems.map(item => item.productId).filter((id): id is string => id !== undefined)));
   }, [orderItems]);
 
   // Fetch product files for all products in the cart
@@ -2080,10 +2080,10 @@ export default function EditOrder() {
 
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <div className="p-3 sm:p-4 lg:p-6 max-w-7xl mx-auto">
         {/* Header - Mobile Optimized */}
-        <div className="bg-white rounded-lg shadow-sm mb-4 lg:mb-6 p-3 sm:p-4">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm mb-4 lg:mb-6 p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
               <Button
@@ -2096,13 +2096,13 @@ export default function EditOrder() {
                 <span className="hidden sm:inline">Back to Orders</span>
                 <span className="sm:hidden">Back</span>
               </Button>
-              <div className="hidden sm:block h-6 w-px bg-gray-200" />
+              <div className="hidden sm:block h-6 w-px bg-gray-200 dark:bg-gray-700" />
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Edit Order</h1>
-                <p className="text-xs sm:text-sm text-slate-600 mt-1">Update products and configure details</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">Edit Order</h1>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">Update products and configure details</p>
               </div>
             </div>
-            <Badge variant="outline" className="text-blue-600 border-blue-600 w-fit">
+            <Badge variant="outline" className="text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 w-fit">
               <Save className="h-3 w-3 mr-1" />
               Edit Order
             </Badge>
@@ -2112,10 +2112,10 @@ export default function EditOrder() {
         <form id="edit-order-form" onSubmit={form.handleSubmit(onSubmit)}>
           <div className="space-y-4 sm:space-y-6">
             {/* Order Location - Mobile Only (at top) */}
-            <Card className="lg:hidden shadow-sm">
-              <CardHeader className="p-3 border-b">
-                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                  <MapPin className="h-4 w-4 text-blue-600" />
+            <Card className="lg:hidden shadow-sm border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800">
+              <CardHeader className="p-3 border-b border-gray-200 dark:border-gray-700">
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   Order Location
                 </CardTitle>
               </CardHeader>
@@ -2125,6 +2125,7 @@ export default function EditOrder() {
                   value={form.watch('orderLocation') || ''}
                   onChange={(e) => form.setValue('orderLocation', e.target.value)}
                   data-testid="input-order-location"
+                  className="border-gray-200 dark:border-gray-700"
                 />
               </CardContent>
             </Card>
@@ -2136,13 +2137,13 @@ export default function EditOrder() {
               <div className="lg:col-span-2 space-y-4 sm:space-y-6">
 
             {/* Customer Selection - Mobile Optimized */}
-            <Card className="shadow-sm">
-              <CardHeader className="p-3 border-b">
-                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                  <User className="h-4 w-4 text-blue-600" />
+            <Card className="shadow-sm border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800">
+              <CardHeader className="p-3 border-b border-gray-200 dark:border-gray-700">
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   Customer Details
                 </CardTitle>
-                <CardDescription className="text-xs sm:text-sm mt-1">Search and select or create new</CardDescription>
+                <CardDescription className="text-xs sm:text-sm mt-1 text-gray-600 dark:text-gray-400">Search and select or create new</CardDescription>
               </CardHeader>
               <CardContent className="p-3 space-y-3">
             {/* Quick Customer Options */}
@@ -2217,9 +2218,9 @@ export default function EditOrder() {
 
             {/* Quick Customer Forms */}
             {quickCustomerType && !selectedCustomer && (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
+              <div className="p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-700 rounded-lg space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-blue-900">
+                  <h4 className="font-medium text-blue-900 dark:text-blue-100">
                     {quickCustomerType === 'quick' && 'Quick Customer (One-time)'}
                     {quickCustomerType === 'tel' && 'Telephone Order'}
                     {quickCustomerType === 'msg' && 'Social Media Customer'}
@@ -2403,14 +2404,14 @@ export default function EditOrder() {
 
               {/* Real-time dropdown for customers */}
               {showCustomerDropdown && filteredCustomers && filteredCustomers.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-96 overflow-y-auto z-50">
-                  <div className="p-2 bg-slate-50 border-b text-xs text-slate-600 sticky top-0 z-10">
+                <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg bg-white dark:bg-slate-800 max-h-96 overflow-y-auto z-50">
+                  <div className="p-2 bg-slate-50 dark:bg-slate-700 border-b border-gray-200 dark:border-gray-700 text-xs text-slate-600 dark:text-slate-400 sticky top-0 z-10">
                     {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} found
                   </div>
                   {filteredCustomers.map((customer: any) => (
                     <div
                       key={customer.id}
-                      className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-colors"
+                      className="p-3 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors"
                       onClick={() => {
                         setSelectedCustomer(customer);
                         setCustomerSearch(customer.name);
@@ -2429,7 +2430,7 @@ export default function EditOrder() {
                         {/* Left side - Main info */}
                         <div className="flex-1 min-w-0">
                           {/* Name, flag, and badges */}
-                          <div className="font-medium text-slate-900 flex items-center gap-2 flex-wrap mb-1">
+                          <div className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2 flex-wrap mb-1">
                             <span className="flex items-center gap-1.5">
                               {customer.country && (
                                 <span className="text-base">{getCountryFlag(customer.country)}</span>
@@ -2437,12 +2438,12 @@ export default function EditOrder() {
                               <span className="truncate">{customer.name}</span>
                             </span>
                             {customer.hasPayLaterBadge && (
-                              <Badge variant="outline" className="text-xs bg-yellow-50 border-yellow-300 text-yellow-700">
+                              <Badge variant="outline" className="text-xs bg-yellow-50 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-700 text-yellow-700 dark:text-yellow-200">
                                 Pay Later
                               </Badge>
                             )}
                             {customer.type && customer.type !== 'regular' && (
-                              <Badge variant="outline" className="text-xs bg-slate-100 border-slate-300 text-slate-600 capitalize">
+                              <Badge variant="outline" className="text-xs bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 capitalize">
                                 {customer.type}
                               </Badge>
                             )}
@@ -2450,7 +2451,7 @@ export default function EditOrder() {
                           
                           {/* Company */}
                           {customer.company && (
-                            <div className="text-xs text-slate-600 flex items-center gap-1 mb-1">
+                            <div className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1 mb-1">
                               <Building className="h-3 w-3 shrink-0" />
                               <span className="truncate">{customer.company}</span>
                             </div>
@@ -2458,7 +2459,7 @@ export default function EditOrder() {
                           
                           {/* Location */}
                           {(customer.city || customer.country) && (
-                            <div className="text-xs text-slate-500 flex items-center gap-1 mb-1">
+                            <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mb-1">
                               <MapPin className="h-3 w-3 shrink-0" />
                               <span className="truncate">
                                 {[customer.city, customer.country].filter(Boolean).join(', ')}
@@ -2468,7 +2469,7 @@ export default function EditOrder() {
                           
                           {/* Facebook name */}
                           {customer.facebookName && customer.facebookName !== customer.name && (
-                            <div className="text-xs text-blue-600 flex items-center gap-1">
+                            <div className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
                               <span className="shrink-0">FB:</span>
                               <span className="truncate">{customer.facebookName}</span>
                             </div>
@@ -2478,13 +2479,13 @@ export default function EditOrder() {
                         {/* Right side - Contact info */}
                         <div className="text-right shrink-0">
                           {customer.phone && (
-                            <div className="text-xs text-slate-600 mb-1">
+                            <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">
                               <Phone className="h-3 w-3 inline mr-1" />
                               {customer.phone}
                             </div>
                           )}
                           {customer.email && (
-                            <div className="text-xs text-slate-500 truncate max-w-[200px]">
+                            <div className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
                               <Mail className="h-3 w-3 inline mr-1" />
                               {customer.email}
                             </div>
@@ -2498,8 +2499,8 @@ export default function EditOrder() {
 
               {/* No results message with Add new customer button */}
               {showCustomerDropdown && customerSearch.length >= 2 && (!filteredCustomers || filteredCustomers.length === 0) && (
-                <div className="absolute top-full left-0 right-0 mt-1 border rounded-md bg-white shadow-lg p-4 text-center text-slate-500 z-50">
-                  <Search className="h-6 w-6 mx-auto mb-2 text-slate-400" />
+                <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-slate-800 shadow-lg p-4 text-center text-slate-500 dark:text-slate-400 z-50">
+                  <Search className="h-6 w-6 mx-auto mb-2 text-slate-400 dark:text-slate-500" />
                   <div>No customers found for "{customerSearch}"</div>
                   <div className="text-xs mt-1">Try searching by name, email, or Facebook name</div>
                   <Button
@@ -2522,7 +2523,7 @@ export default function EditOrder() {
 
             {/* Selected customer display */}
             {selectedCustomer && (
-              <Card className="mt-4 border-2 border-green-500 bg-white">
+              <Card className="mt-4 border-2 border-green-500 dark:border-green-600 bg-white dark:bg-slate-800">
                 <CardContent className="p-6">
                   <div className="flex gap-4">
                     {/* Avatar Section */}
@@ -2550,7 +2551,7 @@ export default function EditOrder() {
                             {selectedCustomer.country && (
                               <span className="text-xl">{getCountryFlag(selectedCustomer.country)}</span>
                             )}
-                            <h3 className="text-sm font-semibold text-slate-900">
+                            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                               {selectedCustomer.name}
                             </h3>
                             <CheckCircle className="h-5 w-5 text-green-600" />
@@ -2575,12 +2576,12 @@ export default function EditOrder() {
                               </Badge>
                             )}
                             {selectedCustomer.preferredCurrency && (
-                              <Badge variant="outline" className="text-xs bg-slate-50 border-slate-300 text-slate-700">
+                              <Badge variant="outline" className="text-xs bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300">
                                 {selectedCustomer.preferredCurrency}
                               </Badge>
                             )}
                             {selectedCustomer.type && selectedCustomer.type !== 'regular' && (
-                              <Badge variant="outline" className="text-xs bg-slate-100 border-slate-300 text-slate-700 capitalize">
+                              <Badge variant="outline" className="text-xs bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 capitalize">
                                 {selectedCustomer.type}
                               </Badge>
                             )}
@@ -2609,8 +2610,8 @@ export default function EditOrder() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mt-3">
                         {/* Contact Info */}
                         {selectedCustomer.phone && (
-                          <div className="flex items-center gap-2 text-sm text-slate-700">
-                            <Phone className="h-4 w-4 text-slate-500" />
+                          <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                            <Phone className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                             <span>{selectedCustomer.phone}</span>
                             {selectedCustomer.socialMediaApp && (
                               <Badge variant="secondary" className="text-xs">{selectedCustomer.socialMediaApp}</Badge>
@@ -2618,20 +2619,20 @@ export default function EditOrder() {
                           </div>
                         )}
                         {selectedCustomer.email && (
-                          <div className="flex items-center gap-2 text-sm text-slate-700 truncate">
-                            <Mail className="h-4 w-4 text-slate-500 shrink-0" />
+                          <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 truncate">
+                            <Mail className="h-4 w-4 text-slate-500 dark:text-slate-400 shrink-0" />
                             <span className="truncate">{selectedCustomer.email}</span>
                           </div>
                         )}
                         {selectedCustomer.company && (
-                          <div className="flex items-center gap-2 text-sm text-slate-700">
-                            <Building className="h-4 w-4 text-slate-500" />
+                          <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                            <Building className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                             <span>{selectedCustomer.company}</span>
                           </div>
                         )}
                         {(selectedCustomer.city || selectedCustomer.country) && (
-                          <div className="flex items-center gap-2 text-sm text-slate-700">
-                            <MapPin className="h-4 w-4 text-slate-500" />
+                          <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                            <MapPin className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                             <span>{[selectedCustomer.city, selectedCustomer.country].filter(Boolean).join(', ')}</span>
                           </div>
                         )}
@@ -2664,7 +2665,7 @@ export default function EditOrder() {
                 </CardHeader>
                 <CardContent className="p-3 space-y-3">
                   {isLoadingShippingAddresses ? (
-                    <div className="text-center py-4 text-slate-500">Loading addresses...</div>
+                    <div className="text-center py-4 text-slate-500 dark:text-slate-400">Loading addresses...</div>
                   ) : shippingAddresses && Array.isArray(shippingAddresses) && shippingAddresses.length > 0 ? (
                     <RadioGroup
                       value={selectedShippingAddress?.id || ""}
@@ -2841,7 +2842,7 @@ export default function EditOrder() {
                       ))}
                     </RadioGroup>
                   ) : (
-                    <div className="text-center py-4 text-slate-500">
+                    <div className="text-center py-4 text-slate-500 dark:text-slate-400">
                       No shipping addresses found. Add one below.
                     </div>
                   )}
@@ -2865,9 +2866,9 @@ export default function EditOrder() {
 
             {/* New customer form */}
             {showNewCustomerForm && (
-              <div className="space-y-4 border border-slate-200 bg-slate-50 p-4 rounded-lg">
+              <div className="space-y-4 border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-medium text-slate-900">New Customer Details</h4>
+                  <h4 className="font-medium text-slate-900 dark:text-slate-100">New Customer Details</h4>
                   <Button
                     type="button"
                     variant="ghost"
@@ -3046,37 +3047,37 @@ export default function EditOrder() {
 
                     {/* Address suggestions dropdown */}
                     {showAddressDropdown && (
-                      <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-72 overflow-y-auto z-50">
+                      <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg bg-white dark:bg-slate-800 max-h-72 overflow-y-auto z-50">
                         {isLoadingAddresses ? (
-                          <div className="p-4 text-center text-slate-500">
+                          <div className="p-4 text-center text-slate-500 dark:text-slate-400">
                             <div className="text-sm">Searching addresses...</div>
                           </div>
                         ) : addressSuggestions.length > 0 ? (
                           <>
-                            <div className="p-2 bg-slate-50 border-b text-xs text-slate-600">
+                            <div className="p-2 bg-slate-50 dark:bg-slate-700 border-b border-gray-200 dark:border-gray-700 text-xs text-slate-600 dark:text-slate-400">
                               {addressSuggestions.length} address{addressSuggestions.length !== 1 ? 'es' : ''} found
                             </div>
                             {addressSuggestions.map((suggestion, index) => (
                               <div
                                 key={index}
-                                className="p-3 hover:bg-slate-100 cursor-pointer border-b last:border-b-0 transition-colors"
+                                className="p-3 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer border-b last:border-b-0 transition-colors"
                                 onClick={() => selectAddress(suggestion)}
                               >
-                                <div className="font-medium text-slate-900">
+                                <div className="font-medium text-slate-900 dark:text-slate-100">
                                   {suggestion.formatted}
                                 </div>
                               </div>
                             ))}
                           </>
                         ) : (
-                          <div className="p-4 text-center text-slate-500">
+                          <div className="p-4 text-center text-slate-500 dark:text-slate-400">
                             <div className="text-sm">No addresses found</div>
                           </div>
                         )}
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     Search for an official address to auto-fill the fields below
                   </p>
                 </div>
@@ -3231,8 +3232,8 @@ export default function EditOrder() {
 
               {/* Real-time dropdown for products - Grouped by Category */}
               {showProductDropdown && filteredProducts && filteredProducts.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-96 overflow-y-auto z-50">
-                  <div className="p-2 bg-slate-50 border-b text-xs text-slate-600 sticky top-0 z-10">
+                <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg bg-white dark:bg-slate-800 max-h-96 overflow-y-auto z-50">
+                  <div className="p-2 bg-slate-50 dark:bg-slate-700 border-b border-gray-200 dark:border-gray-700 text-xs text-slate-600 dark:text-slate-400 sticky top-0 z-10">
                     {(() => {
                       const totalProducts = filteredProducts.reduce((sum, cat) => sum + cat.products.length, 0);
                       return `${totalProducts} product${totalProducts !== 1 ? 's' : ''} found - Click to add`;
@@ -3241,7 +3242,7 @@ export default function EditOrder() {
                   {filteredProducts.map((categoryGroup) => (
                     <div key={categoryGroup.category} className="border-b last:border-b-0">
                       {/* Category Header */}
-                      <div className="bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 sticky top-8 z-10 border-b border-slate-200">
+                      <div className="bg-slate-100 dark:bg-slate-700 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 sticky top-8 z-10 border-b border-slate-200 dark:border-gray-700">
                         {categoryGroup.category}
                       </div>
                       {/* Products in Category */}
@@ -3251,7 +3252,7 @@ export default function EditOrder() {
                           <button
                             type="button"
                             key={product.id}
-                            className="w-full p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-colors text-left"
+                            className="w-full p-3 hover:bg-blue-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-200 dark:border-gray-700 last:border-b-0 transition-colors text-left"
                             onClick={() => {
                               addProductToOrder(product);
                             }}
@@ -3264,18 +3265,18 @@ export default function EditOrder() {
                                   <img 
                                     src={product.image} 
                                     alt={product.name}
-                                    className="w-12 h-12 object-contain rounded border border-slate-200 bg-slate-50"
+                                    className="w-12 h-12 object-contain rounded border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-slate-900"
                                   />
                                 ) : (
-                                  <div className="w-12 h-12 bg-slate-100 rounded border border-slate-200 flex items-center justify-center">
-                                    <Package className="h-6 w-6 text-slate-300" />
+                                  <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-gray-700 flex items-center justify-center">
+                                    <Package className="h-6 w-6 text-slate-300 dark:text-slate-600" />
                                   </div>
                                 )}
                               </div>
                               
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <div className="font-medium text-slate-900">{product.name}</div>
+                                  <div className="font-medium text-slate-900 dark:text-slate-100">{product.name}</div>
                                   {product.itemType === 'bundle' && (
                                     <Badge className="text-xs px-1.5 py-0 bg-purple-100 text-purple-700 border-purple-300">
                                       Bundle
@@ -3292,10 +3293,10 @@ export default function EditOrder() {
                                     </Badge>
                                   )}
                                 </div>
-                                <div className="text-sm text-slate-500">SKU: {product.sku}</div>
+                                <div className="text-sm text-slate-500 dark:text-slate-400">SKU: {product.sku}</div>
                                 
                                 <div className="text-right mt-1">
-                                  <div className="font-medium text-slate-900">
+                                  <div className="font-medium text-slate-900 dark:text-slate-100">
                                     {(() => {
                                       const selectedCurrency = form.watch('currency') || 'EUR';
                                       let price = 0;
@@ -3310,11 +3311,11 @@ export default function EditOrder() {
                                       return formatCurrency(price, selectedCurrency);
                                     })()}
                                   </div>
-                                  <div className="text-sm text-slate-500">
+                                  <div className="text-sm text-slate-500 dark:text-slate-400">
                                     Stock: {product.itemType === 'bundle' ? (product.availableStock ?? 0) : (product.stockQuantity || product.quantity || 0)}
                                   </div>
                                   {product.warehouseName && (
-                                    <div className="text-xs text-slate-400">{product.warehouseName}</div>
+                                    <div className="text-xs text-slate-400 dark:text-slate-500">{product.warehouseName}</div>
                                   )}
                                 </div>
                               </div>
@@ -3329,8 +3330,8 @@ export default function EditOrder() {
 
               {/* No results message */}
               {showProductDropdown && productSearch.length >= 2 && (!filteredProducts || filteredProducts.length === 0) && (
-                <div className="absolute top-full left-0 right-0 mt-1 border rounded-md bg-white shadow-lg p-4 text-center text-slate-500 z-50">
-                  <Search className="h-6 w-6 mx-auto mb-2 text-slate-400" />
+                <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-slate-800 shadow-lg p-4 text-center text-slate-500 dark:text-slate-400 z-50">
+                  <Search className="h-6 w-6 mx-auto mb-2 text-slate-400 dark:text-slate-500" />
                   <div>No products found for "{productSearch}"</div>
                   <div className="text-xs mt-1">Try searching by name, SKU, or category</div>
                 </div>
@@ -3423,11 +3424,11 @@ export default function EditOrder() {
                                     <img 
                                       src={item.image} 
                                       alt={item.productName}
-                                      className="w-12 h-12 object-contain rounded border border-slate-200 bg-slate-50"
+                                      className="w-12 h-12 object-contain rounded border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-slate-900"
                                     />
                                   ) : (
-                                    <div className="w-12 h-12 bg-slate-100 rounded border border-slate-200 flex items-center justify-center">
-                                      <Package className="h-6 w-6 text-slate-300" />
+                                    <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-gray-700 flex items-center justify-center">
+                                      <Package className="h-6 w-6 text-slate-300 dark:text-slate-600" />
                                     </div>
                                   )}
                                 </div>
@@ -3725,11 +3726,11 @@ export default function EditOrder() {
                             <img 
                               src={item.image} 
                               alt={item.productName}
-                              className="w-20 h-20 object-contain rounded border border-slate-200 bg-slate-50"
+                              className="w-20 h-20 object-contain rounded border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-slate-900"
                             />
                           ) : (
-                            <div className="w-20 h-20 bg-slate-100 rounded border border-slate-200 flex items-center justify-center">
-                              <Package className="h-10 w-10 text-slate-300" />
+                            <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-gray-700 flex items-center justify-center">
+                              <Package className="h-10 w-10 text-slate-300 dark:text-slate-600" />
                             </div>
                           )}
                         </div>
@@ -3910,9 +3911,9 @@ export default function EditOrder() {
 
         {/* Document Selection */}
         <OrderDocumentSelector
-          orderItems={orderItems.map(item => ({
+          orderItems={orderItems.filter(item => item.productId !== undefined).map(item => ({
             id: item.id,
-            productId: item.productId,
+            productId: item.productId!,
             productName: item.productName,
             sku: item.sku,
             quantity: item.quantity
@@ -4024,7 +4025,7 @@ export default function EditOrder() {
                         className="flex-1"
                       />
                       {form.watch('discountType') === 'rate' && (
-                        <div className="flex items-center px-3 text-gray-500">
+                        <div className="flex items-center px-3 text-gray-500 dark:text-gray-400">
                           <Percent className="h-4 w-4" />
                         </div>
                       )}
@@ -4032,7 +4033,7 @@ export default function EditOrder() {
 
                     {/* Quick discount buttons */}
                     <div className="mt-2">
-                      <div className="text-xs text-gray-500 mb-1">Quick select:</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Quick select:</div>
                       <div className="flex flex-wrap gap-1">
                         {form.watch('discountType') === 'rate' && [5, 10, 15, 20, 25].map(amount => (
                           <Button
@@ -4098,7 +4099,7 @@ export default function EditOrder() {
                 />
                 {/* Quick shipping cost buttons */}
                 <div className="mt-2">
-                  <div className="text-xs text-gray-500 mb-1">Quick select:</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Quick select:</div>
                   <div className="flex flex-wrap gap-1">
                     {form.watch('currency') === 'CZK' && [0, 100, 150, 250].map(amount => (
                       <Button
@@ -4137,7 +4138,7 @@ export default function EditOrder() {
                   className="mt-1"
                   data-testid="input-actual-shipping-cost"
                 />
-                <p className="text-xs text-gray-500 mt-1">Real cost from carrier</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Real cost from carrier</p>
               </div>
 
               <div>
@@ -4149,7 +4150,7 @@ export default function EditOrder() {
                   className="mt-1"
                   data-testid="input-adjustment"
                 />
-                <p className="text-xs text-gray-500 mt-1">Rounding or other adjustments</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Rounding or other adjustments</p>
               </div>
             </div>
 
@@ -4173,7 +4174,7 @@ export default function EditOrder() {
                       className="mt-1"
                       data-testid="input-dobirka-amount"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Cash on delivery amount (optional)</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Cash on delivery amount (optional)</p>
                   </div>
 
                   <div>
@@ -4194,7 +4195,7 @@ export default function EditOrder() {
                         <SelectItem value="USD">USD</SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-gray-500 mt-1">Currency for cash on delivery</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Currency for cash on delivery</p>
                   </div>
                 </div>
 
@@ -5031,13 +5032,13 @@ export default function EditOrder() {
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold">Select Product Variants</DialogTitle>
             <DialogDescription className="text-sm">
-              Choose variants and quantities for: <span className="font-semibold text-slate-900">{selectedProductForVariant?.name}</span>
+              Choose variants and quantities for: <span className="font-semibold text-slate-900 dark:text-slate-100">{selectedProductForVariant?.name}</span>
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-[400px] overflow-y-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-slate-50">
+                <TableRow className="bg-slate-50 dark:bg-slate-900/50">
                   <TableHead className="font-semibold">Variant Name</TableHead>
                   <TableHead className="font-semibold">Barcode</TableHead>
                   <TableHead className="text-right font-semibold">Stock</TableHead>
@@ -5046,7 +5047,7 @@ export default function EditOrder() {
               </TableHeader>
               <TableBody>
                 {productVariants.map((variant, index) => (
-                  <TableRow key={variant.id} className="hover:bg-slate-50">
+                  <TableRow key={variant.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/30">
                     <TableCell className="font-medium">{variant.name}</TableCell>
                     <TableCell className="text-muted-foreground font-mono text-xs">{variant.barcode || '-'}</TableCell>
                     <TableCell className="text-right">
@@ -5143,7 +5144,7 @@ export default function EditOrder() {
                 data-testid="textarea-item-note"
               />
               <div className="mt-3">
-                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Quick templates:</p>
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-2">Quick templates:</p>
                 <div className="flex flex-wrap gap-2">
                   {[
                     "Handle with care - fragile item",
@@ -5242,7 +5243,7 @@ export default function EditOrder() {
               Are you sure you want to delete this shipping address? This action cannot be undone.
             </AlertDialogDescription>
             {addressToDelete && (
-              <div className="mt-3 p-3 bg-slate-50 rounded-md text-sm text-slate-900">
+              <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-md text-sm text-slate-900 dark:text-slate-100">
                 <div className="font-medium">{addressToDelete.firstName} {addressToDelete.lastName}</div>
                 {addressToDelete.company && <div>{addressToDelete.company}</div>}
                 <div>{addressToDelete.street}{addressToDelete.streetNumber && ` ${addressToDelete.streetNumber}`}</div>

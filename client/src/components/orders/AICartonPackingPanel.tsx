@@ -41,11 +41,11 @@ export function AICartonPackingPanel({
   }
 
   return (
-    <Card className="shadow-sm">
-      <CardHeader className="p-3 border-b">
+    <Card className="shadow-sm border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800">
+      <CardHeader className="p-3 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-start justify-between gap-2">
-          <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-            <Box className="h-4 w-4 text-blue-600" />
+          <CardTitle className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
+            <Box className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             Carton Packing
           </CardTitle>
           <div className="flex gap-2">

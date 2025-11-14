@@ -65,7 +65,7 @@ export default function Notifications() {
   if (isLoading) {
     return (
       <div className="container max-w-4xl mx-auto px-4 py-6 space-y-4">
-        <h1 className="text-2xl font-bold mb-6">Notifications</h1>
+        <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">Notifications</h1>
         {[1, 2, 3].map((i) => (
           <Card key={i}>
             <CardHeader>
@@ -81,8 +81,8 @@ export default function Notifications() {
   return (
     <div className="container max-w-4xl mx-auto px-4 py-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2" data-testid="heading-notifications">Notifications</h1>
-        <p className="text-muted-foreground">View and manage your notifications</p>
+        <h1 className="text-2xl font-bold mb-2 text-gray-900 dark:text-gray-100" data-testid="heading-notifications">Notifications</h1>
+        <p className="text-muted-foreground dark:text-gray-400">View and manage your notifications</p>
       </div>
 
       <Tabs value={filter} onValueChange={(v) => setFilter(v as 'all' | 'unread')} className="mb-6">
@@ -95,11 +95,11 @@ export default function Notifications() {
       {notifications.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Info className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-lg font-medium text-muted-foreground" data-testid="text-empty-state">
+            <Info className="h-12 w-12 text-muted-foreground dark:text-gray-400 mb-4" />
+            <p className="text-lg font-medium text-muted-foreground dark:text-gray-300" data-testid="text-empty-state">
               {filter === 'unread' ? 'No unread notifications' : 'No notifications yet'}
             </p>
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className="text-sm text-muted-foreground dark:text-gray-400 mt-2">
               {filter === 'unread' 
                 ? "You're all caught up!" 
                 : 'Notifications will appear here when you receive them'}
@@ -116,7 +116,7 @@ export default function Notifications() {
             return (
               <Card 
                 key={notification.id} 
-                className={notification.isRead ? 'opacity-60' : ''}
+                className={notification.isRead ? 'opacity-60 dark:opacity-50' : ''}
                 data-testid={`notification-${notification.id}`}
               >
                 <CardHeader>
@@ -124,7 +124,7 @@ export default function Notifications() {
                     <Icon className={`h-6 w-6 flex-shrink-0 mt-1 ${iconColor}`} data-testid={`icon-${notification.type}`} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-4 mb-2">
-                        <CardTitle className="text-lg" data-testid={`title-${notification.id}`}>
+                        <CardTitle className="text-lg text-gray-900 dark:text-gray-100" data-testid={`title-${notification.id}`}>
                           {notification.title}
                         </CardTitle>
                         <Badge variant={badgeVariant} className="flex-shrink-0" data-testid={`badge-${notification.type}`}>
@@ -132,12 +132,12 @@ export default function Notifications() {
                         </Badge>
                       </div>
                       {notification.description && (
-                        <CardDescription className="text-sm" data-testid={`description-${notification.id}`}>
+                        <CardDescription className="text-sm text-gray-600 dark:text-gray-400" data-testid={`description-${notification.id}`}>
                           {notification.description}
                         </CardDescription>
                       )}
                       <div className="flex flex-wrap items-center gap-3 mt-4">
-                        <span className="text-xs text-muted-foreground" data-testid={`timestamp-${notification.id}`}>
+                        <span className="text-xs text-muted-foreground dark:text-gray-400" data-testid={`timestamp-${notification.id}`}>
                           {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                         </span>
                         {!notification.isRead && (

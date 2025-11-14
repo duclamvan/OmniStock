@@ -1179,7 +1179,7 @@ function ProductDocumentsSelector({
 
   if (isLoading) {
     return (
-      <div className="text-sm text-gray-500 p-2 text-center" data-testid="loading-product-docs">
+      <div className="text-sm text-gray-500 dark:text-gray-400 p-2 text-center" data-testid="loading-product-docs">
         Loading documents...
       </div>
     );
@@ -1208,12 +1208,12 @@ function ProductDocumentsSelector({
 
   return (
     <div className="space-y-2 mt-3">
-      <div className="border border-blue-200 rounded-lg p-3 bg-blue-50/50">
+      <div className="border border-blue-200 dark:border-blue-800 rounded-lg p-3 bg-blue-50/50 dark:bg-blue-950/30">
         <div className="flex items-center gap-2 mb-2">
-          <FileText className="h-4 w-4 text-blue-600" />
-          <div className="text-sm font-semibold text-blue-900">Files Sent</div>
+          <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <div className="text-sm font-semibold text-blue-900 dark:text-blue-300">Files Sent</div>
         </div>
-        <div className="text-xs font-medium text-blue-700 mb-2">Product Documents ({productFiles.length})</div>
+        <div className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-2">Product Documents ({productFiles.length})</div>
         <div className="space-y-1.5">
           {productFiles.map((file: any) => {
         const Icon = FILE_TYPE_ICONS[file.fileType] || FileText;
@@ -1225,8 +1225,8 @@ function ProductDocumentsSelector({
             key={file.id}
             className={`p-3 rounded-lg border transition-colors ${
               isPrinted
-                ? 'bg-green-50 border-green-300'
-                : 'bg-white border-gray-200 hover:border-teal-200'
+                ? 'bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-800'
+                : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 hover:border-teal-200 dark:hover:border-teal-700'
             }`}
             data-testid={`product-doc-${file.id}`}
           >
@@ -1234,18 +1234,18 @@ function ProductDocumentsSelector({
             <div className="flex items-start gap-3 mb-2">
               {/* Icon */}
               <div className={`flex-shrink-0 w-10 h-10 rounded-md overflow-hidden bg-gradient-to-br ${
-                isPrinted ? 'from-green-50 to-emerald-50 border-green-300' : 'from-teal-50 to-cyan-50 border-teal-200'
+                isPrinted ? 'from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-300 dark:border-green-800' : 'from-teal-50 to-cyan-50 dark:from-teal-950/30 dark:to-cyan-950/30 border-teal-200 dark:border-teal-800'
               } border flex items-center justify-center`}>
-                <Icon className={`h-5 w-5 ${isPrinted ? 'text-green-600' : 'text-teal-500'}`} />
+                <Icon className={`h-5 w-5 ${isPrinted ? 'text-green-600 dark:text-green-500' : 'text-teal-500 dark:text-teal-400'}`} />
               </div>
               
               {/* Document Info - Full Width */}
               <div className="flex-1 min-w-0">
-                <p className={`text-base font-medium leading-snug ${isPrinted ? 'text-green-900' : 'text-black'}`}>
+                <p className={`text-base font-medium leading-snug ${isPrinted ? 'text-green-900 dark:text-green-300' : 'text-black dark:text-gray-100'}`}>
                   {file.description || file.fileName}
                 </p>
                 {flag && (
-                  <p className="text-xs text-gray-600 mt-0.5">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
                     {flag} {file.language?.toUpperCase()}
                   </p>
                 )}
@@ -1313,7 +1313,7 @@ function OrderFilesDisplay({
 
   if (isLoading) {
     return (
-      <div className="text-sm text-gray-500 p-2 text-center" data-testid="loading-order-files">
+      <div className="text-sm text-gray-500 dark:text-gray-400 p-2 text-center" data-testid="loading-order-files">
         Loading files...
       </div>
     );
@@ -1325,7 +1325,7 @@ function OrderFilesDisplay({
     return (
       <div className="mt-3">
         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Order Files</div>
-        <div className="text-sm text-gray-500 italic p-3 bg-gray-50 rounded-lg border border-gray-200" data-testid="no-order-files">
+        <div className="text-sm text-gray-500 dark:text-gray-400 italic p-3 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700" data-testid="no-order-files">
           No files attached to this order
         </div>
       </div>
@@ -1334,7 +1334,7 @@ function OrderFilesDisplay({
 
   return (
     <div className="space-y-2 mt-3">
-      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Order Files</div>
+      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Order Files</div>
       {files.map((file: any, index: number) => {
         const fileId = file.id || `file-${index}`;
         const isPrinted = printedFiles.has(fileId);
@@ -1344,15 +1344,15 @@ function OrderFilesDisplay({
             key={fileId}
             className={`p-3 rounded-lg border transition-colors ${
               isPrinted
-                ? 'bg-green-50 border-green-300'
-                : 'bg-white border-gray-200 hover:border-emerald-300'
+                ? 'bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-800'
+                : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-700'
             }`}
           >
             {/* Top Row: Icon + Name */}
             <div className="flex items-start gap-3 mb-2">
               {/* File Thumbnail */}
               <div className={`flex-shrink-0 w-10 h-10 rounded-md overflow-hidden border ${
-                isPrinted ? 'bg-green-100 border-green-300' : 'bg-gray-100 border-gray-200'
+                isPrinted ? 'bg-green-100 dark:bg-green-950/30 border-green-300 dark:border-green-800' : 'bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-gray-700'
               }`}>
                 {file.mimeType?.startsWith('image/') ? (
                   <img 
@@ -1361,15 +1361,15 @@ function OrderFilesDisplay({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-                    <FileText className={`h-5 w-5 ${isPrinted ? 'text-green-600' : 'text-gray-500'}`} />
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800">
+                    <FileText className={`h-5 w-5 ${isPrinted ? 'text-green-600 dark:text-green-500' : 'text-gray-500 dark:text-gray-400'}`} />
                   </div>
                 )}
               </div>
               
               {/* File Name - Full Width */}
               <div className="flex-1 min-w-0">
-                <p className={`text-base font-medium leading-snug ${isPrinted ? 'text-green-900' : 'text-black'}`} title={file.fileName || file.name}>
+                <p className={`text-base font-medium leading-snug ${isPrinted ? 'text-green-900 dark:text-green-300' : 'text-black dark:text-gray-100'}`} title={file.fileName || file.name}>
                   {file.fileName || file.name}
                 </p>
               </div>

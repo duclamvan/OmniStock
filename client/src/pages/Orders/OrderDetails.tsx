@@ -659,19 +659,19 @@ export default function OrderDetails() {
         <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
           {/* Breadcrumb Navigation */}
           <div className="mb-3 sm:mb-4">
-            <nav className="flex items-center text-xs sm:text-sm text-slate-600">
+            <nav className="flex items-center text-xs sm:text-sm text-slate-600 dark:text-slate-400">
               <Link href="/orders">
-                <span className="hover:text-slate-900 cursor-pointer font-medium">Orders</span>
+                <span className="hover:text-slate-900 dark:hover:text-slate-100 cursor-pointer font-medium">Orders</span>
               </Link>
-              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 mx-1 sm:mx-2 text-slate-400" />
-              <span className="text-slate-900 font-semibold">Order Details</span>
+              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 mx-1 sm:mx-2 text-slate-400 dark:text-slate-600" />
+              <span className="text-slate-900 dark:text-slate-100 font-semibold">Order Details</span>
             </nav>
           </div>
 
           <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
             <div className="flex-1 w-full sm:w-auto">
                 <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-xl font-bold text-slate-900">#{order.orderId}</h1>
+                  <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">#{order.orderId}</h1>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -1030,8 +1030,8 @@ export default function OrderDetails() {
 
           {/* Invoice - Order Items & Pricing */}
           <Card ref={invoiceCardRef} className="overflow-hidden">
-            <CardHeader className="border-b border-slate-200 px-3 sm:px-6 py-3 sm:py-4">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-bold">
+            <CardHeader className="border-b border-slate-200 dark:border-gray-700 px-3 sm:px-6 py-3 sm:py-4">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">
                 <Package className="h-4 w-4 sm:h-5 sm:w-5" />
                 Invoice
               </CardTitle>
@@ -1066,11 +1066,11 @@ export default function OrderDetails() {
                           <img 
                             src={item.image} 
                             alt={item.productName}
-                            className="w-12 h-12 object-contain rounded border border-slate-200 bg-slate-50"
+                            className="w-12 h-12 object-contain rounded border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-slate-900"
                           />
                         ) : (
-                          <div className="w-12 h-12 bg-slate-100 rounded border border-slate-200 flex items-center justify-center">
-                            <Package className="h-6 w-6 text-slate-300" />
+                          <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-gray-700 flex items-center justify-center">
+                            <Package className="h-6 w-6 text-slate-300 dark:text-slate-600" />
                           </div>
                         )}
                       </div>
@@ -1114,25 +1114,25 @@ export default function OrderDetails() {
                                 {item.productName}
                               </p>
                             )}
-                            <p className="text-xs text-slate-500 mb-1.5">SKU: {item.sku}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1.5">SKU: {item.sku}</p>
                             {item.serviceId && item.notes && (
-                              <div className="bg-purple-50 border border-purple-200 rounded px-2 py-1 mb-1.5">
-                                <p className="text-xs text-purple-900 font-medium">Note: {item.notes}</p>
+                              <div className="bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded px-2 py-1 mb-1.5">
+                                <p className="text-xs text-purple-900 dark:text-purple-300 font-medium">Note: {item.notes}</p>
                               </div>
                             )}
                             
                             <div className="flex items-center gap-2 flex-wrap">
                               {/* Quantity - More Visible */}
                               <div className="flex items-center gap-1.5">
-                                <span className="text-xs text-slate-500">Qty:</span>
-                                <span className="text-sm font-bold text-slate-900">
+                                <span className="text-xs text-slate-500 dark:text-slate-400">Qty:</span>
+                                <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
                                   {item.quantity}
                                 </span>
                               </div>
                               
                               {/* Unit Price */}
-                              <div className="text-xs text-slate-600">
-                                <span className="text-slate-500">×</span> {formatCurrency(item.unitPrice || item.price || 0, order.currency || 'EUR')}
+                              <div className="text-xs text-slate-600 dark:text-slate-400">
+                                <span className="text-slate-500 dark:text-slate-400">×</span> {formatCurrency(item.unitPrice || item.price || 0, order.currency || 'EUR')}
                               </div>
                             </div>
                           </div>
@@ -1143,20 +1143,20 @@ export default function OrderDetails() {
                               {item.discount > 0 ? (
                                 <>
                                   {/* Original price (strikethrough) */}
-                                  <p className="text-xs text-slate-400 line-through">
+                                  <p className="text-xs text-slate-400 dark:text-slate-500 line-through">
                                     {formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}
                                   </p>
                                   {/* Discount amount */}
-                                  <p className="text-xs text-green-600 -mt-0.5">
+                                  <p className="text-xs text-green-600 dark:text-green-500 -mt-0.5">
                                     -{formatCurrency(item.discount || 0, order.currency || 'EUR')} off
                                   </p>
                                   {/* Final price after discount */}
-                                  <p className="font-bold text-base text-slate-900 mt-0.5">
+                                  <p className="font-bold text-base text-slate-900 dark:text-slate-100 mt-0.5">
                                     {formatCurrency(((item.unitPrice || item.price || 0) * item.quantity) - (item.discount || 0), order.currency || 'EUR')}
                                   </p>
                                 </>
                               ) : (
-                                <p className="font-bold text-base text-slate-900">
+                                <p className="font-bold text-base text-slate-900 dark:text-slate-100">
                                   {formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}
                                 </p>
                               )}
@@ -1207,23 +1207,23 @@ export default function OrderDetails() {
               
               {/* Picking Progress */}
               {showPickingMode && (
-                <div className="mx-6 mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="mx-6 mt-6 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-blue-900">Picking Progress</p>
-                    <span className="text-sm text-blue-700">
+                    <p className="text-sm font-medium text-blue-900 dark:text-blue-300">Picking Progress</p>
+                    <span className="text-sm text-blue-700 dark:text-blue-400">
                       {pickedItems.size} of {order.items?.length || 0} items picked
                     </span>
                   </div>
-                  <div className="w-full bg-blue-200 rounded-full h-2">
+                  <div className="w-full bg-blue-200 dark:bg-blue-900 rounded-full h-2">
                     <div
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full transition-all duration-300"
                       style={{
                         width: `${(pickedItems.size / (order.items?.length || 1)) * 100}%`
                       }}
                     />
                   </div>
                   {pickedItems.size === order.items?.length && order.items?.length > 0 && (
-                    <p className="text-sm text-green-600 font-medium mt-2 flex items-center">
+                    <p className="text-sm text-green-600 dark:text-green-500 font-medium mt-2 flex items-center">
                       <CheckCircle2 className="mr-1 h-4 w-4" />
                       All items picked! Ready to ship.
                     </p>
@@ -1294,19 +1294,19 @@ export default function OrderDetails() {
               )}
 
               {/* Pricing Breakdown - Integrated */}
-              <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 px-3 sm:px-6 border-t-2 border-slate-200">
+              <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 px-3 sm:px-6 border-t-2 border-slate-200 dark:border-gray-700">
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-700 font-medium">Subtotal</span>
-                    <span className="font-semibold text-slate-900">{formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</span>
+                    <span className="text-slate-700 dark:text-slate-300 font-medium">Subtotal</span>
+                    <span className="font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</span>
                   </div>
                   
                   {order.discountValue > 0 && (
                     <div className="flex justify-between items-center">
-                      <span className="text-green-700 font-medium">
+                      <span className="text-green-700 dark:text-green-500 font-medium">
                         Discount {order.discountType === 'rate' && `(${order.discountValue}%)`}
                       </span>
-                      <span className="font-semibold text-green-700">
+                      <span className="font-semibold text-green-700 dark:text-green-500">
                         -{formatCurrency(
                           order.discountType === 'rate' 
                             ? (order.subtotal * order.discountValue / 100) 
@@ -1319,15 +1319,15 @@ export default function OrderDetails() {
                   
                   {order.taxAmount > 0 && (
                     <div className="flex justify-between items-center">
-                      <span className="text-slate-700 font-medium">Tax ({order.taxRate}%)</span>
-                      <span className="font-semibold text-slate-900">{formatCurrency(order.taxAmount || 0, order.currency || 'EUR')}</span>
+                      <span className="text-slate-700 dark:text-slate-300 font-medium">Tax ({order.taxRate}%)</span>
+                      <span className="font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(order.taxAmount || 0, order.currency || 'EUR')}</span>
                     </div>
                   )}
                   
                   {order.shippingCost > 0 && (
                     <>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-700 font-medium">
+                        <span className="text-slate-700 dark:text-slate-300 font-medium">
                           Shipping ({(() => {
                             // Show country-specific COD labels
                             if (order.paymentMethod === 'COD') {
@@ -1341,7 +1341,7 @@ export default function OrderDetails() {
                             return order.shippingMethod;
                           })()})
                         </span>
-                        <span className="font-semibold text-slate-900">{formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</span>
+                        <span className="font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</span>
                       </div>
                     </>
                   )}
@@ -1350,24 +1350,24 @@ export default function OrderDetails() {
                     <div className="flex justify-between items-center">
                       <span className={cn(
                         "font-medium",
-                        order.adjustment > 0 ? "text-blue-700" : "text-orange-700"
+                        order.adjustment > 0 ? "text-blue-700 dark:text-blue-500" : "text-orange-700 dark:text-orange-500"
                       )}>
                         Adjustment
                       </span>
                       <span className={cn(
                         "font-semibold",
-                        order.adjustment > 0 ? "text-blue-700" : "text-orange-700"
+                        order.adjustment > 0 ? "text-blue-700 dark:text-blue-500" : "text-orange-700 dark:text-orange-500"
                       )}>
                         {order.adjustment > 0 ? '+' : ''}{formatCurrency(order.adjustment || 0, order.currency || 'EUR')}
                       </span>
                     </div>
                   )}
                   
-                  <div className="border-t-2 border-slate-300 my-3"></div>
+                  <div className="border-t-2 border-slate-300 dark:border-gray-700 my-3"></div>
                   
                   <div className="flex justify-between items-center pt-2 pb-1">
-                    <span className="font-bold text-slate-900 text-lg">Grand Total</span>
-                    <span className="font-bold text-xl text-slate-900">
+                    <span className="font-bold text-slate-900 dark:text-slate-100 text-lg">Grand Total</span>
+                    <span className="font-bold text-xl text-slate-900 dark:text-slate-100">
                       {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
                     </span>
                   </div>
@@ -1379,7 +1379,7 @@ export default function OrderDetails() {
           {/* Shipping Information Card */}
           <Card data-testid="card-shipping-info">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
+              <CardTitle className="flex items-center gap-2 text-base text-gray-900 dark:text-gray-100">
                 <Truck className="h-4 w-4" />
                 Shipping Information
               </CardTitle>
@@ -1554,7 +1554,7 @@ export default function OrderDetails() {
                             <div className="grid grid-cols-2 gap-2 text-xs">
                               {carton.weight && (
                                 <div>
-                                  <span className="text-slate-500">Total Weight:</span>
+                                  <span className="text-slate-500 dark:text-slate-400">Total Weight:</span>
                                   <p className="font-medium text-slate-900 dark:text-slate-100">
                                     {parseFloat(carton.weight).toFixed(2)} kg
                                   </p>
@@ -1562,7 +1562,7 @@ export default function OrderDetails() {
                               )}
                               {carton.payloadWeightKg && (
                                 <div>
-                                  <span className="text-slate-500">Items Weight:</span>
+                                  <span className="text-slate-500 dark:text-slate-400">Items Weight:</span>
                                   <p className="font-medium text-slate-900 dark:text-slate-100">
                                     {parseFloat(carton.payloadWeightKg).toFixed(2)} kg
                                   </p>
@@ -1570,7 +1570,7 @@ export default function OrderDetails() {
                               )}
                               {(carton.innerLengthCm || carton.innerWidthCm || carton.innerHeightCm) && (
                                 <div className="col-span-2">
-                                  <span className="text-slate-500">Dimensions (L×W×H):</span>
+                                  <span className="text-slate-500 dark:text-slate-400">Dimensions (L×W×H):</span>
                                   <p className="font-medium text-slate-900 dark:text-slate-100">
                                     {carton.innerLengthCm ? parseFloat(carton.innerLengthCm).toFixed(1) : '?'} × {carton.innerWidthCm ? parseFloat(carton.innerWidthCm).toFixed(1) : '?'} × {carton.innerHeightCm ? parseFloat(carton.innerHeightCm).toFixed(1) : '?'} cm
                                   </p>
@@ -1578,7 +1578,7 @@ export default function OrderDetails() {
                               )}
                               {carton.trackingNumber && (
                                 <div className="col-span-2">
-                                  <span className="text-slate-500">Tracking:</span>
+                                  <span className="text-slate-500 dark:text-slate-400">Tracking:</span>
                                   <div className="flex items-center gap-2 mt-0.5">
                                     <code className="text-xs bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded font-mono">
                                       {carton.trackingNumber}
@@ -1661,7 +1661,7 @@ export default function OrderDetails() {
           {((productFiles && productFiles.length > 0) || (orderFiles && orderFiles.length > 0) || (shipmentLabels && shipmentLabels.length > 0)) && (
             <Card data-testid="card-files-sent">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
+                <CardTitle className="flex items-center gap-2 text-base text-gray-900 dark:text-gray-100">
                   <FileText className="h-4 w-4" />
                   Files Sent
                 </CardTitle>

@@ -26,7 +26,7 @@ export default function MarginPill({
   if (!landingCost || landingCost <= 0 || !sellingPrice || sellingPrice <= 0) {
     return (
       <span 
-        className={cn("text-xs text-gray-500", className)}
+        className={cn("text-xs text-gray-500 dark:text-gray-400", className)}
         data-testid="margin-pill-unavailable"
       >
         N/A
@@ -49,10 +49,10 @@ export default function MarginPill({
   };
 
   const getMarginColor = () => {
-    if (marginPercentage > 30) return "text-green-700 bg-green-50 border-green-200";
-    if (marginPercentage >= 15) return "text-yellow-700 bg-yellow-50 border-yellow-200";
-    if (marginPercentage >= 0) return "text-red-700 bg-red-50 border-red-200";
-    return "text-red-900 bg-red-100 border-red-300"; // negative margin
+    if (marginPercentage > 30) return "text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700";
+    if (marginPercentage >= 15) return "text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700";
+    if (marginPercentage >= 0) return "text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700";
+    return "text-red-900 dark:text-red-100 bg-red-100 dark:bg-red-900/50 border-red-300 dark:border-red-700"; // negative margin
   };
 
   const getMarginIcon = () => {
@@ -99,7 +99,7 @@ export default function MarginPill({
     <span 
       className={cn(
         "text-xs font-medium cursor-help inline-flex items-center gap-1",
-        marginPercentage > 30 ? "text-green-700" : marginPercentage >= 15 ? "text-yellow-700" : "text-red-700",
+        marginPercentage > 30 ? "text-green-700 dark:text-green-400" : marginPercentage >= 15 ? "text-yellow-700 dark:text-yellow-400" : "text-red-700 dark:text-red-400",
         className
       )}
       data-testid="margin-pill"

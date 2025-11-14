@@ -83,7 +83,7 @@ export function MobileHeader({
     <header
       className={cn(
         "lg:hidden fixed top-0 left-0 right-0 z-40 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-700 transition-all duration-300",
-        isCollapsed && !isSearchExpanded ? "shadow-sm" : ""
+        isCollapsed && !isSearchExpanded ? "shadow-sm dark:shadow-gray-900/50" : ""
       )}
       style={{
         height: isCollapsed && !isSearchExpanded 
@@ -104,15 +104,15 @@ export function MobileHeader({
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="touch-target h-10 w-10"
+                className="touch-target h-10 w-10 hover:bg-gray-100 dark:hover:bg-gray-800"
                 data-testid="button-mobile-menu"
               >
-                <Menu className="h-5 w-5" />
+                <Menu className="h-5 w-5 text-gray-700 dark:text-gray-300" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0 flex flex-col h-full">
-              <div className="p-4 border-b flex-shrink-0">
-                <h2 className="text-lg font-semibold">Menu</h2>
+            <SheetContent side="left" className="w-72 p-0 flex flex-col h-full bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-gray-700">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Menu</h2>
               </div>
               <div className="overflow-y-auto flex-1">
                 {navContent}
@@ -140,11 +140,11 @@ export function MobileHeader({
               variant="ghost"
               size="sm"
               onClick={() => setIsSearchExpanded(true)}
-              className="h-8 px-3 gap-2"
+              className="h-8 px-3 gap-2 hover:bg-gray-100 dark:hover:bg-gray-800"
               data-testid="button-expand-search"
             >
-              <Search className="h-4 w-4" />
-              <span className="text-sm">Search</span>
+              <Search className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+              <span className="text-sm text-gray-700 dark:text-gray-300">Search</span>
             </Button>
           ) : (
             // Expanded: Show full search input
@@ -165,12 +165,12 @@ export function MobileHeader({
             <Button 
               variant="ghost" 
               size="icon" 
-              className="relative h-10 w-10"
+              className="relative h-10 w-10 hover:bg-gray-100 dark:hover:bg-gray-800"
               data-testid="button-notifications"
             >
-              <Bell className="h-5 w-5" />
+              <Bell className="h-5 w-5 text-gray-700 dark:text-gray-300" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-semibold">
+                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 dark:bg-red-600 text-white text-xs rounded-full flex items-center justify-center font-semibold shadow-sm">
                   {unreadCount}
                 </span>
               )}
@@ -189,11 +189,11 @@ export function MobileHeader({
                 document.documentElement.classList.add('dark');
               }
             }}
-            className="h-10 w-10"
+            className="h-10 w-10 hover:bg-gray-100 dark:hover:bg-gray-800"
             data-testid="button-dark-mode"
           >
             {isDarkMode ? (
-              <Sun className="h-5 w-5 text-orange-500" />
+              <Sun className="h-5 w-5 text-orange-500 dark:text-orange-400" />
             ) : (
               <Moon className="h-5 w-5 text-slate-700 dark:text-slate-300" />
             )}
@@ -205,36 +205,36 @@ export function MobileHeader({
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-10 w-10"
+                className="h-10 w-10 hover:bg-gray-100 dark:hover:bg-gray-800"
                 data-testid="button-user-menu"
               >
-                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 dark:from-cyan-600 dark:to-blue-700 flex items-center justify-center shadow-sm">
                   <User className="h-4 w-4 text-white" />
                 </div>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-56 bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium">ronak_03</p>
-                  <p className="text-xs text-muted-foreground">admin@daviesupply.com</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">ronak_03</p>
+                  <p className="text-xs text-muted-foreground dark:text-gray-400">admin@daviesupply.com</p>
                 </div>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
               <Link href="/profile">
-                <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4" />
-                  <span>My Profile</span>
+                <DropdownMenuItem className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <User className="mr-2 h-4 w-4 text-gray-700 dark:text-gray-300" />
+                  <span className="text-gray-900 dark:text-gray-100">My Profile</span>
                 </DropdownMenuItem>
               </Link>
               <Link href="/settings">
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
+                <DropdownMenuItem className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <Settings className="mr-2 h-4 w-4 text-gray-700 dark:text-gray-300" />
+                  <span className="text-gray-900 dark:text-gray-100">Settings</span>
                 </DropdownMenuItem>
               </Link>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600 focus:text-red-600">
+              <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
+              <DropdownMenuItem className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Logout</span>
               </DropdownMenuItem>
