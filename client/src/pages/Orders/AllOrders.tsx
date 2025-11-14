@@ -1185,6 +1185,92 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       {/* Orders Table */}
       <Card className="border-slate-200 dark:border-slate-800">
         <CardContent className="p-0 sm:p-6">
+          {/* Header with view toggle - Always Visible */}
+          <div className="px-4 sm:px-0 pb-4 pt-4 sm:pt-0">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <h2 className="text-mobile-lg font-semibold">Orders ({filteredOrders?.length || 0})</h2>
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* View Mode Toggle */}
+                <div className="flex items-center gap-1 border rounded-md">
+                  <Button
+                    variant={viewMode === 'normal' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => handleViewModeChange('normal')}
+                    className="h-7 px-2 text-xs rounded-r-none"
+                    data-testid="button-viewNormal"
+                  >
+                    <List className="h-3 w-3 mr-1" />
+                    Normal
+                  </Button>
+                  <Button
+                    variant={viewMode === 'compact' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => handleViewModeChange('compact')}
+                    className="h-7 px-2 text-xs rounded-l-none"
+                    data-testid="button-viewCompact"
+                  >
+                    <AlignJustify className="h-3 w-3 mr-1" />
+                    Compact
+                  </Button>
+                </div>
+
+                {/* Expand/Collapse All Toggle */}
+                <div className="flex items-center gap-1 border rounded-md">
+                  <Button
+                    variant={!expandAll ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => handleExpandAllChange(false)}
+                    className="h-7 px-2 text-xs rounded-r-none"
+                    data-testid="button-collapseAll"
+                  >
+                    <ChevronUp className="h-3 w-3 mr-1" />
+                    Collapsed
+                  </Button>
+                  <Button
+                    variant={expandAll ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => handleExpandAllChange(true)}
+                    className="h-7 px-2 text-xs rounded-l-none"
+                    data-testid="button-expandAll"
+                  >
+                    <ChevronDown className="h-3 w-3 mr-1" />
+                    Expanded
+                  </Button>
+                </div>
+                {viewMode === 'normal' && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" data-testid="button-column-visibility">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuLabel>Show Columns</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {columns.map((column) => (
+                        <DropdownMenuItem
+                          key={column.key}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            toggleColumnVisibility(column.key);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span>{column.header}</span>
+                            {visibleColumns[column.key] !== false && (
+                              <Check className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                            )}
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Mobile Card View */}
           <div className="sm:hidden space-y-3 p-3">
             {filteredOrders?.map((order: any) => (
@@ -1274,92 +1360,6 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                 </div>
               </div>
             ))}
-          </div>
-          
-          {/* Header with view toggle - Always Visible */}
-          <div className="px-4 sm:px-0 pb-4 pt-4 sm:pt-0">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <h2 className="text-mobile-lg font-semibold">Orders ({filteredOrders?.length || 0})</h2>
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* View Mode Toggle */}
-                <div className="flex items-center gap-1 border rounded-md">
-                  <Button
-                    variant={viewMode === 'normal' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => handleViewModeChange('normal')}
-                    className="h-7 px-2 text-xs rounded-r-none"
-                    data-testid="button-viewNormal"
-                  >
-                    <List className="h-3 w-3 mr-1" />
-                    Normal
-                  </Button>
-                  <Button
-                    variant={viewMode === 'compact' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => handleViewModeChange('compact')}
-                    className="h-7 px-2 text-xs rounded-l-none"
-                    data-testid="button-viewCompact"
-                  >
-                    <AlignJustify className="h-3 w-3 mr-1" />
-                    Compact
-                  </Button>
-                </div>
-
-                {/* Expand/Collapse All Toggle */}
-                <div className="flex items-center gap-1 border rounded-md">
-                  <Button
-                    variant={!expandAll ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => handleExpandAllChange(false)}
-                    className="h-7 px-2 text-xs rounded-r-none"
-                    data-testid="button-collapseAll"
-                  >
-                    <ChevronUp className="h-3 w-3 mr-1" />
-                    Collapsed
-                  </Button>
-                  <Button
-                    variant={expandAll ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => handleExpandAllChange(true)}
-                    className="h-7 px-2 text-xs rounded-l-none"
-                    data-testid="button-expandAll"
-                  >
-                    <ChevronDown className="h-3 w-3 mr-1" />
-                    Expanded
-                  </Button>
-                </div>
-                {viewMode === 'normal' && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" data-testid="button-column-visibility">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuLabel>Show Columns</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {columns.map((column) => (
-                        <DropdownMenuItem
-                          key={column.key}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            toggleColumnVisibility(column.key);
-                          }}
-                          className="cursor-pointer"
-                        >
-                          <div className="flex items-center justify-between w-full">
-                            <span>{column.header}</span>
-                            {visibleColumns[column.key] !== false && (
-                              <Check className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-                            )}
-                          </div>
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </div>
-            </div>
           </div>
 
           {/* Desktop Table View - Hidden on mobile */}
