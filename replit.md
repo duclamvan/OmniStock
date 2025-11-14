@@ -32,7 +32,7 @@ Utilizes PostgreSQL with Neon serverless driver and Drizzle ORM. The schema supp
   - **ShippingSettings**: Carrier Configuration, Label Generation, Tracking & Notifications, Shipping Rules
   - **FinancialSettings**: Pricing & Margins, Tax Configuration, Currency & Exchange, Invoicing & Billing, Accounting
   - **SystemSettings**: System Preferences, Data Management, Security, Integrations, Automation & AI
-  - All settings persist via key-value pairs in `app_settings` table with category scoping, comprehensive Zod validation, and mobile-responsive Card-based UI organization.
+  - **Settings Persistence Architecture**: All settings persist via key-value pairs in `app_settings` table with category scoping. Database stores snake_case keys, SettingsProvider converts to camelCase for React consumption. Token-based conversion (via `caseConverters.ts`) handles all edge cases including normal camelCase, middle acronyms (defaultVATRate), trailing acronyms (defaultAPIURL, VATID), and preserves already snake_case keys. All 6 settings pages exclusively use SettingsProvider with form hydration via useEffect + form.reset() pattern. Mutations use deepCamelToSnake for nested object conversion before saving, ensuring complete round-trip integrity with falsy value preservation (0, false, null). Comprehensive Zod validation, mobile-responsive Card-based UI organization.
 
 # External Dependencies
 
