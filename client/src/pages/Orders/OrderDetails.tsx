@@ -302,15 +302,14 @@ export default function OrderDetails() {
               display: flex;
               align-items: center;
               gap: 12px;
-              height: 24px;
-              line-height: 1;
+              line-height: 1.2;
             }
             .invoice-icon {
               width: 24px;
               height: 24px;
               color: #64748b;
               flex-shrink: 0;
-              display: flex;
+              display: inline-flex;
               align-items: center;
               justify-content: center;
             }
