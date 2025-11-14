@@ -93,10 +93,7 @@ export function MobileHeader({
       }}
       data-testid="mobile-header"
     >
-      <div className={cn(
-        "flex items-center justify-between px-3 transition-all duration-300",
-        isCollapsed && !isSearchExpanded ? "py-2" : "py-3"
-      )}>
+      <div className="h-full flex items-center justify-between px-3 transition-all duration-300">
         {/* Left: Logo + Menu */}
         <div className="flex items-center gap-2 flex-shrink-0">
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
