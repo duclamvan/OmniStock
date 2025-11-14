@@ -499,7 +499,8 @@ const CartonCard = memo(({
   updateCartonMutation,
   incrementCartonUsageMutation,
   calculateVolumeUtilization,
-  isGLS = false
+  isGLS = false,
+  toast
 }: any) => {
   // Local state for weight input to make it responsive
   const [localWeight, setLocalWeight] = useState(carton.weight || '');
@@ -524,7 +525,7 @@ const CartonCard = memo(({
   
   return (
     <Card 
-      className={`border-2 ${isDraft ? 'border-purple-300 bg-purple-50 opacity-80' : 'border-purple-300 bg-white'}`} 
+      className={`border-2 ${isDraft ? 'border-purple-300 bg-purple-50 opacity-80' : 'border-purple-300 bg-white dark:bg-slate-800'}`} 
       data-testid={`carton-card-${index + 1}`}
     >
       <CardContent className="p-3 space-y-3">
@@ -1000,7 +1001,7 @@ function UnifiedDocumentsList({
       className={`p-3 rounded-lg border transition-colors ${
         isPrinted
           ? 'bg-green-50 border-green-300'
-          : 'bg-white border-gray-200 hover:border-emerald-300'
+          : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-700'
       }`}
       data-testid={testId}
     >
@@ -1898,12 +1899,12 @@ export default function PickPack() {
       productId: item.productId || '',
       productName: item.productName,
       sku: item.sku,
-      quantity: item.quantity,
-      price: item.price || 0
+      quantity: item.quantity
     }));
 
     // Use the shipping country from the active packing order
-    const shippingCountry = activePackingOrder.shippingCountry || 'CZ';
+    const shippingAddr = activePackingOrder.shippingAddress;
+    const shippingCountry = (typeof shippingAddr === 'object' && shippingAddr !== null ? shippingAddr.country : undefined) || 'CZ';
 
     // Call the shared optimization function
     runOptimization(items, shippingCountry);
@@ -2118,7 +2119,7 @@ export default function PickPack() {
 
   // Fetch real orders from the API with items and bundle details
   // Real-time data synchronization: refetch every 5 seconds to ensure Pick & Pack always shows latest order data
-  const { data: allOrders = [], isLoading, isSuccess } = useQuery({
+  const { data: allOrders = [], isLoading, isSuccess } = useQuery<PickPackOrder[]>({
     queryKey: ['/api/orders/pick-pack'],
     staleTime: 0, // IMPORTANT: Set to 0 to always fetch fresh data (fixes 304 cache issue)
     refetchInterval: 5000, // 5 seconds - real-time updates for active picking/packing
@@ -2131,7 +2132,7 @@ export default function PickPack() {
   // This ensures UI updates automatically when PPL labels are created/cancelled
   useEffect(() => {
     if (activePackingOrder && allOrders.length > 0) {
-      const updatedOrder = allOrders.find(o => o.id === activePackingOrder.id);
+      const updatedOrder = allOrders.find((o: PickPackOrder) => o.id === activePackingOrder.id);
       if (updatedOrder) {
         // Check if PPL data has changed
         const pplDataChanged = 
@@ -3707,7 +3708,7 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'A-15-2',
           barcode: 'BAR123456789',
-          image: null,
+          image: undefined,
           isBundle: true,
           dimensions: { length: 15, width: 12, height: 8, weight: 0.180 },
           bundleItems: [
@@ -3735,7 +3736,7 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'B-10-1',
           barcode: 'BAR987654321',
-          image: null,
+          image: undefined,
           dimensions: { length: 25, width: 20, height: 12, weight: 0.850 },
           isFragile: true
         }
@@ -3767,7 +3768,7 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'C-05-3',
           barcode: 'BAR456789123',
-          image: null,
+          image: undefined,
           isBundle: true,
           bundleItems: [
             { id: 'br1', name: 'Ultra Fine Detail', quantity: 1, picked: false, location: 'C-05-3-A' },
@@ -3807,7 +3808,7 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'D-20-5',
           barcode: 'BAR111222333',
-          image: null,
+          image: undefined,
           isBundle: true,
           bundleItems: [
             { id: 'ne1', name: 'Electric Pink', colorNumber: '201', quantity: 1, picked: false, location: 'D-20-5-1' },
@@ -3828,7 +3829,7 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'E-08-2',
           barcode: 'BAR444555666',
-          image: null
+          image: undefined
         }
       ],
       totalItems: 3,
@@ -3860,7 +3861,7 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'A-15-1',
           barcode: 'BAR123MULTI1',
-          image: null,
+          image: undefined,
           dimensions: { length: 45, width: 35, height: 20, weight: 4.200 },
           isBundle: true
         },
@@ -3874,7 +3875,7 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'B-10-1',
           barcode: 'BAR456MULTI2',
-          image: null,
+          image: undefined,
           dimensions: { length: 38, width: 28, height: 22, weight: 2.100 },
           isFragile: true
         },
@@ -3888,7 +3889,7 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'E-03-2',
           barcode: 'BAR789MULTI3',
-          image: null,
+          image: undefined,
           dimensions: { length: 32, width: 24, height: 18, weight: 3.600 },
           isFragile: true
         },
@@ -3902,7 +3903,7 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'F-08-4',
           barcode: 'BAR321MULTI4',
-          image: null,
+          image: undefined,
           dimensions: { length: 30, width: 25, height: 12, weight: 1.800 }
         },
         {
@@ -3915,7 +3916,7 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'G-12-3',
           barcode: 'BAR654MULTI5',
-          image: null,
+          image: undefined,
           dimensions: { length: 28, width: 20, height: 25, weight: 3.200 },
           isFragile: true
         },
@@ -3929,7 +3930,7 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'H-05-1',
           barcode: 'BAR987MULTI6',
-          image: null,
+          image: undefined,
           dimensions: { length: 35, width: 25, height: 30, weight: 2.400 }
         }
       ],
@@ -3964,7 +3965,7 @@ export default function PickPack() {
           packedQuantity: 1,
           warehouseLocation: 'H-18-6',
           barcode: 'BAR333444555',
-          image: null
+          image: undefined
         }
       ],
       totalItems: 1,
@@ -5935,17 +5936,17 @@ export default function PickPack() {
         // First carton always requires weight
         if (index === 0) {
           if (isGLSShipping) {
-            hasValidWeight = carton.weight && parseFloat(carton.weight) > 0 && parseFloat(carton.weight) <= 40;
+            hasValidWeight = !!(carton.weight && parseFloat(carton.weight) > 0 && parseFloat(carton.weight) <= 40);
           } else {
-            hasValidWeight = carton.weight && parseFloat(carton.weight) > 0;
+            hasValidWeight = !!(carton.weight && parseFloat(carton.weight) > 0);
           }
         }
         // Company cartons always require weight
         else if (carton.cartonType !== 'non-company') {
           if (isGLSShipping) {
-            hasValidWeight = carton.weight && parseFloat(carton.weight) > 0 && parseFloat(carton.weight) <= 40;
+            hasValidWeight = !!(carton.weight && parseFloat(carton.weight) > 0 && parseFloat(carton.weight) <= 40);
           } else {
-            hasValidWeight = carton.weight && parseFloat(carton.weight) > 0;
+            hasValidWeight = !!(carton.weight && parseFloat(carton.weight) > 0);
           }
         }
         // Non-company cartons (2nd+) don't require weight, but if they have it, validate GLS limit
@@ -6226,7 +6227,7 @@ export default function PickPack() {
                   <span className="text-sm lg:text-base text-white font-medium truncate">{activePackingOrder.customerName}</span>
                   {(() => {
                     const shippingAddr = activePackingOrder.shippingAddress;
-                    const country = typeof shippingAddr === 'object' && shippingAddr !== null ? shippingAddr.country : '';
+                    const country = (typeof shippingAddr === 'object' && shippingAddr !== null && 'country' in shippingAddr) ? shippingAddr.country : '';
                     return country && (
                       <span className="text-sm lg:text-base text-white font-medium">• {country}</span>
                     );
@@ -7130,6 +7131,7 @@ export default function PickPack() {
                     incrementCartonUsageMutation={incrementCartonUsageMutation}
                     calculateVolumeUtilization={calculateVolumeUtilization}
                     isGLS={isGLSShipping}
+                    toast={toast}
                   />
                 );
               })}
@@ -7186,7 +7188,7 @@ export default function PickPack() {
                     
                     // If DHL Nachnahme and this is carton #2+, automatically add to GLS
                     if (isDHLNachnahme && nextCartonNumber > 1) {
-                      setGlsCartonIds(prev => new Set([...prev, tempId]));
+                      setGlsCartonIds(prev => new Set([...Array.from(prev), tempId]));
                     }
                     
                     createCartonMutation.mutate({
@@ -7341,7 +7343,7 @@ export default function PickPack() {
                 return isGLS;
               })() && (() => {
                 const shippingAddr = activePackingOrder.shippingAddress;
-                const recipientData = typeof shippingAddr === 'object' ? {
+                const recipientData = (typeof shippingAddr === 'object' && shippingAddr !== null && 'firstName' in shippingAddr) ? {
                   name: [shippingAddr.firstName, shippingAddr.lastName].filter(Boolean).join(' ') || 'N/A',
                   company: shippingAddr.company || '',
                   street: shippingAddr.street || '',
@@ -7531,7 +7533,7 @@ export default function PickPack() {
                 return isDHL;
               })() && (() => {
                 const shippingAddr = activePackingOrder.shippingAddress;
-                const recipientData = typeof shippingAddr === 'object' ? {
+                const recipientData = (typeof shippingAddr === 'object' && shippingAddr !== null && 'firstName' in shippingAddr) ? {
                   firstName: shippingAddr.firstName || '',
                   lastName: shippingAddr.lastName || '',
                   company: shippingAddr.company || '',
@@ -7945,7 +7947,7 @@ export default function PickPack() {
                 
                 // Prepare recipient data from shipping address
                 const shippingAddr = activePackingOrder.shippingAddress;
-                const recipientData = typeof shippingAddr === 'object' ? {
+                const recipientData = (typeof shippingAddr === 'object' && shippingAddr !== null && 'firstName' in shippingAddr) ? {
                   name: [shippingAddr.firstName, shippingAddr.lastName].filter(Boolean).join(' ') || 'N/A',
                   company: shippingAddr.company || '',
                   street: shippingAddr.street || '',
@@ -8093,7 +8095,7 @@ export default function PickPack() {
                                 >
                                   <Package className="h-4 w-4 text-sky-600 flex-shrink-0" />
                                   <span className="text-sm font-medium text-black flex-1">
-                                    Carton #{cartons.findIndex(c => c.id === carton.id) + 1}: {carton.name || 'Unnamed'}
+                                    Carton #{cartons.findIndex(c => c.id === carton.id) + 1}
                                     {carton.weight && ` (${carton.weight} kg)`}
                                   </span>
                                   <Button
@@ -8119,7 +8121,6 @@ export default function PickPack() {
                             <GLSAutofillButton
                               recipientData={recipientData}
                               senderData={senderData}
-                              totalWeight={totalGLSWeight}
                               cartonCount={glsCartons.length}
                             />
 
@@ -8363,7 +8364,7 @@ export default function PickPack() {
             if (!isDHL) return null;
 
             const shippingAddr = activePackingOrder.shippingAddress;
-            const recipientData = typeof shippingAddr === 'object' ? {
+            const recipientData = (typeof shippingAddr === 'object' && shippingAddr !== null && 'firstName' in shippingAddr) ? {
               firstName: shippingAddr.firstName || '',
               lastName: shippingAddr.lastName || '',
               addressSupplement: shippingAddr.addressSupplement || '',
@@ -8762,7 +8763,7 @@ export default function PickPack() {
             const availableCartonsForGLS = cartons.slice(1).filter(c => !glsCartonIds.has(c.id));
             
             const shippingAddr = activePackingOrder.shippingAddress;
-            const recipientData = typeof shippingAddr === 'object' ? {
+            const recipientData = (typeof shippingAddr === 'object' && shippingAddr !== null && 'firstName' in shippingAddr) ? {
               name: [shippingAddr.firstName, shippingAddr.lastName].filter(Boolean).join(' ') || 'N/A',
               company: shippingAddr.company || '',
               street: shippingAddr.street || '',
@@ -9238,9 +9239,9 @@ export default function PickPack() {
                 // Check if shipping address is provided
                 const shippingAddr = activePackingOrder.shippingAddress;
                 const hasShippingAddress = shippingAddr && 
-                  (typeof shippingAddr === 'object' && shippingAddr !== null 
+                  (typeof shippingAddr === 'object' && shippingAddr !== null && 'street' in shippingAddr
                     ? (shippingAddr.street || shippingAddr.city || shippingAddr.zipCode)
-                    : shippingAddr.trim() !== '');
+                    : (typeof shippingAddr === 'string' && shippingAddr.trim() !== ''));
                 
                 const isButtonDisabled = createPPLLabelsMutation.isPending || cartons.length === 0 || !hasShippingAddress;
                 
@@ -9547,7 +9548,7 @@ export default function PickPack() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 min-w-0">
                                   <p className={`text-sm font-semibold truncate ${isCancelled ? 'text-gray-600 line-through' : 'text-gray-900'}`}>
-                                    CZ-PPL{label.labelData?.hasCOD || activePackingOrder.codAmount > 0 ? '-DOB' : ''} #{index + 1}
+                                    CZ-PPL{label.labelData?.hasCOD || (activePackingOrder.codAmount && parseFloat(String(activePackingOrder.codAmount)) > 0) ? '-DOB' : ''} #{index + 1}
                                   </p>
                                   {isCancelled && (
                                     <Badge variant="destructive" className="text-xs px-2 py-0 flex-shrink-0">
@@ -9682,7 +9683,7 @@ export default function PickPack() {
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 min-w-0">
                                       <p className={`text-sm font-semibold truncate ${isCancelled ? 'text-gray-600 line-through' : 'text-gray-900'}`}>
-                                        CZ-PPL{activePackingOrder.codAmount > 0 ? '-DOB' : ''} #{index + 1}
+                                        CZ-PPL{(activePackingOrder.codAmount && parseFloat(String(activePackingOrder.codAmount)) > 0) ? '-DOB' : ''} #{index + 1}
                                       </p>
                                       {isCancelled && (
                                         <Badge variant="destructive" className="text-xs px-2 py-0 flex-shrink-0">
@@ -9997,7 +9998,7 @@ export default function PickPack() {
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 min-w-0">
                                       <p className={`text-sm font-semibold truncate ${isCancelled ? 'text-gray-600 line-through' : 'text-gray-900'}`}>
-                                        CZ-PPL{label.labelData?.hasCOD || activePackingOrder.codAmount > 0 ? '-DOB' : ''} #{labelNumber}
+                                        CZ-PPL{label.labelData?.hasCOD || (activePackingOrder.codAmount && parseFloat(String(activePackingOrder.codAmount)) > 0) ? '-DOB' : ''} #{labelNumber}
                                       </p>
                                       <Badge variant="outline" className="text-xs px-2 py-0 flex-shrink-0 border-amber-500 text-amber-700">
                                         No Carton
@@ -10617,7 +10618,7 @@ export default function PickPack() {
                                 onClick={() => {
                                   // Add next available carton
                                   const nextCarton = availableCartonsForGLS[0];
-                                  setGlsCartonIds(prev => new Set([...prev, nextCarton.id]));
+                                  setGlsCartonIds(prev => new Set([...Array.from(prev), nextCarton.id]));
                                 }}
                                 data-testid="button-add-carton-to-gls"
                               >
@@ -12209,7 +12210,7 @@ export default function PickPack() {
                           className={`flex-shrink-0 w-32 p-2 rounded-lg border-2 snap-start transition-all transform active:scale-95 touch-manipulation ${
                             isPicked ? 'bg-green-50 border-green-400' :
                             isCurrent ? 'bg-blue-50 border-blue-500 shadow-lg' :
-                            'bg-white border-gray-200 hover:bg-gray-50'
+                            'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-slate-700'
                           }`}
                           onClick={() => {
                             if (!isPicked) {

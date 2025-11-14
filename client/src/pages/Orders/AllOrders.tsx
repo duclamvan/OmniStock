@@ -689,7 +689,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       sortKey: "orderId",
       cell: (order) => (
         <div className="flex items-center gap-3">
-          <div className="font-semibold text-slate-900">{order.orderId}</div>
+          <div className="font-semibold text-slate-900 dark:text-slate-100">{order.orderId}</div>
         </div>
       ),
     },
@@ -721,7 +721,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         return (
           <div className="flex items-center gap-2">
             {flag && <span className="text-lg">{flag}</span>}
-            <div className="text-sm text-slate-700">{customerName}</div>
+            <div className="text-sm text-slate-700 dark:text-slate-300">{customerName}</div>
           </div>
         );
       },
@@ -731,7 +731,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       header: "Biller",
       sortable: false,
       cell: (order) => (
-        <div className="text-sm text-slate-700">
+        <div className="text-sm text-slate-700 dark:text-slate-300">
           {order.biller?.email || 'N/A'}
         </div>
       ),
@@ -753,7 +753,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               order.orderStatus === 'shipped' ? 'bg-purple-100 text-purple-700 border-purple-200' :
               order.orderStatus === 'delivered' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
               order.orderStatus === 'cancelled' ? 'bg-red-100 text-red-700 border-red-200' :
-              'bg-slate-100 text-slate-700 border-slate-200'
+              'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
             )}
           >
             {order.orderStatus?.replace(/_/g, ' ')}
@@ -773,7 +773,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             order.paymentStatus === 'paid' ? 'bg-green-100 text-green-700 border-green-200' :
             order.paymentStatus === 'pending' ? 'bg-amber-100 text-amber-700 border-amber-200' :
             order.paymentStatus === 'pay_later' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-            'bg-slate-100 text-slate-700 border-slate-200'
+            'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
           )}
         >
           {order.paymentStatus?.replace('_', ' ')}
@@ -786,7 +786,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       sortable: true,
       sortKey: "createdAt",
       cell: (order) => (
-        <div className="text-sm text-slate-600">
+        <div className="text-sm text-slate-600 dark:text-slate-400">
           {formatDate(order.createdAt)}
         </div>
       ),
@@ -797,7 +797,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       sortable: true,
       sortKey: "grandTotal",
       cell: (order) => (
-        <div className="font-semibold text-slate-900">
+        <div className="font-semibold text-slate-900 dark:text-slate-100">
           {formatCurrency(parseFloat(order.grandTotal || '0'), order.currency)}
         </div>
       ),
@@ -828,9 +828,9 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       cell: (order) => (
         <div className="text-sm">
           {order.trackingNumber ? (
-            <span className="font-mono text-slate-700">{order.trackingNumber}</span>
+            <span className="font-mono text-slate-700 dark:text-slate-300">{order.trackingNumber}</span>
           ) : (
-            <span className="text-slate-400">—</span>
+            <span className="text-slate-400 dark:text-slate-500">—</span>
           )}
         </div>
       ),
@@ -1506,7 +1506,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                 return (
                                   <Popover>
                                     <PopoverTrigger asChild>
-                                      <Badge className="bg-gradient-to-r from-slate-200 to-slate-100 text-slate-800 border-slate-300 text-xs cursor-pointer">
+                                      <Badge className="bg-gradient-to-r from-slate-200 to-slate-100 dark:from-slate-700 dark:to-slate-800 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-600 text-xs cursor-pointer">
                                         <Award className="h-3 w-3 mr-1" />
                                         Platinum
                                       </Badge>
@@ -1564,7 +1564,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                             {order.customer?.customerRank === 'TOP100' && (
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <Badge className="bg-slate-50 text-slate-700 border-slate-300 text-xs cursor-pointer">
+                                  <Badge className="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 text-xs cursor-pointer">
                                     <Star className="h-3 w-3 mr-1" />
                                     TOP 100{order.customer?.country ? ` in ${order.customer.country}` : ''}
                                   </Badge>
@@ -1838,7 +1838,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                 {filteredOrders.map((order: any) => (
                   <div
                     key={order.id}
-                    className="border-b border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors"
+                    className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors"
                     onClick={() => {
                       sessionStorage.setItem('orderDetailsReferrer', location);
                       navigate(`/orders/${order.id}`);
@@ -1875,7 +1875,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                 order.orderStatus === 'ready_to_ship' ? 'bg-blue-100 text-blue-800 border-blue-200' :
                                 order.orderStatus === 'shipped' ? 'bg-green-100 text-green-800 border-green-200' :
                                 order.orderStatus === 'cancelled' ? 'bg-red-100 text-red-800 border-red-200' :
-                                'bg-slate-100 text-slate-800 border-slate-200'
+                                'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                               )}
                             >
                               {order.orderStatus?.replace('_', ' ')}
@@ -1886,7 +1886,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                 order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800 border-green-200' :
                                 order.paymentStatus === 'pending' ? 'bg-amber-100 text-amber-800 border-amber-200' :
                                 order.paymentStatus === 'pay_later' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                                'bg-slate-100 text-slate-800 border-slate-200'
+                                'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                               )}
                             >
                               {order.paymentStatus?.replace('_', ' ')}
@@ -1912,7 +1912,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                               return (
                                 <>
                                   <span className={`font-medium ${colorClass}`}>{customerName}</span>
-                                  <span className="text-slate-600"> • {formatDate(order.createdAt)}</span>
+                                  <span className="text-slate-600 dark:text-slate-400"> • {formatDate(order.createdAt)}</span>
                                 </>
                               );
                             })()}
@@ -1923,14 +1923,14 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                         </div>
                       </div>
                       {expandAll && order.items && order.items.length > 0 && (
-                        <div className="mt-1 text-xs text-slate-700 space-y-0.5">
+                        <div className="mt-1 text-xs text-slate-700 dark:text-slate-300 space-y-0.5">
                           {order.items.map((item: any, idx: number) => (
                             <div key={idx} className="flex items-center justify-between">
                               <span className="truncate">
                                 {item.quantity}× {item.productName}
-                                {item.sku && <span className="text-slate-500"> ({item.sku})</span>}
+                                {item.sku && <span className="text-slate-500 dark:text-slate-400"> ({item.sku})</span>}
                               </span>
-                              <span className="ml-2 text-slate-600">
+                              <span className="ml-2 text-slate-600 dark:text-slate-400">
                                 {formatCurrency(item.total || 0, order.currency || 'EUR')}
                               </span>
                             </div>

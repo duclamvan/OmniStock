@@ -32,7 +32,7 @@ const ThemedCardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<H
   ({ className, ...props }, ref) => (
     <CardHeader
       ref={ref}
-      className={cn(themeClasses.border.subtle, className)}
+      className={cn("p-6 border-b border-gray-200 dark:border-gray-700", className)}
       {...props}
     />
   )
@@ -61,10 +61,26 @@ const ThemedCardDescription = React.forwardRef<HTMLDivElement, React.HTMLAttribu
 );
 ThemedCardDescription.displayName = "ThemedCardDescription";
 
-const ThemedCardContent = CardContent;
+const ThemedCardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <CardContent
+      ref={ref}
+      className={cn("p-6", className)}
+      {...props}
+    />
+  )
+);
 ThemedCardContent.displayName = "ThemedCardContent";
 
-const ThemedCardFooter = CardFooter;
+const ThemedCardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <CardFooter
+      ref={ref}
+      className={cn("p-6 border-t border-gray-200 dark:border-gray-700", className)}
+      {...props}
+    />
+  )
+);
 ThemedCardFooter.displayName = "ThemedCardFooter";
 
 export {
