@@ -954,11 +954,11 @@ export default function AllInventory() {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
           {/* Archive dropdown - always visible */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-9 px-3">
+              <Button variant="ghost" size="sm" className="h-9 px-2 sm:px-3">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -987,23 +987,24 @@ export default function AllInventory() {
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="flex-1 sm:flex-none touch-target"
+                className="flex-1 sm:flex-none h-9 px-2 sm:px-3 min-w-0"
                 onClick={() => setShowImportDialog(true)}
                 data-testid="button-import-xls"
               >
-                <FileUp className="mr-2 h-4 w-4" />
-                Import XLS
+                <FileUp className="h-4 w-4 sm:mr-1.5 flex-shrink-0" />
+                <span className="hidden xs:inline truncate">Import</span>
+                <span className="hidden sm:inline ml-0.5">XLS</span>
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="flex-1 sm:flex-none touch-target"
+                    className="flex-1 sm:flex-none h-9 px-2 sm:px-3 min-w-0"
                     data-testid="button-export"
                   >
-                    <FileDown className="mr-2 h-4 w-4" />
-                    Export
+                    <FileDown className="h-4 w-4 sm:mr-1.5 flex-shrink-0" />
+                    <span className="hidden xs:inline truncate">Export</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -1026,9 +1027,10 @@ export default function AllInventory() {
                 </DropdownMenuContent>
               </DropdownMenu>
               <Link href="/inventory/add" className="flex-1 sm:flex-none">
-                <Button className="w-full touch-target">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Product
+                <Button className="w-full h-9 px-2 sm:px-4 min-w-0">
+                  <Plus className="h-4 w-4 sm:mr-1.5 flex-shrink-0" />
+                  <span className="hidden xs:inline truncate">Add</span>
+                  <span className="hidden sm:inline ml-0.5">Product</span>
                 </Button>
               </Link>
             </>
