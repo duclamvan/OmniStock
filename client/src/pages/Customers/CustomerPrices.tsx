@@ -333,16 +333,16 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                   <p>Bulk Import</p>
                 </TooltipContent>
               </Tooltip>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
               <DialogHeader>
-                <DialogTitle>Bulk Import Customer Prices</DialogTitle>
+                <DialogTitle className="text-gray-900 dark:text-gray-100">Bulk Import Customer Prices</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="csv">Paste CSV Content</Label>
+                  <Label htmlFor="csv" className="text-gray-900 dark:text-gray-100">Paste CSV Content</Label>
                   <textarea
                     id="csv"
-                    className="w-full h-48 p-2 border rounded-md font-mono text-sm"
+                    className="w-full h-48 p-2 border rounded-md font-mono text-sm bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
                     placeholder="productId,variantId,price,currency,validFrom,validTo,isActive,notes&#10;prod-001,,100,CZK,2024-01-01,,true,Special price"
                     value={csvContent}
                     onChange={(e) => setCsvContent(e.target.value)}
@@ -387,9 +387,9 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                 <p>Add Price</p>
               </TooltipContent>
             </Tooltip>
-            <DialogContent>
+            <DialogContent className="bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
               <DialogHeader>
-                <DialogTitle>Add Custom Price</DialogTitle>
+                <DialogTitle className="text-gray-900 dark:text-gray-100">Add Custom Price</DialogTitle>
               </DialogHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -429,11 +429,11 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                               </Button>
                             )}
                             {showProductDropdown && filteredProducts.length > 0 && (
-                              <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-64 overflow-y-auto z-50">
+                              <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 max-h-64 overflow-y-auto z-50">
                                 {filteredProducts.map((product) => (
                                   <div
                                     key={product.id}
-                                    className="p-3 hover:bg-slate-100 cursor-pointer border-b last:border-b-0 transition-colors"
+                                    className="p-3 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer border-b dark:border-gray-700 last:border-b-0 transition-colors"
                                     onClick={() => {
                                       field.onChange(product.id);
                                       setSelectedProduct(product.id);
@@ -591,22 +591,22 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
       </div>
 
       {prices.length === 0 ? (
-        <Card>
+        <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-8">
             <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
-                <Tag className="h-8 w-8 text-slate-400" />
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-700 mb-4">
+                <Tag className="h-8 w-8 text-slate-400 dark:text-slate-500" />
               </div>
-              <p className="text-2xl font-bold text-slate-900 mb-2">0</p>
-              <p className="text-sm font-medium text-slate-700 mb-1">No custom prices</p>
-              <p className="text-xs text-slate-500">
+              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">0</p>
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">No custom prices</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Add custom prices to override default product pricing
               </p>
             </div>
           </CardContent>
         </Card>
       ) : (
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-0">
             {/* Mobile Card View */}
             <div className="sm:hidden space-y-3 p-3">
@@ -619,16 +619,16 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                 const isActive = price.isActive && !isExpired;
 
                 return (
-                  <div key={price.id} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+                  <div key={price.id} className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 p-4">
                     <div className="space-y-3">
                       {/* Top Row - Product Name and Status */}
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-900 truncate">
+                          <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">
                             {product?.name || 'Unknown Product'}
                           </p>
                           {price.variantId && (
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                               Variant: {price.variantId}
                             </p>
                           )}
@@ -655,18 +655,18 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                       {/* Middle Row - Price Comparison */}
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                          <p className="text-gray-500 text-xs">Custom Price</p>
-                          <p className="font-bold text-lg text-gray-900">
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">Custom Price</p>
+                          <p className="font-bold text-lg text-gray-900 dark:text-gray-100">
                             {customPrice.toFixed(2)} {price.currency}
                           </p>
                         </div>
                         <div>
-                          <p className="text-gray-500 text-xs">Standard Price</p>
-                          <p className="font-medium text-gray-600">
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">Standard Price</p>
+                          <p className="font-medium text-gray-600 dark:text-gray-300">
                             {standardPrice.toFixed(2)} {price.currency}
                           </p>
                           {discount > 0 && (
-                            <Badge variant="outline" className="text-xs mt-1 bg-green-50 text-green-700 border-green-200">
+                            <Badge variant="outline" className="text-xs mt-1 bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700">
                               -{discount}% discount
                             </Badge>
                           )}
@@ -676,14 +676,14 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                       {/* Bottom Row - Valid Dates */}
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                          <p className="text-gray-500 text-xs">Valid From</p>
-                          <p className="font-medium text-gray-900">
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">Valid From</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-100">
                             {format(new Date(price.validFrom), 'dd/MM/yyyy')}
                           </p>
                         </div>
                         <div>
-                          <p className="text-gray-500 text-xs">Valid To</p>
-                          <p className="font-medium text-gray-900">
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">Valid To</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-100">
                             {price.validTo ? format(new Date(price.validTo), 'dd/MM/yyyy') : 'No expiry'}
                           </p>
                         </div>
@@ -691,9 +691,9 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
 
                       {/* Notes if available */}
                       {price.notes && (
-                        <div className="pt-2 border-t border-gray-100">
-                          <p className="text-xs text-gray-500">Notes</p>
-                          <p className="text-sm text-gray-700">{price.notes}</p>
+                        <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Notes</p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">{price.notes}</p>
                         </div>
                       )}
                     </div>

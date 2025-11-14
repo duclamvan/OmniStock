@@ -145,8 +145,8 @@ export default function AddWarehouse() {
       </div>
 
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Add New Warehouse</h1>
-        <p className="text-sm md:text-base text-slate-600 mt-1">Create a new warehouse location and configure its details</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">Add New Warehouse</h1>
+        <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 mt-1">Create a new warehouse location and configure its details</p>
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
@@ -154,13 +154,13 @@ export default function AddWarehouse() {
           {/* Main Column - 2/3 width */}
           <div className="lg:col-span-2 space-y-4 md:space-y-6">
             {/* Basic Information */}
-            <Card>
+            <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
               <CardHeader className="p-4 md:p-6">
-                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                  <Building2 className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
+                <CardTitle className="flex items-center gap-2 text-base md:text-lg text-gray-900 dark:text-gray-100">
+                  <Building2 className="h-4 w-4 md:h-5 md:w-5 text-blue-600 dark:text-blue-400" />
                   Basic Information
                 </CardTitle>
-                <CardDescription className="text-xs md:text-sm">Essential warehouse details and identification</CardDescription>
+                <CardDescription className="text-xs md:text-sm text-gray-700 dark:text-gray-300">Essential warehouse details and identification</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 md:space-y-4 p-4 md:p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -201,7 +201,7 @@ export default function EditReturn() {
 
   if (returnLoading) {
     return (
-      <div className="p-6 max-w-4xl mx-auto">
+      <div className="p-6 max-w-4xl mx-auto bg-white dark:bg-slate-900">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
@@ -211,9 +211,9 @@ export default function EditReturn() {
 
   if (!returnData) {
     return (
-      <div className="p-6 max-w-4xl mx-auto">
+      <div className="p-6 max-w-4xl mx-auto bg-white dark:bg-slate-900">
         <div className="text-center">
-          <p className="text-gray-500">Return not found</p>
+          <p className="text-gray-500 dark:text-gray-400">Return not found</p>
         </div>
       </div>
     );
@@ -233,8 +233,8 @@ export default function EditReturn() {
         </Button>
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold">Edit Return</h1>
-            <p className="text-gray-600">Update return information</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Edit Return</h1>
+            <p className="text-gray-600 dark:text-gray-400">Update return information</p>
           </div>
           <Button
             variant="destructive"
@@ -248,7 +248,7 @@ export default function EditReturn() {
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <Card>
+        <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
           <CardContent className="space-y-6 pt-6">
             {/* Return ID and Customer */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

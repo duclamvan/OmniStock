@@ -176,10 +176,10 @@ export default function CustomerDetails() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading customer details...</p>
+          <p className="text-slate-600 dark:text-slate-400">Loading customer details...</p>
         </div>
       </div>
     );
@@ -255,9 +255,9 @@ export default function CustomerDetails() {
   const customerDuration = getCustomerDuration();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       {/* Header Section */}
-      <div className="bg-white border-b sticky top-0 z-20">
+      <div className="bg-white dark:bg-slate-800 border-b dark:border-gray-700 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 lg:px-6 py-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 lg:gap-4 flex-1 min-w-0">
@@ -317,54 +317,54 @@ export default function CustomerDetails() {
       {/* Quick Stats */}
       <div className="max-w-7xl mx-auto px-4 lg:px-6 py-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-          <Card>
+          <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
             <CardContent className="p-4 lg:p-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 lg:p-3 bg-blue-50 rounded-lg">
-                  <Package className="h-5 w-5 lg:h-6 lg:w-6 text-blue-600" />
+                <div className="p-2 lg:p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                  <Package className="h-5 w-5 lg:h-6 lg:w-6 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xl lg:text-2xl font-bold text-slate-900">{orders.length}</p>
-                  <p className="text-xs lg:text-sm text-slate-500">Total Orders</p>
+                  <p className="text-xl lg:text-2xl font-bold text-slate-900 dark:text-slate-100">{orders.length}</p>
+                  <p className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">Total Orders</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
             <CardContent className="p-4 lg:p-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 lg:p-3 bg-green-50 rounded-lg">
-                  <DollarSign className="h-5 w-5 lg:h-6 lg:w-6 text-green-600" />
+                <div className="p-2 lg:p-3 bg-green-50 dark:bg-green-950 rounded-lg">
+                  <DollarSign className="h-5 w-5 lg:h-6 lg:w-6 text-green-600 dark:text-green-400" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-base lg:text-xl font-bold text-slate-900 truncate">{formatCurrency(totalSpent, customerCurrency)}</p>
-                  <p className="text-xs lg:text-sm text-slate-500">Total Spent</p>
+                  <p className="text-base lg:text-xl font-bold text-slate-900 dark:text-slate-100 truncate">{formatCurrency(totalSpent, customerCurrency)}</p>
+                  <p className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">Total Spent</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
             <CardContent className="p-4 lg:p-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 lg:p-3 bg-purple-50 rounded-lg">
-                  <ShoppingCart className="h-5 w-5 lg:h-6 lg:w-6 text-purple-600" />
+                <div className="p-2 lg:p-3 bg-purple-50 dark:bg-purple-950 rounded-lg">
+                  <ShoppingCart className="h-5 w-5 lg:h-6 lg:w-6 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-base lg:text-xl font-bold text-slate-900 truncate">{formatCurrency(averageOrderValue, customerCurrency)}</p>
-                  <p className="text-xs lg:text-sm text-slate-500">Avg Order</p>
+                  <p className="text-base lg:text-xl font-bold text-slate-900 dark:text-slate-100 truncate">{formatCurrency(averageOrderValue, customerCurrency)}</p>
+                  <p className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">Avg Order</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
             <CardContent className="p-4 lg:p-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 lg:p-3 bg-orange-50 rounded-lg">
-                  <AlertCircle className="h-5 w-5 lg:h-6 lg:w-6 text-orange-600" />
+                <div className="p-2 lg:p-3 bg-orange-50 dark:bg-orange-950 rounded-lg">
+                  <AlertCircle className="h-5 w-5 lg:h-6 lg:w-6 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xl lg:text-2xl font-bold text-slate-900">{unpaidOrders}</p>
-                  <p className="text-xs lg:text-sm text-slate-500">Unpaid</p>
+                  <p className="text-xl lg:text-2xl font-bold text-slate-900 dark:text-slate-100">{unpaidOrders}</p>
+                  <p className="text-xs lg:text-sm text-slate-500 dark:text-slate-400">Unpaid</p>
                 </div>
               </div>
             </CardContent>
@@ -376,8 +376,8 @@ export default function CustomerDetails() {
       <div className="max-w-7xl mx-auto px-4 lg:px-6 pb-6">
         <Tabs defaultValue="details" className="space-y-6">
           {/* Sticky Tab Navigation */}
-          <div className="sticky top-[113px] lg:top-[105px] z-10 bg-gray-50 -mx-4 lg:-mx-6 px-4 lg:px-6 py-3 border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-            <TabsList className="w-full lg:w-auto h-auto p-1 bg-slate-100">
+          <div className="sticky top-[113px] lg:top-[105px] z-10 bg-gray-50 dark:bg-slate-900 -mx-4 lg:-mx-6 px-4 lg:px-6 py-3 border-b dark:border-gray-700 bg-white/95 dark:bg-slate-800/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:supports-[backdrop-filter]:bg-slate-800/80">
+            <TabsList className="w-full lg:w-auto h-auto p-1 bg-slate-100 dark:bg-slate-700">
               <TabsTrigger 
                 value="details" 
                 className="flex-1 lg:flex-none lg:px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm text-sm font-medium"

@@ -229,8 +229,8 @@ export default function EditSupplier() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex items-center justify-center h-64 bg-white dark:bg-slate-900">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600 dark:text-blue-400" />
       </div>
     );
   }

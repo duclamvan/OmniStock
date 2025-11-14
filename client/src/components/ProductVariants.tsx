@@ -293,7 +293,7 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
                       Add Series
                     </Button>
                   </div>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     For series: Use format like "Gel Polish &lt;1-100&gt;" to automatically create 100 variants
                   </p>
                 </div>
@@ -301,7 +301,7 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
 
               {/* Single Variant Section */}
               <div className="space-y-4 pt-4">
-                <div className="text-sm font-medium text-slate-600">Or add a single variant:</div>
+                <div className="text-sm font-medium text-slate-600 dark:text-slate-400">Or add a single variant:</div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="variant-name">Variant Name</Label>
@@ -395,7 +395,7 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
       </CardHeader>
       <CardContent>
         {variants.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             <p>No variants yet. Click "Add Variant" to create one.</p>
           </div>
         ) : (
@@ -432,11 +432,11 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
                         <img 
                           src={variant.imageUrl} 
                           alt={variant.name}
-                          className="w-10 h-10 rounded object-contain border border-slate-200 bg-slate-50"
+                          className="w-10 h-10 rounded object-contain border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-slate-900"
                         />
                       ) : (
-                        <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
-                          <Upload className="h-5 w-5 text-gray-400" />
+                        <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center">
+                          <Upload className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                         </div>
                       )}
                       {variant.name}

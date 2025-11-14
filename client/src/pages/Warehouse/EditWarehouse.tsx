@@ -425,8 +425,8 @@ export default function EditWarehouse() {
 
   if (isLoading) {
     return (
-      <div className="p-6 max-w-6xl mx-auto space-y-6">
-        <div className="flex items-center justify-between border-b pb-4">
+      <div className="p-6 max-w-6xl mx-auto space-y-6 bg-white dark:bg-slate-900">
+        <div className="flex items-center justify-between border-b dark:border-gray-700 pb-4">
           <Skeleton className="h-10 w-48" />
           <div className="flex items-center gap-2">
             <Skeleton className="h-6 w-16" />

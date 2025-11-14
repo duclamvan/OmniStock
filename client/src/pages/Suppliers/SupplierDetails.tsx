@@ -142,7 +142,7 @@ export default function SupplierDetails() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-64 bg-white dark:bg-slate-900">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
@@ -160,7 +160,7 @@ export default function SupplierDetails() {
           <Button variant="ghost" size="icon" onClick={() => window.history.back()} className="shrink-0">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold truncate">{supplier.name}</h1>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 truncate">{supplier.name}</h1>
         </div>
         <Button onClick={() => setLocation(`/suppliers/${id}/edit`)} className="shrink-0">
           <Pencil className="h-4 w-4 sm:mr-2" />
@@ -173,9 +173,9 @@ export default function SupplierDetails() {
         {/* Left Column - Main Info */}
         <div className="lg:col-span-2 space-y-6">
           {/* Contact Information */}
-          <Card>
+          <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
             <CardHeader>
-              <CardTitle>Contact Information</CardTitle>
+              <CardTitle className="text-gray-900 dark:text-gray-100">Contact Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {supplier.contactPerson && (

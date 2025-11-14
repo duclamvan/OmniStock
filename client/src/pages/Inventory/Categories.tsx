@@ -208,10 +208,10 @@ export default function Categories() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <div className="h-8 w-32 mb-2 bg-gray-200 rounded animate-pulse" />
-            <div className="h-4 w-48 bg-gray-200 rounded animate-pulse" />
+            <div className="h-8 w-32 mb-2 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="h-4 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
           </div>
-          <div className="h-10 w-32 bg-gray-200 rounded animate-pulse" />
+          <div className="h-10 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[1, 2, 3].map(i => (
@@ -267,8 +267,8 @@ export default function Categories() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Categories</h1>
-          <p className="text-muted-foreground">Manage product categories</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Categories</h1>
+          <p className="text-gray-500 dark:text-gray-400">Manage product categories</p>
         </div>
         <Link href="/inventory/categories/add">
           <Button data-testid="button-add-category">

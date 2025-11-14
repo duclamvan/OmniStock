@@ -244,7 +244,7 @@ export default function CategoryDetails() {
       key: "sku",
       header: "SKU",
       cell: (item) => (
-        <span className="text-muted-foreground">
+        <span className="text-gray-500 dark:text-gray-400">
           {item.sku || 'N/A'}
         </span>
       ),
@@ -300,7 +300,7 @@ export default function CategoryDetails() {
   if (!category) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-xl font-semibold">Category not found</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Category not found</h2>
         <Button className="mt-4" onClick={() => window.history.back()}>
           Back to Categories
         </Button>

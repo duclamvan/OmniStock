@@ -333,14 +333,14 @@ export default function ProductLocations({
     if (embedded) {
       return (
         <div className="pt-6">
-          <div className="border border-slate-200 rounded-lg bg-slate-50 p-6">
+          <div className="border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 p-6">
             <div className="flex items-start space-x-3">
               <div className="flex-shrink-0">
-                <MapPin className="h-5 w-5 text-slate-400" />
+                <MapPin className="h-5 w-5 text-slate-400 dark:text-slate-500" />
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-slate-700 mb-1">Warehouse Locations</h4>
-                <p className="text-sm text-slate-500">
+                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Warehouse Locations</h4>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   Save the product first to manage warehouse locations and stock distribution
                 </p>
               </div>
@@ -352,8 +352,8 @@ export default function ProductLocations({
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="text-center text-slate-500">
-            <MapPin className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+          <div className="text-center text-slate-500 dark:text-slate-400">
+            <MapPin className="h-12 w-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
             <p>Save the product first to manage warehouse locations</p>
           </div>
         </CardContent>
@@ -365,8 +365,8 @@ export default function ProductLocations({
     if (embedded) {
       return (
         <div className="pt-6">
-          <div className="border border-slate-200 rounded-lg bg-slate-50 p-6">
-            <div className="text-center text-slate-500">Loading locations...</div>
+          <div className="border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 p-6">
+            <div className="text-center text-slate-500 dark:text-slate-400">Loading locations...</div>
           </div>
         </div>
       );
@@ -374,7 +374,7 @@ export default function ProductLocations({
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="text-center text-slate-500">Loading locations...</div>
+          <div className="text-center text-slate-500 dark:text-slate-400">Loading locations...</div>
         </CardContent>
       </Card>
     );
@@ -384,8 +384,8 @@ export default function ProductLocations({
   const headerSection = (
     <div className="flex items-center justify-between mb-4">
       <div>
-        {!embedded && <h4 className="text-base font-semibold">Warehouse Locations</h4>}
-        {embedded && <h4 className="text-sm font-semibold text-slate-700">Warehouse Locations</h4>}
+        {!embedded && <h4 className="text-base font-semibold text-gray-900 dark:text-gray-100">Warehouse Locations</h4>}
+        {embedded && <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Warehouse Locations</h4>}
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{locationSummary}</p>
       </div>
       {!readOnly && (
@@ -485,35 +485,35 @@ export default function ProductLocations({
     <>
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-slate-50 rounded-lg p-3">
-            <div className="flex items-center space-x-2 text-slate-600 mb-1">
+          <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
+            <div className="flex items-center space-x-2 text-slate-600 dark:text-slate-400 mb-1">
               <Package className="h-4 w-4" />
               <span className="text-xs font-medium">Total Stock</span>
             </div>
-            <p className="text-2xl font-bold" data-testid="text-total-stock">{totalQuantity}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="text-total-stock">{totalQuantity}</p>
           </div>
 
-          <div className="bg-slate-50 rounded-lg p-3">
-            <div className="flex items-center space-x-2 text-slate-600 mb-1">
+          <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
+            <div className="flex items-center space-x-2 text-slate-600 dark:text-slate-400 mb-1">
               <MapPin className="h-4 w-4" />
               <span className="text-xs font-medium">Locations</span>
             </div>
-            <p className="text-2xl font-bold" data-testid="text-location-count">{locations.length}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="text-location-count">{locations.length}</p>
           </div>
 
           <div className={`rounded-lg p-3 ${
             stockDifference === 0 
-              ? 'bg-green-50' 
+              ? 'bg-green-50 dark:bg-green-950/30' 
               : stockDifference > 0 
-              ? 'bg-amber-50' 
-              : 'bg-red-50'
+              ? 'bg-amber-50 dark:bg-amber-950/30' 
+              : 'bg-red-50 dark:bg-red-950/30'
           }`}>
             <div className={`flex items-center space-x-2 mb-1 ${
               stockDifference === 0 
-                ? 'text-green-700' 
+                ? 'text-green-700 dark:text-green-400' 
                 : stockDifference > 0 
-                ? 'text-amber-700' 
-                : 'text-red-700'
+                ? 'text-amber-700 dark:text-amber-400' 
+                : 'text-red-700 dark:text-red-400'
             }`}>
               <ArrowUpDown className="h-4 w-4" />
               <span className="text-xs font-medium">Stock Difference</span>
@@ -521,21 +521,21 @@ export default function ProductLocations({
             <div className="flex items-baseline space-x-2">
               <p className={`text-2xl font-bold ${
                 stockDifference === 0 
-                  ? 'text-green-700' 
+                  ? 'text-green-700 dark:text-green-400' 
                   : stockDifference > 0 
-                  ? 'text-amber-700' 
-                  : 'text-red-700'
+                  ? 'text-amber-700 dark:text-amber-400' 
+                  : 'text-red-700 dark:text-red-400'
               }`} data-testid="text-stock-difference">
                 {stockDifference > 0 ? '+' : ''}{stockDifference}
               </p>
               {stockDifference !== 0 && (
-                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               )}
             </div>
             <p className={`text-xs mt-1 ${
               stockDifference === 0 
-                ? 'text-green-600' 
-                : 'text-slate-600'
+                ? 'text-green-600 dark:text-green-400' 
+                : 'text-slate-600 dark:text-slate-400'
             }`}>
               {stockDifference === 0 
                 ? 'Quantity matches' 
@@ -544,15 +544,15 @@ export default function ProductLocations({
           </div>
 
           {primaryLocation && (
-            <div className="bg-blue-50 rounded-lg p-3">
-              <div className="flex items-center space-x-2 text-blue-600 mb-1">
+            <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3">
+              <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-400 mb-1">
                 <Star className="h-4 w-4" />
                 <span className="text-xs font-medium">Primary Location</span>
               </div>
-              <p className="text-lg font-semibold" data-testid="text-primary-location">
+              <p className="text-lg font-semibold text-gray-900 dark:text-gray-100" data-testid="text-primary-location">
                 {formatLocationCode(primaryLocation.locationCode)}
               </p>
-              <p className="text-sm text-blue-600" data-testid="text-primary-quantity">
+              <p className="text-sm text-blue-600 dark:text-blue-400" data-testid="text-primary-quantity">
                 {primaryLocation.quantity} units
               </p>
             </div>
@@ -561,7 +561,7 @@ export default function ProductLocations({
 
         {/* Locations Table */}
         {locations.length > 0 ? (
-          <div className="rounded-md border">
+          <div className="rounded-md border border-gray-200 dark:border-gray-700">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -580,7 +580,7 @@ export default function ProductLocations({
                     <TableRow key={location.id} data-testid={`row-location-${location.id}`}>
                       <TableCell className="font-mono">
                         <div className="flex items-center space-x-2">
-                          <LocationIcon className="h-4 w-4 text-slate-500" />
+                          <LocationIcon className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                           <span data-testid={`text-location-code-${location.id}`}>
                             {location.locationCode}
                           </span>
@@ -608,7 +608,7 @@ export default function ProductLocations({
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-sm text-slate-600">
+                      <TableCell className="text-sm text-gray-600 dark:text-gray-400">
                         {location.notes || "-"}
                       </TableCell>
                       {!readOnly && (

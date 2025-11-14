@@ -94,7 +94,7 @@ export default function ExpenseDetails() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-64 bg-white dark:bg-slate-900">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
@@ -146,8 +146,8 @@ export default function ExpenseDetails() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-mobile-2xl sm:text-3xl font-bold">Expense Details</h1>
-            <p className="text-muted-foreground">{expense.expenseId}</p>
+            <h1 className="text-mobile-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Expense Details</h1>
+            <p className="text-muted-foreground dark:text-gray-400">{expense.expenseId}</p>
           </div>
         </div>
         <Button
@@ -160,7 +160,7 @@ export default function ExpenseDetails() {
       </div>
 
       {/* Main Details Card */}
-      <Card>
+      <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
         <CardHeader>
           <div className="flex justify-between items-start">
             <div>

@@ -163,10 +163,10 @@ export default function EditExpense() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-64 bg-white dark:bg-slate-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading expense details...</p>
+          <p className="text-slate-600 dark:text-slate-400">Loading expense details...</p>
         </div>
       </div>
     );
@@ -174,8 +174,8 @@ export default function EditExpense() {
 
   if (!expense) {
     return (
-      <div className="text-center py-12">
-        <p className="text-slate-600">Expense not found</p>
+      <div className="text-center py-12 bg-white dark:bg-slate-900">
+        <p className="text-slate-600 dark:text-slate-400">Expense not found</p>
         <Button onClick={() => window.history.back()} className="mt-4">
           Back to Expenses
         </Button>
@@ -195,8 +195,8 @@ export default function EditExpense() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold tracking-tight">Edit Expense</h1>
-          <p className="text-slate-600 mt-1">Update expense details</p>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Edit Expense</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">Update expense details</p>
         </div>
         <div className="text-right">
           <p className="text-sm text-slate-500">Expense ID</p>
@@ -209,10 +209,10 @@ export default function EditExpense() {
           {/* Main Form */}
           <div className="lg:col-span-2 space-y-6">
             {/* Basic Information */}
-            <Card>
+            <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                  <Building className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                   Basic Information
                 </CardTitle>
               </CardHeader>

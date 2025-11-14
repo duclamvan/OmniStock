@@ -60,7 +60,7 @@ export default function WarehouseMapNew() {
 
   if (warehouseLoading) {
     return (
-      <div className="p-6">
+      <div className="p-6 bg-white dark:bg-slate-900">
         <Skeleton className="h-8 w-64 mb-6" />
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           {[1, 2, 3, 4].map(i => (
@@ -74,10 +74,10 @@ export default function WarehouseMapNew() {
 
   if (!warehouse) {
     return (
-      <div className="p-6">
+      <div className="p-6 bg-white dark:bg-slate-900">
         <div className="text-center py-12">
-          <h2 className="text-2xl font-semibold mb-2">Warehouse not found</h2>
-          <p className="text-muted-foreground mb-4">The warehouse you're looking for doesn't exist.</p>
+          <h2 className="text-2xl font-semibold mb-2 text-gray-900 dark:text-gray-100">Warehouse not found</h2>
+          <p className="text-muted-foreground dark:text-gray-400 mb-4">The warehouse you're looking for doesn't exist.</p>
           <Link href="/warehouses">
             <Button data-testid="button-back-warehouses">
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -99,8 +99,8 @@ export default function WarehouseMapNew() {
             </Button>
           </Link>
           <div className="min-w-0">
-            <h1 className="text-xl md:text-2xl font-bold truncate" data-testid="text-warehouse-name">{warehouse.name}</h1>
-            <p className="text-xs md:text-sm text-muted-foreground truncate" data-testid="text-warehouse-location">{warehouse.location}</p>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100 truncate" data-testid="text-warehouse-name">{warehouse.name}</h1>
+            <p className="text-xs md:text-sm text-muted-foreground dark:text-gray-400 truncate" data-testid="text-warehouse-location">{warehouse.location}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">

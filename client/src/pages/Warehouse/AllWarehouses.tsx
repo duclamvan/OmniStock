@@ -364,7 +364,7 @@ export default function AllWarehouses() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[600px]">
+      <div className="flex items-center justify-center min-h-[600px] bg-white dark:bg-slate-900">
         <div className="text-center">
           <div className="relative w-16 h-16 mx-auto mb-6">
             <div className="absolute inset-0 border-4 border-cyan-200 dark:border-cyan-800 rounded-full"></div>
@@ -377,7 +377,7 @@ export default function AllWarehouses() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-gray-50 dark:bg-slate-900 min-h-screen -m-6 p-6">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

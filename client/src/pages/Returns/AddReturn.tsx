@@ -447,8 +447,8 @@ export default function AddReturn() {
         </Button>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Create Return</h1>
-            <p className="text-muted-foreground mt-1">Process customer returns and refunds</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Create Return</h1>
+            <p className="text-muted-foreground dark:text-gray-400 mt-1">Process customer returns and refunds</p>
           </div>
           <div className="text-right">
             <p className="text-sm text-muted-foreground">Return ID</p>
@@ -462,10 +462,10 @@ export default function AddReturn() {
           {/* Left Column - Main Form */}
           <div className="lg:col-span-2 space-y-6">
             {/* Customer & Order Selection */}
-            <Card>
+            <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5 text-blue-500" />
+                <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                  <User className="h-5 w-5 text-blue-500 dark:text-blue-400" />
                   Customer & Order Details
                 </CardTitle>
               </CardHeader>

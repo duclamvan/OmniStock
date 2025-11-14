@@ -160,7 +160,7 @@ function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorPro
       <PopoverTrigger asChild>
         <Button variant="outline" className="justify-between w-full">
           {selectedIds.length === 0 ? (
-            <span className="text-muted-foreground">Select variants...</span>
+            <span className="text-gray-500 dark:text-gray-400">Select variants...</span>
           ) : (
             <span>{selectedIds.length} variant{selectedIds.length !== 1 ? 's' : ''} selected</span>
           )}
@@ -181,7 +181,7 @@ function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorPro
             </div>
           </div>
 
-          <div className="text-xs text-muted-foreground mb-2">
+          <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
             Choose one selection method:
           </div>
           <Tabs value={selectionMode} onValueChange={(v) => setSelectionMode(v as any)}>
@@ -203,7 +203,7 @@ function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorPro
                   {filteredVariants.map(variant => (
                     <div
                       key={variant.id}
-                      className="flex items-center space-x-2 p-2 hover:bg-muted rounded cursor-pointer"
+                      className="flex items-center space-x-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded cursor-pointer"
                       onClick={() => handleToggleVariant(variant.id)}
                     >
                       <Checkbox
@@ -212,7 +212,7 @@ function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorPro
                       />
                       <span className="text-sm flex-1">{variant.name}</span>
                       {variant.barcode && (
-                        <span className="text-xs text-muted-foreground">{variant.barcode}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{variant.barcode}</span>
                       )}
                     </div>
                   ))}

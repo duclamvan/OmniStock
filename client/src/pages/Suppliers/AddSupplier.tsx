@@ -156,8 +156,8 @@ export default function AddSupplier() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Add New Supplier</h1>
-          <p className="text-sm sm:text-base text-slate-600 mt-1 hidden sm:block">Create a new supplier profile with contact and business details</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">Add New Supplier</h1>
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1 hidden sm:block">Create a new supplier profile with contact and business details</p>
         </div>
       </div>
 
@@ -166,10 +166,10 @@ export default function AddSupplier() {
           
           <Accordion type="multiple" defaultValue={["basic-info", "contact-details"]} className="space-y-4">
             {/* Basic Information */}
-            <AccordionItem value="basic-info" className="border-l-4 border-l-blue-500 rounded-lg border bg-card">
+            <AccordionItem value="basic-info" className="border-l-4 border-l-blue-500 dark:border-l-blue-400 rounded-lg border border-gray-200 dark:border-gray-700 bg-card dark:bg-slate-800">
               <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                <div className="flex items-center gap-2 text-lg font-semibold">
-                  <Building2 className="h-5 w-5 text-blue-600" />
+                <div className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   Basic Information
                 </div>
               </AccordionTrigger>

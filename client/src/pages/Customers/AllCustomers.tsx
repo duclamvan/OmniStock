@@ -406,7 +406,7 @@ export default function AllCustomers() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[600px]">
+      <div className="flex items-center justify-center min-h-[600px] bg-white dark:bg-slate-900">
         <div className="text-center">
           <div className="relative w-16 h-16 mx-auto mb-6">
             <div className="absolute inset-0 border-4 border-cyan-200 dark:border-cyan-800 rounded-full"></div>
@@ -419,7 +419,7 @@ export default function AllCustomers() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-gray-50 dark:bg-slate-900 min-h-screen -m-6 p-6">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -547,22 +547,22 @@ export default function AllCustomers() {
       </div>
 
       {/* Filters Section */}
-      <Card className="border-slate-200 dark:border-slate-800">
+      <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800">
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-            <CardTitle className="text-lg">Filters & Search</CardTitle>
+            <CardTitle className="text-lg text-slate-900 dark:text-slate-100">Filters & Search</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 dark:text-slate-500" />
               <Input
                 placeholder="Search customers..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-10 focus:border-cyan-500"
+                className="pl-10 h-10 focus:border-cyan-500 dark:focus:border-cyan-400 bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
                 data-testid="input-search-customers"
               />
             </div>
@@ -571,7 +571,7 @@ export default function AllCustomers() {
       </Card>
 
       {/* Customers Table */}
-      <Card className="overflow-hidden border-slate-200 dark:border-slate-800">
+      <Card className="overflow-hidden border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800">
         <CardContent className="p-0 sm:p-6">
           {/* Mobile Card View */}
           <div className="sm:hidden space-y-3 p-3">
@@ -718,9 +718,9 @@ export default function AllCustomers() {
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
-                <DropdownMenuSeparator />
+              <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
+                <DropdownMenuLabel className="text-gray-900 dark:text-gray-100">Toggle Columns</DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
                 <DropdownMenuCheckboxItem
                   checked={visibleColumns.name !== false}
                   onCheckedChange={() => toggleColumnVisibility('name')}
@@ -773,16 +773,16 @@ export default function AllCustomers() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Customers</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-gray-900 dark:text-gray-100">Delete Customers</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-700 dark:text-gray-300">
               Are you sure you want to delete {selectedCustomers.length} customer(s)? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogCancel className="bg-white dark:bg-slate-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

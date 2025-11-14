@@ -513,9 +513,9 @@ export default function AllInventory() {
     if (quantity <= lowStockAlert) {
       return <Badge variant="destructive">Low Stock</Badge>;
     } else if (quantity <= lowStockAlert * 2) {
-      return <Badge variant="outline" className="text-orange-600 border-orange-600">Warning</Badge>;
+      return <Badge variant="outline" className="text-orange-600 dark:text-orange-400 border-orange-600 dark:border-orange-500">Warning</Badge>;
     } else {
-      return <Badge className="bg-green-100 text-green-800">In Stock</Badge>;
+      return <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">In Stock</Badge>;
     }
   };
 
@@ -565,14 +565,14 @@ export default function AllInventory() {
             <img 
               src={product.imageUrl} 
               alt={product.name} 
-              className="w-10 h-10 object-contain rounded flex-shrink-0 bg-slate-50 border border-slate-200"
+              className="w-10 h-10 object-contain rounded flex-shrink-0 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-gray-700"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
               }}
             />
           ) : (
-            <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
-              <Package className="h-5 w-5 text-gray-400" />
+            <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center flex-shrink-0">
+              <Package className="h-5 w-5 text-gray-400 dark:text-gray-500" />
             </div>
           )}
         </div>
@@ -586,13 +586,13 @@ export default function AllInventory() {
       cell: (product) => (
         <div>
           <Link href={`/inventory/products/${product.id}`}>
-            <span className={`font-medium cursor-pointer block ${product.isActive ? 'text-blue-600 hover:text-blue-800' : 'text-gray-400 line-through'}`}>
+            <span className={`font-medium cursor-pointer block ${product.isActive ? 'text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300' : 'text-gray-400 dark:text-gray-500 line-through'}`}>
               {product.name}
-              {!product.isActive && <span className="text-amber-600 font-medium ml-2">(Inactive)</span>}
+              {!product.isActive && <span className="text-amber-600 dark:text-amber-400 font-medium ml-2">(Inactive)</span>}
               {product.isActive && getProductStatusBadge(product)}
             </span>
           </Link>
-          <p className="text-xs text-gray-500 mt-0.5">SKU: {product.sku}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">SKU: {product.sku}</p>
         </div>
       ),
     },
@@ -723,8 +723,8 @@ export default function AllInventory() {
                     <AlertDialogDescription>
                       Are you sure you want to delete "{product.name}"?
                     </AlertDialogDescription>
-                    <div className="space-y-2 text-sm text-muted-foreground mt-4">
-                      <div className="text-amber-600 font-medium">
+                    <div className="space-y-2 text-sm text-gray-500 dark:text-gray-400 mt-4">
+                      <div className="text-amber-600 dark:text-amber-400 font-medium">
                         ℹ️ Product will be marked as inactive and hidden from inventory.
                       </div>
                       <div>This preserves order history while removing the product from active use.</div>
@@ -746,7 +746,7 @@ export default function AllInventory() {
             <Button 
               size="sm" 
               variant="outline" 
-              className="text-green-600 border-green-600 hover:bg-green-50"
+              className="text-green-600 dark:text-green-400 border-green-600 dark:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20"
               onClick={() => restoreProductMutation.mutate(product.id)}
             >
               Restore

@@ -549,9 +549,9 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
       <CardContent>
         {files.length === 0 ? (
           <div className="text-center py-8">
-            <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No documents uploaded yet</p>
-            <p className="text-sm text-muted-foreground mt-1">
+            <FileText className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
+            <p className="text-gray-500 dark:text-gray-400">No documents uploaded yet</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Upload documents to make them available for orders
             </p>
           </div>
@@ -562,8 +562,8 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
               return (
                 <div key={fileType} className="space-y-2">
                   <div className="flex items-center gap-2 mb-2">
-                    <Icon className="h-5 w-5 text-muted-foreground" />
-                    <h3 className="font-medium">{getFileTypeLabel(fileType)}</h3>
+                    <Icon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                    <h3 className="font-medium text-gray-900 dark:text-gray-100">{getFileTypeLabel(fileType)}</h3>
                     <Badge variant="outline">{typeFiles.length}</Badge>
                   </div>
                   <Table>
