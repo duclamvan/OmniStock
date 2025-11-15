@@ -15,12 +15,25 @@ import { ShoppingCart, Save, Loader2, Package, CheckCircle2, Zap, DollarSign } f
 import { useSettings } from "@/contexts/SettingsContext";
 import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
 
+// Helper function to normalize carrier names for backward compatibility
+const normalizeCarrier = (value: string): string => {
+  const map: Record<string, string> = {
+    'PPL': 'PPL CZ',
+    'GLS': 'GLS DE',
+    'DHL': 'DHL DE',
+    'PPL CZ': 'PPL CZ',
+    'GLS DE': 'GLS DE',
+    'DHL DE': 'DHL DE',
+  };
+  return map[value] || value;
+};
+
 const formSchema = z.object({
   // Order Defaults
   default_payment_method: z.enum(['Cash', 'Card', 'Transfer', 'COD', 'Pay Later', 'Bank Transfer', 'PayPal']).default('Transfer'),
   default_order_status: z.enum(['pending', 'processing', 'shipped', 'delivered', 'cancelled']).default('pending'),
   default_payment_status: z.enum(['pending', 'paid', 'pay_later', 'refunded']).default('pending'),
-  default_carrier: z.enum(['GLS', 'PPL', 'DHL', 'DPD', 'UPS', 'FedEx', 'Other']).default('GLS'),
+  default_carrier: z.enum(['PPL', 'PPL CZ', 'GLS', 'GLS DE', 'DHL', 'DHL DE', 'DPD', 'UPS', 'FedEx', 'Other']).transform(normalizeCarrier).default('GLS DE'),
   default_communication_channel: z.enum(['Viber', 'WhatsApp', 'Zalo', 'E-mail', 'Phone']).default('E-mail'),
   default_discount_type: z.enum(['flat', 'rate']).default('flat'),
   
@@ -68,7 +81,7 @@ export default function OrderSettings() {
       default_payment_method: orderSettings.defaultPaymentMethod || 'Transfer',
       default_order_status: orderSettings.defaultOrderStatus || 'pending',
       default_payment_status: orderSettings.defaultPaymentStatus || 'pending',
-      default_carrier: orderSettings.defaultCarrier || 'GLS',
+      default_carrier: normalizeCarrier(orderSettings.defaultCarrier || 'GLS DE'),
       default_communication_channel: orderSettings.defaultCommunicationChannel || 'E-mail',
       default_discount_type: orderSettings.defaultDiscountType || 'flat',
       default_fulfillment_stage: orderSettings.defaultFulfillmentStage || 'pending',
@@ -104,7 +117,7 @@ export default function OrderSettings() {
         default_payment_method: orderSettings.defaultPaymentMethod || 'Transfer',
         default_order_status: orderSettings.defaultOrderStatus || 'pending',
         default_payment_status: orderSettings.defaultPaymentStatus || 'pending',
-        default_carrier: orderSettings.defaultCarrier || 'GLS',
+        default_carrier: normalizeCarrier(orderSettings.defaultCarrier || 'GLS DE'),
         default_communication_channel: orderSettings.defaultCommunicationChannel || 'E-mail',
         default_discount_type: orderSettings.defaultDiscountType || 'flat',
         default_fulfillment_stage: orderSettings.defaultFulfillmentStage || 'pending',
@@ -274,9 +287,9 @@ export default function OrderSettings() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="GLS">GLS</SelectItem>
-                        <SelectItem value="PPL">PPL</SelectItem>
-                        <SelectItem value="DHL">DHL</SelectItem>
+                        <SelectItem value="GLS DE">GLS DE</SelectItem>
+                        <SelectItem value="PPL CZ">PPL CZ</SelectItem>
+                        <SelectItem value="DHL DE">DHL DE</SelectItem>
                         <SelectItem value="DPD">DPD</SelectItem>
                         <SelectItem value="UPS">UPS</SelectItem>
                         <SelectItem value="FedEx">FedEx</SelectItem>

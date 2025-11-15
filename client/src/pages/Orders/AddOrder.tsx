@@ -84,6 +84,19 @@ import {
 } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+// Helper function to normalize carrier names for backward compatibility
+const normalizeCarrier = (value: string): string => {
+  const map: Record<string, string> = {
+    'PPL': 'PPL CZ',
+    'GLS': 'GLS DE',
+    'DHL': 'DHL DE',
+    'PPL CZ': 'PPL CZ',
+    'GLS DE': 'GLS DE',
+    'DHL DE': 'DHL DE',
+  };
+  return map[value] || value;
+};
+
 const addOrderSchema = z.object({
   customerId: z.string().optional(),
   orderType: z.enum(['pos', 'ord', 'web', 'tel']).default('ord'),
@@ -91,7 +104,7 @@ const addOrderSchema = z.object({
   priority: z.enum(['low', 'medium', 'high']).default('medium'),
   orderStatus: z.enum(['pending', 'to_fulfill', 'shipped']).default('pending'),
   paymentStatus: z.enum(['pending', 'paid', 'pay_later']).default('pending'),
-  shippingMethod: z.enum(['GLS', 'PPL', 'DHL', 'DPD']).optional(),
+  shippingMethod: z.enum(['PPL', 'PPL CZ', 'GLS', 'GLS DE', 'DHL', 'DHL DE', 'DPD']).transform(normalizeCarrier).optional(),
   paymentMethod: z.enum(['Bank Transfer', 'PayPal', 'COD', 'Cash']).optional(),
   discountType: z.enum(['flat', 'rate']).default('flat'),
   discountValue: z.coerce.number().min(0).default(0),
@@ -882,7 +895,7 @@ export default function AddOrder() {
     form.setValue('shippingCost', calculatedCost); // Also set shipping cost for display
   }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency]);
 
-  // Auto-sync dobírka/nachnahme amount and currency when PPL/DHL + COD is selected
+  // Auto-sync dobírka/nachnahme amount and currency when PPL CZ/DHL DE + COD is selected
   // Recalculates on EVERY change (currency, items, shipping, discounts, taxes, adjustment)
   const watchedPaymentMethod = form.watch('paymentMethod');
   const watchedDiscountValue = form.watch('discountValue');
@@ -892,8 +905,8 @@ export default function AddOrder() {
   const watchedAdjustment = form.watch('adjustment');
   
   useEffect(() => {
-    // Only autofill if PPL/DHL shipping and COD payment are selected
-    if ((watchedShippingMethod === 'PPL' || watchedShippingMethod === 'DHL') && watchedPaymentMethod === 'COD') {
+    // Only autofill if PPL CZ/DHL DE shipping and COD payment are selected (support both old and new carrier names)
+    if ((watchedShippingMethod === 'PPL' || watchedShippingMethod === 'PPL CZ' || watchedShippingMethod === 'DHL' || watchedShippingMethod === 'DHL DE') && watchedPaymentMethod === 'COD') {
       // Always sync COD amount to match grand total
       const grandTotal = calculateGrandTotal();
       form.setValue('codAmount', parseFloat(grandTotal.toFixed(2)));
@@ -3738,9 +3751,9 @@ export default function AddOrder() {
                     <SelectValue placeholder="Select shipping" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="GLS">GLS</SelectItem>
-                    <SelectItem value="PPL">PPL</SelectItem>
-                    <SelectItem value="DHL">DHL</SelectItem>
+                    <SelectItem value="GLS DE">GLS DE</SelectItem>
+                    <SelectItem value="PPL CZ">PPL CZ</SelectItem>
+                    <SelectItem value="DHL DE">DHL DE</SelectItem>
                     <SelectItem value="DPD">DPD</SelectItem>
                   </SelectContent>
                 </Select>
@@ -3941,14 +3954,14 @@ export default function AddOrder() {
 
             <Separator className="my-4" />
 
-            {/* Dobírka (COD) Section - Only show for PPL/DHL + COD */}
-            {(form.watch('shippingMethod') === 'PPL' || form.watch('shippingMethod') === 'DHL') && form.watch('paymentMethod') === 'COD' && (
+            {/* Dobírka (COD) Section - Only show for PPL CZ/DHL DE + COD (support both old and new carrier names) */}
+            {(form.watch('shippingMethod') === 'PPL' || form.watch('shippingMethod') === 'PPL CZ' || form.watch('shippingMethod') === 'DHL' || form.watch('shippingMethod') === 'DHL DE') && form.watch('paymentMethod') === 'COD' && (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <Label htmlFor="codAmount" className="flex items-center gap-2">
                       <Banknote className="w-4 h-4" />
-                      {form.watch('shippingMethod') === 'DHL' ? 'Nachnahme (COD)' : 'Dobírka Amount (COD)'}
+                      {form.watch('shippingMethod') === 'DHL DE' ? 'Nachnahme (COD)' : 'Dobírka Amount (COD)'}
                     </Label>
                     <Input
                       type="number"
@@ -3962,9 +3975,9 @@ export default function AddOrder() {
                   </div>
 
                   <div>
-                    <Label htmlFor="codCurrency">{form.watch('shippingMethod') === 'DHL' ? 'Nachnahme Currency' : 'Dobírka Currency'}</Label>
+                    <Label htmlFor="codCurrency">{form.watch('shippingMethod') === 'DHL DE' ? 'Nachnahme Currency' : 'Dobírka Currency'}</Label>
                     <Select 
-                      value={form.watch('codCurrency') || (form.watch('shippingMethod') === 'DHL' ? 'EUR' : 'CZK')}
+                      value={form.watch('codCurrency') || (form.watch('shippingMethod') === 'DHL DE' ? 'EUR' : 'CZK')}
                       onValueChange={(value) => form.setValue('codCurrency', value as any)}
                     >
                       <SelectTrigger data-testid="select-dobirka-currency">

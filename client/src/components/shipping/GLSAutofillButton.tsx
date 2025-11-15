@@ -590,7 +590,7 @@ ${weight ? `Gewicht: ${weight} kg` : ''}
           data-testid="button-ship-with-gls"
         >
           <ExternalLink className="h-4 w-4" />
-          Ship GLS{cartonCount && cartonCount > 0 ? ` (${cartonCount} ${cartonCount === 1 ? 'carton' : 'cartons'})` : ''}
+          Ship GLS DE{cartonCount && cartonCount > 0 ? ` (${cartonCount} ${cartonCount === 1 ? 'carton' : 'cartons'})` : ''}
           {isMobile && orderId && <span className="text-xs opacity-90">(auto-fill)</span>}
         </Button>
 

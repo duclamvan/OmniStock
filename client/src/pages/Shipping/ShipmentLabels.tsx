@@ -32,7 +32,7 @@ import { Link } from 'wouter';
 interface ShipmentLabel {
   id: string;
   orderId: string;
-  carrier: 'PPL' | 'GLS' | 'DHL';
+  carrier: 'PPL CZ' | 'GLS DE' | 'DHL DE' | 'PPL' | 'GLS' | 'DHL';
   trackingNumbers: string[];
   batchId: string | null;
   labelBase64: string;
@@ -262,7 +262,7 @@ export default function ShipmentLabels() {
             Shipment Labels
           </h1>
           <p className="text-sm text-muted-foreground">
-            Manage all shipping labels (PPL, GLS, DHL) created for orders
+            Manage all shipping labels (PPL CZ, GLS DE, DHL DE) created for orders
           </p>
         </div>
       </div>

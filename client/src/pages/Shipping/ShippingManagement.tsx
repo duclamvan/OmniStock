@@ -551,7 +551,7 @@ export default function ShippingManagement() {
                         <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700" />
                       </div>
                       <div className="text-left min-w-0">
-                        <CardTitle className="text-base sm:text-lg truncate">PPL Shipping</CardTitle>
+                        <CardTitle className="text-base sm:text-lg truncate">PPL CZ Shipping</CardTitle>
                         <CardDescription className="text-xs mt-0.5 hidden sm:block">Test label generation and view integration details</CardDescription>
                       </div>
                     </div>
@@ -565,10 +565,10 @@ export default function ShippingManagement() {
                     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-5 border border-blue-100">
                   <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-blue-600" />
-                    Default PPL Sender Address
+                    Default PPL CZ Sender Address
                   </h4>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Set the default sender address (your company) used for all PPL label generation
+                    Set the default sender address (your company) used for all PPL CZ label generation
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -781,7 +781,7 @@ export default function ShippingManagement() {
                         <Package className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600" />
                       </div>
                       <div className="text-left min-w-0">
-                        <CardTitle className="text-base sm:text-lg truncate">DHL Germany</CardTitle>
+                        <CardTitle className="text-base sm:text-lg truncate">DHL DE</CardTitle>
                         <CardDescription className="text-xs mt-0.5 hidden sm:block">Configure sender address and bank details for manual DHL shipping</CardDescription>
                       </div>
                     </div>
@@ -796,10 +796,10 @@ export default function ShippingManagement() {
                     <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg p-5 border border-yellow-100">
                       <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-yellow-600" />
-                        Default DHL Sender Address
+                        Default DHL DE Sender Address
                       </h4>
                       <p className="text-sm text-muted-foreground mb-4">
-                        Set the default sender address for DHL shipping labels
+                        Set the default sender address for DHL DE shipping labels
                       </p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -1083,7 +1083,7 @@ export default function ShippingManagement() {
                         <Package className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                       </div>
                       <div className="text-left min-w-0">
-                        <CardTitle className="text-base sm:text-lg truncate">GLS Germany</CardTitle>
+                        <CardTitle className="text-base sm:text-lg truncate">GLS DE</CardTitle>
                         <CardDescription className="text-xs mt-0.5 hidden sm:block">Configure sender address for manual GLS label workflow</CardDescription>
                       </div>
                     </div>
@@ -1097,10 +1097,10 @@ export default function ShippingManagement() {
                     <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-5 border border-green-100">
                       <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-green-600" />
-                        Default GLS Sender Address
+                        Default GLS DE Sender Address
                       </h4>
                       <p className="text-sm text-muted-foreground mb-4">
-                        Set the default sender address used for GLS label autofill via bookmarklet
+                        Set the default sender address used for GLS DE label autofill via bookmarklet
                       </p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">

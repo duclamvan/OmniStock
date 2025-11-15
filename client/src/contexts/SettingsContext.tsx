@@ -126,7 +126,12 @@ export interface ShippingSettings {
   quickSelectEur?: string;
   defaultShippingMethod?: string;
   pplDefaultSenderAddress?: string | object;
+  pplEnableAutoLabel?: boolean;
+  pplDefaultService?: string;
+  glsDefaultSenderAddress?: string | object;
+  glsEnableManualLabels?: boolean;
   dhlDefaultSenderAddress?: string | object;
+  dhlEnableAutoLabel?: boolean;
   availableCarriers?: string;
   defaultCarrier?: string;
   enableCarrierRateShopping?: boolean;

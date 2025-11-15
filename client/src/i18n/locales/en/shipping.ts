@@ -5,9 +5,9 @@ const shipping = {
   
   // Carriers
   carrier: 'Carrier',
-  gls: 'GLS',
-  ppl: 'PPL',
-  dhl: 'DHL',
+  gls: 'GLS DE',
+  ppl: 'PPL CZ',
+  dhl: 'DHL DE',
   dpd: 'DPD',
   ups: 'UPS',
   fedex: 'FedEx',

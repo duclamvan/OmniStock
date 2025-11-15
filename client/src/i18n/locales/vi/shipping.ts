@@ -5,9 +5,9 @@ const shipping = {
   
   // Carriers (Keep brand names in English)
   carrier: 'Đơn vị vận chuyển',
-  gls: 'GLS',
-  ppl: 'PPL',
-  dhl: 'DHL',
+  gls: 'GLS DE',
+  ppl: 'PPL CZ',
+  dhl: 'DHL DE',
   dpd: 'DPD',
   ups: 'UPS',
   fedex: 'FedEx',
