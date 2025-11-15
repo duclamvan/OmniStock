@@ -12344,11 +12344,11 @@ export default function PickPack() {
             >
               <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
               <div className="flex flex-col items-center gap-0">
-                <span className="text-[9px] sm:text-xs font-medium leading-tight">
+                <span className="text-xs sm:text-sm font-medium leading-tight">
                   <span className="sm:hidden">All</span>
                   <span className="hidden sm:inline">Overview</span>
                 </span>
-                <span className="text-xs sm:text-sm font-bold">
+                <span className="text-sm sm:text-base font-bold">
                   {stats.pending + stats.picking + stats.packing + stats.ready}
                 </span>
               </div>
@@ -12360,11 +12360,11 @@ export default function PickPack() {
             >
               <Clock className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
               <div className="flex flex-col items-center gap-0">
-                <span className="text-[9px] sm:text-xs font-medium leading-tight">
+                <span className="text-xs sm:text-sm font-medium leading-tight">
                   <span className="sm:hidden">Pend</span>
                   <span className="hidden sm:inline">Pending</span>
                 </span>
-                <span className={`text-xs sm:text-sm font-bold ${animatingCounters.has('pending') ? 'animate-bounce-count' : ''}`}>
+                <span className={`text-sm sm:text-base font-bold ${animatingCounters.has('pending') ? 'animate-bounce-count' : ''}`}>
                   {stats.pending}
                 </span>
               </div>
@@ -12376,11 +12376,11 @@ export default function PickPack() {
             >
               <Package className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
               <div className="flex flex-col items-center gap-0">
-                <span className="text-[9px] sm:text-xs font-medium leading-tight">
+                <span className="text-xs sm:text-sm font-medium leading-tight">
                   <span className="sm:hidden">Pick</span>
                   <span className="hidden sm:inline">Picking</span>
                 </span>
-                <span className={`text-xs sm:text-sm font-bold ${animatingCounters.has('picking') ? 'animate-bounce-count' : ''}`}>
+                <span className={`text-sm sm:text-base font-bold ${animatingCounters.has('picking') ? 'animate-bounce-count' : ''}`}>
                   {stats.picking}
                 </span>
               </div>
@@ -12392,11 +12392,11 @@ export default function PickPack() {
             >
               <Box className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
               <div className="flex flex-col items-center gap-0">
-                <span className="text-[9px] sm:text-xs font-medium leading-tight">
+                <span className="text-xs sm:text-sm font-medium leading-tight">
                   <span className="sm:hidden">Pack</span>
                   <span className="hidden sm:inline">Packing</span>
                 </span>
-                <span className={`text-xs sm:text-sm font-bold ${animatingCounters.has('packing') ? 'animate-bounce-count' : ''}`}>
+                <span className={`text-sm sm:text-base font-bold ${animatingCounters.has('packing') ? 'animate-bounce-count' : ''}`}>
                   {stats.packing}
                 </span>
               </div>
@@ -12408,8 +12408,8 @@ export default function PickPack() {
             >
               <Truck className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
               <div className="flex flex-col items-center gap-0">
-                <span className="text-[9px] sm:text-xs font-medium leading-tight">Ready</span>
-                <span className={`text-xs sm:text-sm font-bold ${animatingCounters.has('ready') ? 'animate-bounce-count' : ''}`}>
+                <span className="text-xs sm:text-sm font-medium leading-tight">Ready</span>
+                <span className={`text-sm sm:text-base font-bold ${animatingCounters.has('ready') ? 'animate-bounce-count' : ''}`}>
                   {stats.ready}
                 </span>
               </div>
