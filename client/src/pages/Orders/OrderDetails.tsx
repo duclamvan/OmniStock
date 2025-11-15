@@ -485,7 +485,7 @@ export default function OrderDetails() {
                   <span class="price-value">${formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</span>
                 </div>
               ` : ''}
-              ${order.adjustment && order.adjustment !== 0 ? `
+              ${order.adjustment != null && Number(order.adjustment) !== 0 ? `
                 <div class="price-row">
                   <span class="price-label" style="color: ${order.adjustment > 0 ? '#1e40af' : '#c2410c'};">
                     Adjustment
@@ -1342,7 +1342,7 @@ export default function OrderDetails() {
                     </>
                   )}
                   
-                  {order.adjustment && order.adjustment !== 0 && (
+                  {order.adjustment != null && Number(order.adjustment) !== 0 && (
                     <div className="flex justify-between items-center">
                       <span className={cn(
                         "font-medium",
