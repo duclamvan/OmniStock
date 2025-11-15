@@ -53,34 +53,31 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
   className = "",
   disabled = false,
 }: WarehouseLocationSelectorProps) {
-  // Area type state - determines shelf vs pallet vs office layout
-  const [areaType, setAreaType] = useState<AreaType>("shelves");
-  
-  // Use orchestrator hook for default warehouse selection
+  // FIX 3: Use orchestrator hook for ALL state management (areaType + manualEntry now in hook!)
   const {
     value: warehouse,
     setValue: setWarehouse,
     hasManualOverride,
+    locationType: areaType,
+    setLocationType: setAreaType,
+    manualEntry,
+    setManualEntry: setManualEntryFromHook,
+    locationDefaults,
   } = useDefaultWarehouseSelection({
     initialValue: value ? value.split('-')[0] : undefined,
     onChange: (newWarehouse) => {
       // This onChange is called when the warehouse changes in the hook
       // The location code will be updated by the useEffect below
     },
-    locationType: areaType as 'pallet' | 'office' | 'shelves',
   });
   
-  // Location component states
+  // Location component states (these remain in component - they're not part of default warehouse logic)
   const [aisle, setAisle] = useState("A01");
   const [rack, setRack] = useState("R01");
   const [level, setLevel] = useState("L01");
   const [bin, setBin] = useState("B1");
   const [zone, setZone] = useState("B01");
   const [position, setPosition] = useState("P01");
-  const [manualEntry, setManualEntry] = useState(() => {
-    const stored = localStorage.getItem('warehouse-location-manual-entry');
-    return stored === 'true';
-  });
   const [manualCode, setManualCode] = useState("");
   const [isValid, setIsValid] = useState(true);
   const [isOldFormat, setIsOldFormat] = useState(false);
@@ -225,16 +222,12 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
 
   // Memoized handlers to prevent unnecessary re-renders and freezing
   const handleAreaTypeChange = useCallback((value: string) => {
-    setAreaType(value as AreaType);
-  }, []);
+    setAreaType(value as 'pallet' | 'office' | 'shelves');
+  }, [setAreaType]);
 
   const handleToggleManualEntry = useCallback(() => {
-    setManualEntry(prev => {
-      const newValue = !prev;
-      localStorage.setItem('warehouse-location-manual-entry', String(newValue));
-      return newValue;
-    });
-  }, []);
+    setManualEntryFromHook(!manualEntry);
+  }, [manualEntry, setManualEntryFromHook]);
 
   const handleWarehouseChange = useCallback((value: string) => {
     setWarehouse(value, true); // true = mark as manual selection
