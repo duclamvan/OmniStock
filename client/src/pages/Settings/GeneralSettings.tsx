@@ -207,8 +207,14 @@ export default function GeneralSettings() {
 
   const saveMutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      // Batch save all settings in one transaction
-      const savePromises = Object.entries(values).map(([key, value]) =>
+      // Filter out empty/null/undefined values (keep false and 0 as they're valid)
+      const validEntries = Object.entries(values).filter(([_, value]) => {
+        if (value === null || value === undefined || value === '') return false;
+        return true;
+      });
+      
+      // Batch save all valid settings in one transaction
+      const savePromises = validEntries.map(([key, value]) =>
         apiRequest('POST', `/api/settings`, { 
           key: camelToSnake(key), 
           value: deepCamelToSnake(value), 
