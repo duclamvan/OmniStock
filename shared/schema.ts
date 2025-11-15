@@ -1696,6 +1696,41 @@ export function computePlanChecksum(plan: UIPackingPlan): string {
   return hash.toString(36);
 }
 
+// Shipment Tracking for PPL, GLS, DHL carriers
+export interface TrackingCheckpoint {
+  timestamp: string;
+  location: string;
+  status: string;
+  description: string;
+}
+
+export const shipmentTracking = pgTable('shipment_tracking', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar('order_id').references(() => orders.id, { onDelete: 'cascade' }).notNull(),
+  cartonId: varchar('carton_id').references(() => orderCartons.id, { onDelete: 'cascade' }),
+  carrier: varchar('carrier', { length: 50 }).notNull(), // 'ppl', 'gls', 'dhl'
+  trackingNumber: varchar('tracking_number', { length: 100 }).notNull().unique(),
+  statusCode: varchar('status_code', { length: 50 }), // normalized: created, in_transit, out_for_delivery, delivered, exception
+  statusLabel: text('status_label'), // Human-readable status from carrier
+  checkpoints: jsonb('checkpoints').$type<TrackingCheckpoint[]>(), // Array of tracking events
+  estimatedDelivery: timestamp('estimated_delivery'),
+  deliveredAt: timestamp('delivered_at'),
+  lastEventAt: timestamp('last_event_at'),
+  lastCheckedAt: timestamp('last_checked_at'),
+  errorState: text('error_state'), // Store error message if tracking fetch fails
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const insertShipmentTrackingSchema = createInsertSchema(shipmentTracking).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true 
+});
+
+export type ShipmentTracking = typeof shipmentTracking.$inferSelect;
+export type InsertShipmentTracking = z.infer<typeof insertShipmentTrackingSchema>;
+
 // Notifications table
 export const notifications = pgTable('notifications', {
   id: serial('id').primaryKey(),

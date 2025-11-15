@@ -20,7 +20,8 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { getCountryFlag } from "@/lib/countries";
 import { cn } from "@/lib/utils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
-import { Plus, Search, Filter, Download, FileDown, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal, Sparkles, RefreshCw, Heart, AlertTriangle, TrendingUp, ArrowUp, ArrowDown, MoreVertical, ShoppingCart, DollarSign, Users, Zap } from "lucide-react";
+import { Plus, Search, Filter, Download, FileDown, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal, Sparkles, RefreshCw, Heart, AlertTriangle, TrendingUp, ArrowUp, ArrowDown, MoreVertical, ShoppingCart, DollarSign, Users, Zap, Truck } from "lucide-react";
+import { TrackingStatusBadge } from "@/components/orders/TrackingStatusBadge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -760,6 +761,17 @@ export default function AllOrders({ filter }: AllOrdersProps) {
           </Badge>
         </div>
       ),
+    },
+    {
+      key: "tracking",
+      header: "Tracking",
+      sortable: false,
+      cell: (order) => {
+        if (order.orderStatus !== 'shipped') {
+          return <span className="text-muted-foreground text-xs">-</span>;
+        }
+        return <TrackingStatusBadge orderId={order.id} />;
+      },
     },
     {
       key: "payment",

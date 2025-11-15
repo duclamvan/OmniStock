@@ -75,6 +75,7 @@ import {
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import { CustomerBadges } from '@/components/CustomerBadges';
+import { OrderTrackingPanel } from "@/components/orders/OrderTrackingPanel";
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { useToast } from "@/hooks/use-toast";
@@ -1841,6 +1842,11 @@ export default function OrderDetails() {
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {/* Shipment Tracking */}
+          {order.orderStatus === 'shipped' && (
+            <OrderTrackingPanel orderId={order.id} />
           )}
 
           {/* Pick & Pack Activity Logs */}

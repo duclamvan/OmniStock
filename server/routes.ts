@@ -52,6 +52,7 @@ import {
   orderCartonPlans,
   appSettings,
   notifications,
+  shipmentTracking,
   serializePackingPlanToDB,
   serializePackingPlanItems,
   deserializePackingPlanFromDB,
@@ -62,7 +63,7 @@ import { createInsertSchema } from 'drizzle-zod';
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { eq, desc, and, sql, inArray, or, ilike } from "drizzle-orm";
+import { eq, desc, and, sql, inArray, or, ilike, isNull, lt } from "drizzle-orm";
 import {
   ObjectStorageService,
   ObjectNotFoundError,
@@ -76,6 +77,7 @@ import optimizeDb from './routes/optimize-db';
 import { weightCalculationService } from "./services/weightCalculation";
 import { ImageCompressionService } from "./services/imageCompression";
 import { optimizeCartonPacking } from "./services/cartonPackingService";
+import { TrackingService } from "./services/tracking";
 import OpenAI from "openai";
 
 // Vietnamese and Czech diacritics normalization for accent-insensitive search
@@ -5876,6 +5878,82 @@ Important:
     } catch (error) {
       console.error("Error getting shipment labels:", error);
       res.status(500).json({ message: "Failed to get shipment labels" });
+    }
+  });
+
+  // Tracking service instance
+  const trackingService = new TrackingService();
+
+  // Get tracking for an order
+  app.get('/api/orders/:id/tracking', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const force = req.query.force === 'true';
+      
+      let tracking = await trackingService.getOrderTracking(id);
+      
+      // If no tracking exists, create it from order cartons
+      if (tracking.length === 0) {
+        await trackingService.createTrackingForOrder(id);
+        tracking = await trackingService.getOrderTracking(id);
+      }
+      
+      // Force refresh if requested
+      if (force) {
+        for (const t of tracking) {
+          await trackingService.refreshTracking(t.id);
+        }
+        tracking = await trackingService.getOrderTracking(id);
+      }
+      
+      res.json(tracking);
+    } catch (error: any) {
+      console.error('Error fetching tracking:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch tracking' });
+    }
+  });
+
+  // Refresh specific tracking
+  app.patch('/api/tracking/:id/refresh', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updated = await trackingService.refreshTracking(id);
+      res.json(updated);
+    } catch (error: any) {
+      console.error('Error refreshing tracking:', error);
+      res.status(500).json({ error: error.message || 'Failed to refresh tracking' });
+    }
+  });
+
+  // Bulk refresh all active tracking
+  app.post('/api/tracking/bulk-refresh', async (req, res) => {
+    try {
+      // Get all tracking that hasn't been delivered
+      const activeTracking = await db.query.shipmentTracking.findMany({
+        where: and(
+          isNull(shipmentTracking.deliveredAt),
+          // Only refresh if last check was > 5 minutes ago OR never checked (NULL)
+          or(
+            isNull(shipmentTracking.lastCheckedAt),
+            lt(shipmentTracking.lastCheckedAt, new Date(Date.now() - 5 * 60 * 1000))
+          )
+        )
+      });
+      
+      let refreshed = 0;
+      for (const tracking of activeTracking) {
+        try {
+          await trackingService.refreshTracking(tracking.id);
+          refreshed++;
+        } catch (error) {
+          console.error(`Failed to refresh tracking ${tracking.id}:`, error);
+        }
+      }
+      
+      res.json({ refreshed, total: activeTracking.length });
+    } catch (error: any) {
+      console.error('Error in bulk refresh:', error);
+      res.status(500).json({ error: error.message || 'Bulk refresh failed' });
     }
   });
 

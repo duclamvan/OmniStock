@@ -1,0 +1,578 @@
+# Tracking API Options for PPL, GLS & DHL
+
+Based on your existing integrations and the document showing you already use PPL CPL API, here's the best tracking solution for each carrier:
+
+---
+
+## 🎯 Quick Recommendation
+
+| Carrier | Best Option | Cost | Setup Time | API Available |
+|---------|-------------|------|------------|---------------|
+| **PPL CZ** | Use existing CPL API | **FREE** (included) | 1 hour | ✅ Already have it! |
+| **GLS Germany** | GLS Track & Trace API | **FREE** (public) | 2 hours | ✅ Public API |
+| **DHL Germany** | DHL Public Tracking | **FREE** | 1 hour | ✅ Public API |
+
+**Total cost: €0** 🎉
+
+---
+
+## 1. PPL CZ Tracking (EASIEST - Already Have API!)
+
+### ✅ You Already Have Access!
+
+Since you're using PPL CPL API for labels, **tracking is included** in the same API.
+
+### Implementation
+
+```typescript
+// /server/routes/tracking.ts
+
+interface PPLTrackingResponse {
+  packageNumber: string;
+  status: string;
+  statusText: string;
+  events: Array<{
+    date: string;
+    time: string;
+    status: string;
+    statusText: string;
+    depot: string;
+  }>;
+}
+
+async function trackPPLShipment(trackingNumber: string): Promise<PPLTrackingResponse> {
+  const token = await getPPLAccessToken(); // Use your existing auth
+  
+  const response = await fetch(
+    `https://api.dhl.com/ecs/ppl/myapi2/consignment/${trackingNumber}`,
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    }
+  );
+  
+  if (!response.ok) {
+    throw new Error('PPL tracking failed');
+  }
+  
+  return await response.json();
+}
+
+// Express route
+app.get('/api/tracking/ppl/:trackingNumber', async (req, res) => {
+  try {
+    const tracking = await trackPPLShipment(req.params.trackingNumber);
+    res.json(tracking);
+  } catch (error) {
+    res.status(500).json({ error: 'Tracking failed' });
+  }
+});
+```
+
+**Advantages:**
+- ✅ FREE - Already part of your API contract
+- ✅ No additional setup - Same OAuth2 credentials
+- ✅ Reliable - Official carrier API
+- ✅ Real-time updates
+
+**PPL API Docs:**
+- https://api.dhl.com/ecs/ppl/myapi2/doc/
+
+---
+
+## 2. GLS Germany Tracking (FREE Public API!)
+
+### ✅ Free Public Tracking API
+
+GLS provides a **free public tracking API** - no business contract needed!
+
+### Implementation
+
+```typescript
+// /server/routes/tracking.ts
+
+interface GLSTrackingEvent {
+  date: string;
+  time: string;
+  location: string;
+  status: string;
+  statusText: string;
+}
+
+interface GLSTrackingResponse {
+  tuNo: string[]; // Tracking numbers
+  history: GLSTrackingEvent[];
+  deliveryDate?: string;
+}
+
+async function trackGLSShipment(trackingNumber: string): Promise<GLSTrackingResponse> {
+  // GLS Public Tracking API
+  const response = await fetch(
+    `https://gls-group.com/app/service/open/rest/EU/en/rstt001`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        references: [trackingNumber]
+      })
+    }
+  );
+  
+  if (!response.ok) {
+    throw new Error('GLS tracking failed');
+  }
+  
+  const data = await response.json();
+  return data;
+}
+
+// Express route
+app.get('/api/tracking/gls/:trackingNumber', async (req, res) => {
+  try {
+    const tracking = await trackGLSShipment(req.params.trackingNumber);
+    res.json(tracking);
+  } catch (error) {
+    res.status(500).json({ error: 'Tracking failed' });
+  }
+});
+```
+
+**Advantages:**
+- ✅ FREE - No contract needed
+- ✅ Public API - Anyone can use
+- ✅ No rate limits for reasonable use
+- ✅ Works with your manual GLS workflow
+
+**GLS API Info:**
+- Public endpoint: `https://gls-group.com/app/service/open/rest/EU/en/rstt001`
+- No authentication required
+- POST with tracking number array
+
+---
+
+## 3. DHL Germany Tracking (FREE Public API!)
+
+### ✅ Free Public Tracking
+
+DHL offers **two tracking APIs**:
+1. **Public API** (free, no auth)
+2. **Business API** (requires contract, more detailed)
+
+**Recommendation:** Start with public API (free, works great).
+
+### Implementation
+
+```typescript
+// /server/routes/tracking.ts
+
+interface DHLTrackingEvent {
+  timestamp: string;
+  location: {
+    address: {
+      addressLocality: string;
+    };
+  };
+  status: string;
+  statusText: string;
+}
+
+interface DHLTrackingResponse {
+  shipments: Array<{
+    id: string;
+    status: {
+      statusCode: string;
+      status: string;
+      timestamp: string;
+    };
+    events: DHLTrackingEvent[];
+  }>;
+}
+
+async function trackDHLShipment(trackingNumber: string): Promise<DHLTrackingResponse> {
+  // DHL Public Tracking API (no auth!)
+  const response = await fetch(
+    `https://api-eu.dhl.com/track/shipments?trackingNumber=${trackingNumber}`,
+    {
+      headers: {
+        'DHL-API-Key': 'your_public_api_key' // Free key from developer.dhl.com
+      }
+    }
+  );
+  
+  if (!response.ok) {
+    throw new Error('DHL tracking failed');
+  }
+  
+  return await response.json();
+}
+
+// Express route
+app.get('/api/tracking/dhl/:trackingNumber', async (req, res) => {
+  try {
+    const tracking = await trackDHLShipment(req.params.trackingNumber);
+    res.json(tracking);
+  } catch (error) {
+    res.status(500).json({ error: 'Tracking failed' });
+  }
+});
+```
+
+**Getting API Key:**
+1. Go to https://developer.dhl.com
+2. Register (free)
+3. Create app
+4. Get public API key
+5. Add to your `.env`:
+   ```
+   DHL_PUBLIC_API_KEY=your_key_here
+   ```
+
+**Advantages:**
+- ✅ FREE - No business contract needed
+- ✅ 250 requests/day (plenty for most businesses)
+- ✅ Good data quality
+- ✅ Official DHL API
+
+**Upgrade Later:**
+If you get DHL business contract later, you can switch to Business Tracking API for more detailed info.
+
+---
+
+## 🔧 Unified Tracking Implementation
+
+### Database Schema Update
+
+```typescript
+// /db/schema.ts
+
+export const shipmentTracking = pgTable('shipment_tracking', {
+  id: serial('id').primaryKey(),
+  orderId: integer('order_id').references(() => orders.id).notNull(),
+  cartonId: integer('carton_id').references(() => orderCartons.id),
+  carrier: varchar('carrier', { length: 50 }).notNull(), // 'ppl', 'gls', 'dhl'
+  trackingNumber: varchar('tracking_number', { length: 100 }).notNull(),
+  status: varchar('status', { length: 100 }),
+  statusText: text('status_text'),
+  lastChecked: timestamp('last_checked'),
+  deliveryDate: timestamp('delivery_date'),
+  events: jsonb('events').$type<TrackingEvent[]>(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+interface TrackingEvent {
+  timestamp: string;
+  location: string;
+  status: string;
+  statusText: string;
+}
+```
+
+### Unified Tracking Service
+
+```typescript
+// /server/services/tracking.ts
+
+export class TrackingService {
+  async trackShipment(carrier: 'ppl' | 'gls' | 'dhl', trackingNumber: string) {
+    switch (carrier) {
+      case 'ppl':
+        return this.trackPPL(trackingNumber);
+      case 'gls':
+        return this.trackGLS(trackingNumber);
+      case 'dhl':
+        return this.trackDHL(trackingNumber);
+      default:
+        throw new Error(`Unknown carrier: ${carrier}`);
+    }
+  }
+  
+  private async trackPPL(trackingNumber: string) {
+    // PPL implementation from above
+  }
+  
+  private async trackGLS(trackingNumber: string) {
+    // GLS implementation from above
+  }
+  
+  private async trackDHL(trackingNumber: string) {
+    // DHL implementation from above
+  }
+  
+  async updateAllTracking() {
+    // Get all active shipments
+    const shipments = await db
+      .select()
+      .from(shipmentTracking)
+      .where(
+        and(
+          isNull(shipmentTracking.deliveryDate),
+          notInArray(shipmentTracking.status, ['delivered', 'cancelled'])
+        )
+      );
+    
+    // Update each one
+    for (const shipment of shipments) {
+      try {
+        const tracking = await this.trackShipment(
+          shipment.carrier as any,
+          shipment.trackingNumber
+        );
+        
+        await db
+          .update(shipmentTracking)
+          .set({
+            status: tracking.status,
+            statusText: tracking.statusText,
+            events: tracking.events,
+            lastChecked: new Date(),
+            deliveryDate: tracking.deliveryDate,
+            updatedAt: new Date()
+          })
+          .where(eq(shipmentTracking.id, shipment.id));
+          
+      } catch (error) {
+        console.error(`Failed to track ${shipment.carrier} ${shipment.trackingNumber}:`, error);
+      }
+    }
+  }
+}
+```
+
+### API Routes
+
+```typescript
+// /server/routes/tracking.ts
+
+const trackingService = new TrackingService();
+
+// Track single shipment
+app.get('/api/tracking/:carrier/:trackingNumber', async (req, res) => {
+  try {
+    const { carrier, trackingNumber } = req.params;
+    const tracking = await trackingService.trackShipment(
+      carrier as any,
+      trackingNumber
+    );
+    res.json(tracking);
+  } catch (error) {
+    res.status(500).json({ error: 'Tracking failed' });
+  }
+});
+
+// Get tracking for order
+app.get('/api/orders/:orderId/tracking', async (req, res) => {
+  try {
+    const orderId = parseInt(req.params.orderId);
+    const tracking = await db
+      .select()
+      .from(shipmentTracking)
+      .where(eq(shipmentTracking.orderId, orderId));
+    res.json(tracking);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get tracking' });
+  }
+});
+
+// Batch update all tracking (cron job endpoint)
+app.post('/api/tracking/update-all', async (req, res) => {
+  try {
+    await trackingService.updateAllTracking();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Batch update failed' });
+  }
+});
+```
+
+---
+
+## 📱 Frontend Component
+
+```typescript
+// /client/src/components/orders/TrackingStatus.tsx
+
+interface TrackingStatusProps {
+  orderId: number;
+}
+
+export function TrackingStatus({ orderId }: TrackingStatusProps) {
+  const { data: tracking, isLoading } = useQuery({
+    queryKey: ['tracking', orderId],
+    queryFn: () => fetch(`/api/orders/${orderId}/tracking`).then(r => r.json()),
+    refetchInterval: 5 * 60 * 1000, // Refresh every 5 minutes
+  });
+  
+  if (isLoading) {
+    return <div>Loading tracking...</div>;
+  }
+  
+  if (!tracking || tracking.length === 0) {
+    return <div>No tracking information available</div>;
+  }
+  
+  return (
+    <div className="space-y-4">
+      {tracking.map((shipment: any) => (
+        <Card key={shipment.id}>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>{shipment.carrier.toUpperCase()}: {shipment.trackingNumber}</span>
+              <Badge variant={getStatusVariant(shipment.status)}>
+                {shipment.statusText}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {shipment.events?.map((event: any, idx: number) => (
+                <div key={idx} className="flex gap-4 text-sm">
+                  <div className="text-muted-foreground min-w-[120px]">
+                    {new Date(event.timestamp).toLocaleString()}
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-medium">{event.statusText}</div>
+                    <div className="text-muted-foreground">{event.location}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function getStatusVariant(status: string) {
+  switch (status?.toLowerCase()) {
+    case 'delivered':
+      return 'default';
+    case 'in_transit':
+      return 'secondary';
+    case 'exception':
+      return 'destructive';
+    default:
+      return 'outline';
+  }
+}
+```
+
+---
+
+## ⏰ Automated Tracking Updates (Cron Job)
+
+```typescript
+// /server/cron/tracking.ts
+
+import cron from 'node-cron';
+import { TrackingService } from '../services/tracking';
+
+const trackingService = new TrackingService();
+
+// Update tracking every 30 minutes
+cron.schedule('*/30 * * * *', async () => {
+  console.log('Running tracking update...');
+  try {
+    await trackingService.updateAllTracking();
+    console.log('Tracking update completed');
+  } catch (error) {
+    console.error('Tracking update failed:', error);
+  }
+});
+```
+
+Add to `package.json`:
+```json
+{
+  "dependencies": {
+    "node-cron": "^3.0.3"
+  }
+}
+```
+
+---
+
+## 💰 Cost Summary
+
+| Carrier | API Type | Cost | Rate Limit | Notes |
+|---------|----------|------|------------|-------|
+| **PPL CZ** | Official (included) | **FREE** | Part of contract | Already have access! |
+| **GLS Germany** | Public | **FREE** | Reasonable use | No auth needed |
+| **DHL Germany** | Public | **FREE** | 250/day | Register for free key |
+
+**Total: €0/month** 🎉
+
+### If You Need More (Later)
+
+**DHL Business Tracking:**
+- Cost: Free with business contract
+- Limit: Higher (1000+/day)
+- Benefits: More detailed info, shipment notifications
+- When: If you get DHL business contract
+
+**GLS Business API:**
+- Cost: Free with business contract  
+- Limit: Higher
+- Benefits: Label generation + tracking in one API
+- When: If you get GLS business contract
+
+---
+
+## 🚀 Implementation Order
+
+### Week 1: PPL Tracking (Easiest)
+```
+Day 1-2: Add tracking to existing PPL integration
+Day 3: Test with real tracking numbers
+Day 4: Add frontend component
+Day 5: Deploy
+```
+
+### Week 2: GLS Tracking
+```
+Day 1-2: Implement GLS public API
+Day 3: Test with manual GLS shipments
+Day 4: Update frontend to show GLS tracking
+Day 5: Deploy
+```
+
+### Week 3: DHL Tracking
+```
+Day 1: Register at developer.dhl.com
+Day 2: Get API key, implement tracking
+Day 3: Test
+Day 4: Update frontend
+Day 5: Deploy
+```
+
+### Week 4: Automation
+```
+Day 1-2: Add cron job for auto-updates
+Day 3: Add email notifications for delivery
+Day 4: Add customer tracking page
+Day 5: Polish and deploy
+```
+
+---
+
+## ✅ Final Recommendation
+
+**All three carriers offer FREE tracking APIs!**
+
+**Start with:**
+1. **PPL** - You already have API access (1 hour)
+2. **GLS** - Public API, no setup (2 hours)
+3. **DHL** - Free public API, quick registration (1 hour)
+
+**Total cost: €0**  
+**Total time: 4 hours**  
+**Result: Full tracking for all carriers** ✅
+
+No need for paid third-party tracking services - all carriers provide free APIs!
+
+Want me to help you implement any of these?
