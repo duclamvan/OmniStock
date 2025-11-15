@@ -281,8 +281,8 @@ export default function OrderDetails() {
             body { 
               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
               background: white;
-              padding: 40px;
-              width: 1000px;
+              padding: 0;
+              width: 430px;
             }
             .invoice-card {
               background: white;
@@ -506,11 +506,11 @@ export default function OrderDetails() {
         </html>
       `;
 
-      // Create an invisible iframe to render the HTML
+      // Create an invisible iframe to render the HTML (iPhone 17 Pro Max dimensions)
       const iframe = document.createElement('iframe');
       iframe.style.position = 'absolute';
       iframe.style.left = '-9999px';
-      iframe.style.width = '1080px';
+      iframe.style.width = '430px';
       iframe.style.height = '3000px';
       document.body.appendChild(iframe);
 
@@ -543,13 +543,13 @@ export default function OrderDetails() {
 
       // Download the image
       const link = document.createElement('a');
-      link.download = `invoice-${order?.orderId || id}.png`;
+      link.download = `order-${order?.orderId || id}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
 
       toast({
-        title: "Invoice Downloaded",
-        description: "Professional invoice saved successfully",
+        title: "Order Captured",
+        description: "Order screenshot saved successfully",
       });
     } catch (error) {
       console.error('Invoice generation error:', error);
@@ -1005,11 +1005,11 @@ export default function OrderDetails() {
               variant="outline"
               size="sm"
               onClick={handleDownloadInvoice}
-              data-testid="button-download-invoice"
+              data-testid="button-capture-order"
               className="min-h-[44px] sm:min-h-[36px] w-full sm:w-auto"
             >
               <Download className="mr-2 h-4 w-4" />
-              Download Invoice
+              Capture Order
             </Button>
             {order.orderStatus === 'to_fulfill' && (
               <Button
