@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,9 +78,23 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+const valuesAreEqual = (a: any, b: any): boolean => {
+  // Only null, undefined, and empty string are considered "unset"
+  // false and 0 are valid, intentional values
+  const isUnsetA = a === null || a === undefined || a === '';
+  const isUnsetB = b === null || b === undefined || b === '';
+  
+  if (isUnsetA && isUnsetB) return true; // Both unset = equal
+  if (isUnsetA || isUnsetB) return false; // One set, one unset = not equal
+  
+  // Both are set values, compare normally
+  return a === b;
+};
+
 export default function ShippingSettings() {
   const { toast } = useToast();
   const { shippingSettings, isLoading } = useSettings();
+  const [originalSettings, setOriginalSettings] = useState<Partial<FormValues>>({});
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -128,48 +142,58 @@ export default function ShippingSettings() {
   // Reset form when settings load
   useEffect(() => {
     if (!isLoading) {
-      form.reset({
+      const snapshot = {
         ppl_default_sender_address: toJsonString(shippingSettings.pplDefaultSenderAddress),
-        ppl_enable_auto_label: shippingSettings.pplEnableAutoLabel ?? false,
-        ppl_default_service: shippingSettings.pplDefaultService || '',
+        ppl_enable_auto_label: shippingSettings.pplEnableAutoLabel,
+        ppl_default_service: shippingSettings.pplDefaultService,
         gls_default_sender_address: toJsonString(shippingSettings.glsDefaultSenderAddress),
-        gls_enable_manual_labels: shippingSettings.glsEnableManualLabels ?? false,
+        gls_enable_manual_labels: shippingSettings.glsEnableManualLabels,
         dhl_default_sender_address: toJsonString(shippingSettings.dhlDefaultSenderAddress),
-        dhl_enable_auto_label: shippingSettings.dhlEnableAutoLabel ?? false,
-        quick_select_czk: shippingSettings.quickSelectCzk || '0,100,150,250',
-        quick_select_eur: shippingSettings.quickSelectEur || '0,5,10,13,15,20',
+        dhl_enable_auto_label: shippingSettings.dhlEnableAutoLabel,
+        quick_select_czk: shippingSettings.quickSelectCzk,
+        quick_select_eur: shippingSettings.quickSelectEur,
         default_shipping_method: normalizeCarrier(shippingSettings.defaultShippingMethod || 'PPL CZ'),
-        available_carriers: shippingSettings.availableCarriers || 'GLS DE,PPL CZ,DHL DE',
+        available_carriers: shippingSettings.availableCarriers,
         default_carrier: normalizeCarrier(shippingSettings.defaultCarrier || 'PPL CZ'),
-        free_shipping_threshold: shippingSettings.freeShippingThreshold ?? 0,
-        default_shipping_cost: shippingSettings.defaultShippingCost ?? 0,
-        shipping_cost_currency: shippingSettings.shippingCostCurrency || 'CZK',
-        volumetric_weight_divisor: shippingSettings.volumetricWeightDivisor ?? 5000,
-        max_package_weight_kg: shippingSettings.maxPackageWeightKg ?? 30,
-        max_package_dimensions_cm: shippingSettings.maxPackageDimensionsCm || '120x80x80',
-        default_label_size: shippingSettings.defaultLabelSize || 'A4',
-        label_format: shippingSettings.labelFormat || 'PDF',
-        auto_print_labels: shippingSettings.autoPrintLabels ?? false,
-        include_packing_slip: shippingSettings.includePackingSlip ?? true,
-        include_invoice: shippingSettings.includeInvoice ?? false,
-        enable_tracking: shippingSettings.enableTracking ?? true,
-        auto_update_tracking_status: shippingSettings.autoUpdateTrackingStatus ?? true,
-        tracking_update_frequency_hours: shippingSettings.trackingUpdateFrequencyHours ?? 6,
-        send_tracking_email_to_customer: shippingSettings.sendTrackingEmailToCustomer ?? true,
-        include_estimated_delivery: shippingSettings.includeEstimatedDelivery ?? true,
-      });
+        free_shipping_threshold: shippingSettings.freeShippingThreshold,
+        default_shipping_cost: shippingSettings.defaultShippingCost,
+        shipping_cost_currency: shippingSettings.shippingCostCurrency,
+        volumetric_weight_divisor: shippingSettings.volumetricWeightDivisor,
+        max_package_weight_kg: shippingSettings.maxPackageWeightKg,
+        max_package_dimensions_cm: shippingSettings.maxPackageDimensionsCm,
+        default_label_size: shippingSettings.defaultLabelSize,
+        label_format: shippingSettings.labelFormat,
+        auto_print_labels: shippingSettings.autoPrintLabels,
+        include_packing_slip: shippingSettings.includePackingSlip,
+        include_invoice: shippingSettings.includeInvoice,
+        enable_tracking: shippingSettings.enableTracking,
+        auto_update_tracking_status: shippingSettings.autoUpdateTrackingStatus,
+        tracking_update_frequency_hours: shippingSettings.trackingUpdateFrequencyHours,
+        send_tracking_email_to_customer: shippingSettings.sendTrackingEmailToCustomer,
+        include_estimated_delivery: shippingSettings.includeEstimatedDelivery,
+      };
+      setOriginalSettings(snapshot);
+      form.reset(snapshot);
     }
   }, [isLoading, shippingSettings, form]);
 
   const saveMutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      const savePromises = Object.entries(values).map(([key, value]) => {
-        let processedValue = value;
+      // Compare current values against original snapshot
+      const changedEntries = Object.entries(values).filter(([key, value]) => {
+        const originalValue = originalSettings[key as keyof FormValues];
+        // Only save if value actually changed from original
+        return !valuesAreEqual(value, originalValue);
+      });
+      
+      // Convert empty strings and undefined to null for explicit clearing
+      const savePromises = changedEntries.map(([key, value]) => {
+        let processedValue = (value === '' || value === undefined) ? null : value;
         
         // Parse JSON for address fields
-        if (key.includes('address') && typeof value === 'string' && value.trim()) {
+        if (key.includes('address') && typeof processedValue === 'string' && processedValue.trim()) {
           try {
-            processedValue = JSON.parse(value);
+            processedValue = JSON.parse(processedValue);
           } catch (e) {
             throw new Error(`Invalid JSON format for ${key}`);
           }
@@ -184,8 +208,11 @@ export default function ShippingSettings() {
       
       await Promise.all(savePromises);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+    onSuccess: async () => {
+      // Invalidate and refetch settings to get true persisted state
+      await queryClient.invalidateQueries({ queryKey: ['/api/settings', 'shipping'] });
+      
+      // The useEffect will automatically update originalSettings when new data loads
       toast({
         title: "Settings Saved",
         description: "Shipping settings have been updated successfully.",
