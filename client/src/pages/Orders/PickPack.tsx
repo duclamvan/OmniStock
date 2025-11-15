@@ -12695,7 +12695,7 @@ export default function PickPack() {
                                   onChange={() => {}}
                                 />
                               )}
-                              <h3 className="text-base font-semibold text-gray-900">{order.orderId}</h3>
+                              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{order.orderId}</h3>
                               <Badge variant={getPriorityColor(order.priority)} className="text-xs font-semibold py-0.5 px-2">
                                 {order.priority.toUpperCase()}
                               </Badge>
@@ -12712,14 +12712,14 @@ export default function PickPack() {
                                 );
                               })()}
                             </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600 mb-2">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600 dark:text-gray-300 mb-2">
                               <div className="flex items-center gap-1.5">
                                 <User className="h-4 w-4 text-gray-400" />
                                 <span className="truncate font-medium">{order.customerName}</span>
                               </div>
                               <div className="flex items-center gap-1.5">
                                 <Globe className="h-4 w-4 text-gray-400" />
-                                <span className="font-semibold text-gray-900">{getOrderCountryCode(order)}</span>
+                                <span className="font-semibold text-gray-900 dark:text-gray-100">{getOrderCountryCode(order)}</span>
                               </div>
                               <div className="flex items-center gap-1.5">
                                 <Package className="h-4 w-4 text-gray-400" />
@@ -12732,11 +12732,11 @@ export default function PickPack() {
                             </div>
                             {/* Compact product list */}
                             {order.items && order.items.length > 0 && (
-                              <div className="pt-3 mt-3 border-t border-gray-200">
+                              <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-700">
                                 <div className="space-y-1">
                                   {order.items.map((item, idx) => (
-                                    <div key={idx} className="flex items-center gap-2 text-sm text-gray-600">
-                                      <span className="w-5 text-center text-gray-500 font-medium">{item.quantity}x</span>
+                                    <div key={idx} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                      <span className="w-5 text-center text-gray-500 dark:text-gray-400 font-medium">{item.quantity}x</span>
                                       <span className="truncate">{item.productName}</span>
                                     </div>
                                   ))}
@@ -12856,7 +12856,7 @@ export default function PickPack() {
                           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2">
-                                <h3 className="text-base font-semibold text-gray-900">{order.orderId}</h3>
+                                <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{order.orderId}</h3>
                                 {/* Status indicator */}
                                 {(() => {
                                   const status = getOrderStatusDisplay(order);
@@ -12867,14 +12867,14 @@ export default function PickPack() {
                                   );
                                 })()}
                               </div>
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600 mb-2">
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600 dark:text-gray-300 mb-2">
                                 <div className="flex items-center gap-1.5">
                                   <User className="h-4 w-4 text-gray-400" />
                                   <span className="truncate font-medium">{order.customerName}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <Globe className="h-4 w-4 text-gray-400" />
-                                  <span className="font-semibold text-gray-900">{getOrderCountryCode(order)}</span>
+                                  <span className="font-semibold text-gray-900 dark:text-gray-100">{getOrderCountryCode(order)}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <Package className="h-4 w-4 text-gray-400" />
@@ -12893,11 +12893,11 @@ export default function PickPack() {
                               )}
                               {/* Compact product list */}
                               {order.items && order.items.length > 0 && (
-                                <div className="pt-3 mt-3 border-t border-gray-200">
+                                <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-700">
                                   <div className="space-y-1">
                                     {order.items.map((item, idx) => (
-                                      <div key={idx} className="flex items-center gap-2 text-sm text-gray-600">
-                                        <span className="w-5 text-center text-gray-500 font-medium">{item.quantity}x</span>
+                                      <div key={idx} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                        <span className="w-5 text-center text-gray-500 dark:text-gray-400 font-medium">{item.quantity}x</span>
                                         <span className="truncate">{item.productName}</span>
                                       </div>
                                     ))}
@@ -12918,7 +12918,7 @@ export default function PickPack() {
                               </Button>
                               <Button 
                                 size="sm" 
-                                className="flex-1 sm:flex-initial sm:w-full h-10 sm:h-12 text-sm bg-amber-50 dark:bg-amber-900/300 hover:bg-amber-600 text-white font-semibold"
+                                className="flex-1 sm:flex-initial sm:w-full h-10 sm:h-12 text-sm bg-amber-600 dark:bg-amber-700 hover:bg-amber-700 dark:hover:bg-amber-600 text-white font-semibold"
                                 onClick={() => {
                                   // Resume picking by setting the active order and switching to picking view
                                   setActivePickingOrder(order);
@@ -13012,7 +13012,7 @@ export default function PickPack() {
                           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2">
-                                <h3 className="text-base font-semibold text-gray-900">{order.orderId}</h3>
+                                <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{order.orderId}</h3>
                                 {/* Status indicator */}
                                 {(() => {
                                   const status = getOrderStatusDisplay(order);
@@ -13023,14 +13023,14 @@ export default function PickPack() {
                                   );
                                 })()}
                               </div>
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600 mb-2">
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600 dark:text-gray-300 mb-2">
                                 <div className="flex items-center gap-1.5">
                                   <User className="h-4 w-4 text-gray-400" />
                                   <span className="truncate font-medium">{order.customerName}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <Globe className="h-4 w-4 text-gray-400" />
-                                  <span className="font-semibold text-gray-900">{getOrderCountryCode(order)}</span>
+                                  <span className="font-semibold text-gray-900 dark:text-gray-100">{getOrderCountryCode(order)}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <Package className="h-4 w-4 text-gray-400" />
@@ -13049,11 +13049,11 @@ export default function PickPack() {
                               )}
                               {/* Compact product list */}
                               {order.items && order.items.length > 0 && (
-                                <div className="pt-3 mt-3 border-t border-gray-200">
+                                <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-700">
                                   <div className="space-y-1">
                                     {order.items.map((item, idx) => (
-                                      <div key={idx} className="flex items-center gap-2 text-sm text-gray-600">
-                                        <span className="w-5 text-center text-gray-500 font-medium">{item.quantity}x</span>
+                                      <div key={idx} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                        <span className="w-5 text-center text-gray-500 dark:text-gray-400 font-medium">{item.quantity}x</span>
                                         <span className="truncate">{item.productName}</span>
                                       </div>
                                     ))}
@@ -13319,25 +13319,25 @@ export default function PickPack() {
                           <div key={sectionIndex} className={`rounded-xl border overflow-hidden shadow-sm ${section.color}`}>
                             {/* Section Header */}
                             <div 
-                              className="px-4 py-3 border-b border-gray-200 cursor-pointer select-none bg-white/70 hover:bg-white/90 transition-all"
+                              className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer select-none bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 transition-all"
                               onClick={() => toggleSectionCollapse(section.title)}
                             >
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3 flex-1">
-                                  <div className="p-2.5 rounded-lg bg-white border border-gray-300">
-                                    <Icon className="h-4 w-4 text-gray-600" />
+                                  <div className="p-2.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
+                                    <Icon className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                                   </div>
                                   <div className="flex-1">
-                                    <h3 className="font-bold text-base text-gray-900 tracking-wide uppercase">
+                                    <h3 className="font-bold text-base text-gray-900 dark:text-gray-100 tracking-wide uppercase">
                                       {section.title}
                                     </h3>
-                                    <p className="text-xs text-gray-600 mt-0.5 font-medium">
+                                    <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5 font-medium">
                                       {section.orders.length} {section.orders.length === 1 ? 'order ready' : 'orders ready'}
                                     </p>
                                   </div>
                                   {/* Collapse/Expand indicator */}
                                   <ChevronDown 
-                                    className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
+                                    className={`h-5 w-5 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${
                                       collapsedSections.has(section.title) ? '-rotate-90' : ''
                                     }`} 
                                   />
@@ -13413,7 +13413,7 @@ export default function PickPack() {
                                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
                                       <div className="flex-1">
                                         <div className="flex items-center gap-1.5 mb-1">
-                                          <h3 className="font-semibold text-xs sm:text-sm">{order.orderId}</h3>
+                                          <h3 className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-gray-100">{order.orderId}</h3>
                                           <span className="text-xs px-1.5 py-0.5 rounded-full border font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-200 border-green-200 dark:border-green-700">
                                             Ready to Ship
                                           </span>
@@ -13424,14 +13424,14 @@ export default function PickPack() {
                                             </span>
                                           )}
                                         </div>
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs text-gray-600">
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs text-gray-600 dark:text-gray-300">
                                           <div className="flex items-center gap-1.5">
                                             <User className="h-3 w-3 text-gray-400" />
                                             <span className="truncate font-medium">{order.customerName}</span>
                                           </div>
                                           <div className="flex items-center gap-1.5">
                                             <Globe className="h-3 w-3 text-gray-400" />
-                                            <span className="font-semibold text-gray-900">{getOrderCountryCode(order)}</span>
+                                            <span className="font-semibold text-gray-900 dark:text-gray-100">{getOrderCountryCode(order)}</span>
                                           </div>
                                           <div className="flex items-center gap-1.5">
                                             <Package className="h-3 w-3 text-gray-400" />
@@ -13456,11 +13456,11 @@ export default function PickPack() {
                                         )}
                                         {/* Compact product list */}
                                         {order.items && order.items.length > 0 && (
-                                          <div className="mt-1.5 pt-1.5 border-t border-gray-200">
+                                          <div className="mt-1.5 pt-1.5 border-t border-gray-200 dark:border-gray-700">
                                             <div className="space-y-0.5">
                                               {order.items.map((item, idx) => (
-                                                <div key={idx} className="flex items-center gap-1 text-xs text-gray-600">
-                                                  <span className="w-4 text-center text-gray-400">{item.quantity}x</span>
+                                                <div key={idx} className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300">
+                                                  <span className="w-4 text-center text-gray-400 dark:text-gray-500">{item.quantity}x</span>
                                                   <span className="truncate">{item.productName}</span>
                                                 </div>
                                               ))}
