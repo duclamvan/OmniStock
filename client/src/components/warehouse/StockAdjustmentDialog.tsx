@@ -80,6 +80,7 @@ export default function StockAdjustmentDialog({
   const [barcodeInput, setBarcodeInput] = useState("");
   const [scanCount, setScanCount] = useState(0);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
+  const notesInputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (open && location) {
@@ -112,6 +113,17 @@ export default function StockAdjustmentDialog({
       barcodeInputRef.current.focus();
     }
   }, [barcodeScanMode]);
+
+  // Auto-focus notes textarea when dialog opens
+  useEffect(() => {
+    if (open && !barcodeScanMode && notesInputRef.current) {
+      // Small delay to ensure the dialog is fully rendered
+      const timer = setTimeout(() => {
+        notesInputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [open, barcodeScanMode]);
 
   const createRequestMutation = useMutation({
     mutationFn: async (data: { 
@@ -455,6 +467,7 @@ export default function StockAdjustmentDialog({
               Reason for Adjustment *
             </Label>
             <Textarea
+              ref={notesInputRef}
               id="adjustment-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
