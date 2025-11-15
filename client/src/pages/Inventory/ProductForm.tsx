@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency, convertCurrency, type Currency } from "@/lib/currencyUtils";
 import { useInventoryDefaults } from "@/hooks/useAppSettings";
+import { useDefaultWarehouseSelection } from "@/hooks/useDefaultWarehouseSelection";
 import { Separator } from "@/components/ui/separator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -205,7 +206,12 @@ export default function ProductForm() {
   const isEditMode = !!id;
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { lowStockThreshold, defaultWarehouse } = useInventoryDefaults();
+  const { lowStockThreshold } = useInventoryDefaults();
+  
+  // Use orchestrator hook for default warehouse selection
+  const { value: defaultWarehouse } = useDefaultWarehouseSelection({
+    initialValue: isEditMode ? undefined : undefined, // Don't apply in edit mode
+  });
   
   // State management
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
@@ -680,6 +686,13 @@ export default function ProductForm() {
     }
   }, [productQuantity, isEditMode, form]);
 
+  // Apply default warehouse for new products when it becomes available
+  useEffect(() => {
+    if (!isEditMode && defaultWarehouse) {
+      form.setValue('warehouseId', defaultWarehouse);
+    }
+  }, [defaultWarehouse, isEditMode, form]);
+
   // Save expanded sections to localStorage
   useEffect(() => {
     try {
@@ -816,6 +829,18 @@ export default function ProductForm() {
     
     return () => clearTimeout(timer);
   }, [productQuantity, productLocations, locationsLoaded, productLoaded, isEditMode, id, queryClient]);
+
+  // CRITICAL: Synchronize warehouseId with defaultWarehouse when settings load asynchronously
+  useEffect(() => {
+    // Only auto-set for new products (not edit mode)
+    if (!isEditMode && defaultWarehouse) {
+      const currentWarehouse = form.getValues('warehouseId');
+      // Auto-set default warehouse if no warehouse currently selected
+      if (!currentWarehouse) {
+        form.setValue('warehouseId', defaultWarehouse);
+      }
+    }
+  }, [defaultWarehouse, isEditMode, form]);
 
   // Mutations
   const createProductMutation = useMutation({

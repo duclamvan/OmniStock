@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertCircle, CheckCircle2, MapPin, Package, Layers } from "lucide-react";
+import { useDefaultWarehouseSelection } from "@/hooks/useDefaultWarehouseSelection";
 import {
   generateShelfLocationCode,
   generatePalletLocationCode,
@@ -52,8 +53,24 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
   className = "",
   disabled = false,
 }: WarehouseLocationSelectorProps) {
-  const [warehouse, setWarehouse] = useState("WH1");
+  // Area type state - determines shelf vs pallet vs office layout
   const [areaType, setAreaType] = useState<AreaType>("shelves");
+  
+  // Use orchestrator hook for default warehouse selection
+  const {
+    value: warehouse,
+    setValue: setWarehouse,
+    hasManualOverride,
+  } = useDefaultWarehouseSelection({
+    initialValue: value ? value.split('-')[0] : undefined,
+    onChange: (newWarehouse) => {
+      // This onChange is called when the warehouse changes in the hook
+      // The location code will be updated by the useEffect below
+    },
+    locationType: areaType as 'pallet' | 'office' | 'shelves',
+  });
+  
+  // Location component states
   const [aisle, setAisle] = useState("A01");
   const [rack, setRack] = useState("R01");
   const [level, setLevel] = useState("L01");
@@ -76,7 +93,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
       const shelfParts = parseShelfLocationCode(value);
       if (shelfParts) {
         setAreaType("shelves");
-        setWarehouse(shelfParts.warehouse);
+        setWarehouse(shelfParts.warehouse, false); // false = not manual, don't mark as override
         setAisle(shelfParts.aisle);
         setRack(shelfParts.rack);
         setLevel(shelfParts.level);
@@ -93,7 +110,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
         // Determine if it's office (C prefix) or pallets (B prefix)
         const isOffice = palletParts.zone.startsWith('C');
         setAreaType(isOffice ? "office" : "pallets");
-        setWarehouse(palletParts.warehouse);
+        setWarehouse(palletParts.warehouse, false); // false = not manual, don't mark as override
         setZone(palletParts.zone);
         setPosition(palletParts.position);
         setManualCode(value);
@@ -107,7 +124,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
       const oldMatch = value.match(oldPattern);
       if (oldMatch) {
         setAreaType("shelves");
-        setWarehouse(oldMatch[1]);
+        setWarehouse(oldMatch[1], false); // false = not manual, don't mark as override
         setAisle(oldMatch[2]);
         setRack(oldMatch[3]);
         setLevel(oldMatch[4]);
@@ -118,7 +135,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
         return;
       }
     }
-  }, [value]);
+  }, [value, setWarehouse]);
 
   // Update zone when areaType changes (pallets=B, office=C)
   useEffect(() => {
@@ -162,7 +179,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
       const shelfParts = parseShelfLocationCode(newCode);
       if (shelfParts) {
         setAreaType("shelves");
-        setWarehouse(shelfParts.warehouse);
+        setWarehouse(shelfParts.warehouse, true); // true = mark as manual
         setAisle(shelfParts.aisle);
         setRack(shelfParts.rack);
         setLevel(shelfParts.level);
@@ -179,7 +196,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
         // Determine if it's office (C prefix) or pallets (B prefix)
         const isOffice = palletParts.zone.startsWith('C');
         setAreaType(isOffice ? "office" : "pallets");
-        setWarehouse(palletParts.warehouse);
+        setWarehouse(palletParts.warehouse, true); // true = mark as manual
         setZone(palletParts.zone);
         setPosition(palletParts.position);
         setIsOldFormat(false);
@@ -193,7 +210,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
       const oldMatch = newCode.match(oldPattern);
       if (oldMatch) {
         setAreaType("shelves");
-        setWarehouse(oldMatch[1]);
+        setWarehouse(oldMatch[1], true); // true = mark as manual
         setAisle(oldMatch[2]);
         setRack(oldMatch[3]);
         setLevel(oldMatch[4]);
@@ -220,8 +237,8 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
   }, []);
 
   const handleWarehouseChange = useCallback((value: string) => {
-    setWarehouse(value);
-  }, []);
+    setWarehouse(value, true); // true = mark as manual selection
+  }, [setWarehouse]);
 
   const handleAisleChange = useCallback((value: string) => {
     setAisle(value);

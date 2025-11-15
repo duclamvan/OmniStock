@@ -102,7 +102,8 @@ const playSound = (type: 'add' | 'remove' | 'checkout' | 'error') => {
 
 export default function POS() {
   const { toast } = useToast();
-  const { financialHelpers } = useSettings();
+  const { financialHelpers, inventorySettings } = useSettings();
+  const scanningEnabled = inventorySettings.enableBarcodeScanning ?? true;
   const [currency, setCurrency] = useState<'EUR' | 'CZK'>('EUR');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'pay_later' | 'bank_transfer'>('cash');
   const [cart, setCart] = useState<CartItem[]>([]);

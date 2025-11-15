@@ -298,16 +298,18 @@ export default function StockLookup() {
         <div className="px-3 py-3">
           <div className="flex items-center justify-between mb-2.5">
             <h1 className="text-lg font-bold text-gray-900 dark:text-white">Stock Lookup</h1>
-            <Button
-              variant={barcodeMode ? "default" : "outline"}
-              size="sm"
-              onClick={() => setBarcodeMode(!barcodeMode)}
-              className="h-8"
-              data-testid="button-toggle-barcode-mode"
-            >
-              <Barcode className="h-4 w-4 mr-1.5" />
-              {barcodeMode ? "Scanning" : "Scan"}
-            </Button>
+            {enableBarcodeScanning && (
+              <Button
+                variant={barcodeMode ? "default" : "outline"}
+                size="sm"
+                onClick={() => setBarcodeMode(!barcodeMode)}
+                className="h-8"
+                data-testid="button-toggle-barcode-mode"
+              >
+                <Barcode className="h-4 w-4 mr-1.5" />
+                {barcodeMode ? "Scanning" : "Scan"}
+              </Button>
+            )}
           </div>
           
           {/* Search/Barcode Input */}

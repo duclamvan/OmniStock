@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useSettings } from "@/contexts/SettingsContext";
 import { Plus, Minus, Package, AlertCircle, Barcode, ScanLine } from "lucide-react";
 import {
   Select,
@@ -69,6 +70,8 @@ export default function StockAdjustmentDialog({
 }: StockAdjustmentDialogProps) {
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { inventorySettings } = useSettings();
+  const approvalRequired = inventorySettings.stockAdjustmentApprovalRequired ?? true;
   const [adjustmentType, setAdjustmentType] = useState<"set" | "increment" | "decrement">("set");
   const [newQuantity, setNewQuantity] = useState(0);
   const [adjustmentAmount, setAdjustmentAmount] = useState(0);
@@ -149,6 +152,43 @@ export default function StockAdjustmentDialog({
     },
   });
 
+  const directAdjustmentMutation = useMutation({
+    mutationFn: async (data: {
+      productId: string;
+      locationId: string;
+      adjustmentType: 'add' | 'remove' | 'set';
+      quantity: number;
+      reason: string;
+    }) => {
+      return await apiRequest(
+        'POST',
+        '/api/stock/direct-adjustment',
+        data
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/locations`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stock-adjustment-requests'] });
+      toast({
+        title: "Stock Updated",
+        description: "Stock adjustment completed successfully",
+      });
+      onOpenChange(false);
+      setNewQuantity(0);
+      setAdjustmentAmount(0);
+      setNotes("");
+      onSuccess?.();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to adjust stock",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleAdjustStock = () => {
     if (!location) {
       toast({
@@ -205,15 +245,26 @@ export default function StockAdjustmentDialog({
       });
     }
 
-    createRequestMutation.mutate({
-      productId,
-      locationId: location.id,
-      requestedBy: "test-user",
-      adjustmentType: backendAdjustmentType,
-      currentQuantity: location.quantity,
-      requestedQuantity: finalQuantity,
-      reason: notes,
-    });
+    // Use direct adjustment if approval is not required
+    if (!approvalRequired) {
+      directAdjustmentMutation.mutate({
+        productId,
+        locationId: location.id,
+        adjustmentType: backendAdjustmentType,
+        quantity: finalQuantity,
+        reason: notes,
+      });
+    } else {
+      // Backend will automatically set requestedBy from authenticated user
+      createRequestMutation.mutate({
+        productId,
+        locationId: location.id,
+        adjustmentType: backendAdjustmentType,
+        currentQuantity: location.quantity,
+        requestedQuantity: finalQuantity,
+        reason: notes,
+      });
+    }
   };
 
   const calculateFinalQuantity = () => {

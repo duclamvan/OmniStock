@@ -14,6 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
+import { useSettings } from "@/contexts/SettingsContext";
 import { 
   ArrowLeft, 
   Package, 
@@ -73,6 +74,8 @@ export default function ReceiptDetails() {
   const { id } = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { inventorySettings } = useSettings();
+  const scanningEnabled = inventorySettings.enableBarcodeScanning ?? true;
   
   const [selectedItem, setSelectedItem] = useState<ReceiptItem | null>(null);
   const [showVerifyDialog, setShowVerifyDialog] = useState(false);
@@ -1219,22 +1222,24 @@ export default function ReceiptDetails() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Barcode</Label>
-                  <div className="relative">
-                    <QrCode className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      value={selectedItem.barcode || ""}
-                      onChange={(e) => setSelectedItem({
-                        ...selectedItem,
-                        barcode: e.target.value
-                      })}
-                      placeholder="Scan or enter barcode"
-                      className="pl-10"
-                    />
+                {scanningEnabled && (
+                  <div>
+                    <Label>Barcode</Label>
+                    <div className="relative">
+                      <QrCode className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        value={selectedItem.barcode || ""}
+                        onChange={(e) => setSelectedItem({
+                          ...selectedItem,
+                          barcode: e.target.value
+                        })}
+                        placeholder="Scan or enter barcode"
+                        className="pl-10"
+                      />
+                    </div>
                   </div>
-                </div>
-                <div>
+                )}
+                <div className={scanningEnabled ? "" : "col-span-2"}>
                   <Label>Condition</Label>
                   <Select
                     value={selectedItem.condition}

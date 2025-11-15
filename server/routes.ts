@@ -3858,11 +3858,20 @@ Important:
 
   app.post('/api/stock-adjustment-requests', async (req: any, res) => {
     try {
-      const requestData = insertStockAdjustmentRequestSchema.parse(req.body);
+      // Get user ID (fallback to test-user if auth is disabled)
+      const userId = req.user?.id || "test-user";
+      
+      // Override requestedBy with authenticated user
+      const requestDataWithUser = {
+        ...req.body,
+        requestedBy: userId,
+      };
+      
+      const requestData = insertStockAdjustmentRequestSchema.parse(requestDataWithUser);
       const request = await storage.createStockAdjustmentRequest(requestData);
       
       await storage.createUserActivity({
-        userId: req.body.requestedBy || "test-user",
+        userId: userId,
         action: 'created',
         entityType: 'stock_adjustment_request',
         entityId: request.id,
@@ -3879,6 +3888,82 @@ Important:
         });
       }
       res.status(500).json({ message: "Failed to create stock adjustment request" });
+    }
+  });
+
+  // Direct stock adjustment (bypasses approval if setting allows)
+  app.post('/api/stock/direct-adjustment', async (req: any, res) => {
+    try {
+      // Get user ID (fallback to test-user if auth is disabled)
+      const userId = req.user?.id || "test-user";
+      
+      // Load inventory settings to check if direct adjustments are allowed
+      const inventorySettings = await getSettingsByCategory('inventory');
+      
+      // Server-side validation: Only allow if approval NOT required
+      if (inventorySettings.stockAdjustmentApprovalRequired === true) {
+        return res.status(403).json({ 
+          message: 'Direct adjustments not allowed. Stock adjustment approval is required. Please create an approval request instead.' 
+        });
+      }
+      
+      const { productId, locationId, adjustmentType, quantity, reason } = req.body;
+
+      // Validate required fields
+      if (!productId || !locationId || !adjustmentType || quantity === undefined || !reason) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      // Validate adjustment type
+      if (!['add', 'remove', 'set'].includes(adjustmentType)) {
+        return res.status(400).json({ message: "Invalid adjustment type" });
+      }
+
+      // Get current location
+      const location = await storage.getProductLocation(locationId);
+      if (!location) {
+        return res.status(404).json({ message: "Location not found" });
+      }
+
+      // Calculate new quantity
+      let newQuantity: number;
+      switch (adjustmentType) {
+        case 'add':
+          newQuantity = location.quantity + quantity;
+          break;
+        case 'remove':
+          newQuantity = location.quantity - quantity;
+          break;
+        case 'set':
+          newQuantity = quantity;
+          break;
+        default:
+          return res.status(400).json({ message: "Invalid adjustment type" });
+      }
+      
+      // Validate that new quantity is not negative (unless allowNegativeStock is enabled)
+      if (newQuantity < 0 && !inventorySettings.allowNegativeStock) {
+        return res.status(400).json({ 
+          message: `Adjustment would result in negative stock (${newQuantity}). Current stock: ${location.quantity}` 
+        });
+      }
+
+      // Perform the stock adjustment
+      await storage.updateProductLocationQuantity(locationId, newQuantity);
+
+      // Create audit trail with real user ID
+      await storage.createUserActivity({
+        userId: userId,
+        action: 'adjusted',
+        entityType: 'product_location',
+        entityId: locationId,
+        description: `Direct stock adjustment: ${adjustmentType} ${quantity} units (${reason}). Old: ${location.quantity}, New: ${newQuantity}`,
+      });
+
+      res.json({ success: true, newQuantity, oldQuantity: location.quantity });
+    } catch (error: any) {
+      console.error("Error performing direct stock adjustment:", error);
+      res.status(500).json({ message: error.message || "Failed to adjust stock" });
     }
   });
 

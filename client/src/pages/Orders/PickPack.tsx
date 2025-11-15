@@ -1412,8 +1412,9 @@ function OrderFilesDisplay({
 
 export default function PickPack() {
   const { toast } = useToast();
-  const { generalSettings } = useSettings();
+  const { generalSettings, inventorySettings } = useSettings();
   const aiCartonPackingEnabled = generalSettings?.enableAiCartonPacking ?? false;
+  const scanningEnabled = inventorySettings.enableBarcodeScanning ?? true;
   const [selectedTab, setSelectedTab] = useState<'overview' | 'pending' | 'picking' | 'packing' | 'ready'>(() => {
     // Load selected tab from localStorage
     const saved = localStorage.getItem('pickpack-selected-tab');
@@ -6478,26 +6479,28 @@ export default function PickPack() {
                       </span>
                     </div>
                     {/* Barcode Scanner Toggle Icon */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`h-9 w-9 p-0 ${showBarcodeScanner ? 'bg-white/30 text-white' : 'text-white/70 hover:bg-white/20 hover:text-white'}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowBarcodeScanner(!showBarcodeScanner);
-                        if (!showBarcodeScanner) {
-                          setTimeout(() => barcodeInputRef.current?.focus(), 100);
-                        }
-                      }}
-                      title={showBarcodeScanner ? "Hide barcode scanner" : "Show barcode scanner"}
-                    >
-                      <ScanLine className="h-5 w-5" />
-                    </Button>
+                    {scanningEnabled && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`h-9 w-9 p-0 ${showBarcodeScanner ? 'bg-white/30 text-white' : 'text-white/70 hover:bg-white/20 hover:text-white'}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowBarcodeScanner(!showBarcodeScanner);
+                          if (!showBarcodeScanner) {
+                            setTimeout(() => barcodeInputRef.current?.focus(), 100);
+                          }
+                        }}
+                        title={showBarcodeScanner ? "Hide barcode scanner" : "Show barcode scanner"}
+                      >
+                        <ScanLine className="h-5 w-5" />
+                      </Button>
+                    )}
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
                   {/* Barcode Scanner Input - Collapsible */}
-                  {showBarcodeScanner && (
+                  {scanningEnabled && showBarcodeScanner && (
                     <div className="px-4 pt-3 pb-2 border-b border-gray-200 bg-sky-50">
                       <div className="flex gap-3">
                         <div className="relative flex-1">
@@ -11534,30 +11537,32 @@ export default function PickPack() {
               
               <div className="border-t p-3 sm:p-4 bg-gray-50 space-y-2 sm:space-y-3 flex-shrink-0">
                 {/* Barcode Scanner - Mobile Optimized */}
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Input
-                      ref={overviewBarcodeInputRef}
-                      placeholder="Scan barcode or SKU..."
-                      value={overviewBarcodeInput}
-                      onChange={(e) => setOverviewBarcodeInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleOverviewBarcodeScan();
-                        }
-                      }}
-                      className="text-sm sm:text-base h-12 bg-white border-2 border-gray-300 placeholder:text-gray-400 font-mono touch-manipulation"
-                    />
+                {scanningEnabled && (
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Input
+                        ref={overviewBarcodeInputRef}
+                        placeholder="Scan barcode or SKU..."
+                        value={overviewBarcodeInput}
+                        onChange={(e) => setOverviewBarcodeInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleOverviewBarcodeScan();
+                          }
+                        }}
+                        className="text-sm sm:text-base h-12 bg-white border-2 border-gray-300 placeholder:text-gray-400 font-mono touch-manipulation"
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleOverviewBarcodeScan}
+                      className="h-12 min-w-[48px] px-3 sm:px-5 bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600 active:bg-green-800 dark:active:bg-green-900 text-white font-bold shadow-md text-sm sm:text-base touch-manipulation"
+                      data-testid="button-overview-scan"
+                    >
+                      <ScanLine className="h-5 w-5 sm:mr-2" />
+                      <span className="hidden sm:inline">Scan</span>
+                    </Button>
                   </div>
-                  <Button 
-                    onClick={handleOverviewBarcodeScan}
-                    className="h-12 min-w-[48px] px-3 sm:px-5 bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600 active:bg-green-800 dark:active:bg-green-900 text-white font-bold shadow-md text-sm sm:text-base touch-manipulation"
-                    data-testid="button-overview-scan"
-                  >
-                    <ScanLine className="h-5 w-5 sm:mr-2" />
-                    <span className="hidden sm:inline">Scan</span>
-                  </Button>
-                </div>
+                )}
                 
                 {/* Continue Picking Button */}
                 <Button 
@@ -11919,29 +11924,31 @@ export default function PickPack() {
                     </div>
                   
                   {/* Barcode Scanner - Fixed to Bottom - Mobile Optimized */}
-                  <div className="sticky bottom-0 bg-white border-t-2 border-gray-300 shadow-lg">
-                    <div className="p-3 lg:p-4">
-                      <div className="flex gap-2 lg:gap-3">
-                        <div className="relative flex-1">
-                          <Input
-                            ref={barcodeInputRef}
-                            placeholder="Ready to scan..."
-                            value={barcodeInput}
-                            className="text-base lg:text-lg h-12 lg:h-14 bg-gray-50 border-2 border-gray-300 placeholder:text-gray-400 font-mono cursor-default rounded-lg touch-manipulation"
-                            readOnly
-                          />
+                  {scanningEnabled && (
+                    <div className="sticky bottom-0 bg-white border-t-2 border-gray-300 shadow-lg">
+                      <div className="p-3 lg:p-4">
+                        <div className="flex gap-2 lg:gap-3">
+                          <div className="relative flex-1">
+                            <Input
+                              ref={barcodeInputRef}
+                              placeholder="Ready to scan..."
+                              value={barcodeInput}
+                              className="text-base lg:text-lg h-12 lg:h-14 bg-gray-50 border-2 border-gray-300 placeholder:text-gray-400 font-mono cursor-default rounded-lg touch-manipulation"
+                              readOnly
+                            />
+                          </div>
+                          <Button 
+                            onClick={handleBarcodeScan}
+                            className="h-12 lg:h-14 min-w-[48px] px-3 sm:px-5 lg:px-7 bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-900 text-white font-bold shadow-md touch-manipulation rounded-lg"
+                            data-testid="button-barcode-scan"
+                          >
+                            <ScanLine className="h-5 w-5 lg:h-6 lg:w-6 sm:mr-2" />
+                            <span className="hidden sm:inline text-base">Scan</span>
+                          </Button>
                         </div>
-                        <Button 
-                          onClick={handleBarcodeScan}
-                          className="h-12 lg:h-14 min-w-[48px] px-3 sm:px-5 lg:px-7 bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-900 text-white font-bold shadow-md touch-manipulation rounded-lg"
-                          data-testid="button-barcode-scan"
-                        >
-                          <ScanLine className="h-5 w-5 lg:h-6 lg:w-6 sm:mr-2" />
-                          <span className="hidden sm:inline text-base">Scan</span>
-                        </Button>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               ) : allItemsPicked && showPickingCompletionModal ? (
               <div className="max-w-3xl mx-auto px-3 lg:px-0">

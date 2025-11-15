@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSettings } from '@/contexts/SettingsContext';
 
 export interface UseBarcodeScanner {
   isActive: boolean;
@@ -8,6 +9,7 @@ export interface UseBarcodeScanner {
   startScanning: () => Promise<void>;
   stopScanning: () => void;
   videoRef: React.RefObject<HTMLVideoElement>;
+  scanningEnabled: boolean;
 }
 
 interface UseBarcodeScannerOptions {
@@ -22,6 +24,9 @@ declare global {
 }
 
 export function useBarcodeScanner({ onScan, scanInterval = 500 }: UseBarcodeScannerOptions): UseBarcodeScanner {
+  const { inventorySettings } = useSettings();
+  const scanningEnabled = inventorySettings.enableBarcodeScanning ?? true;
+
   const [isActive, setIsActive] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +37,14 @@ export function useBarcodeScanner({ onScan, scanInterval = 500 }: UseBarcodeScan
   const detectorRef = useRef<any>(null);
   const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // ALWAYS call hooks in same order - check scanningEnabled inside hook logic
   useEffect(() => {
+    if (!scanningEnabled) {
+      setIsSupported(false);
+      setError('Barcode scanning is disabled in settings');
+      return;
+    }
+
     const supported = 'BarcodeDetector' in window;
     setIsSupported(supported);
     
@@ -48,9 +60,14 @@ export function useBarcodeScanner({ onScan, scanInterval = 500 }: UseBarcodeScan
         clearInterval(scanIntervalRef.current);
       }
     };
-  }, []);
+  }, [scanningEnabled]);
 
   const startScanning = useCallback(async () => {
+    // No-op if scanning is disabled
+    if (!scanningEnabled) {
+      return;
+    }
+
     try {
       setError(null);
 
@@ -124,7 +141,7 @@ export function useBarcodeScanner({ onScan, scanInterval = 500 }: UseBarcodeScan
       
       setIsActive(false);
     }
-  }, [isSupported, onScan, scanInterval]);
+  }, [scanningEnabled, isSupported, onScan, scanInterval]);
 
   const stopScanning = useCallback(() => {
     if (scanIntervalRef.current) {
@@ -151,6 +168,7 @@ export function useBarcodeScanner({ onScan, scanInterval = 500 }: UseBarcodeScan
     error,
     startScanning,
     stopScanning,
-    videoRef
+    videoRef,
+    scanningEnabled
   };
 }

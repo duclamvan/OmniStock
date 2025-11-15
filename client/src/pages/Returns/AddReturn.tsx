@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useSettings } from "@/contexts/SettingsContext";
 import { 
   ArrowLeft, 
   Save, 
@@ -72,6 +73,8 @@ type ReturnFormData = z.infer<typeof returnSchema>;
 export default function AddReturn() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { inventorySettings } = useSettings();
+  const scanningEnabled = inventorySettings.enableBarcodeScanning ?? true;
   const [returnId, setReturnId] = useState("");
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
   const [orderSearchOpen, setOrderSearchOpen] = useState(false);
@@ -740,26 +743,28 @@ export default function AddReturn() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Barcode Scanner Section */}
-                <div className="relative">
-                  <Input
-                    ref={barcodeInputRef}
-                    id="barcode-scan"
-                    type="text"
-                    value={barcodeInput}
-                    onChange={(e) => setBarcodeInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleBarcodeScan(barcodeInput);
-                      }
-                    }}
-                    placeholder="Scan barcode or enter SKU..."
-                    className="pl-10"
-                    disabled={productsQuery.isLoading}
-                    data-testid="input-barcode-scan"
-                  />
-                  <Scan className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                </div>
+                {scanningEnabled && (
+                  <div className="relative">
+                    <Input
+                      ref={barcodeInputRef}
+                      id="barcode-scan"
+                      type="text"
+                      value={barcodeInput}
+                      onChange={(e) => setBarcodeInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleBarcodeScan(barcodeInput);
+                        }
+                      }}
+                      placeholder="Scan barcode or enter SKU..."
+                      className="pl-10"
+                      disabled={productsQuery.isLoading}
+                      data-testid="input-barcode-scan"
+                    />
+                    <Scan className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  </div>
+                )}
 
                 {fields.length === 0 ? (
                   <div className="text-center py-12 bg-muted/50 rounded-lg">
