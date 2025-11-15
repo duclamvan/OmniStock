@@ -589,9 +589,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserProfile(userId: string, updates: Partial<Pick<User, 'firstName' | 'lastName' | 'email'>>): Promise<User | undefined> {
+    const normalizedUpdates = { ...updates };
+    
+    if (normalizedUpdates.email) {
+      normalizedUpdates.email = normalizedUpdates.email.toLowerCase();
+    }
+    
     const result = await db
       .update(users)
-      .set({ ...updates, updatedAt: new Date() })
+      .set({ ...normalizedUpdates, updatedAt: new Date() })
       .where(eq(users.id, userId))
       .returning();
     

@@ -529,12 +529,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (firstName !== undefined) updates.firstName = firstName;
       if (lastName !== undefined) updates.lastName = lastName;
       if (email !== undefined) {
-        // Check if email is already in use by another user
-        const existingUser = await storage.getUserByEmail(email);
+        const normalizedEmail = email.toLowerCase();
+        
+        // Check if email is already in use by another user (case-insensitive)
+        const existingUser = await storage.getUserByEmail(normalizedEmail);
         if (existingUser && existingUser.id !== req.user.id) {
-          return res.status(400).json({ message: 'Email is already in use' });
+          return res.status(400).json({ 
+            message: 'Email is already in use',
+            field: 'email',
+            error: 'Email is already in use by another account'
+          });
         }
-        updates.email = email;
+        updates.email = normalizedEmail;
       }
 
       const updatedUser = await storage.updateUserProfile(req.user.id, updates);

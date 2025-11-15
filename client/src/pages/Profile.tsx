@@ -8,10 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { User as UserIcon, Mail, Save, Loader2, Shield, Calendar } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { User as UserIcon, Mail, Save, Loader2, Shield, Calendar, AlertCircle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import type { User } from "@shared/schema";
 
@@ -25,14 +25,18 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function Profile() {
   const { toast } = useToast();
-  const { user } = useAuth() as { user: User | null | undefined };
+
+  const { data: user, isLoading, isError, refetch } = useQuery<User>({
+    queryKey: ['/api/users/me'],
+    refetchOnMount: true,
+  });
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      firstName: user?.firstName || '',
-      lastName: user?.lastName || '',
-      email: user?.email || '',
+      firstName: '',
+      lastName: '',
+      email: '',
     },
   });
 
@@ -47,23 +51,45 @@ export default function Profile() {
     }
   }, [user, form]);
 
-  const updateProfileMutation = useMutation({
+  const updateProfileMutation = useMutation<User, any, FormValues>({
     mutationFn: async (data: FormValues) => {
-      return await apiRequest('PATCH', '/api/users/me', data);
+      const res = await apiRequest('PATCH', '/api/users/me', data);
+      return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/users/me'] });
+      
+      form.reset({
+        firstName: data.firstName || '',
+        lastName: data.lastName || '',
+        email: data.email || '',
+      });
+      
       toast({
         title: "Profile Updated",
         description: "Your profile has been updated successfully.",
       });
     },
     onError: (error: any) => {
-      toast({
-        title: "Update Failed",
-        description: error.message || "Failed to update profile. Please try again.",
-        variant: "destructive",
-      });
+      // Extract error details from the response
+      const errorDetails = error?.details || error?.fullResponse || error;
+      const errorField = errorDetails?.field || error?.field;
+      const errorMessage = errorDetails?.error || error?.error || errorDetails?.message || error?.message;
+      
+      // If it's a field-specific error, set it on the form field
+      if (errorField && errorMessage) {
+        form.setError(errorField as keyof FormValues, {
+          type: 'manual',
+          message: errorMessage,
+        });
+      } else {
+        // Show generic error as toast
+        toast({
+          title: "Update Failed",
+          description: errorMessage || "Failed to update profile. Please try again.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -89,6 +115,93 @@ export default function Profile() {
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };
+
+  // Show loading skeleton while data is being fetched
+  if (isLoading) {
+    return (
+      <div className="space-y-6 max-w-4xl">
+        <div>
+          <Skeleton className="h-9 w-64 mb-2" />
+          <Skeleton className="h-5 w-96" />
+        </div>
+
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-full max-w-md mt-2" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-3 w-full max-w-lg" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-full max-w-md mt-2" />
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-6 w-32" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-40" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-end">
+          <Skeleton className="h-10 w-36" />
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if fetch failed or user is null
+  if (isError || !user) {
+    return (
+      <div className="space-y-6 max-w-4xl">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-destructive" />
+              <CardTitle>Failed to Load Profile</CardTitle>
+            </div>
+            <CardDescription>
+              Unable to load your profile information. Please try again.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-gray-600 dark:text-gray-400">
+              {isError ? "There was an error loading your profile data." : "Profile data is unavailable."}
+            </p>
+            <Button onClick={() => refetch()} data-testid="button-retry">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -121,7 +234,12 @@ export default function Profile() {
                     <FormItem>
                       <FormLabel>First Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter your first name" {...field} data-testid="input-firstName" />
+                        <Input 
+                          placeholder="Enter your first name" 
+                          {...field} 
+                          disabled={updateProfileMutation.isPending}
+                          data-testid="input-firstName" 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -134,7 +252,12 @@ export default function Profile() {
                     <FormItem>
                       <FormLabel>Last Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter your last name" {...field} data-testid="input-lastName" />
+                        <Input 
+                          placeholder="Enter your last name" 
+                          {...field} 
+                          disabled={updateProfileMutation.isPending}
+                          data-testid="input-lastName" 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -155,6 +278,7 @@ export default function Profile() {
                           placeholder="your.email@example.com"
                           className="pl-10"
                           {...field}
+                          disabled={updateProfileMutation.isPending}
                           data-testid="input-email"
                         />
                       </div>
@@ -219,7 +343,7 @@ export default function Profile() {
           <div className="flex justify-end">
             <Button
               type="submit"
-              disabled={updateProfileMutation.isPending || !form.formState.isDirty}
+              disabled={isLoading || updateProfileMutation.isPending || !form.formState.isDirty}
               className="min-w-[140px]"
               data-testid="button-save"
             >
