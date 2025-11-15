@@ -304,6 +304,9 @@ export default function OrderDetails() {
               gap: 8px;
               line-height: 1;
             }
+            .invoice-title span {
+              transform: translateY(-1px);
+            }
             .invoice-icon {
               width: 20px;
               height: 20px;
