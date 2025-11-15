@@ -209,7 +209,10 @@ export default function GeneralSettings() {
     mutationFn: async (values: FormValues) => {
       // Filter out empty/null/undefined values (keep false and 0 as they're valid)
       const validEntries = Object.entries(values).filter(([_, value]) => {
+        // Skip null, undefined, or empty strings
         if (value === null || value === undefined || value === '') return false;
+        // Skip empty arrays
+        if (Array.isArray(value) && value.length === 0) return false;
         return true;
       });
       
