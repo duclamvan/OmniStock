@@ -11,8 +11,12 @@ export default function Login() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [loginMethod, setLoginMethod] = useState<"email" | "phone">("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [isCodeSent, setIsCodeSent] = useState(false);
 
   useEffect(() => {
     // Check for error in URL params
@@ -28,8 +32,90 @@ export default function Login() {
     }
   }, [toast]);
 
+  const handleSendCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/auth/send-phone-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
+
+      if (response.ok) {
+        setIsCodeSent(true);
+        toast({
+          title: "Success",
+          description: "Verification code sent to your phone",
+        });
+      } else {
+        const data = await response.json();
+        toast({
+          title: "Error",
+          description: data.message || "Failed to send code",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/auth/verify-phone-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, code: verificationCode }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Logged in successfully",
+        });
+        navigate("/");
+      } else {
+        const data = await response.json();
+        toast({
+          title: "Error",
+          description: data.message || "Verification failed",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An error occurred during verification",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (loginMethod === "phone") {
+      if (!isCodeSent) {
+        await handleSendCode(e);
+      } else {
+        await handleVerifyCode(e);
+      }
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -79,41 +165,119 @@ export default function Login() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="flex gap-2 mb-4">
+            <Button
+              type="button"
+              variant={loginMethod === "email" ? "default" : "outline"}
+              className="flex-1"
+              onClick={() => {
+                setLoginMethod("email");
+                setIsCodeSent(false);
+              }}
+            >
+              Email
+            </Button>
+            <Button
+              type="button"
+              variant={loginMethod === "phone" ? "default" : "outline"}
+              className="flex-1"
+              onClick={() => {
+                setLoginMethod("phone");
+                setIsCodeSent(false);
+              }}
+            >
+              Phone
+            </Button>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="your@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-11"
-                data-testid="input-email"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="h-11"
-                data-testid="input-password"
-              />
-            </div>
+            {loginMethod === "email" ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="h-11"
+                    data-testid="input-email"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="h-11"
+                    data-testid="input-password"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="+420 123 456 789"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                    className="h-11"
+                    data-testid="input-phone"
+                    disabled={isCodeSent}
+                  />
+                </div>
+                {isCodeSent && (
+                  <div className="space-y-2">
+                    <Label htmlFor="code">Verification Code</Label>
+                    <Input
+                      id="code"
+                      type="text"
+                      placeholder="Enter 6-digit code"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value)}
+                      required
+                      maxLength={6}
+                      className="h-11"
+                      data-testid="input-code"
+                    />
+                  </div>
+                )}
+              </>
+            )}
             <Button
               type="submit"
               className="w-full h-11"
               disabled={isLoading}
               data-testid="button-login"
             >
-              {isLoading ? "Logging in..." : "Log In"}
+              {isLoading 
+                ? "Processing..." 
+                : loginMethod === "phone" && !isCodeSent 
+                  ? "Send Code" 
+                  : loginMethod === "phone" 
+                    ? "Verify Code"
+                    : "Log In"}
             </Button>
+            {loginMethod === "phone" && isCodeSent && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => setIsCodeSent(false)}
+              >
+                Change Phone Number
+              </Button>
+            )}
           </form>
 
           <div className="relative my-6">

@@ -166,8 +166,11 @@ export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByPhone(phone: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+  createUserWithPhone(userData: { name: string; phone: string }): Promise<User>;
+
   // Import Purchases
   getImportPurchases(): Promise<ImportPurchase[]>;
   getImportPurchase(id: number): Promise<ImportPurchase | undefined>;
@@ -176,33 +179,33 @@ export interface IStorage {
   updateImportPurchase(id: number, purchase: Partial<InsertImportPurchase>): Promise<ImportPurchase | undefined>;
   deleteImportPurchase(id: number): Promise<boolean>;
   unpackPurchaseOrder(purchaseId: number): Promise<any>;
-  
+
   // Purchase Items
   getPurchaseItems(purchaseId: number): Promise<PurchaseItem[]>;
   createPurchaseItem(item: InsertPurchaseItem): Promise<PurchaseItem>;
   updatePurchaseItem(id: number, item: Partial<InsertPurchaseItem>): Promise<PurchaseItem | undefined>;
-  
+
   // Consolidations
   getConsolidations(): Promise<Consolidation[]>;
   getConsolidation(id: number): Promise<Consolidation | undefined>;
   createConsolidation(consolidation: InsertConsolidation): Promise<Consolidation>;
   updateConsolidation(id: number, consolidation: Partial<InsertConsolidation>): Promise<Consolidation | undefined>;
-  
+
   // Shipments
   getShipments(): Promise<Shipment[]>;
   getShipment(id: number): Promise<Shipment | undefined>;
   createShipment(shipment: InsertShipment): Promise<Shipment>;
   updateShipment(id: number, shipment: Partial<InsertShipment>): Promise<Shipment | undefined>;
-  
+
   // Custom Items
   getCustomItems(): Promise<CustomItem[]>;
   createCustomItem(item: InsertCustomItem): Promise<CustomItem>;
   updateCustomItem(id: number, item: Partial<InsertCustomItem>): Promise<CustomItem | undefined>;
-  
+
   // Delivery History
   createDeliveryHistory(history: InsertDeliveryHistory): Promise<DeliveryHistory>;
   getDeliveryHistory(filters?: Partial<DeliveryHistory>): Promise<DeliveryHistory[]>;
-  
+
   // Orders (compatibility layer for old code)
   getOrders(customerId?: number): Promise<Order[]>;
   getOrdersByStatus(status: string): Promise<Order[]>;
@@ -220,7 +223,7 @@ export interface IStorage {
   getOrdersByCustomerId(customerId: string): Promise<Order[]>;
   getUnpaidOrders(): Promise<Order[]>;
   getDashboardMetrics(): Promise<any>;
-  
+
   // Order Items
   getOrderItems(orderId: string): Promise<OrderItem[]>;
   getAllOrderItems(): Promise<OrderItem[]>;
@@ -230,73 +233,74 @@ export interface IStorage {
   deleteOrderItems(orderId: string): Promise<boolean>;
   updateOrderItemPickedQuantity(id: string, quantity: number, timestamp?: Date): Promise<OrderItem | undefined>;
   updateOrderItemPackedQuantity(id: string, quantity: number): Promise<OrderItem | undefined>;
-  
+
   // Products
   getProducts(): Promise<Product[]>;
   getProduct(id: string): Promise<Product | undefined>;
   getProductById(id: string): Promise<Product | undefined>;
+  getProductBySku(sku: string): Promise<Product | undefined>;
   createProduct(product: any): Promise<Product>;
   updateProduct(id: string, product: any): Promise<Product | undefined>;
   deleteProduct(id: string): Promise<boolean>;
   getLowStockProducts(): Promise<Product[]>;
-  
+
   // Product Variants
   getProductVariants(productId: string): Promise<ProductVariant[]>;
   createProductVariant(variant: any): Promise<ProductVariant>;
   updateProductVariant(id: string, variant: any): Promise<ProductVariant | undefined>;
   deleteProductVariant(id: string): Promise<boolean>;
-  
+
   // Product Locations
   getProductLocations(productId: string): Promise<ProductLocation[]>;
   createProductLocation(location: InsertProductLocation): Promise<ProductLocation>;
   updateProductLocation(id: string, location: Partial<InsertProductLocation>): Promise<ProductLocation | undefined>;
   deleteProductLocation(id: string): Promise<boolean>;
   moveInventory(fromLocationId: string, toLocationId: string, quantity: number): Promise<boolean>;
-  
+
   // Stock Adjustment Requests
   getStockAdjustmentRequests(): Promise<StockAdjustmentRequest[]>;
   getStockAdjustmentRequest(id: string): Promise<StockAdjustmentRequest | undefined>;
   createStockAdjustmentRequest(request: InsertStockAdjustmentRequest): Promise<StockAdjustmentRequest>;
   approveStockAdjustmentRequest(id: string, approvedBy: string): Promise<StockAdjustmentRequest | undefined>;
   rejectStockAdjustmentRequest(id: string, approvedBy: string, reason: string): Promise<StockAdjustmentRequest | undefined>;
-  
+
   // Over-Allocated Inventory
   getOverAllocatedItems(): Promise<any[]>;
-  
+
   // Under-Allocated Inventory
   getUnderAllocatedItems(): Promise<any[]>;
-  
+
   // Product Files
   getProductFiles(productId: string): Promise<ProductFile[]>;
   getProductFile(id: string): Promise<ProductFile | undefined>;
   createProductFile(file: InsertProductFile): Promise<ProductFile>;
   updateProductFile(id: string, data: Partial<InsertProductFile>): Promise<ProductFile | undefined>;
   deleteProductFile(id: string): Promise<boolean>;
-  
+
   // Order Files
   getOrderFiles(orderId: string): Promise<OrderFile[]>;
   getOrderFile(id: string): Promise<OrderFile | undefined>;
   createOrderFile(file: InsertOrderFile): Promise<OrderFile>;
   deleteOrderFile(id: string): Promise<boolean>;
-  
+
   // Product Tiered Pricing
   getProductTieredPricing(productId: string): Promise<ProductTieredPricing[]>;
   createProductTieredPricing(data: InsertProductTieredPricing): Promise<ProductTieredPricing>;
   updateProductTieredPricing(id: string, data: Partial<InsertProductTieredPricing>): Promise<ProductTieredPricing | undefined>;
   deleteProductTieredPricing(id: string): Promise<boolean>;
-  
+
   // Product Bundles
   getProductBundles(): Promise<ProductBundle[]>;
   getProductBundle(id: string): Promise<ProductBundle | undefined>;
   createProductBundle(bundle: InsertProductBundle): Promise<ProductBundle>;
   updateProductBundle(id: string, bundle: Partial<InsertProductBundle>): Promise<ProductBundle | undefined>;
   deleteProductBundle(id: string): Promise<boolean>;
-  
+
   // Bundle Items
   getBundleItems(bundleId: string): Promise<BundleItem[]>;
   createBundleItem(item: InsertBundleItem): Promise<BundleItem>;
   deleteBundleItems(bundleId: string): Promise<boolean>;
-  
+
   // Customers
   getCustomers(): Promise<Customer[]>;
   searchCustomers(query: string): Promise<Customer[]>;
@@ -305,7 +309,7 @@ export interface IStorage {
   createCustomer(customer: any): Promise<Customer>;
   updateCustomer(id: string, customer: any): Promise<Customer | undefined>;
   deleteCustomer(id: string): Promise<boolean>;
-  
+
   // Customer Shipping Addresses
   getCustomerShippingAddresses(customerId: string): Promise<CustomerShippingAddress[]>;
   getCustomerShippingAddress(id: string): Promise<CustomerShippingAddress | undefined>;
@@ -313,7 +317,7 @@ export interface IStorage {
   updateCustomerShippingAddress(id: string, address: Partial<InsertCustomerShippingAddress>): Promise<CustomerShippingAddress | undefined>;
   deleteCustomerShippingAddress(id: string): Promise<boolean>;
   setPrimaryShippingAddress(customerId: string, addressId: string): Promise<void>;
-  
+
   // Customer Billing Addresses
   getCustomerBillingAddresses(customerId: string): Promise<CustomerBillingAddress[]>;
   getCustomerBillingAddress(id: string): Promise<CustomerBillingAddress | undefined>;
@@ -321,39 +325,39 @@ export interface IStorage {
   updateCustomerBillingAddress(id: string, address: Partial<InsertCustomerBillingAddress>): Promise<CustomerBillingAddress | undefined>;
   deleteCustomerBillingAddress(id: string): Promise<boolean>;
   setPrimaryBillingAddress(customerId: string, addressId: string): Promise<void>;
-  
+
   // Customer Badges
   getCustomerBadges(customerId: string): Promise<CustomerBadge[]>;
   refreshCustomerBadges(customerId: string): Promise<void>;
   refreshOrderBadges(orderId: string): Promise<void>;
-  
+
   // Discounts
   getDiscounts(): Promise<Discount[]>;
   getDiscount(id: string): Promise<Discount | undefined>;
   createDiscount(discount: any): Promise<Discount>;
   updateDiscount(id: string, discount: any): Promise<Discount | undefined>;
   deleteDiscount(id: string): Promise<boolean>;
-  
+
   // Warehouses
   getWarehouses(): Promise<Warehouse[]>;
   getWarehouse(id: string): Promise<Warehouse | undefined>;
   createWarehouse(warehouse: any): Promise<Warehouse>;
   updateWarehouse(id: string, warehouse: any): Promise<Warehouse | undefined>;
   deleteWarehouse(id: string): Promise<boolean>;
-  
+
   // Warehouse Files
   getWarehouseFiles(warehouseId: string): Promise<WarehouseFile[]>;
   getWarehouseFileById(id: string): Promise<WarehouseFile | undefined>;
   createWarehouseFile(data: InsertWarehouseFile): Promise<WarehouseFile>;
   deleteWarehouseFile(fileId: string): Promise<boolean>;
-  
+
   // Warehouse Financial Contracts
   getWarehouseFinancialContracts(warehouseId: string): Promise<WarehouseFinancialContract[]>;
   getWarehouseFinancialContractById(id: string): Promise<WarehouseFinancialContract | undefined>;
   createWarehouseFinancialContract(data: InsertWarehouseFinancialContract): Promise<WarehouseFinancialContract>;
   updateWarehouseFinancialContract(id: string, data: Partial<InsertWarehouseFinancialContract>): Promise<WarehouseFinancialContract>;
   deleteWarehouseFinancialContract(id: string): Promise<boolean>;
-  
+
   // Warehouse Layouts
   getWarehouseLayout(warehouseId: string): Promise<WarehouseLayout | undefined>;
   createWarehouseLayout(data: InsertWarehouseLayout): Promise<WarehouseLayout>;
@@ -363,44 +367,44 @@ export interface IStorage {
   getLayoutStatistics(layoutId: string): Promise<any>;
   getLayoutBins(layoutId: string): Promise<LayoutBin[]>;
   updateLayoutBin(binId: string, data: Partial<InsertLayoutBin>): Promise<LayoutBin | undefined>;
-  
+
   // Suppliers
   getSuppliers(): Promise<Supplier[]>;
   getSupplier(id: string): Promise<Supplier | undefined>;
   createSupplier(supplier: any): Promise<Supplier>;
   updateSupplier(id: string, supplier: any): Promise<Supplier | undefined>;
   deleteSupplier(id: string): Promise<boolean>;
-  
+
   // Returns
   getReturns(): Promise<Return[]>;
   getReturn(id: string): Promise<Return | undefined>;
   createReturn(returnData: any): Promise<Return>;
   updateReturn(id: string, returnData: any): Promise<Return | undefined>;
   deleteReturn(id: string): Promise<boolean>;
-  
+
   // Return Items
   getReturnItems(returnId: string): Promise<ReturnItem[]>;
   createReturnItem(item: any): Promise<ReturnItem>;
-  
+
   // Expenses
   getExpenses(): Promise<Expense[]>;
   getExpenseById(id: string): Promise<Expense | undefined>;
   createExpense(expense: any): Promise<Expense>;
   updateExpense(id: string, expense: any): Promise<Expense | undefined>;
   deleteExpense(id: string): Promise<boolean>;
-  
+
   // Services
   getServices(): Promise<Service[]>;
   getServiceById(id: string): Promise<Service | undefined>;
   createService(service: InsertService, items: InsertServiceItem[]): Promise<Service>;
   updateService(id: string, service: Partial<InsertService>): Promise<Service | undefined>;
   deleteService(id: string): Promise<void>;
-  
+
   // Service Items
   getServiceItems(serviceId: string): Promise<ServiceItem[]>;
   updateServiceItem(id: string, item: Partial<InsertServiceItem>): Promise<ServiceItem | undefined>;
   deleteServiceItem(id: string): Promise<void>;
-  
+
   // Pre-Orders
   getPreOrders(): Promise<PreOrder[]>;
   getPreOrder(id: string): Promise<PreOrder | undefined>;
@@ -411,51 +415,51 @@ export interface IStorage {
   createPreOrderItem(item: InsertPreOrderItem): Promise<PreOrderItem>;
   updatePreOrderItem(id: string, item: Partial<InsertPreOrderItem>): Promise<PreOrderItem>;
   deletePreOrderItem(id: string): Promise<boolean>;
-  
+
   // Purchases
   getPurchases(): Promise<Purchase[]>;
   getPurchase(id: string): Promise<Purchase | undefined>;
   createPurchase(purchase: any): Promise<Purchase>;
   updatePurchase(id: string, purchase: any): Promise<Purchase | undefined>;
   deletePurchase(id: string): Promise<boolean>;
-  
+
   // Sales
   getSales(): Promise<Sale[]>;
   createSale(sale: any): Promise<Sale>;
-  
+
   // User Activities
   getUserActivities(): Promise<UserActivity[]>;
   createUserActivity(activity: any): Promise<UserActivity>;
   createPickPackLog(log: any): Promise<UserActivity>;
   getPickPackLogs(orderId: string): Promise<UserActivity[]>;
-  
+
   // Categories
   getCategories(): Promise<AppCategory[]>;
   getCategoryById(id: string): Promise<AppCategory | undefined>;
   createCategory(category: any): Promise<AppCategory>;
   updateCategory(id: string, category: any): Promise<AppCategory | undefined>;
   deleteCategory(id: string): Promise<boolean>;
-  
+
   // Bundles
   getBundles(): Promise<Bundle[]>;
   getBundleById(id: string): Promise<Bundle | undefined>;
   createBundle(bundle: any): Promise<Bundle>;
   updateBundle(id: string, bundle: any): Promise<Bundle | undefined>;
   deleteBundle(id: string): Promise<boolean>;
-  
+
   // Bundle Items
   getBundleItems(bundleId: string): Promise<BundleItem[]>;
   createBundleItem(item: any): Promise<BundleItem>;
   updateBundleItem(id: string, item: any): Promise<BundleItem | undefined>;
   deleteBundleItem(id: string): Promise<boolean>;
-  
+
   // Customer Prices
   getCustomerPrices(customerId?: number): Promise<CustomerPrice[]>;
   getActiveCustomerPrice(customerId: number, productId: string): Promise<CustomerPrice | undefined>;
   createCustomerPrice(price: any): Promise<CustomerPrice>;
   updateCustomerPrice(id: string, price: any): Promise<CustomerPrice | undefined>;
   deleteCustomerPrice(id: string): Promise<boolean>;
-  
+
   // Packing Materials
   getPackingMaterials(): Promise<PackingMaterial[]>;
   getPackingMaterial(id: string): Promise<PackingMaterial | undefined>;
@@ -463,11 +467,11 @@ export interface IStorage {
   updatePackingMaterial(id: string, material: any): Promise<PackingMaterial | undefined>;
   deletePackingMaterial(id: string): Promise<boolean>;
   decreasePackingMaterialStock(materialId: string, quantity: number): Promise<void>;
-  
+
   // Packing Material Usage
   getPackingMaterialUsage(orderId: string): Promise<PackingMaterialUsage[]>;
   createPackingMaterialUsage(usage: any): Promise<PackingMaterialUsage>;
-  
+
   // PM Suppliers
   getPmSuppliers(): Promise<PmSupplier[]>;
   getPmSupplier(id: string): Promise<PmSupplier | undefined>;
@@ -475,14 +479,14 @@ export interface IStorage {
   updatePmSupplier(id: string, supplier: any): Promise<PmSupplier | undefined>;
   deletePmSupplier(id: string): Promise<boolean>;
   searchPmSuppliers(query: string): Promise<PmSupplier[]>;
-  
+
   // Files
   getAllFiles(): Promise<FileType[]>;
   getFilesByType(type: string): Promise<FileType[]>;
   createFile(file: any): Promise<FileType>;
   updateFile(id: string, file: any): Promise<FileType | undefined>;
   deleteFile(id: string): Promise<boolean>;
-  
+
   // Packing Cartons
   getPackingCartons(): Promise<PackingCarton[]>;
   getPackingCarton(id: string): Promise<PackingCarton | undefined>;
@@ -491,7 +495,7 @@ export interface IStorage {
   deletePackingCarton(id: string): Promise<boolean>;
   getPopularCartons(): Promise<PackingCarton[]>;
   incrementCartonUsage(cartonId: string): Promise<void>;
-  
+
   // Order Carton Plans
   getOrderCartonPlan(orderId: string): Promise<OrderCartonPlan | undefined>;
   getOrderCartonPlanById(planId: string): Promise<OrderCartonPlan | undefined>;
@@ -501,14 +505,14 @@ export interface IStorage {
   createOrderCartonItem(item: InsertOrderCartonItem): Promise<OrderCartonItem>;
   deleteOrderCartonPlan(planId: string): Promise<boolean>;
   deleteOrderCartonPlansByOrderId(orderId: string): Promise<boolean>;
-  
+
   // Order Cartons (actual cartons used during packing)
   getOrderCartons(orderId: string): Promise<OrderCarton[]>;
   getOrderCarton(id: string): Promise<OrderCarton | undefined>;
   createOrderCarton(carton: InsertOrderCarton): Promise<OrderCarton>;
   updateOrderCarton(id: string, carton: Partial<InsertOrderCarton>): Promise<OrderCarton | undefined>;
   deleteOrderCarton(id: string): Promise<boolean>;
-  
+
   // Shipment Labels (PPL, GLS, DHL, etc.)
   getShipmentLabels(): Promise<ShipmentLabel[]>;
   getShipmentLabel(id: string): Promise<ShipmentLabel | undefined>;
@@ -516,12 +520,12 @@ export interface IStorage {
   createShipmentLabel(label: InsertShipmentLabel): Promise<ShipmentLabel>;
   updateShipmentLabel(id: string, label: Partial<InsertShipmentLabel>): Promise<ShipmentLabel | undefined>;
   cancelShipmentLabel(id: string, reason?: string): Promise<ShipmentLabel | undefined>;
-  
+
   // Order Fulfillment Performance Tracking
   logFulfillmentStart(orderId: string, userId: string, activityType: 'pick' | 'pack', itemCount: number, totalQuantity: number): Promise<OrderFulfillmentLog>;
   logFulfillmentComplete(orderId: string, userId: string, activityType: 'pick' | 'pack'): Promise<OrderFulfillmentLog | undefined>;
   getPickPackPredictions(userId: string): Promise<{ pickingTimePerOrder: number; packingTimePerOrder: number; pickingTimePerItem: number; packingTimePerItem: number }>;
-  
+
   // App Settings
   getAppSettings(): Promise<AppSetting[]>;
   getAppSettingByKey(key: string): Promise<AppSetting | undefined>;
@@ -544,6 +548,16 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    return user;
+  }
+
+  async getUserByPhone(phone: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.phone, phone)).limit(1);
+    return user;
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
@@ -551,7 +565,15 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return user;
   }
-  
+
+  async createUserWithPhone(userData: { name: string; phone: string }): Promise<User> {
+    const [user] = await db.insert(users).values({
+      name: userData.name,
+      phone: userData.phone,
+    }).returning();
+    return user;
+  }
+
   // Import Purchases
   async getImportPurchases(): Promise<ImportPurchase[]> {
     return await db
@@ -598,7 +620,7 @@ export class DatabaseStorage implements IStorage {
       .from(importPurchases)
       .where(eq(importPurchases.status, 'at_warehouse'))
       .orderBy(desc(importPurchases.createdAt));
-    
+
     // Get items for each purchase
     const purchasesWithItems = await Promise.all(
       purchases.map(async (purchase) => {
@@ -606,7 +628,7 @@ export class DatabaseStorage implements IStorage {
           .select()
           .from(purchaseItems)
           .where(eq(purchaseItems.purchaseId, purchase.id));
-        
+
         return {
           ...purchase,
           items,
@@ -614,7 +636,7 @@ export class DatabaseStorage implements IStorage {
         };
       })
     );
-    
+
     return purchasesWithItems;
   }
 
@@ -624,7 +646,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(importPurchases)
       .where(eq(importPurchases.id, purchaseId));
-    
+
     if (!purchase) {
       throw new Error('Purchase order not found');
     }
@@ -672,7 +694,7 @@ export class DatabaseStorage implements IStorage {
       customItems: customItemsCreated
     };
   }
-  
+
   // Purchase Items
   async getPurchaseItems(purchaseId: number): Promise<PurchaseItem[]> {
     return await db
@@ -697,7 +719,7 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updated || undefined;
   }
-  
+
   // Consolidations
   async getConsolidations(): Promise<Consolidation[]> {
     return await db
@@ -730,7 +752,7 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updated || undefined;
   }
-  
+
   // Shipments
   async getShipments(): Promise<Shipment[]> {
     return await db
@@ -763,7 +785,7 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updated || undefined;
   }
-  
+
   // Custom Items
   async getCustomItems(): Promise<CustomItem[]> {
     return await db
@@ -788,7 +810,7 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updated || undefined;
   }
-  
+
   // Delivery History
   async createDeliveryHistory(history: InsertDeliveryHistory): Promise<DeliveryHistory> {
     const [newHistory] = await db
@@ -800,7 +822,7 @@ export class DatabaseStorage implements IStorage {
 
   async getDeliveryHistory(filters?: Partial<DeliveryHistory>): Promise<DeliveryHistory[]> {
     let query = db.select().from(deliveryHistory);
-    
+
     if (filters) {
       const conditions = [];
       if (filters.carrier) conditions.push(eq(deliveryHistory.carrier, filters.carrier));
@@ -808,16 +830,16 @@ export class DatabaseStorage implements IStorage {
       if (filters.destination) conditions.push(eq(deliveryHistory.destination, filters.destination));
       if (filters.shippingMethod) conditions.push(eq(deliveryHistory.shippingMethod, filters.shippingMethod));
       if (filters.seasonalFactor !== undefined) conditions.push(sql`${deliveryHistory.seasonalFactor} = ${filters.seasonalFactor}`);
-      
+
       if (conditions.length > 0) {
         // @ts-ignore - Temporary fix for type mismatch
         query = query.where(and(...conditions));
       }
     }
-    
+
     return await query;
   }
-  
+
   // Orders - Compatibility stubs (return empty data for now)
   async getOrders(customerId?: number): Promise<Order[]> {
     try {
@@ -832,7 +854,7 @@ export class DatabaseStorage implements IStorage {
         .leftJoin(users, eq(orders.billerId, users.id))
         .where(eq(orders.customerId, customerId.toString()))
         .orderBy(desc(orders.createdAt));
-        
+
         return ordersData.map(row => ({
           ...row.order,
           customer: row.customer || undefined,
@@ -848,7 +870,7 @@ export class DatabaseStorage implements IStorage {
         .leftJoin(customers, eq(orders.customerId, customers.id))
         .leftJoin(users, eq(orders.billerId, users.id))
         .orderBy(desc(orders.createdAt));
-        
+
         return ordersData.map(row => ({
           ...row.order,
           customer: row.customer || undefined,
@@ -873,7 +895,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(users, eq(orders.billerId, users.id))
       .where(eq(orders.orderStatus, status))
       .orderBy(desc(orders.createdAt));
-      
+
       return ordersData.map(row => ({
         ...row.order,
         customer: row.customer || undefined,
@@ -897,7 +919,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(users, eq(orders.billerId, users.id))
       .where(eq(orders.paymentStatus, paymentStatus))
       .orderBy(desc(orders.createdAt));
-      
+
       return ordersData.map(row => ({
         ...row.order,
         customer: row.customer || undefined,
@@ -920,9 +942,9 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(customers, eq(orders.customerId, customers.id))
       .leftJoin(users, eq(orders.billerId, users.id))
       .where(eq(orders.id, id));
-      
+
       if (!result) return undefined;
-      
+
       return {
         ...result.order,
         customer: result.customer || undefined,
@@ -944,7 +966,7 @@ export class DatabaseStorage implements IStorage {
     .leftJoin(customers, eq(orders.customerId, customers.id))
     .leftJoin(customerShippingAddresses, eq(orders.shippingAddressId, customerShippingAddresses.id))
     .where(eq(orders.id, id));
-    
+
     if (result) {
       const items = await this.getOrderItems(result.order.id);
       return { 
@@ -954,7 +976,7 @@ export class DatabaseStorage implements IStorage {
         items 
       } as any;
     }
-    
+
     return undefined;
   }
 
@@ -962,18 +984,18 @@ export class DatabaseStorage implements IStorage {
     // Generate order ID in format [TYPE]-[YYMMDD]-[XXXX]
     // TYPE is uppercase: POS, ORD, WEB, TEL
     const typeUpper = orderType.toUpperCase();
-    
+
     // Format date as YYMMDD
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
     const dateStr = `${year}${month}${day}`;
-    
+
     // Format date for DB query (YYYY-MM-DD)
     const dbDateStr = date.getFullYear() + '-' + 
                      (date.getMonth() + 1).toString().padStart(2, '0') + '-' + 
                      date.getDate().toString().padStart(2, '0');
-    
+
     try {
       // Check if we have a sequence for this order type and date
       const existingSequence = await db.select()
@@ -983,13 +1005,13 @@ export class DatabaseStorage implements IStorage {
           eq(dailySequences.date, dbDateStr)
         ))
         .limit(1);
-      
+
       let sequence: number;
-      
+
       if (existingSequence.length > 0) {
         // Increment existing sequence
         sequence = existingSequence[0].currentSequence + 1;
-        
+
         // Update the sequence
         await db.update(dailySequences)
           .set({ 
@@ -1000,7 +1022,7 @@ export class DatabaseStorage implements IStorage {
       } else {
         // Create new sequence with random starting point (1000-5000)
         sequence = Math.floor(Math.random() * 4001) + 1000;
-        
+
         // Insert new sequence
         await db.insert(dailySequences).values({
           orderType,
@@ -1008,7 +1030,7 @@ export class DatabaseStorage implements IStorage {
           currentSequence: sequence
         });
       }
-      
+
       // Format sequence as 4-digit string
       const sequenceStr = sequence.toString().padStart(4, '0');
       return `${typeUpper}-${dateStr}-${sequenceStr}`;
@@ -1026,16 +1048,16 @@ export class DatabaseStorage implements IStorage {
     const dateStr = date.getFullYear().toString() + 
                    (date.getMonth() + 1).toString().padStart(2, '0') + 
                    date.getDate().toString().padStart(2, '0');
-    
+
     // Get existing expenses count for today to generate sequence
     const todayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     const todayEnd = new Date(todayStart);
     todayEnd.setDate(todayEnd.getDate() + 1);
-    
+
     try {
       const todayExpenses = await db.select().from(expenses)
         .where(sql`${expenses.createdAt} >= ${todayStart} AND ${expenses.createdAt} < ${todayEnd}`);
-      
+
       const sequence = (todayExpenses.length + 1).toString().padStart(4, '0');
       return `EXP-${dateStr}-${sequence}`;
     } catch (error) {
@@ -1078,7 +1100,7 @@ export class DatabaseStorage implements IStorage {
     try {
       // First delete order items
       await db.delete(orderItems).where(eq(orderItems.orderId, id));
-      
+
       // Then delete the order
       const result = await db.delete(orders).where(eq(orders.id, id));
       return (result.rowCount ?? 0) > 0;
@@ -1087,7 +1109,7 @@ export class DatabaseStorage implements IStorage {
       return false;
     }
   }
-  
+
   async getOrdersByCustomerId(customerId: string): Promise<Order[]> {
     try {
       const ordersData = await db.select({
@@ -1100,7 +1122,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(users, eq(orders.billerId, users.id))
       .where(eq(orders.customerId, customerId))
       .orderBy(desc(orders.createdAt));
-      
+
       return ordersData.map(row => ({
         ...row.order,
         customer: row.customer || undefined,
@@ -1111,18 +1133,18 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
-  
+
   async getUnpaidOrders(): Promise<Order[]> {
     // Return empty array - orders have been replaced by imports system
     return [];
   }
-  
+
   async getDashboardMetrics(): Promise<any> {
     // Return basic metrics using import data
     const purchases = await this.getImportPurchases();
     const consolidations = await this.getConsolidations();
     const shipments = await this.getShipments();
-    
+
     return {
       totalOrders: 0,
       totalProducts: 0,
@@ -1185,7 +1207,7 @@ export class DatabaseStorage implements IStorage {
       if (order.fulfillmentStage === 'packing') return 'packing';
       if (order.fulfillmentStage === 'ready') return 'ready_to_ship';
     }
-    
+
     // Backward compatibility: fall back to old pick/pack status logic
     // For orders that haven't been updated to use fulfillmentStage yet
     if (order.packStatus === 'completed' && order.pickStatus === 'completed') {
@@ -1197,7 +1219,7 @@ export class DatabaseStorage implements IStorage {
     if (order.pickStatus === 'in_progress' || order.orderStatus === 'picking') {
       return 'picking';
     }
-    
+
     // Default: pending/not started
     return 'to_fulfill';
   }
@@ -1208,7 +1230,7 @@ export class DatabaseStorage implements IStorage {
       const items = await this.getOrderItems(id);
       const itemCount = items.length;
       const totalQuantity = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-      
+
       const [updated] = await db
         .update(orders)
         .set({
@@ -1235,12 +1257,12 @@ export class DatabaseStorage implements IStorage {
           )
         )
         .returning();
-      
+
       // Log performance tracking
       if (updated) {
         await this.logFulfillmentStart(id, employeeId, 'pick', itemCount, totalQuantity);
       }
-      
+
       return updated;
     } catch (error) {
       console.error('Error starting picking order:', error);
@@ -1266,12 +1288,12 @@ export class DatabaseStorage implements IStorage {
           )
         )
         .returning();
-      
+
       // Log performance tracking completion
       if (updated && updated.pickedBy) {
         await this.logFulfillmentComplete(id, updated.pickedBy, 'pick');
       }
-      
+
       return updated;
     } catch (error) {
       console.error('Error completing picking order:', error);
@@ -1285,7 +1307,7 @@ export class DatabaseStorage implements IStorage {
       const items = await this.getOrderItems(id);
       const itemCount = items.length;
       const totalQuantity = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-      
+
       const [updated] = await db
         .update(orders)
         .set({
@@ -1313,12 +1335,12 @@ export class DatabaseStorage implements IStorage {
           )
         )
         .returning();
-      
+
       // Log performance tracking
       if (updated) {
         await this.logFulfillmentStart(id, employeeId, 'pack', itemCount, totalQuantity);
       }
-      
+
       return updated;
     } catch (error) {
       console.error('Error starting packing order:', error);
@@ -1348,12 +1370,12 @@ export class DatabaseStorage implements IStorage {
           )
         )
         .returning();
-      
+
       // Log performance tracking completion
       if (updated && updated.packedBy) {
         await this.logFulfillmentComplete(id, updated.packedBy, 'pack');
       }
-      
+
       return updated;
     } catch (error) {
       console.error('Error completing packing order:', error);
@@ -1442,7 +1464,7 @@ export class DatabaseStorage implements IStorage {
       .from(products)
       .leftJoin(suppliers, eq(products.supplierId, suppliers.id))
       .orderBy(desc(products.createdAt));
-      
+
       // Include primary location, supplier, and category for each product
       const productsWithDetails = await Promise.all(
         productsData.map(async (row) => {
@@ -1456,7 +1478,7 @@ export class DatabaseStorage implements IStorage {
               )
             )
             .limit(1);
-          
+
           // Fetch category if categoryId exists
           let category = null;
           if (row.product.categoryId) {
@@ -1470,7 +1492,7 @@ export class DatabaseStorage implements IStorage {
               category = cat;
             }
           }
-          
+
           return {
             ...row.product,
             image: row.product.imageUrl, // Map imageUrl to image for frontend compatibility
@@ -1484,7 +1506,7 @@ export class DatabaseStorage implements IStorage {
           };
         })
       );
-      
+
       return productsWithDetails;
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -1501,18 +1523,18 @@ export class DatabaseStorage implements IStorage {
       .from(products)
       .leftJoin(suppliers, eq(products.supplierId, suppliers.id))
       .where(eq(products.id, id));
-      
+
       if (!productData) {
         return undefined;
       }
-      
+
       // Include all locations for this product
       const locations = await db
         .select()
         .from(productLocations)
         .where(eq(productLocations.productId, id))
         .orderBy(desc(productLocations.isPrimary), productLocations.locationCode);
-      
+
       return {
         ...productData.product,
         image: productData.product.imageUrl, // Map imageUrl to image for frontend compatibility
@@ -1542,11 +1564,11 @@ export class DatabaseStorage implements IStorage {
       .from(products)
       .leftJoin(suppliers, eq(products.supplierId, suppliers.id))
       .where(eq(products.sku, sku));
-      
+
       if (!productData) {
         return undefined;
       }
-      
+
       return {
         ...productData.product,
         image: productData.product.imageUrl, // Map imageUrl to image for frontend compatibility
@@ -1696,7 +1718,7 @@ export class DatabaseStorage implements IStorage {
             eq(productLocations.locationCode, location.locationCode)
           )
         );
-      
+
       if (existing.length > 0) {
         throw new Error('Location code already exists for this product');
       }
@@ -1728,7 +1750,7 @@ export class DatabaseStorage implements IStorage {
           .select()
           .from(productLocations)
           .where(eq(productLocations.id, id));
-        
+
         if (currentLocation) {
           await db
             .update(productLocations)
@@ -2056,24 +2078,24 @@ export class DatabaseStorage implements IStorage {
           .select()
           .from(productLocations)
           .where(eq(productLocations.id, fromLocationId));
-        
+
         const [toLocation] = await tx
           .select()
           .from(productLocations)
           .where(eq(productLocations.id, toLocationId));
-        
+
         if (!fromLocation || !toLocation) {
           throw new Error('One or both locations not found');
         }
-        
+
         if (fromLocation.productId !== toLocation.productId) {
           throw new Error('Locations must be for the same product');
         }
-        
+
         if (fromLocation.quantity < quantity) {
           throw new Error('Insufficient quantity at source location');
         }
-        
+
         // Update quantities
         await tx
           .update(productLocations)
@@ -2082,7 +2104,7 @@ export class DatabaseStorage implements IStorage {
             updatedAt: new Date() 
           })
           .where(eq(productLocations.id, fromLocationId));
-        
+
         await tx
           .update(productLocations)
           .set({ 
@@ -2090,7 +2112,7 @@ export class DatabaseStorage implements IStorage {
             updatedAt: new Date() 
           })
           .where(eq(productLocations.id, toLocationId));
-        
+
         return true;
       });
     } catch (error) {
@@ -2147,25 +2169,25 @@ export class DatabaseStorage implements IStorage {
           .select()
           .from(stockAdjustmentRequests)
           .where(eq(stockAdjustmentRequests.id, id));
-        
+
         if (!request) {
           throw new Error('Request not found');
         }
-        
+
         if (request.status !== 'pending') {
           throw new Error('Request has already been processed');
         }
-        
+
         // Get the location
         const [location] = await tx
           .select()
           .from(productLocations)
           .where(eq(productLocations.id, request.locationId));
-        
+
         if (!location) {
           throw new Error('Location not found');
         }
-        
+
         // Apply the adjustment based on type
         let newQuantity = location.quantity;
         if (request.adjustmentType === 'set') {
@@ -2178,7 +2200,7 @@ export class DatabaseStorage implements IStorage {
             throw new Error('Adjustment would result in negative quantity');
           }
         }
-        
+
         // Update the location quantity
         await tx
           .update(productLocations)
@@ -2187,7 +2209,7 @@ export class DatabaseStorage implements IStorage {
             updatedAt: new Date() 
           })
           .where(eq(productLocations.id, request.locationId));
-        
+
         // Mark request as approved
         const [updatedRequest] = await tx
           .update(stockAdjustmentRequests)
@@ -2199,7 +2221,7 @@ export class DatabaseStorage implements IStorage {
           })
           .where(eq(stockAdjustmentRequests.id, id))
           .returning();
-        
+
         return updatedRequest;
       });
     } catch (error) {
@@ -2214,15 +2236,15 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(stockAdjustmentRequests)
         .where(eq(stockAdjustmentRequests.id, id));
-      
+
       if (!request) {
         throw new Error('Request not found');
       }
-      
+
       if (request.status !== 'pending') {
         throw new Error('Request has already been processed');
       }
-      
+
       const [updatedRequest] = await db
         .update(stockAdjustmentRequests)
         .set({ 
@@ -2234,7 +2256,7 @@ export class DatabaseStorage implements IStorage {
         })
         .where(eq(stockAdjustmentRequests.id, id))
         .returning();
-      
+
       return updatedRequest;
     } catch (error) {
       console.error('Error rejecting stock adjustment request:', error);
@@ -2297,7 +2319,7 @@ export class DatabaseStorage implements IStorage {
         if (ordered.variantId) {
           // Check variant stock - use variant's own quantity field
           const variant = allVariants.find(v => v.id === ordered.variantId);
-          
+
           if (variant && ordered.totalOrdered > (variant.quantity || 0)) {
             const product = allProducts.find(p => p.id === ordered.productId);
 
@@ -2346,7 +2368,7 @@ export class DatabaseStorage implements IStorage {
 
   async getUnderAllocatedItems(): Promise<any[]> {
     try {
-      // Use raw SQL to calculate stock location totals per product
+      // Use SQL aggregation to calculate stock location totals per product
       const locationTotalsResult = await db.execute(sql`
         SELECT 
           product_id as "productId",
@@ -2354,7 +2376,7 @@ export class DatabaseStorage implements IStorage {
         FROM product_locations
         GROUP BY product_id
       `);
-      
+
       const locationTotals = locationTotalsResult.rows as Array<{
         productId: string;
         totalQuantity: number;
@@ -2368,7 +2390,7 @@ export class DatabaseStorage implements IStorage {
       // Check each product
       for (const product of allProducts) {
         const productQty = product.quantity || 0;
-        
+
         // Find location total for this product
         const locationTotal = locationTotals.find(lt => lt.productId === product.id);
         const locationQuantity = locationTotal?.totalQuantity || 0;
@@ -2474,7 +2496,7 @@ export class DatabaseStorage implements IStorage {
       };
 
       const allCustomers = await this.getCustomers();
-      
+
       const scoredCustomers = allCustomers
         .map(customer => {
           const nameScore = calculateScore(customer.name || '', normalizedQuery);
@@ -2625,7 +2647,7 @@ export class DatabaseStorage implements IStorage {
           .update(customerShippingAddresses)
           .set({ isPrimary: false, updatedAt: new Date() })
           .where(eq(customerShippingAddresses.customerId, customerId));
-        
+
         // Then, set the specified address to primary
         await tx
           .update(customerShippingAddresses)
@@ -2713,7 +2735,7 @@ export class DatabaseStorage implements IStorage {
           .update(customerBillingAddresses)
           .set({ isPrimary: false, updatedAt: new Date() })
           .where(eq(customerBillingAddresses.customerId, customerId));
-        
+
         // Then, set the specified address to primary
         await tx
           .update(customerBillingAddresses)
@@ -2856,7 +2878,7 @@ export class DatabaseStorage implements IStorage {
   async updateWarehouse(id: string, warehouse: any): Promise<Warehouse | undefined> {
     try {
       const updateData: any = {};
-      
+
       if (warehouse.name !== undefined) updateData.name = warehouse.name;
       if (warehouse.location !== undefined) updateData.location = warehouse.location;
       if (warehouse.address !== undefined) updateData.address = warehouse.address;
@@ -2879,7 +2901,7 @@ export class DatabaseStorage implements IStorage {
       if (warehouse.maxLevels !== undefined) updateData.maxLevels = warehouse.maxLevels;
       if (warehouse.maxBins !== undefined) updateData.maxBins = warehouse.maxBins;
       if (warehouse.aisleConfigs !== undefined) updateData.aisleConfigs = warehouse.aisleConfigs;
-      
+
       const [updated] = await db
         .update(warehouses)
         .set(updateData)
@@ -3060,7 +3082,7 @@ export class DatabaseStorage implements IStorage {
   async generateBinLayout(warehouseId: string, config: any): Promise<WarehouseLayout> {
     try {
       const { generateBinLayout: generateLayout, validateLayoutConfig } = await import('./services/layoutGeneratorService.js');
-      
+
       const sanitizedConfig = {
         name: config.name || 'Auto-generated Layout',
         width: parseFloat(config.width) || 100,
@@ -3485,16 +3507,16 @@ export class DatabaseStorage implements IStorage {
     const returns = await this.getReturns();
     return returns.find(r => r.id === id);
   }
-  
+
   async createReturn(returnData: any): Promise<Return> { return { id: Date.now().toString(), ...returnData }; }
-  
+
   async updateReturn(id: string, returnData: any): Promise<Return | undefined> { 
     // For now, return mock updated data since we don't have DB persistence
     const existingReturn = await this.getReturn(id);
     if (!existingReturn) return undefined;
     return { ...existingReturn, ...returnData, updatedAt: new Date() };
   }
-  
+
   async deleteReturn(id: string): Promise<boolean> { return true; }
 
   async getReturnItems(returnId: string): Promise<ReturnItem[]> { 
@@ -3597,10 +3619,10 @@ export class DatabaseStorage implements IStorage {
         }
       ]
     };
-    
+
     return mockItems[returnId] || [];
   }
-  
+
   async createReturnItem(item: any): Promise<ReturnItem> { return { id: Date.now().toString(), ...item }; }
 
   async getExpenses(): Promise<Expense[]> {
@@ -3655,7 +3677,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(customers, eq(tickets.customerId, customers.id))
       .leftJoin(orders, eq(tickets.orderId, orders.id))
       .orderBy(desc(tickets.createdAt));
-    
+
     return result.map(row => ({
       ...row,
       customer: row.customer || undefined,
@@ -3689,9 +3711,9 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(customers, eq(tickets.customerId, customers.id))
       .leftJoin(orders, eq(tickets.orderId, orders.id))
       .where(eq(tickets.id, id));
-    
+
     if (!result) return undefined;
-    
+
     return {
       ...result,
       customer: result.customer || undefined,
@@ -3734,7 +3756,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(users, eq(ticketComments.createdBy, users.id))
       .where(eq(ticketComments.ticketId, ticketId))
       .orderBy(asc(ticketComments.createdAt));
-    
+
     return result.map(row => ({
       ...row,
       user: row.user || undefined
@@ -3766,7 +3788,7 @@ export class DatabaseStorage implements IStorage {
       .from(services)
       .leftJoin(customers, eq(services.customerId, customers.id))
       .orderBy(desc(services.createdAt));
-    
+
     return result.map(row => ({
       ...row,
       customer: row.customer || undefined
@@ -3793,9 +3815,9 @@ export class DatabaseStorage implements IStorage {
       .from(services)
       .leftJoin(customers, eq(services.customerId, customers.id))
       .where(eq(services.id, id));
-    
+
     if (!result) return undefined;
-    
+
     return {
       ...result,
       customer: result.customer || undefined
@@ -3808,11 +3830,11 @@ export class DatabaseStorage implements IStorage {
       const partsCost = items.reduce((sum, item) => {
         return sum + parseFloat(item.totalPrice as string);
       }, 0);
-      
+
       // Calculate totalCost = serviceCost + partsCost
       const serviceCost = parseFloat(service.serviceCost as string || '0');
       const totalCost = serviceCost + partsCost;
-      
+
       // Insert service with calculated costs
       const [newService] = await tx
         .insert(services)
@@ -3822,7 +3844,7 @@ export class DatabaseStorage implements IStorage {
           totalCost: totalCost.toFixed(2)
         })
         .returning();
-      
+
       // Insert service items
       if (items.length > 0) {
         await tx.insert(serviceItems).values(
@@ -3832,7 +3854,7 @@ export class DatabaseStorage implements IStorage {
           }))
         );
       }
-      
+
       // Fetch the created service with customer info
       const [result] = await tx
         .select({
@@ -3853,7 +3875,7 @@ export class DatabaseStorage implements IStorage {
         .from(services)
         .leftJoin(customers, eq(services.customerId, customers.id))
         .where(eq(services.id, newService.id));
-      
+
       return {
         ...result,
         customer: result.customer || undefined
@@ -3867,9 +3889,9 @@ export class DatabaseStorage implements IStorage {
       .set({ ...service, updatedAt: new Date() })
       .where(eq(services.id, id))
       .returning();
-    
+
     if (!updated) return undefined;
-    
+
     // Fetch with customer info
     const [result] = await db
       .select({
@@ -3890,7 +3912,7 @@ export class DatabaseStorage implements IStorage {
       .from(services)
       .leftJoin(customers, eq(services.customerId, customers.id))
       .where(eq(services.id, id));
-    
+
     return {
       ...result,
       customer: result.customer || undefined
@@ -3919,7 +3941,7 @@ export class DatabaseStorage implements IStorage {
       .from(serviceItems)
       .leftJoin(products, eq(serviceItems.productId, products.id))
       .where(eq(serviceItems.serviceId, serviceId));
-    
+
     return result.map(row => ({
       ...row,
       product: row.product || undefined
@@ -3932,9 +3954,9 @@ export class DatabaseStorage implements IStorage {
       .set({ ...item, updatedAt: new Date() })
       .where(eq(serviceItems.id, id))
       .returning();
-    
+
     if (!updated) return undefined;
-    
+
     // Fetch with product info
     const [result] = await db
       .select({
@@ -3953,7 +3975,7 @@ export class DatabaseStorage implements IStorage {
       .from(serviceItems)
       .leftJoin(products, eq(serviceItems.productId, products.id))
       .where(eq(serviceItems.id, id));
-    
+
     return {
       ...result,
       product: result.product || undefined
@@ -4007,7 +4029,7 @@ export class DatabaseStorage implements IStorage {
       .from(preOrders)
       .leftJoin(customers, eq(preOrders.customerId, customers.id))
       .where(eq(preOrders.id, id)) as any;
-    
+
     if (!preOrder) return undefined;
 
     const items = await db
@@ -4090,7 +4112,7 @@ export class DatabaseStorage implements IStorage {
 
   async getUserActivities(): Promise<UserActivity[]> { return []; }
   async createUserActivity(activity: any): Promise<UserActivity> { return { id: Date.now().toString(), ...activity }; }
-  
+
   async createPickPackLog(log: any): Promise<UserActivity> {
     // Convert pick/pack log to user activity format
     const activity = {
@@ -4210,19 +4232,19 @@ export class DatabaseStorage implements IStorage {
   async getBundles(): Promise<Bundle[]> { 
     return this.getProductBundles() as Promise<Bundle[]>; 
   }
-  
+
   async getBundleById(id: string): Promise<Bundle | undefined> { 
     return this.getProductBundle(id) as Promise<Bundle | undefined>; 
   }
-  
+
   async createBundle(bundle: any): Promise<Bundle> { 
     return this.createProductBundle(bundle) as Promise<Bundle>; 
   }
-  
+
   async updateBundle(id: string, bundle: any): Promise<Bundle | undefined> { 
     return this.updateProductBundle(id, bundle) as Promise<Bundle | undefined>; 
   }
-  
+
   async deleteBundle(id: string): Promise<boolean> { 
     return this.deleteProductBundle(id); 
   }
@@ -4230,7 +4252,7 @@ export class DatabaseStorage implements IStorage {
   async updateBundleItem(id: string, item: any): Promise<BundleItem | undefined> { 
     return { id, ...item }; 
   }
-  
+
   async deleteBundleItem(id: string): Promise<boolean> { 
     return true; 
   }
@@ -4311,13 +4333,13 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(packingMaterials)
         .where(eq(packingMaterials.id, materialId));
-      
+
       if (!material) {
         throw new Error(`Packing material with ID ${materialId} not found`);
       }
-      
+
       const newStockQuantity = Math.max(0, material.stockQuantity - quantity);
-      
+
       await db
         .update(packingMaterials)
         .set({ 
@@ -4325,7 +4347,7 @@ export class DatabaseStorage implements IStorage {
           updatedAt: new Date()
         })
         .where(eq(packingMaterials.id, materialId));
-      
+
       console.log(`Decreased stock for material ${materialId}: ${material.stockQuantity} → ${newStockQuantity}`);
     } catch (error) {
       console.error('Error decreasing packing material stock:', error);
@@ -4471,7 +4493,7 @@ export class DatabaseStorage implements IStorage {
   async createFile(file: any): Promise<FileType> { return { id: Date.now().toString(), ...file }; }
   async updateFile(id: string, file: any): Promise<FileType | undefined> { return { id, ...file }; }
   async deleteFile(id: string): Promise<boolean> { return true; }
-  
+
   async getPackingCartons(): Promise<PackingCarton[]> {
     try {
       return await db
@@ -4639,7 +4661,7 @@ export class DatabaseStorage implements IStorage {
         .leftJoin(packingCartons, eq(orderCartonItems.cartonId, packingCartons.id))
         .where(eq(orderCartonItems.planId, planId))
         .orderBy(asc(orderCartonItems.cartonNumber));
-      
+
       return items.map(item => ({
         id: item.id,
         planId: item.planId,
@@ -4696,7 +4718,7 @@ export class DatabaseStorage implements IStorage {
       return false;
     }
   }
-  
+
   // Order Cartons (actual cartons used during packing)
   async getOrderCartons(orderId: string): Promise<OrderCarton[]> {
     try {
@@ -4762,7 +4784,7 @@ export class DatabaseStorage implements IStorage {
       return false;
     }
   }
-  
+
   // Shipment Labels (PPL, GLS, DHL, etc.)
   async getShipmentLabels(): Promise<ShipmentLabel[]> {
     try {
@@ -4788,7 +4810,7 @@ export class DatabaseStorage implements IStorage {
         .leftJoin(orders, eq(shipmentLabels.orderId, orders.id))
         .leftJoin(customers, eq(orders.customerId, customers.id))
         .orderBy(desc(shipmentLabels.createdAt));
-      
+
       return results as any;
     } catch (error) {
       console.error('Error fetching shipment labels:', error);
@@ -4867,7 +4889,7 @@ export class DatabaseStorage implements IStorage {
       return undefined;
     }
   }
-  
+
   // Order Fulfillment Performance Tracking
   async logFulfillmentStart(orderId: string, userId: string, activityType: 'pick' | 'pack', itemCount: number, totalQuantity: number): Promise<OrderFulfillmentLog> {
     try {
@@ -4889,7 +4911,7 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
-  
+
   async logFulfillmentComplete(orderId: string, userId: string, activityType: 'pick' | 'pack'): Promise<OrderFulfillmentLog | undefined> {
     try {
       // Find the most recent incomplete log for this order/user/activity
@@ -4906,25 +4928,25 @@ export class DatabaseStorage implements IStorage {
         )
         .orderBy(desc(orderFulfillmentLogs.startedAt))
         .limit(1);
-      
+
       if (!existingLog) {
         console.warn(`No incomplete ${activityType} log found for order ${orderId}`);
         return undefined;
       }
-      
+
       const [updated] = await db
         .update(orderFulfillmentLogs)
         .set({ completedAt: new Date() })
         .where(eq(orderFulfillmentLogs.id, existingLog.id))
         .returning();
-      
+
       return updated || undefined;
     } catch (error) {
       console.error('Error logging fulfillment complete:', error);
       return undefined;
     }
   }
-  
+
   async getPickPackPredictions(userId: string): Promise<{ pickingTimePerOrder: number; packingTimePerOrder: number; pickingTimePerItem: number; packingTimePerItem: number }> {
     try {
       // Get completed pick logs for this user
@@ -4940,7 +4962,7 @@ export class DatabaseStorage implements IStorage {
         )
         .orderBy(desc(orderFulfillmentLogs.startedAt))
         .limit(20); // Last 20 completed picks
-      
+
       // Get completed pack logs for this user
       const packLogs = await db
         .select()
@@ -4954,11 +4976,11 @@ export class DatabaseStorage implements IStorage {
         )
         .orderBy(desc(orderFulfillmentLogs.startedAt))
         .limit(20); // Last 20 completed packs
-      
+
       // Calculate average pick time
       let pickingTimePerOrder = 6; // Default 6 minutes
       let pickingTimePerItem = 1; // Default 1 minute per item
-      
+
       if (pickLogs.length > 0) {
         const pickTimes = pickLogs
           .filter(log => log.completedAt && log.startedAt)
@@ -4966,7 +4988,7 @@ export class DatabaseStorage implements IStorage {
             const duration = (log.completedAt!.getTime() - log.startedAt.getTime()) / 60000; // minutes
             return { duration, itemCount: log.itemCount, totalQuantity: log.totalQuantity };
           });
-        
+
         if (pickTimes.length > 0) {
           pickingTimePerOrder = pickTimes.reduce((sum, t) => sum + t.duration, 0) / pickTimes.length;
           const totalItems = pickTimes.reduce((sum, t) => sum + t.totalQuantity, 0);
@@ -4976,11 +4998,11 @@ export class DatabaseStorage implements IStorage {
           }
         }
       }
-      
+
       // Calculate average pack time
       let packingTimePerOrder = 4; // Default 4 minutes
       let packingTimePerItem = 0.5; // Default 0.5 minutes per item
-      
+
       if (packLogs.length > 0) {
         const packTimes = packLogs
           .filter(log => log.completedAt && log.startedAt)
@@ -4988,7 +5010,7 @@ export class DatabaseStorage implements IStorage {
             const duration = (log.completedAt!.getTime() - log.startedAt.getTime()) / 60000; // minutes
             return { duration, itemCount: log.itemCount, totalQuantity: log.totalQuantity };
           });
-        
+
         if (packTimes.length > 0) {
           packingTimePerOrder = packTimes.reduce((sum, t) => sum + t.duration, 0) / packTimes.length;
           const totalItems = packTimes.reduce((sum, t) => sum + t.totalQuantity, 0);
@@ -4998,7 +5020,7 @@ export class DatabaseStorage implements IStorage {
           }
         }
       }
-      
+
       return {
         pickingTimePerOrder,
         packingTimePerOrder,
@@ -5016,7 +5038,7 @@ export class DatabaseStorage implements IStorage {
       };
     }
   }
-  
+
   // App Settings
   async getAppSettings(): Promise<AppSetting[]> {
     try {
@@ -5029,7 +5051,7 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Failed to retrieve app settings');
     }
   }
-  
+
   async getAppSettingByKey(key: string): Promise<AppSetting | undefined> {
     try {
       const [setting] = await db
@@ -5042,7 +5064,7 @@ export class DatabaseStorage implements IStorage {
       throw new Error(`Failed to retrieve app setting with key: ${key}`);
     }
   }
-  
+
   async createAppSetting(data: InsertAppSetting): Promise<AppSetting> {
     try {
       const [setting] = await db
@@ -5055,7 +5077,7 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Failed to create app setting');
     }
   }
-  
+
   async updateAppSetting(key: string, data: Partial<InsertAppSetting>): Promise<AppSetting> {
     try {
       const [updated] = await db
@@ -5063,24 +5085,24 @@ export class DatabaseStorage implements IStorage {
         .set({ ...data, updatedAt: new Date() })
         .where(eq(appSettings.key, key))
         .returning();
-      
+
       if (!updated) {
         throw new Error(`App setting with key ${key} not found`);
       }
-      
+
       return updated;
     } catch (error) {
       console.error(`Error updating app setting with key ${key}:`, error);
       throw new Error(`Failed to update app setting with key: ${key}`);
     }
   }
-  
+
   async deleteAppSetting(key: string): Promise<void> {
     try {
       const result = await db
         .delete(appSettings)
         .where(eq(appSettings.key, key));
-      
+
       if ((result.rowCount ?? 0) === 0) {
         throw new Error(`App setting with key ${key} not found`);
       }

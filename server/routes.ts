@@ -80,6 +80,7 @@ import { ImageCompressionService } from "./services/imageCompression";
 import { optimizeCartonPacking } from "./services/cartonPackingService";
 import { TrackingService } from "./services/tracking";
 import OpenAI from "openai";
+import passport from "passport";
 
 // Vietnamese and Czech diacritics normalization for accent-insensitive search
 function normalizeVietnamese(str: string): string {
@@ -138,74 +139,42 @@ function normalizeSQLColumn(column: any) {
   `;
 }
 
-// Helper to convert snake_case to camelCase
-function snakeToCamel(str: string): string {
-  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-}
-
-// Deep parse function to handle nested objects
-function deepParse(value: any): any {
-  // Handle null/undefined
-  if (value === null || value === undefined) return value;
-  
-  // Handle boolean strings
-  if (value === 'true') return true;
-  if (value === 'false') return false;
-  
-  // Handle number strings - ONLY if they don't have leading zeros
-  // Leading zeros indicate it's an identifier (zip, phone, ID), not a quantity
-  if (typeof value === 'string' && value !== '') {
-    const trimmed = value.trim();
-    if (!isNaN(Number(trimmed))) {
-      // If it starts with 0 and next char is a digit, keep as string (zip code, phone, ID)
-      if (/^0\d/.test(trimmed)) {
-        return trimmed;
-      }
-      return Number(trimmed);
-    }
-  }
-  
-  // Handle JSON strings
-  if (typeof value === 'string' && (value.startsWith('{') || value.startsWith('['))) {
-    try {
-      const parsed = JSON.parse(value);
-      // Recursively parse nested values
-      return deepParse(parsed);
-    } catch {
-      return value; // Keep as string if parse fails
-    }
-  }
-  
-  // Handle arrays - recursively parse each element
-  if (Array.isArray(value)) {
-    return value.map(item => deepParse(item));
-  }
-  
-  // Handle objects - recursively parse each property
-  if (typeof value === 'object' && value !== null) {
-    const result: Record<string, any> = {};
-    for (const [key, val] of Object.entries(value)) {
-      result[key] = deepParse(val);
-    }
-    return result;
-  }
-  
-  // Return as-is for other types
-  return value;
-}
-
 // Helper to get settings by category as an object
 async function getSettingsByCategory(category: string): Promise<Record<string, any>> {
   const allSettings = await storage.getAppSettings();
   const categorySettings = allSettings.filter(s => s.category === category);
   const result: Record<string, any> = {};
-  
+
   categorySettings.forEach(setting => {
     const key = snakeToCamel(setting.key);
     result[key] = deepParse(setting.value); // Use deep parse instead of shallow
   });
-  
+
   return result;
+}
+
+// Helper function for currency conversion
+async function getCurrencyConverter() {
+  try {
+    const exchangeRateResponse = await fetch('https://api.frankfurter.app/latest?from=EUR');
+    const exchangeRates = await exchangeRateResponse.json();
+
+    return (amount: number, currency: string): number => {
+      if (!amount || !currency) return 0;
+      if (currency === 'EUR') return amount;
+
+      const currencyUpper = currency.toUpperCase();
+      if (exchangeRates.rates && exchangeRates.rates[currencyUpper]) {
+        return amount / exchangeRates.rates[currencyUpper];
+      }
+
+      console.warn(`Exchange rate not found for ${currency}`);
+      return amount;
+    };
+  } catch (error) {
+    console.error('Error fetching exchange rates:', error);
+    return (amount: number, currency: string) => currency === 'EUR' ? amount : amount;
+  }
 }
 
 // Configure multer for image uploads with memory storage for compression
@@ -216,7 +185,7 @@ const upload = multer({
     const allowedTypes = /jpeg|jpg|png|gif|webp|avif/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
-    
+
     if (mimetype && extname) {
       return cb(null, true);
     } else {
@@ -229,11 +198,158 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve static files from uploads directory
   const express = await import('express');
   app.use('/uploads', express.default.static('uploads'));
-  
+
   // Auth middleware (disabled for testing)
   // await setupAuth(app);
 
-  // Auth routes
+  // Phone verification storage (in production, use Redis or database)
+  const phoneVerificationCodes = new Map<string, { code: string; expires: number; attempts: number }>();
+
+  // Send phone verification code
+  app.post('/api/auth/send-phone-code', async (req, res) => {
+    try {
+      const { phone } = req.body;
+
+      if (!phone) {
+        return res.status(400).json({ message: 'Phone number is required' });
+      }
+
+      // Generate 6-digit code
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expires = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+      // Store verification code
+      phoneVerificationCodes.set(phone, { code, expires, attempts: 0 });
+
+      // TODO: Integrate with SMS provider (Twilio, AWS SNS, etc.)
+      console.log(`Verification code for ${phone}: ${code}`);
+
+      // For development, return code in response (remove in production!)
+      if (process.env.NODE_ENV === 'development') {
+        return res.json({ message: 'Code sent', devCode: code });
+      }
+
+      res.json({ message: 'Verification code sent' });
+    } catch (error) {
+      console.error('Error sending verification code:', error);
+      res.status(500).json({ message: 'Failed to send verification code' });
+    }
+  });
+
+  // Verify phone code and login
+  app.post('/api/auth/verify-phone-code', async (req, res) => {
+    try {
+      const { phone, code } = req.body;
+
+      if (!phone || !code) {
+        return res.status(400).json({ message: 'Phone and code are required' });
+      }
+
+      const verification = phoneVerificationCodes.get(phone);
+
+      if (!verification) {
+        return res.status(400).json({ message: 'No verification code found' });
+      }
+
+      if (verification.attempts >= 3) {
+        phoneVerificationCodes.delete(phone);
+        return res.status(400).json({ message: 'Too many attempts. Please request a new code' });
+      }
+
+      if (Date.now() > verification.expires) {
+        phoneVerificationCodes.delete(phone);
+        return res.status(400).json({ message: 'Verification code expired' });
+      }
+
+      if (verification.code !== code) {
+        verification.attempts++;
+        return res.status(400).json({ message: 'Invalid verification code' });
+      }
+
+      // Code is valid, find or create user
+      let user = await storage.getUserByPhone(phone);
+
+      if (!user) {
+        return res.status(404).json({ message: 'No account found with this phone number' });
+      }
+
+      // Clean up verification code
+      phoneVerificationCodes.delete(phone);
+
+      // Create session
+      req.login(user, (err) => {
+        if (err) {
+          return res.status(500).json({ message: 'Login failed' });
+        }
+        res.json({ message: 'Login successful', user });
+      });
+    } catch (error) {
+      console.error('Error verifying code:', error);
+      res.status(500).json({ message: 'Verification failed' });
+    }
+  });
+
+  // Register with phone number
+  app.post('/api/auth/register-with-phone', async (req, res) => {
+    try {
+      const { name, phone, code } = req.body;
+
+      if (!name || !phone || !code) {
+        return res.status(400).json({ message: 'Name, phone, and code are required' });
+      }
+
+      const verification = phoneVerificationCodes.get(phone);
+
+      if (!verification) {
+        return res.status(400).json({ message: 'No verification code found' });
+      }
+
+      if (verification.attempts >= 3) {
+        phoneVerificationCodes.delete(phone);
+        return res.status(400).json({ message: 'Too many attempts. Please request a new code' });
+      }
+
+      if (Date.now() > verification.expires) {
+        phoneVerificationCodes.delete(phone);
+        return res.status(400).json({ message: 'Verification code expired' });
+      }
+
+      if (verification.code !== code) {
+        verification.attempts++;
+        return res.status(400).json({ message: 'Invalid verification code' });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByPhone(phone);
+      if (existingUser) {
+        return res.status(400).json({ message: 'User with this phone number already exists' });
+      }
+
+      // Create user
+      const user = await storage.createUserWithPhone({ name, phone });
+
+      // Clean up verification code
+      phoneVerificationCodes.delete(phone);
+
+      // Create session
+      req.login(user, (err) => {
+        if (err) {
+          return res.status(500).json({ message: 'Registration successful but login failed' });
+        }
+        res.json({ message: 'Registration successful', user });
+      });
+    } catch (error) {
+      console.error('Error during phone registration:', error);
+      res.status(500).json({ message: 'Registration failed' });
+    }
+  });
+
+  // Facebook OAuth routes
+  app.get('/api/auth/facebook',
+    passport.authenticate('facebook', { scope: ['email'] })
+  );
+
+  // Auth user endpoint (mock for development)
   app.get('/api/auth/user', async (req: any, res) => {
     // Return mock user for testing without auth
     res.json({
@@ -249,7 +365,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const scriptPath = path.join(process.cwd(), 'public', 'gls-autofill-mobile.user.js');
       const scriptContent = await fs.readFile(scriptPath, 'utf-8');
-      
+
       // Set headers for Tampermonkey to recognize the script
       res.setHeader('Content-Type', 'application/x-userscript+javascript');
       res.setHeader('Content-Disposition', 'attachment; filename="gls-autofill-mobile.user.js"');
@@ -264,15 +380,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/gls-autofill-data/:orderId', async (req, res) => {
     try {
       const { orderId } = req.params;
-      
+
       // Find order by orderId
       const orders = await storage.getOrders();
       const order = orders.find(o => o.orderId === orderId);
-      
+
       if (!order) {
         return res.status(404).json({ error: 'Order not found' });
       }
-      
+
       // Get shipping address if shippingAddressId exists
       let shippingAddr: any = {};
       if (order.shippingAddressId) {
@@ -281,11 +397,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           shippingAddr = address;
         }
       }
-      
+
       // Get GLS sender address from settings (properly parsed)
       const shippingSettings = await getSettingsByCategory('shipping');
       const senderData = shippingSettings.glsDefaultSenderAddress;
-      
+
       const autofillData = {
         recipient: {
           name: [shippingAddr.firstName, shippingAddr.lastName].filter(Boolean).join(' ') || 'N/A',
@@ -311,12 +427,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         packageSize: 'S',
         weight: undefined,
       };
-      
+
       // Set CORS headers to allow cross-origin requests
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Allow-Methods', 'GET');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-      
+
       res.json(autofillData);
     } catch (error) {
       console.error('Error serving GLS autofill data:', error);
@@ -330,37 +446,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Fetch exchange rates from Frankfurter API
       const exchangeRateResponse = await fetch('https://api.frankfurter.app/latest?from=EUR');
       const exchangeRates = await exchangeRateResponse.json();
-      
+
       const metrics = await storage.getDashboardMetrics();
       const allOrders = await storage.getOrders();
-      
+
       // Convert amount to EUR
       const convertToEur = (amount: number, currency: string): number => {
         if (!amount || !currency) return 0;
         if (currency === 'EUR') return amount;
-        
+
         // Get the rate from the currency to EUR using Frankfurter API format
         const currencyUpper = currency.toUpperCase();
         if (exchangeRates.rates && exchangeRates.rates[currencyUpper]) {
           // Frankfurter gives EUR to other currency rates, so we need to invert
           return amount / exchangeRates.rates[currencyUpper];
         }
-        
+
         // Fallback if rate not found
         console.warn(`Exchange rate not found for ${currency}`);
         return amount;
       };
-      
+
       // Calculate metrics with currency conversion
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
       const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
       const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999);
-      
+
       // Fulfill Orders Today: ALL orders with status "to_fulfill"
       const fulfillOrdersToday = allOrders.filter(order => order.orderStatus === 'to_fulfill').length;
-      
+
       // Total Orders Today: Orders with status "shipped" that were marked as shipped TODAY
       const todayShippedOrders = allOrders.filter(order => {
         if (order.orderStatus !== 'shipped') return false;
@@ -368,17 +484,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const updatedDate = new Date(order.updatedAt || order.createdAt);
         return updatedDate >= today;
       });
-      
+
       const thisMonthOrders = allOrders.filter(order => {
         const orderDate = new Date(order.createdAt);
         return orderDate >= thisMonthStart && order.orderStatus === 'shipped';
       });
-      
+
       const lastMonthOrders = allOrders.filter(order => {
         const orderDate = new Date(order.createdAt);
         return orderDate >= lastMonthStart && orderDate <= lastMonthEnd && order.orderStatus === 'shipped';
       });
-      
+
       // Calculate revenue in EUR (Revenue = Grand Total - Tax - Shipping Cost)
       const calculateRevenueInEur = (orders: any[]) => {
         return orders.reduce((sum, order) => {
@@ -389,30 +505,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return sum + convertToEur(revenue, order.currency);
         }, 0);
       };
-      
+
       // Calculate profit in EUR (Profit = Grand Total - Total Import Cost - Tax Amount - Discount Value)
       const calculateProfitInEur = async (orders: any[]) => {
         let totalProfit = 0;
-        
+
         for (const order of orders) {
           if (order.orderStatus !== 'shipped' || order.paymentStatus !== 'paid') {
             continue; // Only calculate profit for completed orders
           }
-          
+
           const grandTotal = parseFloat(order.grandTotal || '0');
           const taxAmount = parseFloat(order.taxAmount || '0');
           const discountValue = parseFloat(order.discountValue || '0');
-          
+
           // Get order items to calculate import cost
           const orderItems = await storage.getOrderItems(order.id);
           let totalImportCost = 0;
-          
+
           for (const item of orderItems) {
             const product = await storage.getProductById(item.productId);
             if (product) {
               const quantity = parseInt(item.quantity || '0');
               let importCost = 0;
-              
+
               // Use import cost based on order currency
               if (order.currency === 'CZK' && product.importCostCzk) {
                 importCost = parseFloat(product.importCostCzk);
@@ -423,19 +539,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const importCostUsd = parseFloat(product.importCostUsd);
                 importCost = convertToEur(importCostUsd, 'USD');
               }
-              
+
               totalImportCost += importCost * quantity;
             }
           }
-          
+
           // Profit = Revenue - Import Costs - Tax - Discount
           const profit = grandTotal - totalImportCost - taxAmount - discountValue;
           totalProfit += convertToEur(profit, order.currency);
         }
-        
+
         return totalProfit;
       };
-      
+
       const metricsWithConversion = {
         fulfillOrdersToday,
         totalOrdersToday: todayShippedOrders.length,
@@ -447,7 +563,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastMonthProfit: await calculateProfitInEur(lastMonthOrders),
         exchangeRates: exchangeRates.eur
       };
-      
+
       res.json(metricsWithConversion);
     } catch (error) {
       console.error("Error fetching dashboard metrics:", error);
@@ -460,37 +576,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Fetch exchange rates from Frankfurter API
       const exchangeRateResponse = await fetch('https://api.frankfurter.app/latest?from=EUR');
       const exchangeRates = await exchangeRateResponse.json();
-      
+
       const convertToEur = (amount: number, currency: string): number => {
         if (!amount || !currency) return 0;
         if (currency === 'EUR') return amount;
-        
+
         const currencyUpper = currency.toUpperCase();
         if (exchangeRates.rates && exchangeRates.rates[currencyUpper]) {
           return amount / exchangeRates.rates[currencyUpper];
         }
-        
+
         return amount;
       };
-      
+
       const year = req.query.year ? parseInt(req.query.year as string) : new Date().getFullYear();
       const allOrders = await storage.getOrders();
-      
+
       // Generate monthly summary
       const monthlySummary = [];
       for (let month = 0; month < 12; month++) {
         const monthStart = new Date(year, month, 1);
         const monthEnd = new Date(year, month + 1, 0, 23, 59, 59, 999);
-        
+
         const monthOrders = allOrders.filter(order => {
           const orderDate = new Date(order.createdAt);
           return orderDate >= monthStart && orderDate <= monthEnd && order.orderStatus === 'shipped' && order.paymentStatus === 'paid';
         });
-        
+
         // Separate orders by currency
         const czkOrders = monthOrders.filter(order => order.currency === 'CZK');
         const eurOrders = monthOrders.filter(order => order.currency === 'EUR');
-        
+
         // Calculate revenue and profit for each currency
         const calculateRevenue = (orders: any[]) => {
           return orders.reduce((sum, order) => {
@@ -500,7 +616,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return sum + (grandTotal - tax - shippingCost);
           }, 0);
         };
-        
+
         const calculateProfit = (orders: any[]) => {
           return orders.reduce((sum, order) => {
             const grandTotal = parseFloat(order.grandTotal || '0');
@@ -512,12 +628,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return sum + (grandTotal - totalCost - tax - discount - (shippingPaid - actualShippingCost));
           }, 0);
         };
-        
+
         const profitCzkOrders = calculateProfit(czkOrders);
         const revenueCzkOrders = calculateRevenue(czkOrders);
         const profitEurOrders = calculateProfit(eurOrders);
         const revenueEurOrders = calculateRevenue(eurOrders);
-        
+
         // Calculate total in EUR
         const totalRevenueEur = monthOrders.reduce((sum, order) => {
           const grandTotal = parseFloat(order.grandTotal || '0');
@@ -526,7 +642,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const revenue = grandTotal - tax - shippingCost;
           return sum + convertToEur(revenue, order.currency);
         }, 0);
-        
+
         const totalProfitEur = monthOrders.reduce((sum, order) => {
           const grandTotal = parseFloat(order.grandTotal || '0');
           const totalCost = parseFloat(order.totalCost || '0');
@@ -537,12 +653,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const profit = grandTotal - totalCost - tax - discount - (shippingPaid - actualShippingCost);
           return sum + convertToEur(profit, order.currency);
         }, 0);
-        
+
         // Convert EUR totals to CZK
         const eurToCzk = exchangeRates.eur?.czk || 25.0;
         const totalProfitCzk = totalProfitEur * eurToCzk;
         const totalRevenueCzk = totalRevenueEur * eurToCzk;
-        
+
         monthlySummary.push({
           month: `${String(month + 1).padStart(2, '0')}-${String(year).slice(-2)}`,
           totalProfitEur,
@@ -556,7 +672,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           orderCount: monthOrders.length
         });
       }
-      
+
       res.json(monthlySummary);
     } catch (error) {
       console.error("Error fetching financial summary:", error);
@@ -574,30 +690,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch user activities" });
     }
   });
-
-  // Helper function for currency conversion
-  async function getCurrencyConverter() {
-    try {
-      const exchangeRateResponse = await fetch('https://api.frankfurter.app/latest?from=EUR');
-      const exchangeRates = await exchangeRateResponse.json();
-      
-      return (amount: number, currency: string): number => {
-        if (!amount || !currency) return 0;
-        if (currency === 'EUR') return amount;
-        
-        const currencyUpper = currency.toUpperCase();
-        if (exchangeRates.rates && exchangeRates.rates[currencyUpper]) {
-          return amount / exchangeRates.rates[currencyUpper];
-        }
-        
-        console.warn(`Exchange rate not found for ${currency}`);
-        return amount;
-      };
-    } catch (error) {
-      console.error('Error fetching exchange rates:', error);
-      return (amount: number, currency: string) => currency === 'EUR' ? amount : amount;
-    }
-  }
 
   // New Admin Dashboard Endpoints
 
@@ -679,7 +771,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Total revenue (converted to EUR)
       let totalRevenueEur = 0;
       let totalCostEur = 0;
-      
+
       for (const order of paidOrders) {
         const grandTotal = parseFloat(order.grandTotal || '0');
         const totalCost = parseFloat(order.totalCost || '0');
@@ -705,7 +797,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const order of unpaidOrders) {
         const createdAt = new Date(order.createdAt);
         const amount = convertToEur(parseFloat(order.grandTotal || '0'), order.currency || 'EUR');
-        
+
         if (createdAt < ninetyDaysAgo) {
           agedReceivables['90plus'] += amount;
         } else if (createdAt < sixtyDaysAgo) {
@@ -920,11 +1012,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const customerRevenue = new Map<string, { name: string; revenue: number }>();
       const allCustomers = await storage.getCustomers();
-      
+
       for (const order of thisMonthOrders) {
         if (!order.customerId) continue;
         const revenue = convertToEur(parseFloat(order.grandTotal || '0'), order.currency || 'EUR');
-        
+
         if (customerRevenue.has(order.customerId)) {
           customerRevenue.get(order.customerId)!.revenue += revenue;
         } else {
@@ -975,7 +1067,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const last90CustomersSet = new Set(last90DaysOrders.map(o => o.customerId).filter(Boolean));
       const previous90CustomersSet = new Set(previous90DaysOrders.map(o => o.customerId).filter(Boolean));
-      
+
       const retainedCustomers = Array.from(last90CustomersSet).filter(id => 
         previous90CustomersSet.has(id)
       );
@@ -1084,16 +1176,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
       }
-      
+
       // Ensure upload directory exists
       const uploadDir = 'public/images';
       await fs.mkdir(uploadDir, { recursive: true });
-      
+
       // Generate unique filename with webp extension
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
       const outputFilename = uniqueSuffix + '.webp';
       const outputPath = path.join(uploadDir, outputFilename);
-      
+
       // Compress image with lossless compression
       const compressionResult = await ImageCompressionService.compressImageBuffer(
         req.file.buffer,
@@ -1105,14 +1197,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           maxHeight: 2048
         }
       );
-      
+
       // Save compressed image
       await fs.writeFile(outputPath, compressionResult.buffer);
-      
+
       // Generate thumbnail
       const thumbnailFilename = uniqueSuffix + '_thumb.webp';
       const thumbnailPath = path.join(uploadDir, thumbnailFilename);
-      
+
       // Create thumbnail from compressed buffer
       const thumbnailBuffer = await ImageCompressionService.compressImageBuffer(
         compressionResult.buffer,
@@ -1123,15 +1215,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           maxHeight: 200
         }
       );
-      
+
       await fs.writeFile(thumbnailPath, thumbnailBuffer.buffer);
-      
+
       // Log compression stats
       console.log(`Image compressed: ${req.file.originalname}`);
       console.log(`Original size: ${(req.file.size / 1024).toFixed(2)} KB`);
       console.log(`Compressed size: ${(compressionResult.compressedSize / 1024).toFixed(2)} KB`);
       console.log(`Compression ratio: ${compressionResult.compressionRatio.toFixed(2)}%`);
-      
+
       // Return URLs and compression info
       res.json({ 
         imageUrl: `/images/${outputFilename}`,
@@ -1152,27 +1244,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Calculate relevance score for search results with Vietnamese normalization
   function calculateScore(text: string, query: string): number {
     if (!text || !query) return 0;
-    
+
     const normalizedText = normalizeVietnamese(text.toLowerCase());
     const normalizedQuery = normalizeVietnamese(query.toLowerCase());
-    
+
     let score = 0;
-    
+
     // Exact match (highest priority)
     if (normalizedText === normalizedQuery) {
       score += 100;
     }
-    
+
     // Starts with query
     if (normalizedText.startsWith(normalizedQuery)) {
       score += 50;
     }
-    
+
     // Contains query
     if (normalizedText.includes(normalizedQuery)) {
       score += 25;
     }
-    
+
     // Word boundary match (query matches start of a word)
     const words = normalizedText.split(/\s+/);
     for (const word of words) {
@@ -1181,7 +1273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         break;
       }
     }
-    
+
     // Multi-word bonus (all query words found)
     const queryWords = normalizedQuery.split(/\s+/);
     if (queryWords.length > 1) {
@@ -1192,7 +1284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         score += 20;
       }
     }
-    
+
     return score;
   }
 
@@ -1200,7 +1292,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/search', async (req, res) => {
     try {
       const query = req.query.q as string || '';
-      
+
       // Require minimum 2 characters
       if (!query.trim() || query.trim().length < 2) {
         return res.json({ 
@@ -1333,7 +1425,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .select({ count: sql<number>`COUNT(*)::int` })
             .from(orders)
             .where(eq(orders.customerId, customer.id));
-          
+
           const totalOrders = countResult?.count || 0;
 
           // Get recent orders (limited to 3 for display)
@@ -1353,13 +1445,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           const lastOrder = customerOrders[0];
           const lastOrderDate = lastOrder?.createdAt ? new Date(lastOrder.createdAt) : null;
-          
+
           let lastOrderText = 'Never';
           if (lastOrderDate) {
             const now = new Date();
             const diffTime = Math.abs(now.getTime() - lastOrderDate.getTime());
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
+
             if (diffDays === 0) lastOrderText = 'Today';
             else if (diffDays === 1) lastOrderText = '1 day ago';
             else if (diffDays < 30) lastOrderText = `${diffDays} days ago`;
@@ -1410,7 +1502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const data = insertCategorySchema.parse(req.body);
       const category = await storage.createCategory(data);
-      
+
       // Log activity
       await storage.createUserActivity({
         userId: "test-user",
@@ -1419,7 +1511,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         entityId: category.id,
         description: `Created category: ${category.name}`,
       });
-      
+
       res.json(category);
     } catch (error) {
       console.error("Error creating category:", error);
@@ -1434,7 +1526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid category ID" });
       }
-      
+
       const category = await storage.getCategoryById(id.toString());
       if (!category) {
         return res.status(404).json({ message: "Category not found" });
@@ -1450,7 +1542,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const updates = req.body;
       const category = await storage.updateCategory(req.params.id, updates);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated',
@@ -1458,7 +1550,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         entityId: category.id,
         description: `Updated category: ${category.name}`,
       });
-      
+
       res.json(category);
     } catch (error) {
       console.error("Error updating category:", error);
@@ -1472,19 +1564,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!category) {
         return res.status(404).json({ message: "Category not found" });
       }
-      
+
       // Check if category has products
       const products = await storage.getProducts();
       const hasProducts = products.some(p => p.categoryId === req.params.id);
-      
+
       if (hasProducts) {
         return res.status(409).json({ 
           message: "Cannot delete category - it contains products" 
         });
       }
-      
+
       await storage.deleteCategory(req.params.id);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'deleted',
@@ -1492,7 +1584,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         entityId: req.params.id,
         description: `Deleted category: ${category.name}`,
       });
-      
+
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting category:", error);
@@ -1504,7 +1596,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/categories/translate', async (req, res) => {
     try {
       const { categoryName } = req.body;
-      
+
       if (!categoryName || typeof categoryName !== 'string') {
         return res.status(400).json({ message: 'Category name is required' });
       }
@@ -1574,7 +1666,7 @@ Important:
     try {
       const warehouses = await storage.getWarehouses();
       const products = await storage.getProducts();
-      
+
       // Count products per warehouse
       const warehousesWithCounts = warehouses.map(warehouse => {
         const itemCount = products.filter(p => p.warehouseId === warehouse.id).length;
@@ -1583,7 +1675,7 @@ Important:
           itemCount
         };
       });
-      
+
       res.json(warehousesWithCounts);
     } catch (error) {
       console.error("Error fetching warehouses:", error);
@@ -1595,7 +1687,7 @@ Important:
     try {
       const data = insertWarehouseSchema.parse(req.body);
       const warehouse = await storage.createWarehouse(data);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'created',
@@ -1603,7 +1695,7 @@ Important:
         entityId: warehouse.id,
         description: `Created warehouse: ${warehouse.name}`,
       });
-      
+
       res.json(warehouse);
     } catch (error) {
       console.error("Error creating warehouse:", error);
@@ -1639,7 +1731,7 @@ Important:
     try {
       const updates = req.body;
       const warehouse = await storage.updateWarehouse(req.params.id, updates);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated',
@@ -1647,7 +1739,7 @@ Important:
         entityId: warehouse.id,
         description: `Updated warehouse: ${warehouse.name}`,
       });
-      
+
       res.json(warehouse);
     } catch (error) {
       console.error("Error updating warehouse:", error);
@@ -1661,9 +1753,9 @@ Important:
       if (!warehouse) {
         return res.status(404).json({ message: "Warehouse not found" });
       }
-      
+
       await storage.deleteWarehouse(req.params.id);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'deleted',
@@ -1671,18 +1763,18 @@ Important:
         entityId: req.params.id,
         description: `Deleted warehouse: ${warehouse.name}`,
       });
-      
+
       res.status(204).send();
     } catch (error: any) {
       console.error("Error deleting warehouse:", error);
-      
+
       // Check if it's a foreign key constraint error
       if (error.code === '23503' || error.message?.includes('constraint')) {
         return res.status(409).json({ 
           message: "Cannot delete warehouse - it's being used by products" 
         });
       }
-      
+
       res.status(500).json({ message: "Failed to delete warehouse" });
     }
   });
@@ -1718,7 +1810,7 @@ Important:
       });
 
       const validationResult = warehouseConfigSchema.safeParse(req.body);
-      
+
       if (!validationResult.success) {
         return res.status(400).json({ 
           message: "Invalid warehouse configuration",
@@ -1730,14 +1822,14 @@ Important:
       }
 
       const { totalAisles, maxRacks, maxLevels, maxBins } = validationResult.data;
-      
+
       const warehouse = await storage.updateWarehouse(req.params.id, {
         totalAisles,
         maxRacks,
         maxLevels,
         maxBins
       });
-      
+
       if (!warehouse) {
         return res.status(404).json({ message: "Warehouse not found" });
       }
@@ -1749,7 +1841,7 @@ Important:
         entityId: warehouse.id,
         description: `Updated warehouse map configuration: ${warehouse.name}`,
       });
-      
+
       res.json({
         totalAisles: warehouse.totalAisles,
         maxRacks: warehouse.maxRacks,
@@ -1772,7 +1864,7 @@ Important:
       });
 
       const validationResult = aisleConfigSchema.safeParse(req.body);
-      
+
       if (!validationResult.success) {
         return res.status(400).json({ 
           message: "Invalid aisle configuration",
@@ -1812,7 +1904,7 @@ Important:
         entityId: updatedWarehouse.id,
         description: `Updated aisle ${aisleId} configuration: ${updatedWarehouse.name}`,
       });
-      
+
       res.json({
         aisleId,
         config: { maxRacks, maxLevels, maxBins },
@@ -1828,38 +1920,38 @@ Important:
   app.get('/api/product-locations', async (req, res) => {
     try {
       const { warehouseId } = req.query;
-      
+
       if (!warehouseId || typeof warehouseId !== 'string') {
         return res.status(400).json({ message: "warehouseId query parameter is required" });
       }
 
       // Get all products
       const allProducts = await storage.getProducts();
-      
+
       // Build product locations with details
       const productLocationDetails = [];
-      
+
       for (const product of allProducts) {
         const locations = await storage.getProductLocations(product.id);
-        
+
         // Filter locations for this warehouse
         const warehouseLocations = locations.filter(loc => {
           // Parse location code to check warehouse
           // Format: WH1-A06-R04-L04-B2 or WH-CZ-PRG-A01-R02-L03
           const parts = loc.locationCode.split('-');
-          
+
           // Handle both formats
           if (parts.length >= 5) {
             // Could be WH1-... or WH-CZ-PRG-...
             const locWarehouseId = parts[0].startsWith('WH') && parts[1].match(/^[A-Z]{2}$/) 
               ? parts.slice(0, 3).join('-')  // WH-CZ-PRG format
               : parts[0];  // WH1 format
-            
+
             return locWarehouseId === warehouseId;
           }
           return false;
         });
-        
+
         // Add each location with product details
         for (const location of warehouseLocations) {
           productLocationDetails.push({
@@ -1874,7 +1966,7 @@ Important:
           });
         }
       }
-      
+
       res.json(productLocationDetails);
     } catch (error) {
       console.error("Error fetching product locations:", error);
@@ -1887,10 +1979,10 @@ Important:
     try {
       const warehouseId = req.params.id;
       const allProducts = await storage.getProducts();
-      
+
       // Get products that have this warehouse as their primary warehouse
       const warehouseProducts = allProducts.filter(p => p.warehouseId === warehouseId);
-      
+
       // Fetch locations for each product
       const enrichedProducts = await Promise.all(
         warehouseProducts.map(async (product) => {
@@ -1900,10 +1992,10 @@ Important:
             const locWarehouseId = loc.locationCode.split('-').slice(0, 3).join('-');
             return locWarehouseId === warehouseId;
           });
-          
+
           const totalLocationQuantity = warehouseLocations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
           const primaryLocation = warehouseLocations.find(loc => loc.isPrimary);
-          
+
           return {
             ...product,
             locations: warehouseLocations,
@@ -1912,7 +2004,7 @@ Important:
           };
         })
       );
-      
+
       res.json(enrichedProducts);
     } catch (error) {
       console.error("Error fetching warehouse products:", error);
@@ -1934,7 +2026,7 @@ Important:
   app.post('/api/warehouses/:id/files', async (req: any, res) => {
     try {
       const { fileName, fileType, fileUrl, fileSize } = req.body;
-      
+
       if (!fileName || !fileUrl) {
         return res.status(400).json({ message: "fileName and fileUrl are required" });
       }
@@ -2037,7 +2129,7 @@ Important:
     try {
       const updates = req.body;
       const contract = await storage.updateWarehouseFinancialContract(req.params.id, updates);
-      
+
       if (!contract) {
         return res.status(404).json({ message: "Financial contract not found" });
       }
@@ -2099,7 +2191,7 @@ Important:
     try {
       const config = req.body;
       const layout = await storage.generateBinLayout(req.params.id, config);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'generated',
@@ -2121,7 +2213,7 @@ Important:
       if (!layout) {
         return res.status(404).json({ message: "Warehouse layout not found" });
       }
-      
+
       const bins = await storage.getBinsWithInventory(layout.id);
       res.json(bins);
     } catch (error) {
@@ -2136,7 +2228,7 @@ Important:
       if (!layout) {
         return res.status(404).json({ message: "Warehouse layout not found" });
       }
-      
+
       const stats = await storage.getLayoutStatistics(layout.id);
       res.json(stats);
     } catch (error) {
@@ -2149,7 +2241,7 @@ Important:
     try {
       const updates = req.body;
       const bin = await storage.updateLayoutBin(req.params.id, updates);
-      
+
       if (!bin) {
         return res.status(404).json({ message: "Bin not found" });
       }
@@ -2203,10 +2295,10 @@ Important:
         contactPhone: z.string().optional(),
         notes: z.string().optional()
       });
-      
+
       const data = supplierSchema.parse(req.body);
       const supplier = await storage.createSupplier(data);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'created',
@@ -2214,7 +2306,7 @@ Important:
         entityId: supplier.id,
         description: `Created supplier: ${supplier.name}`,
       });
-      
+
       res.json(supplier);
     } catch (error) {
       console.error("Error creating supplier:", error);
@@ -2225,7 +2317,7 @@ Important:
   app.patch('/api/suppliers/:id', async (req: any, res) => {
     try {
       const supplier = await storage.updateSupplier(req.params.id, req.body);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated',
@@ -2233,7 +2325,7 @@ Important:
         entityId: supplier.id,
         description: `Updated supplier: ${supplier.name}`,
       });
-      
+
       res.json(supplier);
     } catch (error) {
       console.error("Error updating supplier:", error);
@@ -2247,9 +2339,9 @@ Important:
       if (!supplier) {
         return res.status(404).json({ message: "Supplier not found" });
       }
-      
+
       await storage.deleteSupplier(req.params.id);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'deleted',
@@ -2257,18 +2349,18 @@ Important:
         entityId: req.params.id,
         description: `Deleted supplier: ${supplier.name}`,
       });
-      
+
       res.status(204).send();
     } catch (error: any) {
       console.error("Error deleting supplier:", error);
-      
+
       // Check if it's a foreign key constraint error
       if (error.code === '23503' || error.message?.includes('constraint')) {
         return res.status(409).json({ 
           message: "Cannot delete supplier - it's being used by products" 
         });
       }
-      
+
       res.status(500).json({ message: "Failed to delete supplier" });
     }
   });
@@ -2310,7 +2402,7 @@ Important:
   app.post('/api/suppliers/:id/files', async (req: any, res) => {
     try {
       const { fileName, fileType, fileUrl, fileSize } = req.body;
-      
+
       const objectStorageService = new ObjectStorageService();
       const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
         fileUrl,
@@ -2376,19 +2468,19 @@ Important:
   app.get('/api/bundles', async (req, res) => {
     try {
       const bundles = await storage.getBundles();
-      
+
       // Calculate available stock for each bundle
       const bundlesWithStock = await Promise.all(bundles.map(async (bundle) => {
         const items = await storage.getBundleItems(bundle.id);
-        
+
         if (items.length === 0) {
           return { ...bundle, availableStock: 0 };
         }
-        
+
         // Calculate how many bundles can be made based on component availability
         const availableBundles = await Promise.all(items.map(async (item) => {
           let availableQuantity = 0;
-          
+
           if (item.variantId) {
             // Get variant quantity
             const variants = await storage.getProductVariants(item.productId);
@@ -2399,17 +2491,17 @@ Important:
             const product = await storage.getProductById(item.productId);
             availableQuantity = product?.quantity || 0;
           }
-          
+
           // Calculate how many bundles can be made with this item
           return Math.floor(availableQuantity / item.quantity);
         }));
-        
+
         // Bundle stock is the minimum across all items
         const stock = Math.min(...availableBundles);
-        
+
         return { ...bundle, availableStock: stock };
       }));
-      
+
       res.json(bundlesWithStock);
     } catch (error) {
       console.error("Error fetching bundles:", error);
@@ -2423,7 +2515,7 @@ Important:
       if (!bundle) {
         return res.status(404).json({ message: "Bundle not found" });
       }
-      
+
       // Fetch bundle items with product and variant details
       const items = await storage.getBundleItems(req.params.id);
       const itemsWithDetails = await Promise.all(items.map(async (item) => {
@@ -2439,7 +2531,7 @@ Important:
           variant
         };
       }));
-      
+
       res.json({
         ...bundle,
         items: itemsWithDetails
@@ -2464,7 +2556,7 @@ Important:
     try {
       const { items, ...bundleData } = req.body;
       const bundle = await storage.createBundle(bundleData);
-      
+
       // Create bundle items
       if (items && Array.isArray(items)) {
         for (const item of items) {
@@ -2477,7 +2569,7 @@ Important:
           });
         }
       }
-      
+
       res.json(bundle);
     } catch (error) {
       console.error("Error creating bundle:", error);
@@ -2489,12 +2581,12 @@ Important:
     try {
       const { items, ...bundleData } = req.body;
       const updatedBundle = await storage.updateBundle(req.params.id, bundleData);
-      
+
       // Update bundle items
       if (items && Array.isArray(items)) {
         // Delete existing items
         await storage.deleteBundleItems(req.params.id);
-        
+
         // Create new items
         for (const item of items) {
           await storage.createBundleItem({
@@ -2506,8 +2598,8 @@ Important:
           });
         }
       }
-      
-      res.json(updatedBundle);
+
+      res.json(updatedSuupdatedBundledBundle);
     } catch (error) {
       console.error("Error updating bundle:", error);
       res.status(500).json({ message: "Failed to update bundle" });
@@ -2529,11 +2621,11 @@ Important:
     try {
       const items = req.body;
       const bundleId = req.params.id;
-      
+
       if (!Array.isArray(items)) {
         return res.status(400).json({ message: "Items must be an array" });
       }
-      
+
       for (const item of items) {
         await storage.createBundleItem({
           bundleId,
@@ -2543,7 +2635,7 @@ Important:
           notes: item.notes || null
         });
       }
-      
+
       res.json({ success: true });
     } catch (error) {
       console.error("Error adding bundle items:", error);
@@ -2558,7 +2650,7 @@ Important:
       if (!originalBundle) {
         return res.status(404).json({ message: "Bundle not found" });
       }
-      
+
       // Create new bundle with duplicated data
       const newBundleData = {
         name: `${originalBundle.name} (Copy)`,
@@ -2570,9 +2662,9 @@ Important:
         notes: originalBundle.notes,
         isActive: false // Start as inactive
       };
-      
+
       const newBundle = await storage.createBundle(newBundleData);
-      
+
       // Duplicate bundle items
       const originalItems = await storage.getBundleItems(req.params.id);
       for (const item of originalItems) {
@@ -2583,7 +2675,7 @@ Important:
           quantity: item.quantity
         });
       }
-      
+
       res.json(newBundle);
     } catch (error) {
       console.error("Error duplicating bundle:", error);
@@ -2609,13 +2701,13 @@ Important:
       const includeInactive = req.query.includeInactive === 'true';
       const includeLandingCost = req.query.includeLandingCost === 'true';
       let productsResult;
-      
+
       if (search) {
         productsResult = await storage.searchProducts(search, includeInactive);
       } else {
         productsResult = await storage.getProducts(includeInactive);
       }
-      
+
       // If landing costs are requested, fetch them from the database
       if (includeLandingCost) {
         const productsWithCosts = await Promise.all(productsResult.map(async (product) => {
@@ -2624,13 +2716,13 @@ Important:
             .from(products)
             .where(eq(products.id, product.id))
             .limit(1);
-          
+
           return {
             ...product,
             landingCost: productWithCost?.latestLandingCost || null
           };
         }));
-        
+
         res.json(productsWithCosts);
       } else {
         res.json(productsResult);
@@ -2657,19 +2749,19 @@ Important:
       if (!product) {
         return res.status(404).json({ message: "Product not found" });
       }
-      
+
       // Get the latest landing cost from product table
       const [productWithCost] = await db
         .select()
         .from(products)
         .where(eq(products.id, req.params.id));
-      
+
       // Add latest_landing_cost to the product object
       const productData = {
         ...product,
         latest_landing_cost: productWithCost?.latestLandingCost || null
       };
-      
+
       res.json(productData);
     } catch (error) {
       console.error("Error fetching product:", error);
@@ -2681,20 +2773,20 @@ Important:
   app.get('/api/products/:id/locations', async (req, res) => {
     try {
       const productId = req.params.id;
-      
+
       // First check if product exists and get its warehouseLocation
       const product = await storage.getProductById(productId);
       if (!product) {
         return res.status(404).json({ message: "Product not found" });
       }
-      
+
       // Get product locations from productLocations table
       const locations = await db
         .select()
         .from(productLocations)
         .where(eq(productLocations.productId, productId))
         .orderBy(desc(productLocations.isPrimary), desc(productLocations.quantity));
-      
+
       // If no locations in productLocations table, but product has warehouseLocation field
       if (locations.length === 0 && product.warehouseLocation) {
         res.json([{
@@ -2732,7 +2824,7 @@ Important:
     fileFilter: (req, file, cb) => {
       const allowedTypes = /pdf|doc|docx|jpg|jpeg|png/;
       const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-      
+
       if (extname) {
         return cb(null, true);
       } else {
@@ -2744,27 +2836,27 @@ Important:
   app.post('/api/products/:id/files', productFileUpload.single('file'), async (req: any, res) => {
     try {
       const productId = req.params.id;
-      
+
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
       }
-      
+
       // Ensure upload directory exists
       const uploadDir = 'uploads/product-files';
       await fs.mkdir(uploadDir, { recursive: true });
-      
+
       // Generate unique filename
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
       const ext = path.extname(req.file.originalname);
       const filename = uniqueSuffix + ext;
       const filepath = path.join(uploadDir, filename);
-      
+
       // Save the file
       await fs.writeFile(filepath, req.file.buffer);
-      
+
       // Generate file URL (accessible via /uploads/product-files/filename)
       const fileUrl = `/uploads/product-files/${filename}`;
-      
+
       // Create database record
       const fileData = {
         id: nanoid(),
@@ -2779,9 +2871,9 @@ Important:
         uploadedAt: new Date(),
         isActive: true
       };
-      
+
       const newFile = await storage.createProductFile(fileData);
-      
+
       res.json(newFile);
     } catch (error) {
       console.error("Error uploading product file:", error);
@@ -2793,19 +2885,19 @@ Important:
     try {
       const fileId = req.params.fileId;
       const { fileType, description, language } = req.body;
-      
+
       const file = await storage.getProductFile(fileId);
-      
+
       if (!file) {
         return res.status(404).json({ message: "File not found" });
       }
-      
+
       const updatedFile = await storage.updateProductFile(fileId, {
         fileType,
         description,
         language,
       });
-      
+
       res.json(updatedFile);
     } catch (error) {
       console.error("Error updating product file:", error);
@@ -2816,30 +2908,30 @@ Important:
   app.delete('/api/product-files/:fileId', async (req, res) => {
     try {
       const file = await storage.getProductFile(req.params.fileId);
-      
+
       if (!file) {
         return res.status(404).json({ message: "File not found" });
       }
-      
+
       // Delete physical file
       // Convert fileUrl (/uploads/product-files/filename) to actual file path
       const filename = file.fileUrl.split('/').pop();
       const filepath = path.join('uploads/product-files', filename!);
-      
+
       try {
         await fs.unlink(filepath);
       } catch (error) {
         console.error("Error deleting physical file:", error);
         // Continue even if physical file deletion fails
       }
-      
+
       // Delete database record
       const deleted = await storage.deleteProductFile(req.params.fileId);
-      
+
       if (!deleted) {
         return res.status(500).json({ message: "Failed to delete file" });
       }
-      
+
       res.json({ message: "File deleted successfully" });
     } catch (error) {
       console.error("Error deleting product file:", error);
@@ -2850,26 +2942,26 @@ Important:
   app.get('/api/product-files/:fileId/download', async (req, res) => {
     try {
       const file = await storage.getProductFile(req.params.fileId);
-      
+
       if (!file) {
         return res.status(404).json({ message: "File not found" });
       }
-      
+
       // Convert fileUrl (/uploads/product-files/filename) to actual file path
       const filename = file.fileUrl.split('/').pop();
       const filepath = path.join('uploads/product-files', filename!);
-      
+
       // Check if file exists
       try {
         await fs.access(filepath);
       } catch (error) {
         return res.status(404).json({ message: "File not found on disk" });
       }
-      
+
       // Set appropriate headers
       res.setHeader('Content-Type', file.mimeType || 'application/octet-stream');
       res.setHeader('Content-Disposition', `attachment; filename="${file.fileName}"`);
-      
+
       // Stream the file
       const fileBuffer = await fs.readFile(filepath);
       res.send(fileBuffer);
@@ -2886,7 +2978,7 @@ Important:
     fileFilter: (req, file, cb) => {
       const allowedTypes = /pdf|doc|docx|jpg|jpeg|png|xlsx|xls|zip/;
       const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-      
+
       if (extname) {
         return cb(null, true);
       } else {
@@ -2898,27 +2990,27 @@ Important:
   app.post('/api/orders/:orderId/files', orderFileUpload.single('file'), async (req: any, res) => {
     try {
       const orderId = req.params.orderId;
-      
+
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
       }
-      
+
       // Ensure upload directory exists
       const uploadDir = 'uploads/order-files';
       await fs.mkdir(uploadDir, { recursive: true });
-      
+
       // Generate unique filename
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
       const ext = path.extname(req.file.originalname);
       const filename = uniqueSuffix + ext;
       const filepath = path.join(uploadDir, filename);
-      
+
       // Save the file
       await fs.writeFile(filepath, req.file.buffer);
-      
+
       // Generate file URL (accessible via /uploads/order-files/filename)
       const fileUrl = `/uploads/order-files/${filename}`;
-      
+
       // Create database record
       const fileData = {
         id: nanoid(),
@@ -2931,9 +3023,9 @@ Important:
         uploadedAt: new Date(),
         isActive: true
       };
-      
+
       const newFile = await storage.createOrderFile(fileData);
-      
+
       res.json(newFile);
     } catch (error) {
       console.error("Error uploading order file:", error);
@@ -2944,28 +3036,28 @@ Important:
   app.delete('/api/order-files/:fileId', async (req, res) => {
     try {
       const file = await storage.getOrderFile(req.params.fileId);
-      
+
       if (!file) {
         return res.status(404).json({ message: "File not found" });
       }
-      
+
       // Delete physical file
       const filename = file.fileUrl.split('/').pop();
       const filepath = path.join('uploads/order-files', filename!);
-      
+
       try {
         await fs.unlink(filepath);
       } catch (error) {
         console.error("Error deleting physical file:", error);
       }
-      
+
       // Delete database record
       const deleted = await storage.deleteOrderFile(req.params.fileId);
-      
+
       if (!deleted) {
         return res.status(500).json({ message: "Failed to delete file" });
       }
-      
+
       res.json({ message: "File deleted successfully" });
     } catch (error) {
       console.error("Error deleting order file:", error);
@@ -3036,11 +3128,11 @@ Important:
   app.delete('/api/products/tiered-pricing/:id', async (req, res) => {
     try {
       const deleted = await storage.deleteProductTieredPricing(req.params.id);
-      
+
       if (!deleted) {
         return res.status(404).json({ message: "Tiered pricing not found" });
       }
-      
+
       res.json({ message: "Tiered pricing deleted successfully" });
     } catch (error) {
       console.error("Error deleting product tiered pricing:", error);
@@ -3054,7 +3146,7 @@ Important:
       if (!Array.isArray(productIds)) {
         return res.status(400).json({ message: "Product IDs must be an array" });
       }
-      
+
       const orderCounts = await storage.getProductsOrderCounts(productIds);
       res.json(orderCounts);
     } catch (error) {
@@ -3067,7 +3159,7 @@ Important:
   app.get('/api/products/:id/cost-history', async (req, res) => {
     try {
       const productId = req.params.id;
-      
+
       // Fetch cost history for this product
       const costHistory = await db
         .select({
@@ -3081,7 +3173,7 @@ Important:
         .from(productCostHistory)
         .where(eq(productCostHistory.productId, productId))
         .orderBy(desc(productCostHistory.computedAt));
-      
+
       // Get purchase item details if available
       const costHistoryWithDetails = await Promise.all(
         costHistory.map(async (history) => {
@@ -3094,19 +3186,19 @@ Important:
               })
               .from(purchaseItems)
               .where(eq(purchaseItems.id, history.customItemId));
-            
+
             if (purchaseItem) {
               source = `PO-${purchaseItem.purchaseId}: ${purchaseItem.name}`;
             }
           }
-          
+
           return {
             ...history,
             source,
           };
         })
       );
-      
+
       res.json(costHistoryWithDetails);
     } catch (error) {
       console.error("Error fetching product cost history:", error);
@@ -3118,17 +3210,17 @@ Important:
   app.get('/api/products/:id/order-history', async (req, res) => {
     try {
       const productId = req.params.id;
-      
+
       // Get the product to access its cost
       const [product] = await db
         .select()
         .from(products)
         .where(eq(products.id, productId));
-      
+
       if (!product) {
         return res.status(404).json({ message: "Product not found" });
       }
-      
+
       // Fetch order items for this product with order details
       const orderItems_list = await db
         .select({
@@ -3147,10 +3239,10 @@ Important:
         .innerJoin(orders, eq(orderItems.orderId, orders.id))
         .where(eq(orderItems.productId, productId))
         .orderBy(desc(orders.createdAt));
-      
+
       // Get unique customer IDs
       const customerIds = [...new Set(orderItems_list.map(item => item.customerId).filter(Boolean))];
-      
+
       // Fetch customer details
       const customersMap = new Map();
       if (customerIds.length > 0) {
@@ -3162,20 +3254,20 @@ Important:
           })
           .from(customers)
           .where(inArray(customers.id, customerIds));
-        
+
         customersList.forEach(customer => {
           customersMap.set(customer.id, customer);
         });
       }
-      
+
       // Calculate profit and profit margin for each order
       const orderHistoryWithProfit = orderItems_list.map((order) => {
         const price = parseFloat(order.appliedPrice || order.price || '0');
         const quantity = order.quantity || 0;
-        
+
         // Get customer details
         const customer = order.customerId ? customersMap.get(order.customerId) : null;
-        
+
         // Use landing cost based on currency
         let costPerUnit = 0;
         if (order.currency === 'EUR') {
@@ -3190,12 +3282,12 @@ Important:
           // Default to CZK
           costPerUnit = parseFloat(product.landingCostCzk || product.importCostCzk || '0');
         }
-        
+
         const totalRevenue = price * quantity;
         const totalCost = costPerUnit * quantity;
         const profit = totalRevenue - totalCost;
         const profitMargin = totalRevenue > 0 ? (profit / totalRevenue * 100) : 0;
-        
+
         return {
           orderId: order.orderId,
           orderNumber: order.orderNumber,
@@ -3215,7 +3307,7 @@ Important:
           profitMargin: profitMargin.toFixed(2),
         };
       });
-      
+
       res.json(orderHistoryWithProfit);
     } catch (error) {
       console.error("Error fetching product order history:", error);
@@ -3226,27 +3318,27 @@ Important:
   app.post('/api/products', async (req: any, res) => {
     try {
       const data = insertProductSchema.parse(req.body);
-      
+
       // Check if product with same name and SKU exists
       if (data.sku) {
         const existingProduct = await storage.getProductBySku(data.sku);
         if (existingProduct && existingProduct.name === data.name) {
           // Calculate average import cost
-          const importCurrency = data.importCostUsd ? 'USD' : data.importCostCzk ? 'CZK' : 'EUR';
-          const importCost = parseFloat(data.importCostUsd || data.importCostCzk || data.importCostEur || '0');
+          const importCurrency = data.importCostUsd ? 'USD' : data.importCostCzk ? 'CZK' : data.importCostEur ? 'EUR' : data.importCostVnd ? 'VND' : data.importCostCny ? 'CNY' : 'CZK';
+          const importCost = parseFloat(data.importCostUsd || data.importCostCzk || data.importCostEur || data.importCostVnd || data.importCostCny || data.importCostCzk || '0');
           const newCosts = await storage.calculateAverageImportCost(
             existingProduct,
             data.quantity || 0,
             importCost,
             importCurrency
           );
-          
+
           // Update existing product
           const updatedProduct = await storage.updateProduct(existingProduct.id, {
             quantity: (existingProduct.quantity || 0) + (data.quantity || 0),
             ...newCosts,
           });
-          
+
           await storage.createUserActivity({
             userId: "test-user",
             action: 'updated',
@@ -3254,13 +3346,13 @@ Important:
             entityId: updatedProduct.id,
             description: `Added ${data.quantity} units to existing product: ${updatedProduct.name}`,
           });
-          
+
           return res.json(updatedProduct);
         }
       }
-      
+
       const product = await storage.createProduct(data);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'created',
@@ -3268,7 +3360,7 @@ Important:
         entityId: product.id,
         description: `Created product: ${product.name}`,
       });
-      
+
       res.json(product);
     } catch (error) {
       console.error("Error creating product:", error);
@@ -3283,22 +3375,22 @@ Important:
     try {
       const updates = { ...req.body };
       const productId = req.params.id;
-      
+
       console.log('PATCH /api/products/:id - variants received:', updates.variants);
-      
+
       // Extract variants from updates
       const newVariants = updates.variants || [];
       delete updates.variants;
-      
+
       console.log('PATCH - extracted variants count:', newVariants.length);
-      
+
       // Update the main product
       const product = await storage.updateProduct(productId, updates);
-      
+
       if (!product) {
         return res.status(404).json({ message: "Product not found" });
       }
-      
+
       // Handle variants if provided
       if (newVariants.length > 0 || req.body.hasOwnProperty('variants')) {
         // Get existing variants
@@ -3307,13 +3399,13 @@ Important:
         const newVariantIds = newVariants
           .filter((v: any) => v.id && !v.id.startsWith('temp-'))
           .map((v: any) => v.id);
-        
+
         // Delete variants that are no longer in the list
         const variantsToDelete = existingVariantIds.filter(id => !newVariantIds.includes(id));
         for (const variantId of variantsToDelete) {
           await storage.deleteProductVariant(variantId);
         }
-        
+
         // Create or update variants
         for (const variant of newVariants) {
           const variantData = {
@@ -3326,7 +3418,7 @@ Important:
             importCostEur: variant.importCostEur || null,
             imageUrl: variant.imageUrl || null,
           };
-          
+
           // Create new variant if ID starts with "temp-" or doesn't exist
           if (!variant.id || variant.id.startsWith('temp-')) {
             await storage.createProductVariant(variantData);
@@ -3336,7 +3428,7 @@ Important:
           }
         }
       }
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated',
@@ -3344,7 +3436,7 @@ Important:
         entityId: product.id,
         description: `Updated product: ${product.name}`,
       });
-      
+
       res.json(product);
     } catch (error) {
       console.error("Error updating product:", error);
@@ -3358,9 +3450,9 @@ Important:
       if (!product) {
         return res.status(404).json({ message: "Product not found" });
       }
-      
+
       await storage.deleteProduct(req.params.id);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'deleted',
@@ -3368,18 +3460,18 @@ Important:
         entityId: req.params.id,
         description: `Deleted product: ${product.name}`,
       });
-      
+
       res.status(204).send();
     } catch (error: any) {
       console.error("Error deleting product:", error);
-      
+
       // Check if it's a foreign key constraint error
       if (error.code === '23503' || error.message?.includes('constraint')) {
         return res.status(409).json({ 
           message: "Cannot delete product - it's being used in existing orders" 
         });
       }
-      
+
       res.status(500).json({ message: "Failed to delete product" });
     }
   });
@@ -3451,9 +3543,9 @@ Important:
         ...req.body,
         productId: req.params.productId
       });
-      
+
       const variant = await storage.createProductVariant(data);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'created',
@@ -3461,7 +3553,7 @@ Important:
         entityId: variant.id,
         description: `Created variant: ${variant.name}`,
       });
-      
+
       res.json(variant);
     } catch (error) {
       console.error("Error creating product variant:", error);
@@ -3476,7 +3568,7 @@ Important:
     try {
       const updates = req.body;
       const variant = await storage.updateProductVariant(req.params.id, updates);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated',
@@ -3484,7 +3576,7 @@ Important:
         entityId: variant.id,
         description: `Updated variant: ${variant.name}`,
       });
-      
+
       res.json(variant);
     } catch (error) {
       console.error("Error updating product variant:", error);
@@ -3495,7 +3587,7 @@ Important:
   app.delete('/api/products/:productId/variants/:id', async (req: any, res) => {
     try {
       await storage.deleteProductVariant(req.params.id);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'deleted',
@@ -3503,7 +3595,7 @@ Important:
         entityId: req.params.id,
         description: `Deleted product variant`,
       });
-      
+
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting product variant:", error);
@@ -3525,7 +3617,7 @@ Important:
           ...variantData,
           productId: req.params.productId
         });
-        
+
         const variant = await storage.createProductVariant(data);
         createdVariants.push(variant);
       }
@@ -3552,24 +3644,24 @@ Important:
   app.post('/api/products/move-warehouse', async (req: any, res) => {
     try {
       const { productIds, targetWarehouseId } = req.body;
-      
+
       if (!Array.isArray(productIds) || productIds.length === 0) {
         return res.status(400).json({ message: "Product IDs must be a non-empty array" });
       }
-      
+
       if (!targetWarehouseId) {
         return res.status(400).json({ message: "Target warehouse ID is required" });
       }
-      
+
       // Verify target warehouse exists
       const targetWarehouse = await storage.getWarehouse(targetWarehouseId);
       if (!targetWarehouse) {
         return res.status(404).json({ message: "Target warehouse not found" });
       }
-      
+
       // Move products
       await storage.moveProductsToWarehouse(productIds, targetWarehouseId);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'moved',
@@ -3577,7 +3669,7 @@ Important:
         entityId: targetWarehouseId,
         description: `Moved ${productIds.length} products to ${targetWarehouse.name}`,
       });
-      
+
       res.json({ message: `Successfully moved ${productIds.length} products` });
     } catch (error) {
       console.error("Error moving products:", error);
@@ -3590,7 +3682,7 @@ Important:
     try {
       console.log("Bulk delete request body:", req.body);
       const { variantIds } = req.body;
-      
+
       if (!variantIds || !Array.isArray(variantIds)) {
         return res.status(400).json({ message: "variantIds must be an array" });
       }
@@ -3635,21 +3727,21 @@ Important:
   app.post('/api/products/:id/locations', async (req: any, res) => {
     try {
       const productId = req.params.id;
-      
+
       // Validate product exists
       const product = await storage.getProduct(productId);
       if (!product) {
         return res.status(404).json({ message: "Product not found" });
       }
-      
+
       // Parse and validate location data
       const locationData = insertProductLocationSchema.parse({
         ...req.body,
         productId
       });
-      
+
       const location = await storage.createProductLocation(locationData);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'created',
@@ -3657,7 +3749,7 @@ Important:
         entityId: location.id,
         description: `Added location ${location.locationCode} for product`,
       });
-      
+
       res.status(201).json(location);
     } catch (error: any) {
       console.error("Error creating product location:", error);
@@ -3677,10 +3769,10 @@ Important:
   app.patch('/api/products/:id/locations/:locationId', async (req: any, res) => {
     try {
       const { id: productId, locationId } = req.params;
-      
+
       // Validate update data (partial schema)
       const updateData = insertProductLocationSchema.partial().parse(req.body);
-      
+
       // Handle legacy locations (from old warehouseLocation field)
       if (locationId === 'legacy') {
         // Get the product to verify it exists
@@ -3688,7 +3780,7 @@ Important:
         if (!product) {
           return res.status(404).json({ message: "Product not found" });
         }
-        
+
         // Create a new real location with the updated data
         const newLocation = await storage.createProductLocation({
           productId: productId,
@@ -3698,10 +3790,10 @@ Important:
           notes: updateData.notes || 'Migrated from legacy location',
           isPrimary: updateData.isPrimary ?? true,
         });
-        
+
         // Clear the old warehouseLocation field
         await storage.updateProduct(productId, { warehouseLocation: null });
-        
+
         await storage.createUserActivity({
           userId: "test-user",
           action: 'created',
@@ -3709,17 +3801,17 @@ Important:
           entityId: newLocation.id,
           description: `Migrated legacy location ${newLocation.locationCode}`,
         });
-        
+
         return res.json(newLocation);
       }
-      
+
       // Normal update for existing locations
       const location = await storage.updateProductLocation(locationId, updateData);
-      
+
       if (!location) {
         return res.status(404).json({ message: "Location not found" });
       }
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated',
@@ -3727,7 +3819,7 @@ Important:
         entityId: location.id,
         description: `Updated location ${location.locationCode}`,
       });
-      
+
       res.json(location);
     } catch (error: any) {
       console.error("Error updating product location:", error);
@@ -3744,12 +3836,12 @@ Important:
   app.delete('/api/products/:id/locations/:locationId', async (req: any, res) => {
     try {
       const { id: productId, locationId } = req.params;
-      
+
       // Handle legacy locations (from old warehouseLocation field)
       if (locationId === 'legacy') {
         // Just clear the old warehouseLocation field
         await storage.updateProduct(productId, { warehouseLocation: null });
-        
+
         await storage.createUserActivity({
           userId: "test-user",
           action: 'deleted',
@@ -3757,17 +3849,17 @@ Important:
           entityId: locationId,
           description: `Removed legacy location`,
         });
-        
+
         return res.status(204).send();
       }
-      
+
       // Normal delete for existing locations
       const success = await storage.deleteProductLocation(locationId);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Location not found" });
       }
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'deleted',
@@ -3775,7 +3867,7 @@ Important:
         entityId: locationId,
         description: `Deleted product location`,
       });
-      
+
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting product location:", error);
@@ -3786,28 +3878,28 @@ Important:
   app.post('/api/products/:id/locations/move', async (req: any, res) => {
     try {
       const { fromLocationId, toLocationId, quantity } = req.body;
-      
+
       // Validate required fields
       if (!fromLocationId || !toLocationId || !quantity) {
         return res.status(400).json({ 
           message: "Missing required fields: fromLocationId, toLocationId, quantity" 
         });
       }
-      
+
       if (quantity <= 0) {
         return res.status(400).json({ 
           message: "Quantity must be greater than 0" 
         });
       }
-      
+
       const success = await storage.moveInventory(fromLocationId, toLocationId, quantity);
-      
+
       if (!success) {
         return res.status(400).json({ 
           message: "Failed to move inventory. Check locations and quantity." 
         });
       }
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'moved',
@@ -3815,7 +3907,7 @@ Important:
         entityId: req.params.id,
         description: `Moved ${quantity} items between locations`,
       });
-      
+
       res.json({ message: "Inventory moved successfully", quantity });
     } catch (error: any) {
       console.error("Error moving inventory:", error);
@@ -3860,16 +3952,16 @@ Important:
     try {
       // Get user ID (fallback to test-user if auth is disabled)
       const userId = req.user?.id || "test-user";
-      
+
       // Override requestedBy with authenticated user
       const requestDataWithUser = {
         ...req.body,
         requestedBy: userId,
       };
-      
+
       const requestData = insertStockAdjustmentRequestSchema.parse(requestDataWithUser);
       const request = await storage.createStockAdjustmentRequest(requestData);
-      
+
       await storage.createUserActivity({
         userId: userId,
         action: 'created',
@@ -3877,7 +3969,7 @@ Important:
         entityId: request.id,
         description: `Requested stock adjustment: ${request.adjustmentType} ${request.requestedQuantity}`,
       });
-      
+
       res.status(201).json(request);
     } catch (error: any) {
       console.error("Error creating stock adjustment request:", error);
@@ -3896,24 +3988,24 @@ Important:
     try {
       // Get user ID (fallback to test-user if auth is disabled)
       const userId = req.user?.id || "test-user";
-      
+
       // Load inventory settings to check if direct adjustments are allowed
       const inventorySettings = await getSettingsByCategory('inventory');
-      
+
       // Server-side validation: Only allow if approval NOT required
       if (inventorySettings.stockAdjustmentApprovalRequired === true) {
         return res.status(403).json({ 
           message: 'Direct adjustments not allowed. Stock adjustment approval is required. Please create an approval request instead.' 
         });
       }
-      
+
       const { productId, locationId, adjustmentType, quantity, reason } = req.body;
 
       // Validate required fields
       if (!productId || !locationId || !adjustmentType || quantity === undefined || !reason) {
         return res.status(400).json({ message: "Missing required fields" });
       }
-      
+
       // Validate adjustment type
       if (!['add', 'remove', 'set'].includes(adjustmentType)) {
         return res.status(400).json({ message: "Invalid adjustment type" });
@@ -3940,7 +4032,7 @@ Important:
         default:
           return res.status(400).json({ message: "Invalid adjustment type" });
       }
-      
+
       // Validate that new quantity is not negative (unless allowNegativeStock is enabled)
       if (newQuantity < 0 && !inventorySettings.allowNegativeStock) {
         return res.status(400).json({ 
@@ -3971,13 +4063,13 @@ Important:
     try {
       const { id } = req.params;
       const approvedBy = req.body.approvedBy || "test-user";
-      
+
       const request = await storage.approveStockAdjustmentRequest(id, approvedBy);
-      
+
       if (!request) {
         return res.status(404).json({ message: "Request not found or already processed" });
       }
-      
+
       await storage.createUserActivity({
         userId: approvedBy,
         action: 'approved',
@@ -3985,7 +4077,7 @@ Important:
         entityId: request.id,
         description: `Approved stock adjustment: ${request.adjustmentType} ${request.requestedQuantity}`,
       });
-      
+
       res.json(request);
     } catch (error: any) {
       console.error("Error approving stock adjustment request:", error);
@@ -3999,17 +4091,17 @@ Important:
     try {
       const { id } = req.params;
       const { approvedBy = "test-user", reason } = req.body;
-      
+
       if (!reason) {
         return res.status(400).json({ message: "Rejection reason is required" });
       }
-      
+
       const request = await storage.rejectStockAdjustmentRequest(id, approvedBy, reason);
-      
+
       if (!request) {
         return res.status(404).json({ message: "Request not found or already processed" });
       }
-      
+
       await storage.createUserActivity({
         userId: approvedBy,
         action: 'rejected',
@@ -4017,7 +4109,7 @@ Important:
         entityId: request.id,
         description: `Rejected stock adjustment: ${request.adjustmentType} ${request.requestedQuantity}`,
       });
-      
+
       res.json(request);
     } catch (error: any) {
       console.error("Error rejecting stock adjustment request:", error);
@@ -4032,13 +4124,13 @@ Important:
     try {
       const search = req.query.search as string;
       let materials;
-      
+
       if (search) {
         materials = await storage.searchPackingMaterials(search);
       } else {
         materials = await storage.getPackingMaterials();
       }
-      
+
       res.json(materials);
     } catch (error) {
       console.error("Error fetching packing materials:", error);
@@ -4064,7 +4156,7 @@ Important:
     try {
       const materialData = req.body;
       const material = await storage.createPackingMaterial(materialData);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'created',
@@ -4072,7 +4164,7 @@ Important:
         entityId: material.id,
         description: `Created packing material: ${material.name}`,
       });
-      
+
       res.status(201).json(material);
     } catch (error) {
       console.error("Error creating packing material:", error);
@@ -4084,7 +4176,7 @@ Important:
     try {
       const updates = req.body;
       const material = await storage.updatePackingMaterial(req.params.id, updates);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated',
@@ -4092,7 +4184,7 @@ Important:
         entityId: material.id,
         description: `Updated packing material: ${material.name}`,
       });
-      
+
       res.json(material);
     } catch (error) {
       console.error("Error updating packing material:", error);
@@ -4103,7 +4195,7 @@ Important:
   app.delete('/api/packing-materials/:id', async (req: any, res) => {
     try {
       await storage.deletePackingMaterial(req.params.id);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'deleted',
@@ -4111,7 +4203,7 @@ Important:
         entityId: req.params.id,
         description: `Deleted packing material`,
       });
-      
+
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting packing material:", error);
@@ -4123,14 +4215,14 @@ Important:
   app.post('/api/packing-materials/bulk-delete', async (req: any, res) => {
     try {
       const { ids } = req.body;
-      
+
       if (!Array.isArray(ids) || ids.length === 0) {
         return res.status(400).json({ message: "Invalid request: ids array required" });
       }
 
       // Delete all materials
       await Promise.all(ids.map(id => storage.deletePackingMaterial(id)));
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'deleted',
@@ -4138,7 +4230,7 @@ Important:
         entityId: ids.join(','),
         description: `Bulk deleted ${ids.length} packing material(s)`,
       });
-      
+
       res.json({ message: `Successfully deleted ${ids.length} material(s)` });
     } catch (error) {
       console.error("Error bulk deleting packing materials:", error);
@@ -4150,7 +4242,7 @@ Important:
   app.post('/api/packing-materials/bulk-update-category', async (req: any, res) => {
     try {
       const { ids, category } = req.body;
-      
+
       if (!Array.isArray(ids) || ids.length === 0) {
         return res.status(400).json({ message: "Invalid request: ids array required" });
       }
@@ -4163,7 +4255,7 @@ Important:
       const updatedMaterials = await Promise.all(
         ids.map(id => storage.updatePackingMaterial(id, { category }))
       );
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated',
@@ -4171,7 +4263,7 @@ Important:
         entityId: ids.join(','),
         description: `Bulk updated category to "${category}" for ${ids.length} material(s)`,
       });
-      
+
       res.json(updatedMaterials);
     } catch (error) {
       console.error("Error bulk updating packing materials:", error);
@@ -4184,13 +4276,13 @@ Important:
     try {
       const search = req.query.search as string;
       let suppliers;
-      
+
       if (search) {
         suppliers = await storage.searchPmSuppliers(search);
       } else {
         suppliers = await storage.getPmSuppliers();
       }
-      
+
       res.json(suppliers);
     } catch (error) {
       console.error("Error fetching PM suppliers:", error);
@@ -4216,7 +4308,7 @@ Important:
     try {
       const supplierData = req.body;
       const supplier = await storage.createPmSupplier(supplierData);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'created',
@@ -4224,7 +4316,7 @@ Important:
         entityId: supplier.id,
         description: `Created PM supplier: ${supplier.name}`,
       });
-      
+
       res.status(201).json(supplier);
     } catch (error) {
       console.error("Error creating PM supplier:", error);
@@ -4236,7 +4328,7 @@ Important:
     try {
       const updates = req.body;
       const supplier = await storage.updatePmSupplier(req.params.id, updates);
-      
+
       if (supplier) {
         await storage.createUserActivity({
           userId: "test-user",
@@ -4245,7 +4337,7 @@ Important:
           entityId: supplier.id,
           description: `Updated PM supplier: ${supplier.name}`,
         });
-        
+
         res.json(supplier);
       } else {
         res.status(404).json({ message: "PM supplier not found" });
@@ -4259,7 +4351,7 @@ Important:
   app.delete('/api/pm-suppliers/:id', async (req: any, res) => {
     try {
       await storage.deletePmSupplier(req.params.id);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'deleted',
@@ -4267,7 +4359,7 @@ Important:
         entityId: req.params.id,
         description: `Deleted PM supplier`,
       });
-      
+
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting PM supplier:", error);
@@ -4279,30 +4371,30 @@ Important:
   app.post('/api/compress-images', async (req, res) => {
     try {
       const { paths, format = 'webp', lossless = true, quality = 95 } = req.body;
-      
+
       if (!paths || !Array.isArray(paths)) {
         return res.status(400).json({ message: "Paths array is required" });
       }
-      
+
       const results = [];
-      
+
       for (const imagePath of paths) {
         try {
           // Check if file exists
           const fullPath = path.join('public', imagePath.replace(/^\//, ''));
           await fs.access(fullPath);
-          
+
           // Generate output path
           const ext = path.extname(fullPath);
           const outputPath = fullPath.replace(ext, `.compressed.${format}`);
-          
+
           // Compress image
           const compressionResult = await ImageCompressionService.compressImage(
             fullPath,
             outputPath,
             { format, lossless, quality, maxWidth: 2048, maxHeight: 2048 }
           );
-          
+
           results.push({
             original: imagePath,
             compressed: imagePath.replace(ext, `.compressed.${format}`),
@@ -4317,7 +4409,7 @@ Important:
           });
         }
       }
-      
+
       res.json({ results });
     } catch (error) {
       console.error("Error batch compressing images:", error);
@@ -4331,16 +4423,16 @@ Important:
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
       }
-      
+
       // Get metadata from buffer
       const metadata = await ImageCompressionService.getImageMetadataFromBuffer(req.file.buffer);
-      
+
       // Simulate compression to get potential savings
       const compressionResult = await ImageCompressionService.compressImageBuffer(
         req.file.buffer,
         { format: 'webp', lossless: true, quality: 95 }
       );
-      
+
       res.json({
         original: {
           size: req.file.size,
@@ -4367,30 +4459,30 @@ Important:
       const search = req.query.search as string;
       const includeBadges = req.query.includeBadges === 'true';
       let customers;
-      
+
       if (search) {
         customers = await storage.searchCustomers(search);
       } else {
         customers = await storage.getCustomers();
       }
-      
+
       // Get all orders to calculate Pay Later badge
       const allOrders = await storage.getOrders();
-      
+
       // Calculate Pay Later preference for each customer
       const customersWithPayLaterBadge = customers.map(customer => {
         // Get orders for this customer
         const customerOrders = allOrders.filter(order => order.customerId === customer.id);
-        
+
         // Calculate Pay Later percentage
         const payLaterOrders = customerOrders.filter(order => order.paymentStatus === 'pay_later');
         const payLaterPercentage = customerOrders.length > 0 
           ? (payLaterOrders.length / customerOrders.length) * 100 
           : 0;
-        
+
         // Add Pay Later badge if customer has >= 50% Pay Later orders and at least 2 orders
         const hasPayLaterBadge = customerOrders.length >= 2 && payLaterPercentage >= 50;
-        
+
         return {
           ...customer,
           hasPayLaterBadge,
@@ -4398,7 +4490,7 @@ Important:
           totalOrders: customerOrders.length
         };
       });
-      
+
       // If includeBadges=true, fetch badges for each customer
       if (includeBadges) {
         const customersWithBadges = await Promise.all(
@@ -4409,7 +4501,7 @@ Important:
         );
         return res.json(customersWithBadges);
       }
-      
+
       res.json(customersWithPayLaterBadge);
     } catch (error) {
       console.error("Error fetching customers:", error);
@@ -4420,15 +4512,15 @@ Important:
   app.get('/api/customers/check-duplicate/:facebookId', async (req, res) => {
     try {
       const facebookId = req.params.facebookId;
-      
+
       if (!facebookId) {
         return res.status(400).json({ message: "Facebook ID is required" });
       }
-      
+
       // Get all customers and find one with matching Facebook ID
       const customers = await storage.getCustomers();
       const existingCustomer = customers.find(c => c.facebookId === facebookId);
-      
+
       if (existingCustomer) {
         res.json({
           exists: true,
@@ -4447,15 +4539,15 @@ Important:
   app.get('/api/customers/:id/order-count', async (req, res) => {
     try {
       const customerId = req.params.id;
-      
+
       if (!customerId) {
         return res.status(400).json({ message: "Customer ID is required" });
       }
-      
+
       // Get all orders for this customer
       const allOrders = await storage.getOrders();
       const customerOrders = allOrders.filter(order => order.customerId === customerId);
-      
+
       res.json({ count: customerOrders.length });
     } catch (error) {
       console.error("Error fetching customer order count:", error);
@@ -4467,7 +4559,7 @@ Important:
     try {
       const data = insertCustomerSchema.parse(req.body);
       const customer = await storage.createCustomer(data);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'created',
@@ -4475,7 +4567,7 @@ Important:
         entityId: customer.id,
         description: `Created customer: ${customer.name}`,
       });
-      
+
       res.json(customer);
     } catch (error) {
       console.error("Error creating customer:", error);
@@ -4489,33 +4581,33 @@ Important:
       if (!customer) {
         return res.status(404).json({ message: "Customer not found" });
       }
-      
+
       // Get all orders for this customer to calculate Pay Later badge
       const allOrders = await storage.getOrders();
       const customerOrders = allOrders.filter(order => order.customerId === customer.id);
-      
+
       // Calculate Pay Later percentage
       const payLaterOrders = customerOrders.filter(order => order.paymentStatus === 'pay_later');
       const payLaterPercentage = customerOrders.length > 0 
         ? (payLaterOrders.length / customerOrders.length) * 100 
         : 0;
-      
+
       // Add Pay Later badge if customer has >= 50% Pay Later orders and at least 2 orders
       const hasPayLaterBadge = customerOrders.length >= 2 && payLaterPercentage >= 50;
-      
+
       const customerWithBadge: any = {
         ...customer,
         hasPayLaterBadge,
         payLaterPercentage: Math.round(payLaterPercentage),
         totalOrders: customerOrders.length
       };
-      
+
       // Include badges if requested via query parameter
       if (req.query.includeBadges === 'true') {
         const badges = await storage.getCustomerBadges(req.params.id);
         customerWithBadge.badges = badges;
       }
-      
+
       res.json(customerWithBadge);
     } catch (error) {
       console.error("Error fetching customer:", error);
@@ -4527,11 +4619,11 @@ Important:
     try {
       const updates = req.body;
       const customer = await storage.updateCustomer(req.params.id, updates);
-      
+
       if (!customer) {
         return res.status(404).json({ message: "Customer not found" });
       }
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated',
@@ -4539,7 +4631,7 @@ Important:
         entityId: customer.id,
         description: `Updated customer: ${customer.name}`,
       });
-      
+
       res.json(customer);
     } catch (error) {
       console.error("Error updating customer:", error);
@@ -4553,9 +4645,9 @@ Important:
       if (!customer) {
         return res.status(404).json({ message: "Customer not found" });
       }
-      
+
       await storage.deleteCustomer(req.params.id);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'deleted',
@@ -4563,24 +4655,24 @@ Important:
         entityId: req.params.id,
         description: `Deleted customer: ${customer.name}`,
       });
-      
+
       res.status(204).send();
     } catch (error: any) {
       console.error("Error deleting customer:", error);
-      
+
       // Check if it's a foreign key constraint error
       if (error.code === '23503' || error.message?.includes('constraint')) {
         return res.status(409).json({ 
           message: "Cannot delete customer - they have existing orders" 
         });
       }
-      
+
       res.status(500).json({ message: "Failed to delete customer" });
     }
   });
 
   // Customer Badge endpoints
-  app.get('/api/customers/:id/badges', async (req, res) => {
+  app.get('/api/customers/:id/badges', async(req, res) => {
     try {
       const badges = await storage.getCustomerBadges(req.params.id);
       res.json(badges);
@@ -4642,22 +4734,22 @@ Important:
   app.post('/api/customers/:customerId/shipping-addresses', async (req: any, res) => {
     try {
       const { customerId } = req.params;
-      
+
       // Validate required fields
       const requiredFields = ['firstName', 'lastName', 'street', 'city', 'zipCode', 'country'];
       const missingFields = requiredFields.filter(field => !req.body[field]);
-      
+
       if (missingFields.length > 0) {
         return res.status(400).json({ 
           message: `Missing required fields: ${missingFields.join(', ')}` 
         });
       }
-      
+
       const address = await storage.createCustomerShippingAddress({
         customerId,
         ...req.body
       });
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'created',
@@ -4665,7 +4757,7 @@ Important:
         entityId: address.id,
         description: `Created shipping address for customer ${customerId}`,
       });
-      
+
       res.status(201).json(address);
     } catch (error: any) {
       console.error("Error creating shipping address:", error);
@@ -4677,29 +4769,29 @@ Important:
   app.patch('/api/customers/:customerId/shipping-addresses/:addressId', async (req: any, res) => {
     try {
       const { customerId, addressId } = req.params;
-      
+
       // Validate required fields if they are being updated
       const requiredFields = ['firstName', 'lastName', 'street', 'city', 'zipCode', 'country'];
       const fieldsToUpdate = Object.keys(req.body);
       const invalidFields = requiredFields.filter(field => 
         fieldsToUpdate.includes(field) && !req.body[field]
       );
-      
+
       if (invalidFields.length > 0) {
         return res.status(400).json({ 
           message: `These required fields cannot be empty: ${invalidFields.join(', ')}` 
         });
       }
-      
+
       const address = await storage.updateCustomerShippingAddress(addressId, {
         ...req.body,
         customerId // Ensure customer ID doesn't change
       });
-      
+
       if (!address) {
         return res.status(404).json({ message: 'Address not found' });
       }
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated',
@@ -4707,7 +4799,7 @@ Important:
         entityId: addressId,
         description: `Updated shipping address for customer ${customerId}`,
       });
-      
+
       res.json(address);
     } catch (error: any) {
       console.error("Error updating shipping address:", error);
@@ -4719,25 +4811,25 @@ Important:
   app.patch('/api/shipping-addresses/:id', async (req: any, res) => {
     try {
       const { id } = req.params;
-      
+
       // Validate required fields if they are being updated
       const requiredFields = ['firstName', 'lastName', 'street', 'city', 'zipCode', 'country'];
       const fieldsToUpdate = Object.keys(req.body);
       const invalidFields = requiredFields.filter(field => 
         fieldsToUpdate.includes(field) && !req.body[field]
       );
-      
+
       if (invalidFields.length > 0) {
         return res.status(400).json({ 
           message: `Cannot set required fields to empty: ${invalidFields.join(', ')}` 
         });
       }
-      
+
       const address = await storage.updateCustomerShippingAddress(id, req.body);
       if (!address) {
         return res.status(404).json({ message: 'Address not found' });
       }
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated',
@@ -4745,7 +4837,7 @@ Important:
         entityId: address.id,
         description: `Updated shipping address`,
       });
-      
+
       res.json(address);
     } catch (error: any) {
       console.error("Error updating shipping address:", error);
@@ -4761,7 +4853,7 @@ Important:
       if (!success) {
         return res.status(404).json({ message: 'Address not found' });
       }
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'deleted',
@@ -4769,7 +4861,7 @@ Important:
         entityId: id,
         description: `Deleted shipping address`,
       });
-      
+
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting shipping address:", error);
@@ -4781,7 +4873,7 @@ Important:
     try {
       const { customerId, addressId } = req.params;
       await storage.setPrimaryShippingAddress(customerId, addressId);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated',
@@ -4789,7 +4881,7 @@ Important:
         entityId: addressId,
         description: `Set shipping address as primary for customer ${customerId}`,
       });
-      
+
       res.json({ success: true });
     } catch (error) {
       console.error("Error setting primary shipping address:", error);
@@ -4800,10 +4892,10 @@ Important:
   app.delete('/api/customers/:customerId/shipping-addresses/:addressId/remove-primary', async (req: any, res) => {
     try {
       const { customerId, addressId } = req.params;
-      
+
       // Set this specific address to non-primary
       await storage.updateCustomerShippingAddress(addressId, { isPrimary: false });
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated',
@@ -4811,7 +4903,7 @@ Important:
         entityId: addressId,
         description: `Removed primary status from shipping address for customer ${customerId}`,
       });
-      
+
       res.json({ success: true });
     } catch (error) {
       console.error("Error removing primary shipping address:", error);
@@ -4848,16 +4940,16 @@ Important:
   app.post('/api/customers/:customerId/billing-addresses', async (req: any, res) => {
     try {
       const { customerId } = req.params;
-      
+
       // Validate request body and omit customerId to prevent override
       const validatedData = insertCustomerBillingAddressSchema.omit({ customerId: true }).parse(req.body);
-      
+
       // Create address with customerId from path parameter
       const address = await storage.createCustomerBillingAddress({
         ...validatedData,
         customerId,
       });
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'created',
@@ -4865,7 +4957,7 @@ Important:
         entityId: address.id,
         description: `Created billing address for customer ${customerId}`,
       });
-      
+
       res.status(201).json(address);
     } catch (error) {
       console.error("Error creating billing address:", error);
@@ -4879,15 +4971,15 @@ Important:
   app.patch('/api/billing-addresses/:id', async (req: any, res) => {
     try {
       const { id } = req.params;
-      
+
       // Validate request body and omit customerId to prevent override
       const validatedData = insertCustomerBillingAddressSchema.partial().omit({ customerId: true }).parse(req.body);
-      
+
       const address = await storage.updateCustomerBillingAddress(id, validatedData);
       if (!address) {
         return res.status(404).json({ message: 'Address not found' });
       }
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated',
@@ -4895,7 +4987,7 @@ Important:
         entityId: address.id,
         description: `Updated billing address`,
       });
-      
+
       res.json(address);
     } catch (error) {
       console.error("Error updating billing address:", error);
@@ -4913,7 +5005,7 @@ Important:
       if (!success) {
         return res.status(404).json({ message: 'Address not found' });
       }
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'deleted',
@@ -4921,7 +5013,7 @@ Important:
         entityId: id,
         description: `Deleted billing address`,
       });
-      
+
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting billing address:", error);
@@ -4936,9 +5028,9 @@ Important:
       if (!address) {
         return res.status(404).json({ message: 'Address not found' });
       }
-      
+
       await storage.setPrimaryBillingAddress(address.customerId, id);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated',
@@ -4946,7 +5038,7 @@ Important:
         entityId: id,
         description: `Set billing address as primary for customer ${address.customerId}`,
       });
-      
+
       res.json({ success: true });
     } catch (error) {
       console.error("Error setting primary billing address:", error);
@@ -4975,11 +5067,11 @@ Important:
         validFrom: req.body.validFrom ? new Date(req.body.validFrom) : new Date(),
         validTo: req.body.validTo ? new Date(req.body.validTo) : undefined
       };
-      
+
       const data = insertCustomerPriceSchema.parse(priceData);
-      
+
       const price = await storage.createCustomerPrice(data);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'created',
@@ -4987,7 +5079,7 @@ Important:
         entityId: price.id,
         description: `Created custom price for customer ${req.params.customerId}`,
       });
-      
+
       res.json(price);
     } catch (error) {
       console.error("Error creating customer price:", error);
@@ -5006,14 +5098,14 @@ Important:
         validFrom: req.body.validFrom ? new Date(req.body.validFrom) : undefined,
         validTo: req.body.validTo ? new Date(req.body.validTo) : undefined
       };
-      
+
       // Remove undefined values
       Object.keys(updates).forEach(key => 
         updates[key] === undefined && delete updates[key]
       );
-      
+
       const price = await storage.updateCustomerPrice(req.params.id, updates);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated',
@@ -5021,7 +5113,7 @@ Important:
         entityId: price.id,
         description: `Updated customer price`,
       });
-      
+
       res.json(price);
     } catch (error) {
       console.error("Error updating customer price:", error);
@@ -5032,7 +5124,7 @@ Important:
   app.delete('/api/customer-prices/:id', async (req: any, res) => {
     try {
       await storage.deleteCustomerPrice(req.params.id);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'deleted',
@@ -5040,7 +5132,7 @@ Important:
         entityId: req.params.id,
         description: `Deleted customer price`,
       });
-      
+
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting customer price:", error);
@@ -5068,7 +5160,7 @@ Important:
       });
 
       const createdPrices = await storage.bulkCreateCustomerPrices(validatedPrices);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'created',
@@ -5076,7 +5168,7 @@ Important:
         entityId: req.params.customerId,
         description: `Bulk imported ${createdPrices.length} customer prices`,
       });
-      
+
       res.json(createdPrices);
     } catch (error) {
       console.error("Error bulk importing customer prices:", error);
@@ -5095,18 +5187,18 @@ Important:
         variantId?: string; 
         currency?: string;
       };
-      
+
       const price = await storage.getActiveCustomerPrice(
         req.params.customerId,
         productId,
         variantId,
         currency
       );
-      
+
       if (!price) {
         return res.status(404).json({ message: "No active price found" });
       }
-      
+
       res.json(price);
     } catch (error) {
       console.error("Error fetching active customer price:", error);
@@ -5121,7 +5213,7 @@ Important:
       const paymentStatus = req.query.paymentStatus as string;
       const customerId = req.query.customerId as string;
       const includeItems = req.query.includeItems === 'true';
-      
+
       let orders;
       // Special filter: pay_later means shipped orders with pay_later payment status
       if (status === 'pay_later') {
@@ -5138,18 +5230,18 @@ Important:
       } else {
         orders = await storage.getOrders();
       }
-      
+
       // If includeItems is requested, fetch order items for each order
       if (includeItems) {
         const ordersWithItems = await Promise.all(orders.map(async (order) => {
           const items = await storage.getOrderItems(order.id);
-          
+
           // For each item, check if it's part of a bundle and fetch bundle items
           const itemsWithBundleDetails = await Promise.all(items.map(async (item) => {
             // Fetch product details including shipping notes and packing material
             let shipmentNotes = null;
             let packingMaterial = null;
-            
+
             if (item.productId) {
               const product = await storage.getProductById(item.productId);
               if (product) {
@@ -5159,16 +5251,16 @@ Important:
                 }
               }
             }
-            
+
             // Check if the item name indicates it's a bundle product
             const bundles = await storage.getBundles();
             const isBundle = item.productName?.toLowerCase().includes('bundle') || 
                            item.productName?.toLowerCase().includes('kit') || 
                            item.productName?.toLowerCase().includes('collection') ||
                            item.productName?.toLowerCase().includes('set');
-            
+
             let bundleItemsData = [];
-            
+
             if (isBundle) {
               // Try to find the bundle by name match
               const bundle = bundles.find(b => 
@@ -5176,7 +5268,7 @@ Important:
                 b.name.includes(item.productName) ||
                 item.sku === b.sku
               );
-              
+
               if (bundle) {
                 // Fetch bundle items
                 const bundleItems = await storage.getBundleItems(bundle.id);
@@ -5184,12 +5276,12 @@ Important:
                   let productName = '';
                   let colorNumber = '';
                   let location = '';
-                  
+
                   if (bundleItem.productId) {
                     const product = await storage.getProductById(bundleItem.productId);
                     productName = product?.name || '';
                     location = product?.warehouseLocation || '';
-                    
+
                     if (bundleItem.variantId) {
                       const variants = await storage.getProductVariants(bundleItem.productId);
                       const variant = variants.find(v => v.id === bundleItem.variantId);
@@ -5203,19 +5295,19 @@ Important:
                       }
                     }
                   }
-                  
+
                   return {
                     id: bundleItem.id,
                     name: productName || bundleItem.notes || 'Bundle Item',
                     colorNumber: colorNumber || undefined,
                     quantity: bundleItem.quantity,
                     picked: false,
-                    location: location || undefined
+                    location: location || 'A1-R1-S1'
                   };
                 }));
               }
             }
-            
+
             return {
               ...item,
               isBundle: isBundle,
@@ -5224,13 +5316,13 @@ Important:
               packingMaterial
             };
           }));
-          
+
           return {
             ...order,
             items: itemsWithBundleDetails
           };
         }));
-        
+
         res.json(ordersWithItems);
       } else {
         res.json(orders);
@@ -5269,24 +5361,24 @@ Important:
       res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
       res.set('Pragma', 'no-cache');
       res.set('Expires', '0');
-      
+
       const status = req.query.status as string; // pending, picking, packing, ready
       const orders = await storage.getPickPackOrders(status);
-      
+
       // OPTIMIZATION 1: Fetch bundles ONCE for all orders (not inside loops)
       const allBundles = await storage.getBundles();
       const bundleMap = new Map(allBundles.map(b => [b.name, b]));
-      
+
       // OPTIMIZATION 2: Batch fetch all order items
       const allOrderItemsArrays = await Promise.all(
         orders.map(order => storage.getOrderItems(order.id))
       );
-      
+
       // OPTIMIZATION 3: Identify all bundles needed and collect product/variant IDs
       const bundleIds = new Set<string>();
       const productIds = new Set<string>();
       const variantRequests = new Map<string, Set<string>>(); // productId -> variantIds
-      
+
       // First pass: identify bundles in use AND collect product IDs from all order items
       for (const items of allOrderItemsArrays) {
         for (const item of items) {
@@ -5294,7 +5386,7 @@ Important:
           if (item.productId) {
             productIds.add(item.productId);
           }
-          
+
           // Check if this is a bundle
           for (const [bundleName, bundle] of Array.from(bundleMap.entries())) {
             if (item.productName && item.productName.includes(bundleName)) {
@@ -5304,7 +5396,7 @@ Important:
           }
         }
       }
-      
+
       // OPTIMIZATION 4: Batch fetch all bundle items
       const bundleItemsMap = new Map<string, any[]>();
       if (bundleIds.size > 0) {
@@ -5313,15 +5405,15 @@ Important:
             storage.getBundleItems(bundleId).then(items => ({ bundleId, items }))
           )
         );
-        
+
         for (const { bundleId, items } of bundleItemsResults) {
           bundleItemsMap.set(bundleId, items);
-          
+
           // Collect product and variant IDs from bundle items
           for (const bundleItem of items) {
             if (bundleItem.productId) {
               productIds.add(bundleItem.productId);
-              
+
               if (bundleItem.variantId) {
                 if (!variantRequests.has(bundleItem.productId)) {
                   variantRequests.set(bundleItem.productId, new Set());
@@ -5332,7 +5424,7 @@ Important:
           }
         }
       }
-      
+
       // OPTIMIZATION 5: Batch fetch all products
       const productsMap = new Map<string, any>();
       if (productIds.size > 0) {
@@ -5341,14 +5433,14 @@ Important:
             storage.getProductById(productId).then(product => ({ productId, product }))
           )
         );
-        
+
         for (const { productId, product } of productsResults) {
           if (product) {
             productsMap.set(productId, product);
           }
         }
       }
-      
+
       // OPTIMIZATION 6: Batch fetch all variants
       const variantsMap = new Map<string, Map<string, any>>();
       if (variantRequests.size > 0) {
@@ -5357,21 +5449,21 @@ Important:
             storage.getProductVariants(productId).then(variants => ({ productId, variants }))
           )
         );
-        
+
         for (const { productId, variants } of variantsResults) {
           variantsMap.set(productId, new Map(variants.map(v => [v.id, v])));
         }
       }
-      
+
       // OPTIMIZATION 7: Assemble response using lookup maps (O(1) access)
       const ordersWithItems = orders.map((order, orderIndex) => {
         const items = allOrderItemsArrays[orderIndex];
-        
+
         const itemsWithBundleDetails = items.map(item => {
           // Get product image from products map
           const product = item.productId ? productsMap.get(item.productId) : null;
           const imageUrl = product?.imageUrl || null;
-          
+
           // Check if this product is a bundle (using pre-fetched bundle map)
           let matchedBundle = null;
           for (const [bundleName, bundle] of Array.from(bundleMap.entries())) {
@@ -5380,16 +5472,16 @@ Important:
               break;
             }
           }
-          
+
           if (matchedBundle && bundleItemsMap.has(matchedBundle.id)) {
             const bundleItems = bundleItemsMap.get(matchedBundle.id) || [];
             const bundleItemsWithDetails = bundleItems.map(bundleItem => {
               let productName = '';
-              
+
               if (bundleItem.productId) {
                 const product = productsMap.get(bundleItem.productId);
                 productName = product?.name || '';
-                
+
                 if (bundleItem.variantId) {
                   const productVariants = variantsMap.get(bundleItem.productId);
                   if (productVariants) {
@@ -5400,7 +5492,7 @@ Important:
                   }
                 }
               }
-              
+
               return {
                 id: bundleItem.id,
                 name: productName || bundleItem.notes || 'Bundle Item',
@@ -5409,7 +5501,7 @@ Important:
                 location: item.warehouseLocation || 'A1-R1-S1'
               };
             });
-            
+
             return {
               ...item,
               image: imageUrl,
@@ -5417,27 +5509,27 @@ Important:
               bundleItems: bundleItemsWithDetails
             };
           }
-          
+
           return {
             ...item,
             image: imageUrl
           };
         });
-        
+
         return {
           ...order,
           // Keep the status already mapped by getPickPackStatus in storage layer
           items: itemsWithBundleDetails
         };
       });
-      
+
       res.json(ordersWithItems);
     } catch (error) {
       console.error("Error fetching pick-pack orders:", error);
       res.status(500).json({ message: "Failed to fetch pick-pack orders" });
     }
   });
-  
+
   // Get pick/pack performance predictions for current user
   app.get('/api/orders/pick-pack/predictions', async (req: any, res) => {
     try {
@@ -5454,7 +5546,7 @@ Important:
   app.post('/api/orders/:id/pick/start', async (req: any, res) => {
     try {
       const { employeeId } = req.body;
-      
+
       // Handle mock orders
       if (req.params.id.startsWith('mock-')) {
         return res.json({ 
@@ -5466,9 +5558,9 @@ Important:
           message: 'Mock order picking started' 
         });
       }
-      
+
       const order = await storage.startPickingOrder(req.params.id, employeeId || "test-user");
-      
+
       if (order) {
         await storage.createUserActivity({
           userId: "test-user",
@@ -5500,9 +5592,9 @@ Important:
           message: 'Mock order picking completed' 
         });
       }
-      
+
       const order = await storage.completePickingOrder(req.params.id);
-      
+
       if (order) {
         await storage.createUserActivity({
           userId: "test-user",
@@ -5525,7 +5617,7 @@ Important:
   app.post('/api/orders/:id/pack/start', async (req: any, res) => {
     try {
       const { employeeId } = req.body;
-      
+
       // Handle mock orders
       if (req.params.id.startsWith('mock-')) {
         return res.json({ 
@@ -5537,9 +5629,9 @@ Important:
           message: 'Mock order packing started' 
         });
       }
-      
+
       const order = await storage.startPackingOrder(req.params.id, employeeId || "test-user");
-      
+
       if (order) {
         await storage.createUserActivity({
           userId: "test-user",
@@ -5562,7 +5654,7 @@ Important:
   app.post('/api/orders/:id/pack/complete', async (req: any, res) => {
     try {
       const { cartons, packageWeight, printedDocuments, packingChecklist, packingMaterialsApplied, selectedDocumentIds } = req.body;
-      
+
       // Handle mock orders
       if (req.params.id.startsWith('mock-')) {
         return res.json({ 
@@ -5575,7 +5667,7 @@ Important:
           message: 'Mock order packing completed' 
         });
       }
-      
+
       // Update order with weight and complete packing
       const updateData: any = {
         packStatus: 'completed',
@@ -5584,13 +5676,13 @@ Important:
         finalWeight: parseFloat(packageWeight) || 0,
         cartonUsed: cartons?.length > 0 ? cartons.map((c: any) => c.cartonName).join(', ') : ''
       };
-      
+
       // Update includedDocuments with selected product document IDs (merge with existing)
       if (selectedDocumentIds && Array.isArray(selectedDocumentIds)) {
         try {
           const order = await storage.getOrderById(req.params.id);
           const currentIncludedDocs = (order?.includedDocuments || {}) as any;
-          
+
           updateData.includedDocuments = {
             ...currentIncludedDocs,
             fileIds: selectedDocumentIds
@@ -5603,20 +5695,20 @@ Important:
           };
         }
       }
-      
+
       await storage.updateOrder(req.params.id, updateData);
-      
+
       // Process packing materials - decrease stock and create usage records
       if (packingMaterialsApplied && typeof packingMaterialsApplied === 'object') {
         const appliedMaterialIds = Object.keys(packingMaterialsApplied).filter(
           (materialId) => packingMaterialsApplied[materialId] === true
         );
-        
+
         for (const materialId of appliedMaterialIds) {
           try {
             // Decrease stock quantity by 1 for each applied material
             await storage.decreasePackingMaterialStock(materialId, 1);
-            
+
             // Create usage record
             await storage.createPackingMaterialUsage({
               orderId: req.params.id,
@@ -5630,9 +5722,9 @@ Important:
           }
         }
       }
-      
+
       const order = await storage.getOrderById(req.params.id);
-      
+
       if (order) {
         await storage.createUserActivity({
           userId: "test-user",
@@ -5651,201 +5743,11 @@ Important:
     }
   });
 
-  // Update picked quantity for an order item
-  app.patch('/api/orders/:id/items/:itemId/pick', async (req: any, res) => {
-    try {
-      const { pickedQuantity } = req.body;
-      
-      // Handle mock orders
-      if (req.params.id.startsWith('mock-')) {
-        return res.json({ 
-          id: req.params.itemId, 
-          pickedQuantity,
-          message: 'Mock item picked quantity updated' 
-        });
-      }
-      
-      // Get current item details before update
-      const currentItems = await storage.getOrderItems(req.params.id);
-      const currentItem = currentItems.find(i => i.id === req.params.itemId);
-      
-      // Update the picked quantity with timestamp
-      const item = await storage.updateOrderItemPickedQuantity(req.params.itemId, pickedQuantity, new Date());
-      
-      // Create detailed pick log
-      await storage.createPickPackLog({
-        orderId: req.params.id,
-        orderItemId: req.params.itemId,
-        activityType: 'item_picked',
-        userId: "test-user",
-        userName: "Test User",
-        productName: item.productName,
-        sku: item.sku || '',
-        quantity: pickedQuantity,
-        location: item.warehouseLocation || '',
-        notes: `Picked ${pickedQuantity} of ${item.quantity} units`,
-      });
-      
-      // Also log to user activities
-      await storage.createUserActivity({
-        userId: "test-user",
-        action: 'updated_pick_quantity',
-        entityType: 'order_item',
-        entityId: req.params.itemId,
-        description: `Updated picked quantity to ${pickedQuantity} for item ${item.productName}`,
-      });
-      
-      res.json(item);
-    } catch (error) {
-      console.error("Error updating picked quantity:", error);
-      res.status(500).json({ message: "Failed to update picked quantity" });
-    }
-  });
-
-  // Update packed quantity for an order item
-  app.patch('/api/orders/:id/items/:itemId/pack', async (req: any, res) => {
-    try {
-      const { packedQuantity } = req.body;
-      
-      // Handle mock orders
-      if (req.params.id.startsWith('mock-')) {
-        return res.json({ 
-          id: req.params.itemId, 
-          packedQuantity,
-          message: 'Mock item packed quantity updated' 
-        });
-      }
-      
-      const item = await storage.updateOrderItemPackedQuantity(req.params.itemId, packedQuantity);
-      
-      await storage.createUserActivity({
-        userId: "test-user",
-        action: 'updated_pack_quantity',
-        entityType: 'order_item',
-        entityId: req.params.itemId,
-        description: `Updated packed quantity to ${packedQuantity} for item ${item.productName}`,
-      });
-      
-      res.json(item);
-    } catch (error) {
-      console.error("Error updating packed quantity:", error);
-      res.status(500).json({ message: "Failed to update packed quantity" });
-    }
-  });
-
-  // Start picking an order
-  app.post('/api/orders/:id/pick/start', async (req: any, res) => {
-    try {
-      const { employeeId } = req.body;
-      
-      // Handle mock orders
-      if (req.params.id.startsWith('mock-')) {
-        return res.json({ 
-          id: req.params.id, 
-          orderId: req.params.id,
-          pickStatus: 'in_progress',
-          pickedBy: employeeId || "test-user",
-          pickStartTime: new Date().toISOString(),
-          message: 'Mock order picking started' 
-        });
-      }
-      
-      const order = await storage.startPickingOrder(req.params.id, employeeId || "test-user");
-      
-      if (order) {
-        await storage.createUserActivity({
-          userId: "test-user",
-          action: 'started_picking',
-          entityType: 'order',
-          entityId: req.params.id,
-          description: `Started picking order: ${order.orderId}`,
-        });
-        res.json(order);
-      } else {
-        res.status(404).json({ message: "Order not found" });
-      }
-    } catch (error) {
-      console.error("Error starting pick:", error);
-      res.status(500).json({ message: "Failed to start picking order" });
-    }
-  });
-
-  // Complete picking an order
-  app.post('/api/orders/:id/pick/complete', async (req: any, res) => {
-    try {
-      // Handle mock orders
-      if (req.params.id.startsWith('mock-')) {
-        return res.json({ 
-          id: req.params.id, 
-          orderId: req.params.id,
-          pickStatus: 'completed',
-          pickEndTime: new Date().toISOString(),
-          message: 'Mock order picking completed' 
-        });
-      }
-      
-      const order = await storage.completePickingOrder(req.params.id);
-      
-      if (order) {
-        await storage.createUserActivity({
-          userId: "test-user",
-          action: 'completed_picking',
-          entityType: 'order',
-          entityId: req.params.id,
-          description: `Completed picking order: ${order.orderId}`,
-        });
-        res.json(order);
-      } else {
-        res.status(404).json({ message: "Order not found" });
-      }
-    } catch (error) {
-      console.error("Error completing pick:", error);
-      res.status(500).json({ message: "Failed to complete picking order" });
-    }
-  });
-
-  // Start packing an order
-  app.post('/api/orders/:id/pack/start', async (req: any, res) => {
-    try {
-      const { employeeId } = req.body;
-      
-      // Handle mock orders
-      if (req.params.id.startsWith('mock-')) {
-        return res.json({ 
-          id: req.params.id, 
-          orderId: req.params.id,
-          packStatus: 'in_progress',
-          packedBy: employeeId || "test-user",
-          packStartTime: new Date().toISOString(),
-          message: 'Mock order packing started' 
-        });
-      }
-      
-      const order = await storage.startPackingOrder(req.params.id, employeeId || "test-user");
-      
-      if (order) {
-        await storage.createUserActivity({
-          userId: "test-user",
-          action: 'started_packing',
-          entityType: 'order',
-          entityId: req.params.id,
-          description: `Started packing order: ${order.orderId}`,
-        });
-        res.json(order);
-      } else {
-        res.status(404).json({ message: "Order not found" });
-      }
-    } catch (error) {
-      console.error("Error starting pack:", error);
-      res.status(500).json({ message: "Failed to start packing order" });
-    }
-  });
-
   // Create packing session
   app.post('/api/packing/sessions', async (req, res) => {
     try {
       const { orderId, packerId } = req.body;
-      
+
       const session = {
         id: `pack-session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         orderId,
@@ -5869,7 +5771,7 @@ Important:
         cartons: [],
         notes: []
       };
-      
+
       // In production, save to database
       res.json(session);
     } catch (error) {
@@ -5883,14 +5785,14 @@ Important:
     try {
       const { sessionId } = req.params;
       const updates = req.body;
-      
+
       // In production, fetch from database
       const updatedSession = {
         id: sessionId,
         ...updates,
         lastUpdated: new Date().toISOString()
       };
-      
+
       res.json(updatedSession);
     } catch (error) {
       console.error('Error updating packing session:', error);
@@ -5902,7 +5804,7 @@ Important:
   app.get('/api/packing/sessions/:sessionId', async (req, res) => {
     try {
       const { sessionId } = req.params;
-      
+
       // In production, fetch from database
       const session = {
         id: sessionId,
@@ -5916,7 +5818,7 @@ Important:
           paused: false
         }
       };
-      
+
       res.json(session);
     } catch (error) {
       console.error('Error fetching packing session:', error);
@@ -5935,7 +5837,7 @@ Important:
         multiCartonOptimization,
         selectedDocumentIds
       } = req.body;
-      
+
       // Store packing details
       const packingDetails = {
         orderId: req.params.id,
@@ -5946,20 +5848,20 @@ Important:
         multiCartonEnabled: multiCartonOptimization,
         createdAt: new Date()
       };
-      
+
       // Update order's includedDocuments with selected product documents
       if (selectedDocumentIds && Array.isArray(selectedDocumentIds)) {
         try {
           // Get current order to merge with existing includedDocuments
           const order = await storage.getOrderById(req.params.id);
           const currentIncludedDocs = (order?.includedDocuments || {}) as any;
-          
+
           // Merge selected document IDs while preserving other fields
           const updatedIncludedDocs = {
             ...currentIncludedDocs,
             fileIds: selectedDocumentIds
           };
-          
+
           await storage.updateOrder(req.params.id, {
             includedDocuments: updatedIncludedDocs
           });
@@ -5968,7 +5870,7 @@ Important:
           // Don't fail the whole request if this fails
         }
       }
-      
+
       // Log packing details activity
       await storage.createPickPackLog({
         orderId: req.params.id,
@@ -5982,7 +5884,7 @@ Important:
         location: '',
         notes: `Saved packing details: ${cartons?.length || 0} carton(s), weight: ${packageWeight}kg`,
       });
-      
+
       res.json({ success: true, packingDetails });
     } catch (error) {
       console.error("Error saving packing details:", error);
@@ -6041,27 +5943,27 @@ Important:
     try {
       const { id } = req.params;
       const force = req.query.force === 'true';
-      
+
       // Load shipping settings
       const shippingSettings = await getSettingsByCategory('shipping');
       const enableTracking = shippingSettings.enableTracking ?? true;
       const trackingUpdateFrequencyHours = shippingSettings.trackingUpdateFrequencyHours ?? 1;
-      
+
       // Guard: Return empty if tracking disabled
       if (!enableTracking) {
         return res.json([]);
       }
-      
+
       // Create service with configured frequency
       const trackingService = new TrackingService(trackingUpdateFrequencyHours);
       let tracking = await trackingService.getOrderTracking(id);
-      
+
       // If no tracking exists, create it from order cartons
       if (tracking.length === 0) {
         await trackingService.createTrackingForOrder(id);
         tracking = await trackingService.getOrderTracking(id);
       }
-      
+
       // Force refresh if requested
       if (force) {
         for (const t of tracking) {
@@ -6069,7 +5971,7 @@ Important:
         }
         tracking = await trackingService.getOrderTracking(id);
       }
-      
+
       res.json(tracking);
     } catch (error: any) {
       console.error('Error fetching tracking:', error);
@@ -6081,17 +5983,17 @@ Important:
   app.patch('/api/tracking/:id/refresh', async (req, res) => {
     try {
       const { id } = req.params;
-      
+
       // Load shipping settings
       const shippingSettings = await getSettingsByCategory('shipping');
       const enableTracking = shippingSettings.enableTracking ?? true;
       const trackingUpdateFrequencyHours = shippingSettings.trackingUpdateFrequencyHours ?? 1;
-      
+
       // Guard: Return error if tracking disabled
       if (!enableTracking) {
         return res.status(400).json({ error: 'Tracking is disabled' });
       }
-      
+
       // Create service with configured frequency
       const trackingService = new TrackingService(trackingUpdateFrequencyHours);
       const updated = await trackingService.refreshTracking(id);
@@ -6109,15 +6011,15 @@ Important:
       const shippingSettings = await getSettingsByCategory('shipping');
       const enableTracking = shippingSettings.enableTracking ?? true;
       const trackingUpdateFrequencyHours = shippingSettings.trackingUpdateFrequencyHours ?? 1;
-      
+
       // Guard: Return early if tracking disabled
       if (!enableTracking) {
         return res.json({ refreshed: 0, total: 0, message: 'Tracking is disabled' });
       }
-      
+
       // Calculate frequency in milliseconds
       const frequencyMs = trackingUpdateFrequencyHours * 60 * 60 * 1000;
-      
+
       // Get all tracking that hasn't been delivered
       const activeTracking = await db.query.shipmentTracking.findMany({
         where: and(
@@ -6129,10 +6031,10 @@ Important:
           )
         )
       });
-      
+
       // Create service with configured frequency
       const trackingService = new TrackingService(trackingUpdateFrequencyHours);
-      
+
       let refreshed = 0;
       for (const tracking of activeTracking) {
         try {
@@ -6142,7 +6044,7 @@ Important:
           console.error(`Failed to refresh tracking ${tracking.id}:`, error);
         }
       }
-      
+
       res.json({ refreshed, total: activeTracking.length });
     } catch (error: any) {
       console.error('Error in bulk refresh:', error);
@@ -6159,13 +6061,13 @@ Important:
         'Expires': '0',
         'Surrogate-Control': 'no-store'
       });
-      
+
       const includeBadges = req.query.includeBadges === 'true';
       const order = await storage.getOrderById(req.params.id);
       if (!order) {
         return res.status(404).json({ message: "Order not found" });
       }
-      
+
       // Enhance order items with landing costs and images
       if (order.items && order.items.length > 0) {
         const itemsWithEnhancements = await Promise.all(order.items.map(async (item) => {
@@ -6176,7 +6078,7 @@ Important:
               .from(products)
               .where(eq(products.id, item.productId))
               .limit(1);
-            
+
             return {
               ...item,
               landingCost: productData?.latestLandingCost || null,
@@ -6184,7 +6086,7 @@ Important:
               image: item.image || productData?.imageUrl || null
             };
           }
-          
+
           // Handle bundles
           if (item.bundleId) {
             const [bundleData] = await db
@@ -6192,14 +6094,14 @@ Important:
               .from(productBundles)
               .where(eq(productBundles.id, item.bundleId))
               .limit(1);
-            
+
             return {
               ...item,
               // If order item doesn't have image, populate from bundle
               image: item.image || bundleData?.imageUrl || null
             };
           }
-          
+
           // Handle bundles with missing bundleId (legacy orders) - lookup by name
           if (!item.productId && !item.serviceId && item.productName) {
             const [bundleData] = await db
@@ -6207,7 +6109,7 @@ Important:
               .from(productBundles)
               .where(eq(productBundles.name, item.productName))
               .limit(1);
-            
+
             if (bundleData) {
               return {
                 ...item,
@@ -6216,19 +6118,19 @@ Important:
               };
             }
           }
-          
+
           return item;
         }));
-        
+
         order.items = itemsWithEnhancements;
       }
-      
+
       // If includeBadges=true and order has a customer, fetch customer badges
       if (includeBadges && order.customer && order.customer.id) {
         const badges = await storage.getCustomerBadges(order.customer.id);
         order.customer = { ...order.customer, badges };
       }
-      
+
       res.json(order);
     } catch (error) {
       console.error("Error fetching order:", error);
@@ -6250,37 +6152,37 @@ Important:
   app.post('/api/orders', async (req: any, res) => {
     try {
       const { items, selectedDocumentIds, ...orderData } = req.body;
-      
+
       // Load order settings FIRST (before any processing)
       const orderSettings = await getSettingsByCategory('order');
-      
+
       // Validation 1: Require Customer Email
       if (orderSettings.requireCustomerEmail) {
         if (!orderData.customerEmail || !orderData.customerEmail.trim()) {
           return res.status(400).json({ error: 'Customer email is required' });
         }
       }
-      
+
       // Validation 4: Require Shipping Address
       if (orderSettings.requireShippingAddress) {
         if (!orderData.shippingAddressId && !orderData.shippingAddress) {
           return res.status(400).json({ error: 'Shipping address is required' });
         }
       }
-      
+
       // Validation 5: Require Phone Number
       if (orderSettings.requirePhoneNumber) {
         if (!orderData.customerPhone || !orderData.customerPhone.trim()) {
           return res.status(400).json({ error: 'Customer phone number is required' });
         }
       }
-      
+
       // Get orderType from request body, default to 'ord'
       const orderType = orderData.orderType || 'ord';
-      
+
       // Generate order ID with the specified order type
       const orderId = await storage.generateOrderId(orderType);
-      
+
       // Process selectedDocumentIds and merge into includedDocuments
       let finalOrderData = { ...orderData };
       if (selectedDocumentIds !== undefined) {
@@ -6292,26 +6194,26 @@ Important:
         };
         console.log('Merged selectedDocumentIds into includedDocuments:', finalOrderData.includedDocuments);
       }
-      
+
       const data = insertOrderSchema.parse({
         ...finalOrderData,
         orderId,
         orderType,
         billerId: req.user?.id || null,
       });
-      
+
       // Validation 2: Block Duplicate Orders
       if (orderSettings.blockDuplicateOrdersHours && orderSettings.blockDuplicateOrdersHours > 0) {
         const hoursMs = orderSettings.blockDuplicateOrdersHours * 60 * 60 * 1000;
         const cutoffTime = new Date(Date.now() - hoursMs);
-        
+
         const customerId = data.customerId || null;
         // Normalize email to lowercase for case-insensitive matching
         const normalizedEmail = data.customerEmail?.trim().toLowerCase() || null;
         const normalizedPhone = normalizePhone(data.customerPhone);
-        
+
         let recentOrders = [];
-        
+
         if (customerId) {
           // Registered user: check by customer_id only
           recentOrders = await db
@@ -6327,16 +6229,16 @@ Important:
         } else {
           // Guest order: check BOTH email AND phone (not mutually exclusive!)
           const guestConditions = [];
-          
+
           if (normalizedEmail) {
             // Use LOWER() in SQL for case-insensitive comparison
             guestConditions.push(sql`LOWER(TRIM(customer_email)) = ${normalizedEmail}`);
           }
-          
+
           if (normalizedPhone) {
             guestConditions.push(sql`REGEXP_REPLACE(customer_phone, '[^0-9+]', '', 'g') = ${normalizedPhone}`);
           }
-          
+
           // Only run query if we have at least one guest identifier
           if (guestConditions.length > 0) {
             recentOrders = await db
@@ -6352,14 +6254,14 @@ Important:
               .limit(1);
           }
         }
-        
+
         if (recentOrders.length > 0) {
           return res.status(400).json({ 
             error: `Duplicate order detected. Please wait ${orderSettings.blockDuplicateOrdersHours} hours before placing another order.` 
           });
         }
       }
-      
+
       // Validation 3: Minimum Order Value (Bug Fix 1: Validate AFTER schema parsing for proper number handling)
       if (orderSettings.minimumOrderValue && orderSettings.minimumOrderValue > 0) {
         const grandTotal = parseFloat(data.grandTotal || '0');
@@ -6369,9 +6271,9 @@ Important:
           });
         }
       }
-      
+
       const order = await storage.createOrder(data);
-      
+
       // Create order items
       if (items && items.length > 0) {
         console.log('Creating order items, items received:', JSON.stringify(items));
@@ -6408,7 +6310,7 @@ Important:
       } else {
         console.log('No items to create or empty items array');
       }
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'create',
@@ -6416,7 +6318,7 @@ Important:
         entityId: order.id,
         description: `Created order: ${order.orderId}`,
       });
-      
+
       // Fetch the complete order with items to return
       const completeOrder = await storage.getOrderById(order.id);
       res.json(completeOrder);
@@ -6430,16 +6332,16 @@ Important:
     try {
       console.log('PATCH /api/orders/:id - Received body:', req.body);
       const { items, selectedDocumentIds, ...orderUpdates } = req.body;
-      
+
       const updates = { ...orderUpdates };
-      
+
       // Process selectedDocumentIds - save to dedicated column
       if (selectedDocumentIds !== undefined) {
         // Save to the selectedDocumentIds column directly
         updates.selectedDocumentIds = selectedDocumentIds || [];
         console.log('✅ Saving selectedDocumentIds to database:', updates.selectedDocumentIds);
       }
-      
+
       // Convert all date fields from strings to Date objects
       const dateFields = ['pickStartTime', 'pickEndTime', 'packStartTime', 'packEndTime', 'shippedAt', 'createdAt', 'updatedAt'];
       dateFields.forEach(field => {
@@ -6459,26 +6361,26 @@ Important:
           }
         }
       });
-      
+
       // Remove undefined fields
       Object.keys(updates).forEach(key => 
         updates[key] === undefined && delete updates[key]
       );
-      
+
       console.log('Updates after date conversion:', updates);
-      
+
       const order = await storage.updateOrder(req.params.id, updates);
-      
+
       // Check if order exists
       if (!order) {
         return res.status(404).json({ message: "Order not found" });
       }
-      
+
       // Update order items if provided
       if (items && Array.isArray(items)) {
         // Delete existing items and add new ones
         await storage.deleteOrderItems(req.params.id);
-        
+
         // Add new items
         for (const item of items) {
           const orderDetail = await storage.getOrderById(req.params.id);
@@ -6505,7 +6407,7 @@ Important:
           });
         }
       }
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'update',
@@ -6513,7 +6415,7 @@ Important:
         entityId: order.id,
         description: `Updated order: ${order.orderId}`,
       });
-      
+
       res.json(order);
     } catch (error) {
       console.error("Error updating order:", error);
@@ -6525,9 +6427,9 @@ Important:
   app.patch('/api/orders/:orderId/items/:itemId', async (req: any, res) => {
     try {
       const { pickedQuantity, packedQuantity, ...otherUpdates } = req.body;
-      
+
       let updatedItem;
-      
+
       // Handle specific quantity updates
       if (pickedQuantity !== undefined) {
         updatedItem = await storage.updateOrderItemPickedQuantity(req.params.itemId, pickedQuantity);
@@ -6539,7 +6441,7 @@ Important:
       } else {
         return res.status(400).json({ message: "No updates provided" });
       }
-      
+
       res.json(updatedItem);
     } catch (error) {
       console.error("Error updating order item:", error);
@@ -6552,15 +6454,15 @@ Important:
     try {
       const { id } = req.params;
       const order = await storage.getOrder(id);
-      
+
       if (!order) {
         return res.status(404).json({ message: 'Order not found' });
       }
-      
+
       // Check if order is in ready state and has been modified
       if (order.orderStatus === 'ready_to_ship' && order.packStatus === 'completed') {
         const { modificationNotes } = req.body;
-        
+
         // Mark order as modified
         const updatedOrder = await storage.updateOrder(id, {
           modifiedAfterPacking: true,
@@ -6568,7 +6470,7 @@ Important:
           lastModifiedAt: new Date(),
           previousPackStatus: order.packStatus
         });
-        
+
         // Log the modification
         await storage.createPickPackLog({
           orderId: id,
@@ -6577,7 +6479,7 @@ Important:
           userName: req.user?.firstName || 'System',
           notes: modificationNotes || 'Order modified after packing'
         });
-        
+
         res.json({
           modified: true,
           order: updatedOrder,
@@ -6601,14 +6503,14 @@ Important:
   app.post('/api/orders/batch-undo-ship', async (req: any, res) => {
     try {
       const { orderIds } = req.body;
-      
+
       if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
         return res.status(400).json({ message: "Order IDs array is required" });
       }
-      
+
       const results = [];
       const errors = [];
-      
+
       // Process all orders in parallel for better performance
       const updatePromises = orderIds.map(async (orderId) => {
         try {
@@ -6616,15 +6518,15 @@ Important:
           if (orderId.startsWith('mock-')) {
             return { id: orderId, success: true, message: 'Mock order unshipped' };
           }
-          
+
           const updates = {
             orderStatus: 'ready_to_ship' as const,
             packStatus: 'completed' as const,
             shippedAt: null
           };
-          
+
           const order = await storage.updateOrder(orderId, updates);
-          
+
           if (order) {
             // Log the undo action
             await storage.createPickPackLog({
@@ -6634,7 +6536,7 @@ Important:
               userName: 'System',
               notes: `Order ${order.orderId} shipment undone`,
             });
-            
+
             return { id: orderId, success: true, order };
           } else {
             return { id: orderId, success: false, error: 'Order not found' };
@@ -6644,10 +6546,10 @@ Important:
           return { id: orderId, success: false, error: error.message || 'Unknown error' };
         }
       });
-      
+
       // Wait for all updates to complete
       const allResults = await Promise.all(updatePromises);
-      
+
       // Separate successful and failed updates
       allResults.forEach(result => {
         if (result.success) {
@@ -6656,7 +6558,7 @@ Important:
           errors.push(result);
         }
       });
-      
+
       res.json({
         success: true,
         unshipped: results.length,
@@ -6665,7 +6567,7 @@ Important:
         errors,
         message: `Successfully unshipped ${results.length} orders${errors.length > 0 ? `, ${errors.length} failed` : ''}`
       });
-      
+
     } catch (error) {
       console.error("Error in batch undo ship orders:", error);
       res.status(500).json({ message: "Failed to batch undo ship orders" });
@@ -6676,15 +6578,15 @@ Important:
   app.post('/api/orders/batch-ship', async (req: any, res) => {
     try {
       const { orderIds } = req.body;
-      
+
       if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
         return res.status(400).json({ message: "Order IDs array is required" });
       }
-      
+
       const shippedAt = new Date();
       const results = [];
       const errors = [];
-      
+
       // Process all orders in parallel for better performance
       const updatePromises = orderIds.map(async (orderId) => {
         try {
@@ -6692,15 +6594,15 @@ Important:
           if (orderId.startsWith('mock-')) {
             return { id: orderId, success: true, message: 'Mock order shipped' };
           }
-          
+
           const updates = {
             orderStatus: 'shipped' as const,
             packStatus: 'completed' as const,
             shippedAt
           };
-          
+
           const order = await storage.updateOrder(orderId, updates);
-          
+
           if (order) {
             // Log the shipping action
             await storage.createPickPackLog({
@@ -6710,7 +6612,7 @@ Important:
               userName: 'System',
               notes: `Order ${order.orderId} marked as shipped`,
             });
-            
+
             return { id: orderId, success: true, order };
           } else {
             return { id: orderId, success: false, error: 'Order not found' };
@@ -6720,10 +6622,10 @@ Important:
           return { id: orderId, success: false, error: error.message || 'Unknown error' };
         }
       });
-      
+
       // Wait for all updates to complete
       const allResults = await Promise.all(updatePromises);
-      
+
       // Separate successful and failed updates
       allResults.forEach(result => {
         if (result.success) {
@@ -6732,7 +6634,7 @@ Important:
           errors.push(result);
         }
       });
-      
+
       res.json({
         success: true,
         shipped: results.length,
@@ -6741,7 +6643,7 @@ Important:
         errors,
         message: `Successfully shipped ${results.length} orders${errors.length > 0 ? `, ${errors.length} failed` : ''}`
       });
-      
+
     } catch (error) {
       console.error("Error in batch ship orders:", error);
       res.status(500).json({ message: "Failed to batch ship orders" });
@@ -6752,7 +6654,7 @@ Important:
   app.patch('/api/orders/:id/status', async (req: any, res) => {
     try {
       const { status, orderStatus, pickStatus, packStatus, pickedBy, packedBy, pickStartTime, pickEndTime, packStartTime, packEndTime } = req.body;
-      
+
       const updates: any = {};
       // Support both 'status' and 'orderStatus' fields - map to orderStatus which is the DB field
       if (status) updates.orderStatus = status;
@@ -6768,37 +6670,37 @@ Important:
       } else if (pickStatus === 'in_progress' && !req.body.hasOwnProperty('pickStartTime')) {
         updates.pickStartTime = new Date();
       }
-      
+
       if (pickEndTime !== undefined) {
         updates.pickEndTime = pickEndTime ? new Date(pickEndTime) : null;
       } else if (pickStatus === 'completed' && !req.body.hasOwnProperty('pickEndTime')) {
         updates.pickEndTime = new Date();
       }
-      
+
       if (packStartTime !== undefined) {
         updates.packStartTime = packStartTime ? new Date(packStartTime) : null;
       } else if (packStatus === 'in_progress' && !req.body.hasOwnProperty('packStartTime')) {
         updates.packStartTime = new Date();
       }
-      
+
       if (packEndTime !== undefined) {
         updates.packEndTime = packEndTime ? new Date(packEndTime) : null;
       } else if (packStatus === 'completed' && !req.body.hasOwnProperty('packEndTime')) {
         updates.packEndTime = new Date();
       }
-      
+
       // Check if order is being marked as shipped
       if (updates.orderStatus === 'shipped') {
         updates.shippedAt = new Date();
       }
-      
+
       // Check if this is a mock order (skip database update)
       if (req.params.id.startsWith('mock-')) {
         return res.json({ id: req.params.id, ...updates, message: 'Mock order updated' });
       }
-      
+
       const order = await storage.updateOrder(req.params.id, updates);
-      
+
       if (order) {
         // Create pick/pack logs based on status changes
         if (pickStatus === 'in_progress' && pickedBy) {
@@ -6810,7 +6712,7 @@ Important:
             notes: `Started picking order ${order.orderId}`,
           });
         }
-        
+
         if (pickStatus === 'completed') {
           await storage.createPickPackLog({
             orderId: req.params.id,
@@ -6820,7 +6722,7 @@ Important:
             notes: `Completed picking order ${order.orderId}`,
           });
         }
-        
+
         if (packStatus === 'in_progress' && packedBy) {
           await storage.createPickPackLog({
             orderId: req.params.id,
@@ -6830,7 +6732,7 @@ Important:
             notes: `Started packing order ${order.orderId}`,
           });
         }
-        
+
         if (packStatus === 'completed') {
           await storage.createPickPackLog({
             orderId: req.params.id,
@@ -6840,7 +6742,7 @@ Important:
             notes: `Completed packing order ${order.orderId}`,
           });
         }
-        
+
         // Also keep the user activity log
         await storage.createUserActivity({
           userId: "test-user",
@@ -6865,9 +6767,9 @@ Important:
       if (!order) {
         return res.status(404).json({ message: "Order not found" });
       }
-      
+
       await storage.deleteOrder(req.params.id);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'delete',
@@ -6875,7 +6777,7 @@ Important:
         entityId: req.params.id,
         description: `Deleted order: ${order.orderId}`,
       });
-      
+
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting order:", error);
@@ -6890,7 +6792,7 @@ Important:
       if (!categoryName || !productName) {
         return res.status(400).json({ message: "Category name and product name are required" });
       }
-      
+
       const sku = await storage.generateSKU(categoryName, productName);
       res.json({ sku });
     } catch (error) {
@@ -6914,7 +6816,7 @@ Important:
     try {
       const data = insertPreOrderSchema.parse(req.body);
       const preOrder = await storage.createPreOrder(data);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'create',
@@ -6922,7 +6824,7 @@ Important:
         entityId: preOrder.id,
         description: `Created pre-order for: ${preOrder.customerName}`,
       });
-      
+
       res.json(preOrder);
     } catch (error) {
       console.error("Error creating pre-order:", error);
@@ -6933,7 +6835,7 @@ Important:
   app.delete('/api/pre-orders/:id', async (req: any, res) => {
     try {
       await storage.deletePreOrder(req.params.id);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'delete',
@@ -6941,7 +6843,7 @@ Important:
         entityId: req.params.id,
         description: `Deleted pre-order`,
       });
-      
+
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting pre-order:", error);
@@ -6984,7 +6886,7 @@ Important:
           break;
         }
       }
-      
+
       // Convert date strings to Date objects and prepare data for parsing
       const bodyWithDates = {
         ...req.body,
@@ -6993,10 +6895,10 @@ Important:
         date: req.body.date ? new Date(req.body.date) : undefined,
         dueDate: req.body.dueDate ? new Date(req.body.dueDate) : undefined,
       };
-      
+
       const data = insertExpenseSchema.parse(bodyWithDates);
       const expense = await storage.createExpense(data);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'create',
@@ -7004,7 +6906,7 @@ Important:
         entityId: expense.id,
         description: `Created expense: ${expense.name}`,
       });
-      
+
       res.json(expense);
     } catch (error) {
       console.error("Error creating expense:", error);
@@ -7021,7 +6923,7 @@ Important:
       }
 
       const expense = await storage.updateExpense(req.params.id, req.body);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'update',
@@ -7029,7 +6931,7 @@ Important:
         entityId: expense.id,
         description: `Updated expense: ${expense.name}`,
       });
-      
+
       res.json(expense);
     } catch (error) {
       console.error("Error updating expense:", error);
@@ -7043,9 +6945,9 @@ Important:
       if (!expense) {
         return res.status(404).json({ message: "Expense not found" });
       }
-      
+
       await storage.deleteExpense(req.params.id);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'delete',
@@ -7053,7 +6955,7 @@ Important:
         entityId: req.params.id,
         description: `Deleted expense: ${expense.name}`,
       });
-      
+
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting expense:", error);
@@ -7066,17 +6968,17 @@ Important:
     try {
       const { orderId, customerId } = req.query;
       let tickets = await storage.getTickets();
-      
+
       // Filter by orderId if provided
       if (orderId && typeof orderId === 'string') {
         tickets = tickets.filter(ticket => ticket.orderId === orderId);
       }
-      
+
       // Filter by customerId if provided
       if (customerId && typeof customerId === 'string') {
         tickets = tickets.filter(ticket => ticket.customerId === customerId);
       }
-      
+
       res.json(tickets);
     } catch (error) {
       console.error("Error fetching tickets:", error);
@@ -7104,16 +7006,16 @@ Important:
       const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
       const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
       const ticketId = `TKT-${dateStr}-${randomSuffix}`;
-      
+
       // Convert dueDate string to Date object if present
       let dueDate = null;
       if (req.body.dueDate && req.body.dueDate !== 'null' && req.body.dueDate !== '') {
         dueDate = new Date(req.body.dueDate);
       }
-      
+
       // Remove dueDate from req.body to avoid overwriting
       const { dueDate: _, ...restBody } = req.body;
-      
+
       // Convert empty strings to null for foreign key fields
       const cleanBody = {
         ...restBody,
@@ -7122,7 +7024,7 @@ Important:
         title: restBody.title?.trim() || null,
         description: restBody.description?.trim() || null,
       };
-      
+
       const bodyWithDefaults = {
         ...cleanBody,
         ticketId,
@@ -7130,10 +7032,10 @@ Important:
         category: req.body.category || 'general',
         dueDate
       };
-      
+
       const data = insertTicketSchema.parse(bodyWithDefaults);
       const ticket = await storage.createTicket(data);
-      
+
       await storage.createUserActivity({
         userId: req.user?.id || "test-user",
         action: 'create',
@@ -7141,7 +7043,7 @@ Important:
         entityId: ticket.id,
         description: `Created ticket: ${ticket.title}`,
       });
-      
+
       res.status(201).json(ticket);
     } catch (error) {
       console.error("Error creating ticket:", error);
@@ -7152,7 +7054,7 @@ Important:
   app.post('/api/tickets/generate-subject', async (req: any, res) => {
     try {
       const { description } = req.body;
-      
+
       if (!description || typeof description !== 'string' || description.trim().length < 10) {
         return res.status(400).json({ message: "Description must be at least 10 characters long" });
       }
@@ -7163,62 +7065,52 @@ Important:
         baseURL: "https://api.deepseek.com",
       });
 
-      const response = await deepseek.chat.completions.create({
-        model: "deepseek-chat",
+      const prompt = `Translate the following product category name into Czech (CZ) and Vietnamese (VN).
+Return ONLY a valid JSON object with this exact structure:
+{
+  "nameCz": "Czech translation",
+  "nameVn": "Vietnamese translation"
+}
+
+Category name: ${description}
+
+Important:
+- Keep the translation concise and appropriate for product categories
+- Use proper diacritics for both languages
+- Return ONLY the JSON, no additional text`;
+
+      const completion = await openai.chat.completions.create({
+        model: 'deepseek-chat',
         messages: [
           {
-            role: "system",
-            content: `You are an AI assistant for Davie Supply's Warehouse Management System (WMS). 
-
-BUSINESS CONTEXT:
-- B2B nail salon supply distributor serving European markets (Czech Republic and Germany)
-- Multi-currency operations (CZK and EUR for sales, USD/CZK/EUR for imports)
-- Manages inventory, orders, shipping, returns, customer relationships, and supplier operations
-
-WMS FEATURES:
-- Product Management: Inventory tracking, variants, barcodes, location codes, packing instructions
-- Order Management: Order processing, shipping cost calculation, payment tracking, order fulfillment
-- Customer Management: B2B customer accounts, credit terms, shipping addresses, order history
-- Warehouse Operations: Stock levels, location tracking, pick & pack workflows, carton optimization
-- Returns Management: RMA processing, refunds, stock adjustments
-- Supplier Management: Purchase orders, import costs, processing times, supplier files
-- Shipping: International shipping (PPL, GLS, DPD, etc.), tracking, delivery issues
-
-COMMON TICKET CATEGORIES:
-- Shipping Issues: Delays, damaged goods, wrong address, tracking problems, customs holds
-- Product Questions: Stock availability, pricing, variant details, product specifications
-- Payment Problems: Invoice discrepancies, payment processing, credit terms, currency issues
-- Complaints: Quality issues, service problems, delivery complaints
-- General: System access, feature requests, data corrections, reporting needs
-
-YOUR TASK:
-Generate a concise, actionable subject line (max 6-8 words) that:
-1. Clearly identifies the issue type
-2. Uses domain-specific terminology when appropriate
-3. Highlights the main action or problem
-4. Is professional and business-focused
-
-Return ONLY the subject line without quotes or extra formatting.`,
+            role: 'system',
+            content: 'You are a professional translator specializing in product category names. Always respond with valid JSON only.'
           },
           {
-            role: "user",
-            content: `Generate a concise ticket subject for this issue:\n\n${description}`,
-          },
+            role: 'user',
+            content: prompt
+          }
         ],
-        temperature: 0.7,
-        max_tokens: 30,
+        temperature: 0.3,
+        max_tokens: 150
       });
 
-      const subject = response.choices[0]?.message?.content?.trim() || "";
-      
-      if (!subject) {
-        return res.status(500).json({ message: "Failed to generate subject" });
+      const translationText = completion.choices[0]?.message?.content?.trim();
+      if (!translationText) {
+        throw new Error('No translation received from API');
       }
 
-      res.json({ subject });
+      // Extract JSON from the response
+      const jsonMatch = translationText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('Invalid translation format');
+      }
+
+      const translations = JSON.parse(jsonMatch[0]);
+      res.json(translations);
     } catch (error) {
-      console.error("Error generating subject:", error);
-      res.status(500).json({ message: "Failed to generate subject" });
+      console.error('Translation error:', error);
+      res.status(500).json({ message: 'Failed to translate category name' });
     }
   });
 
@@ -7243,7 +7135,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       if (updateData.description !== undefined) {
         updateData.description = updateData.description?.trim() || null;
       }
-      
+
       // Convert dueDate string to Date object if present
       if (updateData.dueDate && updateData.dueDate !== 'null' && updateData.dueDate !== '') {
         updateData.dueDate = new Date(updateData.dueDate);
@@ -7257,7 +7149,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       }
 
       const ticket = await storage.updateTicket(req.params.id, updateData);
-      
+
       await storage.createUserActivity({
         userId: req.user?.id || "test-user",
         action: 'update',
@@ -7265,7 +7157,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
         entityId: req.params.id,
         description: `Updated ticket: ${ticket.title}`,
       });
-      
+
       res.json(ticket);
     } catch (error) {
       console.error("Error updating ticket:", error);
@@ -7279,9 +7171,9 @@ Return ONLY the subject line without quotes or extra formatting.`,
       if (!ticket) {
         return res.status(404).json({ message: "Ticket not found" });
       }
-      
+
       await storage.deleteTicket(req.params.id);
-      
+
       await storage.createUserActivity({
         userId: req.user?.id || "test-user",
         action: 'delete',
@@ -7289,7 +7181,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
         entityId: req.params.id,
         description: `Deleted ticket: ${ticket.title}`,
       });
-      
+
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting ticket:", error);
@@ -7320,9 +7212,9 @@ Return ONLY the subject line without quotes or extra formatting.`,
         isInternal: req.body.isInternal || false,
         createdBy: req.user?.id || "test-user"
       };
-      
+
       const comment = await storage.addTicketComment(commentData);
-      
+
       await storage.createUserActivity({
         userId: req.user?.id || "test-user",
         action: 'create',
@@ -7330,7 +7222,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
         entityId: comment.id,
         description: `Added comment to ticket: ${ticket.title}`,
       });
-      
+
       res.status(201).json(comment);
     } catch (error) {
       console.error("Error adding ticket comment:", error);
@@ -7379,7 +7271,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
   app.get('/api/notifications/unread-count', async (req: any, res) => {
     try {
       const userId = req.user?.id || "test-user";
-      
+
       const result = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(notifications)
@@ -7467,7 +7359,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       if (!service) {
         return res.status(404).json({ message: "Service not found" });
       }
-      
+
       const items = await storage.getServiceItems(req.params.id);
       res.json({ ...service, items });
     } catch (error) {
@@ -7480,16 +7372,16 @@ Return ONLY the subject line without quotes or extra formatting.`,
     try {
       // Validate service data
       const serviceData = insertServiceSchema.parse(req.body.service || req.body);
-      
+
       // Validate items array
       const items = z.array(insertServiceItemSchema).parse(req.body.items || []);
-      
+
       // Create service with items in transaction
       const service = await storage.createService(serviceData, items);
-      
+
       // Fetch items to return complete service
       const serviceItems = await storage.getServiceItems(service.id);
-      
+
       res.status(201).json({ ...service, items: serviceItems });
     } catch (error) {
       console.error("Error creating service:", error);
@@ -7506,14 +7398,14 @@ Return ONLY the subject line without quotes or extra formatting.`,
       if (!service) {
         return res.status(404).json({ message: "Service not found" });
       }
-      
+
       const updates = insertServiceSchema.partial().parse(req.body);
       const updatedService = await storage.updateService(req.params.id, updates);
-      
+
       if (!updatedService) {
         return res.status(404).json({ message: "Service not found" });
       }
-      
+
       res.json(updatedService);
     } catch (error) {
       console.error("Error updating service:", error);
@@ -7530,7 +7422,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       if (!service) {
         return res.status(404).json({ message: "Service not found" });
       }
-      
+
       await storage.deleteService(req.params.id);
       res.status(204).send();
     } catch (error) {
@@ -7566,7 +7458,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       if (!preOrder) {
         return res.status(404).json({ message: "Pre-order not found" });
       }
-      
+
       const items = await storage.getPreOrderItems(req.params.id);
       res.json({ ...preOrder, items });
     } catch (error) {
@@ -7592,7 +7484,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       if (!preOrder) {
         return res.status(404).json({ message: "Pre-order not found" });
       }
-      
+
       const updates = insertPreOrderSchema.partial().parse(req.body);
       const updatedPreOrder = await storage.updatePreOrder(req.params.id, updates);
       res.json(updatedPreOrder);
@@ -7608,7 +7500,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       if (!preOrder) {
         return res.status(404).json({ message: "Pre-order not found" });
       }
-      
+
       await storage.deletePreOrder(req.params.id);
       res.status(204).send();
     } catch (error) {
@@ -7685,10 +7577,10 @@ Return ONLY the subject line without quotes or extra formatting.`,
         startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
         endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
       };
-      
+
       const data = insertDiscountSchema.parse(body);
       const discount = await storage.createDiscount(data);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'create',
@@ -7696,7 +7588,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
         entityId: discount.id,
         description: `Created discount: ${discount.name}`,
       });
-      
+
       res.json(discount);
     } catch (error) {
       console.error("Error creating discount:", error);
@@ -7725,13 +7617,13 @@ Return ONLY the subject line without quotes or extra formatting.`,
         startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
         endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
       };
-      
+
       const discount = await storage.updateDiscount(req.params.id, updates);
-      
+
       if (!discount) {
         return res.status(404).json({ message: "Discount not found" });
       }
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated',
@@ -7739,7 +7631,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
         entityId: discount.id.toString(),
         description: `Updated discount: ${discount.name}`,
       });
-      
+
       res.json(discount);
     } catch (error) {
       console.error("Error updating discount:", error);
@@ -7753,9 +7645,9 @@ Return ONLY the subject line without quotes or extra formatting.`,
       if (!discount) {
         return res.status(404).json({ message: "Discount not found" });
       }
-      
+
       await storage.deleteDiscount(req.params.id);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'deleted',
@@ -7763,28 +7655,28 @@ Return ONLY the subject line without quotes or extra formatting.`,
         entityId: req.params.id,
         description: `Deleted discount: ${discount.name}`,
       });
-      
+
       res.status(204).send();
     } catch (error: any) {
       console.error("Error deleting discount:", error);
-      
+
       // Check if it's a foreign key constraint error
       if (error.code === '23503' || error.message?.includes('constraint')) {
         return res.status(409).json({ 
           message: "Cannot delete discount - it's being used by other records" 
         });
       }
-      
+
       res.status(500).json({ message: "Failed to delete discount" });
     }
   });
 
   // Import routes
   app.use('/api/imports', imports);
-  
+
   // World-record speed optimization routes
   app.use('/api/optimize', optimizeDb);
-  
+
   // Returns endpoints
   app.get('/api/returns', async (req, res) => {
     try {
@@ -7795,7 +7687,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       res.status(500).json({ message: "Failed to fetch returns" });
     }
   });
-  
+
   app.get('/api/returns/:id', async (req, res) => {
     try {
       const returnData = await storage.getReturn(req.params.id);
@@ -7808,11 +7700,11 @@ Return ONLY the subject line without quotes or extra formatting.`,
       res.status(500).json({ message: "Failed to fetch return" });
     }
   });
-  
+
   app.post('/api/returns', async (req: any, res) => {
     try {
       const { items, ...returnData } = req.body;
-      
+
       // Convert date strings to Date objects
       if (returnData.returnDate) {
         returnData.returnDate = new Date(returnData.returnDate);
@@ -7823,10 +7715,10 @@ Return ONLY the subject line without quotes or extra formatting.`,
       if (returnData.processedDate) {
         returnData.processedDate = new Date(returnData.processedDate);
       }
-      
+
       // Create the return
       const newReturn = await storage.createReturn(returnData);
-      
+
       // Create return items
       if (items && items.length > 0) {
         await Promise.all(items.map((item: any) => 
@@ -7836,7 +7728,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
           })
         ));
       }
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'created',
@@ -7844,18 +7736,18 @@ Return ONLY the subject line without quotes or extra formatting.`,
         entityId: newReturn.id,
         description: `Created return: ${newReturn.returnId}`,
       });
-      
+
       res.json(newReturn);
     } catch (error) {
       console.error("Error creating return:", error);
       res.status(500).json({ message: "Failed to create return" });
     }
   });
-  
+
   app.put('/api/returns/:id', async (req: any, res) => {
     try {
       const { items, ...returnData } = req.body;
-      
+
       // Convert date strings to Date objects
       if (returnData.returnDate) {
         returnData.returnDate = new Date(returnData.returnDate);
@@ -7866,10 +7758,10 @@ Return ONLY the subject line without quotes or extra formatting.`,
       if (returnData.processedDate) {
         returnData.processedDate = new Date(returnData.processedDate);
       }
-      
+
       // Update the return
       const updatedReturn = await storage.updateReturn(req.params.id, returnData);
-      
+
       // Delete existing items and recreate
       if (items) {
         await storage.deleteReturnItems(req.params.id);
@@ -7880,7 +7772,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
           })
         ));
       }
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated',
@@ -7888,23 +7780,23 @@ Return ONLY the subject line without quotes or extra formatting.`,
         entityId: updatedReturn.id,
         description: `Updated return: ${updatedReturn.returnId}`,
       });
-      
+
       res.json(updatedReturn);
     } catch (error) {
       console.error("Error updating return:", error);
       res.status(500).json({ message: "Failed to update return" });
     }
   });
-  
+
   app.delete('/api/returns/:id', async (req: any, res) => {
     try {
       const returnData = await storage.getReturnById(req.params.id);
       if (!returnData) {
         return res.status(404).json({ message: "Return not found" });
       }
-      
+
       await storage.deleteReturn(req.params.id);
-      
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'deleted',
@@ -7912,17 +7804,17 @@ Return ONLY the subject line without quotes or extra formatting.`,
         entityId: req.params.id,
         description: `Deleted return: ${returnData.returnId}`,
       });
-      
+
       res.status(204).send();
     } catch (error: any) {
       console.error("Error deleting return:", error);
-      
+
       if (error.code === '23503' || error.message?.includes('constraint')) {
         return res.status(409).json({ 
           message: "Cannot delete return - it's being referenced by other records" 
         });
       }
-      
+
       res.status(500).json({ message: "Failed to delete return" });
     }
   });
@@ -7967,7 +7859,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       // Clear existing sales data
       await storage.deleteAllSales();
       console.log("Cleared all existing sales/discounts data");
-      
+
       // Create new discounts data
       const newDiscounts = [
         {
@@ -8066,7 +7958,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
   // app.use('/api', locationsRouter);
   // app.use('/api', putawayRouter);
   // app.use('/api', importOrdersRouter);
-  
+
   // Imports routes registered above
 
   // Reports endpoints
@@ -8074,7 +7966,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
     try {
       const { startDate, endDate } = req.query;
       const orders = await storage.getOrders();
-      
+
       // Filter orders by date range if provided
       let filteredOrders = orders;
       if (startDate && endDate) {
@@ -8085,7 +7977,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
           return orderDate >= start && orderDate <= end;
         });
       }
-      
+
       // Calculate summary
       const summary = {
         totalOrders: filteredOrders.length,
@@ -8101,7 +7993,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
           return acc;
         }, {} as Record<string, number>)
       };
-      
+
       res.json(summary);
     } catch (error) {
       console.error("Error generating sales summary:", error);
@@ -8113,7 +8005,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
     try {
       const products = await storage.getProducts();
       const warehouses = await storage.getWarehouses();
-      
+
       const summary = {
         totalProducts: products.length,
         totalStockValue: products.reduce((sum, product) => {
@@ -8140,7 +8032,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
           return acc;
         }, {} as Record<string, { count: number; totalStock: number }>)
       };
-      
+
       res.json(summary);
     } catch (error) {
       console.error("Error generating inventory summary:", error);
@@ -8152,14 +8044,14 @@ Return ONLY the subject line without quotes or extra formatting.`,
     try {
       const customers = await storage.getCustomers();
       const orders = await storage.getOrders();
-      
+
       // Calculate customer metrics
       const customerMetrics = customers.map(customer => {
         const customerOrders = orders.filter(o => o.customerId === customer.id);
         const totalSpent = customerOrders.reduce((sum, order) => sum + parseFloat(order.total || '0'), 0);
         const lastOrderDate = customerOrders.length > 0 ? 
           customerOrders.sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())[0].createdAt : null;
-        
+
         return {
           customerId: customer.id,
           customerName: customer.name,
@@ -8169,10 +8061,10 @@ Return ONLY the subject line without quotes or extra formatting.`,
           lastOrderDate
         };
       });
-      
+
       // Sort by total spent
       customerMetrics.sort((a, b) => b.totalSpent - a.totalSpent);
-      
+
       const analytics = {
         totalCustomers: customers.length,
         topCustomers: customerMetrics.slice(0, 10),
@@ -8184,7 +8076,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
         averageCustomerValue: customerMetrics.length > 0 ?
           customerMetrics.reduce((sum, c) => sum + c.totalSpent, 0) / customerMetrics.length : 0
       };
-      
+
       res.json(analytics);
     } catch (error) {
       console.error("Error generating customer analytics:", error);
@@ -8195,23 +8087,23 @@ Return ONLY the subject line without quotes or extra formatting.`,
   app.get('/api/reports/financial-summary', async (req, res) => {
     try {
       const { year, month } = req.query;
-      
+
       // Get financial data
       const orders = await storage.getOrders();
       const expenses = await storage.getExpenses();
       const purchases = await storage.getPurchases();
-      
+
       // Filter by year/month if provided
       let filteredOrders = orders;
       let filteredExpenses = expenses;
       let filteredPurchases = purchases;
-      
+
       if (year) {
         const yearNum = parseInt(year as string);
         filteredOrders = orders.filter(o => new Date(o.createdAt!).getFullYear() === yearNum);
         filteredExpenses = expenses.filter(e => new Date(e.date!).getFullYear() === yearNum);
         filteredPurchases = purchases.filter(p => new Date(p.createdAt!).getFullYear() === yearNum);
-        
+
         if (month) {
           const monthNum = parseInt(month as string) - 1; // JS months are 0-indexed
           filteredOrders = filteredOrders.filter(o => new Date(o.createdAt!).getMonth() === monthNum);
@@ -8219,25 +8111,25 @@ Return ONLY the subject line without quotes or extra formatting.`,
           filteredPurchases = filteredPurchases.filter(p => new Date(p.createdAt!).getMonth() === monthNum);
         }
       }
-      
+
       // Calculate financial summary
       const revenue = filteredOrders
         .filter(o => o.status === 'shipped' || o.status === 'delivered')
         .reduce((sum, order) => sum + parseFloat(order.total || '0'), 0);
-      
+
       const totalExpenses = filteredExpenses
         .filter(e => e.status === 'paid')
         .reduce((sum, expense) => sum + parseFloat(expense.amount || '0'), 0);
-      
+
       const totalPurchases = filteredPurchases
         .reduce((sum, purchase) => {
           const qty = purchase.quantity || 0;
           const price = parseFloat(purchase.importPrice || '0');
           return sum + (qty * price);
         }, 0);
-      
+
       const profit = revenue - totalExpenses - totalPurchases;
-      
+
       const summary = {
         revenue,
         expenses: totalExpenses,
@@ -8251,7 +8143,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
         }, {} as Record<string, number>),
         monthlyTrend: year ? getMonthlyTrend(orders, expenses, purchases, parseInt(year as string)) : []
       };
-      
+
       res.json(summary);
     } catch (error) {
       console.error("Error generating financial summary:", error);
@@ -8262,38 +8154,38 @@ Return ONLY the subject line without quotes or extra formatting.`,
   // Helper function for monthly trend
   function getMonthlyTrend(orders: Order[], expenses: Expense[], purchases: Purchase[], year: number) {
     const months = Array.from({ length: 12 }, (_, i) => i);
-    
+
     return months.map(month => {
       const monthOrders = orders.filter(o => 
         new Date(o.createdAt!).getFullYear() === year && 
         new Date(o.createdAt!).getMonth() === month
       );
-      
+
       const monthExpenses = expenses.filter(e => 
         new Date(e.date!).getFullYear() === year && 
         new Date(e.date!).getMonth() === month
       );
-      
+
       const monthPurchases = purchases.filter(p => 
         new Date(p.createdAt!).getFullYear() === year && 
         new Date(p.createdAt!).getMonth() === month
       );
-      
+
       const revenue = monthOrders
         .filter(o => o.status === 'shipped' || o.status === 'delivered')
         .reduce((sum, order) => sum + parseFloat(order.total || '0'), 0);
-      
+
       const totalExpenses = monthExpenses
         .filter(e => e.status === 'paid')
         .reduce((sum, expense) => sum + parseFloat(expense.amount || '0'), 0);
-      
+
       const totalPurchases = monthPurchases
         .reduce((sum, purchase) => {
           const qty = purchase.quantity || 0;
           const price = parseFloat(purchase.importPrice || '0');
           return sum + (qty * price);
         }, 0);
-      
+
       return {
         month: month + 1,
         revenue,
@@ -8334,7 +8226,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       }
 
       const data = await response.json();
-      
+
       // Transform the response to our format
       const suggestions = data.map((item: any) => {
         const address = item.address || {};
@@ -8343,7 +8235,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
         const city = address.city || address.town || address.village || '';
         const zipCode = address.postcode || '';
         const country = address.country || '';
-        
+
         // Build street with house number for formatted display
         let streetWithNumber = street;
         if (houseNumber && street) {
@@ -8354,7 +8246,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
             streetWithNumber = street; // Street already contains house number
           }
         }
-        
+
         // Create short formatted address: "Street Number, Postcode City, Country"
         let shortFormatted = '';
         if (streetWithNumber && zipCode && city) {
@@ -8366,7 +8258,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
           // Fallback to original display name if we can't build short format
           shortFormatted = item.display_name;
         }
-        
+
         return {
           formatted: shortFormatted,
           street: streetWithNumber,  // Full street address with number for display
@@ -8387,7 +8279,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       res.status(500).json({ error: 'Failed to fetch addresses' });
     }
   });
-  
+
   // Seed returns data
   app.post('/api/seed-returns', async (req, res) => {
     try {
@@ -8442,7 +8334,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
   app.post('/api/shipping/create-label', async (req, res) => {
     try {
       const { orderId, codAmount, codCurrency } = req.body;
-      
+
       if (!orderId) {
         return res.status(400).json({ error: 'Order ID is required' });
       }
@@ -8562,7 +8454,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
           dpi: 203,
           completeLabelSettings: {
             isCompleteLabelRequested: true,
-            pageSize: 'Default' // Thermal label format (127x110mm for CZ domestic)
+            pageSize: 'Default' // Thermal label format (127x110mm for CZ domestic, 150x100mm for international)
           }
         }
       });
@@ -8585,7 +8477,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
 
       // Get label PDF
       const label = await getPPLLabel(batchId, 'pdf');
-      
+
       const labelBase64 = label.labelContent;
       const labelUrl = `data:application/pdf;base64,${labelBase64}`;
 
@@ -8607,7 +8499,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
           codCurrency: codCurrency || null
         })
         .where(eq(orders.id, orderId));
-      
+
       // Save shipment label to shipment_labels table
       await storage.createShipmentLabel({
         orderId,
@@ -8658,7 +8550,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
   app.post('/api/shipping/create-additional-label/:orderId', async (req, res) => {
     try {
       const { orderId } = req.params;
-      
+
       if (!orderId) {
         return res.status(400).json({ error: 'Order ID is required' });
       }
@@ -8680,10 +8572,10 @@ Return ONLY the subject line without quotes or extra formatting.`,
         });
       }
 
-      // Validate required fields (now accessing actual object properties)
+      // Validate required fields
       const requiredSenderFields = ['country', 'zipCode', 'city', 'street', 'name'];
       const missingSenderFields = requiredSenderFields.filter(field => !senderAddress[field]);
-      
+
       if (missingSenderFields.length > 0) {
         return res.status(400).json({ 
           error: `Default sender address is incomplete. Missing: ${missingSenderFields.join(', ')}` 
@@ -8695,7 +8587,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
         .select()
         .from(orderCartons)
         .where(eq(orderCartons.orderId, orderId));
-      
+
       const nextCartonNumber = existingCartons.length > 0
         ? Math.max(...existingCartons.map(c => c.cartonNumber || 0)) + 1
         : 1;
@@ -8750,10 +8642,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
         // Build PPL shipment with unique reference using shipmentSet structure
         // NOTE: PPL batches are immutable - we cannot add to existing batch, so we create a NEW batch
         const referenceId = `${order.orderId}-additional-${nextCartonNumber}`;
-        
-        const cartonWeight = newCarton.weight ? parseFloat(newCarton.weight.toString()) : 
-                            (order.finalWeight ? parseFloat(order.finalWeight.toString()) : 1.0);
-        
+
         // Normalize country to ISO code (PPL requires 2-letter codes)
         const normalizeCountry = (country: string | null | undefined): string => {
           if (!country) return 'CZ';
@@ -8762,7 +8651,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
           if (upper.length === 2) return upper;
           return 'CZ'; // Default to CZ
         };
-        
+
         // Validate required shipping address fields
         if (!shippingAddress.zipCode?.trim()) {
           // Rollback carton creation
@@ -8785,23 +8674,23 @@ Return ONLY the subject line without quotes or extra formatting.`,
             error: 'Missing required shipping address: City is required for PPL label creation. Please update the order shipping address.' 
           });
         }
-        
+
         const hasCOD = order.cashOnDeliveryAmount && parseFloat(order.cashOnDeliveryAmount) > 0;
-        
+
         // Prepare recipient info (customer receiving the package)
         const recipientName = shippingAddress.company?.trim() || 
                              `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || 
                              customer?.name || 
                              'Unknown';
-        
+
         const recipientContactName = shippingAddress.company?.trim() 
           ? `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() 
           : undefined;
-        
+
         const recipientStreet = shippingAddress.streetNumber 
           ? `${shippingAddress.street.trim()} ${shippingAddress.streetNumber.trim()}`
           : shippingAddress.street.trim();
-        
+
         const pplShipment: any = {
           referenceId,
           productType: hasCOD ? 'BUSD' : 'BUSS',
@@ -8825,8 +8714,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
             phone: shippingAddress.tel || customer?.phone || undefined,
             email: shippingAddress.email || customer?.email || undefined
           },
-          // Weight removed as per user requirement - PPL doesn't need weight input
-          // Only include COD on the first shipment (already stored in order)
+          // COD applied only to the first carton (handled by createPPLShipment logic)
           cashOnDelivery: undefined
         };
 
@@ -8845,7 +8733,6 @@ Return ONLY the subject line without quotes or extra formatting.`,
 
         // Get shipment numbers from batch status (with fallback if API fails)
         let shipmentNumbers: string[] = [];
-        
         try {
           const batchStatus = await getPPLBatchStatus(batchId);
           console.log('📦 Batch status response:', JSON.stringify(batchStatus, null, 2));
@@ -8856,13 +8743,13 @@ Return ONLY the subject line without quotes or extra formatting.`,
             console.log('✅ Extracted shipment numbers:', shipmentNumbers);
           }
         } catch (statusError) {
-          // PPL status API sometimes fails - continue with label retrieval anyway
-          console.log('⚠️ PPL batch status check failed, attempting to retrieve label directly:', statusError);
+          console.log('⚠️ Could not get batch status:', statusError);
+          // Continue with empty tracking numbers - will use placeholder
         }
 
-        // Get label PDF (this usually works even when status API fails)
+        // Get label PDF
         const label = await getPPLLabel(batchId, 'pdf');
-        
+
         const labelBase64 = label.labelContent;
 
         // Save shipment label to shipment_labels table
@@ -8903,277 +8790,8 @@ Return ONLY the subject line without quotes or extra formatting.`,
     }
   });
 
-  // Create PPL label for a specific existing carton
-  app.post('/api/shipping/create-label-for-carton', async (req, res) => {
-    try {
-      const { orderId, cartonId, cartonNumber } = req.body;
-      
-      if (!orderId || !cartonId || !cartonNumber) {
-        return res.status(400).json({ error: 'Order ID, Carton ID, and Carton Number are required' });
-      }
-
-      // Get order details
-      const order = await storage.getOrder(orderId);
-      if (!order) {
-        return res.status(404).json({ error: 'Order not found' });
-      }
-
-      // Get carton details
-      const cartons = await storage.getOrderCartons(orderId);
-      const carton = cartons.find(c => c.id === cartonId);
-      if (!carton) {
-        return res.status(404).json({ error: 'Carton not found' });
-      }
-
-      // Load shipping settings (includes all sender addresses, properly parsed)
-      const shippingSettings = await getSettingsByCategory('shipping');
-      const senderAddress = shippingSettings.pplDefaultSenderAddress;
-
-      // Validate that sender address exists
-      if (!senderAddress) {
-        return res.status(400).json({ 
-          error: 'No default PPL sender address configured. Please set it in Shipping Management settings.' 
-        });
-      }
-
-      // Get order shipping address (customer/recipient)
-      let shippingAddress;
-      if (order.shippingAddressId) {
-        const addresses = await db
-          .select()
-          .from(customerShippingAddresses)
-          .where(eq(customerShippingAddresses.id, order.shippingAddressId))
-          .limit(1);
-        shippingAddress = addresses[0];
-      }
-
-      if (!shippingAddress) {
-        return res.status(400).json({ error: 'No shipping address found for order' });
-      }
-
-      // Get customer details for fallback info
-      let customer;
-      if (order.customerId) {
-        const customerResult = await db
-          .select()
-          .from(customers)
-          .where(eq(customers.id, order.customerId))
-          .limit(1);
-        customer = customerResult[0];
-      }
-
-      // Build PPL shipment
-      const referenceId = `${order.orderId}-carton-${cartonNumber}`;
-      // Only use weight if it's actually provided (no default)
-      const cartonWeight = carton.weight ? parseFloat(carton.weight.toString()) : 
-                          (order.finalWeight ? parseFloat(order.finalWeight.toString()) : null);
-      
-      // Normalize country to ISO code (PPL requires 2-letter codes)
-      const normalizeCountry = (country: string | null | undefined): string => {
-        if (!country) return 'CZ';
-        const upper = country.toUpperCase();
-        if (upper === 'CZECH REPUBLIC' || upper === 'CZECHIA') return 'CZ';
-        if (upper.length === 2) return upper;
-        return 'CZ'; // Default to CZ
-      };
-      
-      // Validate required sender address fields
-      if (!senderAddress.zipCode?.trim()) {
-        return res.status(400).json({ 
-          error: 'Missing required sender address: Postal Code is required for PPL label creation. Please update the default sender address in Shipping Management.' 
-        });
-      }
-      if (!senderAddress.street?.trim()) {
-        return res.status(400).json({ 
-          error: 'Missing required sender address: Street Address is required for PPL label creation. Please update the default sender address in Shipping Management.' 
-        });
-      }
-      if (!senderAddress.city?.trim()) {
-        return res.status(400).json({ 
-          error: 'Missing required sender address: City is required for PPL label creation. Please update the default sender address in Shipping Management.' 
-        });
-      }
-      
-      // Validate required recipient (order shipping) address fields
-      if (!shippingAddress.zipCode?.trim()) {
-        return res.status(400).json({ 
-          error: 'Missing required shipping address: Postal Code is required for PPL label creation. Please update the order shipping address.' 
-        });
-      }
-      if (!shippingAddress.street?.trim()) {
-        return res.status(400).json({ 
-          error: 'Missing required shipping address: Street Address is required for PPL label creation. Please update the order shipping address.' 
-        });
-      }
-      if (!shippingAddress.city?.trim()) {
-        return res.status(400).json({ 
-          error: 'Missing required shipping address: City is required for PPL label creation. Please update the order shipping address.' 
-        });
-      }
-      
-      // CRITICAL PPL API RESTRICTION: "nelze slučovat zásilky s dobírkou"
-      // Translation: "cannot merge shipments with dobírka (cash on delivery)"
-      // 
-      // For multi-carton COD orders:
-      // - FIRST carton MUST have the full dobírka amount (customer pays ONCE)
-      // - REMAINING cartons MUST NOT have dobírka
-      // - Always verify dobírka amount exists and is valid before applying
-      //
-      // Strict validation: Check if order has valid COD amount
-      const codAmount = order.codAmount;
-      const hasCOD = codAmount && !isNaN(parseFloat(codAmount)) && parseFloat(codAmount) > 0;
-      const isFirstCarton = cartonNumber === 1;
-      
-      // Determine if THIS specific carton should have COD
-      const shouldAddCOD = hasCOD && isFirstCarton;
-      
-      // Log COD assignment for debugging
-      if (shouldAddCOD) {
-        console.log(`💰 Carton #${cartonNumber} (FIRST): Will include COD ${codAmount} ${order.codCurrency || 'CZK'}`);
-      } else if (hasCOD && !isFirstCarton) {
-        console.log(`📦 Carton #${cartonNumber}: NO COD (PPL restriction - only first carton has COD)`);
-      } else {
-        console.log(`📦 Carton #${cartonNumber}: Standard shipment (order has no COD)`);
-      }
-      
-      // Extract numeric part from order ID for variable symbol (e.g., "ORD-251028-4142" -> "2510284142")
-      const numericOrderId = order.orderId.replace(/\D/g, '').slice(0, 10);
-      
-      // Prepare recipient info (customer receiving the package)
-      const recipientName = shippingAddress.company?.trim() || 
-                           `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || 
-                           customer?.name || 
-                           'Unknown';
-      
-      const recipientContactName = shippingAddress.company?.trim() 
-        ? `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() 
-        : undefined;
-      
-      const recipientStreet = shippingAddress.streetNumber 
-        ? `${shippingAddress.street.trim()} ${shippingAddress.streetNumber.trim()}`
-        : shippingAddress.street.trim();
-      
-      const pplShipment: any = {
-        referenceId,
-        productType: hasCOD ? 'BUSD' : 'BUSS', // Product type based on whether order has COD
-        sender: {
-          country: normalizeCountry(senderAddress.country),
-          zipCode: senderAddress.zipCode.trim(),
-          name: senderAddress.name?.trim() || 'Unknown',
-          name2: senderAddress.name2?.trim() || undefined,
-          street: senderAddress.street?.trim() || '',
-          city: senderAddress.city.trim(),
-          phone: senderAddress.phone || senderAddress.contact || undefined,
-          email: senderAddress.email || undefined
-        },
-        recipient: {
-          country: normalizeCountry(shippingAddress.country),
-          zipCode: shippingAddress.zipCode.trim(),
-          name: recipientName,
-          name2: recipientContactName,
-          street: recipientStreet,
-          city: shippingAddress.city.trim(),
-          phone: shippingAddress.tel || customer?.phone || undefined,
-          email: shippingAddress.email || customer?.email || undefined
-        },
-        // Validate and add COD only to first carton (PPL API restriction)
-        cashOnDelivery: shouldAddCOD ? (() => {
-          const codValue = parseFloat(order.codAmount);
-          if (isNaN(codValue) || codValue <= 0) {
-            throw new Error(`Invalid COD amount for carton #${cartonNumber}: ${order.codAmount}`);
-          }
-          return {
-            CodPrice: codValue,                           // PPL API requires PascalCase
-            CodCurrency: order.codCurrency || 'CZK',  // PPL API requires PascalCase
-            CodVarSym: numericOrderId || '1234567890'     // PPL API requires PascalCase
-          };
-        })() : undefined
-      };
-      
-      // Weight removed as per user requirement - PPL doesn't need weight input
-
-      // 🔄 NEW APPROACH: Create batch and extract tracking numbers from response
-      console.log('🚀 Creating PPL batch...');
-      const batchResult = await createPPLShipment({
-        shipments: [pplShipment],
-        labelSettings: {
-          format: 'Pdf',
-          dpi: 203,
-          completeLabelSettings: {
-            isCompleteLabelRequested: true,
-            pageSize: 'Default'
-          }
-        }
-      });
-
-      const batchId = batchResult.batchId;
-      console.log(`✅ PPL batch created: ${batchId}`);
-
-      // Get tracking numbers from batch creation response if available
-      let shipmentNumbers: string[] = batchResult.trackingNumbers || [];
-      
-      if (shipmentNumbers.length > 0) {
-        console.log(`🎯 Tracking number(s) from batch creation:`, shipmentNumbers);
-      }
-
-      // Get the label PDF
-      let labelBase64: string | undefined;
-      try {
-        console.log('📄 Retrieving PPL label...');
-        const label = await getPPLLabel(batchId, 'pdf');
-        labelBase64 = label.labelContent;
-        console.log(`✅ Label retrieved (${labelBase64?.length} bytes)`);
-      } catch (labelError: any) {
-        console.error('❌ Failed to retrieve PPL label:', labelError.message);
-        return res.status(500).json({ 
-          error: 'PPL shipment created but label retrieval failed. Please try again.',
-          batchId,
-          labelError: labelError.message
-        });
-      }
-
-      // If we STILL don't have tracking numbers, use placeholder
-      // (Real tracking number is visible on the label PDF barcode)
-      if (shipmentNumbers.length === 0) {
-        shipmentNumbers = [`PENDING-${batchId.slice(0, 8)}`];
-        console.log('⚠️ No tracking number from PPL batch creation');
-        console.log('💡 Using placeholder. Check the label PDF barcode for the real tracking number.');
-      }
-
-      // Save shipment label to shipment_labels table
-      const savedLabel = await storage.createShipmentLabel({
-        orderId,
-        carrier: 'PPL',
-        trackingNumbers: shipmentNumbers,
-        batchId,
-        labelBase64,
-        labelData: {
-          pplShipment,
-          cartonNumber,
-          referenceId,
-          hasCOD
-        },
-        shipmentCount: shipmentNumbers.length,
-        status: 'active'
-      });
-
-      res.json({
-        success: true,
-        label: savedLabel,
-        batchId,
-        shipmentNumbers,
-        trackingNumber: shipmentNumbers[0]
-      });
-    } catch (error) {
-      console.error('Failed to create PPL label for carton:', error);
-      res.status(500).json({ 
-        error: error instanceof Error ? error.message : 'Failed to create PPL label for carton' 
-      });
-    }
-  });
-
   // Shipment Labels Routes
-  
+
   // Get all shipment labels
   app.get('/api/shipment-labels', async (req, res) => {
     try {
@@ -9196,18 +8814,18 @@ Return ONLY the subject line without quotes or extra formatting.`,
       res.status(500).json({ message: 'Failed to fetch shipment labels' });
     }
   });
-  
+
   // Delete a shipment label (PPL Cancel API)
   app.delete('/api/shipment-labels/:labelId', async (req, res) => {
     try {
       const { labelId } = req.params;
-      
+
       // Get the label first to get tracking numbers
       const label = await storage.getShipmentLabel(labelId);
       if (!label) {
         return res.status(404).json({ error: 'Shipment label not found' });
       }
-      
+
       // For PPL labels, try to cancel with PPL API
       if (label.carrier === 'PPL' && label.trackingNumbers?.[0]) {
         try {
@@ -9219,14 +8837,14 @@ Return ONLY the subject line without quotes or extra formatting.`,
           // Continue with deletion even if PPL cancellation fails
         }
       }
-      
+
       // Cancel the label in our database
       await storage.cancelShipmentLabel(labelId, 'User requested cancellation');
-      
+
       // Note: We do NOT delete the carton - only the label is removed
       // This allows regenerating labels without losing carton data (weight, dimensions, etc.)
       console.log(`✅ Label ${labelId} cancelled - carton data preserved`);
-      
+
       res.json({ success: true, message: 'Shipment label cancelled successfully' });
     } catch (error) {
       console.error('Error deleting shipment label:', error);
@@ -9322,29 +8940,29 @@ Return ONLY the subject line without quotes or extra formatting.`,
     try {
       const { id } = req.params;
       const { trackingNumber } = req.body;
-      
+
       if (!trackingNumber || typeof trackingNumber !== 'string' || trackingNumber.trim() === '') {
         return res.status(400).json({ error: 'Valid tracking number is required' });
       }
-      
+
       // Get existing label
       const existingLabel = await storage.getShipmentLabel(id);
       if (!existingLabel) {
         return res.status(404).json({ error: 'Shipment label not found' });
       }
-      
+
       // Update tracking numbers array - replace the first tracking number
       const updatedTrackingNumbers = [trackingNumber.trim()];
-      
+
       // Update the label
       const label = await storage.updateShipmentLabel(id, {
         trackingNumbers: updatedTrackingNumbers as any
       });
-      
+
       if (!label) {
         return res.status(500).json({ error: 'Failed to update tracking number' });
       }
-      
+
       console.log(`✅ Updated tracking number for label ${id}: ${trackingNumber}`);
       res.json({ 
         success: true, 
@@ -9362,24 +8980,24 @@ Return ONLY the subject line without quotes or extra formatting.`,
     try {
       const { id } = req.params;
       const { reason } = req.body;
-      
+
       // Check if label exists
       const existingLabel = await storage.getShipmentLabel(id);
       if (!existingLabel) {
         return res.status(404).json({ message: 'Shipment label not found' });
       }
-      
+
       // Check if already cancelled
       if (existingLabel.status === 'cancelled') {
         return res.status(400).json({ message: 'Shipment label is already cancelled' });
       }
-      
+
       // Cancel the label
       const label = await storage.cancelShipmentLabel(id, reason || 'Cancelled by user');
       if (!label) {
         return res.status(500).json({ message: 'Failed to update shipment label status' });
       }
-      
+
       res.json(label);
     } catch (error) {
       console.error('Error cancelling shipment label:', error);
@@ -9393,7 +9011,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       const { batchId } = req.params;
       const format = (req.query.format as 'pdf' | 'zpl') || 'pdf';
       const label = await getPPLLabel(batchId, format);
-      
+
       if (format === 'pdf') {
         const pdfBuffer = Buffer.from(label.labelContent, 'base64');
         res.setHeader('Content-Type', 'application/pdf');
@@ -9411,13 +9029,13 @@ Return ONLY the subject line without quotes or extra formatting.`,
   });
 
   // Weight Calculation AI Endpoints
-  
+
   // Calculate package weight for an order
   app.post('/api/orders/:orderId/calculate-weight', async (req, res) => {
     try {
       const { orderId } = req.params;
       const { selectedCartonId, optimizeMultipleCartons } = req.body;
-      
+
       const calculation = await weightCalculationService.calculatePackageWeight(
         orderId, 
         selectedCartonId, 
@@ -9436,7 +9054,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
   app.post('/api/orders/:orderId/optimize-multi-carton', async (req, res) => {
     try {
       const { orderId } = req.params;
-      
+
       const optimization = await weightCalculationService.optimizeMultiCartonPacking(orderId);
       res.json(optimization);
     } catch (error) {
@@ -9464,19 +9082,19 @@ Return ONLY the subject line without quotes or extra formatting.`,
   app.get('/api/cartons/popular', async (req, res) => {
     try {
       const cartons = await storage.getPopularCartons();
-      
+
       const cartonsWithScore = cartons.map((carton) => {
         const usageCount = Number(carton.usageCount) || 0;
         const lastUsedAt = carton.lastUsedAt ? new Date(carton.lastUsedAt) : null;
-        
+
         let daysSinceLastUsed = 0;
         if (lastUsedAt) {
           const now = new Date();
           daysSinceLastUsed = Math.floor((now.getTime() - lastUsedAt.getTime()) / (1000 * 60 * 60 * 24));
         }
-        
+
         const score = usageCount * 1000 - daysSinceLastUsed;
-        
+
         return {
           id: carton.id,
           name: carton.name,
@@ -9489,9 +9107,9 @@ Return ONLY the subject line without quotes or extra formatting.`,
           score
         };
       });
-      
+
       cartonsWithScore.sort((a, b) => b.score - a.score);
-      
+
       res.json(cartonsWithScore);
     } catch (error) {
       console.error('Error getting popular cartons:', error);
@@ -9516,7 +9134,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
   });
 
   // Multi-Carton Packing Routes
-  
+
   // Get all cartons for an order
   app.get('/api/orders/:orderId/cartons', async (req, res) => {
     try {
@@ -9539,7 +9157,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
         ...req.body,
         orderId
       });
-      
+
       const carton = await storage.createOrderCarton(cartonData);
       res.json(carton);
     } catch (error) {
@@ -9555,11 +9173,11 @@ Return ONLY the subject line without quotes or extra formatting.`,
     try {
       const { cartonId } = req.params;
       const updatedCarton = await storage.updateOrderCarton(cartonId, req.body);
-      
+
       if (!updatedCarton) {
         return res.status(404).json({ error: 'Carton not found' });
       }
-      
+
       res.json(updatedCarton);
     } catch (error) {
       console.error('Error updating order carton:', error);
@@ -9574,11 +9192,11 @@ Return ONLY the subject line without quotes or extra formatting.`,
     try {
       const { cartonId } = req.params;
       const success = await storage.deleteOrderCarton(cartonId);
-      
+
       if (!success) {
         return res.status(404).json({ error: 'Carton not found' });
       }
-      
+
       res.json({ success: true });
     } catch (error) {
       console.error('Error deleting order carton:', error);
@@ -9592,30 +9210,30 @@ Return ONLY the subject line without quotes or extra formatting.`,
   app.post('/api/orders/:orderId/cartons/:cartonId/generate-label', async (req, res) => {
     try {
       const { orderId, cartonId } = req.params;
-      
+
       // Get order and carton details
       const order = await storage.getOrderById(orderId);
       if (!order) {
         return res.status(404).json({ error: 'Order not found' });
       }
-      
+
       const cartons = await storage.getOrderCartons(orderId);
       const carton = cartons.find(c => c.id === cartonId);
       if (!carton) {
         return res.status(404).json({ error: 'Carton not found' });
       }
-      
+
       // Mock label generation - in production, integrate with shipping provider
       const labelUrl = `https://example.com/labels/${orderId}-${cartonId}.pdf`;
       const trackingNumber = `TRK-${Date.now()}-${cartonId.slice(-6)}`;
-      
+
       // Update carton with label info
       const updatedCarton = await storage.updateOrderCarton(cartonId, {
         labelUrl,
         trackingNumber,
         labelPrinted: true
       });
-      
+
       res.json({
         success: true,
         labelUrl,
@@ -9631,13 +9249,13 @@ Return ONLY the subject line without quotes or extra formatting.`,
   });
 
   // PPL Shipping Label API endpoints
-  
+
   // Create PPL shipping labels for an order
   app.post('/api/orders/:orderId/ppl/create-labels', async (req, res) => {
     try {
       const { orderId } = req.params;
       const { createPPLShipment, getPPLBatchStatus, getPPLLabel } = await import('./services/pplService');
-      
+
       // Get order details
       const order = await storage.getOrderById(orderId);
       if (!order) {
@@ -9655,10 +9273,10 @@ Return ONLY the subject line without quotes or extra formatting.`,
         });
       }
 
-      // Validate required fields (now accessing actual object properties)
+      // Validate required fields
       const requiredFields = ['country', 'zipCode', 'city', 'street', 'name'];
       const missingFields = requiredFields.filter(field => !senderAddress[field]);
-      
+
       if (missingFields.length > 0) {
         return res.status(400).json({ 
           error: `Default sender address is incomplete. Missing: ${missingFields.join(', ')}` 
@@ -9697,15 +9315,8 @@ Return ONLY the subject line without quotes or extra formatting.`,
         customer = customerResult[0];
       }
 
-      // Prepare recipient info (customer receiving the package)
-      const recipientName = shippingAddress.company?.trim() || 
-                           `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || 
-                           customer?.name || 
-                           'Unknown';
-      const contactName = shippingAddress.company?.trim() 
-                         ? `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || undefined
-                         : undefined;
-
+      // Build PPL shipment
+      const referenceId = order.orderId;
       // Map country name to ISO 2-letter code
       const getCountryCode = (country: string): string => {
         const countryUpper = country.toUpperCase();
@@ -9724,33 +9335,26 @@ Return ONLY the subject line without quotes or extra formatting.`,
       // Translation: "cannot merge shipments with dobírka (cash on delivery)"
       // 
       // For multi-carton orders with COD:
-      // - FIRST carton MUST have the full dobírka amount
-      // - REMAINING cartons MUST NOT have dobírka (customer pays once, not per carton)
+      // - FIRST carton MUST have the full dobírka amount (customer pays ONCE)
+      // - REMAINING cartons MUST NOT have dobírka
       // - Always verify dobírka amount exists and is valid before applying
       //
       // Extract numeric part from order ID for variable symbol (max 10 digits)
       const numericOrderId = order.orderId.replace(/\D/g, '').slice(0, 10);
-      
+
       // Strict validation: Verify COD amount exists and is a valid positive number
       const codAmount = order.codAmount;
       const hasCOD = codAmount && !isNaN(parseFloat(codAmount)) && parseFloat(codAmount) > 0;
-      
-      if (hasCOD) {
-        console.log(`✓ Order has COD: ${codAmount} ${order.codCurrency || 'CZK'}`);
-        console.log(`✓ COD will be applied ONLY to first carton (PPL API restriction)`);
-      } else {
-        console.log(`✓ Order has NO COD - all cartons will be standard shipments`);
-      }
-      
+
       // Use sender address from settings (warehouse/company)
       const sender = {
         country: getCountryCode(senderAddress.country),
         zipCode: senderAddress.zipCode.replace(/\s+/g, ''),
-        name: senderAddress.name,
-        name2: senderAddress.name2 || undefined,
-        street: senderAddress.street,
-        city: senderAddress.city,
-        phone: senderAddress.phone || undefined,
+        name: senderAddress.name?.trim() || 'Unknown',
+        name2: senderAddress.name2?.trim() || undefined,
+        street: senderAddress.street?.trim() || '',
+        city: senderAddress.city.trim(),
+        phone: senderAddress.phone || senderAddress.contact || undefined,
         email: senderAddress.email || undefined
       };
 
@@ -9761,7 +9365,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       // COND = Connect Delivery with CoD (International)
       const recipientCountryCode = getCountryCode(shippingAddress.country || 'CZ');
       let productType: string;
-      
+
       if (recipientCountryCode === 'CZ') {
         // Czech domestic shipment
         productType = hasCOD ? 'BUSD' : 'BUSS';
@@ -9774,16 +9378,16 @@ Return ONLY the subject line without quotes or extra formatting.`,
       // For multi-carton orders, we use shipmentSet to create ONE shipment with multiple cartons
       // This ensures labels show "1/2", "2/2" instead of separate "1/1", "1/1" shipments
       const shipments: any[] = [];
-      
+
       if (cartons.length > 1) {
         // Multi-carton order: Create ONE SHIPMENT with shipmentSet
         // Each carton becomes an item in the set, labeled as 1/N, 2/N, etc.
         console.log(`📦 Creating shipment SET with ${cartons.length} cartons`);
-        
+
         // PPL API RESTRICTION for COD in shipmentSet:
         // When using shipmentSet, ONLY the main shipment can have COD
         // Individual items in the set cannot have separate COD values
-        
+
         // Validate COD amount if present
         let cashOnDelivery = undefined;
         if (hasCOD) {
@@ -9800,15 +9404,15 @@ Return ONLY the subject line without quotes or extra formatting.`,
         } else {
           console.log(`📦 Shipment SET: Standard shipment (no COD)`);
         }
-        
+
         // Create ONE shipment with shipmentSet structure
         const shipment: any = {
-          referenceId: order.orderId,
+          referenceId,
           productType,
           sender,
           recipient: {
             country: recipientCountryCode,
-            zipCode: shippingAddress.zipCode.replace(/\s+/g, ''),
+            zipCode: shippingAddress.zipCode.trim(),
             name: recipientName,
             name2: contactName,
             street: shippingAddress.street,
@@ -9827,22 +9431,19 @@ Return ONLY the subject line without quotes or extra formatting.`,
           // shipmentSet defines multiple cartons in ONE shipment
           shipmentSet: {
             numberOfShipments: cartons.length,
-            shipmentSetItems: cartons.map((carton, index) => {
-              const item: any = {
-                referenceId: `${order.orderId}-${carton.cartonNumber}`
-                // Weight removed as per user requirement - PPL doesn't need weight input
-              };
-              return item;
-            })
+            shipmentSetItems: cartons.map((carton) => ({
+              referenceId: `${order.orderId}-${carton.cartonNumber}`
+              // Weight removed as per user requirement - PPL doesn't need weight input
+            }))
           }
         };
-        
+
         shipments.push(shipment);
         console.log(`✓ Created shipment SET:`, JSON.stringify(shipment.shipmentSet, null, 2));
       } else if (cartons.length === 1) {
         // Single carton - simpler structure with COD if present
         console.log(`📦 Creating single PPL shipment`);
-        
+
         // Validate COD amount before creating cashOnDelivery object
         let cashOnDelivery = undefined;
         if (hasCOD) {
@@ -9859,14 +9460,14 @@ Return ONLY the subject line without quotes or extra formatting.`,
         } else {
           console.log(`📦 Single carton: Standard shipment (no COD)`);
         }
-        
+
         const singleShipment: any = {
-          referenceId: order.orderId,
+          referenceId,
           productType,
           sender,
           recipient: {
             country: recipientCountryCode,
-            zipCode: shippingAddress.zipCode.replace(/\s+/g, ''),
+            zipCode: shippingAddress.zipCode.trim(),
             name: recipientName,
             name2: contactName,
             street: shippingAddress.street,
@@ -9882,9 +9483,9 @@ Return ONLY the subject line without quotes or extra formatting.`,
             }
           ]
         };
-        
+
         // Weight removed as per user requirement - PPL doesn't need weight input
-        
+
         shipments.push(singleShipment);
       }
 
@@ -9897,7 +9498,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
           dpi: 203,
           completeLabelSettings: {
             isCompleteLabelRequested: true,
-            pageSize: 'Default' // Thermal label format (127x110mm for CZ domestic, 150x100mm for international)
+            pageSize: 'Default'
           }
         }
       });
@@ -9905,7 +9506,23 @@ Return ONLY the subject line without quotes or extra formatting.`,
       const batchId = batchResult.batchId;
       console.log(`✅ PPL batch created: ${batchId}`);
 
-      // Get the label PDF first (it needs to be ready before batch status works)
+      // Get shipment numbers from batch status (with fallback if API fails)
+      let shipmentNumbers: string[] = [];
+      try {
+        const batchStatus = await getPPLBatchStatus(batchId);
+        console.log('📦 Batch status response:', JSON.stringify(batchStatus, null, 2));
+        if (batchStatus.items && Array.isArray(batchStatus.items)) {
+          shipmentNumbers = batchStatus.items
+            .filter(item => item.shipmentNumber)
+            .map(item => item.shipmentNumber!);
+          console.log('✅ Extracted shipment numbers:', shipmentNumbers);
+        }
+      } catch (statusError) {
+        // PPL status API sometimes fails - continue with label retrieval anyway
+        console.log('⚠️ PPL batch status check failed, attempting to retrieve label directly:', statusError);
+      }
+
+      // Get the label PDF
       let label;
       try {
         console.log('📄 Retrieving PPL label...');
@@ -9920,51 +9537,8 @@ Return ONLY the subject line without quotes or extra formatting.`,
         });
       }
 
-      // Now try to get tracking numbers from batch status endpoint (after label is ready)
-      // Add initial delay + retry logic since PPL needs time to process the batch
-      let shipmentNumbers: string[] = [];
-      const maxStatusRetries = 5;
-      const statusRetryDelay = 3000;
-      const initialDelay = 2000; // Wait 2 seconds before first attempt
-      
-      console.log(`⏳ Waiting ${initialDelay}ms for PPL to process batch...`);
-      await new Promise(resolve => setTimeout(resolve, initialDelay));
-      
-      for (let attempt = 1; attempt <= maxStatusRetries; attempt++) {
-        try {
-          console.log(`📊 Fetching batch status (attempt ${attempt}/${maxStatusRetries})...`);
-          const batchStatus = await getPPLBatchStatus(batchId);
-          
-          // Log the full response to see what we're getting
-          console.log('📦 Batch status SUCCESS - Full response:', JSON.stringify(batchStatus, null, 2));
-          
-          if (batchStatus.items && Array.isArray(batchStatus.items)) {
-            shipmentNumbers = batchStatus.items
-              .filter(item => item.shipmentNumber)
-              .map(item => item.shipmentNumber!);
-            console.log(`✅ Extracted ${shipmentNumbers.length} tracking number(s):`, shipmentNumbers);
-            break; // Success - exit retry loop
-          } else {
-            console.log('⚠️ Batch status response has no items array');
-          }
-        } catch (statusError: any) {
-          const errorDetails = statusError.response?.data || statusError.message;
-          console.log(`⚠️ Attempt ${attempt}/${maxStatusRetries} failed:`, errorDetails);
-          
-          if (attempt < maxStatusRetries) {
-            console.log(`⏳ Retrying in ${statusRetryDelay}ms...`);
-            await new Promise(resolve => setTimeout(resolve, statusRetryDelay));
-          } else {
-            console.log('⚠️ All attempts failed - will use placeholder tracking numbers');
-            console.log('💡 The PPL batch status endpoint appears to be unavailable in sandbox');
-            console.log('💡 Real tracking numbers are visible on the PDF label barcodes');
-            // Continue with empty tracking numbers - will use placeholders
-          }
-        }
-      }
-
-      // If we STILL don't have tracking numbers, use placeholders
-      // (Real tracking numbers are visible on the label PDF barcodes)
+      // If we STILL don't have tracking numbers, use placeholder
+      // (Real tracking number is visible on the label PDF barcode)
       if (shipmentNumbers.length === 0 && cartons.length > 0) {
         shipmentNumbers = cartons.map((_, index) => `PENDING-${batchId.slice(0, 8)}-${index + 1}`);
         console.log('⚠️ No tracking numbers from PPL batch creation');
@@ -9980,299 +9554,54 @@ Return ONLY the subject line without quotes or extra formatting.`,
           shipmentNumbers,
           labelBase64: label.labelContent,
           format: label.format,
-          productType,
-          recipientCountry: recipientCountryCode,
-          hasCOD,
           createdAt: new Date().toISOString()
         } as any,
         pplStatus: 'created'
       });
 
-      // CRITICAL: Create individual shipment label records for each carton
-      // This allows the UI to display labels per carton
-      console.log(`📝 Creating ${cartons.length} shipment label record(s) in database...`);
-      const createdLabels = [];
-      
-      for (let i = 0; i < cartons.length; i++) {
-        const carton = cartons[i];
-        const cartonNumber = i + 1;
-        const trackingNumber = shipmentNumbers[i] || `PENDING-${cartonNumber}`;
-        const isFirstCarton = i === 0;
-        
-        console.log(`📦 Creating label record for carton #${cartonNumber}:`, {
-          cartonId: carton.id,
-          trackingNumber,
-          hasCOD: hasCOD && isFirstCarton
-        });
-        
-        const labelRecord = await storage.createShipmentLabel({
-          orderId,
-          carrier: 'PPL',
-          trackingNumbers: [trackingNumber],
-          batchId,
-          labelBase64: label.labelContent, // Same PDF for all (PPL returns combined PDF)
-          labelData: {
-            cartonNumber,
-            cartonId: carton.id,
-            referenceId: `${order.orderId}-${carton.cartonNumber}`,
-            hasCOD: hasCOD && isFirstCarton, // Only first carton has COD
-            productType,
-            recipientCountry: recipientCountryCode,
-            shipmentIndex: i
-          },
-          shipmentCount: 1,
-          status: 'active'
-        });
-        
-        createdLabels.push(labelRecord);
-        console.log(`✅ Label record created for carton #${cartonNumber}:`, labelRecord.id);
-        
-        // IMPORTANT: Update the carton to mark label as printed
-        await storage.updateOrderCarton(carton.id, {
-          labelPrinted: true,
-          trackingNumber
-        });
-        console.log(`✅ Carton #${cartonNumber} marked as labelPrinted: true`);
-      }
-
-      console.log(`✅ All ${createdLabels.length} shipment label records created successfully`);
-
-      res.json({
-        success: true,
+      // Save shipment label to shipment_labels table
+      const savedLabel = await storage.createShipmentLabel({
+        orderId,
+        carrier: 'PPL',
+        trackingNumbers: shipmentNumbers,
         batchId,
-        shipmentNumbers,
-        labelBase64: label.labelContent,
-        format: label.format,
-        labelsCreated: createdLabels.length
-      });
-
-    } catch (error: any) {
-      console.error('Error creating PPL labels:', error);
-      
-      // Provide detailed error information for debugging
-      const errorResponse: any = { 
-        error: error.message || 'Failed to create PPL labels',
-        type: error.constructor.name
-      };
-      
-      // Include detailed error information if available
-      if (error.details) {
-        errorResponse.details = {
-          status: error.details.status,
-          data: error.details.data,
-          url: error.details.url
-        };
-      }
-      
-      // Add helpful hints based on error type
-      if (error.message?.includes('Invalid client') || error.message?.includes('credentials')) {
-        errorResponse.hint = 'PPL API credentials may be incorrect or not configured for the test environment. Please check PPL_CLIENT_ID and PPL_CLIENT_SECRET.';
-      } else if (error.message?.includes('ProductType')) {
-        errorResponse.hint = 'Invalid product type code. Valid codes are: BUSD (Business with COD), BUSS (Business Standard), COND (International with COD)';
-      }
-      
-      res.status(500).json(errorResponse);
-    }
-  });
-
-  // Cancel PPL shipping labels for an order
-  app.post('/api/orders/:orderId/ppl/cancel-labels', async (req, res) => {
-    try {
-      const { orderId } = req.params;
-      const { cancelPPLShipment } = await import('./services/pplService');
-      
-      // Get order details
-      const order = await storage.getOrderById(orderId);
-      if (!order) {
-        return res.status(404).json({ error: 'Order not found' });
-      }
-
-      if (!order.pplShipmentNumbers || order.pplShipmentNumbers.length === 0) {
-        return res.status(400).json({ error: 'No PPL shipments found for this order' });
-      }
-
-      // Cancel all shipments
-      const cancelResults = [];
-      for (const shipmentNumber of order.pplShipmentNumbers) {
-        try {
-          await cancelPPLShipment(shipmentNumber);
-          cancelResults.push({ shipmentNumber, success: true });
-        } catch (error: any) {
-          cancelResults.push({ 
-            shipmentNumber, 
-            success: false, 
-            error: error.message 
-          });
-        }
-      }
-
-      // Update order status and clear PPL data
-      await storage.updateOrder(orderId, {
-        pplStatus: 'cancelled',
-        pplBatchId: null,
-        pplShipmentNumbers: null,
-        pplLabelData: null
-      });
-
-      res.json({
-        success: true,
-        cancelResults
-      });
-
-    } catch (error: any) {
-      console.error('Error cancelling PPL labels:', error);
-      res.status(500).json({ 
-        error: error.message || 'Failed to cancel PPL labels'
-      });
-    }
-  });
-
-  // Delete PPL shipping labels for an order (without cancelling with PPL API)
-  app.delete('/api/orders/:orderId/ppl/labels', async (req, res) => {
-    try {
-      const { orderId } = req.params;
-      
-      // Get order details
-      const order = await storage.getOrderById(orderId);
-      if (!order) {
-        return res.status(404).json({ error: 'Order not found' });
-      }
-
-      if (!order.pplBatchId && !order.pplShipmentNumbers) {
-        return res.status(400).json({ error: 'No PPL labels found for this order' });
-      }
-
-      // Clear all PPL data from the order
-      await storage.updateOrder(orderId, {
-        pplStatus: null,
-        pplBatchId: null,
-        pplShipmentNumbers: null,
-        pplLabelData: null
-      });
-
-      res.json({
-        success: true,
-        message: 'PPL label data removed from order'
-      });
-
-    } catch (error: any) {
-      console.error('Error deleting PPL labels:', error);
-      res.status(500).json({ 
-        error: error.message || 'Failed to delete PPL labels'
-      });
-    }
-  });
-
-  // Get PPL label for an order (retrieve existing label)
-  app.get('/api/orders/:orderId/ppl/label', async (req, res) => {
-    try {
-      const { orderId } = req.params;
-      
-      // Get order details
-      const order = await storage.getOrderById(orderId);
-      if (!order) {
-        return res.status(404).json({ error: 'Order not found' });
-      }
-
-      if (!order.pplLabelData) {
-        return res.status(404).json({ error: 'No PPL label found for this order' });
-      }
-
-      const labelData = order.pplLabelData as any;
-
-      res.json({
-        success: true,
-        batchId: labelData.batchId,
-        shipmentNumbers: labelData.shipmentNumbers,
-        labelBase64: labelData.labelBase64,
-        format: labelData.format,
-        createdAt: labelData.createdAt
-      });
-
-    } catch (error: any) {
-      console.error('Error retrieving PPL label:', error);
-      res.status(500).json({ 
-        error: error.message || 'Failed to retrieve PPL label'
-      });
-    }
-  });
-
-  // Retry PPL label retrieval using existing batchId
-  app.post('/api/orders/:orderId/ppl/retry-label', async (req, res) => {
-    try {
-      const { orderId } = req.params;
-      const { getPPLLabel, getPPLBatchStatus } = await import('./services/pplService');
-      
-      // Get order details
-      const order = await storage.getOrderById(orderId);
-      if (!order) {
-        return res.status(404).json({ error: 'Order not found' });
-      }
-
-      if (!order.pplBatchId) {
-        return res.status(400).json({ error: 'No PPL batch ID found for this order. Please create a new shipment.' });
-      }
-
-      const batchId = order.pplBatchId;
-
-      // Try to get batch status first to check if shipment is ready and get tracking numbers
-      let shipmentNumbers: string[] = [];
-      try {
-        const batchStatus = await getPPLBatchStatus(batchId);
-        console.log('📦 Batch status response:', JSON.stringify(batchStatus, null, 2));
-        if (batchStatus.items && Array.isArray(batchStatus.items)) {
-          shipmentNumbers = batchStatus.items
-            .filter(item => item.shipmentNumber)
-            .map(item => item.shipmentNumber!);
-          console.log('✅ Extracted shipment numbers:', shipmentNumbers);
-        }
-      } catch (statusError) {
-        console.log('Could not get batch status, attempting label retrieval anyway:', statusError);
-      }
-
-      // Try to retrieve the label with required parameters
-      const label = await getPPLLabel(batchId, 'pdf', { offset: 0, limit: 100 });
-
-      // Update order with PPL data
-      await storage.updateOrder(orderId, {
-        pplShipmentNumbers: shipmentNumbers.length > 0 ? shipmentNumbers as any : order.pplShipmentNumbers,
-        pplLabelData: {
-          batchId,
-          shipmentNumbers,
-          labelBase64: label.labelContent,
-          format: label.format,
-          createdAt: new Date().toISOString()
-        } as any,
-        pplStatus: 'created'
+        labelBase64,
+        labelData: {
+          pplShipment,
+          // cartonNumber: nextCartonNumber, // This is for single carton creation
+          referenceId: order.orderId, // Use original order ID for general reference
+          hasCOD
+        },
+        shipmentCount: shipmentNumbers.length,
+        status: 'active'
       });
 
       res.json({
         success: true,
         batchId,
         shipmentNumbers,
-        labelBase64: label.labelContent,
-        format: label.format
+        labelPdf: label.labelContent,
+        trackingNumber: shipmentNumbers[0]
       });
+    } catch (error) {
+      console.error('Failed to create PPL label for order:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to create PPL label for order' 
+      });
+    }
+  });
 
-    } catch (error: any) {
-      console.error('Error retrying PPL label retrieval:', error);
-      
-      const errorResponse: any = { 
-        error: error.message || 'Failed to retrieve PPL label',
-        type: error.constructor.name
-      };
-      
-      if (error.details) {
-        errorResponse.details = {
-          status: error.details.status,
-          data: error.details.data,
-          batchId: error.details.batchId
-        };
-      }
-      
-      errorResponse.hint = 'The shipment may still be processing. Please wait a few moments and try again.';
-      
-      res.status(500).json(errorResponse);
+  // Get PPL batch status
+  app.get('/api/shipping/ppl/batch/:batchId', async (req, res) => {
+    try {
+      const { batchId } = req.params;
+      const status = await getPPLBatchStatus(batchId);
+      res.json(status);
+    } catch (error) {
+      console.error('Failed to get PPL batch status:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to get batch status' 
+      });
     }
   });
 
@@ -10285,17 +9614,17 @@ Return ONLY the subject line without quotes or extra formatting.`,
     try {
       const { key } = req.params;
       const { appSettings } = await import('@shared/schema');
-      
+
       const setting = await db
         .select()
         .from(appSettings)
         .where(eq(appSettings.key, key))
         .limit(1);
-      
+
       if (setting.length === 0) {
         return res.status(404).json({ error: 'Setting not found' });
       }
-      
+
       res.json(setting[0]);
     } catch (error: any) {
       console.error('Error fetching setting:', error);
@@ -10308,7 +9637,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
     try {
       const { key, value, category, description } = req.body;
       const { appSettings } = await import('@shared/schema');
-      
+
       if (!key || !value) {
         return res.status(400).json({ error: 'Key and value are required' });
       }
@@ -10361,7 +9690,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
   app.get('/api/orders/:orderId/files', async (req, res) => {
     try {
       const { orderId } = req.params;
-      
+
       // Get order details to access includedDocuments
       const order = await storage.getOrderById(orderId);
       if (!order) {
@@ -10396,7 +9725,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
             .from(productFiles)
             .where(eq(productFiles.id, fileId))
             .limit(1);
-          
+
           if (fileResult.length > 0) {
             const file = fileResult[0];
             allFiles.push({
@@ -10425,13 +9754,13 @@ Return ONLY the subject line without quotes or extra formatting.`,
   app.get('/api/orders/:orderId/packing-materials', async (req, res) => {
     try {
       const { orderId } = req.params;
-      
+
       // Get order items
       const orderItems = await storage.getOrderItems(orderId);
-      
+
       // Get product details for each item and extract packing materials
       const packingMaterialsMap = new Map();
-      
+
       for (const item of orderItems) {
         if (item.productId) {
           const product = await storage.getProductById(item.productId);
@@ -10451,7 +9780,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
                 }
               }
             }
-            
+
             // Handle single packingMaterialId reference
             if (product.packingMaterialId) {
               const materialId = product.packingMaterialId;
@@ -10462,7 +9791,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
                     .from(packingMaterials)
                     .where(eq(packingMaterials.id, materialId))
                     .limit(1);
-                  
+
                   if (materialDetails.length > 0) {
                     const mat = materialDetails[0];
                     packingMaterialsMap.set(materialId, {
@@ -10479,7 +9808,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
                 }
               }
             }
-            
+
             // Fallback: if product has packing instructions but no material ID
             if (!product.packingMaterialId && !product.packingMaterials && 
                 (product.packingInstructionsText || product.packingInstructionsImage)) {
@@ -10498,9 +9827,9 @@ Return ONLY the subject line without quotes or extra formatting.`,
           }
         }
       }
-      
+
       res.json(Array.from(packingMaterialsMap.values()));
-      
+
     } catch (error) {
       console.error('Error fetching packing materials:', error);
       res.status(500).json({ 
@@ -10513,20 +9842,20 @@ Return ONLY the subject line without quotes or extra formatting.`,
   app.get('/api/orders/:orderId/packing-list.pdf', async (req, res) => {
     try {
       const { orderId } = req.params;
-      
+
       // Get order details
       const order = await storage.getOrderById(orderId);
       if (!order) {
         return res.status(404).json({ error: 'Order not found' });
       }
-      
+
       // Get order items
       const orderItems = await storage.getOrderItems(orderId);
-      
+
       // Get order cartons
       const orderCartons = await storage.getOrderCartons(orderId);
       const cartonCount = orderCartons.length;
-      
+
       // Get shipping address
       let formattedAddress = 'Address not provided';
       if (order.shippingAddressId) {
@@ -10535,29 +9864,29 @@ Return ONLY the subject line without quotes or extra formatting.`,
           if (shippingAddress) {
             // Format address as multi-line string
             const addressLines = [];
-            
+
             // Company name if exists
             if (shippingAddress.company) {
               addressLines.push(shippingAddress.company);
             }
-            
+
             // Full name
             const fullName = `${shippingAddress.firstName} ${shippingAddress.lastName}`.trim();
             if (fullName) {
               addressLines.push(fullName);
             }
-            
+
             // Street address
             const street = shippingAddress.streetNumber 
               ? `${shippingAddress.street} ${shippingAddress.streetNumber}`
               : shippingAddress.street;
             addressLines.push(street);
-            
+
             // City, ZIP, Country
             const cityLine = `${shippingAddress.zipCode} ${shippingAddress.city}`;
             addressLines.push(cityLine);
             addressLines.push(shippingAddress.country);
-            
+
             // Contact info
             if (shippingAddress.tel) {
               addressLines.push(`Tel: ${shippingAddress.tel}`);
@@ -10565,14 +9894,14 @@ Return ONLY the subject line without quotes or extra formatting.`,
             if (shippingAddress.email) {
               addressLines.push(`Email: ${shippingAddress.email}`);
             }
-            
+
             formattedAddress = addressLines.join('\n');
           }
         } catch (error) {
           console.error('Error fetching shipping address:', error);
         }
       }
-      
+
       // Get product details for each item
       const itemsWithProducts = await Promise.all(
         orderItems.map(async (item) => {
@@ -10588,21 +9917,21 @@ Return ONLY the subject line without quotes or extra formatting.`,
           };
         })
       );
-      
+
       // Create a new PDF document
       const doc = new PDFDocument({ 
         size: 'A4', 
         margin: 40,
         bufferPages: true
       });
-      
+
       // Set response headers
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `inline; filename="packing-list-${order.orderId}.pdf"`);
-      
+
       // Pipe the PDF directly to the response
       doc.pipe(res);
-      
+
       // ===== HEADER SECTION =====
       // Add company logo (in black/grayscale)
       const logoPath = path.join(process.cwd(), 'attached_assets', 'logo_1754349267160.png');
@@ -10611,7 +9940,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       } catch (error) {
         console.error('Logo not found, skipping:', error);
       }
-      
+
       // Company information
       doc.fontSize(18)
          .fillColor('#000000')
@@ -10621,20 +9950,20 @@ Return ONLY the subject line without quotes or extra formatting.`,
          .font('Helvetica')
          .fillColor('#666666')
          .text('ID: CZ17587816', 135, 65);
-      
+
       // Document title
       doc.fontSize(26)
          .fillColor('#000000')
          .font('Helvetica-Bold')
          .text('PACKING LIST', 40, 115, { align: 'center' });
-      
+
       // Horizontal line under title
       doc.strokeColor('#000000')
          .lineWidth(2)
          .moveTo(40, 150)
          .lineTo(555, 150)
          .stroke();
-      
+
       // ===== ORDER INFORMATION =====
       const infoStartY = 165;
       doc.fontSize(9)
@@ -10648,7 +9977,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
            month: 'long', 
            day: 'numeric' 
          }), 120, infoStartY);
-      
+
       doc.fontSize(9)
          .fillColor('#666666')
          .font('Helvetica')
@@ -10656,7 +9985,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
          .fillColor('#000000')
          .font('Helvetica-Bold')
          .text(order.orderId, 120, infoStartY + 15);
-      
+
       if (order.shippingMethod) {
         doc.fontSize(9)
            .fillColor('#666666')
@@ -10666,19 +9995,19 @@ Return ONLY the subject line without quotes or extra formatting.`,
            .font('Helvetica-Bold')
            .text(order.shippingMethod, 120, infoStartY + 30);
       }
-      
+
       // ===== CUSTOMER INFORMATION BOX =====
       const customerBoxY = 220;
       // Box background - increased height to accommodate address
       doc.rect(40, customerBoxY, 515, 120)
          .fillAndStroke('#F8F9FA', '#CCCCCC');
-      
+
       // Box title
       doc.fontSize(11)
          .fillColor('#000000')
          .font('Helvetica-Bold')
          .text('SHIP TO:', 50, customerBoxY + 15);
-      
+
       // Address details (no separate customer name line - it's in the formatted address)
       doc.fontSize(9)
          .font('Helvetica')
@@ -10687,14 +10016,14 @@ Return ONLY the subject line without quotes or extra formatting.`,
            width: 500,
            lineGap: 3
          });
-      
+
       // ===== ITEMS TABLE =====
       const tableTop = 355;
-      
+
       // Table header background
       doc.rect(40, tableTop, 515, 28)
          .fillAndStroke('#2C3E50', '#2C3E50');
-      
+
       // Table headers (white text on dark background)
       doc.fontSize(10)
          .font('Helvetica-Bold')
@@ -10704,17 +10033,17 @@ Return ONLY the subject line without quotes or extra formatting.`,
          .text('ITEM DESCRIPTION', 170, tableTop + 9, { width: 250 })
          .text('WEIGHT', 425, tableTop + 9, { width: 60, align: 'right' })
          .text('QTY', 490, tableTop + 9, { width: 60, align: 'right' });
-      
+
       // Table body
       let yPosition = tableTop + 28;
       const rowHeight = 32;
-      
+
       itemsWithProducts.forEach((item, index) => {
         // Check if we need a new page
         if (yPosition > 720) {
           doc.addPage();
           yPosition = 50;
-          
+
           // Redraw table header on new page
           doc.rect(40, yPosition, 515, 28)
              .fillAndStroke('#2C3E50', '#2C3E50');
@@ -10728,12 +10057,12 @@ Return ONLY the subject line without quotes or extra formatting.`,
              .text('QTY', 490, yPosition + 9, { width: 60, align: 'right' });
           yPosition += 28;
         }
-        
+
         // Alternating row colors
         const bgColor = index % 2 === 0 ? '#FFFFFF' : '#F8F9FA';
         doc.rect(40, yPosition, 515, rowHeight)
            .fillAndStroke(bgColor, '#E0E0E0');
-        
+
         // Row data
         doc.fontSize(9)
            .fillColor('#000000')
@@ -10741,35 +10070,35 @@ Return ONLY the subject line without quotes or extra formatting.`,
            .text(`${index + 1}`, 45, yPosition + 10, { width: 25 })
            .text(item.sku || 'N/A', 75, yPosition + 10, { width: 90 })
            .text(item.productName, 170, yPosition + 10, { width: 245, ellipsis: true });
-        
+
         // Weight
         const weightText = item.weight ? `${item.weight}kg` : '-';
         doc.text(weightText, 425, yPosition + 10, { width: 60, align: 'right' });
-        
+
         // Quantity (bold)
         doc.font('Helvetica-Bold')
            .text(item.quantity.toString(), 490, yPosition + 10, { width: 60, align: 'right' });
-        
+
         yPosition += rowHeight;
       });
-      
+
       // ===== SUMMARY SECTION =====
       yPosition += 15;
       if (yPosition > 700) {
         doc.addPage();
         yPosition = 50;
       }
-      
+
       // Summary box
       doc.rect(350, yPosition, 205, 66)
-         .fillAndStroke('#F0F4F8', '#CCCCCC');
-      
+         .fillAndStroke('#F8F9FA', '#CCCCCC');
+
       const totalItems = itemsWithProducts.reduce((sum, item) => sum + item.quantity, 0);
       const totalWeight = itemsWithProducts.reduce((sum, item) => {
         const weight = item.weight || 0;
         return sum + (weight * item.quantity);
       }, 0);
-      
+
       // Total cartons
       doc.fontSize(10)
          .font('Helvetica')
@@ -10778,7 +10107,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
          .font('Helvetica-Bold')
          .fillColor('#000000')
          .text(cartonCount.toString(), 480, yPosition + 10, { align: 'right' });
-      
+
       // Total items
       doc.fontSize(10)
          .font('Helvetica')
@@ -10787,7 +10116,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
          .font('Helvetica-Bold')
          .fillColor('#000000')
          .text(totalItems.toString(), 480, yPosition + 28, { align: 'right' });
-      
+
       // Total weight
       doc.fontSize(10)
          .font('Helvetica')
@@ -10796,7 +10125,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
          .font('Helvetica-Bold')
          .fillColor('#000000')
          .text(`${totalWeight.toFixed(2)} kg`, 480, yPosition + 46, { align: 'right' });
-      
+
       // ===== FOOTER =====
       const footerY = 760;
       doc.fontSize(8)
@@ -10810,7 +10139,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
            align: 'center', 
            width: 515 
          });
-      
+
       // Page numbers
       const range = doc.bufferedPageRange();
       for (let i = 0; i < range.count; i++) {
@@ -10823,10 +10152,10 @@ Return ONLY the subject line without quotes or extra formatting.`,
              width: 515 
            });
       }
-      
+
       // Finalize the PDF
       doc.end();
-      
+
     } catch (error) {
       console.error('Error generating packing list PDF:', error);
       res.status(500).json({ 
@@ -10839,7 +10168,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
   app.get('/api/orders/:orderId/recommend-carton', async (req, res) => {
     try {
       const { orderId } = req.params;
-      
+
       const order = await storage.getOrderById(orderId);
       if (!order) {
         return res.status(404).json({ error: 'Order not found' });
@@ -10884,7 +10213,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
   app.post('/api/orders/:orderId/apply-ai-cartons', async (req, res) => {
     try {
       const { orderId } = req.params;
-      
+
       const order = await storage.getOrderById(orderId);
       if (!order) {
         return res.status(404).json({ error: 'Order not found' });
@@ -10936,7 +10265,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
             updatedAt: new Date()
           })
           .returning();
-        
+
         createdCartons.push(created);
       }
 
@@ -11024,13 +10353,13 @@ Return ONLY the subject line without quotes or extra formatting.`,
     try {
       const { orderId } = req.params;
       const { pickedItems, selectedCartonId } = req.body;
-      
+
       // Create a temporary order object with current picked quantities
       const order = await storage.getOrderById(orderId);
       if (!order) {
         return res.status(404).json({ error: 'Order not found' });
       }
-      
+
       // Update quantities with picked amounts
       const updatedOrder = {
         ...order,
@@ -11039,7 +10368,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
           quantity: pickedItems[item.id] || 0
         }))
       };
-      
+
       // Calculate weight with current picked items
       const calculation = await weightCalculationService.calculatePackageWeight(orderId, selectedCartonId);
       res.json(calculation);
@@ -11055,7 +10384,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
   app.get('/api/product-files', async (req, res) => {
     try {
       const { productId, fileType } = req.query;
-      
+
       let files;
       if (fileType) {
         files = await storage.getFilesByType(fileType as string);
@@ -11064,7 +10393,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       } else {
         files = await storage.getAllFiles();
       }
-      
+
       res.json(files);
     } catch (error) {
       console.error('Error fetching product files:', error);
@@ -11076,40 +10405,76 @@ Return ONLY the subject line without quotes or extra formatting.`,
   app.get('/api/orders/:orderId/packing-files', async (req, res) => {
     try {
       const { orderId } = req.params;
-      
-      // Get order items
+
+      // Get order details to access includedDocuments
       const order = await storage.getOrderById(orderId);
       if (!order) {
         return res.status(404).json({ error: 'Order not found' });
       }
-      
-      const items = await storage.getOrderItems(orderId);
-      const productIds = [...new Set(items.map(item => item.productId))];
-      
-      // Get all files for products in this order
-      const filesPromises = productIds.map(productId => storage.getProductFiles(productId));
-      const filesArrays = await Promise.all(filesPromises);
-      const allFiles = filesArrays.flat();
-      
-      // Group files by type for easy display
-      const filesByType = {
-        MSDS: allFiles.filter(f => f.fileType === 'MSDS'),
-        CPNP: allFiles.filter(f => f.fileType === 'CPNP'),
-        Leaflet: allFiles.filter(f => f.fileType === 'Leaflet'),
-        Manual: allFiles.filter(f => f.fileType === 'Manual'),
-        Certificate: allFiles.filter(f => f.fileType === 'Certificate'),
-        Other: allFiles.filter(f => f.fileType === 'Other'),
-      };
-      
+
+      const allFiles: any[] = [];
+
+      // Get uploaded files from orderFiles table
+      const uploadedFiles = await storage.getOrderFiles(orderId);
+      uploadedFiles.forEach((file) => {
+        allFiles.push({
+          id: file.id,
+          fileName: file.fileName,
+          fileUrl: file.fileUrl,
+          fileType: 'uploaded',
+          fileSize: file.fileSize,
+          mimeType: file.mimeType || 'application/octet-stream',
+          uploadedAt: file.uploadedAt,
+          source: 'uploaded'
+        });
+      });
+
+      // Get includedDocuments from order
+      const includedDocs = order.includedDocuments as any;
+
+      // Get product files by IDs
+      if (includedDocs?.fileIds && Array.isArray(includedDocs.fileIds)) {
+        for (const fileId of includedDocs.fileIds) {
+          const fileResult = await db
+            .select()
+            .from(productFiles)
+            .where(eq(productFiles.id, fileId))
+            .limit(1);
+
+          if (fileResult.length > 0) {
+            const file = fileResult[0];
+            allFiles.push({
+              id: file.id,
+              fileName: file.fileName,
+              fileUrl: file.fileUrl,
+              fileType: file.fileType,
+              mimeType: file.mimeType,
+              description: file.description,
+              language: file.language,
+              source: 'product'
+            });
+          }
+        }
+      }
+
       res.json({
         orderId,
         totalFiles: allFiles.length,
-        filesByType,
+        filesByType: {
+          MSDS: allFiles.filter(f => f.fileType === 'MSDS'),
+          CPNP: allFiles.filter(f => f.fileType === 'CPNP'),
+          Leaflet: allFiles.filter(f => f.fileType === 'Leaflet'),
+          Manual: allFiles.filter(f => f.fileType === 'Manual'),
+          Certificate: allFiles.filter(f => f.fileType === 'Certificate'),
+          Other: allFiles.filter(f => f.fileType === 'Other'),
+        },
         files: allFiles
       });
     } catch (error) {
       console.error('Error fetching packing files:', error);
-      res.status(500).json({ message: 'Failed to fetch packing files' });
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to fetch packing files' 
+      });
     }
   });
 
@@ -11128,7 +10493,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
     try {
       const { orderId } = req.params;
       const { documentIds, packingSessionId } = req.body;
-      
+
       // Update packing session with included documents
       const packingDocuments = {
         orderId,
@@ -11137,7 +10502,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
         includedAt: new Date().toISOString(),
         includedBy: req.user?.id || 'system'
       };
-      
+
       // Store packing document tracking (would need a new table in production)
       res.json({
         success: true,
@@ -11162,13 +10527,13 @@ Return ONLY the subject line without quotes or extra formatting.`,
         packingPhotos,
         shippingLabel
       } = req.body;
-      
+
       // Update order status to ready_to_ship
       const order = await storage.getOrderById(orderId);
       if (!order) {
         return res.status(404).json({ error: 'Order not found' });
       }
-      
+
       // Create packing completion record
       const packingCompletion = {
         orderId,
@@ -11184,14 +10549,14 @@ Return ONLY the subject line without quotes or extra formatting.`,
         previousStatus: order.status,
         newStatus: 'ready_to_ship'
       };
-      
+
       // Update order status
       await storage.updateOrder(orderId, {
         ...order,
         status: 'ready_to_ship',
         packingCompletedAt: new Date().toISOString()
       });
-      
+
       res.json({
         success: true,
         packingCompletion,
@@ -11207,7 +10572,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
   });
 
   // Carton Packing Optimization Routes
-  
+
   // Get all available packing cartons
   app.get('/api/packing-cartons', async (req, res) => {
     try {
@@ -11223,7 +10588,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
   app.post('/api/packing/optimize', async (req, res) => {
     try {
       const { items, shippingCountry } = req.body;
-      
+
       if (!items || items.length === 0) {
         return res.status(400).json({ message: 'No items provided for optimization' });
       }
@@ -11264,31 +10629,13 @@ Return ONLY the subject line without quotes or extra formatting.`,
 
       // Return the optimization plan without saving to database
       res.json({
-        totalCartons: packingPlan.totalCartons,
-        totalWeight: packingPlan.totalWeightKg,
+        suggestions: packingPlan.cartons,
+        cartonCount: packingPlan.totalCartons,
+        nylonWrapItems: packingPlan.nylonWrapItems,
+        reasoning: packingPlan.reasoning,
+        totalWeightKg: packingPlan.totalWeightKg,
         avgUtilization: packingPlan.avgUtilization,
-        estimatedShippingCost,
-        suggestions: packingPlan.suggestions,
-        cartons: packingPlan.cartons.map(carton => {
-          const cartonInfo = cartons.find(c => c.id === carton.cartonId);
-          return {
-            cartonNumber: carton.cartonNumber,
-            cartonId: carton.cartonId,
-            cartonName: cartonInfo?.name || 'Unknown',
-            dimensions: cartonInfo ? `${cartonInfo.innerLengthCm}x${cartonInfo.innerWidthCm}x${cartonInfo.innerHeightCm}` : '',
-            weight: carton.totalWeightKg,
-            utilization: carton.volumeUtilization,
-            fillingWeight: carton.fillingWeightKg,
-            unusedVolume: carton.unusedVolumeCm3,
-            items: carton.items.map(item => ({
-              productId: item.productId,
-              productName: enrichedItems.find(ei => ei.productId === item.productId)?.productName || 'Unknown',
-              quantity: item.quantity,
-              weight: item.weightKg,
-              isEstimated: item.aiEstimated
-            }))
-          };
-        })
+        optimizationSuggestions: packingPlan.suggestions
       });
     } catch (error) {
       console.error('Error optimizing packing:', error);
@@ -11304,16 +10651,16 @@ Return ONLY the subject line without quotes or extra formatting.`,
     try {
       const { orderId } = req.params;
       const planData = req.body as UIPackingPlan;
-      
+
       // Validate the plan data structure
       if (!planData || typeof planData !== 'object') {
         return res.status(400).json({ message: 'Invalid packing plan data' });
       }
-      
+
       if (typeof planData.totalCartons !== 'number' || planData.totalCartons < 0) {
         return res.status(400).json({ message: 'Invalid totalCartons' });
       }
-      
+
       if (!Array.isArray(planData.cartons)) {
         return res.status(400).json({ message: 'Invalid cartons array' });
       }
@@ -11338,23 +10685,23 @@ Return ONLY the subject line without quotes or extra formatting.`,
 
       // Use serializer to convert UI format to DB format
       const serializedData = serializePackingPlanToDB(planData, orderId);
-      
+
       // Validate with Zod schema before inserting
       const insertSchema = createInsertSchema(orderCartonPlans);
       const validatedData = insertSchema.parse({
         ...serializedData,
         checksum
       });
-      
+
       // Use validated data for DB insertion
       const dbPlanData = validatedData;
-      
+
       // Save the plan to database
       const createdPlan = await storage.createOrderCartonPlan(dbPlanData);
 
       // Use serializer to convert items
       const itemsToCreate = serializePackingPlanItems(planData, createdPlan.id);
-      
+
       // Save each item to database
       const createdItems = [];
       for (const itemData of itemsToCreate) {
@@ -11365,7 +10712,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
         const cartonInfo = planCarton?.cartonName 
           ? cartons.find(c => c.name === planCarton.cartonName)
           : null;
-        
+
         const createdItem = await storage.createOrderCartonItem({
           planId: itemData.planId,
           cartonId: cartonInfo?.id || itemData.cartonId,
@@ -11401,7 +10748,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
   app.get('/api/orders/:orderId/packing-plan', async (req, res) => {
     try {
       const { orderId } = req.params;
-      
+
       // Fetch the latest packing plan
       const plan = await storage.getOrderCartonPlan(orderId);
       if (!plan) {
@@ -11411,7 +10758,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
       // Fetch carton items for this plan
       const items = await storage.getOrderCartonItems(plan.id);
       console.log(`Loading packing plan ${plan.id} for order ${orderId}: found ${items.length} items`);
-      
+
       // Fetch all packing cartons for reference
       const allCartons = await storage.getPackingCartons();
 
@@ -11420,14 +10767,14 @@ Return ONLY the subject line without quotes or extra formatting.`,
         items.map(async (item) => {
           let productName = 'Unknown Product';
           let sku = '';
-          
+
           if (item.productId) {
             try {
               const product = await db.query.products.findFirst({
                 where: eq(products.id, item.productId),
                 columns: { name: true, sku: true }
               });
-              
+
               if (product) {
                 productName = product.name;
                 sku = product.sku || '';
@@ -11436,7 +10783,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
               console.error(`Failed to fetch product ${item.productId}:`, err);
             }
           }
-          
+
           return {
             ...item,
             productName,
@@ -11458,11 +10805,11 @@ Return ONLY the subject line without quotes or extra formatting.`,
       // Use deserializer to convert DB format to UI format
       // This function takes the enrichedItems and includes them in the cartons
       const uiPackingPlan = deserializePackingPlanFromDB(plan, enrichedItems, cartonDetails);
-      
+
       // CRITICAL: Verify items are included in ALL cartons
       const totalItemsInPlan = uiPackingPlan.cartons.reduce((sum, c) => sum + (c.items?.length || 0), 0);
       console.log(`Deserialized plan has ${uiPackingPlan.cartons.length} cartons with ${totalItemsInPlan} total items (from ${enrichedItems.length} DB items)`);
-      
+
       // Explicitly verify each carton has items array
       uiPackingPlan.cartons.forEach((carton, idx) => {
         if (!carton.items) {
@@ -11490,7 +10837,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
   app.patch('/api/orders/:orderId/packing-plan/:planId', async (req, res) => {
     try {
       const { planId } = req.params;
-      
+
       // Validate request body
       const updateSchema = z.object({
         status: z.enum(['draft', 'accepted', 'archived']).optional(),
@@ -11504,7 +10851,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
 
       // Update the packing plan
       const updatedPlan = await storage.updateOrderCartonPlan(planId, validatedData);
-      
+
       if (!updatedPlan) {
         return res.status(404).json({ message: 'Packing plan not found' });
       }
@@ -11548,7 +10895,7 @@ Return ONLY the subject line without quotes or extra formatting.`,
   app.get('/api/addresses/autocomplete', async (req, res) => {
     try {
       const query = req.query.q as string;
-      
+
       if (!query) {
         return res.status(400).json({ message: 'Query parameter "q" is required' });
       }
@@ -11586,318 +10933,11 @@ Return ONLY the subject line without quotes or extra formatting.`,
     }
   });
 
-  // AI Smart Paste - Parse Address Endpoint
-  app.post('/api/addresses/parse', async (req, res) => {
-    try {
-      const { rawAddress } = req.body;
-      
-      if (!rawAddress || typeof rawAddress !== 'string') {
-        return res.status(400).json({ message: 'rawAddress is required and must be a string' });
-      }
-
-      const apiKey = process.env.DEEPSEEK_API_KEY;
-      if (!apiKey) {
-        return res.status(500).json({ message: 'DeepSeek API key not configured' });
-      }
-
-      // Country code to English name mapping (matching frontend dropdown)
-      const countryCodeToName: { [key: string]: string } = {
-        'cz': 'Czech Republic',
-        'de': 'Germany',
-        'at': 'Austria',
-        'pl': 'Poland',
-        'sk': 'Slovakia',
-        'hu': 'Hungary',
-        'fr': 'France',
-        'it': 'Italy',
-        'es': 'Spain',
-        'nl': 'Netherlands',
-        'be': 'Belgium',
-        'gb': 'United Kingdom',
-        'us': 'United States',
-        'ca': 'Canada',
-      };
-
-      // Local country name to English name mapping
-      const localToEnglishCountry: { [key: string]: string } = {
-        'česko': 'Czech Republic',
-        'deutschland': 'Germany',
-        'österreich': 'Austria',
-        'polska': 'Poland',
-        'slovensko': 'Slovakia',
-        'magyarország': 'Hungary',
-        'france': 'France',
-        'italia': 'Italy',
-        'españa': 'Spain',
-        'nederland': 'Netherlands',
-        'belgië': 'Belgium',
-        'united kingdom': 'United Kingdom',
-        'česká republika': 'Czech Republic',
-        'czech republic': 'Czech Republic',
-        'germany': 'Germany',
-        'austria': 'Austria',
-        'poland': 'Poland',
-        'slovakia': 'Slovakia',
-        'hungary': 'Hungary',
-        'italy': 'Italy',
-        'spain': 'Spain',
-        'netherlands': 'Netherlands',
-        'belgium': 'Belgium',
-      };
-
-      const OpenAI = (await import('openai')).default;
-      const openai = new OpenAI({ 
-        apiKey,
-        baseURL: 'https://api.deepseek.com'
-      });
-
-      const prompt = `You are an address parsing engine. Extract contact and address information from the text below.
-
-IMPORTANT NAME AND COMPANY PARSING RULES:
-- **Detect business/company names by keywords**: Nail, Salon, Spa, Shop, Store, Studio, Beauty, Hair, Massage, Restaurant, Cafe, Bar, Boutique, etc.
-- **When a line contains BOTH a person name AND business keywords**:
-  * Separate the person name from the company name
-  * Example: "Van Hang Bui Rosa Nail" → firstName: "Van Hang", lastName: "Bui", company: "Rosa Nail"
-  * Example: "Nguyen Thi Mai Nail Studio" → firstName: "Thi Mai", lastName: "Nguyen", company: "Nail Studio"
-
-- **For Vietnamese names** (family name detection):
-  * Common family names: Nguyen, Tran, Le, Pham, Hoang, Phan, Vu, Vo, Dang, Bui, Do, Ho, Ngo, Duong, Ly, Phung, Trinh, Dinh, Mai, Cao, Lam, Vuong, Ta, Huynh, Luu, Dao, Tong, Thai
-  * **CRITICAL: For EXACTLY 2-word names, ALWAYS use**: First word is firstName, second word is lastName
-    - Example: "Ha Dang" → firstName: "Ha", lastName: "Dang" (even though Dang is a family name)
-    - Example: "Diet Lam" → firstName: "Diet", lastName: "Lam"
-    - Example: "Huong Vuong" → firstName: "Huong", lastName: "Vuong"
-    - Example: "Van Bui" → firstName: "Van", lastName: "Bui"
-  * **For 3+ word names with known family names**: That word is lastName, all words BEFORE it are firstName
-    - Example: "Van Hang Bui" → firstName: "Van Hang", lastName: "Bui" (Bui is a known family name)
-    - Example: "Phung Thi Hong Tham" → firstName: "Thi Hong Tham", lastName: "Phung" (Phung is a known family name)
-  * **For 3+ word names without known family names**: First word is lastName, remaining words are firstName
-    - Example: "Minh Tuan Hoang" → firstName: "Tuan Hoang", lastName: "Minh"
-
-- **For Western names**: First word is firstName, remaining words (before any company) are lastName
-- Always preserve name capitalization as given
-
-PHONE NUMBER RULES:
-- Extract phone numbers regardless of prefix (Sdt, Tel, Phone, etc.)
-- Remove prefixes and return only the number
-
-ADDRESS RULES:
-- **Separate street name and house number carefully**:
-  * If street and number are combined (e.g., "Dragounska2545/9A"), split them intelligently
-  * Street name is typically alphabetic characters, number is numeric with optional slash notation (e.g., "2545/9A")
-  * Common European patterns: "StreetName123", "StreetName123/4A", "StreetName 123"
-  * Example: "Dragounska2545/9A" → street: "Dragounska", streetNumber: "2545/9A"
-- Keep original spelling for street names (including diacritics if present)
-- Extract city, postal code, and country from remaining text
-- **IMPORTANT: Always use English country names** (e.g., "Czech Republic" not "Česko", "Germany" not "Deutschland")
-- **Handle compact formats** where all fields are space-separated without labels:
-  * Example: "Company StreetNumber City PostalCode PhoneNumber"
-  * Use context clues: 5-digit numbers often postal codes, 9-digit numbers often phone numbers
-
-Return ONLY valid JSON with these exact fields: firstName, lastName, company, email, phone, street, streetNumber, city, zipCode, country. Use null for missing fields.
-
-EXAMPLE PARSING:
-Input: "Van Duy Lam Pro Nails Dragounska2545/9A Cheb 35002 776887045"
-Output: {
-  "firstName": "Van Duy",
-  "lastName": "Lam",
-  "company": "Pro Nails",
-  "email": null,
-  "phone": "776887045",
-  "street": "Dragounska",
-  "streetNumber": "2545/9A",
-  "city": "Cheb",
-  "zipCode": "35002",
-  "country": null
-}
-
-Input: "Diet Lam Pro Nails Dragounska 2545/9A Cheb 350 02 776887045"
-Output: {
-  "firstName": "Diet",
-  "lastName": "Lam",
-  "company": "Pro Nails",
-  "email": null,
-  "phone": "776887045",
-  "street": "Dragounska",
-  "streetNumber": "2545/9A",
-  "city": "Cheb",
-  "zipCode": "350 02",
-  "country": "Czech Republic"
-}
-
-Text: ${rawAddress}`;
-
-      const completion = await openai.chat.completions.create({
-        model: 'deepseek-chat',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an address parsing engine. Always respond with valid JSON only containing the requested fields.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0,
-        max_tokens: 500,
-        response_format: { type: 'json_object' }
-      });
-
-      const responseText = completion.choices[0]?.message?.content;
-      if (!responseText) {
-        return res.status(500).json({ message: 'Failed to parse address - empty response from AI' });
-      }
-
-      const parsedFields = JSON.parse(responseText);
-
-      // Post-processing: Fix missing firstName for 2-word names
-      // If AI failed to extract firstName but lastName exists, try to split the full name
-      if ((!parsedFields.firstName || parsedFields.firstName.trim() === '') && parsedFields.lastName) {
-        const lastNameWords = parsedFields.lastName.trim().split(/\s+/);
-        
-        // If lastName contains exactly 2 words, split them properly
-        if (lastNameWords.length === 2) {
-          parsedFields.firstName = lastNameWords[0];
-          parsedFields.lastName = lastNameWords[1];
-        } else if (lastNameWords.length > 2) {
-          // For 3+ words, keep first word as firstName, rest as lastName
-          parsedFields.firstName = lastNameWords[0];
-          parsedFields.lastName = lastNameWords.slice(1).join(' ');
-        }
-      }
-      
-      // Also check if AI put the full name in firstName but left lastName empty
-      if (parsedFields.firstName && (!parsedFields.lastName || parsedFields.lastName.trim() === '')) {
-        const firstNameWords = parsedFields.firstName.trim().split(/\s+/);
-        
-        // If firstName contains exactly 2 words, split them properly
-        if (firstNameWords.length === 2) {
-          parsedFields.firstName = firstNameWords[0];
-          parsedFields.lastName = firstNameWords[1];
-        } else if (firstNameWords.length > 2) {
-          // For 3+ words, keep first word as firstName, rest as lastName
-          parsedFields.lastName = firstNameWords[firstNameWords.length - 1];
-          parsedFields.firstName = firstNameWords.slice(0, -1).join(' ');
-        }
-      }
-
-      // Validate and optionally enhance with Nominatim
-      let confidence: 'high' | 'medium' | 'low' = 'medium';
-      
-      // Determine confidence based on how many fields were extracted
-      const fieldCount = Object.values(parsedFields).filter(v => v !== null && v !== '').length;
-      if (fieldCount >= 8) {
-        confidence = 'high';
-      } else if (fieldCount >= 5) {
-        confidence = 'medium';
-      } else {
-        confidence = 'low';
-      }
-
-      // Store original values for debugging
-      const originalStreet = parsedFields.street;
-      const originalCity = parsedFields.city;
-      
-      // Try to validate/enhance address with Nominatim if we have any address components
-      if (parsedFields.street || parsedFields.city || parsedFields.zipCode) {
-        try {
-          parsedFields._nominatimCalled = true;
-          parsedFields._originalStreet = originalStreet;
-          parsedFields._originalCity = originalCity;
-          
-          const searchQuery = [
-            parsedFields.streetNumber,
-            parsedFields.street,
-            parsedFields.city,
-            parsedFields.zipCode,
-            parsedFields.country // Let Nominatim detect country from address components
-          ].filter(Boolean).join(' ');
-          
-          const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&addressdetails=1&limit=1`;
-          const nominatimResponse = await fetch(nominatimUrl, {
-            headers: {
-              'User-Agent': 'DavieSupply/1.0 (Warehouse Management System)'
-            }
-          });
-
-          if (nominatimResponse.ok) {
-            const nominatimData = await nominatimResponse.json();
-            
-            if (nominatimData.length > 0) {
-              const nominatimAddress = nominatimData[0].address;
-              
-              // Always prioritize Nominatim data for accurate local formatting with diacritics
-              if (nominatimAddress?.road) {
-                parsedFields.street = nominatimAddress.road;
-              }
-              if (nominatimAddress?.house_number) {
-                parsedFields.streetNumber = nominatimAddress.house_number;
-              }
-              if (nominatimAddress?.city || nominatimAddress?.town || nominatimAddress?.village) {
-                parsedFields.city = nominatimAddress.city || nominatimAddress.town || nominatimAddress.village;
-              }
-              if (nominatimAddress?.postcode) {
-                // Format Czech postal codes with space (e.g., "431 91")
-                let postcode = nominatimAddress.postcode;
-                if (nominatimAddress?.country_code === 'cz' && postcode.length === 5) {
-                  postcode = postcode.slice(0, 3) + ' ' + postcode.slice(3);
-                }
-                parsedFields.zipCode = postcode;
-              }
-              // Normalize country to English name matching frontend dropdown
-              if (nominatimAddress?.country_code) {
-                const englishCountry = countryCodeToName[nominatimAddress.country_code.toLowerCase()];
-                if (englishCountry) {
-                  parsedFields.country = englishCountry;
-                } else if (nominatimAddress?.country) {
-                  // Fallback to country name normalization
-                  const normalizedCountry = localToEnglishCountry[nominatimAddress.country.toLowerCase()];
-                  parsedFields.country = normalizedCountry || nominatimAddress.country;
-                }
-              } else if (nominatimAddress?.country) {
-                // No country code, try normalizing the country name
-                const normalizedCountry = localToEnglishCountry[nominatimAddress.country.toLowerCase()];
-                parsedFields.country = normalizedCountry || nominatimAddress.country;
-              }
-              
-              // Increase confidence if Nominatim validated the address
-              if (confidence === 'low') confidence = 'medium';
-              else if (confidence === 'medium') confidence = 'high';
-            }
-          }
-        } catch (nominatimError) {
-          console.error('Nominatim validation error:', nominatimError);
-        }
-      }
-
-      // Normalize country name to English if it wasn't already normalized by Nominatim
-      if (parsedFields.country && typeof parsedFields.country === 'string') {
-        const normalizedCountry = localToEnglishCountry[parsedFields.country.toLowerCase()];
-        if (normalizedCountry) {
-          parsedFields.country = normalizedCountry;
-        }
-      }
-
-      // Remove internal debug fields before sending to client
-      delete parsedFields._nominatimCalled;
-      delete parsedFields._originalStreet;
-      delete parsedFields._originalCity;
-      
-      res.json({
-        fields: parsedFields,
-        confidence
-      });
-    } catch (error) {
-      console.error('Error parsing address:', error);
-      res.status(500).json({ message: 'Failed to parse address' });
-    }
-  });
-
   // ARES Lookup Endpoint (Czech company registry)
   app.get('/api/tax/ares-lookup', async (req, res) => {
     try {
       const ico = req.query.ico as string;
-      
+
       if (!ico) {
         return res.status(400).json({ message: 'Query parameter "ico" is required' });
       }
@@ -11923,7 +10963,7 @@ Text: ${rawAddress}`;
       // Extract company information
       const companyName = data.obchodniJmeno || data.nazev || '';
       const address = data.sidlo || {};
-      
+
       const result = {
         companyName,
         street: address.nazevUlice || '',
@@ -12002,7 +11042,7 @@ Text: ${rawAddress}`;
       res.json(result);
     } catch (error) {
       console.error('Error validating VAT:', error);
-      
+
       // Return a response indicating the service might be unavailable
       res.json({
         valid: false,
@@ -12016,7 +11056,7 @@ Text: ${rawAddress}`;
   app.get('/api/facebook/name', async (req, res) => {
     try {
       const facebookUrl = req.query.url as string;
-      
+
       if (!facebookUrl) {
         return res.status(400).json({ message: 'Query parameter "url" is required' });
       }
@@ -12024,7 +11064,7 @@ Text: ${rawAddress}`;
       // Extract Facebook username/ID from URL
       let facebookId = '';
       let extractedName = '';
-      
+
       // Handle various Facebook URL formats including mobile (m.facebook.com)
       // Pattern 1: profile.php?id=NUMERIC_ID (works for both www and mobile)
       const profilePhpMatch = facebookUrl.match(/(?:www\.|m\.)?facebook\.com\/profile\.php\?id=(\d+)/);
@@ -12037,7 +11077,7 @@ Text: ${rawAddress}`;
         const usernameMatch = facebookUrl.match(/(?:www\.|m\.)?facebook\.com\/([^/?#]+)/);
         if (usernameMatch) {
           facebookId = usernameMatch[1];
-          
+
           // Try to extract a meaningful name from username
           // Remove common prefixes and convert to proper case
           const cleanedUsername = facebookId
@@ -12048,7 +11088,7 @@ Text: ${rawAddress}`;
             .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
             .join(' ')
             .trim();
-          
+
           extractedName = cleanedUsername || facebookId;
         }
       }
@@ -12070,19 +11110,9 @@ Text: ${rawAddress}`;
 
 
   // Facebook OAuth endpoints
-  app.get('/api/auth/facebook', (req, res) => {
-    const appId = process.env.FACEBOOK_APP_ID;
-    if (!appId) {
-      return res.status(500).json({ message: 'Facebook App ID not configured' });
-    }
-
-    const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/facebook/callback`;
-    const scope = 'email,public_profile';
-    
-    const facebookAuthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code`;
-    
-    res.redirect(facebookAuthUrl);
-  });
+  app.get('/api/auth/facebook',
+    passport.authenticate('facebook', { scope: ['email'] })
+  );
 
   app.get('/api/auth/facebook/callback', async (req, res) => {
     try {
@@ -12100,9 +11130,9 @@ Text: ${rawAddress}`;
       const tokenResponse = await fetch(
         `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&code=${code}&redirect_uri=${encodeURIComponent(redirectUri)}`
       );
-      
+
       const tokenData = await tokenResponse.json();
-      
+
       if (!tokenData.access_token) {
         console.error('Facebook token error:', tokenData);
         return res.redirect('/login?error=auth_failed');
@@ -12112,9 +11142,9 @@ Text: ${rawAddress}`;
       const userResponse = await fetch(
         `https://graph.facebook.com/v18.0/me?fields=id,name,email,picture.type(large)&access_token=${tokenData.access_token}`
       );
-      
+
       const userData = await userResponse.json();
-      
+
       if (!userData.id) {
         console.error('Facebook user data error:', userData);
         return res.redirect('/login?error=auth_failed');
@@ -12156,11 +11186,11 @@ Text: ${rawAddress}`;
     try {
       const { key } = req.params;
       const setting = await storage.getAppSettingByKey(key);
-      
+
       if (!setting) {
         return res.status(404).json({ message: `Setting with key '${key}' not found` });
       }
-      
+
       res.json(setting);
     } catch (error) {
       console.error('Error fetching app setting:', error);
@@ -12189,13 +11219,13 @@ Text: ${rawAddress}`;
     try {
       const { key } = req.params;
       const data = req.body;
-      
+
       // Check if setting exists first
       const existing = await storage.getAppSettingByKey(key);
       if (!existing) {
         return res.status(404).json({ message: `Setting with key '${key}' not found` });
       }
-      
+
       const updated = await storage.updateAppSetting(key, data);
       res.json(updated);
     } catch (error) {
@@ -12213,13 +11243,13 @@ Text: ${rawAddress}`;
   app.delete('/api/settings/:key', async (req, res) => {
     try {
       const { key } = req.params;
-      
+
       // Check if setting exists first
       const existing = await storage.getAppSettingByKey(key);
       if (!existing) {
         return res.status(404).json({ message: `Setting with key '${key}' not found` });
       }
-      
+
       await storage.deleteAppSetting(key);
       res.status(204).send();
     } catch (error) {
