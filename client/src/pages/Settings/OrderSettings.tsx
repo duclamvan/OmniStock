@@ -83,6 +83,19 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+const valuesAreEqual = (a: any, b: any): boolean => {
+  // Only null, undefined, and empty string are considered "unset"
+  // false and 0 are valid, intentional values
+  const isUnsetA = a === null || a === undefined || a === '';
+  const isUnsetB = b === null || b === undefined || b === '';
+  
+  if (isUnsetA && isUnsetB) return true; // Both unset = equal
+  if (isUnsetA || isUnsetB) return false; // One set, one unset = not equal
+  
+  // Both are set values, compare normally
+  return a === b;
+};
+
 export default function OrderSettings() {
   const { toast } = useToast();
   const { orderSettings, isLoading } = useSettings();
@@ -182,25 +195,26 @@ export default function OrderSettings() {
       const changedEntries = Object.entries(values).filter(([key, value]) => {
         const originalValue = originalSettings[key as keyof FormValues];
         // Only save if value actually changed from original
-        return value !== originalValue;
+        return !valuesAreEqual(value, originalValue);
       });
       
-      // Filter out undefined/null/empty from changed values
-      const savePromises = changedEntries
-        .filter(([_, value]) => value !== undefined && value !== null && value !== '')
-        .map(([key, value]) =>
-          apiRequest('POST', `/api/settings`, { 
-            key: camelToSnake(key), 
-            value: deepCamelToSnake(value), 
-            category: 'orders' 
-          })
-        );
+      // Convert empty strings and undefined to null for explicit clearing
+      const savePromises = changedEntries.map(([key, value]) => {
+        const cleanValue = (value === '' || value === undefined) ? null : value;
+        return apiRequest('POST', `/api/settings`, { 
+          key: camelToSnake(key), 
+          value: deepCamelToSnake(cleanValue), 
+          category: 'orders' 
+        });
+      });
       
       await Promise.all(savePromises);
     },
-    onSuccess: (_, variables) => {
-      setOriginalSettings(variables);
-      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+    onSuccess: async () => {
+      // Invalidate and refetch settings to get true persisted state
+      await queryClient.invalidateQueries({ queryKey: ['/api/settings', 'orders'] });
+      
+      // The useEffect will automatically update originalSettings when new data loads
       toast({
         title: "Settings Saved",
         description: "Order settings have been updated successfully.",
