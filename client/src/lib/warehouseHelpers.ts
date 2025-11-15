@@ -20,8 +20,10 @@ export interface LocationParts {
 
 export interface PalletLocationParts {
   warehouse: string;
-  zone: string;
-  position: string;
+  aisle: string;
+  rack: string;
+  level: string;
+  pallet: string;
 }
 
 /**
@@ -64,32 +66,36 @@ export function parseShelfLocationCode(code: string): LocationParts | null {
 
 /**
  * Parse a pallet location code into its component parts
- * Format: WH1-B03-P05 (new) or WH1-B-B03-P05 (old with area)
+ * Format: WH1-B01-R01-L01-PAL1 (new 5-field format) or WH1-B03-P05 (old 3-field format for backward compatibility)
  */
 export function parsePalletLocationCode(code: string): PalletLocationParts | null {
   if (!code) return null;
   
-  // Try new format first (without area)
-  const newPattern = /^(WH\d+)-([A-Z]\d{2})-P(\d{2})$/;
+  // Try new 5-field format first: WH1-B01-R01-L01-PAL1
+  const newPattern = /^(WH\d+)-([B]\d{2})-R(\d{2})-L(\d{2})-PAL(\d{1,2})$/;
   const newMatch = code.match(newPattern);
   
   if (newMatch) {
     return {
       warehouse: newMatch[1],
-      zone: newMatch[2],
-      position: `P${newMatch[3]}`
+      aisle: newMatch[2],
+      rack: `R${newMatch[3]}`,
+      level: `L${newMatch[4]}`,
+      pallet: `PAL${newMatch[5]}`
     };
   }
   
-  // Try old format with area for backward compatibility
-  const oldPattern = /^(WH\d+)-[A-Z]-([A-Z]\d{2})-P(\d{2})$/;
+  // Try old 3-field format for backward compatibility: WH1-B03-P05
+  const oldPattern = /^(WH\d+)-([B]\d{2})-P(\d{2})$/;
   const oldMatch = code.match(oldPattern);
   
   if (oldMatch) {
     return {
       warehouse: oldMatch[1],
-      zone: oldMatch[2],
-      position: `P${oldMatch[3]}`
+      aisle: oldMatch[2],
+      rack: 'R01',
+      level: 'L01',
+      pallet: `PAL${oldMatch[3]}`
     };
   }
   
@@ -139,11 +145,11 @@ export function validateShelfLocationCode(code: string): boolean {
 
 /**
  * Validate a pallet location code format
- * Format: WH1-B03-P05 (new) or WH1-B-B03-P05 (old with area)
+ * Format: WH1-B01-R01-L01-PAL1 (new 5-field) or WH1-B03-P05 (old 3-field for backward compatibility)
  */
 export function validatePalletLocationCode(code: string): boolean {
-  const newPattern = /^WH\d+-[A-Z]\d{2}-P\d{2}$/;
-  const oldPattern = /^WH\d+-[A-Z]-[A-Z]\d{2}-P\d{2}$/;
+  const newPattern = /^WH\d+-[B]\d{2}-R\d{2}-L\d{2}-PAL\d{1,2}$/;
+  const oldPattern = /^WH\d+-[B]\d{2}-P\d{2}$/;
   return newPattern.test(code) || oldPattern.test(code);
 }
 
@@ -178,18 +184,22 @@ export function generateShelfLocationCode(
 
 /**
  * Generate a pallet location code from components
- * Format: WH1-B03-P05
+ * Format: WH1-B01-R01-L01-PAL1
  */
 export function generatePalletLocationCode(
   warehouse: string,
-  zone: string,
-  position: string
+  aisle: string,
+  rack: string,
+  level: string,
+  pallet: string
 ): string {
   const whFormatted = warehouse.startsWith('WH') ? warehouse : `WH${warehouse}`;
-  const zoneFormatted = zone;
-  const positionFormatted = position.replace(/^P/, '').padStart(2, '0');
+  const aisleFormatted = aisle;
+  const rackFormatted = rack.replace(/^R/, '').padStart(2, '0');
+  const levelFormatted = level.replace(/^L/, '').padStart(2, '0');
+  const palletFormatted = pallet.replace(/^PAL/, '');
   
-  return `${whFormatted}-${zoneFormatted}-P${positionFormatted}`;
+  return `${whFormatted}-${aisleFormatted}-R${rackFormatted}-L${levelFormatted}-PAL${palletFormatted}`;
 }
 
 /**
@@ -272,9 +282,9 @@ export function formatLocationCode(code: string): string {
   const parts = parseLocationCode(code);
   if (!parts) return code;
   
-  // Check if it's a pallet location
-  if ('zone' in parts && 'position' in parts) {
-    return `${parts.warehouse} • ${parts.zone} • ${parts.position}`;
+  // Check if it's a pallet location (has 'pallet' field)
+  if ('pallet' in parts) {
+    return `${parts.warehouse} • ${parts.aisle} • ${parts.rack} • ${parts.level} • ${parts.pallet}`;
   }
   
   // Shelf location
@@ -400,11 +410,32 @@ export function getZoneOptions(zoneLetter: 'B' | 'C' = 'B'): Array<{ value: stri
 
 /**
  * Get position options for pallets (P01-P20)
+ * @deprecated Use getPalletOptions instead for new 5-field pallet format
  */
 export function getPositionOptions(count: number = 20): Array<{ value: string; label: string }> {
   return Array.from({ length: count }, (_, i) => ({
     value: `P${String(i + 1).padStart(2, '0')}`,
     label: `Position ${String(i + 1).padStart(2, '0')}`
+  }));
+}
+
+/**
+ * Get pallet options for new 5-field format (PAL1-PAL99)
+ */
+export function getPalletOptions(count: number = 99): Array<{ value: string; label: string }> {
+  return Array.from({ length: count }, (_, i) => ({
+    value: `PAL${i + 1}`,
+    label: `Pallet ${i + 1}`
+  }));
+}
+
+/**
+ * Get aisle options for pallet racks (B01-B99)
+ */
+export function getPalletAisleOptions(): Array<{ value: string; label: string }> {
+  return Array.from({ length: 99 }, (_, i) => ({
+    value: `B${String(i + 1).padStart(2, '0')}`,
+    label: `Aisle B${String(i + 1).padStart(2, '0')}`
   }));
 }
 
@@ -415,8 +446,8 @@ export function isPalletLocation(code: string): boolean {
   const parts = parseLocationCode(code);
   if (!parts) return false;
   
-  // Check if it's a pallet location by checking for zone and position
-  if ('zone' in parts && 'position' in parts) return true;
+  // Check if it's a pallet location by checking for pallet field
+  if ('pallet' in parts) return true;
   
   // Old logic for backward compatibility
   return ('level' in parts && (parts.level === 'L00' || parts.level === 'L99'));

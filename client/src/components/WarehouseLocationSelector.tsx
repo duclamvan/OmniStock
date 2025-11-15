@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, memo, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Select,
   SelectContent,
@@ -22,14 +23,13 @@ import {
   getLocationTypeIcon,
   getLocationTypeTextColor,
   getLocationTypeLabel,
-  getWarehouseOptions,
   getAreaOptions,
   getAisleOptions,
   getRackOptions,
   getLevelOptions,
   getBinOptions,
-  getZoneOptions,
-  getPositionOptions,
+  getPalletOptions,
+  getPalletAisleOptions,
   LocationType,
   AreaType,
 } from "@/lib/warehouseHelpers";
@@ -53,6 +53,12 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
   className = "",
   disabled = false,
 }: WarehouseLocationSelectorProps) {
+  // Fetch warehouses from database
+  const { data: warehousesData = [] } = useQuery<any[]>({
+    queryKey: ['/api/warehouses'],
+    retry: false,
+  });
+
   // FIX 3: Use orchestrator hook for ALL state management (areaType + manualEntry now in hook!)
   const {
     value: warehouse,
@@ -76,8 +82,10 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
   const [rack, setRack] = useState("R01");
   const [level, setLevel] = useState("L01");
   const [bin, setBin] = useState("B1");
-  const [zone, setZone] = useState("B01");
-  const [position, setPosition] = useState("P01");
+  const [palletAisle, setPalletAisle] = useState("B01");
+  const [palletRack, setPalletRack] = useState("R01");
+  const [palletLevel, setPalletLevel] = useState("L01");
+  const [pallet, setPallet] = useState("PAL1");
   const [manualCode, setManualCode] = useState("");
   const [isValid, setIsValid] = useState(true);
   const [isOldFormat, setIsOldFormat] = useState(false);
@@ -101,15 +109,15 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
         return;
       }
       
-      // Try new pallet/office format
+      // Try new pallet format (5-field: WH1-B01-R01-L01-PAL1)
       const palletParts = parsePalletLocationCode(value);
       if (palletParts) {
-        // Determine if it's office (C prefix) or pallets (B prefix)
-        const isOffice = palletParts.zone.startsWith('C');
-        setAreaType(isOffice ? "office" : "pallets");
+        setAreaType("pallets");
         setWarehouse(palletParts.warehouse, false); // false = not manual, don't mark as override
-        setZone(palletParts.zone);
-        setPosition(palletParts.position);
+        setPalletAisle(palletParts.aisle);
+        setPalletRack(palletParts.rack);
+        setPalletLevel(palletParts.level);
+        setPallet(palletParts.pallet);
         setManualCode(value);
         setIsOldFormat(false);
         setOldFormatCode("");
@@ -132,16 +140,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
         return;
       }
     }
-  }, [value, setWarehouse]);
-
-  // Update zone when areaType changes (pallets=B, office=C)
-  useEffect(() => {
-    if (areaType === 'pallets' && !zone.startsWith('B')) {
-      setZone('B01');
-    } else if (areaType === 'office' && !zone.startsWith('C')) {
-      setZone('C01');
-    }
-  }, [areaType, zone]);
+  }, [value, setWarehouse, setAreaType]);
 
   // Update location code when components change
   useEffect(() => {
@@ -157,14 +156,14 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
       let code = "";
       if (areaType === "shelves") {
         code = generateShelfLocationCode(warehouse, aisle, rack, level, bin);
-      } else if (areaType === "pallets" || areaType === "office") {
-        code = generatePalletLocationCode(warehouse, zone, position);
+      } else if (areaType === "pallets") {
+        code = generatePalletLocationCode(warehouse, palletAisle, palletRack, palletLevel, pallet);
       }
       onChange(code);
       setManualCode(code);
       setIsValid(true);
     }
-  }, [warehouse, areaType, aisle, rack, level, bin, zone, position, manualEntry, onChange, isOldFormat, oldFormatCode]);
+  }, [warehouse, areaType, aisle, rack, level, bin, palletAisle, palletRack, palletLevel, pallet, manualEntry, onChange, isOldFormat, oldFormatCode]);
 
   const handleManualCodeChange = (newCode: string) => {
     setManualCode(newCode);
@@ -187,15 +186,15 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
         return;
       }
       
-      // Try new pallet/office format
+      // Try new pallet format (5-field)
       const palletParts = parsePalletLocationCode(newCode);
       if (palletParts) {
-        // Determine if it's office (C prefix) or pallets (B prefix)
-        const isOffice = palletParts.zone.startsWith('C');
-        setAreaType(isOffice ? "office" : "pallets");
+        setAreaType("pallets");
         setWarehouse(palletParts.warehouse, true); // true = mark as manual
-        setZone(palletParts.zone);
-        setPosition(palletParts.position);
+        setPalletAisle(palletParts.aisle);
+        setPalletRack(palletParts.rack);
+        setPalletLevel(palletParts.level);
+        setPallet(palletParts.pallet);
         setIsOldFormat(false);
         setOldFormatCode("");
         onChange(newCode);
@@ -253,25 +252,48 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
     setBin(value);
   }, []);
 
-  const handleZoneChange = useCallback((value: string) => {
-    setZone(value);
+  const handlePalletAisleChange = useCallback((value: string) => {
+    setPalletAisle(value);
   }, []);
 
-  const handlePositionChange = useCallback((value: string) => {
-    setPosition(value);
+  const handlePalletRackChange = useCallback((value: string) => {
+    setPalletRack(value);
   }, []);
 
-  const warehouseOptions = useMemo(() => getWarehouseOptions(), []);
+  const handlePalletLevelChange = useCallback((value: string) => {
+    setPalletLevel(value);
+  }, []);
+
+  const handlePalletChange = useCallback((value: string) => {
+    setPallet(value);
+  }, []);
+
+  // Generate warehouse options from fetched data
+  const warehouseOptions = useMemo(() => {
+    if (!warehousesData || warehousesData.length === 0) {
+      return [{ value: 'WH1', label: 'Warehouse 1' }];
+    }
+    
+    // Sort by createdAt ascending (oldest first)
+    const sortedWarehouses = [...warehousesData].sort((a, b) => {
+      const dateA = new Date(a.createdAt || 0).getTime();
+      const dateB = new Date(b.createdAt || 0).getTime();
+      return dateA - dateB;
+    });
+    
+    // Number them sequentially
+    return sortedWarehouses.map((warehouse, index) => ({
+      value: warehouse.id,  // Use actual database ID (e.g., "WH-xx-yy")
+      label: `Warehouse ${index + 1}`  // Display as "Warehouse 1", "Warehouse 2", etc.
+    }));
+  }, [warehousesData]);
+
   const aisleOptions = useMemo(() => getAisleOptions(), []);
   const rackOptions = useMemo(() => getRackOptions(), []);
   const levelOptions = useMemo(() => getLevelOptions(), []);
   const binOptions = useMemo(() => getBinOptions(), []);
-  const zoneOptions = useMemo(() => {
-    // Pallets use B zones, Office uses C zones
-    const zoneLetter = areaType === 'office' ? 'C' : 'B';
-    return getZoneOptions(zoneLetter);
-  }, [areaType]);
-  const positionOptions = useMemo(() => getPositionOptions(), []);
+  const palletAisleOptions = useMemo(() => getPalletAisleOptions(), []);
+  const palletOptions = useMemo(() => getPalletOptions(), []);
 
   const LocationTypeIcon = getLocationTypeIcon(locationType);
 
@@ -303,7 +325,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
         </div>
       )}
 
-      {/* Area Type Selector (Shelves/Pallets/Office) */}
+      {/* Area Type Selector (Shelves/Pallets) */}
       <div className="space-y-1">
         <Label htmlFor="area-type" className="text-xs">Storage Type</Label>
         <Select
@@ -329,12 +351,6 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
               <div className="flex items-center gap-1.5">
                 <Layers className="h-3.5 w-3.5" />
                 <span>Pallets</span>
-              </div>
-            </SelectItem>
-            <SelectItem value="office" data-testid="option-office">
-              <div className="flex items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5" />
-                <span>Office</span>
               </div>
             </SelectItem>
           </SelectContent>
@@ -370,7 +386,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                 type="text"
                 value={manualCode}
                 onChange={(e) => handleManualCodeChange(e.target.value.toUpperCase())}
-                placeholder={areaType === "pallets" ? "WH1-B03-P05" : areaType === "office" ? "WH1-C01-P01" : "WH1-A06-R04-L04-B2"}
+                placeholder={areaType === "pallets" ? "WH1-B01-R01-L01-PAL1" : "WH1-A06-R04-L04-B2"}
                 disabled={disabled}
                 data-testid="input-manual-code"
                 className={`h-8 ${!isValid && manualCode ? "border-red-500" : ""}`}
@@ -386,7 +402,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                     <>
                       <AlertCircle className="h-4 w-4 text-red-600" />
                       <span className="text-red-600">
-                        Invalid format. Use: {areaType === "pallets" ? "WH1-B03-P05" : areaType === "office" ? "WH1-C01-P01" : "WH1-A06-R04-L04-B2"}
+                        Invalid format. Use: {areaType === "pallets" ? "WH1-B01-R01-L01-PAL1" : "WH1-A06-R04-L04-B2"}
                       </span>
                     </>
                   )
@@ -575,23 +591,23 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                     </Select>
                   </div>
 
-                  {/* Zone Selector */}
+                  {/* Aisle Selector for Pallets (B01-B99) */}
                   <div>
-                    <Label htmlFor="zone" className="text-xs">Zone</Label>
+                    <Label htmlFor="pallet-aisle" className="text-xs">Aisle</Label>
                     <Select
-                      value={zone}
-                      onValueChange={handleZoneChange}
+                      value={palletAisle}
+                      onValueChange={handlePalletAisleChange}
                       disabled={disabled}
                     >
                       <SelectTrigger
-                        id="zone"
-                        data-testid="select-zone"
+                        id="pallet-aisle"
+                        data-testid="select-pallet-aisle"
                         className="h-9"
                       >
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {zoneOptions.slice(0, 40).map((opt) => (
+                        {palletAisleOptions.slice(0, 30).map((opt) => (
                           <SelectItem
                             key={opt.value}
                             value={opt.value}
@@ -604,23 +620,81 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
                     </Select>
                   </div>
 
-                  {/* Position Selector */}
+                  {/* Row Selector */}
                   <div>
-                    <Label htmlFor="position" className="text-xs">Position</Label>
+                    <Label htmlFor="pallet-rack" className="text-xs">Row</Label>
                     <Select
-                      value={position}
-                      onValueChange={handlePositionChange}
+                      value={palletRack}
+                      onValueChange={handlePalletRackChange}
                       disabled={disabled}
                     >
                       <SelectTrigger
-                        id="position"
-                        data-testid="select-position"
+                        id="pallet-rack"
+                        data-testid="select-pallet-rack"
                         className="h-9"
                       >
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {positionOptions.map((opt) => (
+                        {rackOptions.map((opt) => (
+                          <SelectItem
+                            key={opt.value}
+                            value={opt.value}
+                            data-testid={`option-${opt.value}`}
+                          >
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Level Selector */}
+                  <div>
+                    <Label htmlFor="pallet-level" className="text-xs">Level</Label>
+                    <Select
+                      value={palletLevel}
+                      onValueChange={handlePalletLevelChange}
+                      disabled={disabled}
+                    >
+                      <SelectTrigger
+                        id="pallet-level"
+                        data-testid="select-pallet-level"
+                        className="h-9"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {levelOptions.map((opt) => (
+                          <SelectItem
+                            key={opt.value}
+                            value={opt.value}
+                            data-testid={`option-${opt.value}`}
+                          >
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Pallet Selector (PAL1-PAL99) */}
+                  <div>
+                    <Label htmlFor="pallet" className="text-xs">Pallet</Label>
+                    <Select
+                      value={pallet}
+                      onValueChange={handlePalletChange}
+                      disabled={disabled}
+                    >
+                      <SelectTrigger
+                        id="pallet"
+                        data-testid="select-pallet"
+                        className="h-9"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {palletOptions.map((opt) => (
                           <SelectItem
                             key={opt.value}
                             value={opt.value}
@@ -643,8 +717,8 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <code className="text-base font-mono font-semibold" data-testid="text-location-code">
-                    {manualCode || (isOldFormat && oldFormatCode) || (areaType === "pallets" || areaType === "office"
-                      ? generatePalletLocationCode(warehouse, zone, position)
+                    {manualCode || (isOldFormat && oldFormatCode) || (areaType === "pallets"
+                      ? generatePalletLocationCode(warehouse, palletAisle, palletRack, palletLevel, pallet)
                       : generateShelfLocationCode(warehouse, aisle, rack, level, bin))}
                   </code>
                   <Badge
