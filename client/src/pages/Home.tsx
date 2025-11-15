@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   Package, 
   ShoppingCart, 
@@ -18,10 +19,11 @@ import {
   Plus,
   PackageCheck,
   DollarSign,
-  ClipboardCheck
+  ClipboardCheck,
+  ChevronRight
 } from "lucide-react";
 import { Link } from "wouter";
-import { formatCurrency } from "@/lib/currencyUtils";
+import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 
 interface DashboardMetrics {
   fulfillOrdersToday: number;
@@ -43,7 +45,10 @@ interface LowStockProduct {
 interface RecentOrder {
   id: string;
   orderId: string;
-  customer?: { name?: string };
+  customer?: { 
+    name?: string;
+    imageUrl?: string;
+  };
   status: string;
   grandTotal: string;
   currency: string;
@@ -416,17 +421,36 @@ export default function Home() {
                 {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full" />)}
               </div>
             ) : lowStockProducts.length > 0 ? (
-              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              <div className="space-y-3 max-h-[400px] overflow-y-auto">
                 {lowStockProducts.slice(0, 5).map((product) => (
                   <Link key={product.id} href={`/inventory/${product.id}/edit`}>
-                    <div className="flex items-center justify-between gap-3 p-3 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors min-h-[60px]">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-xs sm:text-sm truncate">{product.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{product.sku}</p>
+                    <div className="group relative flex items-center gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 min-h-[72px]">
+                      {/* Product Icon */}
+                      <div className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center ring-2 ring-slate-100 dark:ring-slate-800">
+                        <Package className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                       </div>
-                      <Badge variant="destructive" className="text-xs shrink-0 whitespace-nowrap">
-                        {product.quantity} left
-                      </Badge>
+
+                      {/* Product Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate mb-1">
+                          {product.name}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                          <span className="font-mono">{product.sku}</span>
+                          <span className="text-slate-300 dark:text-slate-600">•</span>
+                          <span className="text-orange-600 dark:text-orange-400 font-medium">
+                            Alert at {product.lowStockAlert}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Stock Badge & Arrow */}
+                      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                        <Badge variant="destructive" className="text-xs px-3 py-1 font-bold whitespace-nowrap">
+                          {product.quantity} left
+                        </Badge>
+                        <ChevronRight className="h-5 w-5 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
+                      </div>
                     </div>
                   </Link>
                 ))}
@@ -459,23 +483,43 @@ export default function Home() {
                 {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full" />)}
               </div>
             ) : recentOrders.length > 0 ? (
-              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              <div className="space-y-3 max-h-[400px] overflow-y-auto">
                 {recentOrders.slice(0, 5).map((order) => (
                   <Link key={order.id} href={`/orders/${order.id}`}>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 p-3 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors min-h-[60px]">
+                    <div className="group relative flex items-center gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 min-h-[72px]">
+                      {/* Customer Avatar */}
+                      <Avatar className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 ring-2 ring-slate-100 dark:ring-slate-800">
+                        <AvatarImage src={order.customer?.imageUrl} />
+                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white font-semibold text-sm">
+                          {(order.customer?.name || 'W').charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      {/* Order Info */}
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-xs sm:text-sm font-mono truncate">{order.orderId}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {order.customer?.name || 'Walk-in'}
-                        </p>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-semibold text-sm sm:text-base text-slate-900 dark:text-slate-100 font-mono">
+                            {order.orderId}
+                          </p>
+                          <Badge className={`${getStatusColor(order.status)} text-xs px-2 py-0.5`}>
+                            {order.status.replace(/_/g, ' ')}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                          <span className="truncate">{order.customer?.name || 'Walk-in Customer'}</span>
+                          <span className="text-slate-300 dark:text-slate-600">•</span>
+                          <span className="whitespace-nowrap">{formatDate(order.createdAt)}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <Badge className={`${getStatusColor(order.status)} text-xs`} variant="secondary">
-                          {order.status}
-                        </Badge>
-                        <p className="text-xs sm:text-sm font-semibold whitespace-nowrap">
-                          {formatCurrency(parseFloat(order.grandTotal), order.currency as any)}
-                        </p>
+
+                      {/* Amount & Arrow */}
+                      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                        <div className="text-right">
+                          <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                            {formatCurrency(parseFloat(order.grandTotal), order.currency as any)}
+                          </p>
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
                       </div>
                     </div>
                   </Link>
