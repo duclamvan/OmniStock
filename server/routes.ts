@@ -281,10 +281,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Get GLS sender address from settings
-      const settings = await storage.getAppSettings();
-      const glsSenderSetting = settings.find(s => s.key === 'gls_default_sender_address');
-      const senderData = glsSenderSetting?.value ? JSON.parse(glsSenderSetting.value) : undefined;
+      // Get GLS sender address from settings (properly parsed)
+      const shippingSettings = await getSettingsByCategory('shipping');
+      const senderData = shippingSettings.glsDefaultSenderAddress;
       
       const autofillData = {
         recipient: {
@@ -8490,28 +8489,24 @@ Return ONLY the subject line without quotes or extra formatting.`,
         return res.status(404).json({ error: 'Order not found' });
       }
 
-      // Load default PPL sender address from settings
-      const settingsResult = await db
-        .select()
-        .from(appSettings)
-        .where(eq(appSettings.key, 'ppl_default_sender_address'))
-        .limit(1);
-      
-      if (settingsResult.length === 0 || !settingsResult[0].value) {
+      // Load shipping settings (includes all sender addresses, properly parsed)
+      const shippingSettings = await getSettingsByCategory('shipping');
+      const senderAddress = shippingSettings.pplDefaultSenderAddress;
+
+      // Validate that sender address exists
+      if (!senderAddress) {
         return res.status(400).json({ 
           error: 'No default PPL sender address configured. Please set it in Shipping Management settings.' 
         });
       }
 
-      const senderAddress = settingsResult[0].value as any;
-
-      // Validate required sender address fields
+      // Validate required fields (now accessing actual object properties)
       const requiredSenderFields = ['country', 'zipCode', 'city', 'street', 'name'];
       const missingSenderFields = requiredSenderFields.filter(field => !senderAddress[field]);
       
       if (missingSenderFields.length > 0) {
         return res.status(400).json({ 
-          error: `Default sender address is incomplete. Missing required fields: ${missingSenderFields.join(', ')}` 
+          error: `Default sender address is incomplete. Missing: ${missingSenderFields.join(', ')}` 
         });
       }
 
@@ -8750,20 +8745,16 @@ Return ONLY the subject line without quotes or extra formatting.`,
         return res.status(404).json({ error: 'Carton not found' });
       }
 
-      // Load default PPL sender address from settings (your company address)
-      const settingsResult = await db
-        .select()
-        .from(appSettings)
-        .where(eq(appSettings.key, 'ppl_default_sender_address'))
-        .limit(1);
-      
-      if (settingsResult.length === 0 || !settingsResult[0].value) {
+      // Load shipping settings (includes all sender addresses, properly parsed)
+      const shippingSettings = await getSettingsByCategory('shipping');
+      const senderAddress = shippingSettings.pplDefaultSenderAddress;
+
+      // Validate that sender address exists
+      if (!senderAddress) {
         return res.status(400).json({ 
           error: 'No default PPL sender address configured. Please set it in Shipping Management settings.' 
         });
       }
-
-      const senderAddress = settingsResult[0].value as any;
 
       // Get order shipping address (customer/recipient)
       let shippingAddress;
@@ -9473,28 +9464,24 @@ Return ONLY the subject line without quotes or extra formatting.`,
         return res.status(404).json({ error: 'Order not found' });
       }
 
-      // Load default PPL sender address from settings
-      const settingsResult = await db
-        .select()
-        .from(appSettings)
-        .where(eq(appSettings.key, 'ppl_default_sender_address'))
-        .limit(1);
-      
-      if (settingsResult.length === 0 || !settingsResult[0].value) {
+      // Load shipping settings (includes all sender addresses, properly parsed)
+      const shippingSettings = await getSettingsByCategory('shipping');
+      const senderAddress = shippingSettings.pplDefaultSenderAddress;
+
+      // Validate that sender address exists
+      if (!senderAddress) {
         return res.status(400).json({ 
           error: 'No default PPL sender address configured. Please set it in Shipping Management settings.' 
         });
       }
 
-      const senderAddress = settingsResult[0].value as any;
-
-      // Validate required sender address fields
+      // Validate required fields (now accessing actual object properties)
       const requiredFields = ['country', 'zipCode', 'city', 'street', 'name'];
       const missingFields = requiredFields.filter(field => !senderAddress[field]);
       
       if (missingFields.length > 0) {
         return res.status(400).json({ 
-          error: `Default sender address is incomplete. Missing required fields: ${missingFields.join(', ')}` 
+          error: `Default sender address is incomplete. Missing: ${missingFields.join(', ')}` 
         });
       }
 
