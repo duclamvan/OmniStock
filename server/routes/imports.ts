@@ -2936,6 +2936,155 @@ router.get("/shipments/receivable", async (req, res) => {
   }
 });
 
+// ============================================================================
+// RECEIVING PAGE ENDPOINTS (for ReceivingList.tsx)
+// NOTE: These specific routes MUST be before /shipments/:id route
+// ============================================================================
+
+// Get shipments ready to receive (alias for receivable)
+router.get("/shipments/to-receive", async (req, res) => {
+  try {
+    const receivableShipments = await db
+      .select({
+        shipment: shipments,
+        consolidation: consolidations
+      })
+      .from(shipments)
+      .leftJoin(consolidations, eq(shipments.consolidationId, consolidations.id))
+      .where(and(
+        or(
+          eq(shipments.status, 'delivered'),
+          and(
+            eq(shipments.status, 'in transit'),
+            sql`${shipments.estimatedDelivery} <= NOW() + INTERVAL '2 days'`
+          )
+        ),
+        or(
+          isNull(shipments.receivingStatus),
+          eq(shipments.receivingStatus, '')
+        )
+      ))
+      .orderBy(desc(shipments.updatedAt));
+
+    const formattedShipments = receivableShipments.map(({ shipment, consolidation }) => ({
+      ...shipment,
+      consolidation,
+      shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
+    }));
+
+    res.json(formattedShipments);
+  } catch (error) {
+    console.error("Error fetching to-receive shipments:", error);
+    res.status(500).json({ message: "Failed to fetch to-receive shipments" });
+  }
+});
+
+// Get shipments currently being received
+router.get("/shipments/receiving", async (req, res) => {
+  try {
+    const shipmentsWithStatus = await db
+      .select({
+        shipment: shipments,
+        consolidation: consolidations
+      })
+      .from(shipments)
+      .leftJoin(consolidations, eq(shipments.consolidationId, consolidations.id))
+      .where(eq(shipments.receivingStatus, 'receiving'))
+      .orderBy(desc(shipments.updatedAt));
+
+    const formattedShipments = shipmentsWithStatus.map(({ shipment, consolidation }) => ({
+      ...shipment,
+      consolidation,
+      shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
+    }));
+
+    res.json(formattedShipments);
+  } catch (error) {
+    console.error("Error fetching receiving shipments:", error);
+    res.status(500).json({ message: "Failed to fetch receiving shipments" });
+  }
+});
+
+// Get shipments in storage (pending approval)
+router.get("/shipments/storage", async (req, res) => {
+  try {
+    const shipmentsWithStatus = await db
+      .select({
+        shipment: shipments,
+        consolidation: consolidations
+      })
+      .from(shipments)
+      .leftJoin(consolidations, eq(shipments.consolidationId, consolidations.id))
+      .where(eq(shipments.receivingStatus, 'pending_approval'))
+      .orderBy(desc(shipments.updatedAt));
+
+    const formattedShipments = shipmentsWithStatus.map(({ shipment, consolidation }) => ({
+      ...shipment,
+      consolidation,
+      shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
+    }));
+
+    res.json(formattedShipments);
+  } catch (error) {
+    console.error("Error fetching storage shipments:", error);
+    res.status(500).json({ message: "Failed to fetch storage shipments" });
+  }
+});
+
+// Get completed shipments
+router.get("/shipments/completed", async (req, res) => {
+  try {
+    const shipmentsWithStatus = await db
+      .select({
+        shipment: shipments,
+        consolidation: consolidations
+      })
+      .from(shipments)
+      .leftJoin(consolidations, eq(shipments.consolidationId, consolidations.id))
+      .where(eq(shipments.receivingStatus, 'completed'))
+      .orderBy(desc(shipments.updatedAt))
+      .limit(50);
+
+    const formattedShipments = shipmentsWithStatus.map(({ shipment, consolidation }) => ({
+      ...shipment,
+      consolidation,
+      shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
+    }));
+
+    res.json(formattedShipments);
+  } catch (error) {
+    console.error("Error fetching completed shipments:", error);
+    res.status(500).json({ message: "Failed to fetch completed shipments" });
+  }
+});
+
+// Get archived shipments
+router.get("/shipments/archived", async (req, res) => {
+  try {
+    const shipmentsWithStatus = await db
+      .select({
+        shipment: shipments,
+        consolidation: consolidations
+      })
+      .from(shipments)
+      .leftJoin(consolidations, eq(shipments.consolidationId, consolidations.id))
+      .where(eq(shipments.receivingStatus, 'archived'))
+      .orderBy(desc(shipments.updatedAt))
+      .limit(50);
+
+    const formattedShipments = shipmentsWithStatus.map(({ shipment, consolidation }) => ({
+      ...shipment,
+      consolidation,
+      shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
+    }));
+
+    res.json(formattedShipments);
+  } catch (error) {
+    console.error("Error fetching archived shipments:", error);
+    res.status(500).json({ message: "Failed to fetch archived shipments" });
+  }
+});
+
 // Get single shipment by ID with details
 router.get("/shipments/:id", async (req, res) => {
   try {

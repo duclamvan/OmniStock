@@ -58,6 +58,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { soundEffects } from "@/utils/soundEffects";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
+import type { Shipment, Receipt } from "@shared/schema";
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -1387,28 +1388,28 @@ export default function ReceivingList() {
   const [filter, setFilter] = useState("all");
 
   // Fetch shipments data
-  const { data: toReceiveShipments = [], isLoading: isLoadingToReceive } = useQuery({
+  const { data: toReceiveShipments = [], isLoading: isLoadingToReceive } = useQuery<Shipment[]>({
     queryKey: ['/api/imports/shipments/to-receive'],
   });
 
-  const { data: receivingShipments = [], isLoading: isLoadingReceiving } = useQuery({
+  const { data: receivingShipments = [], isLoading: isLoadingReceiving } = useQuery<Shipment[]>({
     queryKey: ['/api/imports/shipments/receiving'],
   });
 
-  const { data: storageShipments = [], isLoading: isLoadingStorage } = useQuery({
+  const { data: storageShipments = [], isLoading: isLoadingStorage } = useQuery<Shipment[]>({
     queryKey: ['/api/imports/shipments/storage'],
   });
 
-  const { data: completedShipments = [], isLoading: isLoadingCompleted } = useQuery({
+  const { data: completedShipments = [], isLoading: isLoadingCompleted } = useQuery<Shipment[]>({
     queryKey: ['/api/imports/shipments/completed'],
   });
 
-  const { data: archivedShipments = [], isLoading: isLoadingArchived } = useQuery({
+  const { data: archivedShipments = [], isLoading: isLoadingArchived } = useQuery<Shipment[]>({
     queryKey: ['/api/imports/shipments/archived'],
   });
 
-  const { data: receipts = [], isLoading: isLoadingReceipts } = useQuery({
-    queryKey: ['/api/receipts'],
+  const { data: receipts = [], isLoading: isLoadingReceipts } = useQuery<Receipt[]>({
+    queryKey: ['/api/imports/receipts'],
   });
 
   // Barcode scanning handler
