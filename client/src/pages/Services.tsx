@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatDate } from "@/lib/currencyUtils";
-import { Plus, Wrench, Trash2, Edit } from "lucide-react";
+import { Plus, Wrench, Trash2, Edit, ChevronDown, ChevronUp, Tag } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +27,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface Service {
   id: string;
@@ -44,6 +49,13 @@ export default function Services() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [deleteServiceId, setDeleteServiceId] = useState<string | null>(null);
+  const [isServiceTypesOpen, setIsServiceTypesOpen] = useState(() => {
+    const saved = localStorage.getItem('serviceTypesExpanded');
+    return saved === null ? true : saved === 'true';
+  });
+  const [isTypeDialogOpen, setIsTypeDialogOpen] = useState(false);
+  const [editingType, setEditingType] = useState<any>(null);
+  const [deleteTypeId, setDeleteTypeId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -51,9 +63,19 @@ export default function Services() {
     priceCzk: "",
     priceEur: "",
   });
+  
+  const [typeFormData, setTypeFormData] = useState({
+    name: "",
+    description: "",
+    color: "#3B82F6",
+  });
 
   const { data: services, isLoading } = useQuery<Service[]>({
     queryKey: ['/api/services'],
+  });
+  
+  const { data: serviceTypes = [], isLoading: typesLoading } = useQuery<any[]>({
+    queryKey: ['/api/service-types'],
   });
 
   const createServiceMutation = useMutation({
@@ -130,6 +152,112 @@ export default function Services() {
       priceEur: "",
     });
   };
+  
+  const resetTypeForm = () => {
+    setTypeFormData({
+      name: "",
+      description: "",
+      color: "#3B82F6",
+    });
+  };
+  
+  const toggleServiceTypes = () => {
+    const newValue = !isServiceTypesOpen;
+    setIsServiceTypesOpen(newValue);
+    localStorage.setItem('serviceTypesExpanded', String(newValue));
+  };
+  
+  // Service Type Mutations
+  const createTypeMutation = useMutation({
+    mutationFn: async (data: typeof typeFormData) => {
+      return await apiRequest('POST', '/api/service-types', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-types'] });
+      setIsTypeDialogOpen(false);
+      resetTypeForm();
+      toast({
+        title: "Success",
+        description: "Service type created successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create service type",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const updateTypeMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: typeof typeFormData }) => {
+      return await apiRequest('PATCH', `/api/service-types/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-types'] });
+      setIsTypeDialogOpen(false);
+      setEditingType(null);
+      resetTypeForm();
+      toast({
+        title: "Success",
+        description: "Service type updated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update service type",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const deleteTypeMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest('DELETE', `/api/service-types/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-types'] });
+      setDeleteTypeId(null);
+      toast({
+        title: "Success",
+        description: "Service type deleted successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete service type",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const handleTypeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingType) {
+      updateTypeMutation.mutate({ id: editingType.id, data: typeFormData });
+    } else {
+      createTypeMutation.mutate(typeFormData);
+    }
+  };
+  
+  const handleEditType = (type: any) => {
+    setEditingType(type);
+    setTypeFormData({
+      name: type.name,
+      description: type.description || "",
+      color: type.color || "#3B82F6",
+    });
+    setIsTypeDialogOpen(true);
+  };
+  
+  const handleAddNewType = () => {
+    setEditingType(null);
+    resetTypeForm();
+    setIsTypeDialogOpen(true);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,8 +295,8 @@ export default function Services() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Services</h1>
-          <p className="text-sm text-gray-500">Manage services like repairs and maintenance</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Services</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Manage services like repairs and maintenance</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -254,9 +382,166 @@ export default function Services() {
         </Dialog>
       </div>
 
+      {/* Service Types Section - Collapsible */}
+      <Collapsible open={isServiceTypesOpen} onOpenChange={toggleServiceTypes}>
+        <Card className="bg-white dark:bg-slate-800">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="p-0 hover:bg-transparent">
+                  <div className="flex items-center gap-2">
+                    <Tag className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                    <CardTitle className="text-lg">Service Types</CardTitle>
+                    {isServiceTypesOpen ? (
+                      <ChevronUp className="h-4 w-4 text-gray-500" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-gray-500" />
+                    )}
+                  </div>
+                </Button>
+              </CollapsibleTrigger>
+              <Dialog open={isTypeDialogOpen} onOpenChange={setIsTypeDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" onClick={handleAddNewType} data-testid="button-add-service-type">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Type
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>{editingType ? "Edit Service Type" : "Add New Service Type"}</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleTypeSubmit} className="space-y-4">
+                    <div>
+                      <Label htmlFor="type-name">Type Name *</Label>
+                      <Input
+                        id="type-name"
+                        value={typeFormData.name}
+                        onChange={(e) => setTypeFormData({ ...typeFormData, name: e.target.value })}
+                        placeholder="e.g., Repair, Maintenance, Installation"
+                        required
+                        data-testid="input-type-name"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="type-description">Description</Label>
+                      <Textarea
+                        id="type-description"
+                        value={typeFormData.description}
+                        onChange={(e) => setTypeFormData({ ...typeFormData, description: e.target.value })}
+                        placeholder="Type description..."
+                        rows={2}
+                        data-testid="input-type-description"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="type-color">Color</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="type-color"
+                          type="color"
+                          value={typeFormData.color}
+                          onChange={(e) => setTypeFormData({ ...typeFormData, color: e.target.value })}
+                          className="w-20 h-10"
+                          data-testid="input-type-color"
+                        />
+                        <Input
+                          type="text"
+                          value={typeFormData.color}
+                          onChange={(e) => setTypeFormData({ ...typeFormData, color: e.target.value })}
+                          placeholder="#3B82F6"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                      <Button type="submit" className="flex-1" data-testid="button-save-type">
+                        {editingType ? "Update Type" : "Create Type"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setIsTypeDialogOpen(false);
+                          setEditingType(null);
+                          resetTypeForm();
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent>
+              {typesLoading ? (
+                <div className="text-center py-4 text-gray-500 dark:text-gray-400">Loading service types...</div>
+              ) : serviceTypes.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <Tag className="h-8 w-8 mx-auto mb-2 text-gray-400 dark:text-gray-600" />
+                  <p>No service types yet. Click "Add Type" to create one.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {serviceTypes.map((type) => (
+                    <div
+                      key={type.id}
+                      className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-700/30 hover:shadow-md transition-shadow"
+                      data-testid={`service-type-${type.id}`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <div
+                            className="w-3 h-3 rounded-full shrink-0"
+                            style={{ backgroundColor: type.color }}
+                          />
+                          <span className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
+                            {type.name}
+                          </span>
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => handleEditType(type)}
+                            data-testid={`button-edit-type-${type.id}`}
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30"
+                            onClick={() => setDeleteTypeId(type.id)}
+                            data-testid={`button-delete-type-${type.id}`}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      {type.description && (
+                        <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2">{type.description}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* Services List */}
       {isLoading ? (
         <div className="text-center py-12">
-          <div className="text-gray-500">Loading services...</div>
+          <div className="text-gray-500 dark:text-gray-400">Loading services...</div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -339,6 +624,26 @@ export default function Services() {
             <AlertDialogAction
               className="bg-red-600 hover:bg-red-700"
               onClick={() => deleteServiceId && deleteServiceMutation.mutate(deleteServiceId)}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!deleteTypeId} onOpenChange={() => setDeleteTypeId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Service Type</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this service type? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => deleteTypeId && deleteTypeMutation.mutate(deleteTypeId)}
             >
               Delete
             </AlertDialogAction>
