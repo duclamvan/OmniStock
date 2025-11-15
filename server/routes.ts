@@ -9638,7 +9638,7 @@ Important:
       const { key, value, category, description } = req.body;
       const { appSettings } = await import('@shared/schema');
 
-      if (!key || !value) {
+      if (!key || value === undefined) {
         return res.status(400).json({ error: 'Key and value are required' });
       }
 
