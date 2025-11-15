@@ -1,95 +1,151 @@
-import { lazy, Suspense, memo, useMemo } from "react";
+import { lazy, Suspense, memo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MobileCardView } from "@/components/ui/responsive-table";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Truck, Package, Euro, TrendingUp, Filter, ArrowUpDown, Bell, Info, AlertCircle, CheckCircle2, ClipboardCheck, ArrowRight } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { 
+  Package, 
+  AlertCircle, 
+  CheckCircle2, 
+  Truck, 
+  ClipboardCheck,
+  Euro,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  AlertTriangle,
+  Target,
+  Users,
+  Headphones,
+  CreditCard,
+  Bell,
+  Info,
+  ArrowRight,
+  Activity
+} from "lucide-react";
 import { Link } from "wouter";
-import { formatCurrency, formatDate } from "@/lib/currencyUtils";
-import { FixedSizeList as List } from "react-window";
-import { useToast } from "@/hooks/use-toast";
+import { formatCurrency } from "@/lib/currencyUtils";
 
-// Lazy load heavy chart components to reduce initial bundle size
+// Lazy load chart components
 const RevenueChart = lazy(() => import("./charts/RevenueChart").then(m => ({ default: m.RevenueChart })));
 const ExpensesChart = lazy(() => import("./charts/ExpensesChart").then(m => ({ default: m.ExpensesChart })));
 const YearlyChart = lazy(() => import("./charts/YearlyChart").then(m => ({ default: m.YearlyChart })));
 
-// Define types for dashboard data
-interface DashboardMetrics {
-  fulfillOrdersToday: number;
-  totalOrdersToday: number;
-  totalRevenueToday: number;
-  totalProfitToday: number;
-  thisMonthRevenue: number;
-  thisMonthProfit: number;
-  lastMonthRevenue: number;
-  lastMonthProfit: number;
+// TypeScript interfaces for API responses
+interface OperationsPulseData {
+  ordersAwaitingFulfillment: number;
+  ordersAtRiskOfSLA: number;
+  pickPackThroughputToday: number;
+  carrierExceptions: number;
+  pendingStockAdjustments: number;
+  timestamp: string;
 }
 
-interface FinancialSummaryItem {
-  month: string;
-  orderCount: number;
-  totalProfitEur: number;
+interface FinancialControlData {
   totalRevenueEur: number;
-  profitCzkOrders: number;
-  revenueCzkOrders: number;
-  profitEurOrders: number;
-  revenueEurOrders: number;
-  totalProfitCzk: number;
-  totalRevenueCzk: number;
+  netProfit: number;
+  profitMarginPercent: number;
+  averageOrderValue: number;
+  agedReceivables: {
+    '30-60days': number;
+    '60-90days': number;
+    '90plus': number;
+  };
+  cashConversionByCurrency: {
+    EUR: { current: number; previous: number; trend: number };
+    CZK: { current: number; previous: number; trend: number };
+    USD: { current: number; previous: number; trend: number };
+  };
+  timestamp: string;
 }
 
-interface Activity {
-  id: string;
-  user?: {
-    firstName?: string;
-    lastName?: string;
-  };
-  description: string;
-  createdAt: string;
+interface InventoryRiskData {
+  lowStockCount: number;
+  overAllocatedSKUs: number;
+  agingInventoryCount: number;
+  inboundBacklog: number;
+  supplierDelayAlerts: number;
+  timestamp: string;
 }
 
-interface UnpaidOrder {
-  id: string;
-  orderId: string;
-  customer?: {
-    name?: string;
+interface FulfillmentEfficiencyData {
+  pickErrorsCount: number;
+  aiCartonRecommendationsUsed: number;
+  aiAdoptionRatePercent: number;
+  ordersByStage: {
+    to_fulfill: number;
+    picking: number;
+    packing: number;
+    shipped: number;
+    fulfilled: number;
   };
-  createdAt: string;
-  grandTotal: string;
-  currency: string;
-  paymentStatus: string;
+  carrierOnTimeRatePercent: number;
+  timestamp: string;
 }
 
-interface LowStockProduct {
-  id: string;
-  name: string;
-  category?: {
-    name?: string;
+interface CustomerSupportData {
+  top10CustomersByRevenue: Array<{
+    customerId: string;
+    name: string;
+    revenue: number;
+  }>;
+  activeSupportTickets: {
+    low: number;
+    medium: number;
+    high: number;
+    urgent: number;
   };
-  sku: string;
-  quantity: number;
-  lowStockAlert: number;
-  supplier?: {
-    name?: string;
+  totalActiveTickets: number;
+  codPaymentStatus: {
+    pending: number;
+    paid: number;
+    failed: number;
   };
+  retentionRatePercent: number;
+  timestamp: string;
 }
 
-// Memoized skeleton components for better performance
+interface SystemAlertsData {
+  returnsSpike: {
+    thisWeek: number;
+    lastWeek: number;
+    averageWeekly: number;
+    spikePercent: number;
+    isAlert: boolean;
+  };
+  recentCriticalNotifications: Array<{
+    id: string;
+    title: string;
+    description: string;
+    type: string;
+    createdAt: string;
+  }>;
+  integrationHealth: {
+    orderProcessing: string;
+    lastOrderAt: string | null;
+    recentOrderCount: number;
+  };
+  recentAuditHighlights: Array<{
+    id: string;
+    description: string;
+    createdAt: string;
+  }>;
+  timestamp: string;
+}
+
+// Skeleton components
 const MetricCardSkeleton = memo(() => (
-  <Card>
+  <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
     <CardContent className="p-4 sm:p-6">
       <div className="flex items-center justify-between">
         <div className="flex-1 space-y-2">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-4 w-24 bg-slate-200 dark:bg-slate-700" />
+          <Skeleton className="h-8 w-32 bg-slate-200 dark:bg-slate-700" />
+          <Skeleton className="h-3 w-20 bg-slate-200 dark:bg-slate-700" />
         </div>
-        <Skeleton className="h-12 w-12 rounded-lg ml-4" />
+        <Skeleton className="h-12 w-12 rounded-lg ml-4 bg-slate-200 dark:bg-slate-700" />
       </div>
     </CardContent>
   </Card>
@@ -97,768 +153,811 @@ const MetricCardSkeleton = memo(() => (
 MetricCardSkeleton.displayName = 'MetricCardSkeleton';
 
 const ChartSkeleton = memo(() => (
-  <Card>
+  <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
     <CardHeader className="flex flex-row items-center justify-between">
-      <Skeleton className="h-6 w-32" />
-      <Skeleton className="h-8 w-24" />
+      <Skeleton className="h-6 w-32 bg-slate-200 dark:bg-slate-700" />
+      <Skeleton className="h-8 w-24 bg-slate-200 dark:bg-slate-700" />
     </CardHeader>
     <CardContent>
-      <Skeleton className="h-64 w-full" />
+      <Skeleton className="h-64 w-full bg-slate-200 dark:bg-slate-700" />
     </CardContent>
   </Card>
 ));
 ChartSkeleton.displayName = 'ChartSkeleton';
 
-const TableRowSkeleton = memo(() => (
-  <TableRow>
-    <TableCell><Skeleton className="h-8 w-8 rounded-full" /></TableCell>
-    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-    <TableCell><Skeleton className="h-6 w-16 rounded" /></TableCell>
-  </TableRow>
-));
-TableRowSkeleton.displayName = 'TableRowSkeleton';
-
-const ActivitySkeleton = memo(() => (
-  <div className="flex items-center space-x-3">
-    <Skeleton className="h-8 w-8 rounded-full" />
-    <div className="flex-1 space-y-1">
-      <Skeleton className="h-4 w-32" />
-      <Skeleton className="h-3 w-48" />
-    </div>
-    <Skeleton className="h-3 w-16" />
-  </div>
-));
-ActivitySkeleton.displayName = 'ActivitySkeleton';
-
 export function Dashboard() {
-  const { toast } = useToast();
-  
-  // Test functions for the stacked notification system
-  const triggerSuccessToast = () => {
-    toast({
-      title: "✅ Success!",
-      description: "Your order has been successfully processed and shipped.",
-      variant: "default",
-    });
-  };
-  
-  const triggerErrorToast = () => {
-    toast({
-      title: "❌ Error Occurred",
-      description: "Failed to process payment. Please check your card details.",
-      variant: "destructive",
-    });
-  };
-  
-  const triggerInfoToast = () => {
-    toast({
-      title: "ℹ️ Information",
-      description: "New inventory items have been added to warehouse location A-1-3.",
-      variant: "default",
-    });
-  };
-  
-  const triggerMultipleToasts = () => {
-    // Trigger multiple toasts to test stacking
-    setTimeout(() => {
-      toast({
-        title: "📦 Order Received",
-        description: "Order #12345 has been received and is being prepared.",
-      });
-    }, 0);
-    
-    setTimeout(() => {
-      toast({
-        title: "🚚 Shipment Update",
-        description: "Your shipment is out for delivery and will arrive today.",
-      });
-    }, 100);
-    
-    setTimeout(() => {
-      toast({
-        title: "✨ New Feature",
-        description: "Check out our new inventory management dashboard!",
-      });
-    }, 200);
-    
-    setTimeout(() => {
-      toast({
-        title: "⚠️ Low Stock Alert",
-        description: "Product SKU-789 is running low on stock. Reorder soon.",
-        variant: "destructive",
-      });
-    }, 300);
-  };
-
-  // Dashboard data with optimized caching settings to reduce unnecessary requests
-  const { data: metrics, isLoading: metricsLoading } = useQuery<DashboardMetrics>({
-    queryKey: ['/api/dashboard/metrics'],
-    staleTime: 60 * 1000, // 60 seconds - metrics are cached on backend
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-    refetchOnWindowFocus: false,
-    refetchOnMount: false, // Prevent refetch on component mount
+  // Query all dashboard endpoints
+  const { data: operationsPulse, isLoading: operationsLoading } = useQuery<OperationsPulseData>({
+    queryKey: ['/api/dashboard/operations-pulse'],
+    staleTime: 60 * 1000,
+    refetchInterval: 60 * 1000,
   });
 
-  const { data: financialSummary, isLoading: summaryLoading } = useQuery<FinancialSummaryItem[]>({
-    queryKey: ['/api/dashboard/financial-summary'],
-    staleTime: 60 * 1000, // 60 seconds - summary is cached on backend
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-    refetchOnWindowFocus: false,
-    refetchOnMount: false, // Prevent refetch on component mount
+  const { data: financialControl, isLoading: financialLoading } = useQuery<FinancialControlData>({
+    queryKey: ['/api/dashboard/financial-control'],
+    staleTime: 60 * 1000,
+    refetchInterval: 60 * 1000,
   });
 
-  const { data: activities, isLoading: activitiesLoading } = useQuery<Activity[]>({
-    queryKey: ['/api/dashboard/activities'],
-    staleTime: 30 * 1000, // 30 seconds - activities are cached on backend
-    gcTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false, // Prevent refetch on component mount
+  const { data: inventoryRisk, isLoading: inventoryLoading } = useQuery<InventoryRiskData>({
+    queryKey: ['/api/dashboard/inventory-risk'],
+    staleTime: 60 * 1000,
+    refetchInterval: 60 * 1000,
   });
 
-  const { data: unpaidOrders, isLoading: unpaidLoading } = useQuery<UnpaidOrder[]>({
-    queryKey: ['/api/orders/unpaid'],
-    staleTime: 60 * 1000, // 60 seconds
-    gcTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false, // Prevent refetch on component mount
+  const { data: fulfillmentEfficiency, isLoading: fulfillmentLoading } = useQuery<FulfillmentEfficiencyData>({
+    queryKey: ['/api/dashboard/fulfillment-efficiency'],
+    staleTime: 60 * 1000,
+    refetchInterval: 60 * 1000,
   });
 
-  const { data: lowStockProducts, isLoading: lowStockLoading } = useQuery<LowStockProduct[]>({
-    queryKey: ['/api/products/low-stock'],
-    staleTime: 60 * 1000, // 60 seconds - low stock is cached on backend
-    gcTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false, // Prevent refetch on component mount
+  const { data: customerSupport, isLoading: customerLoading } = useQuery<CustomerSupportData>({
+    queryKey: ['/api/dashboard/customer-support'],
+    staleTime: 60 * 1000,
+    refetchInterval: 60 * 1000,
   });
 
-  const { data: stockAdjustmentRequests = [] } = useQuery<any[]>({
-    queryKey: ['/api/stock-adjustment-requests'],
-    staleTime: 0, // Always fetch fresh data
-    refetchInterval: 30000, // Refetch every 30 seconds
-    refetchOnWindowFocus: true,
+  const { data: systemAlerts, isLoading: alertsLoading } = useQuery<SystemAlertsData>({
+    queryKey: ['/api/dashboard/system-alerts'],
+    staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
   });
-
-  const pendingAdjustments = useMemo(() => 
-    stockAdjustmentRequests.filter(req => req.status === 'pending'),
-    [stockAdjustmentRequests]
-  );
-
-  // Show skeleton loading state for dashboard
-  if (metricsLoading && !metrics) {
-    return (
-      <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-in fade-in-50 duration-500">
-        {/* Skeleton Metrics Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-          {[...Array(4)].map((_, i) => (
-            <MetricCardSkeleton key={i} />
-          ))}
-        </div>
-        {/* Skeleton Monthly Metrics */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-          {[...Array(4)].map((_, i) => (
-            <MetricCardSkeleton key={i} />
-          ))}
-        </div>
-        {/* Skeleton Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartSkeleton />
-          <ChartSkeleton />
-        </div>
-        <ChartSkeleton />
-      </div>
-    );
-  }
 
   return (
-    <div className="space-y-4 sm:space-y-6 lg:space-y-8">
-      {/* Test Notification System - Remove in production */}
-      <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-blue-200 dark:border-blue-800">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2 text-gray-900 dark:text-gray-100">
-            <Bell className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            Test Notification System
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Click buttons to test the stacked notification system (max 3 visible)</p>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={triggerSuccessToast}
-              className="bg-green-600 hover:bg-green-700"
-              size="sm"
-              data-testid="button-success-toast"
-            >
-              <CheckCircle2 className="h-4 w-4 mr-1" />
-              Success
-            </Button>
-            <Button
-              onClick={triggerErrorToast}
-              variant="destructive"
-              size="sm"
-              data-testid="button-error-toast"
-            >
-              <AlertCircle className="h-4 w-4 mr-1" />
-              Error
-            </Button>
-            <Button
-              onClick={triggerInfoToast}
-              className="bg-blue-600 hover:bg-blue-700"
-              size="sm"
-              data-testid="button-info-toast"
-            >
-              <Info className="h-4 w-4 mr-1" />
-              Info
-            </Button>
-            <Button
-              onClick={triggerMultipleToasts}
-              variant="outline"
-              size="sm"
-              data-testid="button-multiple-toasts"
-            >
-              <Bell className="h-4 w-4 mr-1" />
-              Trigger 4 Toasts (Test Stacking)
-            </Button>
+    <div className="space-y-6 lg:space-y-8">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100" data-testid="heading-dashboard">
+            Admin Command Center
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1" data-testid="text-dashboard-subtitle">
+            Real-time operational intelligence and insights
+          </p>
+        </div>
+        <Badge variant="outline" className="text-sm flex items-center gap-2 w-fit">
+          <Activity className="h-4 w-4 text-green-500" />
+          <span className="text-gray-900 dark:text-gray-100">Live Updates</span>
+        </Badge>
+      </div>
+
+      {/* Section 1: Operations Pulse */}
+      <section>
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-operations-pulse">
+            <Package className="h-5 w-5" />
+            Operations Pulse
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Critical fulfillment metrics</p>
+        </div>
+        
+        {operationsLoading && !operationsPulse ? (
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+            {[...Array(5)].map((_, i) => <MetricCardSkeleton key={i} />)}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Stock Adjustment Approvals Notice */}
-      {pendingAdjustments.length > 0 && (
-        <Card className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20 border-orange-300 dark:border-orange-700">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-orange-100 dark:bg-orange-900/50 rounded-lg">
-                  <ClipboardCheck className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+            {/* Orders to Fulfill */}
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-orders-to-fulfill">Orders to Fulfill</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-orders-to-fulfill">
+                      {operationsPulse?.ordersAwaitingFulfillment || 0}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Awaiting pickup</p>
+                  </div>
+                  <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                    <Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
-                    Pending Stock Adjustment Approvals
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
-                    <span className="font-bold text-orange-600 dark:text-orange-400">{pendingAdjustments.length}</span> stock adjustment {pendingAdjustments.length === 1 ? 'request' : 'requests'} waiting for admin approval
-                  </p>
-                  <Link href="/stock/approvals">
-                    <Button 
-                      size="sm" 
-                      className="bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-800 text-white"
-                      data-testid="button-view-pending-approvals"
-                    >
-                      Review Approvals
-                      <ArrowRight className="h-4 w-4 ml-1" />
-                    </Button>
-                  </Link>
+              </CardContent>
+            </Card>
+
+            {/* SLA Breach Risk */}
+            <Card className={`${(operationsPulse?.ordersAtRiskOfSLA || 0) > 0 ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-sla-breach-risk">SLA Breach Risk</p>
+                    <p className={`text-3xl font-bold mt-1 ${(operationsPulse?.ordersAtRiskOfSLA || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}`} data-testid="value-sla-breach-risk">
+                      {operationsPulse?.ordersAtRiskOfSLA || 0}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">&gt;24h old</p>
+                  </div>
+                  <div className={`p-3 rounded-lg ${(operationsPulse?.ordersAtRiskOfSLA || 0) > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-gray-100 dark:bg-slate-700'}`}>
+                    <AlertCircle className={`h-6 w-6 ${(operationsPulse?.ordersAtRiskOfSLA || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`} />
+                  </div>
                 </div>
-              </div>
-              <Badge variant="destructive" className="text-sm font-bold flex-shrink-0">
-                {pendingAdjustments.length} Pending
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              </CardContent>
+            </Card>
 
-      {/* Key Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-        {/* Fulfill Orders Today */}
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-mobile-sm font-medium text-slate-600 dark:text-gray-400">Orders to Fulfill</p>
-                <p className="text-mobile-2xl font-bold text-slate-900 dark:text-gray-100 mt-1">
-                  {metrics?.fulfillOrdersToday || 0}+
-                </p>
-                <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">Orders to fulfill</p>
-              </div>
-              <div className="p-2 sm:p-3 bg-emerald-100 dark:bg-emerald-900/20 rounded-lg ml-4">
-                <Truck className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600 dark:text-emerald-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            {/* Today's Throughput */}
+            <Card className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-today-throughput">Today's Throughput</p>
+                    <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1" data-testid="value-today-throughput">
+                      {operationsPulse?.pickPackThroughputToday || 0}
+                    </p>
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-1">Orders fulfilled</p>
+                  </div>
+                  <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                    <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Total Orders Today */}
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-mobile-sm font-medium text-slate-600 dark:text-gray-400">Total Orders</p>
-                <p className="text-mobile-2xl font-bold text-slate-900 dark:text-gray-100 mt-1">
-                  {metrics?.totalOrdersToday || 0}+
-                </p>
-                <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">Shipped today</p>
-              </div>
-              <div className="p-2 sm:p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg ml-4">
-                <Package className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            {/* Carrier Exceptions */}
+            <Card className={`${(operationsPulse?.carrierExceptions || 0) > 0 ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-carrier-exceptions">Carrier Exceptions</p>
+                    <p className={`text-3xl font-bold mt-1 ${(operationsPulse?.carrierExceptions || 0) > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-gray-900 dark:text-gray-100'}`} data-testid="value-carrier-exceptions">
+                      {operationsPulse?.carrierExceptions || 0}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Active issues</p>
+                  </div>
+                  <div className={`p-3 rounded-lg ${(operationsPulse?.carrierExceptions || 0) > 0 ? 'bg-orange-100 dark:bg-orange-900/30' : 'bg-gray-100 dark:bg-slate-700'}`}>
+                    <Truck className={`h-6 w-6 ${(operationsPulse?.carrierExceptions || 0) > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'}`} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Total Revenue Today */}
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-mobile-sm font-medium text-slate-600 dark:text-gray-400">Total Revenue</p>
-                <p className="text-mobile-xl font-bold text-slate-900 dark:text-gray-100 mt-1 break-all">
-                  {formatCurrency(metrics?.totalRevenueToday || 0, 'EUR')}
-                </p>
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">Today +10%</p>
-              </div>
-              <div className="p-2 sm:p-3 bg-green-100 dark:bg-green-900/20 rounded-lg ml-4">
-                <Euro className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Total Profit Today */}
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-mobile-sm font-medium text-slate-600 dark:text-gray-400">Total Profit</p>
-                <p className="text-mobile-xl font-bold text-slate-900 dark:text-gray-100 mt-1 break-all">
-                  {formatCurrency(metrics?.totalProfitToday || 0, 'EUR')}
-                </p>
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">Today +15% 🏆</p>
-              </div>
-              <div className="p-2 sm:p-3 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg ml-4">
-                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600 dark:text-yellow-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      {/* Monthly Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <p className="text-mobile-sm font-medium text-slate-600 dark:text-gray-400">This Month's Total Revenue</p>
-            <p className="text-mobile-xl font-bold text-slate-900 dark:text-gray-100 mt-1 break-all">
-              {formatCurrency(metrics?.thisMonthRevenue || 0, 'EUR')}
-            </p>
-            <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">All currencies converted to EUR</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm font-medium text-slate-600 dark:text-gray-400">This Month's Total Profit</p>
-            <p className="text-2xl font-bold text-slate-900 dark:text-gray-100">
-              {formatCurrency(metrics?.thisMonthProfit || 0, 'EUR')}
-            </p>
-            <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">All currencies converted to EUR</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm font-medium text-slate-600 dark:text-gray-400">Last Month's Total Revenue</p>
-            <p className="text-2xl font-bold text-slate-900 dark:text-gray-100">
-              {formatCurrency(metrics?.lastMonthRevenue || 0, 'EUR')}
-            </p>
-            <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">All currencies converted to EUR</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm font-medium text-slate-600 dark:text-gray-400">Last Month's Total Profit</p>
-            <p className="text-2xl font-bold text-slate-900 dark:text-gray-100">
-              {formatCurrency(metrics?.lastMonthProfit || 0, 'EUR')}
-            </p>
-            <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">All currencies converted to EUR</p>
-          </CardContent>
-        </Card>
-      </div>
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-gray-900 dark:text-gray-100">Revenue and Profit</CardTitle>
-            <select className="text-sm border border-slate-300 dark:border-gray-600 rounded px-3 py-1 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100">
-              <option>Year</option>
-              <option>Month</option>
-              <option>Week</option>
-            </select>
-          </CardHeader>
-          <CardContent>
-            <Suspense fallback={<ChartSkeleton />}>
-              <RevenueChart />
-            </Suspense>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-gray-900 dark:text-gray-100">Total Expenses</CardTitle>
-            <select className="text-sm border border-slate-300 dark:border-gray-600 rounded px-3 py-1 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100">
-              <option>This Year</option>
-              <option>Last Year</option>
-            </select>
-          </CardHeader>
-          <CardContent>
-            <Suspense fallback={<ChartSkeleton />}>
-              <ExpensesChart />
-            </Suspense>
-          </CardContent>
-        </Card>
-      </div>
-      {/* Yearly Report Chart */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-gray-900 dark:text-gray-100">Yearly Report</CardTitle>
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-blue-800 dark:bg-blue-600 rounded"></div>
-              <span className="text-sm text-slate-600 dark:text-gray-400">Purchased</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-blue-400 dark:bg-blue-300 rounded"></div>
-              <span className="text-sm text-slate-600 dark:text-gray-400">Sold Amount</span>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Suspense fallback={<ChartSkeleton />}>
-            <YearlyChart />
-          </Suspense>
-        </CardContent>
-      </Card>
-      {/* Data Tables Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        {/* Unpaid Orders */}
-        <Card>
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="text-mobile-lg text-gray-900 dark:text-gray-100">Unpaid Orders</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-            {unpaidLoading ? (
-              <div className="space-y-2 animate-in fade-in-50 duration-500">
-                {/* Mobile Card Skeleton */}
-                <div className="block sm:hidden space-y-4">
-                  {[...Array(4)].map((_, i) => (
-                    <div key={i} className="p-4 border rounded-lg space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Skeleton className="h-8 w-8 rounded-full" />
-                        <Skeleton className="h-6 w-20 rounded" />
-                      </div>
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-6 w-24" />
+            {/* Stock Approvals Needed */}
+            <Link href="/stock/approvals">
+              <Card className={`cursor-pointer hover:shadow-lg transition-shadow ${(operationsPulse?.pendingStockAdjustments || 0) > 0 ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`} data-testid="card-stock-approvals">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-stock-approvals">Stock Approvals</p>
+                      <p className={`text-3xl font-bold mt-1 ${(operationsPulse?.pendingStockAdjustments || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}`} data-testid="value-stock-approvals">
+                        {operationsPulse?.pendingStockAdjustments || 0}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
+                        Review needed <ArrowRight className="h-3 w-3" />
+                      </p>
                     </div>
-                  ))}
-                </div>
-                {/* Desktop Table Skeleton */}
-                <div className="hidden sm:block">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Customer Name</TableHead>
-                        <TableHead>Order ID</TableHead>
-                        <TableHead>Order Date</TableHead>
-                        <TableHead>Order Value</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {[...Array(4)].map((_, i) => (
-                        <TableRowSkeleton key={i} />
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* Mobile Card View */}
-                <MobileCardView
-                  items={unpaidOrders?.slice(0, 4) || []}
-                  renderCard={(order) => (
-                    <div key={order.id} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                              {order.customer?.name?.[0] || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium text-mobile-base text-gray-900 dark:text-gray-100">{order.customer?.name || 'Unknown'}</span>
-                        </div>
-                        <Badge variant={order.paymentStatus === 'pay_later' ? 'default' : 'secondary'} className="text-xs">
-                          {order.paymentStatus === 'pay_later' ? 'Pay Later' : 'Pending'}
-                        </Badge>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 text-mobile-sm">
-                        <div>
-                          <span className="text-gray-500 dark:text-gray-400">Order ID:</span>
-                          <p className="font-medium text-gray-900 dark:text-gray-100">{order.orderId}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500 dark:text-gray-400">Date:</span>
-                          <p className="font-medium text-gray-900 dark:text-gray-100">{formatDate(order.createdAt)}</p>
-                        </div>
-                      </div>
-                      <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                        <span className="text-gray-500 dark:text-gray-400 text-mobile-sm">Order Value:</span>
-                        <p className="font-semibold text-mobile-lg text-gray-900 dark:text-gray-100">{formatCurrency(parseFloat(order.grandTotal), order.currency)}</p>
-                      </div>
+                    <div className={`p-3 rounded-lg ${(operationsPulse?.pendingStockAdjustments || 0) > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-gray-100 dark:bg-slate-700'}`}>
+                      <ClipboardCheck className={`h-6 w-6 ${(operationsPulse?.pendingStockAdjustments || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        )}
+      </section>
+
+      <Separator className="bg-slate-200 dark:bg-slate-700" />
+
+      {/* Section 2: Financial Control */}
+      <section>
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-financial-control">
+            <Euro className="h-5 w-5" />
+            Financial Control
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Revenue, profit, and cash flow metrics</p>
+        </div>
+
+        {financialLoading && !financialControl ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {[...Array(4)].map((_, i) => <MetricCardSkeleton key={i} />)}
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
+              {/* Total Revenue */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-total-revenue">Total Revenue</p>
+                    <Euro className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-total-revenue">
+                    {formatCurrency(financialControl?.totalRevenueEur || 0, 'EUR')}
+                  </p>
+                  {financialControl?.cashConversionByCurrency.EUR && (
+                    <div className="flex items-center gap-1 mt-2">
+                      {financialControl.cashConversionByCurrency.EUR.trend >= 0 ? (
+                        <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      ) : (
+                        <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
+                      )}
+                      <span className={`text-xs ${financialControl.cashConversionByCurrency.EUR.trend >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {Math.abs(financialControl.cashConversionByCurrency.EUR.trend).toFixed(1)}% vs last month
+                      </span>
                     </div>
                   )}
-                />
-                {/* Desktop Table View */}
-                <div className="hidden sm:block overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Customer Name</TableHead>
-                        <TableHead>Order ID</TableHead>
-                        <TableHead>Order Date</TableHead>
-                        <TableHead>Order Value</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {unpaidOrders?.slice(0, 4).map((order) => (
-                        <TableRow key={order.id}>
-                          <TableCell className="flex items-center space-x-2">
-                            <Avatar className="h-6 w-6">
-                              <AvatarFallback className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                                {order.customer?.name?.[0] || 'U'}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-gray-900 dark:text-gray-100">{order.customer?.name || 'Unknown'}</span>
-                          </TableCell>
-                          <TableCell>{order.orderId}</TableCell>
-                          <TableCell>
-                            {formatDate(order.createdAt)}
-                          </TableCell>
-                          <TableCell>
-                            {formatCurrency(parseFloat(order.grandTotal), order.currency)}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={order.paymentStatus === 'pay_later' ? 'default' : 'secondary'}>
-                              {order.paymentStatus === 'pay_later' ? 'Pay Later' : 'Pending'}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
 
-        {/* User Activities */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-gray-900 dark:text-gray-100">User Activities</CardTitle>
+              {/* Net Profit */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-net-profit">Net Profit</p>
+                    <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-net-profit">
+                    {formatCurrency(financialControl?.netProfit || 0, 'EUR')}
+                  </p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                    Margin: <span className="font-semibold text-green-600 dark:text-green-400" data-testid="value-profit-margin">{financialControl?.profitMarginPercent.toFixed(1)}%</span>
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Average Order Value */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-average-order-value">Avg Order Value</p>
+                    <DollarSign className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-average-order-value">
+                    {formatCurrency(financialControl?.averageOrderValue || 0, 'EUR')}
+                  </p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">Per transaction</p>
+                </CardContent>
+              </Card>
+
+              {/* Aged Receivables */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-aged-receivables">Aged Receivables</p>
+                    <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600 dark:text-gray-400">30-60d:</span>
+                      <span className="font-semibold text-gray-900 dark:text-gray-100" data-testid="value-receivables-30-60">
+                        {formatCurrency(financialControl?.agedReceivables['30-60days'] || 0, 'EUR')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600 dark:text-gray-400">60-90d:</span>
+                      <span className="font-semibold text-orange-600 dark:text-orange-400" data-testid="value-receivables-60-90">
+                        {formatCurrency(financialControl?.agedReceivables['60-90days'] || 0, 'EUR')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600 dark:text-gray-400">90+ days:</span>
+                      <span className="font-semibold text-red-600 dark:text-red-400" data-testid="value-receivables-90-plus">
+                        {formatCurrency(financialControl?.agedReceivables['90plus'] || 0, 'EUR')}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Currency Breakdown */}
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-lg text-gray-900 dark:text-gray-100" data-testid="heading-currency-breakdown">Currency Distribution</CardTitle>
+                <CardDescription className="text-gray-600 dark:text-gray-400">This month vs last month</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {Object.entries(financialControl?.cashConversionByCurrency || {}).map(([currency, data]) => (
+                    <div key={currency} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-gray-900 dark:text-gray-100" data-testid={`label-currency-${currency.toLowerCase()}`}>{currency}</span>
+                        <Badge variant={data.trend >= 0 ? 'default' : 'destructive'} className="text-xs">
+                          {data.trend >= 0 ? '+' : ''}{data.trend.toFixed(1)}%
+                        </Badge>
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        Current: <span className="font-semibold text-gray-900 dark:text-gray-100" data-testid={`value-currency-current-${currency.toLowerCase()}`}>{data.current.toFixed(0)}</span>
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        Previous: <span className="font-semibold text-gray-900 dark:text-gray-100" data-testid={`value-currency-previous-${currency.toLowerCase()}`}>{data.previous.toFixed(0)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+      </section>
+
+      <Separator className="bg-slate-200 dark:bg-slate-700" />
+
+      {/* Section 3: Inventory Risk */}
+      <section>
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-inventory-risk">
+            <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            Inventory Risk Alerts
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Stock issues requiring attention</p>
+        </div>
+
+        {inventoryLoading && !inventoryRisk ? (
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => <MetricCardSkeleton key={i} />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {/* Low Stock Products */}
+            <Link href="/products?filter=low-stock">
+              <Card className={`cursor-pointer hover:shadow-lg transition-shadow ${(inventoryRisk?.lowStockCount || 0) > 0 ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`} data-testid="card-low-stock">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className={`h-5 w-5 ${(inventoryRisk?.lowStockCount || 0) > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'}`} />
+                        <p className="font-semibold text-gray-900 dark:text-gray-100" data-testid="label-low-stock">Low Stock Products</p>
+                      </div>
+                      <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100" data-testid="value-low-stock">{inventoryRisk?.lowStockCount || 0}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-1">
+                        View all <ArrowRight className="h-3 w-3" />
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+
+            {/* Over-Allocated SKUs */}
+            <Link href="/inventory">
+              <Card className={`cursor-pointer hover:shadow-lg transition-shadow ${(inventoryRisk?.overAllocatedSKUs || 0) > 0 ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`} data-testid="card-over-allocated">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className={`h-5 w-5 ${(inventoryRisk?.overAllocatedSKUs || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`} />
+                        <p className="font-semibold text-gray-900 dark:text-gray-100" data-testid="label-over-allocated">Over-Allocated SKUs</p>
+                      </div>
+                      <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100" data-testid="value-over-allocated">{inventoryRisk?.overAllocatedSKUs || 0}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-1">
+                        Reconcile <ArrowRight className="h-3 w-3" />
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+
+            {/* Aging Inventory */}
+            <Link href="/products">
+              <Card className={`cursor-pointer hover:shadow-lg transition-shadow ${(inventoryRisk?.agingInventoryCount || 0) > 0 ? 'bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`} data-testid="card-aging-inventory">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className={`h-5 w-5 ${(inventoryRisk?.agingInventoryCount || 0) > 0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-600 dark:text-gray-400'}`} />
+                        <p className="font-semibold text-gray-900 dark:text-gray-100" data-testid="label-aging-inventory">Aging Inventory</p>
+                      </div>
+                      <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100" data-testid="value-aging-inventory">{inventoryRisk?.agingInventoryCount || 0}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">90+ days no movement</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+
+            {/* Inbound Backlog */}
+            <Link href="/receiving">
+              <Card className={`cursor-pointer hover:shadow-lg transition-shadow ${(inventoryRisk?.inboundBacklog || 0) > 0 ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`} data-testid="card-inbound-backlog">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <Package className={`h-5 w-5 ${(inventoryRisk?.inboundBacklog || 0) > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`} />
+                        <p className="font-semibold text-gray-900 dark:text-gray-100" data-testid="label-inbound-backlog">Inbound Backlog</p>
+                      </div>
+                      <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100" data-testid="value-inbound-backlog">{inventoryRisk?.inboundBacklog || 0}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-1">
+                        Process receipts <ArrowRight className="h-3 w-3" />
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+
+            {/* Supplier Delays */}
+            <Link href="/imports">
+              <Card className={`cursor-pointer hover:shadow-lg transition-shadow ${(inventoryRisk?.supplierDelayAlerts || 0) > 0 ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`} data-testid="card-supplier-delays">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <Truck className={`h-5 w-5 ${(inventoryRisk?.supplierDelayAlerts || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`} />
+                        <p className="font-semibold text-gray-900 dark:text-gray-100" data-testid="label-supplier-delays">Supplier Delays</p>
+                      </div>
+                      <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100" data-testid="value-supplier-delays">{inventoryRisk?.supplierDelayAlerts || 0}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-1">
+                        Review shipments <ArrowRight className="h-3 w-3" />
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        )}
+      </section>
+
+      <Separator className="bg-slate-200 dark:bg-slate-700" />
+
+      {/* Section 4: Fulfillment Efficiency & Section 5: Customer & Support */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Section 4: Fulfillment Efficiency */}
+        <section>
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-fulfillment-efficiency">
+              <Target className="h-5 w-5" />
+              Fulfillment Efficiency
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Pick/pack performance metrics</p>
+          </div>
+
+          {fulfillmentLoading && !fulfillmentEfficiency ? (
+            <div className="space-y-4">
+              <MetricCardSkeleton />
+              <MetricCardSkeleton />
+              <MetricCardSkeleton />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Pick Errors */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-pick-errors">Pick Errors (This Month)</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-pick-errors">
+                        {fulfillmentEfficiency?.pickErrorsCount || 0}
+                      </p>
+                    </div>
+                    <AlertCircle className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* AI Adoption Rate */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardContent className="p-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-ai-adoption">AI Carton Recommendations</p>
+                      <Badge variant="default" className="text-xs">{fulfillmentEfficiency?.aiAdoptionRatePercent.toFixed(1)}%</Badge>
+                    </div>
+                    <Progress value={fulfillmentEfficiency?.aiAdoptionRatePercent || 0} className="h-2" data-testid="progress-ai-adoption" />
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      {fulfillmentEfficiency?.aiCartonRecommendationsUsed || 0} orders used AI suggestions
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Carrier OTD */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardContent className="p-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-carrier-otd">Carrier On-Time Delivery</p>
+                      <Badge variant={fulfillmentEfficiency && fulfillmentEfficiency.carrierOnTimeRatePercent >= 90 ? 'default' : 'destructive'} className="text-xs">
+                        {fulfillmentEfficiency?.carrierOnTimeRatePercent.toFixed(1)}%
+                      </Badge>
+                    </div>
+                    <Progress value={fulfillmentEfficiency?.carrierOnTimeRatePercent || 0} className="h-2" data-testid="progress-carrier-otd" />
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Target: &gt;95% delivery within 3 days</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Order Stage Distribution */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardHeader>
+                  <CardTitle className="text-sm text-gray-900 dark:text-gray-100" data-testid="heading-order-stages">Order Stage Distribution</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {fulfillmentEfficiency && Object.entries(fulfillmentEfficiency.ordersByStage).map(([stage, count]) => (
+                    <div key={stage} className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400 capitalize" data-testid={`label-stage-${stage}`}>{stage.replace('_', ' ')}</span>
+                      <Badge variant="outline" data-testid={`value-stage-${stage}`}>{count}</Badge>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </section>
+
+        {/* Section 5: Customer & Support */}
+        <section>
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-customer-support">
+              <Users className="h-5 w-5" />
+              Customer & Support
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Customer metrics and tickets</p>
+          </div>
+
+          {customerLoading && !customerSupport ? (
+            <div className="space-y-4">
+              <MetricCardSkeleton />
+              <MetricCardSkeleton />
+              <MetricCardSkeleton />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Top Customers */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardHeader>
+                  <CardTitle className="text-sm text-gray-900 dark:text-gray-100" data-testid="heading-top-customers">Top 5 Customers (This Month)</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {customerSupport?.top10CustomersByRevenue.slice(0, 5).map((customer, index) => (
+                    <div key={customer.customerId} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">#{index + 1}</span>
+                        <span className="font-medium text-gray-900 dark:text-gray-100" data-testid={`customer-name-${index}`}>{customer.name}</span>
+                      </div>
+                      <span className="font-semibold text-gray-900 dark:text-gray-100" data-testid={`customer-revenue-${index}`}>
+                        {formatCurrency(customer.revenue, 'EUR')}
+                      </span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              {/* Support Tickets */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm text-gray-900 dark:text-gray-100" data-testid="heading-support-tickets">Active Support Tickets</CardTitle>
+                    <Badge variant="outline" data-testid="value-total-tickets">{customerSupport?.totalActiveTickets || 0}</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Low</span>
+                    <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/20" data-testid="value-tickets-low">
+                      {customerSupport?.activeSupportTickets.low || 0}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Medium</span>
+                    <Badge variant="outline" className="bg-yellow-50 dark:bg-yellow-950/20" data-testid="value-tickets-medium">
+                      {customerSupport?.activeSupportTickets.medium || 0}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">High</span>
+                    <Badge variant="warning" data-testid="value-tickets-high">
+                      {customerSupport?.activeSupportTickets.high || 0}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Urgent</span>
+                    <Badge variant="destructive" data-testid="value-tickets-urgent">
+                      {customerSupport?.activeSupportTickets.urgent || 0}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* COD Status */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-cod-status">
+                      <CreditCard className="h-4 w-4" />
+                      COD Collection Status
+                    </CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Pending</span>
+                    <Badge variant="outline" className="bg-yellow-50 dark:bg-yellow-950/20" data-testid="value-cod-pending">
+                      {customerSupport?.codPaymentStatus.pending || 0}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Paid</span>
+                    <Badge variant="default" className="bg-green-600 dark:bg-green-700" data-testid="value-cod-paid">
+                      {customerSupport?.codPaymentStatus.paid || 0}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Failed</span>
+                    <Badge variant="destructive" data-testid="value-cod-failed">
+                      {customerSupport?.codPaymentStatus.failed || 0}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Retention Rate */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-retention-rate">Customer Retention Rate</p>
+                      <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-retention-rate">
+                        {customerSupport?.retentionRatePercent.toFixed(1)}%
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">90-day cohort</p>
+                    </div>
+                    <Users className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </section>
+      </div>
+
+      <Separator className="bg-slate-200 dark:bg-slate-700" />
+
+      {/* Section 6: System & Alerts */}
+      <section>
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-system-alerts">
+            <Bell className="h-5 w-5 text-red-600 dark:text-red-400" />
+            System Alerts & Activity
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Critical alerts and recent activities</p>
+        </div>
+
+        {alertsLoading && !systemAlerts ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <MetricCardSkeleton />
+            <MetricCardSkeleton />
+            <MetricCardSkeleton />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Returns Spike Alert */}
+            <Card className={`${systemAlerts?.returnsSpike.isAlert ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
+              <CardHeader>
+                <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-returns-spike">
+                  <AlertCircle className={`h-4 w-4 ${systemAlerts?.returnsSpike.isAlert ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`} />
+                  Returns Spike Detection
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">This Week</span>
+                  <Badge variant={systemAlerts?.returnsSpike.isAlert ? 'destructive' : 'outline'} data-testid="value-returns-this-week">
+                    {systemAlerts?.returnsSpike.thisWeek || 0}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Last Week</span>
+                  <Badge variant="outline" data-testid="value-returns-last-week">{systemAlerts?.returnsSpike.lastWeek || 0}</Badge>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Trend</span>
+                  <span className={`font-semibold ${systemAlerts?.returnsSpike.spikePercent && systemAlerts.returnsSpike.spikePercent > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`} data-testid="value-returns-trend">
+                    {systemAlerts?.returnsSpike.spikePercent >= 0 ? '+' : ''}{systemAlerts?.returnsSpike.spikePercent.toFixed(1)}%
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Integration Health */}
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-integration-health">
+                  <Activity className="h-4 w-4" />
+                  Integration Health
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Order Processing</span>
+                  <Badge variant={systemAlerts?.integrationHealth.orderProcessing === 'healthy' ? 'default' : 'warning'} data-testid="value-order-processing-status">
+                    {systemAlerts?.integrationHealth.orderProcessing || 'unknown'}
+                  </Badge>
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">
+                  Recent orders: <span className="font-semibold text-gray-900 dark:text-gray-100" data-testid="value-recent-order-count">{systemAlerts?.integrationHealth.recentOrderCount || 0}</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Recent Audit Log */}
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-recent-audit">
+                  <Info className="h-4 w-4" />
+                  Recent Activity Feed
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {systemAlerts?.recentAuditHighlights.slice(0, 5).map((activity) => (
+                    <div key={activity.id} className="text-xs text-gray-600 dark:text-gray-400 pb-2 border-b border-slate-200 dark:border-slate-700 last:border-0" data-testid={`audit-item-${activity.id}`}>
+                      {activity.description}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </section>
+
+      <Separator className="bg-slate-200 dark:bg-slate-700" />
+
+      {/* Financial Analytics Section (Existing Charts) */}
+      <section>
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100" data-testid="heading-financial-analytics">
+            Financial Analytics
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Historical performance trends</p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-gray-900 dark:text-gray-100">Revenue and Profit</CardTitle>
+              <select className="text-sm border border-slate-300 dark:border-gray-600 rounded px-3 py-1 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100">
+                <option>Year</option>
+                <option>Month</option>
+                <option>Week</option>
+              </select>
+            </CardHeader>
+            <CardContent>
+              <Suspense fallback={<ChartSkeleton />}>
+                <RevenueChart />
+              </Suspense>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-gray-900 dark:text-gray-100">Total Expenses</CardTitle>
+              <select className="text-sm border border-slate-300 dark:border-gray-600 rounded px-3 py-1 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100">
+                <option>This Year</option>
+                <option>Last Year</option>
+              </select>
+            </CardHeader>
+            <CardContent>
+              <Suspense fallback={<ChartSkeleton />}>
+                <ExpensesChart />
+              </Suspense>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-gray-900 dark:text-gray-100">Yearly Report</CardTitle>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-blue-800 dark:bg-blue-600 rounded"></div>
+                <span className="text-sm text-slate-600 dark:text-gray-400">Purchased</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-blue-400 dark:bg-blue-300 rounded"></div>
+                <span className="text-sm text-slate-600 dark:text-gray-400">Sold Amount</span>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {activitiesLoading ? (
-                <div className="space-y-4 animate-in fade-in-50 duration-500">
-                  {[...Array(5)].map((_, i) => (
-                    <ActivitySkeleton key={i} />
-                  ))}
-                </div>
-              ) : (
-                activities?.map((activity) => (
-                  <div key={activity.id} className="flex items-center space-x-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                        {activity.user?.firstName?.[0]}{activity.user?.lastName?.[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-900 dark:text-gray-100">
-                        {activity.user?.firstName} {activity.user?.lastName}
-                      </p>
-                      <p className="text-xs text-slate-500 dark:text-gray-400">{activity.description}</p>
-                    </div>
-                    <span className="text-xs text-slate-400 dark:text-gray-500">
-                      {new Date(activity.createdAt).toLocaleTimeString()}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
+            <Suspense fallback={<ChartSkeleton />}>
+              <YearlyChart />
+            </Suspense>
           </CardContent>
         </Card>
-      </div>
-      {/* Low in Stock Table */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-gray-900 dark:text-gray-100">Low in Stock</CardTitle>
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-slate-600 dark:text-gray-400">View All Products</span>
-            <Button variant="outline" size="sm">
-              <Filter className="mr-1 h-4 w-4" />
-              Filter
-            </Button>
-            <Button variant="outline" size="sm">
-              <ArrowUpDown className="mr-1 h-4 w-4" />
-              Sort
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            {lowStockLoading ? (
-              <div className="animate-in fade-in-50 duration-500">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Product ID</TableHead>
-                      <TableHead>Product Name</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>SKU</TableHead>
-                      <TableHead>Current Stock</TableHead>
-                      <TableHead>Low Stock Alert</TableHead>
-                      <TableHead>Supplier</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {[...Array(5)].map((_, i) => (
-                      <TableRow key={i}>
-                        <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                        <TableCell><Skeleton className="h-6 w-20 rounded" /></TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Product ID</TableHead>
-                    <TableHead>Product Name</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>SKU</TableHead>
-                    <TableHead>Current Stock</TableHead>
-                    <TableHead>Low Stock Alert</TableHead>
-                    <TableHead>Supplier</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {lowStockProducts?.slice(0, 5).map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell>#{product.id.slice(-6)}</TableCell>
-                      <TableCell>{product.name}</TableCell>
-                      <TableCell>{product.category?.name || 'N/A'}</TableCell>
-                      <TableCell>{product.sku}</TableCell>
-                      <TableCell>{product.quantity}</TableCell>
-                      <TableCell>{product.lowStockAlert}</TableCell>
-                      <TableCell>{product.supplier?.name || 'N/A'}</TableCell>
-                      <TableCell>
-                        <Badge variant="destructive">Low Stock</Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-      {/* Monthly Financial Summary Table */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-gray-900 dark:text-gray-100">Monthly Financial Summary</CardTitle>
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-slate-600 dark:text-gray-400">All amounts in EUR</span>
-            <Button variant="outline" size="sm">
-              <Filter className="mr-1 h-4 w-4" />
-              Filter
-            </Button>
-            <Button variant="outline" size="sm">
-              <ArrowUpDown className="mr-1 h-4 w-4" />
-              Sort
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            {summaryLoading ? (
-              <div className="animate-in fade-in-50 duration-500">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Month</TableHead>
-                      <TableHead>Total Profit EUR</TableHead>
-                      <TableHead>Total Revenue EUR</TableHead>
-                      <TableHead>Profit CZK Orders</TableHead>
-                      <TableHead>Revenue CZK Orders</TableHead>
-                      <TableHead>Profit EUR Orders</TableHead>
-                      <TableHead>Revenue EUR Orders</TableHead>
-                      <TableHead>Total Profit CZK</TableHead>
-                      <TableHead>Total Revenue CZK</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {[...Array(6)].map((_, i) => (
-                      <TableRow key={i}>
-                        <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Month</TableHead>
-                    <TableHead>Total Profit EUR</TableHead>
-                    <TableHead>Total Revenue EUR</TableHead>
-                    <TableHead>Profit CZK Orders</TableHead>
-                    <TableHead>Revenue CZK Orders</TableHead>
-                    <TableHead>Profit EUR Orders</TableHead>
-                    <TableHead>Revenue EUR Orders</TableHead>
-                    <TableHead>Total Profit CZK</TableHead>
-                    <TableHead>Total Revenue CZK</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {financialSummary?.filter((month) => month.orderCount > 0 || new Date().getFullYear() === parseInt('20' + month.month.split('-')[1])).map((month) => (
-                    <TableRow key={month.month}>
-                      <TableCell>{month.month}</TableCell>
-                      <TableCell>{formatCurrency(month.totalProfitEur || 0, 'EUR')}</TableCell>
-                      <TableCell>{formatCurrency(month.totalRevenueEur || 0, 'EUR')}</TableCell>
-                      <TableCell>{formatCurrency(month.profitCzkOrders || 0, 'CZK')}</TableCell>
-                      <TableCell>{formatCurrency(month.revenueCzkOrders || 0, 'CZK')}</TableCell>
-                      <TableCell>{formatCurrency(month.profitEurOrders || 0, 'EUR')}</TableCell>
-                      <TableCell>{formatCurrency(month.revenueEurOrders || 0, 'EUR')}</TableCell>
-                      <TableCell>{formatCurrency(month.totalProfitCzk || 0, 'CZK')}</TableCell>
-                      <TableCell>{formatCurrency(month.totalRevenueCzk || 0, 'CZK')}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      </section>
     </div>
   );
 }
