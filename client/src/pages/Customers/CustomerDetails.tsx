@@ -380,7 +380,7 @@ export default function CustomerDetails() {
             <TabsList className="w-full lg:w-auto h-auto p-1 bg-slate-100 dark:bg-slate-700">
               <TabsTrigger 
                 value="details" 
-                className="flex-1 lg:flex-none lg:px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm text-sm font-medium"
+                className="flex-1 lg:flex-none lg:px-6 py-2.5 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600 data-[state=active]:shadow-sm text-sm font-medium"
                 data-testid="tab-details"
               >
                 <FileText className="h-4 w-4 lg:mr-2" />
@@ -388,7 +388,7 @@ export default function CustomerDetails() {
               </TabsTrigger>
               <TabsTrigger 
                 value="orders" 
-                className="flex-1 lg:flex-none lg:px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm text-sm font-medium"
+                className="flex-1 lg:flex-none lg:px-6 py-2.5 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600 data-[state=active]:shadow-sm text-sm font-medium"
                 data-testid="tab-orders"
               >
                 <Package className="h-4 w-4 lg:mr-2" />
@@ -399,7 +399,7 @@ export default function CustomerDetails() {
               </TabsTrigger>
               <TabsTrigger 
                 value="prices" 
-                className="flex-1 lg:flex-none lg:px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm text-sm font-medium"
+                className="flex-1 lg:flex-none lg:px-6 py-2.5 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600 data-[state=active]:shadow-sm text-sm font-medium"
                 data-testid="tab-prices"
               >
                 <Tag className="h-4 w-4 lg:mr-2" />
@@ -407,7 +407,7 @@ export default function CustomerDetails() {
               </TabsTrigger>
               <TabsTrigger 
                 value="tickets" 
-                className="flex-1 lg:flex-none lg:px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm text-sm font-medium"
+                className="flex-1 lg:flex-none lg:px-6 py-2.5 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600 data-[state=active]:shadow-sm text-sm font-medium"
                 data-testid="tab-tickets"
               >
                 <Ticket className="h-4 w-4 lg:mr-2" />
@@ -468,16 +468,16 @@ export default function CustomerDetails() {
                   {/* Customer Name */}
                   <div className="flex items-center gap-2 text-sm">
                     <User className="h-4 w-4 text-slate-400 shrink-0" />
-                    <span className="text-slate-600">Customer:</span>
-                    <span className="font-medium" data-testid="text-customerName">{customer.name}</span>
+                    <span className="text-slate-600 dark:text-slate-300">Customer:</span>
+                    <span className="font-medium text-slate-900 dark:text-slate-100" data-testid="text-customerName">{customer.name}</span>
                   </div>
 
                   {/* Country */}
                   {customer.country && (
                     <div className="flex items-center gap-2 text-sm">
                       <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
-                      <span className="text-slate-600">Country:</span>
-                      <span className="font-medium flex items-center gap-1.5" data-testid="text-country">
+                      <span className="text-slate-600 dark:text-slate-300">Country:</span>
+                      <span className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-1.5" data-testid="text-country">
                         <span className="text-lg">{getCountryFlag(getCountryCodeByName(customer.country))}</span>
                         {customer.country}
                       </span>
@@ -488,8 +488,8 @@ export default function CustomerDetails() {
                   {customer.preferredCurrency && (
                     <div className="flex items-center gap-2 text-sm">
                       <Banknote className="h-4 w-4 text-slate-400 shrink-0" />
-                      <span className="text-slate-600">Preferred Currency:</span>
-                      <Badge variant="outline" className="bg-blue-50 border-blue-300 text-blue-700" data-testid="badge-currency">
+                      <span className="text-slate-600 dark:text-slate-300">Preferred Currency:</span>
+                      <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300" data-testid="badge-currency">
                         {customer.preferredCurrency}
                       </Badge>
                     </div>
@@ -498,10 +498,10 @@ export default function CustomerDetails() {
               </Card>
 
               {/* Tax & Business Information Card */}
-              <Card>
+              <Card className="bg-white dark:bg-slate-800">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
-                    <Receipt className="h-5 w-5 text-blue-600" />
+                    <Receipt className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     Tax & Business Information
                   </CardTitle>
                 </CardHeader>
@@ -510,20 +510,20 @@ export default function CustomerDetails() {
                     <>
                       {/* Czech Company Information */}
                       {customer.country === 'Czech Republic' && (customer.ico || customer.dic) && (
-                        <div className="space-y-2 pb-3 border-b">
-                          <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Czech Company Information</h4>
+                        <div className="space-y-2 pb-3 border-b dark:border-gray-700">
+                          <h4 className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">Czech Company Information</h4>
                           {customer.ico && (
                             <div className="flex items-center gap-2 text-sm">
                               <Building className="h-4 w-4 text-slate-400 shrink-0" />
-                              <span className="text-slate-600">IČO:</span>
-                              <span className="font-medium font-mono" data-testid="text-ico">{customer.ico}</span>
+                              <span className="text-slate-600 dark:text-slate-300">IČO:</span>
+                              <span className="font-medium font-mono text-slate-900 dark:text-slate-100" data-testid="text-ico">{customer.ico}</span>
                             </div>
                           )}
                           {customer.dic && (
                             <div className="flex items-center gap-2 text-sm">
                               <Building className="h-4 w-4 text-slate-400 shrink-0" />
-                              <span className="text-slate-600">DIČ:</span>
-                              <span className="font-medium font-mono" data-testid="text-dic">{customer.dic}</span>
+                              <span className="text-slate-600 dark:text-slate-300">DIČ:</span>
+                              <span className="font-medium font-mono text-slate-900 dark:text-slate-100" data-testid="text-dic">{customer.dic}</span>
                             </div>
                           )}
                         </div>
@@ -685,10 +685,10 @@ export default function CustomerDetails() {
             </div>
 
             {/* Shipping Addresses Card */}
-            <Card>
+            <Card className="bg-white dark:bg-slate-800">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
-                  <Truck className="h-5 w-5 text-blue-600" />
+                  <Truck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   Shipping Addresses
                   {shippingAddresses.length > 0 && (
                     <Badge variant="secondary" className="ml-2">
@@ -699,36 +699,36 @@ export default function CustomerDetails() {
               </CardHeader>
               <CardContent>
                 {shippingAddresses.length === 0 ? (
-                  <div className="text-center py-8 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
-                    <Truck className="mx-auto h-12 w-12 mb-3 text-slate-300" />
-                    <p className="text-sm font-medium text-slate-700">No shipping addresses added yet</p>
-                    <p className="text-xs text-slate-500 mt-1">Shipping addresses will appear here when added</p>
+                  <div className="text-center py-8 bg-slate-50 dark:bg-slate-900/50 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700">
+                    <Truck className="mx-auto h-12 w-12 mb-3 text-slate-300 dark:text-slate-600" />
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">No shipping addresses added yet</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Shipping addresses will appear here when added</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {shippingAddresses.map((address: any, index: number) => (
                       <div 
                         key={address.id || index} 
-                        className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 hover:bg-slate-50 transition-colors"
+                        className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-slate-50/50 dark:bg-slate-700/30 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
                         data-testid={`card-shippingAddress-${index}`}
                       >
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
-                            <span className="font-semibold text-sm text-slate-900">
+                            <span className="font-semibold text-sm text-slate-900 dark:text-slate-100">
                               {address.company || `${address.firstName} ${address.lastName}`}
                             </span>
                           </div>
                           {address.isPrimary && (
-                            <Badge variant="outline" className="bg-blue-50 border-blue-300 text-blue-700" data-testid={`badge-primary-${index}`}>
+                            <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300" data-testid={`badge-primary-${index}`}>
                               Primary
                             </Badge>
                           )}
                         </div>
                         {address.label && (
-                          <p className="text-xs text-slate-500 mb-2 ml-6">{address.label}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 ml-6">{address.label}</p>
                         )}
-                        <div className="space-y-1 ml-6 text-sm text-slate-600">
+                        <div className="space-y-1 ml-6 text-sm text-slate-600 dark:text-slate-300">
                           {address.company && (
                             <p className="font-medium">{address.company}</p>
                           )}
@@ -740,9 +740,9 @@ export default function CustomerDetails() {
                             {address.country}
                           </p>
                           {address.tel && (
-                            <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-slate-200">
+                            <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
                               <Phone className="h-3.5 w-3.5 text-slate-400" />
-                              <a href={`tel:${address.tel}`} className="text-blue-600 hover:underline">
+                              <a href={`tel:${address.tel}`} className="text-blue-600 dark:text-blue-400 hover:underline">
                                 {address.tel}
                               </a>
                             </div>
@@ -750,7 +750,7 @@ export default function CustomerDetails() {
                           {address.email && (
                             <div className="flex items-center gap-1.5">
                               <Mail className="h-3.5 w-3.5 text-slate-400" />
-                              <a href={`mailto:${address.email}`} className="text-blue-600 hover:underline truncate">
+                              <a href={`mailto:${address.email}`} className="text-blue-600 dark:text-blue-400 hover:underline truncate">
                                 {address.email}
                               </a>
                             </div>
@@ -764,10 +764,10 @@ export default function CustomerDetails() {
             </Card>
 
             {/* Billing Addresses Card */}
-            <Card>
+            <Card className="bg-white dark:bg-slate-800">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
-                  <Building className="h-5 w-5 text-blue-600" />
+                  <Building className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   Billing Addresses
                   {billingAddresses.length > 0 && (
                     <Badge variant="secondary" className="ml-2">
@@ -778,36 +778,36 @@ export default function CustomerDetails() {
               </CardHeader>
               <CardContent>
                 {billingAddresses.length === 0 ? (
-                  <div className="text-center py-8 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
-                    <Building className="mx-auto h-12 w-12 mb-3 text-slate-300" />
-                    <p className="text-sm font-medium text-slate-700">No billing addresses added yet</p>
-                    <p className="text-xs text-slate-500 mt-1">Billing addresses will appear here when added</p>
+                  <div className="text-center py-8 bg-slate-50 dark:bg-slate-900/50 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700">
+                    <Building className="mx-auto h-12 w-12 mb-3 text-slate-300 dark:text-slate-600" />
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">No billing addresses added yet</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Billing addresses will appear here when added</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {billingAddresses.map((address: any, index: number) => (
                       <div 
                         key={address.id || index} 
-                        className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 hover:bg-slate-50 transition-colors"
+                        className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-slate-50/50 dark:bg-slate-700/30 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
                         data-testid={`card-billingAddress-${index}`}
                       >
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
-                            <span className="font-semibold text-sm text-slate-900">
+                            <span className="font-semibold text-sm text-slate-900 dark:text-slate-100">
                               {address.company || `${address.firstName || ''} ${address.lastName || ''}`.trim() || 'Billing Address'}
                             </span>
                           </div>
                           {address.isPrimary && (
-                            <Badge variant="outline" className="bg-blue-50 border-blue-300 text-blue-700" data-testid={`badge-billingPrimary-${index}`}>
+                            <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300" data-testid={`badge-billingPrimary-${index}`}>
                               Primary
                             </Badge>
                           )}
                         </div>
                         {address.label && (
-                          <p className="text-xs text-slate-500 mb-2 ml-6">{address.label}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 ml-6">{address.label}</p>
                         )}
-                        <div className="space-y-1 ml-6 text-sm text-slate-600">
+                        <div className="space-y-1 ml-6 text-sm text-slate-600 dark:text-slate-300">
                           {address.company && (
                             <p className="font-medium">{address.company}</p>
                           )}
