@@ -301,41 +301,41 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
           name: "Pick & Pack",
           href: "/orders/pick-pack",
           icon: PackageCheck,
-          color: "text-amber-600",
+          color: "text-amber-600 dark:text-amber-400",
           description: "Order Fulfillment"
         },
         {
           name: "Receiving",
           href: "/receiving",
           icon: ClipboardCheck,
-          color: "text-violet-600",
+          color: "text-violet-600 dark:text-violet-400",
           description: "Incoming Shipments"
         },
         {
           name: "Storage",
           href: "/receiving/storage",
           icon: PackageCheck,
-          color: "text-lime-600",
+          color: "text-lime-600 dark:text-lime-400",
           description: "Items to Store"
         },
         {
           name: "Stock",
           href: "/stock",
           icon: Package,
-          color: "text-indigo-600",
+          color: "text-indigo-600 dark:text-indigo-400",
           description: "Inventory Lookup"
         },
         {
           name: "POS",
           href: "/pos",
           icon: Store,
-          color: "text-green-600",
+          color: "text-green-600 dark:text-green-400",
           description: "Point of Sale"
         },
         {
           name: "Shipping",
           icon: Send,
-          color: "text-blue-500",
+          color: "text-blue-500 dark:text-blue-400",
           description: "Outbound Logistics",
           children: [
             { name: "Shipping Management", href: "/shipping" },
@@ -353,13 +353,13 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
           name: "Dashboard",
           href: "/",
           icon: LayoutDashboard,
-          color: "text-blue-600",
+          color: "text-blue-600 dark:text-blue-400",
           description: "Overview & Analytics"
         },
         {
           name: "Orders",
           icon: ShoppingCart,
-          color: "text-emerald-600",
+          color: "text-emerald-600 dark:text-emerald-400",
           description: "Order Management",
           children: [
             { name: "All Orders", href: "/orders" },
@@ -373,7 +373,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
         {
           name: "Inventory",
           icon: Boxes,
-          color: "text-purple-600",
+          color: "text-purple-600 dark:text-purple-400",
           description: "Product Management",
           children: [
             { name: "All Products", href: "/inventory" },
@@ -386,7 +386,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
         {
           name: "Warehouses",
           icon: Building2,
-          color: "text-orange-600",
+          color: "text-orange-600 dark:text-orange-400",
           description: "Storage Facilities",
           children: [
             { name: "All Warehouses", href: "/warehouses" },
@@ -398,55 +398,55 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
           name: "Customers",
           href: "/customers",
           icon: UserCheck,
-          color: "text-indigo-600",
+          color: "text-indigo-600 dark:text-indigo-400",
           description: "Client Management"
         },
         {
           name: "Suppliers",
           href: "/suppliers",
           icon: Building,
-          color: "text-teal-600",
+          color: "text-teal-600 dark:text-teal-400",
           description: "Vendor Network"
         },
         {
           name: "Discounts",
           href: "/discounts",
           icon: Percent,
-          color: "text-red-600",
+          color: "text-red-600 dark:text-red-400",
           description: "Pricing & Offers"
         },
         {
           name: "Returns",
           href: "/returns",
           icon: RefreshCw,
-          color: "text-yellow-600",
+          color: "text-yellow-600 dark:text-yellow-400",
           description: "Return Processing"
         },
         {
           name: "Expenses",
           href: "/expenses",
           icon: Calculator,
-          color: "text-pink-600",
+          color: "text-pink-600 dark:text-pink-400",
           description: "Cost Tracking"
         },
         {
           name: "Services",
           href: "/services",
           icon: Wrench,
-          color: "text-purple-600",
+          color: "text-purple-600 dark:text-purple-400",
           description: "Repairs & Services"
         },
         {
           name: "Tickets",
           href: "/tickets",
           icon: Ticket,
-          color: "text-blue-600",
+          color: "text-blue-600 dark:text-blue-400",
           description: "Support Tickets"
         },
         {
           name: "Imports",
           icon: Import,
-          color: "text-cyan-600",
+          color: "text-cyan-600 dark:text-cyan-400",
           description: "International Orders",
           children: [
             { name: "Kanban Dashboard", href: "/imports/kanban" },
@@ -459,13 +459,13 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
           name: "Reports",
           href: "/reports",
           icon: FileText,
-          color: "text-gray-600",
+          color: "text-gray-600 dark:text-gray-400",
           description: "Analytics & Reports"
         },
         {
           name: "Settings",
           icon: Settings,
-          color: "text-slate-600",
+          color: "text-slate-600 dark:text-slate-400",
           description: "System Configuration",
           children: [
             { name: "General", href: "/settings/general" },
