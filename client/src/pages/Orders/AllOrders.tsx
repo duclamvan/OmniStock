@@ -194,7 +194,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       biller: false,
       payment: false,
       profit: false,
-      tracking: false,
+      trackingStatus: false,
+      trackingNumber: false,
     };
   });
 
@@ -763,7 +764,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       ),
     },
     {
-      key: "tracking",
+      key: "trackingStatus",
       header: "Tracking",
       sortable: false,
       cell: (order) => {
@@ -833,8 +834,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       className: "text-right",
     },
     {
-      key: "tracking",
-      header: "Tracking",
+      key: "trackingNumber",
+      header: "Tracking #",
       sortable: true,
       sortKey: "trackingNumber",
       cell: (order) => (
