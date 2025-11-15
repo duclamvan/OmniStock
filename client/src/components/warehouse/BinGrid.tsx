@@ -16,17 +16,32 @@ export function BinGrid({ bins, onBinClick, selectedBin }: BinGridProps) {
   }
 
   const getBinColor = (bin: any) => {
-    if (bin.status === 'inactive') return 'bg-gray-200 hover:bg-gray-300 border-gray-300';
+    if (bin.status === 'inactive') return 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300';
     
     const occupancy = bin.occupancy || 0;
     
     if (occupancy === 0) {
-      return 'bg-green-100 hover:bg-green-200 border-green-300 text-green-800';
+      return 'bg-green-100 dark:bg-green-900/40 hover:bg-green-200 dark:hover:bg-green-900/60 border-green-300 dark:border-green-700 text-green-800 dark:text-green-200';
     } else if (occupancy < 80) {
-      return 'bg-yellow-100 hover:bg-yellow-200 border-yellow-300 text-yellow-800';
+      return 'bg-yellow-100 dark:bg-yellow-900/40 hover:bg-yellow-200 dark:hover:bg-yellow-900/60 border-yellow-300 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200';
     } else {
-      return 'bg-red-100 hover:bg-red-200 border-red-300 text-red-800';
+      return 'bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/60 border-red-300 dark:border-red-700 text-red-800 dark:text-red-200';
     }
+  };
+  
+  // Get zone-specific border style
+  const getZoneBorderStyle = (bin: any) => {
+    const zonePrefix = bin.code.charAt(0);
+    // Different border styles for different zones
+    if (zonePrefix === 'B') {
+      // Pallets - dashed border
+      return 'border-dashed';
+    } else if (zonePrefix === 'C') {
+      // Bulk - dotted border
+      return 'border-dotted';
+    }
+    // Shelves (A) and others - solid border (default)
+    return 'border-solid';
   };
 
   const rows = Array.from(new Set(bins.map(b => b.row))).sort();
@@ -63,7 +78,8 @@ export function BinGrid({ bins, onBinClick, selectedBin }: BinGridProps) {
                       "border-2 rounded-lg p-3 transition-all duration-200 cursor-pointer",
                       "flex flex-col items-center justify-center min-h-[80px]",
                       getBinColor(bin),
-                      selectedBin?.id === bin.id && "ring-2 ring-blue-500 ring-offset-2"
+                      getZoneBorderStyle(bin),
+                      selectedBin?.id === bin.id && "ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 dark:ring-offset-slate-900"
                     )}
                     data-testid={`bin-${bin.code}`}
                   >

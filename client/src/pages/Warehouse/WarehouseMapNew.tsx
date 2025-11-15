@@ -19,6 +19,7 @@ export default function WarehouseMapNew() {
   const [selectedBin, setSelectedBin] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showLayoutGenerator, setShowLayoutGenerator] = useState(false);
+  const [selectedZone, setSelectedZone] = useState<string>("all");
 
   const { data: warehouse, isLoading: warehouseLoading } = useQuery({
     queryKey: ['/api/warehouses', id],
@@ -40,9 +41,14 @@ export default function WarehouseMapNew() {
     enabled: !!layout && !!id
   });
 
-  const filteredBins = bins?.filter((bin: any) => 
-    bin.code.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  // Extract unique zones from bin codes (A for shelves, B for pallets, etc.)
+  const zones = bins ? Array.from(new Set(bins.map((bin: any) => bin.code.charAt(0)))).sort() : [];
+  
+  const filteredBins = bins?.filter((bin: any) => {
+    const matchesSearch = bin.code.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesZone = selectedZone === "all" || bin.code.charAt(0) === selectedZone;
+    return matchesSearch && matchesZone;
+  }) || [];
 
   const handleBinClick = (bin: any) => {
     setSelectedBin(bin);
@@ -176,35 +182,69 @@ export default function WarehouseMapNew() {
             </Card>
           </div>
 
-          <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search bins..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-                data-testid="input-search-bins"
-              />
+          <div className="flex flex-col gap-3 md:gap-4">
+            <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search bins..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                  data-testid="input-search-bins"
+                />
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="outline" className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700 text-xs">
+                  <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-green-500 mr-1 md:mr-2" />
+                  Empty
+                </Badge>
+                <Badge variant="outline" className="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-700 text-xs">
+                  <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-yellow-500 mr-1 md:mr-2" />
+                  Partial
+                </Badge>
+                <Badge variant="outline" className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700 text-xs">
+                  <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-500 mr-1 md:mr-2" />
+                  Full
+                </Badge>
+                <Badge variant="outline" className="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 text-xs">
+                  <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-gray-500 mr-1 md:mr-2" />
+                  Inactive
+                </Badge>
+              </div>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
-                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-green-500 mr-1 md:mr-2" />
-                Empty
-              </Badge>
-              <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 text-xs">
-                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-yellow-500 mr-1 md:mr-2" />
-                Partial
-              </Badge>
-              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs">
-                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-500 mr-1 md:mr-2" />
-                Full
-              </Badge>
-              <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 text-xs">
-                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-gray-500 mr-1 md:mr-2" />
-                Inactive
-              </Badge>
-            </div>
+            
+            {/* Zone/Section Filter */}
+            {zones.length > 1 && (
+              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0">Storage Zone:</span>
+                <Button
+                  variant={selectedZone === "all" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedZone("all")}
+                  data-testid="button-zone-all"
+                  className="shrink-0"
+                >
+                  All ({bins?.length || 0})
+                </Button>
+                {zones.map(zone => {
+                  const zoneCount = bins?.filter(b => b.code.charAt(0) === zone).length || 0;
+                  const zoneName = zone === 'A' ? 'Shelves' : zone === 'B' ? 'Pallets' : zone === 'C' ? 'Bulk' : `Zone ${zone}`;
+                  return (
+                    <Button
+                      key={zone}
+                      variant={selectedZone === zone ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedZone(zone)}
+                      data-testid={`button-zone-${zone}`}
+                      className="shrink-0"
+                    >
+                      {zoneName} {zone} ({zoneCount})
+                    </Button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <Card data-testid="card-bin-grid">
