@@ -20,6 +20,7 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { calculateShippingCost } from "@/lib/shippingCosts";
 import { getCustomerBadges } from "@/lib/customerBadges";
 import { useOrderDefaults, useFinancialDefaults } from "@/hooks/useAppSettings";
+import { useSettings } from "@/contexts/SettingsContext";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -246,6 +247,8 @@ export default function AddOrder() {
   const { toast } = useToast();
   const { defaultCurrency, defaultPaymentMethod, defaultCarrier, enableCod } = useOrderDefaults();
   const { vatRate } = useFinancialDefaults();
+  const { generalSettings } = useSettings();
+  const aiCartonPackingEnabled = generalSettings?.enableAiCartonPacking ?? false;
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [productSearch, setProductSearch] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
@@ -324,7 +327,14 @@ export default function AddOrder() {
     runPackingOptimization: runOptimization,
     savePackingPlanMutation,
     isLoading: isPackingOptimizationLoading 
-  } = usePackingOptimization(orderId ?? undefined);
+  } = usePackingOptimization(orderId ?? undefined, aiCartonPackingEnabled);
+
+  // Clear AI packing data when AI is disabled (redundant safety layer)
+  useEffect(() => {
+    if (!aiCartonPackingEnabled && packingPlan) {
+      setPackingPlan(null);
+    }
+  }, [aiCartonPackingEnabled, packingPlan, setPackingPlan]);
 
   // File upload state
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -1074,6 +1084,10 @@ export default function AddOrder() {
 
   // Packing optimization wrapper function with country mapping and auto-fill
   const runPackingOptimization = () => {
+    if (!aiCartonPackingEnabled) {
+      return; // No-op when AI is disabled
+    }
+
     if (orderItems.length === 0) {
       toast({
         title: "Error",
@@ -1191,6 +1205,15 @@ export default function AddOrder() {
 
   // Manual carton creation handler
   const handleAddManualCarton = async () => {
+    if (!aiCartonPackingEnabled) {
+      toast({
+        title: "AI Packing Disabled",
+        description: "AI Carton Packing is disabled in Settings",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!orderId) {
       toast({
         title: "Error",
@@ -1231,13 +1254,13 @@ export default function AddOrder() {
     }
   };
 
-  // Auto-fill shipping costs when packing plan updates
+  // Auto-fill shipping costs when packing plan updates (only when AI is enabled)
   useEffect(() => {
-    if (packingPlan?.estimatedShippingCost !== undefined && packingPlan?.estimatedShippingCost !== null) {
+    if (aiCartonPackingEnabled && packingPlan?.estimatedShippingCost !== undefined && packingPlan?.estimatedShippingCost !== null) {
       form.setValue('shippingCost', packingPlan.estimatedShippingCost);
       form.setValue('actualShippingCost', packingPlan.estimatedShippingCost);
     }
-  }, [packingPlan, form]);
+  }, [packingPlan, form, aiCartonPackingEnabled]);
 
   const addProductToOrder = async (product: any) => {
     // Check if this is a service
@@ -4119,14 +4142,16 @@ export default function AddOrder() {
         />
 
         {/* AI Carton Packing Optimization Panel */}
-        <AICartonPackingPanel
-          packingPlan={packingPlan}
-          onRunOptimization={runPackingOptimization}
-          isLoading={isPackingOptimizationLoading}
-          currency={form.watch('currency')}
-          orderItems={orderItems}
-          onAddManualCarton={handleAddManualCarton}
-        />
+        {aiCartonPackingEnabled && (
+          <AICartonPackingPanel
+            packingPlan={packingPlan}
+            onRunOptimization={runPackingOptimization}
+            isLoading={isPackingOptimizationLoading}
+            currency={form.watch('currency')}
+            orderItems={orderItems}
+            onAddManualCarton={handleAddManualCarton}
+          />
+        )}
 
         {/* Files Section */}
         {orderItems.length > 0 && (

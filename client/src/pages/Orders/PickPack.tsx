@@ -43,6 +43,7 @@ import { useToast } from "@/hooks/use-toast";
 import { offlineQueue } from "@/lib/offlineQueue";
 import { CartonTypeAutocomplete } from "@/components/orders/CartonTypeAutocomplete";
 import { usePackingOptimization } from "@/hooks/usePackingOptimization";
+import { useSettings } from "@/contexts/SettingsContext";
 import { GLSAutofillButton } from "@/components/shipping/GLSAutofillButton";
 import { GLS_COUNTRY_MAP } from "@/lib/gls";
 import { 
@@ -1411,6 +1412,8 @@ function OrderFilesDisplay({
 
 export default function PickPack() {
   const { toast } = useToast();
+  const { generalSettings } = useSettings();
+  const aiCartonPackingEnabled = generalSettings?.enableAiCartonPacking ?? false;
   const [selectedTab, setSelectedTab] = useState<'overview' | 'pending' | 'picking' | 'packing' | 'ready'>(() => {
     // Load selected tab from localStorage
     const saved = localStorage.getItem('pickpack-selected-tab');
@@ -1594,7 +1597,7 @@ export default function PickPack() {
     setIsHydrating,
     runPackingOptimization: runOptimization,
     isLoading: isPackingOptimizationLoading 
-  } = usePackingOptimization(activePackingOrder?.id);
+  } = usePackingOptimization(activePackingOrder?.id, aiCartonPackingEnabled);
   
   // Workflow management state
   const [orderToHold, setOrderToHold] = useState<PickPackOrder | null>(null);
@@ -1886,6 +1889,10 @@ export default function PickPack() {
 
   // Packing optimization wrapper function
   const runPackingOptimization = () => {
+    if (!aiCartonPackingEnabled) {
+      return; // No-op when AI is disabled
+    }
+
     if (!activePackingOrder || !activePackingOrder.items || activePackingOrder.items.length === 0) {
       toast({
         title: "Error",
@@ -2235,7 +2242,7 @@ export default function PickPack() {
   // Query for carton recommendation for current order
   const { data: recommendedCarton } = useQuery<CartonRecommendation>({
     queryKey: ['/api/orders', activePackingOrder?.id, 'recommend-carton'],
-    enabled: !!activePackingOrder?.id,
+    enabled: !!activePackingOrder?.id && aiCartonPackingEnabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchInterval: false,
     refetchOnWindowFocus: false,
@@ -2492,8 +2499,14 @@ export default function PickPack() {
       isRecalc: isRecalculating,
       hasManualMods: hasManuallyModifiedCartons,
       orderCartonsCount: orderCartons.length,
-      localCartonsCount: cartons.length
+      localCartonsCount: cartons.length,
+      aiEnabled: aiCartonPackingEnabled
     });
+
+    if (!aiCartonPackingEnabled) {
+      console.log('⏸️ AI Carton Packing is disabled in settings, skipping auto-apply');
+      return;
+    }
 
     if (!activePackingOrder || !recommendedCarton || hasAutoAppliedSuggestions) {
       return;
@@ -2585,7 +2598,7 @@ export default function PickPack() {
     };
 
     createAndUpdateCartons();
-  }, [activePackingOrder?.id, recommendedCarton, orderCartons.length, hasAutoAppliedSuggestions, isCreatingCartons, isRecalculating, hasManuallyModifiedCartons]);
+  }, [activePackingOrder?.id, recommendedCarton, orderCartons.length, hasAutoAppliedSuggestions, isCreatingCartons, isRecalculating, hasManuallyModifiedCartons, aiCartonPackingEnabled]);
 
   // Create carton mutation
   const createCartonMutation = useMutation({
@@ -3349,6 +3362,16 @@ export default function PickPack() {
 
   // AI-powered packing optimization algorithm
   const generatePackingRecommendation = (items: OrderItem[], dbCartons: any[]): PackingRecommendation => {
+    if (!aiCartonPackingEnabled) {
+      return {
+        cartons: [],
+        totalCost: 0,
+        totalWeight: 0,
+        efficiency: 0,
+        reasoning: 'AI Carton Packing is disabled'
+      };
+    }
+
     // Convert database cartons to the format expected by packing algorithms
     const boxSizesFromDB = convertCartonsToBoxSizes(dbCartons);
     
@@ -5189,9 +5212,12 @@ export default function PickPack() {
     setPackingTimer(0);
     setIsPackingTimerRunning(true);
     
-    // Generate AI packing recommendation using database cartons
-    const recommendation = generatePackingRecommendation(order.items, availableCartons);
-    setPackingRecommendation(recommendation);
+    // Generate AI packing recommendation using database cartons (only if AI is enabled)
+    let recommendation = null;
+    if (aiCartonPackingEnabled) {
+      recommendation = generatePackingRecommendation(order.items, availableCartons);
+      setPackingRecommendation(recommendation);
+    }
     
     // Update database in background for real orders (non-blocking)
     if (!order.id.startsWith('mock-')) {

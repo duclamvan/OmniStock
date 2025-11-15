@@ -25,6 +25,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import OrderDocumentSelector from "@/components/OrderDocumentSelector";
 import { ShippingAddressModal } from "@/components/ShippingAddressModal";
 import { CustomerBadges } from '@/components/CustomerBadges';
+import { useSettings } from "@/contexts/SettingsContext";
 import { 
   Plus, 
   Search, 
@@ -284,6 +285,8 @@ export default function EditOrder() {
   const [showDiscount, setShowDiscount] = useState(false);
   const [roundingAdjustment, setRoundingAdjustment] = useState(0);
   const { toast } = useToast();
+  const { generalSettings } = useSettings();
+  const aiCartonPackingEnabled = generalSettings?.enableAiCartonPacking ?? false;
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [productSearch, setProductSearch] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
@@ -354,7 +357,7 @@ export default function EditOrder() {
     setIsHydrating,
     runPackingOptimization: runOptimization,
     isLoading: isPackingOptimizationLoading 
-  } = usePackingOptimization(id);
+  } = usePackingOptimization(id, aiCartonPackingEnabled);
 
   // Fetch order files from database
   const { data: orderFiles = [] } = useQuery<any[]>({
@@ -1396,6 +1399,10 @@ export default function EditOrder() {
 
   // Packing optimization wrapper
   const runPackingOptimization = () => {
+    if (!aiCartonPackingEnabled) {
+      return; // No-op when AI is disabled
+    }
+
     const items = orderItems.map(item => ({
       productId: item.productId || '',
       productName: item.productName,
@@ -3925,14 +3932,16 @@ export default function EditOrder() {
         />
 
         {/* AI Carton Packing Optimization Panel */}
-        <AICartonPackingPanel
-          packingPlan={packingPlan}
-          onRunOptimization={runPackingOptimization}
-          isLoading={isPackingOptimizationLoading}
-          currency={form.watch('currency')}
-          orderItems={orderItems}
-          onAddManualCarton={handleAddManualCarton}
-        />
+        {aiCartonPackingEnabled && (
+          <AICartonPackingPanel
+            packingPlan={packingPlan}
+            onRunOptimization={runPackingOptimization}
+            isLoading={isPackingOptimizationLoading}
+            currency={form.watch('currency')}
+            orderItems={orderItems}
+            onAddManualCarton={handleAddManualCarton}
+          />
+        )}
 
         {/* Payment Details - Mobile Optimized */}
         <Card className="shadow-sm">

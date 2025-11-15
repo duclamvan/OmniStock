@@ -38,16 +38,19 @@ interface PackingPlan {
   }>;
 }
 
-export function usePackingOptimization(orderId?: string) {
+export function usePackingOptimization(
+  orderId?: string, 
+  enableAiCartonPacking: boolean = false
+) {
   const { toast } = useToast();
   const [packingPlan, setPackingPlan] = useState<PackingPlan | null>(null);
   const serverChecksumRef = useRef<string | null>(null);
   const hydratingRef = useRef(false);
 
-  // Load saved plan via useQuery
+  // Load saved plan via useQuery - only if AI is enabled
   const queryResult = useQuery({
     queryKey: ['/api/orders', orderId, 'packing-plan'],
-    enabled: !!orderId,
+    enabled: !!orderId && enableAiCartonPacking,
   });
   
   const { data: savedPlan, isFetching } = queryResult;
@@ -56,6 +59,11 @@ export function usePackingOptimization(orderId?: string) {
 
   // Hydration with restore cycle detection
   useLayoutEffect(() => {
+    // Skip hydration when AI is disabled
+    if (!enableAiCartonPacking) {
+      return;
+    }
+    
     if (!savedPlan || isFetching) return;
     
     if (!packingPlan) {
@@ -70,7 +78,7 @@ export function usePackingOptimization(orderId?: string) {
         serverChecksumRef.current = savedPlan.checksum;
       }
     }
-  }, [savedPlan, isFetching, isRestoring, packingPlan]);
+  }, [savedPlan, isFetching, isRestoring, packingPlan, enableAiCartonPacking]);
 
   // Separate effect to clear hydrating flag AFTER state commits
   useEffect(() => {
@@ -80,9 +88,22 @@ export function usePackingOptimization(orderId?: string) {
     }
   }, [packingPlan]);
 
+  // Clear all AI data when AI is disabled
+  useEffect(() => {
+    if (!enableAiCartonPacking) {
+      setPackingPlan(null);
+      serverChecksumRef.current = null;
+    }
+  }, [enableAiCartonPacking]);
+
   // Auto-save mutation
   const savePackingPlanMutation = useMutation({
     mutationFn: async (params: PackingPlan | { planData: PackingPlan; orderIdOverride: string }) => {
+      // No-op if AI is disabled
+      if (!enableAiCartonPacking) {
+        return { checksum: null };
+      }
+      
       // Check if params has planData and orderIdOverride
       const plan = 'planData' in params ? params.planData : params;
       const targetOrderId = 'orderIdOverride' in params ? params.orderIdOverride : orderId;
@@ -105,6 +126,11 @@ export function usePackingOptimization(orderId?: string) {
   // Optimization mutation
   const packingOptimizationMutation = useMutation({
     mutationFn: async ({ items, shippingCountry }: { items: PackingItem[]; shippingCountry: string }) => {
+      // No-op if AI is disabled
+      if (!enableAiCartonPacking) {
+        throw new Error('AI Carton Packing is disabled. Enable it in Settings to use this feature.');
+      }
+      
       if (items.length === 0) {
         throw new Error('Please add items to the order first');
       }
@@ -141,6 +167,16 @@ export function usePackingOptimization(orderId?: string) {
   });
 
   const runPackingOptimization = (items: PackingItem[], shippingCountry: string = 'CZ') => {
+    // No-op if AI is disabled
+    if (!enableAiCartonPacking) {
+      toast({
+        title: "AI Packing Disabled",
+        description: "Please enable AI Carton Packing in Settings to use this feature",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (items.length === 0) {
       toast({
         title: "Error",
@@ -159,6 +195,11 @@ export function usePackingOptimization(orderId?: string) {
 
   // Method to manually save (for external triggers)
   const manualSave = () => {
+    // No-op if AI is disabled
+    if (!enableAiCartonPacking) {
+      return;
+    }
+    
     if (packingPlan && orderId) {
       const newChecksum = computePlanChecksum(packingPlan);
       if (newChecksum !== serverChecksumRef.current) {
