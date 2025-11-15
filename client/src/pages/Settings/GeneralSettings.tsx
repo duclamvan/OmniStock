@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -101,9 +101,23 @@ const TIMEZONES = [
   { value: 'Asia/Shanghai', label: 'Asia/Shanghai (CST)' },
 ];
 
+const valuesAreEqual = (a: any, b: any): boolean => {
+  // Only null, undefined, and empty string are considered "unset"
+  // false and 0 are valid, intentional values
+  const isUnsetA = a === null || a === undefined || a === '';
+  const isUnsetB = b === null || b === undefined || b === '';
+  
+  if (isUnsetA && isUnsetB) return true; // Both unset = equal
+  if (isUnsetA || isUnsetB) return false; // One set, one unset = not equal
+  
+  // Both are set values, compare normally
+  return a === b;
+};
+
 export default function GeneralSettings() {
   const { toast } = useToast();
   const { generalSettings, isLoading } = useSettings();
+  const [originalSettings, setOriginalSettings] = useState<Partial<FormValues>>({});
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -157,80 +171,85 @@ export default function GeneralSettings() {
   // Reset form when settings load
   useEffect(() => {
     if (!isLoading) {
-      form.reset({
-        company_name: generalSettings.companyName || 'Davie Supply',
-        company_email: generalSettings.companyEmail || '',
-        company_phone: generalSettings.companyPhone || '',
-        company_address: generalSettings.companyAddress || '',
-        company_city: generalSettings.companyCity || '',
-        company_zip: generalSettings.companyZip || '',
-        company_country: generalSettings.companyCountry || '',
-        company_website: generalSettings.companyWebsite || '',
-        company_vat_id: generalSettings.companyVatId || '',
-        company_logo_url: generalSettings.companyLogoUrl || '',
-        company_invoice_stamp: generalSettings.companyInvoiceStamp || '',
-        company_facebook_url: generalSettings.companyFacebookUrl || '',
-        company_whatsapp_number: generalSettings.companyWhatsAppNumber || '',
-        company_zalo_number: generalSettings.companyZaloNumber || '',
-        company_linkedin_url: generalSettings.companyLinkedInUrl || '',
-        company_instagram_url: generalSettings.companyInstagramUrl || '',
-        default_language: generalSettings.defaultLanguage || 'en',
-        default_date_format: generalSettings.defaultDateFormat || 'DD/MM/YYYY',
-        default_time_format: generalSettings.defaultTimeFormat || '24-hour',
-        default_timezone: generalSettings.defaultTimezone || 'Europe/Prague',
-        number_format: generalSettings.numberFormat || '1,000.00',
-        default_currency: generalSettings.defaultCurrency || 'CZK',
-        currency_display: generalSettings.currencyDisplay || 'symbol',
-        default_priority: generalSettings.defaultPriority || 'medium',
-        default_order_location: generalSettings.defaultOrderLocation || '',
-        working_days: generalSettings.workingDays || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-        business_hours_start: generalSettings.businessHoursStart || '09:00',
-        business_hours_end: generalSettings.businessHoursEnd || '17:00',
-        warehouse_emergency_contact: generalSettings.warehouseEmergencyContact || '',
-        warehouse_contact_email: generalSettings.warehouseContactEmail || '',
-        pickup_cutoff_time: generalSettings.pickupCutoffTime || '14:00',
-        max_order_processing_days: generalSettings.maxOrderProcessingDays || 2,
-        enable_email_notifications: generalSettings.enableEmailNotifications ?? true,
-        enable_sms_notifications: generalSettings.enableSmsNotifications ?? false,
-        low_stock_alert_email: generalSettings.lowStockAlertEmail ?? true,
-        order_status_change_notifications: generalSettings.orderStatusChangeNotifications ?? true,
-        daily_summary_report_email: generalSettings.dailySummaryReportEmail ?? false,
-        weekly_report_email: generalSettings.weeklyReportEmail ?? true,
-        customer_portal_enabled: generalSettings.customerPortalEnabled ?? false,
-        return_policy_text: generalSettings.returnPolicyText || '',
-        enable_ai_address_parsing: generalSettings.enableAiAddressParsing ?? false,
-        enable_ai_carton_packing: generalSettings.enableAiCartonPacking ?? false,
-        audit_log_retention_days: generalSettings.auditLogRetentionDays || 90,
-      });
+      const snapshot = {
+        company_name: generalSettings.companyName,
+        company_email: generalSettings.companyEmail,
+        company_phone: generalSettings.companyPhone,
+        company_address: generalSettings.companyAddress,
+        company_city: generalSettings.companyCity,
+        company_zip: generalSettings.companyZip,
+        company_country: generalSettings.companyCountry,
+        company_website: generalSettings.companyWebsite,
+        company_vat_id: generalSettings.companyVatId,
+        company_logo_url: generalSettings.companyLogoUrl,
+        company_invoice_stamp: generalSettings.companyInvoiceStamp,
+        company_facebook_url: generalSettings.companyFacebookUrl,
+        company_whatsapp_number: generalSettings.companyWhatsAppNumber,
+        company_zalo_number: generalSettings.companyZaloNumber,
+        company_linkedin_url: generalSettings.companyLinkedInUrl,
+        company_instagram_url: generalSettings.companyInstagramUrl,
+        default_language: generalSettings.defaultLanguage,
+        default_date_format: generalSettings.defaultDateFormat,
+        default_time_format: generalSettings.defaultTimeFormat,
+        default_timezone: generalSettings.defaultTimezone,
+        number_format: generalSettings.numberFormat,
+        default_currency: generalSettings.defaultCurrency,
+        currency_display: generalSettings.currencyDisplay,
+        default_priority: generalSettings.defaultPriority,
+        default_order_location: generalSettings.defaultOrderLocation,
+        working_days: generalSettings.workingDays,
+        business_hours_start: generalSettings.businessHoursStart,
+        business_hours_end: generalSettings.businessHoursEnd,
+        warehouse_emergency_contact: generalSettings.warehouseEmergencyContact,
+        warehouse_contact_email: generalSettings.warehouseContactEmail,
+        pickup_cutoff_time: generalSettings.pickupCutoffTime,
+        max_order_processing_days: generalSettings.maxOrderProcessingDays,
+        enable_email_notifications: generalSettings.enableEmailNotifications,
+        enable_sms_notifications: generalSettings.enableSmsNotifications,
+        low_stock_alert_email: generalSettings.lowStockAlertEmail,
+        order_status_change_notifications: generalSettings.orderStatusChangeNotifications,
+        daily_summary_report_email: generalSettings.dailySummaryReportEmail,
+        weekly_report_email: generalSettings.weeklyReportEmail,
+        customer_portal_enabled: generalSettings.customerPortalEnabled,
+        return_policy_text: generalSettings.returnPolicyText,
+        enable_ai_address_parsing: generalSettings.enableAiAddressParsing,
+        enable_ai_carton_packing: generalSettings.enableAiCartonPacking,
+        audit_log_retention_days: generalSettings.auditLogRetentionDays,
+      };
+      setOriginalSettings(snapshot);
+      form.reset(snapshot);
     }
   }, [isLoading, form, generalSettings]);
 
   const saveMutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      // Filter out empty/null/undefined values (keep false and 0 as they're valid)
-      const validEntries = Object.entries(values).filter(([_, value]) => {
-        // Skip null, undefined, or empty strings
-        if (value === null || value === undefined || value === '') return false;
-        // Skip empty arrays
-        if (Array.isArray(value) && value.length === 0) return false;
-        return true;
+      // Compare current values against original snapshot
+      const changedEntries = Object.entries(values).filter(([key, value]) => {
+        const originalValue = originalSettings[key as keyof FormValues];
+        // Only save if value actually changed from original
+        return !valuesAreEqual(value, originalValue);
       });
       
-      // Batch save all valid settings in one transaction
-      const savePromises = validEntries.map(([key, value]) =>
-        apiRequest('POST', `/api/settings`, { 
+      // Convert empty strings and undefined to null for explicit clearing
+      const savePromises = changedEntries.map(([key, value]) => {
+        const cleanValue = (value === '' || value === undefined) ? null : value;
+        return apiRequest('POST', `/api/settings`, { 
           key: camelToSnake(key), 
-          value: deepCamelToSnake(value), 
+          value: deepCamelToSnake(cleanValue), 
           category: 'general' 
-        })
-      );
+        });
+      });
+      
       await Promise.all(savePromises);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+    onSuccess: async () => {
+      // Invalidate and refetch settings to get true persisted state
+      await queryClient.invalidateQueries({ queryKey: ['/api/settings', 'general'] });
+      
+      // The useEffect will automatically update originalSettings when new data loads
       toast({
         title: "Settings Saved",
-        description: "All general settings have been updated successfully.",
+        description: "General settings have been updated successfully.",
       });
     },
     onError: (error: any) => {
