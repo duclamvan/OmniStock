@@ -13,6 +13,12 @@ export interface GeneralSettings {
   companyWebsite?: string;
   companyVatId?: string;
   companyLogoUrl?: string;
+  companyInvoiceStamp?: string;
+  companyFacebookUrl?: string;
+  companyWhatsAppNumber?: string;
+  companyZaloNumber?: string;
+  companyLinkedInUrl?: string;
+  companyInstagramUrl?: string;
   defaultLanguage?: 'en' | 'vi';
   defaultDateFormat?: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
   defaultTimeFormat?: '12-hour' | '24-hour';
@@ -25,12 +31,21 @@ export interface GeneralSettings {
   workingDays?: string[];
   businessHoursStart?: string;
   businessHoursEnd?: string;
+  warehouseEmergencyContact?: string;
+  warehouseContactEmail?: string;
+  pickupCutoffTime?: string;
+  maxOrderProcessingDays?: number;
+  returnPolicyText?: string;
+  customerPortalEnabled?: boolean;
   enableEmailNotifications?: boolean;
   enableSmsNotifications?: boolean;
   lowStockAlertEmail?: boolean;
   orderStatusChangeNotifications?: boolean;
   dailySummaryReportEmail?: boolean;
   weeklyReportEmail?: boolean;
+  enableAiAddressParsing?: boolean;
+  enableAiCartonPacking?: boolean;
+  auditLogRetentionDays?: number;
 }
 
 export interface InventorySettings {
@@ -310,6 +325,10 @@ function sanitizeSettingValue(key: string, value: any, category: string): any {
       if (key === 'currency_position') return 'before';
       if (key === 'decimal_separator') return '.';
       if (key === 'thousands_separator') return ',';
+      // New WMS-specific defaults
+      if (key === 'pickup_cutoff_time') return '14:00';
+      if (key === 'max_order_processing_days') return 2;
+      if (key === 'audit_log_retention_days') return 90;
     }
     
     // System settings
