@@ -502,7 +502,7 @@ export default function Home() {
                             {order.orderId}
                           </p>
                           <Badge className={`${getStatusColor(order.status)} text-xs px-2 py-0.5`}>
-                            {order.status.replace(/_/g, ' ')}
+                            {(order.status || 'pending').replace(/_/g, ' ')}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
