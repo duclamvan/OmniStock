@@ -89,6 +89,7 @@ import Register from "@/pages/Auth/Register";
 import ReportsIndex from "@/pages/Reports";
 import CustomReport from "@/pages/Reports/CustomReport";
 import Settings from "@/pages/Settings";
+import UserManagement from "@/pages/UserManagement";
 import StockLookup from "@/pages/Stock/StockLookup";
 import StockAdjustmentApprovals from "@/pages/Stock/StockAdjustmentApprovals";
 import OverAllocated from "@/pages/Stock/OverAllocated";
@@ -229,6 +230,8 @@ function Router() {
         <Route path="/settings/financial" component={Settings} />
         <Route path="/settings/inventory" component={Settings} />
         <Route path="/settings/system" component={Settings} />
+        {/* User Management Route */}
+        <Route path="/user-management" component={UserManagement} />
       </Layout>
       <Route component={NotFound} />
     </Switch>
