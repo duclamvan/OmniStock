@@ -291,27 +291,24 @@ export default function OrderDetails() {
               overflow: hidden;
             }
             .invoice-header {
-              padding: 24px 32px;
+              padding: 16px 24px;
               border-bottom: 2px solid #e2e8f0;
               background: #f8fafc;
             }
             .invoice-title {
-              font-size: 24px;
+              font-size: 18px;
               font-weight: 700;
               color: #0f172a;
               display: flex;
               align-items: center;
-              gap: 12px;
-              line-height: 1.2;
+              gap: 8px;
+              line-height: 1.5;
             }
             .invoice-icon {
-              width: 24px;
-              height: 24px;
+              width: 20px;
+              height: 20px;
               color: #64748b;
               flex-shrink: 0;
-              display: inline-flex;
-              align-items: center;
-              justify-content: center;
             }
             .invoice-body {
               padding: 0;
