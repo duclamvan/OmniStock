@@ -516,6 +516,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // PATCH /api/users/me - Update current user profile
+  app.patch('/api/users/me', async (req: any, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized - Please log in' });
+      }
+
+      const { firstName, lastName, email } = req.body;
+      const updates: any = {};
+
+      if (firstName !== undefined) updates.firstName = firstName;
+      if (lastName !== undefined) updates.lastName = lastName;
+      if (email !== undefined) {
+        // Check if email is already in use by another user
+        const existingUser = await storage.getUserByEmail(email);
+        if (existingUser && existingUser.id !== req.user.id) {
+          return res.status(400).json({ message: 'Email is already in use' });
+        }
+        updates.email = email;
+      }
+
+      const updatedUser = await storage.updateUserProfile(req.user.id, updates);
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      res.json({
+        id: updatedUser.id,
+        email: updatedUser.email,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        role: updatedUser.role,
+        createdAt: updatedUser.createdAt
+      });
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      res.status(500).json({ message: 'Failed to update user profile' });
+    }
+  });
+
   // Serve GLS autofill userscript for Tampermonkey
   app.get('/api/download/gls-autofill-userscript', async (req, res) => {
     try {
