@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { formatCurrency } from "@/lib/currencyUtils";
+import { useTranslation } from "react-i18next";
 
 // Lazy load chart components
 const RevenueChart = lazy(() => import("./charts/RevenueChart").then(m => ({ default: m.RevenueChart })));
@@ -166,6 +167,8 @@ const ChartSkeleton = memo(() => (
 ChartSkeleton.displayName = 'ChartSkeleton';
 
 export function Dashboard() {
+  const { t } = useTranslation();
+  
   // Query all dashboard endpoints
   const { data: operationsPulse, isLoading: operationsLoading } = useQuery<OperationsPulseData>({
     queryKey: ['/api/dashboard/operations-pulse'],
@@ -209,15 +212,15 @@ export function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100" data-testid="heading-dashboard">
-            Admin Command Center
+            {t('common:adminCommandCenter')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1" data-testid="text-dashboard-subtitle">
-            Real-time operational intelligence and insights
+            {t('common:realTimeOperationalIntelligence')}
           </p>
         </div>
         <Badge variant="outline" className="text-sm flex items-center gap-2 w-fit">
           <Activity className="h-4 w-4 text-green-500" />
-          <span className="text-gray-900 dark:text-gray-100">Live Updates</span>
+          <span className="text-gray-900 dark:text-gray-100">{t('common:liveUpdates')}</span>
         </Badge>
       </div>
 
@@ -226,9 +229,9 @@ export function Dashboard() {
         <div className="mb-4">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-operations-pulse">
             <Package className="h-5 w-5" />
-            Operations Pulse
+            {t('common:operationsPulse')}
           </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">Critical fulfillment metrics</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('common:criticalFulfillmentMetrics')}</p>
         </div>
         
         {operationsLoading && !operationsPulse ? (
@@ -242,11 +245,11 @@ export function Dashboard() {
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-orders-to-fulfill">Orders to Fulfill</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-orders-to-fulfill">{t('common:ordersToFulfill')}</p>
                     <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-orders-to-fulfill">
                       {operationsPulse?.ordersAwaitingFulfillment || 0}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Awaiting pickup</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('common:awaitingPickup')}</p>
                   </div>
                   <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
                     <Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />
@@ -260,7 +263,7 @@ export function Dashboard() {
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-sla-breach-risk">SLA Breach Risk</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-sla-breach-risk">{t('common:slaBreachRisk')}</p>
                     <p className={`text-3xl font-bold mt-1 ${(operationsPulse?.ordersAtRiskOfSLA || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}`} data-testid="value-sla-breach-risk">
                       {operationsPulse?.ordersAtRiskOfSLA || 0}
                     </p>

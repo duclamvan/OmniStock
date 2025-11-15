@@ -27,7 +27,7 @@ const formSchema = z.object({
   company_vat_id: z.string().default(''),
   company_logo_url: z.string().default(''),
 
-  default_language: z.enum(['cs', 'en', 'vn']).default('en'),
+  default_language: z.enum(['en', 'vi']).default('en'),
   default_date_format: z.enum(['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).default('DD/MM/YYYY'),
   default_time_format: z.enum(['12-hour', '24-hour']).default('24-hour'),
   default_timezone: z.string().default('Europe/Prague'),
@@ -368,9 +368,8 @@ export default function GeneralSettings() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="cs">Czech (cs)</SelectItem>
-                        <SelectItem value="en">English (en)</SelectItem>
-                        <SelectItem value="vn">Vietnamese (vn)</SelectItem>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="vi">Tiếng Việt (Vietnamese)</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

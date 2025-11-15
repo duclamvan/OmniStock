@@ -13,7 +13,7 @@ export interface GeneralSettings {
   companyWebsite?: string;
   companyVatId?: string;
   companyLogoUrl?: string;
-  defaultLanguage?: 'cs' | 'en' | 'vn';
+  defaultLanguage?: 'en' | 'vi';
   defaultDateFormat?: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
   defaultTimeFormat?: '12-hour' | '24-hour';
   defaultTimezone?: string;
