@@ -291,7 +291,7 @@ export default function OrderDetails() {
               overflow: hidden;
             }
             .invoice-header {
-              padding: 16px 24px;
+              padding: 10px 24px 12px 24px;
               border-bottom: 2px solid #e2e8f0;
               background: #f8fafc;
             }
@@ -303,14 +303,12 @@ export default function OrderDetails() {
               align-items: center;
               gap: 8px;
               line-height: 1;
-              padding-bottom: 2px;
             }
             .invoice-icon {
               width: 20px;
               height: 20px;
               color: #64748b;
               flex-shrink: 0;
-              margin-bottom: 1px;
             }
             .invoice-body {
               padding: 0;
