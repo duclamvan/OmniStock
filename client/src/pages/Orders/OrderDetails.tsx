@@ -613,7 +613,7 @@ export default function OrderDetails() {
     order.orderStatus === 'awaiting_stock' ? 'Awaiting Stock' :
     order.orderStatus === 'pending' ? 'Pending' :
     order.orderStatus === 'cancelled' ? 'Cancelled' :
-    order.orderStatus?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Unknown';
+    order.orderStatus?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || 'Unknown';
 
   const paymentStatusVariant = 
     order.paymentStatus === 'paid' ? 'default' : // Will use custom green class
