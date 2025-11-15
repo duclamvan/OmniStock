@@ -13596,139 +13596,133 @@ export default function PickPack() {
         </Tabs>
       </div>
       
-      {/* Enhanced Order Preview Dialog with Pricing */}
+      {/* Receipt-Style Order Preview Dialog */}
       <Dialog open={!!previewOrder} onOpenChange={() => setPreviewOrder(null)}>
         <DialogContent className="w-[92vw] max-w-3xl sm:w-full max-h-[80vh] sm:max-h-[90vh] mx-auto flex flex-col p-2 sm:p-6">
-          <DialogHeader className="flex-shrink-0 pb-1 sm:pb-2">
-            <DialogTitle className="text-xs sm:text-lg">{previewOrder?.orderId} - Order Details</DialogTitle>
-            <DialogDescription className="text-[9px] sm:text-sm">
-              {previewOrder && getOrderStatusDisplay(previewOrder).label} • {previewOrder?.totalItems} items • {previewOrder?.shippingMethod}
-            </DialogDescription>
+          <DialogHeader className="flex-shrink-0 pb-1 sm:pb-2 border-b-2">
+            <DialogTitle className="text-center text-sm sm:text-xl font-bold uppercase tracking-wide">
+              ORDER DETAILS
+            </DialogTitle>
           </DialogHeader>
           
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto min-h-0">
-            {/* Shipping Information */}
-            <div className="space-y-2 sm:space-y-4 mt-2 sm:mt-4">
-              <div className="bg-blue-50 dark:bg-blue-900/30 p-2 sm:p-4 rounded-lg">
-                <h3 className="font-semibold text-xs sm:text-sm mb-2 sm:mb-3 flex items-center gap-2">
-                  <User className="h-3 sm:h-4 w-3 sm:w-4" />
-                  Customer Information
-                </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
-                <div>
-                  <span className="text-gray-600">Name:</span>
-                  <p className="font-medium">{previewOrder?.customerName}</p>
-                </div>
-                <div>
-                  <span className="text-gray-600">Order ID:</span>
-                  <p className="font-medium">{previewOrder?.orderId}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-green-50 dark:bg-green-900/30 p-2 sm:p-4 rounded-lg">
-              <h3 className="font-semibold text-xs sm:text-sm mb-2 sm:mb-3 flex items-center gap-2">
-                <MapPin className="h-3 sm:h-4 w-3 sm:w-4" />
-                Shipping Address
-              </h3>
-              <div className="text-xs sm:text-sm space-y-2">
-                <p className="font-medium text-gray-900 break-words whitespace-pre-line">
-                  {formatShippingAddress(previewOrder?.shippingAddress) || 'No address provided'}
-                </p>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 mt-2">
-                  <div className="flex items-center gap-1">
-                    <Truck className="h-3 sm:h-4 w-3 sm:w-4 text-gray-500" />
-                    <span className="text-gray-600">Method:</span>
-                    <span className="font-medium">{previewOrder?.shippingMethod}</span>
+            <div className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+              
+              {/* Header Section - Order ID, Customer, Date */}
+              <div className="border-b pb-3 sm:pb-4">
+                <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
+                  <div className="flex justify-between items-start">
+                    <span className="text-gray-500 font-medium">Order:</span>
+                    <span className="font-bold text-gray-900">{previewOrder?.orderId}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <AlertCircle className="h-3 sm:h-4 w-3 sm:w-4 text-gray-500" />
-                    <span className="text-gray-600">Priority:</span>
-                    <span className={`font-medium capitalize ${
-                      previewOrder?.priority === 'high' ? 'text-red-600 dark:text-red-400' :
-                      previewOrder?.priority === 'medium' ? 'text-yellow-600 dark:text-yellow-400' :
-                      'text-gray-600'
-                    }`}>
-                      {previewOrder?.priority}
+                  <div className="flex justify-between items-start">
+                    <span className="text-gray-500 font-medium">Customer:</span>
+                    <span className="font-semibold text-gray-900">{previewOrder?.customerName}</span>
+                  </div>
+                  <div className="flex justify-between items-start">
+                    <span className="text-gray-500 font-medium">Date:</span>
+                    <span className="font-medium text-gray-900">
+                      {previewOrder?.createdAt 
+                        ? new Date(previewOrder.createdAt).toLocaleString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                          })
+                        : 'N/A'}
                     </span>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Order Items with Pricing for Pickup/Personal Delivery */}
-            <div>
-              <h3 className="font-semibold text-xs sm:text-sm mb-2 sm:mb-3 flex items-center gap-2">
-                <Package className="h-3 sm:h-4 w-3 sm:w-4" />
-                Order Items ({previewOrder?.totalItems})
-              </h3>
-              <div className="space-y-2">
-                {previewOrder?.items.map((item, index) => {
-                  // Check if this is a Personal Delivery or Pickup order based on the same logic used in Ready tab
-                  const orderId = previewOrder?.orderId?.toLowerCase() || '';
-                  const notes = previewOrder?.notes?.toLowerCase() || '';
-                  const method = previewOrder?.shippingMethod?.toLowerCase() || '';
-                  
-                  const isPersonalDelivery = orderId.includes('-pd') || 
-                                           notes.includes('personal') ||
-                                           method.includes('personal') || method.includes('hand deliver');
-                  
-                  const isPickup = orderId.includes('-pu') || 
-                                 notes.includes('pickup') ||
-                                 method.includes('pickup') || method.includes('collect');
-                  
-                  const showPricing = isPersonalDelivery || isPickup;
-                  return (
-                    <div key={item.id || index} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 border rounded-lg bg-gray-50">
-                      {item.image && (
-                        <img 
-                          src={item.image} 
-                          alt={item.productName}
-                          className="w-10 h-10 sm:w-12 sm:h-12 object-contain rounded flex-shrink-0 bg-slate-50 border border-slate-200"
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-xs sm:text-sm truncate">{item.productName}</div>
-                        <div className="text-[10px] sm:text-xs text-gray-500">
-                          SKU: {item.sku} {item.barcode && `• ${item.barcode}`}
-                        </div>
-                        {item.warehouseLocation && (
-                          <div className="text-[10px] sm:text-xs text-blue-600 dark:text-blue-400 mt-1">
-                            📍 {item.warehouseLocation}
-                          </div>
-                        )}
-                        {showPricing && (
-                          <div className="text-[10px] sm:text-xs text-green-600 dark:text-green-400 dark:text-green-300 mt-1 font-medium">
-                            {(item as any).price ? 
-                              `Unit Price: ${previewOrder?.currency || '$'}${Number((item as any).price).toFixed(2)}` :
-                              'Unit Price: Not set'
-                            }
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <div className="text-xs sm:text-sm font-semibold">Qty: {item.quantity}</div>
-                        {showPricing && (
-                          <div className="text-xs sm:text-sm font-medium text-green-700 dark:text-green-200">
-                            {(item as any).price ? 
-                              `${previewOrder?.currency || '$'}${(Number((item as any).price) * item.quantity).toFixed(2)}` :
-                              'Price: Not set'
-                            }
-                          </div>
-                        )}
-                        <div className="text-[10px] sm:text-xs text-green-600 dark:text-green-400 dark:text-green-300">
-                          {item.pickedQuantity === item.quantity ? '✓ Picked' : 
-                           previewOrder?.packStatus === 'completed' ? '✓ Packed' : 
-                           '⏳ Pending'}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+              {/* Shipping Address Section */}
+              <div className="border-b pb-3 sm:pb-4">
+                <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wide text-gray-700 mb-2">
+                  SHIP TO:
+                </h3>
+                <div className="text-xs sm:text-sm space-y-1">
+                  <p className="font-medium text-gray-900 break-words whitespace-pre-line leading-relaxed">
+                    {formatShippingAddress(previewOrder?.shippingAddress) || 'No address provided'}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t">
+                    <span className="text-gray-500 font-medium">Method:</span>
+                    <span className="font-semibold text-gray-900">{previewOrder?.shippingMethod}</span>
+                    {previewOrder?.priority && (
+                      <>
+                        <span className="text-gray-400">•</span>
+                        <span className="text-gray-500 font-medium">Priority:</span>
+                        <span className="font-semibold text-gray-900 capitalize">{previewOrder?.priority}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
-              
-              {/* Order Total for Pickup/Personal Delivery */}
+
+              {/* Items Section */}
+              <div className="border-b pb-3 sm:pb-4">
+                <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wide text-gray-700 mb-3">
+                  ITEMS
+                </h3>
+                <div className="space-y-3">
+                  {previewOrder?.items.map((item, index) => {
+                    // Check if this is a Personal Delivery or Pickup order
+                    const orderId = previewOrder?.orderId?.toLowerCase() || '';
+                    const notes = previewOrder?.notes?.toLowerCase() || '';
+                    const method = previewOrder?.shippingMethod?.toLowerCase() || '';
+                    
+                    const isPersonalDelivery = orderId.includes('-pd') || 
+                                             notes.includes('personal') ||
+                                             method.includes('personal') || method.includes('hand deliver');
+                    
+                    const isPickup = orderId.includes('-pu') || 
+                                   notes.includes('pickup') ||
+                                   method.includes('pickup') || method.includes('collect');
+                    
+                    const showPricing = isPersonalDelivery || isPickup;
+                    const unitPrice = Number((item as any).price) || 0;
+                    const lineTotal = unitPrice * item.quantity;
+
+                    return (
+                      <div key={item.id || index} className="pb-3 border-b border-gray-200 last:border-0">
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-xs sm:text-sm text-gray-900">{item.productName}</div>
+                            <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5">
+                              SKU: {item.sku}
+                            </div>
+                            {item.warehouseLocation && (
+                              <div className="text-[10px] sm:text-xs text-gray-400 mt-0.5">
+                                📍 {item.warehouseLocation}
+                              </div>
+                            )}
+                          </div>
+                          {showPricing ? (
+                            <div className="text-right flex-shrink-0 min-w-[100px] sm:min-w-[140px]">
+                              <div className="text-xs sm:text-sm text-gray-900">
+                                Qty: {item.quantity} × {previewOrder?.currency || 'CZK'}{unitPrice.toFixed(2)}
+                              </div>
+                              <div className="text-sm sm:text-base font-bold text-gray-900 mt-0.5">
+                                {previewOrder?.currency || 'CZK'}{lineTotal.toFixed(2)}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-right flex-shrink-0">
+                              <div className="text-xs sm:text-sm font-semibold text-gray-900">
+                                Qty: {item.quantity}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Total Section - Only show for PD/Pickup orders */}
               {(() => {
                 const orderId = previewOrder?.orderId?.toLowerCase() || '';
                 const notes = previewOrder?.notes?.toLowerCase() || '';
@@ -13742,88 +13736,38 @@ export default function PickPack() {
                                notes.includes('pickup') ||
                                method.includes('pickup') || method.includes('collect');
                 
-                return (isPersonalDelivery || isPickup);
-              })() && (
-                <div className="mt-3 p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg border border-indigo-200 dark:border-indigo-700">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm sm:text-base font-semibold text-indigo-900">Order Total:</span>
-                    <span className="text-base sm:text-lg font-bold text-indigo-900">
-                      {(() => {
-                        const total = previewOrder?.items.reduce((total, item) => {
-                          return total + ((Number((item as any).price) || 0) * item.quantity);
-                        }, 0) || 0;
-                        const hasAnyPrices = previewOrder?.items.some(item => (item as any).price);
-                        
-                        if (!hasAnyPrices) {
-                          return 'Prices not set';
-                        }
-                        return `${previewOrder?.currency || '$'}${total.toFixed(2)}`;
-                      })()}
-                    </span>
-                  </div>
-                  {(previewOrder as any)?.paymentStatus && (
-                    <div className="mt-2 text-xs sm:text-sm text-indigo-700 dark:text-indigo-200">
-                      Payment Status: <span className="font-medium capitalize">{(previewOrder as any).paymentStatus}</span>
+                const showPricing = isPersonalDelivery || isPickup;
+                
+                if (!showPricing) return null;
+
+                const subtotal = previewOrder?.items.reduce((total, item) => {
+                  return total + ((Number((item as any).price) || 0) * item.quantity);
+                }, 0) || 0;
+
+                return (
+                  <div className="border-t-2 border-gray-900 pt-3">
+                    <div className="flex justify-between items-center text-sm sm:text-base mb-2">
+                      <span className="font-semibold text-gray-700">Subtotal:</span>
+                      <span className="font-semibold text-gray-900">
+                        {previewOrder?.currency || 'CZK'}{subtotal.toFixed(2)}
+                      </span>
                     </div>
-                  )}
-                  <div className="mt-2 text-xs text-indigo-600 dark:text-indigo-400">
-                    This pricing section appears for Personal Delivery and Pickup orders
+                    <div className="flex justify-between items-center text-lg sm:text-2xl font-bold border-t pt-2">
+                      <span className="text-gray-900">TOTAL:</span>
+                      <span className="text-gray-900">
+                        {previewOrder?.currency || 'CZK'}{subtotal.toFixed(2)}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                );
+              })()}
 
-            {/* Processing Information */}
-            <div className="bg-gray-50 p-2 sm:p-4 rounded-lg">
-              <h3 className="font-semibold text-xs sm:text-sm mb-2 sm:mb-3 flex items-center gap-2">
-                <Clock className="h-3 sm:h-4 w-3 sm:w-4" />
-                Processing Information
-              </h3>
-              <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
-                <div>
-                  <span className="text-gray-600">Picked by:</span>
-                  <p className="font-medium">{previewOrder?.pickedBy || 'N/A'}</p>
-                </div>
-                <div>
-                  <span className="text-gray-600">Packed by:</span>
-                  <p className="font-medium">{previewOrder?.packedBy || 'N/A'}</p>
-                </div>
-                <div>
-                  <span className="text-gray-600">Pick Time:</span>
-                  <p className="font-medium">
-                    {previewOrder?.pickEndTime 
-                      ? new Date(previewOrder.pickEndTime).toLocaleString()
-                      : 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-gray-600">Pack Time:</span>
-                  <p className="font-medium">
-                    {previewOrder?.packEndTime 
-                      ? new Date(previewOrder.packEndTime).toLocaleString()
-                      : 'N/A'}
-                  </p>
-                </div>
-                {previewOrder?.trackingNumber && (
-                  <div className="col-span-2">
-                    <span className="text-gray-600">Tracking Number:</span>
-                    <p className="font-medium text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                      <Hash className="h-3 w-3" />
-                      {previewOrder.trackingNumber}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-              {/* Notes */}
+              {/* Notes - Subtle, at bottom */}
               {previewOrder?.notes && (
-                <div className="bg-yellow-50 dark:bg-yellow-900/30 p-2 sm:p-4 rounded-lg">
-                  <h3 className="font-semibold text-xs sm:text-sm mb-2 flex items-center gap-2">
-                    <FileText className="h-3 sm:h-4 w-3 sm:w-4" />
-                    Order Notes
-                  </h3>
-                  <p className="text-xs sm:text-sm text-gray-700">{previewOrder.notes}</p>
+                <div className="pt-2 border-t">
+                  <p className="text-[10px] sm:text-xs text-gray-500 italic">
+                    <span className="font-medium">Notes:</span> {previewOrder.notes}
+                  </p>
                 </div>
               )}
             </div>
