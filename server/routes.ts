@@ -360,6 +360,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Role-checking middleware
+  function requireRole(allowedRoles: string[]) {
+    return (req: any, res: any, next: any) => {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized - Please log in' });
+      }
+
+      if (!allowedRoles.includes(req.user.role)) {
+        return res.status(403).json({ message: 'Forbidden - Insufficient permissions' });
+      }
+
+      next();
+    };
+  }
+
+  // User Management API Endpoints
+  
+  // GET /api/users - List all users (admin-only)
+  app.get('/api/users', requireRole(['administrator']), async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      const sanitizedUsers = users.map(user => ({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        createdAt: user.createdAt
+      }));
+      res.json(sanitizedUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ message: 'Failed to fetch users' });
+    }
+  });
+
+  // PATCH /api/users/:userId/role - Update user role (admin-only)
+  app.patch('/api/users/:userId/role', requireRole(['administrator']), async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { role } = req.body;
+
+      if (!role) {
+        return res.status(400).json({ message: 'Role is required' });
+      }
+
+      if (!['administrator', 'warehouse_operator'].includes(role)) {
+        return res.status(400).json({ message: 'Invalid role. Must be either "administrator" or "warehouse_operator"' });
+      }
+
+      await storage.updateUserRole(userId, role);
+      res.json({ message: 'User role updated successfully' });
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      res.status(500).json({ message: 'Failed to update user role' });
+    }
+  });
+
+  // GET /api/users/me - Get current user info (authenticated users)
+  app.get('/api/users/me', async (req: any, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized - Please log in' });
+      }
+
+      res.json({
+        id: req.user.id,
+        email: req.user.email,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
+        role: req.user.role,
+        createdAt: req.user.createdAt
+      });
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+      res.status(500).json({ message: 'Failed to fetch user information' });
+    }
+  });
+
   // Serve GLS autofill userscript for Tampermonkey
   app.get('/api/download/gls-autofill-userscript', async (req, res) => {
     try {
