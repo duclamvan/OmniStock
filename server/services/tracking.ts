@@ -30,6 +30,12 @@ interface TrackingAdapter {
 
 // PPL Adapter - uses existing OAuth2 token
 class PPLTrackingAdapter implements TrackingAdapter {
+  private trackingUpdateFrequencyHours: number;
+  
+  constructor(trackingUpdateFrequencyHours: number = 1) {
+    this.trackingUpdateFrequencyHours = trackingUpdateFrequencyHours;
+  }
+  
   async fetchTracking(trackingNumber: string): Promise<NormalizedTracking> {
     // Get PPL access token (reuse from existing PPL label service)
     const token = await getPPLAccessToken();
@@ -91,13 +97,20 @@ class PPLTrackingAdapter implements TrackingAdapter {
   
   shouldRefresh(lastChecked?: Date): boolean {
     if (!lastChecked) return true;
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    return lastChecked < fiveMinutesAgo;
+    const frequencyMs = this.trackingUpdateFrequencyHours * 60 * 60 * 1000;
+    const thresholdDate = new Date(Date.now() - frequencyMs);
+    return lastChecked < thresholdDate;
   }
 }
 
 // GLS Adapter - public API
 class GLSTrackingAdapter implements TrackingAdapter {
+  private trackingUpdateFrequencyHours: number;
+  
+  constructor(trackingUpdateFrequencyHours: number = 1) {
+    this.trackingUpdateFrequencyHours = trackingUpdateFrequencyHours;
+  }
+  
   async fetchTracking(trackingNumber: string): Promise<NormalizedTracking> {
     const response = await fetch(
       `https://gls-group.com/app/service/open/rest/EU/en/rstt001`,
@@ -154,13 +167,20 @@ class GLSTrackingAdapter implements TrackingAdapter {
   
   shouldRefresh(lastChecked?: Date): boolean {
     if (!lastChecked) return true;
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    return lastChecked < fiveMinutesAgo;
+    const frequencyMs = this.trackingUpdateFrequencyHours * 60 * 60 * 1000;
+    const thresholdDate = new Date(Date.now() - frequencyMs);
+    return lastChecked < thresholdDate;
   }
 }
 
 // DHL Adapter - public API with API key
 class DHLTrackingAdapter implements TrackingAdapter {
+  private trackingUpdateFrequencyHours: number;
+  
+  constructor(trackingUpdateFrequencyHours: number = 1) {
+    this.trackingUpdateFrequencyHours = trackingUpdateFrequencyHours;
+  }
+  
   async fetchTracking(trackingNumber: string): Promise<NormalizedTracking> {
     const apiKey = process.env.DHL_PUBLIC_API_KEY;
     if (!apiKey) {
@@ -219,20 +239,36 @@ class DHLTrackingAdapter implements TrackingAdapter {
   
   shouldRefresh(lastChecked?: Date): boolean {
     if (!lastChecked) return true;
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    return lastChecked < fiveMinutesAgo;
+    const frequencyMs = this.trackingUpdateFrequencyHours * 60 * 60 * 1000;
+    const thresholdDate = new Date(Date.now() - frequencyMs);
+    return lastChecked < thresholdDate;
   }
 }
 
 // Main Tracking Service
 export class TrackingService {
   private adapters: Map<string, TrackingAdapter>;
+  private trackingUpdateFrequencyHours: number;
   
-  constructor() {
+  constructor(trackingUpdateFrequencyHours?: number) {
+    // Centralized validation with sane min/max
+    let hours = 1; // Default
+    
+    if (typeof trackingUpdateFrequencyHours === 'number') {
+      // Enforce minimum 0.083 hours (5 minutes) and maximum 24 hours
+      hours = Math.max(0.083, Math.min(24, trackingUpdateFrequencyHours));
+    }
+    
+    if (isNaN(hours) || hours <= 0) {
+      hours = 1; // Fallback to 1 hour if invalid
+    }
+    
+    this.trackingUpdateFrequencyHours = hours;
+    
     this.adapters = new Map([
-      ['ppl', new PPLTrackingAdapter()],
-      ['gls', new GLSTrackingAdapter()],
-      ['dhl', new DHLTrackingAdapter()],
+      ['ppl', new PPLTrackingAdapter(hours)],
+      ['gls', new GLSTrackingAdapter(hours)],
+      ['dhl', new DHLTrackingAdapter(hours)],
     ]);
   }
   

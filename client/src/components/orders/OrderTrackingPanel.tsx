@@ -7,6 +7,7 @@ import { Truck, Package, CheckCircle2, AlertCircle, Clock, MapPin, RefreshCw, Ch
 import { formatDate } from "@/lib/currencyUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useSettings } from "@/contexts/SettingsContext";
 import { useState } from "react";
 
 interface OrderTrackingPanelProps {
@@ -16,6 +17,12 @@ interface OrderTrackingPanelProps {
 export function OrderTrackingPanel({ orderId }: OrderTrackingPanelProps) {
   const { toast } = useToast();
   const [expandedCartons, setExpandedCartons] = useState<Set<string>>(new Set());
+  const { shippingSettings } = useSettings();
+  
+  // Read settings with fallbacks
+  const enableTracking = shippingSettings?.enableTracking ?? true;
+  const autoUpdateTrackingStatus = shippingSettings?.autoUpdateTrackingStatus ?? true;
+  const trackingUpdateFrequencyHours = shippingSettings?.trackingUpdateFrequencyHours ?? 1;
   
   const { data: tracking, isLoading } = useQuery({
     queryKey: ['/api/orders', orderId, 'tracking'],
@@ -24,7 +31,10 @@ export function OrderTrackingPanel({ orderId }: OrderTrackingPanelProps) {
       if (!res.ok) throw new Error('Failed to fetch tracking');
       return res.json();
     },
-    refetchInterval: 60 * 1000, // Poll every 60 seconds
+    // Disable query if tracking is disabled
+    enabled: enableTracking,
+    // Use configured frequency for auto-updates, or disable if autoUpdate is off
+    refetchInterval: autoUpdateTrackingStatus ? trackingUpdateFrequencyHours * 60 * 60 * 1000 : false,
   });
   
   const refreshMutation = useMutation({
@@ -60,6 +70,25 @@ export function OrderTrackingPanel({ orderId }: OrderTrackingPanelProps) {
       return next;
     });
   };
+  
+  // Early return if tracking is disabled
+  if (!enableTracking) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Truck className="h-5 w-5" />
+            Shipment Tracking
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground">
+            Tracking is disabled. Enable it in Settings &gt; Shipping to view shipment tracking.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
   
   if (isLoading) {
     return (

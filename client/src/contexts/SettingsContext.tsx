@@ -250,6 +250,56 @@ function snakeToCamel(str: string): string {
   return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 }
 
+// Deep parse function to recursively handle nested objects
+function deepParse(value: any): any {
+  // Handle null/undefined
+  if (value === null || value === undefined) return value;
+  
+  // Handle boolean strings
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  
+  // Handle number strings - ONLY if they don't have leading zeros
+  // Leading zeros indicate it's an identifier (zip, phone, ID), not a quantity
+  if (typeof value === 'string' && value !== '') {
+    const trimmed = value.trim();
+    if (!isNaN(Number(trimmed))) {
+      // If it starts with 0 and next char is a digit, keep as string (zip code, phone, ID)
+      if (/^0\d/.test(trimmed)) {
+        return trimmed;
+      }
+      return Number(trimmed);
+    }
+  }
+  
+  // Handle JSON strings
+  if (typeof value === 'string' && (value.startsWith('{') || value.startsWith('['))) {
+    try {
+      const parsed = JSON.parse(value);
+      return deepParse(parsed); // Recursive call
+    } catch {
+      return value;
+    }
+  }
+  
+  // Handle arrays - recursively sanitize each element
+  if (Array.isArray(value)) {
+    return value.map(item => deepParse(item));
+  }
+  
+  // Handle objects - recursively sanitize each property
+  if (typeof value === 'object' && value !== null) {
+    const result: Record<string, any> = {};
+    for (const [key, val] of Object.entries(value)) {
+      result[key] = deepParse(val);
+    }
+    return result;
+  }
+  
+  // Return as-is
+  return value;
+}
+
 // Helper to sanitize setting values (replace empty strings and invalid values with safe defaults)
 function sanitizeSettingValue(key: string, value: any, category: string): any {
   // Return null/undefined as-is
@@ -257,9 +307,12 @@ function sanitizeSettingValue(key: string, value: any, category: string): any {
     return value;
   }
   
+  // Apply deep recursive parsing first
+  const parsedValue = deepParse(value);
+  
   // Replace empty strings with safe defaults based on the setting
   // Note: key comes from API in snake_case format
-  if (value === '') {
+  if (parsedValue === '') {
     // Inventory settings
     if (category === 'inventory') {
       if (key === 'default_warehouse') return 'none';
@@ -342,7 +395,7 @@ function sanitizeSettingValue(key: string, value: any, category: string): any {
     return undefined;
   }
   
-  return value;
+  return parsedValue;
 }
 
 // Helper to parse settings by category

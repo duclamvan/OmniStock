@@ -137,6 +137,76 @@ function normalizeSQLColumn(column: any) {
   `;
 }
 
+// Helper to convert snake_case to camelCase
+function snakeToCamel(str: string): string {
+  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+}
+
+// Deep parse function to handle nested objects
+function deepParse(value: any): any {
+  // Handle null/undefined
+  if (value === null || value === undefined) return value;
+  
+  // Handle boolean strings
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  
+  // Handle number strings - ONLY if they don't have leading zeros
+  // Leading zeros indicate it's an identifier (zip, phone, ID), not a quantity
+  if (typeof value === 'string' && value !== '') {
+    const trimmed = value.trim();
+    if (!isNaN(Number(trimmed))) {
+      // If it starts with 0 and next char is a digit, keep as string (zip code, phone, ID)
+      if (/^0\d/.test(trimmed)) {
+        return trimmed;
+      }
+      return Number(trimmed);
+    }
+  }
+  
+  // Handle JSON strings
+  if (typeof value === 'string' && (value.startsWith('{') || value.startsWith('['))) {
+    try {
+      const parsed = JSON.parse(value);
+      // Recursively parse nested values
+      return deepParse(parsed);
+    } catch {
+      return value; // Keep as string if parse fails
+    }
+  }
+  
+  // Handle arrays - recursively parse each element
+  if (Array.isArray(value)) {
+    return value.map(item => deepParse(item));
+  }
+  
+  // Handle objects - recursively parse each property
+  if (typeof value === 'object' && value !== null) {
+    const result: Record<string, any> = {};
+    for (const [key, val] of Object.entries(value)) {
+      result[key] = deepParse(val);
+    }
+    return result;
+  }
+  
+  // Return as-is for other types
+  return value;
+}
+
+// Helper to get settings by category as an object
+async function getSettingsByCategory(category: string): Promise<Record<string, any>> {
+  const allSettings = await storage.getAppSettings();
+  const categorySettings = allSettings.filter(s => s.category === category);
+  const result: Record<string, any> = {};
+  
+  categorySettings.forEach(setting => {
+    const key = snakeToCamel(setting.key);
+    result[key] = deepParse(setting.value); // Use deep parse instead of shallow
+  });
+  
+  return result;
+}
+
 // Configure multer for image uploads with memory storage for compression
 const upload = multer({ 
   storage: multer.memoryStorage(), // Use memory storage for compression
@@ -5881,15 +5951,24 @@ Important:
     }
   });
 
-  // Tracking service instance
-  const trackingService = new TrackingService();
-
   // Get tracking for an order
   app.get('/api/orders/:id/tracking', async (req, res) => {
     try {
       const { id } = req.params;
       const force = req.query.force === 'true';
       
+      // Load shipping settings
+      const shippingSettings = await getSettingsByCategory('shipping');
+      const enableTracking = shippingSettings.enableTracking ?? true;
+      const trackingUpdateFrequencyHours = shippingSettings.trackingUpdateFrequencyHours ?? 1;
+      
+      // Guard: Return empty if tracking disabled
+      if (!enableTracking) {
+        return res.json([]);
+      }
+      
+      // Create service with configured frequency
+      const trackingService = new TrackingService(trackingUpdateFrequencyHours);
       let tracking = await trackingService.getOrderTracking(id);
       
       // If no tracking exists, create it from order cartons
@@ -5917,6 +5996,19 @@ Important:
   app.patch('/api/tracking/:id/refresh', async (req, res) => {
     try {
       const { id } = req.params;
+      
+      // Load shipping settings
+      const shippingSettings = await getSettingsByCategory('shipping');
+      const enableTracking = shippingSettings.enableTracking ?? true;
+      const trackingUpdateFrequencyHours = shippingSettings.trackingUpdateFrequencyHours ?? 1;
+      
+      // Guard: Return error if tracking disabled
+      if (!enableTracking) {
+        return res.status(400).json({ error: 'Tracking is disabled' });
+      }
+      
+      // Create service with configured frequency
+      const trackingService = new TrackingService(trackingUpdateFrequencyHours);
       const updated = await trackingService.refreshTracking(id);
       res.json(updated);
     } catch (error: any) {
@@ -5928,17 +6020,33 @@ Important:
   // Bulk refresh all active tracking
   app.post('/api/tracking/bulk-refresh', async (req, res) => {
     try {
+      // Load shipping settings
+      const shippingSettings = await getSettingsByCategory('shipping');
+      const enableTracking = shippingSettings.enableTracking ?? true;
+      const trackingUpdateFrequencyHours = shippingSettings.trackingUpdateFrequencyHours ?? 1;
+      
+      // Guard: Return early if tracking disabled
+      if (!enableTracking) {
+        return res.json({ refreshed: 0, total: 0, message: 'Tracking is disabled' });
+      }
+      
+      // Calculate frequency in milliseconds
+      const frequencyMs = trackingUpdateFrequencyHours * 60 * 60 * 1000;
+      
       // Get all tracking that hasn't been delivered
       const activeTracking = await db.query.shipmentTracking.findMany({
         where: and(
           isNull(shipmentTracking.deliveredAt),
-          // Only refresh if last check was > 5 minutes ago OR never checked (NULL)
+          // Only refresh if last check was > configured frequency OR never checked (NULL)
           or(
             isNull(shipmentTracking.lastCheckedAt),
-            lt(shipmentTracking.lastCheckedAt, new Date(Date.now() - 5 * 60 * 1000))
+            lt(shipmentTracking.lastCheckedAt, new Date(Date.now() - frequencyMs))
           )
         )
       });
+      
+      // Create service with configured frequency
+      const trackingService = new TrackingService(trackingUpdateFrequencyHours);
       
       let refreshed = 0;
       for (const tracking of activeTracking) {
