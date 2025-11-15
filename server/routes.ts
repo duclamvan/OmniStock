@@ -503,6 +503,509 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper function for currency conversion
+  async function getCurrencyConverter() {
+    try {
+      const exchangeRateResponse = await fetch('https://api.frankfurter.app/latest?from=EUR');
+      const exchangeRates = await exchangeRateResponse.json();
+      
+      return (amount: number, currency: string): number => {
+        if (!amount || !currency) return 0;
+        if (currency === 'EUR') return amount;
+        
+        const currencyUpper = currency.toUpperCase();
+        if (exchangeRates.rates && exchangeRates.rates[currencyUpper]) {
+          return amount / exchangeRates.rates[currencyUpper];
+        }
+        
+        console.warn(`Exchange rate not found for ${currency}`);
+        return amount;
+      };
+    } catch (error) {
+      console.error('Error fetching exchange rates:', error);
+      return (amount: number, currency: string) => currency === 'EUR' ? amount : amount;
+    }
+  }
+
+  // New Admin Dashboard Endpoints
+
+  // Operations Pulse Metrics
+  app.get('/api/dashboard/operations-pulse', cacheMiddleware(60000), async (req, res) => {
+    try {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+
+      // Orders awaiting fulfillment
+      const ordersToFulfill = await db.select()
+        .from(orders)
+        .where(eq(orders.orderStatus, 'to_fulfill'));
+
+      // Orders at risk of SLA breach (>24 hours in to_fulfill status)
+      const ordersAtRisk = ordersToFulfill.filter(order => {
+        const createdAt = new Date(order.createdAt);
+        return createdAt < yesterday;
+      });
+
+      // Pick/pack throughput today (orders moved to fulfilled today)
+      const fulfilledToday = await db.select()
+        .from(orders)
+        .where(
+          and(
+            eq(orders.orderStatus, 'fulfilled'),
+            sql`${orders.updatedAt} >= ${today.toISOString()}`
+          )
+        );
+
+      // Carrier exceptions (simplified - checking for specific statuses)
+      const carrierExceptions = await db.select()
+        .from(orders)
+        .where(
+          or(
+            ilike(orders.notes, '%failed%delivery%'),
+            ilike(orders.notes, '%exception%'),
+            ilike(orders.notes, '%delay%')
+          )
+        );
+
+      // Pending stock adjustment approvals
+      const pendingAdjustments = await db.select()
+        .from(sql`stock_adjustment_requests`)
+        .where(sql`status = 'pending'`)
+        .catch(() => []);
+
+      res.json({
+        ordersAwaitingFulfillment: ordersToFulfill.length,
+        ordersAtRiskOfSLA: ordersAtRisk.length,
+        pickPackThroughputToday: fulfilledToday.length,
+        carrierExceptions: carrierExceptions.length,
+        pendingStockAdjustments: pendingAdjustments.length,
+        timestamp: now.toISOString()
+      });
+    } catch (error) {
+      console.error("Error fetching operations pulse metrics:", error);
+      res.status(500).json({ message: "Failed to fetch operations pulse metrics" });
+    }
+  });
+
+  // Financial Control Metrics
+  app.get('/api/dashboard/financial-control', cacheMiddleware(60000), async (req, res) => {
+    try {
+      const convertToEur = await getCurrencyConverter();
+      const now = new Date();
+      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+      const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+
+      // Get all orders
+      const allOrders = await storage.getOrders();
+      const paidOrders = allOrders.filter(o => o.paymentStatus === 'paid');
+
+      // Total revenue (converted to EUR)
+      let totalRevenueEur = 0;
+      let totalCostEur = 0;
+      
+      for (const order of paidOrders) {
+        const grandTotal = parseFloat(order.grandTotal || '0');
+        const totalCost = parseFloat(order.totalCost || '0');
+        totalRevenueEur += convertToEur(grandTotal, order.currency || 'EUR');
+        totalCostEur += convertToEur(totalCost, order.currency || 'EUR');
+      }
+
+      // Net profit and margin
+      const netProfit = totalRevenueEur - totalCostEur;
+      const profitMargin = totalRevenueEur > 0 ? (netProfit / totalRevenueEur) * 100 : 0;
+
+      // Average order value
+      const aov = paidOrders.length > 0 ? totalRevenueEur / paidOrders.length : 0;
+
+      // Aged receivables (unpaid orders)
+      const unpaidOrders = allOrders.filter(o => o.paymentStatus !== 'paid');
+      const agedReceivables = {
+        '30-60days': 0,
+        '60-90days': 0,
+        '90plus': 0
+      };
+
+      for (const order of unpaidOrders) {
+        const createdAt = new Date(order.createdAt);
+        const amount = convertToEur(parseFloat(order.grandTotal || '0'), order.currency || 'EUR');
+        
+        if (createdAt < ninetyDaysAgo) {
+          agedReceivables['90plus'] += amount;
+        } else if (createdAt < sixtyDaysAgo) {
+          agedReceivables['60-90days'] += amount;
+        } else if (createdAt < thirtyDaysAgo) {
+          agedReceivables['30-60days'] += amount;
+        }
+      }
+
+      // Cash conversion by currency (this month vs last month)
+      const thisMonthOrders = allOrders.filter(o => {
+        const orderDate = new Date(o.createdAt);
+        return orderDate >= thisMonthStart && o.paymentStatus === 'paid';
+      });
+
+      const lastMonthOrders = allOrders.filter(o => {
+        const orderDate = new Date(o.createdAt);
+        return orderDate >= lastMonthStart && orderDate <= lastMonthEnd && o.paymentStatus === 'paid';
+      });
+
+      const calculateByCurrency = (orders: any[]) => {
+        const byCurrency: any = { EUR: 0, CZK: 0, USD: 0 };
+        orders.forEach(o => {
+          const curr = o.currency || 'EUR';
+          if (byCurrency[curr] !== undefined) {
+            byCurrency[curr] += parseFloat(o.grandTotal || '0');
+          }
+        });
+        return byCurrency;
+      };
+
+      const thisMonthByCurrency = calculateByCurrency(thisMonthOrders);
+      const lastMonthByCurrency = calculateByCurrency(lastMonthOrders);
+
+      const cashConversion = {
+        EUR: {
+          current: thisMonthByCurrency.EUR,
+          previous: lastMonthByCurrency.EUR,
+          trend: lastMonthByCurrency.EUR > 0 
+            ? ((thisMonthByCurrency.EUR - lastMonthByCurrency.EUR) / lastMonthByCurrency.EUR) * 100 
+            : 0
+        },
+        CZK: {
+          current: thisMonthByCurrency.CZK,
+          previous: lastMonthByCurrency.CZK,
+          trend: lastMonthByCurrency.CZK > 0 
+            ? ((thisMonthByCurrency.CZK - lastMonthByCurrency.CZK) / lastMonthByCurrency.CZK) * 100 
+            : 0
+        },
+        USD: {
+          current: thisMonthByCurrency.USD,
+          previous: lastMonthByCurrency.USD,
+          trend: lastMonthByCurrency.USD > 0 
+            ? ((thisMonthByCurrency.USD - lastMonthByCurrency.USD) / lastMonthByCurrency.USD) * 100 
+            : 0
+        }
+      };
+
+      res.json({
+        totalRevenueEur: Math.round(totalRevenueEur * 100) / 100,
+        netProfit: Math.round(netProfit * 100) / 100,
+        profitMarginPercent: Math.round(profitMargin * 100) / 100,
+        averageOrderValue: Math.round(aov * 100) / 100,
+        agedReceivables,
+        cashConversionByCurrency: cashConversion,
+        timestamp: now.toISOString()
+      });
+    } catch (error) {
+      console.error("Error fetching financial control metrics:", error);
+      res.status(500).json({ message: "Failed to fetch financial control metrics" });
+    }
+  });
+
+  // Inventory Risk Metrics
+  app.get('/api/dashboard/inventory-risk', cacheMiddleware(60000), async (req, res) => {
+    try {
+      const now = new Date();
+      const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+
+      // Low stock count
+      const allProducts = await storage.getProducts();
+      const lowStockProducts = allProducts.filter(p => 
+        p.quantity <= (p.lowStockAlert || 5) && p.isActive
+      );
+
+      // Over-allocated SKUs (products with allocated > quantity)
+      const overAllocatedProducts = allProducts.filter(p => {
+        const quantity = p.quantity || 0;
+        const allocated = parseInt(p.allocated || '0');
+        return allocated > quantity && p.isActive;
+      });
+
+      // Aging inventory (no stock movement in 90+ days - simplified check via updatedAt)
+      const agingInventory = allProducts.filter(p => {
+        const updatedAt = new Date(p.updatedAt || p.createdAt);
+        return updatedAt < ninetyDaysAgo && (p.quantity || 0) > 0;
+      });
+
+      // Inbound backlog (receipts with pending_verification status)
+      const pendingReceipts = await db.select()
+        .from(receipts)
+        .where(eq(receipts.status, 'pending_verification'));
+
+      // Supplier delay alerts
+      const delayedPurchases = await db.select()
+        .from(importPurchases)
+        .where(
+          and(
+            sql`${importPurchases.estimatedArrival} < ${now.toISOString()}`,
+            sql`${importPurchases.status} != 'delivered'`
+          )
+        );
+
+      res.json({
+        lowStockCount: lowStockProducts.length,
+        overAllocatedSKUs: overAllocatedProducts.length,
+        agingInventoryCount: agingInventory.length,
+        inboundBacklog: pendingReceipts.length,
+        supplierDelayAlerts: delayedPurchases.length,
+        timestamp: now.toISOString()
+      });
+    } catch (error) {
+      console.error("Error fetching inventory risk metrics:", error);
+      res.status(500).json({ message: "Failed to fetch inventory risk metrics" });
+    }
+  });
+
+  // Fulfillment Efficiency Metrics
+  app.get('/api/dashboard/fulfillment-efficiency', cacheMiddleware(60000), async (req, res) => {
+    try {
+      const now = new Date();
+      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      // Pick errors count (from returns with picking_error reason this month)
+      const returns = await storage.getReturns();
+      const pickErrors = returns.filter((r: any) => {
+        const createdAt = new Date(r.createdAt || r.returnDate);
+        return r.reason === 'picking_error' && createdAt >= thisMonthStart;
+      });
+
+      // AI carton recommendations used
+      const thisMonthOrders = await db.select()
+        .from(orders)
+        .where(sql`${orders.createdAt} >= ${thisMonthStart.toISOString()}`);
+
+      const ordersWithAIPlans = await db.select()
+        .from(orderCartonPlans)
+        .where(
+          and(
+            sql`${orderCartonPlans.createdAt} >= ${thisMonthStart.toISOString()}`,
+            sql`${orderCartonPlans.aiConfidenceScore} > 0`
+          )
+        );
+
+      const aiAdoptionRate = thisMonthOrders.length > 0 
+        ? (ordersWithAIPlans.length / thisMonthOrders.length) * 100 
+        : 0;
+
+      // Orders by fulfillment stage distribution
+      const allOrders = await storage.getOrders();
+      const stageDistribution = {
+        to_fulfill: allOrders.filter(o => o.orderStatus === 'to_fulfill').length,
+        picking: allOrders.filter(o => o.fulfillmentStage === 'picking').length,
+        packing: allOrders.filter(o => o.fulfillmentStage === 'packing').length,
+        shipped: allOrders.filter(o => o.orderStatus === 'shipped').length,
+        fulfilled: allOrders.filter(o => o.orderStatus === 'fulfilled').length
+      };
+
+      // Carrier on-time delivery rate (simplified - checking shipped orders with tracking)
+      const shippedOrders = allOrders.filter(o => o.orderStatus === 'shipped' && o.shippedAt);
+      const onTimeDeliveries = shippedOrders.filter(o => {
+        // Simplified: assume on-time if shipped within 3 days of order
+        const shippedAt = new Date(o.shippedAt!);
+        const createdAt = new Date(o.createdAt);
+        const daysDiff = (shippedAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+        return daysDiff <= 3;
+      });
+
+      const onTimeRate = shippedOrders.length > 0 
+        ? (onTimeDeliveries.length / shippedOrders.length) * 100 
+        : 0;
+
+      res.json({
+        pickErrorsCount: pickErrors.length,
+        aiCartonRecommendationsUsed: ordersWithAIPlans.length,
+        aiAdoptionRatePercent: Math.round(aiAdoptionRate * 100) / 100,
+        ordersByStage: stageDistribution,
+        carrierOnTimeRatePercent: Math.round(onTimeRate * 100) / 100,
+        timestamp: now.toISOString()
+      });
+    } catch (error) {
+      console.error("Error fetching fulfillment efficiency metrics:", error);
+      res.status(500).json({ message: "Failed to fetch fulfillment efficiency metrics" });
+    }
+  });
+
+  // Customer & Support Metrics
+  app.get('/api/dashboard/customer-support', cacheMiddleware(60000), async (req, res) => {
+    try {
+      const convertToEur = await getCurrencyConverter();
+      const now = new Date();
+      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      const oneeightyDaysAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+
+      // Top 10 customers by revenue this month
+      const allOrders = await storage.getOrders();
+      const thisMonthOrders = allOrders.filter(o => {
+        const orderDate = new Date(o.createdAt);
+        return orderDate >= thisMonthStart && o.paymentStatus === 'paid';
+      });
+
+      const customerRevenue = new Map<string, { name: string; revenue: number }>();
+      const allCustomers = await storage.getCustomers();
+      
+      for (const order of thisMonthOrders) {
+        if (!order.customerId) continue;
+        const revenue = convertToEur(parseFloat(order.grandTotal || '0'), order.currency || 'EUR');
+        
+        if (customerRevenue.has(order.customerId)) {
+          customerRevenue.get(order.customerId)!.revenue += revenue;
+        } else {
+          const customer = allCustomers.find(c => c.id === order.customerId);
+          customerRevenue.set(order.customerId, {
+            name: customer?.name || 'Unknown',
+            revenue
+          });
+        }
+      }
+
+      const top10Customers = Array.from(customerRevenue.entries())
+        .map(([id, data]) => ({ customerId: id, ...data }))
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10);
+
+      // Active support tickets by severity
+      const allTickets = await storage.getTickets();
+      const activeTickets = allTickets.filter(t => 
+        t.status === 'open' || t.status === 'in_progress'
+      );
+
+      const ticketsBySeverity = {
+        low: activeTickets.filter(t => t.priority === 'low').length,
+        medium: activeTickets.filter(t => t.priority === 'medium').length,
+        high: activeTickets.filter(t => t.priority === 'high').length,
+        urgent: activeTickets.filter(t => t.priority === 'urgent').length
+      };
+
+      // COD payment collection status
+      const codOrders = allOrders.filter(o => o.paymentMethod === 'COD');
+      const codStatus = {
+        pending: codOrders.filter(o => o.paymentStatus === 'pending').length,
+        paid: codOrders.filter(o => o.paymentStatus === 'paid').length,
+        failed: codOrders.filter(o => o.paymentStatus === 'failed').length
+      };
+
+      // Retention rate (customers who ordered in last 90 days AND previous 90 days)
+      const last90DaysOrders = allOrders.filter(o => {
+        const orderDate = new Date(o.createdAt);
+        return orderDate >= ninetyDaysAgo;
+      });
+
+      const previous90DaysOrders = allOrders.filter(o => {
+        const orderDate = new Date(o.createdAt);
+        return orderDate >= oneeightyDaysAgo && orderDate < ninetyDaysAgo;
+      });
+
+      const last90CustomersSet = new Set(last90DaysOrders.map(o => o.customerId).filter(Boolean));
+      const previous90CustomersSet = new Set(previous90DaysOrders.map(o => o.customerId).filter(Boolean));
+      
+      const retainedCustomers = Array.from(last90CustomersSet).filter(id => 
+        previous90CustomersSet.has(id)
+      );
+
+      const retentionRate = previous90CustomersSet.size > 0 
+        ? (retainedCustomers.length / previous90CustomersSet.size) * 100 
+        : 0;
+
+      res.json({
+        top10CustomersByRevenue: top10Customers,
+        activeSupportTickets: ticketsBySeverity,
+        totalActiveTickets: activeTickets.length,
+        codPaymentStatus: codStatus,
+        retentionRatePercent: Math.round(retentionRate * 100) / 100,
+        timestamp: now.toISOString()
+      });
+    } catch (error) {
+      console.error("Error fetching customer support metrics:", error);
+      res.status(500).json({ message: "Failed to fetch customer support metrics" });
+    }
+  });
+
+  // System & Alerts Metrics
+  app.get('/api/dashboard/system-alerts', cacheMiddleware(30000), async (req, res) => {
+    try {
+      const now = new Date();
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+      // Returns spike indicator
+      const returns = await storage.getReturns();
+      const thisWeekReturns = returns.filter((r: any) => {
+        const returnDate = new Date(r.createdAt || r.returnDate);
+        return returnDate >= oneWeekAgo;
+      });
+
+      const lastWeekReturns = returns.filter((r: any) => {
+        const returnDate = new Date(r.createdAt || r.returnDate);
+        return returnDate >= twoWeeksAgo && returnDate < oneWeekAgo;
+      });
+
+      const avgWeeklyReturns = returns.length > 0 ? returns.length / 4 : 0; // Approximate
+      const returnsSpikePercent = avgWeeklyReturns > 0 
+        ? ((thisWeekReturns.length - avgWeeklyReturns) / avgWeeklyReturns) * 100 
+        : 0;
+
+      // Recent critical notifications (last 24 hours)
+      const recentNotifications = await db.select()
+        .from(notifications)
+        .where(
+          and(
+            sql`${notifications.createdAt} >= ${twentyFourHoursAgo.toISOString()}`,
+            or(
+              eq(notifications.type, 'error'),
+              ilike(notifications.title, '%critical%'),
+              ilike(notifications.title, '%urgent%')
+            )
+          )
+        )
+        .limit(10);
+
+      // Integration health status (simplified - check for recent order processing)
+      const recentOrders = await db.select()
+        .from(orders)
+        .where(sql`${orders.createdAt} >= ${twentyFourHoursAgo.toISOString()}`)
+        .limit(100);
+
+      const integrationHealth = {
+        orderProcessing: recentOrders.length > 0 ? 'healthy' : 'warning',
+        lastOrderAt: recentOrders.length > 0 ? recentOrders[0].createdAt : null,
+        recentOrderCount: recentOrders.length
+      };
+
+      // Recent audit log highlights (last 10 significant actions from user_activities)
+      const activities = await storage.getUserActivities(10);
+
+      res.json({
+        returnsSpike: {
+          thisWeek: thisWeekReturns.length,
+          lastWeek: lastWeekReturns.length,
+          averageWeekly: Math.round(avgWeeklyReturns),
+          spikePercent: Math.round(returnsSpikePercent * 100) / 100,
+          isAlert: Math.abs(returnsSpikePercent) > 50
+        },
+        recentCriticalNotifications: recentNotifications.map(n => ({
+          id: n.id,
+          title: n.title,
+          description: n.description,
+          type: n.type,
+          createdAt: n.createdAt
+        })),
+        integrationHealth,
+        recentAuditHighlights: activities,
+        timestamp: now.toISOString()
+      });
+    } catch (error) {
+      console.error("Error fetching system alerts metrics:", error);
+      res.status(500).json({ message: "Failed to fetch system alerts metrics" });
+    }
+  });
+
   // Image upload endpoint
   app.post('/api/upload', upload.single('image'), async (req, res) => {
     try {
