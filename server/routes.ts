@@ -63,7 +63,8 @@ import { createInsertSchema } from 'drizzle-zod';
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { eq, desc, and, sql, inArray, or, ilike, isNull, lt } from "drizzle-orm";
+import { normalizePhone } from '@shared/utils/phoneNormalizer';
+import { eq, desc, and, sql, inArray, or, ilike, isNull, lt, gt } from "drizzle-orm";
 import {
   ObjectStorageService,
   ObjectNotFoundError,
@@ -6165,6 +6166,30 @@ Important:
     try {
       const { items, selectedDocumentIds, ...orderData } = req.body;
       
+      // Load order settings FIRST (before any processing)
+      const orderSettings = await getSettingsByCategory('order');
+      
+      // Validation 1: Require Customer Email
+      if (orderSettings.requireCustomerEmail) {
+        if (!orderData.customerEmail || !orderData.customerEmail.trim()) {
+          return res.status(400).json({ error: 'Customer email is required' });
+        }
+      }
+      
+      // Validation 4: Require Shipping Address
+      if (orderSettings.requireShippingAddress) {
+        if (!orderData.shippingAddressId && !orderData.shippingAddress) {
+          return res.status(400).json({ error: 'Shipping address is required' });
+        }
+      }
+      
+      // Validation 5: Require Phone Number
+      if (orderSettings.requirePhoneNumber) {
+        if (!orderData.customerPhone || !orderData.customerPhone.trim()) {
+          return res.status(400).json({ error: 'Customer phone number is required' });
+        }
+      }
+      
       // Get orderType from request body, default to 'ord'
       const orderType = orderData.orderType || 'ord';
       
@@ -6189,6 +6214,76 @@ Important:
         orderType,
         billerId: req.user?.id || null,
       });
+      
+      // Validation 2: Block Duplicate Orders
+      if (orderSettings.blockDuplicateOrdersHours && orderSettings.blockDuplicateOrdersHours > 0) {
+        const hoursMs = orderSettings.blockDuplicateOrdersHours * 60 * 60 * 1000;
+        const cutoffTime = new Date(Date.now() - hoursMs);
+        
+        const customerId = data.customerId || null;
+        // Normalize email to lowercase for case-insensitive matching
+        const normalizedEmail = data.customerEmail?.trim().toLowerCase() || null;
+        const normalizedPhone = normalizePhone(data.customerPhone);
+        
+        let recentOrders = [];
+        
+        if (customerId) {
+          // Registered user: check by customer_id only
+          recentOrders = await db
+            .select({ id: orders.id })
+            .from(orders)
+            .where(
+              and(
+                sql`created_at > ${cutoffTime}`,
+                eq(orders.customerId, customerId)
+              )
+            )
+            .limit(1);
+        } else {
+          // Guest order: check BOTH email AND phone (not mutually exclusive!)
+          const guestConditions = [];
+          
+          if (normalizedEmail) {
+            // Use LOWER() in SQL for case-insensitive comparison
+            guestConditions.push(sql`LOWER(TRIM(customer_email)) = ${normalizedEmail}`);
+          }
+          
+          if (normalizedPhone) {
+            guestConditions.push(sql`REGEXP_REPLACE(customer_phone, '[^0-9+]', '', 'g') = ${normalizedPhone}`);
+          }
+          
+          // Only run query if we have at least one guest identifier
+          if (guestConditions.length > 0) {
+            recentOrders = await db
+              .select({ id: orders.id })
+              .from(orders)
+              .where(
+                and(
+                  sql`created_at > ${cutoffTime}`,
+                  sql`customer_id IS NULL`,
+                  or(...guestConditions)
+                )
+              )
+              .limit(1);
+          }
+        }
+        
+        if (recentOrders.length > 0) {
+          return res.status(400).json({ 
+            error: `Duplicate order detected. Please wait ${orderSettings.blockDuplicateOrdersHours} hours before placing another order.` 
+          });
+        }
+      }
+      
+      // Validation 3: Minimum Order Value (Bug Fix 1: Validate AFTER schema parsing for proper number handling)
+      if (orderSettings.minimumOrderValue && orderSettings.minimumOrderValue > 0) {
+        const grandTotal = parseFloat(data.grandTotal || '0');
+        if (grandTotal < orderSettings.minimumOrderValue) {
+          return res.status(400).json({ 
+            error: `Order total ${grandTotal} is below minimum order value of ${orderSettings.minimumOrderValue}` 
+          });
+        }
+      }
       
       const order = await storage.createOrder(data);
       
