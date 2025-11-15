@@ -285,7 +285,7 @@ export default function EditOrder() {
   const [showDiscount, setShowDiscount] = useState(false);
   const [roundingAdjustment, setRoundingAdjustment] = useState(0);
   const { toast } = useToast();
-  const { generalSettings } = useSettings();
+  const { generalSettings, financialHelpers } = useSettings();
   const aiCartonPackingEnabled = generalSettings?.enableAiCartonPacking ?? false;
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [productSearch, setProductSearch] = useState("");
@@ -1280,6 +1280,34 @@ export default function EditOrder() {
     }
   };
 
+  // Track previous currency to detect manual tax rate overrides
+  const prevCurrencyRef = useRef<string>(watchedCurrency);
+
+  // Auto-update tax rate when currency changes (uses financial settings)
+  // Preserves manual overrides
+  useEffect(() => {
+    if (!showTaxInvoice) return;
+    
+    const currentCurrency = watchedCurrency;
+    const prevCurrency = prevCurrencyRef.current;
+    
+    // Get tax rates for current and previous currencies
+    const newDefaultRate = financialHelpers.getDefaultTaxRate(currentCurrency) * 100;
+    const prevDefaultRate = financialHelpers.getDefaultTaxRate(prevCurrency) * 100;
+    const currentRate = parseFloat(form.getValues('taxRate')?.toString() || '0');
+    
+    // Only update if current rate matches the OLD currency's default (within 0.01% tolerance)
+    // This means user hasn't manually overridden the rate
+    if (Math.abs(currentRate - prevDefaultRate) < 0.01) {
+      // Current rate matches old default, so auto-update to new default
+      form.setValue('taxRate', newDefaultRate);
+    }
+    // Otherwise, user has manual override - preserve it
+    
+    // Update previous currency reference
+    prevCurrencyRef.current = currentCurrency;
+  }, [watchedCurrency, showTaxInvoice, financialHelpers]);
+
   // Auto-fill currency from customer preference (only when creating new orders)
   // Note: This is intentionally NOT in EditOrder - we preserve the order's saved currency
   // when editing existing orders, even if the customer changes.
@@ -1367,8 +1395,15 @@ export default function EditOrder() {
 
       console.log('Updating order with customerId:', data.customerId);
 
+      // Convert taxRate from percentage (21) to decimal (0.21) for API
+      // The form stores it as percentage for user-friendly display
+      const convertedData = {
+        ...data,
+        taxRate: data.taxRate ? parseFloat(data.taxRate) / 100 : undefined,
+      };
+
       // Order data already includes selectedDocumentIds from onSubmit
-      const orderData = data;
+      const orderData = convertedData;
 
       const response = await apiRequest('PATCH', `/api/orders/${id}`, orderData);
       const updatedOrder = await response.json();
@@ -1787,24 +1822,15 @@ export default function EditOrder() {
     }
   };
 
-  const calculateSubtotal = () => {
-    return orderItems.reduce((sum, item) => sum + item.total, 0);
-  };
-
-  const calculateTax = () => {
-    const subtotal = calculateSubtotal();
-    const taxRateValue = form.watch('taxRate');
-    const taxRate = typeof taxRateValue === 'string' ? parseFloat(taxRateValue || '0') : (taxRateValue || 0);
-    return (subtotal * taxRate) / 100;
-  };
-
-  const calculateGrandTotal = () => {
-    const subtotal = calculateSubtotal();
-    const tax = showTaxInvoice ? calculateTax() : 0; // Only include tax if Tax Invoice is enabled
+  // Calculate totals using shared financial helpers
+  const totals = useMemo(() => {
+    const rawSubtotal = orderItems.reduce((sum, item) => sum + item.total, 0);
+    const currency = form.watch('currency') || 'CZK';
     const shippingValue = form.watch('shippingCost');
     const discountValue = form.watch('discountValue');
     const discountType = form.watch('discountType');
     const adjustmentValue = form.watch('adjustment');
+    const customTaxRate = form.watch('taxRate');
     const shipping = typeof shippingValue === 'string' ? parseFloat(shippingValue || '0') : (shippingValue || 0);
     const discountAmount = typeof discountValue === 'string' ? parseFloat(discountValue || '0') : (discountValue || 0);
     const adjustment = typeof adjustmentValue === 'string' ? parseFloat(adjustmentValue || '0') : (adjustmentValue || 0);
@@ -1812,13 +1838,35 @@ export default function EditOrder() {
     // Calculate actual discount based on type
     let actualDiscount = 0;
     if (discountType === 'rate') {
-      actualDiscount = (subtotal * discountAmount) / 100;
+      actualDiscount = (rawSubtotal * discountAmount) / 100;
     } else {
       actualDiscount = discountAmount;
     }
 
-    return subtotal + tax + shipping + adjustment - actualDiscount;
-  };
+    // Calculate subtotal after discount
+    const subtotalAfterDiscount = rawSubtotal - actualDiscount;
+
+    // Use shared financial helpers for tax calculation with custom tax rate support
+    const calculated = financialHelpers.calculateOrderTotals(
+      subtotalAfterDiscount,
+      currency,
+      {
+        customTaxRate: customTaxRate,
+        taxEnabled: showTaxInvoice,
+      }
+    );
+
+    return {
+      subtotal: rawSubtotal,
+      taxAmount: calculated.taxAmount,
+      grandTotal: calculated.grandTotal + shipping + adjustment,
+    };
+  }, [orderItems, form.watch('currency'), form.watch('shippingCost'), form.watch('discountValue'), form.watch('discountType'), form.watch('adjustment'), form.watch('taxRate'), showTaxInvoice, financialHelpers]);
+
+  // Legacy helper functions for backward compatibility
+  const calculateSubtotal = () => totals.subtotal;
+  const calculateTax = () => totals.taxAmount;
+  const calculateGrandTotal = () => totals.grandTotal;
 
   const onSubmit = (data: z.infer<typeof editOrderSchema>) => {
     // Comprehensive validation

@@ -30,6 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 import { fuzzySearch } from '@/lib/fuzzySearch';
 import type { Product } from '@shared/schema';
+import { useSettings } from '@/contexts/SettingsContext';
 import {
   Dialog,
   DialogContent,
@@ -101,6 +102,7 @@ const playSound = (type: 'add' | 'remove' | 'checkout' | 'error') => {
 
 export default function POS() {
   const { toast } = useToast();
+  const { financialHelpers } = useSettings();
   const [currency, setCurrency] = useState<'EUR' | 'CZK'>('EUR');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'pay_later' | 'bank_transfer'>('cash');
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -115,8 +117,12 @@ export default function POS() {
   const [customPrice, setCustomPrice] = useState('');
   const [showClearCartDialog, setShowClearCartDialog] = useState(false);
   const [showCartDetailsDialog, setShowCartDetailsDialog] = useState(false);
-  const [vatEnabled, setVatEnabled] = useState(false); // Default OFF
-  const [vatRate, setVatRate] = useState<string>('0'); // 0, 19, 21, or custom
+  const [vatEnabled, setVatEnabled] = useState(false);
+  const [vatRate, setVatRate] = useState<string>(() => {
+    // Initialize with currency-specific default tax rate
+    const defaultRate = financialHelpers.getDefaultTaxRate('EUR') * 100;
+    return defaultRate.toString();
+  });
   const [customVatRate, setCustomVatRate] = useState<string>('');
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>(() => {
     // Load from localStorage on init
@@ -133,6 +139,15 @@ export default function POS() {
   const shouldScrollRef = useRef<boolean>(false);
 
   const today = format(new Date(), 'yyyy-MM-dd');
+
+  // Update VAT rate when currency changes
+  // Don't include vatRate in dependencies to avoid loops and preserve custom VAT
+  useEffect(() => {
+    if (vatRate !== 'custom') {
+      const newRate = financialHelpers.getDefaultTaxRate(currency) * 100;
+      setVatRate(newRate.toString());
+    }
+  }, [currency, financialHelpers]);
 
   // Fetch products with landing costs
   const { data: products = [] } = useQuery<Product[]>({
@@ -502,11 +517,22 @@ export default function POS() {
     playSound('remove');
   };
 
-  // Calculate totals
+  // Calculate totals using shared financial helpers
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const actualVatRate = vatEnabled ? (vatRate === 'custom' ? parseFloat(customVatRate || '0') : parseFloat(vatRate)) : 0;
-  const tax = subtotal * (actualVatRate / 100);
-  const total = subtotal + tax;
+  
+  // Use financial helpers for tax calculation with custom VAT rate support
+  const calculated = financialHelpers.calculateOrderTotals(
+    subtotal,
+    currency,
+    {
+      customTaxRate: actualVatRate,
+      taxEnabled: vatEnabled,
+    }
+  );
+  
+  const tax = calculated.taxAmount;
+  const total = calculated.grandTotal;
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   // Create or update order mutation

@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { getDefaultTaxRate, applyTax, calculateOrderTotals } from '@shared/utils/tax';
 
 // Types for settings by category
 export interface GeneralSettings {
@@ -239,6 +240,31 @@ interface SettingsContextType {
   financialSettings: FinancialSettings;
   systemSettings: SystemSettings;
   getSetting: <T = any>(category: string, key: string, fallback?: T) => T;
+  financialHelpers: {
+    getDefaultTaxRate: (currency: string) => number;
+    applyTax: (amount: number, taxRate: number) => {
+      netAmount: number;
+      taxAmount: number;
+      grossAmount: number;
+      displayAmount: number;
+    };
+    calculateOrderTotals: (
+      subtotal: number, 
+      currency: string,
+      options?: {
+        customTaxRate?: number;
+        taxEnabled?: boolean;
+        showPricesWithVatOverride?: boolean;
+      }
+    ) => {
+      subtotal: number;
+      taxRate: number;
+      taxAmount: number;
+      grandTotal: number;
+      displaySubtotal: number;
+      displayGrandTotal: number;
+    };
+  };
   isLoading: boolean;
   error: Error | null;
 }
@@ -468,6 +494,29 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [settings]
   );
 
+  // Financial helpers for tax calculations
+  const financialHelpers = useMemo(
+    () => ({
+      getDefaultTaxRate: (currency: string) => 
+        getDefaultTaxRate(currency, financialSettings),
+      applyTax: (amount: number, taxRate: number) => 
+        applyTax(amount, taxRate, {
+          taxCalculationMethod: financialSettings.taxCalculationMethod,
+          showPricesWithVat: financialSettings.showPricesWithVat,
+        }),
+      calculateOrderTotals: (
+        subtotal: number, 
+        currency: string,
+        options?: {
+          customTaxRate?: number;
+          taxEnabled?: boolean;
+          showPricesWithVatOverride?: boolean;
+        }
+      ) => calculateOrderTotals(subtotal, currency, financialSettings, options),
+    }),
+    [financialSettings]
+  );
+
   const value: SettingsContextType = {
     settings,
     generalSettings,
@@ -477,6 +526,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     financialSettings,
     systemSettings,
     getSetting,
+    financialHelpers,
     isLoading,
     error: error as Error | null,
   };
