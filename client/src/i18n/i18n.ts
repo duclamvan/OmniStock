@@ -8,6 +8,11 @@ import inventoryEN from './locales/en/inventory';
 import productsEN from './locales/en/products';
 import shippingEN from './locales/en/shipping';
 import customersEN from './locales/en/customers';
+import settingsEN from './locales/en/settings';
+import warehouseEN from './locales/en/warehouse';
+import financialEN from './locales/en/financial';
+import reportsEN from './locales/en/reports';
+import systemEN from './locales/en/system';
 
 import commonVI from './locales/vi/common';
 import ordersVI from './locales/vi/orders';
@@ -15,6 +20,11 @@ import inventoryVI from './locales/vi/inventory';
 import productsVI from './locales/vi/products';
 import shippingVI from './locales/vi/shipping';
 import customersVI from './locales/vi/customers';
+import settingsVI from './locales/vi/settings';
+import warehouseVI from './locales/vi/warehouse';
+import financialVI from './locales/vi/financial';
+import reportsVI from './locales/vi/reports';
+import systemVI from './locales/vi/system';
 
 export const defaultNS = 'common';
 
@@ -26,6 +36,11 @@ export const resources = {
     products: productsEN,
     shipping: shippingEN,
     customers: customersEN,
+    settings: settingsEN,
+    warehouse: warehouseEN,
+    financial: financialEN,
+    reports: reportsEN,
+    system: systemEN,
   },
   vi: {
     common: commonVI,
@@ -34,6 +49,11 @@ export const resources = {
     products: productsVI,
     shipping: shippingVI,
     customers: customersVI,
+    settings: settingsVI,
+    warehouse: warehouseVI,
+    financial: financialVI,
+    reports: reportsVI,
+    system: systemVI,
   },
 } as const;
 
