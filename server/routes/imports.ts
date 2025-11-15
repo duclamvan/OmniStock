@@ -3042,11 +3042,41 @@ router.get("/shipments/to-receive", async (req, res) => {
       ))
       .orderBy(desc(shipments.updatedAt));
 
-    const formattedShipments = receivableShipments.map(({ shipment, consolidation }) => ({
+    let formattedShipments = receivableShipments.map(({ shipment, consolidation }) => ({
       ...shipment,
       consolidation,
       shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
     }));
+
+    // Load shipment items if there are any shipments
+    if (formattedShipments.length > 0) {
+      const shipmentIds = formattedShipments.map(s => s.id);
+      const allItems = await db
+        .select()
+        .from(shipmentItems)
+        .where(inArray(shipmentItems.shipmentId, shipmentIds));
+      
+      // Group items by shipmentId in memory
+      const itemsByShipmentId: Record<number, typeof allItems> = {};
+      for (const item of allItems) {
+        if (!itemsByShipmentId[item.shipmentId]) {
+          itemsByShipmentId[item.shipmentId] = [];
+        }
+        itemsByShipmentId[item.shipmentId].push(item);
+      }
+      
+      // Attach items array to each shipment
+      formattedShipments = formattedShipments.map(shipment => {
+        const items = itemsByShipmentId[shipment.id] || [];
+        const totalQuantity = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        return {
+          ...shipment,
+          items,
+          itemCount: items.length,
+          totalQuantity
+        };
+      });
+    }
 
     // Filter financial data based on user role
     const userRole = (req as any).user?.role || 'warehouse_operator';
@@ -3071,11 +3101,41 @@ router.get("/shipments/receiving", async (req, res) => {
       .where(eq(shipments.receivingStatus, 'receiving'))
       .orderBy(desc(shipments.updatedAt));
 
-    const formattedShipments = shipmentsWithStatus.map(({ shipment, consolidation }) => ({
+    let formattedShipments = shipmentsWithStatus.map(({ shipment, consolidation }) => ({
       ...shipment,
       consolidation,
       shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
     }));
+
+    // Load shipment items if there are any shipments
+    if (formattedShipments.length > 0) {
+      const shipmentIds = formattedShipments.map(s => s.id);
+      const allItems = await db
+        .select()
+        .from(shipmentItems)
+        .where(inArray(shipmentItems.shipmentId, shipmentIds));
+      
+      // Group items by shipmentId in memory
+      const itemsByShipmentId: Record<number, typeof allItems> = {};
+      for (const item of allItems) {
+        if (!itemsByShipmentId[item.shipmentId]) {
+          itemsByShipmentId[item.shipmentId] = [];
+        }
+        itemsByShipmentId[item.shipmentId].push(item);
+      }
+      
+      // Attach items array to each shipment
+      formattedShipments = formattedShipments.map(shipment => {
+        const items = itemsByShipmentId[shipment.id] || [];
+        const totalQuantity = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        return {
+          ...shipment,
+          items,
+          itemCount: items.length,
+          totalQuantity
+        };
+      });
+    }
 
     // Filter financial data based on user role
     const userRole = (req as any).user?.role || 'warehouse_operator';
@@ -3100,11 +3160,41 @@ router.get("/shipments/storage", async (req, res) => {
       .where(eq(shipments.receivingStatus, 'pending_approval'))
       .orderBy(desc(shipments.updatedAt));
 
-    const formattedShipments = shipmentsWithStatus.map(({ shipment, consolidation }) => ({
+    let formattedShipments = shipmentsWithStatus.map(({ shipment, consolidation }) => ({
       ...shipment,
       consolidation,
       shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
     }));
+
+    // Load shipment items if there are any shipments
+    if (formattedShipments.length > 0) {
+      const shipmentIds = formattedShipments.map(s => s.id);
+      const allItems = await db
+        .select()
+        .from(shipmentItems)
+        .where(inArray(shipmentItems.shipmentId, shipmentIds));
+      
+      // Group items by shipmentId in memory
+      const itemsByShipmentId: Record<number, typeof allItems> = {};
+      for (const item of allItems) {
+        if (!itemsByShipmentId[item.shipmentId]) {
+          itemsByShipmentId[item.shipmentId] = [];
+        }
+        itemsByShipmentId[item.shipmentId].push(item);
+      }
+      
+      // Attach items array to each shipment
+      formattedShipments = formattedShipments.map(shipment => {
+        const items = itemsByShipmentId[shipment.id] || [];
+        const totalQuantity = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        return {
+          ...shipment,
+          items,
+          itemCount: items.length,
+          totalQuantity
+        };
+      });
+    }
 
     // Filter financial data based on user role
     const userRole = (req as any).user?.role || 'warehouse_operator';
@@ -3130,11 +3220,41 @@ router.get("/shipments/completed", async (req, res) => {
       .orderBy(desc(shipments.updatedAt))
       .limit(50);
 
-    const formattedShipments = shipmentsWithStatus.map(({ shipment, consolidation }) => ({
+    let formattedShipments = shipmentsWithStatus.map(({ shipment, consolidation }) => ({
       ...shipment,
       consolidation,
       shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
     }));
+
+    // Load shipment items if there are any shipments
+    if (formattedShipments.length > 0) {
+      const shipmentIds = formattedShipments.map(s => s.id);
+      const allItems = await db
+        .select()
+        .from(shipmentItems)
+        .where(inArray(shipmentItems.shipmentId, shipmentIds));
+      
+      // Group items by shipmentId in memory
+      const itemsByShipmentId: Record<number, typeof allItems> = {};
+      for (const item of allItems) {
+        if (!itemsByShipmentId[item.shipmentId]) {
+          itemsByShipmentId[item.shipmentId] = [];
+        }
+        itemsByShipmentId[item.shipmentId].push(item);
+      }
+      
+      // Attach items array to each shipment
+      formattedShipments = formattedShipments.map(shipment => {
+        const items = itemsByShipmentId[shipment.id] || [];
+        const totalQuantity = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        return {
+          ...shipment,
+          items,
+          itemCount: items.length,
+          totalQuantity
+        };
+      });
+    }
 
     // Filter financial data based on user role
     const userRole = (req as any).user?.role || 'warehouse_operator';
@@ -3160,11 +3280,41 @@ router.get("/shipments/archived", async (req, res) => {
       .orderBy(desc(shipments.updatedAt))
       .limit(50);
 
-    const formattedShipments = shipmentsWithStatus.map(({ shipment, consolidation }) => ({
+    let formattedShipments = shipmentsWithStatus.map(({ shipment, consolidation }) => ({
       ...shipment,
       consolidation,
       shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
     }));
+
+    // Load shipment items if there are any shipments
+    if (formattedShipments.length > 0) {
+      const shipmentIds = formattedShipments.map(s => s.id);
+      const allItems = await db
+        .select()
+        .from(shipmentItems)
+        .where(inArray(shipmentItems.shipmentId, shipmentIds));
+      
+      // Group items by shipmentId in memory
+      const itemsByShipmentId: Record<number, typeof allItems> = {};
+      for (const item of allItems) {
+        if (!itemsByShipmentId[item.shipmentId]) {
+          itemsByShipmentId[item.shipmentId] = [];
+        }
+        itemsByShipmentId[item.shipmentId].push(item);
+      }
+      
+      // Attach items array to each shipment
+      formattedShipments = formattedShipments.map(shipment => {
+        const items = itemsByShipmentId[shipment.id] || [];
+        const totalQuantity = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        return {
+          ...shipment,
+          items,
+          itemCount: items.length,
+          totalQuantity
+        };
+      });
+    }
 
     // Filter financial data based on user role
     const userRole = (req as any).user?.role || 'warehouse_operator';

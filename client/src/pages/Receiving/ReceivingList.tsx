@@ -924,7 +924,7 @@ function SessionFooter({ onComplete, onCancel }: { onComplete: () => void; onCan
 
 function ToReceiveShipmentCard({ shipment }: { shipment: any }) {
   const [, navigate] = useLocation();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   
   const itemCount = shipment.items?.length || 0;
   const totalQuantity = shipment.items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0;
@@ -1008,7 +1008,7 @@ function ToReceiveShipmentCard({ shipment }: { shipment: any }) {
 
 function ReceivingShipmentCard({ shipment }: { shipment: any }) {
   const [, navigate] = useLocation();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   
   const itemCount = shipment.items?.length || 0;
   const receivedCount = shipment.items?.filter((i: any) => i.receivedQuantity > 0).length || 0;
@@ -1093,7 +1093,7 @@ function ReceivingShipmentCard({ shipment }: { shipment: any }) {
 
 function StorageShipmentCard({ shipment }: { shipment: any }) {
   const [, navigate] = useLocation();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   
   const itemCount = shipment.items?.length || 0;
 
@@ -1173,7 +1173,7 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
 
 function CompletedShipmentCard({ shipment }: { shipment: any }) {
   const [, navigate] = useLocation();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   
   const itemCount = shipment.items?.length || 0;
 
@@ -1253,7 +1253,7 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
 
 function ArchivedShipmentCard({ shipment }: { shipment: any }) {
   const [, navigate] = useLocation();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   
   const itemCount = shipment.items?.length || 0;
 
