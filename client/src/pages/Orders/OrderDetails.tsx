@@ -305,7 +305,7 @@ export default function OrderDetails() {
               line-height: 1;
             }
             .invoice-title span {
-              transform: translateY(-1px);
+              margin-bottom: 5px;
             }
             .invoice-icon {
               width: 20px;
