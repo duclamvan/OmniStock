@@ -177,6 +177,83 @@ async function getCurrencyConverter() {
   }
 }
 
+// Comprehensive list of all COST and PROFIT fields to be filtered from warehouse operator responses
+// IMPORTANT: This list should NOT include selling prices (price, sellingPrice, totalPrice, total, unitPrice)
+// Warehouse operators need to see what customers pay, but not what we paid (costs) or our margins (profit)
+export const FINANCIAL_FIELDS = [
+  // Base cost fields
+  'cost', 'margin', 'profit',
+  
+  // Profit and margin metrics
+  'profitMargin', 'marginPercent', 'profitPercent', 'totalProfit',
+  'grossProfit', 'netProfit', 'profitMarginPercent',
+  
+  // Import costs (all currencies)
+  'importCost', 'importCostUsd', 'importCostCzk', 'importCostEur', 'importCostVnd', 'importCostCny',
+  'importPrice', 'importPriceUsd', 'importPriceEur', 'importPriceCzk', 'importPriceVnd', 'importPriceCny',
+  
+  // Landing costs (all currencies)
+  'landingCost', 'landingCostUsd', 'landingCostCzk', 'landingCostEur', 'landingCostVnd', 'landingCostCny',
+  'landedCost', 'landedCostUsd', 'landedCostCzk', 'landedCostEur', 'landedCostVnd', 'landedCostCny',
+  'latestLandingCost', 'latest_landing_cost',
+  'landingCostUnitBase', 'landingCostUnitUsd', 'landingCostUnitEur', 'landingCostUnitCzk',
+  
+  // Order/Purchase totals (all currencies)
+  'totalCost', 'totalCostUsd', 'totalCostCzk', 'totalCostEur', 'totalCostVnd', 'totalCostCny',
+  'totalImportCost', 'totalImportCostUsd', 'totalImportCostCzk', 'totalImportCostEur', 'totalImportCostVnd', 'totalImportCostCny',
+  'importTotalCost', 'importTotalCostUsd', 'importTotalCostCzk', 'importTotalCostEur',
+  
+  // Purchase/shipping costs (all currencies)
+  'purchaseTotal', 'purchaseTotalUsd', 'purchaseTotalCzk', 'purchaseTotalEur', 'purchaseTotalVnd', 'purchaseTotalCny',
+  'purchasePrice', 'purchasePriceUsd', 'purchasePriceEur', 'purchasePriceCzk', 'purchasePriceVnd', 'purchasePriceCny',
+  'purchaseCost', 'purchaseCostUsd', 'purchaseCostEur', 'purchaseCostCzk',
+  'shippingCost', 'shippingCostUsd', 'shippingCostCzk', 'shippingCostEur', 'shippingCostVnd', 'shippingCostCny',
+  'actualShippingCost', 'actualShippingCostUsd', 'actualShippingCostCzk', 'actualShippingCostEur',
+  'freightCost', 'freightCostUsd', 'freightCostCzk', 'freightCostEur',
+  'totalPaid', 'totalPaidUsd', 'totalPaidCzk', 'totalPaidEur',
+  
+  // Unit costs (all currencies)
+  'unitCost', 'unitCostUsd', 'unitCostEur', 'unitCostCzk', 'unitCostVnd', 'unitCostCny',
+  'importUnitCost', 'importUnitCostUsd', 'importUnitCostEur', 'importUnitCostCzk',
+  'averageCost', 'averageCostUsd', 'averageCostEur', 'averageCostCzk',
+  
+  // Other financial fields
+  'actualCost', 'dutyCost', 'dutyRatePercent', 'unitGrossWeightKg',
+  'costHistory', 'insuranceValue', 'exchangeRate', 'totalImportPrice'
+];
+
+// Deeply recursive middleware to filter financial data from responses for warehouse operators
+function filterFinancialData(data: any, userRole: string): any {
+  if (userRole === 'administrator') {
+    return data; // Admins see everything
+  }
+  
+  // Handle arrays recursively
+  if (Array.isArray(data)) {
+    return data.map(item => filterFinancialData(item, userRole));
+  }
+  
+  // Handle objects recursively
+  if (typeof data === 'object' && data !== null) {
+    const filtered: any = {};
+    
+    for (const key in data) {
+      // Skip financial fields completely
+      if (FINANCIAL_FIELDS.includes(key)) {
+        continue;
+      }
+      
+      // Recursively filter nested objects and arrays
+      filtered[key] = filterFinancialData(data[key], userRole);
+    }
+    
+    return filtered;
+  }
+  
+  // Return primitives as-is
+  return data;
+}
+
 // Configure multer for image uploads with memory storage for compression
 const upload = multer({ 
   storage: multer.memoryStorage(), // Use memory storage for compression
@@ -520,7 +597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard endpoints with caching
-  app.get('/api/dashboard/metrics', cacheMiddleware(60000), async (req, res) => {
+  app.get('/api/dashboard/metrics', requireRole(['administrator']), cacheMiddleware(60000), async (req, res) => {
     try {
       // Fetch exchange rates from Frankfurter API
       const exchangeRateResponse = await fetch('https://api.frankfurter.app/latest?from=EUR');
@@ -650,7 +727,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/dashboard/financial-summary', cacheMiddleware(60000), async (req, res) => {
+  app.get('/api/dashboard/financial-summary', requireRole(['administrator']), cacheMiddleware(60000), async (req, res) => {
     try {
       // Fetch exchange rates from Frankfurter API
       const exchangeRateResponse = await fetch('https://api.frankfurter.app/latest?from=EUR');
@@ -759,7 +836,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/dashboard/activities', cacheMiddleware(30000), async (req, res) => {
+  app.get('/api/dashboard/activities', requireRole(['administrator']), cacheMiddleware(30000), async (req, res) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
       const activities = await storage.getUserActivities(limit);
@@ -773,7 +850,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // New Admin Dashboard Endpoints
 
   // Operations Pulse Metrics
-  app.get('/api/dashboard/operations-pulse', cacheMiddleware(60000), async (req, res) => {
+  app.get('/api/dashboard/operations-pulse', requireRole(['administrator']), cacheMiddleware(60000), async (req, res) => {
     try {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -832,7 +909,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Financial Control Metrics
-  app.get('/api/dashboard/financial-control', cacheMiddleware(60000), async (req, res) => {
+  app.get('/api/dashboard/financial-control', requireRole(['administrator']), cacheMiddleware(60000), async (req, res) => {
     try {
       const convertToEur = await getCurrencyConverter();
       const now = new Date();
@@ -951,7 +1028,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Inventory Risk Metrics
-  app.get('/api/dashboard/inventory-risk', cacheMiddleware(60000), async (req, res) => {
+  app.get('/api/dashboard/inventory-risk', requireRole(['administrator']), cacheMiddleware(60000), async (req, res) => {
     try {
       const now = new Date();
       const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
@@ -1005,7 +1082,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Fulfillment Efficiency Metrics
-  app.get('/api/dashboard/fulfillment-efficiency', cacheMiddleware(60000), async (req, res) => {
+  app.get('/api/dashboard/fulfillment-efficiency', requireRole(['administrator']), cacheMiddleware(60000), async (req, res) => {
     try {
       const now = new Date();
       const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -1074,7 +1151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Customer & Support Metrics
-  app.get('/api/dashboard/customer-support', cacheMiddleware(60000), async (req, res) => {
+  app.get('/api/dashboard/customer-support', requireRole(['administrator']), cacheMiddleware(60000), async (req, res) => {
     try {
       const convertToEur = await getCurrencyConverter();
       const now = new Date();
@@ -1170,7 +1247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // System & Alerts Metrics
-  app.get('/api/dashboard/system-alerts', cacheMiddleware(30000), async (req, res) => {
+  app.get('/api/dashboard/system-alerts', requireRole(['administrator']), cacheMiddleware(30000), async (req, res) => {
     try {
       const now = new Date();
       const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -2158,7 +2235,7 @@ Important:
   });
 
   // Warehouse financial contracts endpoints
-  app.get('/api/warehouses/:warehouseId/financial-contracts', async (req, res) => {
+  app.get('/api/warehouses/:warehouseId/financial-contracts', requireRole(['administrator']), async (req, res) => {
     try {
       const contracts = await storage.getWarehouseFinancialContracts(req.params.warehouseId);
       res.json(contracts);
@@ -2168,7 +2245,7 @@ Important:
     }
   });
 
-  app.get('/api/financial-contracts/:id', async (req, res) => {
+  app.get('/api/financial-contracts/:id', requireRole(['administrator']), async (req, res) => {
     try {
       const contract = await storage.getWarehouseFinancialContractById(req.params.id);
       if (!contract) {
@@ -2181,7 +2258,7 @@ Important:
     }
   });
 
-  app.post('/api/warehouses/:warehouseId/financial-contracts', async (req: any, res) => {
+  app.post('/api/warehouses/:warehouseId/financial-contracts', requireRole(['administrator']), async (req: any, res) => {
     try {
       const data = insertWarehouseFinancialContractSchema.parse({
         ...req.body,
@@ -2204,7 +2281,7 @@ Important:
     }
   });
 
-  app.patch('/api/financial-contracts/:id', async (req: any, res) => {
+  app.patch('/api/financial-contracts/:id', requireRole(['administrator']), async (req: any, res) => {
     try {
       const updates = req.body;
       const contract = await storage.updateWarehouseFinancialContract(req.params.id, updates);
@@ -2228,7 +2305,7 @@ Important:
     }
   });
 
-  app.delete('/api/financial-contracts/:id', async (req: any, res) => {
+  app.delete('/api/financial-contracts/:id', requireRole(['administrator']), async (req: any, res) => {
     try {
       const contract = await storage.getWarehouseFinancialContractById(req.params.id);
       if (!contract) {
@@ -2581,7 +2658,10 @@ Important:
         return { ...bundle, availableStock: stock };
       }));
 
-      res.json(bundlesWithStock);
+      // Filter financial data based on user role
+      const userRole = req.user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(bundlesWithStock, userRole);
+      res.json(filtered);
     } catch (error) {
       console.error("Error fetching bundles:", error);
       res.status(500).json({ message: "Failed to fetch bundles" });
@@ -2611,10 +2691,15 @@ Important:
         };
       }));
 
-      res.json({
+      const bundleWithItems = {
         ...bundle,
         items: itemsWithDetails
-      });
+      };
+
+      // Filter financial data based on user role
+      const userRole = req.user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(bundleWithItems, userRole);
+      res.json(filtered);
     } catch (error) {
       console.error("Error fetching bundle:", error);
       res.status(500).json({ message: "Failed to fetch bundle" });
@@ -2624,7 +2709,10 @@ Important:
   app.get('/api/bundles/:id/items', async (req, res) => {
     try {
       const items = await storage.getBundleItems(req.params.id);
-      res.json(items);
+      // Filter financial data based on user role
+      const userRole = req.user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(items, userRole);
+      res.json(filtered);
     } catch (error) {
       console.error("Error fetching bundle items:", error);
       res.status(500).json({ message: "Failed to fetch bundle items" });
@@ -2774,7 +2862,7 @@ Important:
   });
 
   // Products endpoints
-  app.get('/api/products', async (req, res) => {
+  app.get('/api/products', async (req: any, res) => {
     try {
       const search = req.query.search as string;
       const includeInactive = req.query.includeInactive === 'true';
@@ -2802,9 +2890,15 @@ Important:
           };
         }));
 
-        res.json(productsWithCosts);
+        // Filter financial data based on user role
+        const userRole = req.user?.role || 'warehouse_operator';
+        const filtered = filterFinancialData(productsWithCosts, userRole);
+        res.json(filtered);
       } else {
-        res.json(productsResult);
+        // Filter financial data based on user role
+        const userRole = req.user?.role || 'warehouse_operator';
+        const filtered = filterFinancialData(productsResult, userRole);
+        res.json(filtered);
       }
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -2815,14 +2909,17 @@ Important:
   app.get('/api/products/low-stock', async (req, res) => {
     try {
       const products = await storage.getLowStockProducts();
-      res.json(products);
+      // Filter financial data based on user role
+      const userRole = req.user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(products, userRole);
+      res.json(filtered);
     } catch (error) {
       console.error("Error fetching low stock products:", error);
       res.status(500).json({ message: "Failed to fetch low stock products" });
     }
   });
 
-  app.get('/api/products/:id', async (req, res) => {
+  app.get('/api/products/:id', async (req: any, res) => {
     try {
       const product = await storage.getProductById(req.params.id);
       if (!product) {
@@ -2841,7 +2938,10 @@ Important:
         latest_landing_cost: productWithCost?.latestLandingCost || null
       };
 
-      res.json(productData);
+      // Filter financial data based on user role
+      const userRole = req.user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(productData, userRole);
+      res.json(filtered);
     } catch (error) {
       console.error("Error fetching product:", error);
       res.status(500).json({ message: "Failed to fetch product" });
@@ -2867,18 +2967,21 @@ Important:
         .orderBy(desc(productLocations.isPrimary), desc(productLocations.quantity));
 
       // If no locations in productLocations table, but product has warehouseLocation field
-      if (locations.length === 0 && product.warehouseLocation) {
-        res.json([{
-          id: 'legacy',
-          productId: productId,
-          locationCode: product.warehouseLocation,
-          quantity: product.quantity || 0,
-          isPrimary: true,
-          locationType: 'warehouse'
-        }]);
-      } else {
-        res.json(locations);
-      }
+      const legacyLocation = [{
+        id: 'legacy',
+        productId: productId,
+        locationCode: product.warehouseLocation,
+        quantity: product.quantity || 0,
+        isPrimary: true,
+        locationType: 'warehouse'
+      }];
+
+      const locationsData = locations.length === 0 && product.warehouseLocation ? legacyLocation : locations;
+
+      // Filter financial data based on user role
+      const userRole = req.user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(locationsData, userRole);
+      res.json(filtered);
     } catch (error) {
       console.error("Error fetching product locations:", error);
       res.status(500).json({ message: "Failed to fetch product locations" });
@@ -2889,7 +2992,10 @@ Important:
   app.get('/api/products/:id/files', async (req, res) => {
     try {
       const files = await storage.getProductFiles(req.params.id);
-      res.json(files);
+      // Filter financial data based on user role
+      const userRole = req.user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(files, userRole);
+      res.json(filtered);
     } catch (error) {
       console.error("Error fetching product files:", error);
       res.status(500).json({ message: "Failed to fetch product files" });
@@ -3606,10 +3712,13 @@ Important:
   });
 
   // Product Variants
-  app.get('/api/products/:productId/variants', async (req, res) => {
+  app.get('/api/products/:productId/variants', async (req: any, res) => {
     try {
       const variants = await storage.getProductVariants(req.params.productId);
-      res.json(variants);
+      // Filter financial data based on user role
+      const userRole = req.user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(variants, userRole);
+      res.json(filtered);
     } catch (error) {
       console.error("Error fetching product variants:", error);
       res.status(500).json({ message: "Failed to fetch product variants" });
@@ -4000,7 +4109,10 @@ Important:
   app.get('/api/stock-adjustment-requests', async (req: any, res) => {
     try {
       const requests = await storage.getStockAdjustmentRequests();
-      res.json(requests);
+      // Filter financial data based on user role
+      const userRole = req.user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(requests, userRole);
+      res.json(filtered);
     } catch (error) {
       console.error("Error fetching stock adjustment requests:", error);
       res.status(500).json({ message: "Failed to fetch stock adjustment requests" });
@@ -4010,7 +4122,10 @@ Important:
   app.get('/api/over-allocated-items', async (req: any, res) => {
     try {
       const items = await storage.getOverAllocatedItems();
-      res.json(items);
+      // Filter financial data based on user role
+      const userRole = req.user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(items, userRole);
+      res.json(filtered);
     } catch (error) {
       console.error("Error fetching over-allocated items:", error);
       res.status(500).json({ message: "Failed to fetch over-allocated items" });
@@ -4020,7 +4135,10 @@ Important:
   app.get('/api/under-allocated-items', async (req: any, res) => {
     try {
       const items = await storage.getUnderAllocatedItems();
-      res.json(items);
+      // Filter financial data based on user role
+      const userRole = req.user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(items, userRole);
+      res.json(filtered);
     } catch (error) {
       console.error("Error fetching under-allocated items:", error);
       res.status(500).json({ message: "Failed to fetch under-allocated items" });
@@ -5286,7 +5404,7 @@ Important:
   });
 
   // Orders endpoints
-  app.get('/api/orders', async (req, res) => {
+  app.get('/api/orders', async (req: any, res) => {
     try {
       const status = req.query.status as string;
       const paymentStatus = req.query.paymentStatus as string;
@@ -5402,9 +5520,15 @@ Important:
           };
         }));
 
-        res.json(ordersWithItems);
+        // Filter financial data based on user role
+        const userRole = req.user?.role || 'warehouse_operator';
+        const filtered = filterFinancialData(ordersWithItems, userRole);
+        res.json(filtered);
       } else {
-        res.json(orders);
+        // Filter financial data based on user role
+        const userRole = req.user?.role || 'warehouse_operator';
+        const filtered = filterFinancialData(orders, userRole);
+        res.json(filtered);
       }
     } catch (error) {
       console.error("Error fetching orders:", error);
@@ -5415,7 +5539,10 @@ Important:
   app.get('/api/orders/unpaid', async (req, res) => {
     try {
       const orders = await storage.getUnpaidOrders();
-      res.json(orders);
+      // Filter financial data based on user role
+      const userRole = req.user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(orders, userRole);
+      res.json(filtered);
     } catch (error) {
       console.error("Error fetching unpaid orders:", error);
       res.status(500).json({ message: "Failed to fetch unpaid orders" });
@@ -5426,7 +5553,10 @@ Important:
   app.get('/api/order-items/all', async (req, res) => {
     try {
       const items = await storage.getAllOrderItems();
-      res.json(items);
+      // Filter financial data based on user role
+      const userRole = req.user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(items, userRole);
+      res.json(filtered);
     } catch (error) {
       console.error("Error fetching all order items:", error);
       res.status(500).json({ message: "Failed to fetch order items" });
@@ -5602,7 +5732,10 @@ Important:
         };
       });
 
-      res.json(ordersWithItems);
+      // Filter financial data based on user role
+      const userRole = req.user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(ordersWithItems, userRole);
+      res.json(filtered);
     } catch (error) {
       console.error("Error fetching pick-pack orders:", error);
       res.status(500).json({ message: "Failed to fetch pick-pack orders" });
@@ -6131,7 +6264,7 @@ Important:
     }
   });
 
-  app.get('/api/orders/:id', async (req, res) => {
+  app.get('/api/orders/:id', async (req: any, res) => {
     try {
       // Prevent all caching for order details to ensure fresh data
       res.set({
@@ -6210,7 +6343,10 @@ Important:
         order.customer = { ...order.customer, badges };
       }
 
-      res.json(order);
+      // Filter financial data based on user role
+      const userRole = req.user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(order, userRole);
+      res.json(filtered);
     } catch (error) {
       console.error("Error fetching order:", error);
       res.status(500).json({ message: "Failed to fetch order" });
@@ -6931,7 +7067,7 @@ Important:
   });
 
   // Expenses endpoints
-  app.get('/api/expenses', async (req, res) => {
+  app.get('/api/expenses', requireRole(['administrator']), async (req, res) => {
     try {
       const expenses = await storage.getExpenses();
       res.json(expenses);
@@ -6941,7 +7077,7 @@ Important:
     }
   });
 
-  app.get('/api/expenses/:id', async (req, res) => {
+  app.get('/api/expenses/:id', requireRole(['administrator']), async (req, res) => {
     try {
       const expense = await storage.getExpenseById(req.params.id);
       if (!expense) {
@@ -6954,7 +7090,7 @@ Important:
     }
   });
 
-  app.post('/api/expenses', async (req: any, res) => {
+  app.post('/api/expenses', requireRole(['administrator']), async (req: any, res) => {
     try {
       // Extract the amount from the currency-specific field or use the generic amount field
       const amountFields = ['amountCzk', 'amountEur', 'amountUsd', 'amountVnd', 'amountCny'];
@@ -6993,7 +7129,7 @@ Important:
     }
   });
 
-  app.patch('/api/expenses/:id', async (req: any, res) => {
+  app.patch('/api/expenses/:id', requireRole(['administrator']), async (req: any, res) => {
     try {
       // Get the existing expense first to preserve its name for the activity log
       const existingExpense = await storage.getExpenseById(req.params.id);
@@ -7018,7 +7154,7 @@ Important:
     }
   });
 
-  app.delete('/api/expenses/:id', async (req: any, res) => {
+  app.delete('/api/expenses/:id', requireRole(['administrator']), async (req: any, res) => {
     try {
       const expense = await storage.getExpenseById(req.params.id);
       if (!expense) {
@@ -7524,7 +7660,10 @@ Important:
   app.get('/api/pre-orders', async (req, res) => {
     try {
       const preOrders = await storage.getPreOrders();
-      res.json(preOrders);
+      // Filter financial data based on user role
+      const userRole = req.user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(preOrders, userRole);
+      res.json(filtered);
     } catch (error) {
       console.error("Error fetching pre-orders:", error);
       res.status(500).json({ message: "Failed to fetch pre-orders" });
@@ -7539,7 +7678,12 @@ Important:
       }
 
       const items = await storage.getPreOrderItems(req.params.id);
-      res.json({ ...preOrder, items });
+      const preOrderWithItems = { ...preOrder, items };
+      
+      // Filter financial data based on user role
+      const userRole = req.user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(preOrderWithItems, userRole);
+      res.json(filtered);
     } catch (error) {
       console.error("Error fetching pre-order:", error);
       res.status(500).json({ message: "Failed to fetch pre-order" });
@@ -7592,7 +7736,10 @@ Important:
   app.get('/api/pre-orders/:preOrderId/items', async (req, res) => {
     try {
       const items = await storage.getPreOrderItems(req.params.preOrderId);
-      res.json(items);
+      // Filter financial data based on user role
+      const userRole = req.user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(items, userRole);
+      res.json(filtered);
     } catch (error) {
       console.error("Error fetching pre-order items:", error);
       res.status(500).json({ message: "Failed to fetch pre-order items" });
@@ -7751,7 +7898,7 @@ Important:
   });
 
   // Import routes
-  app.use('/api/imports', imports);
+  app.use('/api/imports', requireRole(['administrator']), imports);
 
   // World-record speed optimization routes
   app.use('/api/optimize', optimizeDb);
@@ -7760,7 +7907,10 @@ Important:
   app.get('/api/returns', async (req, res) => {
     try {
       const returns = await storage.getReturns();
-      res.json(returns);
+      // Filter financial data based on user role
+      const userRole = req.user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(returns, userRole);
+      res.json(filtered);
     } catch (error) {
       console.error("Error fetching returns:", error);
       res.status(500).json({ message: "Failed to fetch returns" });
@@ -7773,7 +7923,10 @@ Important:
       if (!returnData) {
         return res.status(404).json({ message: "Return not found" });
       }
-      res.json(returnData);
+      // Filter financial data based on user role
+      const userRole = req.user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(returnData, userRole);
+      res.json(filtered);
     } catch (error) {
       console.error("Error fetching return:", error);
       res.status(500).json({ message: "Failed to fetch return" });
@@ -8041,7 +8194,7 @@ Important:
   // Imports routes registered above
 
   // Reports endpoints
-  app.get('/api/reports/sales-summary', async (req, res) => {
+  app.get('/api/reports/sales-summary', requireRole(['administrator']), async (req, res) => {
     try {
       const { startDate, endDate } = req.query;
       const orders = await storage.getOrders();
@@ -8080,7 +8233,7 @@ Important:
     }
   });
 
-  app.get('/api/reports/inventory-summary', async (req, res) => {
+  app.get('/api/reports/inventory-summary', requireRole(['administrator']), async (req, res) => {
     try {
       const products = await storage.getProducts();
       const warehouses = await storage.getWarehouses();
@@ -8119,7 +8272,7 @@ Important:
     }
   });
 
-  app.get('/api/reports/customer-analytics', async (req, res) => {
+  app.get('/api/reports/customer-analytics', requireRole(['administrator']), async (req, res) => {
     try {
       const customers = await storage.getCustomers();
       const orders = await storage.getOrders();
@@ -8163,7 +8316,7 @@ Important:
     }
   });
 
-  app.get('/api/reports/financial-summary', async (req, res) => {
+  app.get('/api/reports/financial-summary', requireRole(['administrator']), async (req, res) => {
     try {
       const { year, month } = req.query;
 

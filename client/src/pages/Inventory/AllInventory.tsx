@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
@@ -54,6 +55,7 @@ import {
 
 export default function AllInventory() {
   const { toast } = useToast();
+  const { canAccessFinancialData } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   
   // Read category from URL parameter
@@ -757,8 +759,14 @@ export default function AllInventory() {
     },
   ];
 
-  // Filter columns based on visibility
-  const visibleColumns = columns.filter(col => columnVisibility[col.key] !== false);
+  // Filter columns based on visibility and financial data access
+  const visibleColumns = columns.filter(col => {
+    // Hide financial columns for users without access
+    if (!canAccessFinancialData && ['importCostUsd', 'importCostCzk', 'importCostEur'].includes(col.key)) {
+      return false;
+    }
+    return columnVisibility[col.key] !== false;
+  });
 
   // Toggle column visibility
   const toggleColumnVisibility = (key: string) => {

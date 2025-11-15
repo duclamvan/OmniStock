@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCurrency, formatDate, formatCompactNumber } from "@/lib/currencyUtils";
@@ -132,6 +133,7 @@ function useDailyHighScores(statistics: {
 
 export default function AllOrders({ filter }: AllOrdersProps) {
   const { toast } = useToast();
+  const { canAccessFinancialData } = useAuth();
   const [location, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -850,8 +852,14 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     },
   ];
 
-  // Filter columns based on visibility
-  const visibleColumnsFiltered = columns.filter(col => visibleColumns[col.key] !== false);
+  // Filter columns based on visibility and financial data access
+  const visibleColumnsFiltered = columns.filter(col => {
+    // Hide profit column for users without financial data access
+    if (!canAccessFinancialData && col.key === 'profit') {
+      return false;
+    }
+    return visibleColumns[col.key] !== false;
+  });
 
   // Bulk actions for DataTable
   const bulkActions = [
@@ -1145,30 +1153,32 @@ export default function AllOrders({ filter }: AllOrdersProps) {
           </Card>
 
           {/* Total Profit */}
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-3 sm:p-4 md:p-6 h-full">
-              <div className="flex items-start justify-between gap-3 h-full">
-                <div className="flex-1 min-w-0 flex flex-col">
-                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Total Profit
-                  </p>
-                  <p className={`text-xl sm:text-2xl md:text-3xl font-bold truncate ${statistics.totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {formatCompactNumber(statistics.totalProfit)}
-                  </p>
-                  <div className="flex-grow"></div>
-                  {highScores.totalProfit > 0 && (
-                    <div className="flex items-center gap-1 mt-2 text-xs text-amber-600 dark:text-amber-400">
-                      <Zap className="h-3 w-3" />
-                      <span>Record: {formatCompactNumber(highScores.totalProfit)}</span>
-                    </div>
-                  )}
+          {canAccessFinancialData && (
+            <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+              <CardContent className="p-3 sm:p-4 md:p-6 h-full">
+                <div className="flex items-start justify-between gap-3 h-full">
+                  <div className="flex-1 min-w-0 flex flex-col">
+                    <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Total Profit
+                    </p>
+                    <p className={`text-xl sm:text-2xl md:text-3xl font-bold truncate ${statistics.totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                      {formatCompactNumber(statistics.totalProfit)}
+                    </p>
+                    <div className="flex-grow"></div>
+                    {highScores.totalProfit > 0 && (
+                      <div className="flex items-center gap-1 mt-2 text-xs text-amber-600 dark:text-amber-400">
+                        <Zap className="h-3 w-3" />
+                        <span>Record: {formatCompactNumber(highScores.totalProfit)}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className={`flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br ${statistics.totalProfit >= 0 ? 'from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950' : 'from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950'}`}>
+                    <TrendingUp className={`h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 ${statistics.totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`} />
+                  </div>
                 </div>
-                <div className={`flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br ${statistics.totalProfit >= 0 ? 'from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950' : 'from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950'}`}>
-                  <TrendingUp className={`h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 ${statistics.totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Customers */}
           <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">

@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useAuth } from "@/hooks/useAuth";
 import { FixedSizeList as List } from "react-window";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -258,6 +259,7 @@ export default function AddOrder() {
   const [showTaxInvoice, setShowTaxInvoice] = useState(false);
   const [showDiscount, setShowDiscount] = useState(false);
   const { toast } = useToast();
+  const { canAccessFinancialData } = useAuth();
   const { defaultCurrency, defaultPaymentMethod, defaultCarrier, enableCod } = useOrderDefaults();
   const { generalSettings, financialHelpers } = useSettings();
   const aiCartonPackingEnabled = generalSettings?.enableAiCartonPacking ?? false;
@@ -4462,7 +4464,7 @@ export default function AddOrder() {
                     </CardHeader>
                     <CardContent className="p-3 space-y-3">
                     {/* Margin Analysis Section */}
-                    {orderItems.length > 0 && (() => {
+                    {canAccessFinancialData && orderItems.length > 0 && (() => {
                       const totalLandingCost = orderItems.reduce((sum, item) => 
                         sum + (item.landingCost || 0) * item.quantity, 0);
                       const totalSellingPrice = orderItems.reduce((sum, item) => 

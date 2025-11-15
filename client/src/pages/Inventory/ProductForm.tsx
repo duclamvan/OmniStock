@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -206,6 +207,7 @@ export default function ProductForm() {
   const isEditMode = !!id;
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { canAccessFinancialData } = useAuth();
   const { lowStockThreshold } = useInventoryDefaults();
   
   // Use orchestrator hook for default warehouse selection
@@ -2168,85 +2170,87 @@ export default function ProductForm() {
                   </div>
 
                   {/* Import Costs */}
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">Import Costs</Label>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div>
-                        <Label htmlFor="importCostUsd" className="text-xs text-slate-500">USD</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          {...form.register('importCostUsd')}
-                          placeholder="0.00"
-                          data-testid="input-cost-usd"
-                          className="mt-1"
-                          onInput={(e) => {
-                            if (importCostUpdatingRef.current === 'usd') return;
-                            const value = parseFloat((e.target as HTMLInputElement).value);
-                            if (value && value > 0) {
-                              importCostUpdatingRef.current = 'usd';
-                              form.setValue('importCostCzk', parseFloat(convertCurrency(value, 'USD', 'CZK').toFixed(2)));
-                              form.setValue('importCostEur', parseFloat(convertCurrency(value, 'USD', 'EUR').toFixed(2)));
-                              setTimeout(() => { importCostUpdatingRef.current = null; }, 0);
-                            }
-                          }}
-                        />
-                      </div>
+                  {canAccessFinancialData && (
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">Import Costs</Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <Label htmlFor="importCostUsd" className="text-xs text-slate-500">USD</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            {...form.register('importCostUsd')}
+                            placeholder="0.00"
+                            data-testid="input-cost-usd"
+                            className="mt-1"
+                            onInput={(e) => {
+                              if (importCostUpdatingRef.current === 'usd') return;
+                              const value = parseFloat((e.target as HTMLInputElement).value);
+                              if (value && value > 0) {
+                                importCostUpdatingRef.current = 'usd';
+                                form.setValue('importCostCzk', parseFloat(convertCurrency(value, 'USD', 'CZK').toFixed(2)));
+                                form.setValue('importCostEur', parseFloat(convertCurrency(value, 'USD', 'EUR').toFixed(2)));
+                                setTimeout(() => { importCostUpdatingRef.current = null; }, 0);
+                              }
+                            }}
+                          />
+                        </div>
 
-                      <div>
-                        <Label htmlFor="importCostCzk" className="text-xs text-slate-500">CZK</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          {...form.register('importCostCzk')}
-                          placeholder="0.00"
-                          data-testid="input-cost-czk"
-                          className="mt-1"
-                          onInput={(e) => {
-                            if (importCostUpdatingRef.current === 'czk') return;
-                            const value = parseFloat((e.target as HTMLInputElement).value);
-                            if (value && value > 0) {
-                              importCostUpdatingRef.current = 'czk';
-                              form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'CZK', 'USD').toFixed(2)));
-                              form.setValue('importCostEur', parseFloat(convertCurrency(value, 'CZK', 'EUR').toFixed(2)));
-                              setTimeout(() => { importCostUpdatingRef.current = null; }, 0);
-                            }
-                          }}
-                        />
-                      </div>
+                        <div>
+                          <Label htmlFor="importCostCzk" className="text-xs text-slate-500">CZK</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            {...form.register('importCostCzk')}
+                            placeholder="0.00"
+                            data-testid="input-cost-czk"
+                            className="mt-1"
+                            onInput={(e) => {
+                              if (importCostUpdatingRef.current === 'czk') return;
+                              const value = parseFloat((e.target as HTMLInputElement).value);
+                              if (value && value > 0) {
+                                importCostUpdatingRef.current = 'czk';
+                                form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'CZK', 'USD').toFixed(2)));
+                                form.setValue('importCostEur', parseFloat(convertCurrency(value, 'CZK', 'EUR').toFixed(2)));
+                                setTimeout(() => { importCostUpdatingRef.current = null; }, 0);
+                              }
+                            }}
+                          />
+                        </div>
 
-                      <div>
-                        <Label htmlFor="importCostEur" className="text-xs text-slate-500">EUR</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          {...form.register('importCostEur')}
-                          placeholder="0.00"
-                          data-testid="input-cost-eur"
-                          className="mt-1"
-                          onInput={(e) => {
-                            if (importCostUpdatingRef.current === 'eur') return;
-                            const value = parseFloat((e.target as HTMLInputElement).value);
-                            if (value && value > 0) {
-                              importCostUpdatingRef.current = 'eur';
-                              form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'EUR', 'USD').toFixed(2)));
-                              form.setValue('importCostCzk', parseFloat(convertCurrency(value, 'EUR', 'CZK').toFixed(2)));
-                              setTimeout(() => { importCostUpdatingRef.current = null; }, 0);
-                            }
-                          }}
-                        />
+                        <div>
+                          <Label htmlFor="importCostEur" className="text-xs text-slate-500">EUR</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            {...form.register('importCostEur')}
+                            placeholder="0.00"
+                            data-testid="input-cost-eur"
+                            className="mt-1"
+                            onInput={(e) => {
+                              if (importCostUpdatingRef.current === 'eur') return;
+                              const value = parseFloat((e.target as HTMLInputElement).value);
+                              if (value && value > 0) {
+                                importCostUpdatingRef.current = 'eur';
+                                form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'EUR', 'USD').toFixed(2)));
+                                form.setValue('importCostCzk', parseFloat(convertCurrency(value, 'EUR', 'CZK').toFixed(2)));
+                                setTimeout(() => { importCostUpdatingRef.current = null; }, 0);
+                              }
+                            }}
+                          />
+                        </div>
                       </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        Enter cost in one currency, others auto-convert in real-time
+                      </p>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      Enter cost in one currency, others auto-convert in real-time
-                    </p>
-                  </div>
+                  )}
                   
                   {/* Edit mode: Cost History Chart */}
-                  {isEditMode && costHistory && costHistory.length > 0 && (
+                  {canAccessFinancialData && isEditMode && costHistory && costHistory.length > 0 && (
                     <div className="pt-2">
                       <Label className="text-sm font-medium mb-2 block flex items-center gap-2">
                         <TrendingUp className="h-4 w-4 text-amber-600" />
@@ -2879,58 +2883,62 @@ export default function ProductForm() {
                             </div>
                           </div>
                           
-                          <Separator />
-                          
-                          <div className="space-y-3">
-                            <div>
-                              <Label className="text-sm font-medium">Variant Import Cost (Optional)</Label>
-                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                Leave blank to use product's default import cost. Enter value in any currency - others auto-convert.
-                              </p>
-                            </div>
-                            
-                            <div className="grid grid-cols-3 gap-3">
-                              <div>
-                                <Label htmlFor="variant-cost-usd" className="text-xs">Import Cost USD</Label>
-                                <Input
-                                  id="variant-cost-usd"
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={newVariant.importCostUsd}
-                                  onChange={(e) => setNewVariant((prev) => ({ ...prev, importCostUsd: e.target.value }))}
-                                  placeholder="Optional"
-                                  data-testid="input-variant-cost-usd"
-                                />
+                          {canAccessFinancialData && (
+                            <>
+                              <Separator />
+                              
+                              <div className="space-y-3">
+                                <div>
+                                  <Label className="text-sm font-medium">Variant Import Cost (Optional)</Label>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                    Leave blank to use product's default import cost. Enter value in any currency - others auto-convert.
+                                  </p>
+                                </div>
+                                
+                                <div className="grid grid-cols-3 gap-3">
+                                  <div>
+                                    <Label htmlFor="variant-cost-usd" className="text-xs">Import Cost USD</Label>
+                                    <Input
+                                      id="variant-cost-usd"
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      value={newVariant.importCostUsd}
+                                      onChange={(e) => setNewVariant((prev) => ({ ...prev, importCostUsd: e.target.value }))}
+                                      placeholder="Optional"
+                                      data-testid="input-variant-cost-usd"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="variant-cost-czk" className="text-xs">Import Cost CZK</Label>
+                                    <Input
+                                      id="variant-cost-czk"
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      value={newVariant.importCostCzk}
+                                      onChange={(e) => setNewVariant((prev) => ({ ...prev, importCostCzk: e.target.value }))}
+                                      placeholder="Optional"
+                                      data-testid="input-variant-cost-czk"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="variant-cost-eur" className="text-xs">Import Cost EUR</Label>
+                                    <Input
+                                      id="variant-cost-eur"
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      value={newVariant.importCostEur}
+                                      onChange={(e) => setNewVariant((prev) => ({ ...prev, importCostEur: e.target.value }))}
+                                      placeholder="Optional"
+                                      data-testid="input-variant-cost-eur"
+                                    />
+                                  </div>
+                                </div>
                               </div>
-                              <div>
-                                <Label htmlFor="variant-cost-czk" className="text-xs">Import Cost CZK</Label>
-                                <Input
-                                  id="variant-cost-czk"
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={newVariant.importCostCzk}
-                                  onChange={(e) => setNewVariant((prev) => ({ ...prev, importCostCzk: e.target.value }))}
-                                  placeholder="Optional"
-                                  data-testid="input-variant-cost-czk"
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="variant-cost-eur" className="text-xs">Import Cost EUR</Label>
-                                <Input
-                                  id="variant-cost-eur"
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={newVariant.importCostEur}
-                                  onChange={(e) => setNewVariant((prev) => ({ ...prev, importCostEur: e.target.value }))}
-                                  placeholder="Optional"
-                                  data-testid="input-variant-cost-eur"
-                                />
-                              </div>
-                            </div>
-                          </div>
+                            </>
+                          )}
                           
                           <Button 
                             onClick={addVariant} 
@@ -3029,58 +3037,62 @@ export default function ProductForm() {
                             </div>
                           </div>
                           
-                          <Separator />
-                          
-                          <div className="space-y-3">
-                            <div>
-                              <Label className="text-sm font-medium">Variant Import Cost (Optional)</Label>
-                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                Leave blank to use product's default import cost. Enter value in any currency - others auto-convert.
-                              </p>
-                            </div>
-                            
-                            <div className="grid grid-cols-3 gap-3">
-                              <div>
-                                <Label htmlFor="series-cost-usd" className="text-xs">Import Cost USD</Label>
-                                <Input
-                                  id="series-cost-usd"
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={seriesImportCostUsd}
-                                  onChange={(e) => setSeriesImportCostUsd(e.target.value)}
-                                  placeholder="Optional"
-                                  data-testid="input-series-cost-usd"
-                                />
+                          {canAccessFinancialData && (
+                            <>
+                              <Separator />
+                              
+                              <div className="space-y-3">
+                                <div>
+                                  <Label className="text-sm font-medium">Variant Import Cost (Optional)</Label>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                    Leave blank to use product's default import cost. Enter value in any currency - others auto-convert.
+                                  </p>
+                                </div>
+                                
+                                <div className="grid grid-cols-3 gap-3">
+                                  <div>
+                                    <Label htmlFor="series-cost-usd" className="text-xs">Import Cost USD</Label>
+                                    <Input
+                                      id="series-cost-usd"
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      value={seriesImportCostUsd}
+                                      onChange={(e) => setSeriesImportCostUsd(e.target.value)}
+                                      placeholder="Optional"
+                                      data-testid="input-series-cost-usd"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="series-cost-czk" className="text-xs">Import Cost CZK</Label>
+                                    <Input
+                                      id="series-cost-czk"
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      value={seriesImportCostCzk}
+                                      onChange={(e) => setSeriesImportCostCzk(e.target.value)}
+                                      placeholder="Optional"
+                                      data-testid="input-series-cost-czk"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="series-cost-eur" className="text-xs">Import Cost EUR</Label>
+                                    <Input
+                                      id="series-cost-eur"
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      value={seriesImportCostEur}
+                                      onChange={(e) => setSeriesImportCostEur(e.target.value)}
+                                      placeholder="Optional"
+                                      data-testid="input-series-cost-eur"
+                                    />
+                                  </div>
+                                </div>
                               </div>
-                              <div>
-                                <Label htmlFor="series-cost-czk" className="text-xs">Import Cost CZK</Label>
-                                <Input
-                                  id="series-cost-czk"
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={seriesImportCostCzk}
-                                  onChange={(e) => setSeriesImportCostCzk(e.target.value)}
-                                  placeholder="Optional"
-                                  data-testid="input-series-cost-czk"
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="series-cost-eur" className="text-xs">Import Cost EUR</Label>
-                                <Input
-                                  id="series-cost-eur"
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={seriesImportCostEur}
-                                  onChange={(e) => setSeriesImportCostEur(e.target.value)}
-                                  placeholder="Optional"
-                                  data-testid="input-series-cost-eur"
-                                />
-                              </div>
-                            </div>
-                          </div>
+                            </>
+                          )}
                           
                           <Button 
                             onClick={addVariantSeries} 
@@ -3149,9 +3161,9 @@ export default function ProductForm() {
                             <TableHead className="w-24 text-right">Quantity</TableHead>
                             <TableHead className="w-28 text-right">Price CZK</TableHead>
                             <TableHead className="w-28 text-right">Price EUR</TableHead>
-                            <TableHead className="w-28 text-right">Import Cost USD</TableHead>
-                            <TableHead className="w-28 text-right">Import Cost CZK</TableHead>
-                            <TableHead className="w-28 text-right">Import Cost EUR</TableHead>
+                            {canAccessFinancialData && <TableHead className="w-28 text-right">Import Cost USD</TableHead>}
+                            {canAccessFinancialData && <TableHead className="w-28 text-right">Import Cost CZK</TableHead>}
+                            {canAccessFinancialData && <TableHead className="w-28 text-right">Import Cost EUR</TableHead>}
                             <TableHead className="w-12"></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -3278,45 +3290,51 @@ export default function ProductForm() {
                                   data-testid={`input-variant-price-eur-${variant.id}`}
                                 />
                               </TableCell>
-                              <TableCell className="text-right">
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={variant.importCostUsd}
-                                  onChange={(e) => updateVariant(variant.id, 'importCostUsd', e.target.value)}
-                                  className="h-8 text-right [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                                  style={{ MozAppearance: 'textfield' } as any}
-                                  placeholder="0.00"
-                                  data-testid={`input-variant-cost-usd-${variant.id}`}
-                                />
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={variant.importCostCzk}
-                                  onChange={(e) => updateVariant(variant.id, 'importCostCzk', e.target.value)}
-                                  className="h-8 text-right [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                                  style={{ MozAppearance: 'textfield' } as any}
-                                  placeholder="0.00"
-                                  data-testid={`input-variant-cost-czk-${variant.id}`}
-                                />
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={variant.importCostEur}
-                                  onChange={(e) => updateVariant(variant.id, 'importCostEur', e.target.value)}
-                                  className="h-8 text-right [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                                  style={{ MozAppearance: 'textfield' } as any}
-                                  placeholder="0.00"
-                                  data-testid={`input-variant-cost-eur-${variant.id}`}
-                                />
-                              </TableCell>
+                              {canAccessFinancialData && (
+                                <TableCell className="text-right">
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={variant.importCostUsd}
+                                    onChange={(e) => updateVariant(variant.id, 'importCostUsd', e.target.value)}
+                                    className="h-8 text-right [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                    style={{ MozAppearance: 'textfield' } as any}
+                                    placeholder="0.00"
+                                    data-testid={`input-variant-cost-usd-${variant.id}`}
+                                  />
+                                </TableCell>
+                              )}
+                              {canAccessFinancialData && (
+                                <TableCell className="text-right">
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={variant.importCostCzk}
+                                    onChange={(e) => updateVariant(variant.id, 'importCostCzk', e.target.value)}
+                                    className="h-8 text-right [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                    style={{ MozAppearance: 'textfield' } as any}
+                                    placeholder="0.00"
+                                    data-testid={`input-variant-cost-czk-${variant.id}`}
+                                  />
+                                </TableCell>
+                              )}
+                              {canAccessFinancialData && (
+                                <TableCell className="text-right">
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={variant.importCostEur}
+                                    onChange={(e) => updateVariant(variant.id, 'importCostEur', e.target.value)}
+                                    className="h-8 text-right [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                    style={{ MozAppearance: 'textfield' } as any}
+                                    placeholder="0.00"
+                                    data-testid={`input-variant-cost-eur-${variant.id}`}
+                                  />
+                                </TableCell>
+                              )}
                               <TableCell>
                                 <Button
                                   type="button"

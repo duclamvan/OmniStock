@@ -4,6 +4,7 @@ import { useLocation, useParams } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useAuth } from "@/hooks/useAuth";
 import { FixedSizeList as List } from "react-window";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -298,6 +299,7 @@ export default function EditOrder() {
   const [showDiscount, setShowDiscount] = useState(false);
   const [roundingAdjustment, setRoundingAdjustment] = useState(0);
   const { toast } = useToast();
+  const { canAccessFinancialData } = useAuth();
   const { generalSettings, financialHelpers } = useSettings();
   const aiCartonPackingEnabled = generalSettings?.enableAiCartonPacking ?? false;
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -4806,7 +4808,7 @@ export default function EditOrder() {
                     </CardHeader>
                     <CardContent className="p-4 space-y-4">
                       {/* Margin Analysis Section */}
-                      {orderItems.length > 0 && (() => {
+                      {canAccessFinancialData && orderItems.length > 0 && (() => {
                         const totalLandingCost = orderItems.reduce((sum, item) => 
                           sum + (item.landingCost || 0) * item.quantity, 0);
                         const totalSellingPrice = orderItems.reduce((sum, item) => 
@@ -4957,7 +4959,7 @@ export default function EditOrder() {
             </CardHeader>
             <CardContent className="p-4 space-y-4">
               {/* Margin Analysis Section - Mobile */}
-              {orderItems.length > 0 && (() => {
+              {canAccessFinancialData && orderItems.length > 0 && (() => {
                 const totalLandingCost = orderItems.reduce((sum, item) => 
                   sum + (item.landingCost || 0) * item.quantity, 0);
                 const totalSellingPrice = orderItems.reduce((sum, item) => 

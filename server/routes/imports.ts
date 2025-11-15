@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { db } from "../db";
 import crypto from "crypto";
+import { FINANCIAL_FIELDS } from "../routes";
 import { 
   importPurchases, 
   purchaseItems, 
@@ -48,8 +49,42 @@ const upload = multer({
 
 const router = Router();
 
+// FINANCIAL_FIELDS is now imported from ../routes for consistency across all routers
+
+// Deeply recursive middleware to filter financial data from responses for warehouse operators
+function filterFinancialData(data: any, userRole: string): any {
+  if (userRole === 'administrator') {
+    return data; // Admins see everything
+  }
+  
+  // Handle arrays recursively
+  if (Array.isArray(data)) {
+    return data.map(item => filterFinancialData(item, userRole));
+  }
+  
+  // Handle objects recursively
+  if (typeof data === 'object' && data !== null) {
+    const filtered: any = {};
+    
+    for (const key in data) {
+      // Skip financial fields completely
+      if (FINANCIAL_FIELDS.includes(key)) {
+        continue;
+      }
+      
+      // Recursively filter nested objects and arrays
+      filtered[key] = filterFinancialData(data[key], userRole);
+    }
+    
+    return filtered;
+  }
+  
+  // Return primitives as-is
+  return data;
+}
+
 // Get frequent suppliers
-router.get("/suppliers/frequent", async (req, res) => {
+router.get("/suppliers/frequent", async (req: any, res) => {
   try {
     // Get suppliers ordered by frequency of use
     const suppliers = await db
@@ -63,7 +98,10 @@ router.get("/suppliers/frequent", async (req, res) => {
       .orderBy(desc(sql`count(*)`))
       .limit(10);
     
-    res.json(suppliers);
+    // Filter financial data based on user role
+    const userRole = req.user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(suppliers, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching frequent suppliers:", error);
     res.status(500).json({ message: "Failed to fetch frequent suppliers" });
@@ -102,7 +140,10 @@ router.get("/purchases", async (req, res) => {
       itemCount: (itemsByPurchaseId[purchase.id] || []).length
     }));
     
-    res.json(purchasesWithItems);
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(purchasesWithItems, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching purchases:", error);
     res.status(500).json({ message: "Failed to fetch purchases" });
@@ -145,7 +186,10 @@ router.get("/purchases/at-warehouse", async (req, res) => {
       itemCount: (itemsByPurchaseId[purchase.id] || []).length
     }));
     
-    res.json(purchasesWithItems);
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(purchasesWithItems, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching at-warehouse purchases:", error);
     res.status(500).json({ message: "Failed to fetch at-warehouse purchases" });
@@ -153,7 +197,7 @@ router.get("/purchases/at-warehouse", async (req, res) => {
 });
 
 // Get unpacked items (custom items from unpacked purchase orders that are still available)
-router.get("/unpacked-items", async (req, res) => {
+router.get("/unpacked-items", async (req: any, res) => {
   try {
     const unpackedItems = await db
       .select()
@@ -164,7 +208,10 @@ router.get("/unpacked-items", async (req, res) => {
       ))
       .orderBy(desc(customItems.createdAt));
     
-    res.json(unpackedItems);
+    // Filter financial data based on user role
+    const userRole = req.user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(unpackedItems, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching unpacked items:", error);
     res.status(500).json({ message: "Failed to fetch unpacked items" });
@@ -461,7 +508,7 @@ router.post("/purchases/unpack", async (req, res) => {
 });
 
 // Get single purchase with items
-router.get("/purchases/:id", async (req, res) => {
+router.get("/purchases/:id", async (req: any, res) => {
   try {
     const purchaseId = parseInt(req.params.id);
     
@@ -479,7 +526,12 @@ router.get("/purchases/:id", async (req, res) => {
       .from(purchaseItems)
       .where(eq(purchaseItems.purchaseId, purchaseId));
     
-    res.json({ ...purchase, items });
+    const purchaseWithItems = { ...purchase, items };
+    
+    // Filter financial data based on user role
+    const userRole = req.user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(purchaseWithItems, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching purchase:", error);
     res.status(500).json({ message: "Failed to fetch purchase" });
@@ -817,7 +869,10 @@ router.get("/consolidations", async (req, res) => {
       })
     );
     
-    res.json(consolidationsWithItems);
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(consolidationsWithItems, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching consolidations:", error);
     res.status(500).json({ message: "Failed to fetch consolidations" });
@@ -978,7 +1033,10 @@ router.get("/consolidations/:id/items", async (req, res) => {
       .where(eq(consolidationItems.consolidationId, consolidationId))
       .orderBy(consolidationItems.createdAt);
     
-    res.json(items);
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(items, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching consolidation items:", error);
     res.status(500).json({ message: "Failed to fetch consolidation items" });
@@ -1081,14 +1139,17 @@ router.post("/consolidations/:id/ship", async (req, res) => {
 });
 
 // Get all available custom items (not in consolidations or shipped)
-router.get("/custom-items", async (req, res) => {
+router.get("/custom-items", async (req: any, res) => {
   try {
     const result = await db
       .select()
       .from(customItems)
       .where(eq(customItems.status, 'available'))
       .orderBy(desc(customItems.createdAt));
-    res.json(result);
+    // Filter financial data based on user role
+    const userRole = req.user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(result, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching custom items:", error);
     res.status(500).json({ message: "Failed to fetch custom items" });
@@ -1307,7 +1368,10 @@ router.get("/shipments/pending", async (req, res) => {
     // Filter out nulls and combine results
     const filteredPending = pendingFromConsolidations.filter(p => p !== null);
     
-    res.json(filteredPending);
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(filteredPending, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching pending shipments:", error);
     res.status(500).json({ message: "Failed to fetch pending shipments" });
@@ -1394,7 +1458,10 @@ router.get("/shipments/search", async (req, res) => {
     // Filter out nulls from search results
     const filteredResults = shipmentsWithDetails.filter(s => s !== null);
     
-    res.json(filteredResults);
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(filteredResults, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error searching shipments:", error);
     res.status(500).json({ message: "Failed to search shipments" });
@@ -1456,7 +1523,10 @@ router.get("/shipments", async (req, res) => {
       })
     );
     
-    res.json(shipmentsWithDetails);
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(shipmentsWithDetails, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching shipments:", error);
     res.status(500).json({ message: "Failed to fetch shipments" });
@@ -2539,7 +2609,10 @@ router.get("/shipments/by-status/:status", async (req, res) => {
       formattedUpdatedAt: shipment.updatedAt ? shipment.updatedAt.toISOString() : null
     }));
     
-    res.json(formattedShipments);
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(formattedShipments, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching shipments by status:", error);
     res.status(500).json({ message: "Failed to fetch shipments" });
@@ -2929,7 +3002,10 @@ router.get("/shipments/receivable", async (req, res) => {
     }
     */
 
-    res.json(formattedShipments);
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(formattedShipments, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching receivable shipments:", error);
     res.status(500).json({ message: "Failed to fetch receivable shipments" });
@@ -2972,7 +3048,10 @@ router.get("/shipments/to-receive", async (req, res) => {
       shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
     }));
 
-    res.json(formattedShipments);
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(formattedShipments, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching to-receive shipments:", error);
     res.status(500).json({ message: "Failed to fetch to-receive shipments" });
@@ -2998,7 +3077,10 @@ router.get("/shipments/receiving", async (req, res) => {
       shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
     }));
 
-    res.json(formattedShipments);
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(formattedShipments, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching receiving shipments:", error);
     res.status(500).json({ message: "Failed to fetch receiving shipments" });
@@ -3024,7 +3106,10 @@ router.get("/shipments/storage", async (req, res) => {
       shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
     }));
 
-    res.json(formattedShipments);
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(formattedShipments, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching storage shipments:", error);
     res.status(500).json({ message: "Failed to fetch storage shipments" });
@@ -3051,7 +3136,10 @@ router.get("/shipments/completed", async (req, res) => {
       shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
     }));
 
-    res.json(formattedShipments);
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(formattedShipments, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching completed shipments:", error);
     res.status(500).json({ message: "Failed to fetch completed shipments" });
@@ -3078,7 +3166,10 @@ router.get("/shipments/archived", async (req, res) => {
       shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
     }));
 
-    res.json(formattedShipments);
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(formattedShipments, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching archived shipments:", error);
     res.status(500).json({ message: "Failed to fetch archived shipments" });
@@ -3278,7 +3369,10 @@ router.get("/shipments/:id", async (req, res) => {
     };
 
     console.log("Returning full shipment data with", items.length, "items");
-    res.json(shipmentWithDetails);
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(shipmentWithDetails, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching shipment:", error);
     res.status(500).json({ message: "Failed to fetch shipment", error: error instanceof Error ? error.message : "Unknown error" });
@@ -3575,11 +3669,16 @@ router.get("/receipts/storage", async (req, res) => {
       sum + (item.receivedQuantity || 0), 0
     );
     
-    res.json({
+    const responseData = {
       receipts: receiptsWithItems,
       totalItems,
       totalQuantity
-    });
+    };
+    
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(responseData, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching items to store:", error);
     res.status(500).json({ message: "Failed to fetch items to store" });
@@ -3694,14 +3793,19 @@ router.get("/receipts/:id", async (req, res) => {
       }
     }
 
-    res.json({
+    const receiptWithDetails = {
       ...receipt,
       items: itemsWithLandingCosts,
       shipment,
       consolidation,
       landedCost,
       photos: receipt.photos || [] // Ensure photos are included in response
-    });
+    };
+    
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(receiptWithDetails, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching receipt:", error);
     res.status(500).json({ message: "Failed to fetch receipt" });
@@ -5054,10 +5158,16 @@ router.get("/receipts", async (req, res) => {
         }
       ];
       
-      return res.json(mockReceipts);
+      // Filter financial data for mock receipts
+      const userRole = (req as any).user?.role || 'warehouse_operator';
+      const filteredMock = filterFinancialData(mockReceipts, userRole);
+      return res.json(filteredMock);
     }
 
-    res.json(transformedReceipts);
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(transformedReceipts, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching receipts:", error);
     res.status(500).json({ message: "Failed to fetch receipts" });
@@ -5130,11 +5240,16 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
     }));
     
     // Return shipment, receipt, and items with details
-    res.json({
+    const responseData = {
       shipment: shipmentData,
       receipt: receipt,
       items: itemsWithDetails
-    });
+    };
+    
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(responseData, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching receipt by shipment:", error);
     res.status(500).json({ message: "Failed to fetch receipt" });
@@ -6031,7 +6146,7 @@ router.get('/receipts/:id/storage-items', async (req, res) => {
       .from(shipments)
       .where(eq(shipments.id, receipt.shipmentId));
     
-    res.json({
+    const responseData = {
       receipt: {
         id: receipt.id,
         shipmentId: receipt.shipmentId,
@@ -6039,7 +6154,12 @@ router.get('/receipts/:id/storage-items', async (req, res) => {
         status: receipt.status
       },
       items: itemsWithDetails
-    });
+    };
+    
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(responseData, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching storage items:", error);
     res.status(500).json({ 
@@ -6310,12 +6430,17 @@ router.get("/shipments/:id/costs", async (req, res) => {
       totals.originalAmounts[cost.currency] += Number(cost.amountOriginal);
     });
     
-    res.json({
+    const responseData = {
       shipmentId,
       costs: groupedCosts,
       totals,
       baseCurrency: 'EUR'
-    });
+    };
+    
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(responseData, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching shipment costs:", error);
     res.status(500).json({ message: "Failed to fetch shipment costs" });
@@ -6685,7 +6810,7 @@ router.get("/shipments/:id/cartons", async (req, res) => {
       };
     });
     
-    res.json({
+    const responseData = {
       shipmentId,
       cartons: cartonsWithMetrics,
       totals: {
@@ -6694,7 +6819,12 @@ router.get("/shipments/:id/cartons", async (req, res) => {
         totalVolumetricWeight: cartonsWithMetrics.reduce((sum, c) => sum + c.volumetricWeight, 0),
         totalChargeableWeight: cartonsWithMetrics.reduce((sum, c) => sum + c.chargeableWeight, 0)
       }
-    });
+    };
+    
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(responseData, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error fetching cartons:", error);
     res.status(500).json({ message: "Failed to fetch cartons" });
@@ -6768,7 +6898,7 @@ router.get("/shipments/:id/landing-cost-preview", async (req, res) => {
     // Get item allocation breakdown
     const items = await getItemAllocationBreakdown(shipmentId, costsByType);
     
-    res.json({
+    const responseData = {
       shipmentId,
       metrics,
       costsByType,
@@ -6792,7 +6922,12 @@ router.get("/shipments/:id/landing-cost-preview", async (req, res) => {
         total: Object.values(costsByType).reduce((sum, val) => sum + val, 0)
       },
       message: "This is a preview using auto-selected weight-based allocation. Use /calculate-landing-costs to save allocations."
-    });
+    };
+    
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(responseData, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error generating landing cost preview:", error);
     res.status(500).json({ message: "Failed to generate landing cost preview" });
@@ -6844,7 +6979,7 @@ router.get("/shipments/:id/landing-cost-preview/:method", async (req, res) => {
     // Get item allocation breakdown using specified method
     const items = await getItemAllocationBreakdownWithMethod(shipmentId, costsByType, method);
     
-    res.json({
+    const responseData = {
       shipmentId,
       metrics,
       costsByType,
@@ -6868,7 +7003,12 @@ router.get("/shipments/:id/landing-cost-preview/:method", async (req, res) => {
         total: Object.values(costsByType).reduce((sum, val) => sum + val, 0)
       },
       message: `Preview using ${method} allocation method. Use /calculate-landing-costs to save allocations.`
-    });
+    };
+    
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(responseData, userRole);
+    res.json(filtered);
   } catch (error) {
     console.error("Error generating method-specific landing cost preview:", error);
     res.status(500).json({ 
@@ -7224,7 +7364,7 @@ router.get("/shipments/:id/landing-cost-summary", async (req, res) => {
     try {
       const summary: any = await landingCostService.getLandingCostSummary(shipmentId);
       
-      res.json({
+      const responseData = {
         shipmentId,
         items: summary?.items || [],
         totals: summary?.totals || {},
@@ -7234,10 +7374,15 @@ router.get("/shipments/:id/landing-cost-summary", async (req, res) => {
         lastCalculated: allocations[0]?.createdAt || new Date(),
         status: 'calculated',
         itemCount: summary?.items?.length || 0
-      });
+      };
+      
+      // Filter financial data based on user role
+      const userRole = (req as any).user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(responseData, userRole);
+      res.json(filtered);
     } catch (summaryError) {
       console.error("Error getting landing cost summary:", summaryError);
-      res.json({
+      const fallbackData = {
         shipmentId,
         items: [],
         totals: {},
@@ -7246,7 +7391,12 @@ router.get("/shipments/:id/landing-cost-summary", async (req, res) => {
         hasAllocations: false,
         lastCalculated: null,
         message: "Landing costs calculation in progress or failed. Please recalculate."
-      });
+      };
+      
+      // Filter financial data based on user role
+      const userRole = (req as any).user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(fallbackData, userRole);
+      res.json(filtered);
     }
   } catch (error) {
     console.error("Error fetching landing cost summary:", error);
@@ -7273,11 +7423,16 @@ router.get("/exchange-rates", async (req, res) => {
       
       const data = await response.json();
       
-      res.json({
+      const responseData = {
         base: data.base || base,
         date: data.date || new Date().toISOString().split('T')[0],
         rates: data.rates || {}
-      });
+      };
+      
+      // Filter financial data based on user role
+      const userRole = (req as any).user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(responseData, userRole);
+      res.json(filtered);
     } catch (apiError) {
       // Fallback to placeholder rates if API fails
       console.error("Error fetching exchange rates from API:", apiError);
@@ -7312,12 +7467,17 @@ router.get("/exchange-rates", async (req, res) => {
         }
       }
       
-      res.json({
+      const fallbackData = {
         base,
         date: new Date().toISOString().split('T')[0],
         rates: filteredRates,
         source: 'placeholder'
-      });
+      };
+      
+      // Filter financial data based on user role
+      const userRole = (req as any).user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData(fallbackData, userRole);
+      res.json(filtered);
     }
   } catch (error) {
     console.error("Error in exchange rates endpoint:", error);

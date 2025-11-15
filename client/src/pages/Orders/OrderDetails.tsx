@@ -1,5 +1,6 @@
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -100,6 +101,7 @@ export default function OrderDetails() {
   const { id } = useParams();
   const [location, navigate] = useLocation();
   const { toast } = useToast();
+  const { canAccessFinancialData } = useAuth();
   const invoiceCardRef = useRef<HTMLDivElement>(null);
   const [showReturnDialog, setShowReturnDialog] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +57,7 @@ const IMAGE_PURPOSE_CONFIG = {
 export default function ProductDetails() {
   const { id } = useParams();
   const [, navigate] = useLocation();
+  const { canAccessFinancialData } = useAuth();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   const { data: product, isLoading } = useQuery<any>({
@@ -272,20 +274,22 @@ export default function ProductDetails() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Profit Margin</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className={`text-3xl font-bold ${parseFloat(primaryMargin) > 30 ? 'text-green-600' : parseFloat(primaryMargin) > 15 ? 'text-yellow-600' : 'text-red-600'}`}>
-                {primaryMargin}%
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">Per unit</p>
-            </CardContent>
-          </Card>
+          {canAccessFinancialData && (
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Profit Margin</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className={`text-3xl font-bold ${parseFloat(primaryMargin) > 30 ? 'text-green-600' : parseFloat(primaryMargin) > 15 ? 'text-yellow-600' : 'text-red-600'}`}>
+                  {primaryMargin}%
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">Per unit</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
@@ -370,35 +374,37 @@ export default function ProductDetails() {
                 </div>
 
                 {/* Import Costs */}
-                <div>
-                  <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                    <Truck className="h-4 w-4" />
-                    Import Costs
-                  </h4>
-                  <div className="grid grid-cols-3 gap-2 text-sm">
-                    {product.importCostUsd && (
-                      <div className="p-2 rounded bg-blue-50 dark:bg-blue-950/30">
-                        <p className="text-muted-foreground text-xs">USD</p>
-                        <p className="font-semibold">${parseFloat(product.importCostUsd).toFixed(2)}</p>
-                      </div>
-                    )}
-                    {landingCostCzk > 0 && (
-                      <div className="p-2 rounded bg-blue-50 dark:bg-blue-950/30">
-                        <p className="text-muted-foreground text-xs">CZK</p>
-                        <p className="font-semibold">{formatCurrency(landingCostCzk, 'CZK')}</p>
-                      </div>
-                    )}
-                    {landingCostEur > 0 && (
-                      <div className="p-2 rounded bg-blue-50 dark:bg-blue-950/30">
-                        <p className="text-muted-foreground text-xs">EUR</p>
-                        <p className="font-semibold">{formatCurrency(landingCostEur, 'EUR')}</p>
-                      </div>
-                    )}
+                {canAccessFinancialData && (
+                  <div>
+                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                      <Truck className="h-4 w-4" />
+                      Import Costs
+                    </h4>
+                    <div className="grid grid-cols-3 gap-2 text-sm">
+                      {product.importCostUsd && (
+                        <div className="p-2 rounded bg-blue-50 dark:bg-blue-950/30">
+                          <p className="text-muted-foreground text-xs">USD</p>
+                          <p className="font-semibold">${parseFloat(product.importCostUsd).toFixed(2)}</p>
+                        </div>
+                      )}
+                      {landingCostCzk > 0 && (
+                        <div className="p-2 rounded bg-blue-50 dark:bg-blue-950/30">
+                          <p className="text-muted-foreground text-xs">CZK</p>
+                          <p className="font-semibold">{formatCurrency(landingCostCzk, 'CZK')}</p>
+                        </div>
+                      )}
+                      {landingCostEur > 0 && (
+                        <div className="p-2 rounded bg-blue-50 dark:bg-blue-950/30">
+                          <p className="text-muted-foreground text-xs">EUR</p>
+                          <p className="font-semibold">{formatCurrency(landingCostEur, 'EUR')}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Profit Margins */}
-                {(marginEur || marginCzk) && (
+                {canAccessFinancialData && (marginEur || marginCzk) && (
                   <div>
                     <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
                       <TrendingUp className="h-4 w-4" />
@@ -684,7 +690,7 @@ export default function ProductDetails() {
           )}
 
           {/* Cost History Chart */}
-          {costHistory.length > 0 && (
+          {canAccessFinancialData && costHistory.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
