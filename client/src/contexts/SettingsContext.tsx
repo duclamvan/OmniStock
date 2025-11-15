@@ -119,6 +119,13 @@ export interface OrderSettings {
   codFeePercentage?: number;
   codFeeFixedAmount?: number;
   requireCodSignature?: boolean;
+  defaultOrderLocation?: string;
+  autoAssignWarehouseByRegion?: boolean;
+  czechRepublicCarrier?: string;
+  europeanUnionCarrier?: string;
+  restOfWorldCarrier?: string;
+  enableLocationBasedRouting?: boolean;
+  preferNearestWarehouse?: boolean;
 }
 
 export interface ShippingSettings {
