@@ -9,6 +9,7 @@ import { useLanguageSync } from "@/hooks/useLanguageSync";
 import { Layout } from "@/components/Layout";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { SettingsProvider } from "@/contexts/SettingsContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import NotFound from "@/pages/not-found";
 // Removed Landing page import
 import Home from "@/pages/Home";
@@ -113,80 +114,202 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Layout>
-        <Route path="/" component={Home} />
-        <Route path="/orders">
-          {() => <AllOrders />}
+        <Route path="/">
+          {() => <ProtectedRoute requireAdmin><Home /></ProtectedRoute>}
         </Route>
-        <Route path="/orders/add" component={AddOrder} />
+        <Route path="/orders">
+          {() => <ProtectedRoute requireAdmin><AllOrders /></ProtectedRoute>}
+        </Route>
+        <Route path="/orders/add">
+          {() => <ProtectedRoute requireAdmin><AddOrder /></ProtectedRoute>}
+        </Route>
         <Route path="/orders/pick-pack" component={PickPack} />
         <Route path="/orders/to-fulfill">
-          {() => <AllOrders filter="to_fulfill" />}
+          {() => <ProtectedRoute requireAdmin><AllOrders filter="to_fulfill" /></ProtectedRoute>}
         </Route>
         <Route path="/orders/shipped">
-          {() => <AllOrders filter="shipped" />}
+          {() => <ProtectedRoute requireAdmin><AllOrders filter="shipped" /></ProtectedRoute>}
         </Route>
         <Route path="/orders/pay-later">
-          {() => <AllOrders filter="pay_later" />}
+          {() => <ProtectedRoute requireAdmin><AllOrders filter="pay_later" /></ProtectedRoute>}
         </Route>
-        <Route path="/orders/pre-orders" component={AllPreOrders} />
-        <Route path="/orders/pre-orders/add" component={AddPreOrder} />
-        <Route path="/orders/pre-orders/:id/edit" component={EditPreOrder} />
-        <Route path="/orders/pre-orders/:id" component={PreOrderDetails} />
-        <Route path="/orders/:id/edit" component={EditOrder} />
-        <Route path="/orders/:id" component={OrderDetails} />
-        <Route path="/inventory" component={AllInventory} />
-        <Route path="/inventory/products" component={AllInventory} />
-        <Route path="/inventory/categories" component={Categories} />
-        <Route path="/inventory/categories/add" component={AddCategory} />
-        <Route path="/inventory/categories/:id/edit" component={EditCategory} />
-        <Route path="/inventory/categories/:id" component={CategoryDetails} />
-        <Route path="/inventory/bundles" component={Bundles} />
-        <Route path="/inventory/bundles/create" component={CreateBundle} />
-        <Route path="/inventory/bundles/:id/edit" component={EditBundle} />
-        <Route path="/inventory/bundles/:id" component={BundleDetails} />
-        <Route path="/inventory/products/:id" component={ProductDetails} />
-        <Route path="/products/:id" component={ProductDetails} />
-        <Route path="/inventory/add" component={ProductForm} />
-        <Route path="/inventory/:id/edit" component={ProductForm} />
-        <Route path="/inventory/products/edit/:id" component={ProductForm} />
-        <Route path="/packing-materials" component={PackingMaterials} />
-        <Route path="/packing-materials/add" component={AddPackingMaterial} />
-        <Route path="/packing-materials/edit/:id" component={EditPackingMaterial} />
-        <Route path="/warehouses" component={AllWarehouses} />
-        <Route path="/warehouses/add" component={AddWarehouse} />
-        <Route path="/warehouses/map" component={WarehouseMap} />
-        <Route path="/warehouses/:id/mapping" component={WarehouseMap} />
-        <Route path="/warehouses/:id/map" component={WarehouseMapNew} />
-        <Route path="/warehouses/:id/edit" component={EditWarehouse} />
-        <Route path="/warehouses/:id" component={WarehouseDetails} />
-        <Route path="/discounts" component={AllDiscounts} />
-        <Route path="/discounts/add" component={AddDiscount} />
-        <Route path="/discounts/:id/edit" component={EditDiscount} />
-        <Route path="/customers" component={AllCustomers} />
-        <Route path="/customers/add" component={AddCustomer} />
-        <Route path="/customers/:id/edit" component={AddCustomer} />
-        <Route path="/customers/:id" component={CustomerDetails} />
-        <Route path="/suppliers" component={AllSuppliers} />
-        <Route path="/suppliers/new" component={AddSupplier} />
-        <Route path="/suppliers/:id/edit" component={EditSupplier} />
-        <Route path="/suppliers/:id" component={SupplierDetails} />
-        <Route path="/returns" component={AllReturns} />
-        <Route path="/returns/add" component={AddReturn} />
-        <Route path="/returns/:id/edit" component={EditReturn} />
-        <Route path="/returns/:id" component={ReturnDetails} />
-        <Route path="/expenses" component={AllExpenses} />
-        <Route path="/expenses/add" component={AddExpense} />
-        <Route path="/expenses/edit/:id" component={EditExpense} />
-        <Route path="/expenses/:id" component={ExpenseDetails} />
-        <Route path="/services" component={Services} />
-        <Route path="/services/add" component={AddService} />
-        <Route path="/services/:id/edit" component={AddService} />
-        <Route path="/services/:id" component={ServiceDetails} />
-        <Route path="/tickets" component={AllTickets} />
-        <Route path="/tickets/add" component={AddTicket} />
-        <Route path="/tickets/edit/:id" component={EditTicket} />
-        <Route path="/tickets/:id" component={TicketDetails} />
-        <Route path="/notifications" component={Notifications} />
+        <Route path="/orders/pre-orders">
+          {() => <ProtectedRoute requireAdmin><AllPreOrders /></ProtectedRoute>}
+        </Route>
+        <Route path="/orders/pre-orders/add">
+          {() => <ProtectedRoute requireAdmin><AddPreOrder /></ProtectedRoute>}
+        </Route>
+        <Route path="/orders/pre-orders/:id/edit">
+          {() => <ProtectedRoute requireAdmin><EditPreOrder /></ProtectedRoute>}
+        </Route>
+        <Route path="/orders/pre-orders/:id">
+          {() => <ProtectedRoute requireAdmin><PreOrderDetails /></ProtectedRoute>}
+        </Route>
+        <Route path="/orders/:id/edit">
+          {() => <ProtectedRoute requireAdmin><EditOrder /></ProtectedRoute>}
+        </Route>
+        <Route path="/orders/:id">
+          {() => <ProtectedRoute requireAdmin><OrderDetails /></ProtectedRoute>}
+        </Route>
+        <Route path="/inventory">
+          {() => <ProtectedRoute requireAdmin><AllInventory /></ProtectedRoute>}
+        </Route>
+        <Route path="/inventory/products">
+          {() => <ProtectedRoute requireAdmin><AllInventory /></ProtectedRoute>}
+        </Route>
+        <Route path="/inventory/categories">
+          {() => <ProtectedRoute requireAdmin><Categories /></ProtectedRoute>}
+        </Route>
+        <Route path="/inventory/categories/add">
+          {() => <ProtectedRoute requireAdmin><AddCategory /></ProtectedRoute>}
+        </Route>
+        <Route path="/inventory/categories/:id/edit">
+          {() => <ProtectedRoute requireAdmin><EditCategory /></ProtectedRoute>}
+        </Route>
+        <Route path="/inventory/categories/:id">
+          {() => <ProtectedRoute requireAdmin><CategoryDetails /></ProtectedRoute>}
+        </Route>
+        <Route path="/inventory/bundles">
+          {() => <ProtectedRoute requireAdmin><Bundles /></ProtectedRoute>}
+        </Route>
+        <Route path="/inventory/bundles/create">
+          {() => <ProtectedRoute requireAdmin><CreateBundle /></ProtectedRoute>}
+        </Route>
+        <Route path="/inventory/bundles/:id/edit">
+          {() => <ProtectedRoute requireAdmin><EditBundle /></ProtectedRoute>}
+        </Route>
+        <Route path="/inventory/bundles/:id">
+          {() => <ProtectedRoute requireAdmin><BundleDetails /></ProtectedRoute>}
+        </Route>
+        <Route path="/inventory/products/:id">
+          {() => <ProtectedRoute requireAdmin><ProductDetails /></ProtectedRoute>}
+        </Route>
+        <Route path="/products/:id">
+          {() => <ProtectedRoute requireAdmin><ProductDetails /></ProtectedRoute>}
+        </Route>
+        <Route path="/inventory/add">
+          {() => <ProtectedRoute requireAdmin><ProductForm /></ProtectedRoute>}
+        </Route>
+        <Route path="/inventory/:id/edit">
+          {() => <ProtectedRoute requireAdmin><ProductForm /></ProtectedRoute>}
+        </Route>
+        <Route path="/inventory/products/edit/:id">
+          {() => <ProtectedRoute requireAdmin><ProductForm /></ProtectedRoute>}
+        </Route>
+        <Route path="/packing-materials">
+          {() => <ProtectedRoute requireAdmin><PackingMaterials /></ProtectedRoute>}
+        </Route>
+        <Route path="/packing-materials/add">
+          {() => <ProtectedRoute requireAdmin><AddPackingMaterial /></ProtectedRoute>}
+        </Route>
+        <Route path="/packing-materials/edit/:id">
+          {() => <ProtectedRoute requireAdmin><EditPackingMaterial /></ProtectedRoute>}
+        </Route>
+        <Route path="/warehouses">
+          {() => <ProtectedRoute requireAdmin><AllWarehouses /></ProtectedRoute>}
+        </Route>
+        <Route path="/warehouses/add">
+          {() => <ProtectedRoute requireAdmin><AddWarehouse /></ProtectedRoute>}
+        </Route>
+        <Route path="/warehouses/map">
+          {() => <ProtectedRoute requireAdmin><WarehouseMap /></ProtectedRoute>}
+        </Route>
+        <Route path="/warehouses/:id/mapping">
+          {() => <ProtectedRoute requireAdmin><WarehouseMap /></ProtectedRoute>}
+        </Route>
+        <Route path="/warehouses/:id/map">
+          {() => <ProtectedRoute requireAdmin><WarehouseMapNew /></ProtectedRoute>}
+        </Route>
+        <Route path="/warehouses/:id/edit">
+          {() => <ProtectedRoute requireAdmin><EditWarehouse /></ProtectedRoute>}
+        </Route>
+        <Route path="/warehouses/:id">
+          {() => <ProtectedRoute requireAdmin><WarehouseDetails /></ProtectedRoute>}
+        </Route>
+        <Route path="/discounts">
+          {() => <ProtectedRoute requireAdmin><AllDiscounts /></ProtectedRoute>}
+        </Route>
+        <Route path="/discounts/add">
+          {() => <ProtectedRoute requireAdmin><AddDiscount /></ProtectedRoute>}
+        </Route>
+        <Route path="/discounts/:id/edit">
+          {() => <ProtectedRoute requireAdmin><EditDiscount /></ProtectedRoute>}
+        </Route>
+        <Route path="/customers">
+          {() => <ProtectedRoute requireAdmin><AllCustomers /></ProtectedRoute>}
+        </Route>
+        <Route path="/customers/add">
+          {() => <ProtectedRoute requireAdmin><AddCustomer /></ProtectedRoute>}
+        </Route>
+        <Route path="/customers/:id/edit">
+          {() => <ProtectedRoute requireAdmin><AddCustomer /></ProtectedRoute>}
+        </Route>
+        <Route path="/customers/:id">
+          {() => <ProtectedRoute requireAdmin><CustomerDetails /></ProtectedRoute>}
+        </Route>
+        <Route path="/suppliers">
+          {() => <ProtectedRoute requireAdmin><AllSuppliers /></ProtectedRoute>}
+        </Route>
+        <Route path="/suppliers/new">
+          {() => <ProtectedRoute requireAdmin><AddSupplier /></ProtectedRoute>}
+        </Route>
+        <Route path="/suppliers/:id/edit">
+          {() => <ProtectedRoute requireAdmin><EditSupplier /></ProtectedRoute>}
+        </Route>
+        <Route path="/suppliers/:id">
+          {() => <ProtectedRoute requireAdmin><SupplierDetails /></ProtectedRoute>}
+        </Route>
+        <Route path="/returns">
+          {() => <ProtectedRoute requireAdmin><AllReturns /></ProtectedRoute>}
+        </Route>
+        <Route path="/returns/add">
+          {() => <ProtectedRoute requireAdmin><AddReturn /></ProtectedRoute>}
+        </Route>
+        <Route path="/returns/:id/edit">
+          {() => <ProtectedRoute requireAdmin><EditReturn /></ProtectedRoute>}
+        </Route>
+        <Route path="/returns/:id">
+          {() => <ProtectedRoute requireAdmin><ReturnDetails /></ProtectedRoute>}
+        </Route>
+        <Route path="/expenses">
+          {() => <ProtectedRoute requireAdmin><AllExpenses /></ProtectedRoute>}
+        </Route>
+        <Route path="/expenses/add">
+          {() => <ProtectedRoute requireAdmin><AddExpense /></ProtectedRoute>}
+        </Route>
+        <Route path="/expenses/edit/:id">
+          {() => <ProtectedRoute requireAdmin><EditExpense /></ProtectedRoute>}
+        </Route>
+        <Route path="/expenses/:id">
+          {() => <ProtectedRoute requireAdmin><ExpenseDetails /></ProtectedRoute>}
+        </Route>
+        <Route path="/services">
+          {() => <ProtectedRoute requireAdmin><Services /></ProtectedRoute>}
+        </Route>
+        <Route path="/services/add">
+          {() => <ProtectedRoute requireAdmin><AddService /></ProtectedRoute>}
+        </Route>
+        <Route path="/services/:id/edit">
+          {() => <ProtectedRoute requireAdmin><AddService /></ProtectedRoute>}
+        </Route>
+        <Route path="/services/:id">
+          {() => <ProtectedRoute requireAdmin><ServiceDetails /></ProtectedRoute>}
+        </Route>
+        <Route path="/tickets">
+          {() => <ProtectedRoute requireAdmin><AllTickets /></ProtectedRoute>}
+        </Route>
+        <Route path="/tickets/add">
+          {() => <ProtectedRoute requireAdmin><AddTicket /></ProtectedRoute>}
+        </Route>
+        <Route path="/tickets/edit/:id">
+          {() => <ProtectedRoute requireAdmin><EditTicket /></ProtectedRoute>}
+        </Route>
+        <Route path="/tickets/:id">
+          {() => <ProtectedRoute requireAdmin><TicketDetails /></ProtectedRoute>}
+        </Route>
+        <Route path="/notifications">
+          {() => <ProtectedRoute requireAdmin><Notifications /></ProtectedRoute>}
+        </Route>
         <Route path="/stock" component={StockLookup} />
         <Route path="/stock/approvals" component={StockAdjustmentApprovals} />
         <Route path="/stock/over-allocated" component={OverAllocated} />
@@ -194,16 +317,30 @@ function Router() {
         <Route path="/pos" component={POS} />
         <Route path="/shipping" component={ShippingManagement} />
         <Route path="/shipping/labels" component={ShipmentLabels} />
-        <Route path="/files" component={Files} />
+        <Route path="/files">
+          {() => <ProtectedRoute requireAdmin><Files /></ProtectedRoute>}
+        </Route>
         {/* Import Management Routes */}
-        <Route path="/imports/kanban" component={ImportKanbanDashboard} />
-        <Route path="/purchase-orders/create" component={CreatePurchase} />
-        <Route path="/purchase-orders/edit/:id" component={CreatePurchase} />
-        <Route path="/purchase-orders" component={SupplierProcessing} />
-        <Route path="/consolidation" component={AtWarehouse} />
-        <Route path="/imports/international-transit" component={InternationalTransit} />
+        <Route path="/imports/kanban">
+          {() => <ProtectedRoute requireAdmin><ImportKanbanDashboard /></ProtectedRoute>}
+        </Route>
+        <Route path="/purchase-orders/create">
+          {() => <ProtectedRoute requireAdmin><CreatePurchase /></ProtectedRoute>}
+        </Route>
+        <Route path="/purchase-orders/edit/:id">
+          {() => <ProtectedRoute requireAdmin><CreatePurchase /></ProtectedRoute>}
+        </Route>
+        <Route path="/purchase-orders">
+          {() => <ProtectedRoute requireAdmin><SupplierProcessing /></ProtectedRoute>}
+        </Route>
+        <Route path="/consolidation">
+          {() => <ProtectedRoute requireAdmin><AtWarehouse /></ProtectedRoute>}
+        </Route>
+        <Route path="/imports/international-transit">
+          {() => <ProtectedRoute requireAdmin><InternationalTransit /></ProtectedRoute>}
+        </Route>
         <Route path="/imports">
-          {() => <ImportKanbanDashboard />}
+          {() => <ProtectedRoute requireAdmin><ImportKanbanDashboard /></ProtectedRoute>}
         </Route>
         {/* Receiving Routes */}
         <Route path="/receiving" component={ReceivingList} />
@@ -214,24 +351,56 @@ function Router() {
         <Route path="/receiving/details/:id" component={ReceiptDetails} />
         <Route path="/receiving/approve/:id" component={ReviewApprove} />
         {/* Reports Routes */}
-        <Route path="/reports/custom" component={CustomReport} />
-        <Route path="/reports/financial" component={ReportsIndex} />
-        <Route path="/reports/sales" component={ReportsIndex} />
-        <Route path="/reports/inventory" component={ReportsIndex} />
-        <Route path="/reports/customers" component={ReportsIndex} />
-        <Route path="/reports/orders" component={ReportsIndex} />
-        <Route path="/reports/expenses" component={ReportsIndex} />
-        <Route path="/reports" component={ReportsIndex} />
+        <Route path="/reports/custom">
+          {() => <ProtectedRoute requireAdmin><CustomReport /></ProtectedRoute>}
+        </Route>
+        <Route path="/reports/financial">
+          {() => <ProtectedRoute requireAdmin><ReportsIndex /></ProtectedRoute>}
+        </Route>
+        <Route path="/reports/sales">
+          {() => <ProtectedRoute requireAdmin><ReportsIndex /></ProtectedRoute>}
+        </Route>
+        <Route path="/reports/inventory">
+          {() => <ProtectedRoute requireAdmin><ReportsIndex /></ProtectedRoute>}
+        </Route>
+        <Route path="/reports/customers">
+          {() => <ProtectedRoute requireAdmin><ReportsIndex /></ProtectedRoute>}
+        </Route>
+        <Route path="/reports/orders">
+          {() => <ProtectedRoute requireAdmin><ReportsIndex /></ProtectedRoute>}
+        </Route>
+        <Route path="/reports/expenses">
+          {() => <ProtectedRoute requireAdmin><ReportsIndex /></ProtectedRoute>}
+        </Route>
+        <Route path="/reports">
+          {() => <ProtectedRoute requireAdmin><ReportsIndex /></ProtectedRoute>}
+        </Route>
         {/* Settings Routes */}
-        <Route path="/settings" component={Settings} />
-        <Route path="/settings/general" component={Settings} />
-        <Route path="/settings/shipping" component={Settings} />
-        <Route path="/settings/orders" component={Settings} />
-        <Route path="/settings/financial" component={Settings} />
-        <Route path="/settings/inventory" component={Settings} />
-        <Route path="/settings/system" component={Settings} />
+        <Route path="/settings">
+          {() => <ProtectedRoute requireAdmin><Settings /></ProtectedRoute>}
+        </Route>
+        <Route path="/settings/general">
+          {() => <ProtectedRoute requireAdmin><Settings /></ProtectedRoute>}
+        </Route>
+        <Route path="/settings/shipping">
+          {() => <ProtectedRoute requireAdmin><Settings /></ProtectedRoute>}
+        </Route>
+        <Route path="/settings/orders">
+          {() => <ProtectedRoute requireAdmin><Settings /></ProtectedRoute>}
+        </Route>
+        <Route path="/settings/financial">
+          {() => <ProtectedRoute requireAdmin><Settings /></ProtectedRoute>}
+        </Route>
+        <Route path="/settings/inventory">
+          {() => <ProtectedRoute requireAdmin><Settings /></ProtectedRoute>}
+        </Route>
+        <Route path="/settings/system">
+          {() => <ProtectedRoute requireAdmin><Settings /></ProtectedRoute>}
+        </Route>
         {/* User Management Route */}
-        <Route path="/user-management" component={UserManagement} />
+        <Route path="/user-management">
+          {() => <ProtectedRoute requireAdmin><UserManagement /></ProtectedRoute>}
+        </Route>
       </Layout>
       <Route component={NotFound} />
     </Switch>
