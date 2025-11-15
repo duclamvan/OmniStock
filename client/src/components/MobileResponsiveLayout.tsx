@@ -64,6 +64,7 @@ import { GlobalSearch } from '@/components/GlobalSearch';
 import { MobileHeader } from '@/components/MobileHeader';
 import { ChevronRight as BreadcrumbChevron, Home } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useAuth } from '@/hooks/useAuth.tsx';
 
 interface MobileResponsiveLayoutProps {
   children: React.ReactNode;
@@ -166,6 +167,7 @@ function getLocalStorageNumber(key: string, defaultValue: number): number {
 
 export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps) {
   const [location] = useLocation();
+  const { isAdministrator, isWarehouseOperator } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const desktopNavRef = useRef<HTMLDivElement>(null);
   const mobileNavRef = useRef<HTMLDivElement>(null);
@@ -476,9 +478,21 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
             { name: "System", href: "/settings/system" },
           ],
         },
+        {
+          name: "User Management",
+          href: "/user-management",
+          icon: Users,
+          color: "text-indigo-600 dark:text-indigo-400",
+          description: "Manage Users & Roles"
+        },
       ]
     }
   ];
+
+  // Filter navigation based on user role
+  const filteredNavigation = isWarehouseOperator 
+    ? navigation.filter(section => section.name === "Warehouse Operations")
+    : navigation; // Admins see everything
 
   // Automatically open parent menus when location changes (without scrolling)
   useEffect(() => {
@@ -490,7 +504,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
     
     // Find parent menus that should be open based on current location
     const activeParentMenus: string[] = [];
-    navigation.forEach(section => {
+    filteredNavigation.forEach(section => {
       section.items?.forEach(item => {
         if (item.children) {
           const hasActiveChild = item.children.some(child => child.href === location);
@@ -512,7 +526,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
 
   const NavLinks = ({ collapsed = false }: { collapsed?: boolean }) => (
     <>
-      {navigation.map((section, sectionIdx) => {
+      {filteredNavigation.map((section, sectionIdx) => {
         const isSectionOpen = openSections.includes(section.name);
         
         return (
