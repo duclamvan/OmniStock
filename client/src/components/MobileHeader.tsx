@@ -46,6 +46,12 @@ export function MobileHeader({
   });
   const unreadCount = unreadData?.count || 0;
   
+  // Fetch recent notifications for dropdown
+  const { data: notifications = [] } = useQuery<any[]>({
+    queryKey: ['/api/notifications'],
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+  
   // Determine if header should be collapsed
   const isCollapsed = scrollDir === 'down' && isPastThreshold && !isAtTop && !isSearchExpanded;
   
@@ -160,22 +166,95 @@ export function MobileHeader({
 
         {/* Right: Actions */}
         <div className="flex items-center gap-1 flex-shrink-0">
-          {/* Notifications */}
-          <Link href="/notifications">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="relative h-10 w-10 hover:bg-gray-100 dark:hover:bg-gray-800"
-              data-testid="button-notifications"
-            >
-              <Bell className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 dark:bg-red-600 text-white text-xs rounded-full flex items-center justify-center font-semibold shadow-sm">
-                  {unreadCount}
-                </span>
+          {/* Notifications Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="relative h-10 w-10 hover:bg-gray-100 dark:hover:bg-gray-800"
+                data-testid="button-notifications"
+              >
+                <Bell className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 dark:bg-red-600 text-white text-xs rounded-full flex items-center justify-center font-semibold shadow-sm">
+                    {unreadCount}
+                  </span>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80 bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Notifications</span>
+                  {unreadCount > 0 && (
+                    <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-2 py-0.5 rounded-full font-medium">
+                      {unreadCount} new
+                    </span>
+                  )}
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
+              
+              {/* Recent Notifications (max 5) */}
+              <div className="max-h-96 overflow-y-auto">
+                {notifications && notifications.length > 0 ? (
+                  <>
+                    {notifications.slice(0, 5).map((notification: any) => (
+                      <DropdownMenuItem 
+                        key={notification.id}
+                        className="flex flex-col items-start p-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer focus:bg-gray-100 dark:focus:bg-gray-700"
+                        data-testid={`notification-item-${notification.id}`}
+                      >
+                        <div className="flex items-start gap-2 w-full">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                              {notification.title}
+                            </p>
+                            {notification.description && (
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 line-clamp-2">
+                                {notification.description}
+                              </p>
+                            )}
+                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                              {new Date(notification.createdAt).toLocaleDateString(undefined, {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </div>
+                          {!notification.isRead && (
+                            <div className="h-2 w-2 bg-blue-500 dark:bg-blue-400 rounded-full flex-shrink-0 mt-1" />
+                          )}
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                  </>
+                ) : (
+                  <div className="p-4 text-center">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No notifications</p>
+                  </div>
+                )}
+              </div>
+              
+              {/* View All Link */}
+              {notifications && notifications.length > 0 && (
+                <>
+                  <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
+                  <Link href="/notifications">
+                    <DropdownMenuItem 
+                      className="justify-center text-blue-600 dark:text-blue-400 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                      data-testid="link-notifications-view-all"
+                    >
+                      View All Notifications
+                    </DropdownMenuItem>
+                  </Link>
+                </>
               )}
-            </Button>
-          </Link>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* User Menu */}
           <DropdownMenu>
