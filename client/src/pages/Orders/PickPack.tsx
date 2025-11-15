@@ -12302,72 +12302,84 @@ export default function PickPack() {
       {/* Main Content - Mobile Optimized */}
       <div className="px-3 sm:px-6 pb-6 pt-4">
         <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v as any)}>
-          {/* Optimized responsive tabs - compact layout to prevent overflow */}
-          <TabsList className="grid grid-cols-5 w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-700 p-1 sm:p-2 gap-1 sm:gap-2 shadow-sm rounded-lg">
+          {/* Optimized responsive tabs - consistent height with labels and counts */}
+          <TabsList className="grid grid-cols-5 w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-700 p-1.5 sm:p-2 gap-1 sm:gap-2 shadow-sm rounded-lg max-w-full mx-auto sm:max-w-3xl">
             <TabsTrigger 
               value="overview" 
-              className="flex flex-col items-center justify-center gap-1 sm:gap-1.5 py-2 px-1 sm:py-3 sm:px-2 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation"
+              className="flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation min-h-[60px] sm:min-h-[72px]"
               data-testid="tab-overview"
             >
-              <BarChart3 className="h-3.5 w-3.5 sm:h-5 sm:w-5 flex-shrink-0" />
-              <span className="text-[8px] sm:text-xs font-medium leading-none">
-                All
-              </span>
-              <span className="text-[11px] sm:text-sm font-bold leading-none">
-                {stats.pending + stats.picking + stats.packing + stats.ready}
-              </span>
+              <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
+              <div className="flex flex-col items-center gap-0">
+                <span className="text-[9px] sm:text-xs font-medium leading-tight">
+                  <span className="sm:hidden">All</span>
+                  <span className="hidden sm:inline">Overview</span>
+                </span>
+                <span className="text-xs sm:text-sm font-bold">
+                  {stats.pending + stats.picking + stats.packing + stats.ready}
+                </span>
+              </div>
             </TabsTrigger>
             <TabsTrigger 
               value="pending" 
-              className="flex flex-col items-center justify-center gap-1 sm:gap-1.5 py-2 px-1 sm:py-3 sm:px-2 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-orange-600 dark:data-[state=active]:text-orange-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-orange-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation"
+              className="flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-orange-600 dark:data-[state=active]:text-orange-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-orange-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation min-h-[60px] sm:min-h-[72px]"
               data-testid="tab-pending"
             >
-              <Clock className="h-3.5 w-3.5 sm:h-5 sm:w-5 flex-shrink-0" />
-              <span className="text-[8px] sm:text-xs font-medium leading-none">
-                Pend
-              </span>
-              <span className={`text-[11px] sm:text-sm font-bold leading-none ${animatingCounters.has('pending') ? 'animate-bounce-count' : ''}`}>
-                {stats.pending}
-              </span>
+              <Clock className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
+              <div className="flex flex-col items-center gap-0">
+                <span className="text-[9px] sm:text-xs font-medium leading-tight">
+                  <span className="sm:hidden">Pend</span>
+                  <span className="hidden sm:inline">Pending</span>
+                </span>
+                <span className={`text-xs sm:text-sm font-bold ${animatingCounters.has('pending') ? 'animate-bounce-count' : ''}`}>
+                  {stats.pending}
+                </span>
+              </div>
             </TabsTrigger>
             <TabsTrigger 
               value="picking" 
-              className="flex flex-col items-center justify-center gap-1 sm:gap-1.5 py-2 px-1 sm:py-3 sm:px-2 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation"
+              className="flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation min-h-[60px] sm:min-h-[72px]"
               data-testid="tab-picking"
             >
-              <Package className="h-3.5 w-3.5 sm:h-5 sm:w-5 flex-shrink-0" />
-              <span className="text-[8px] sm:text-xs font-medium leading-none">
-                Pick
-              </span>
-              <span className={`text-[11px] sm:text-sm font-bold leading-none ${animatingCounters.has('picking') ? 'animate-bounce-count' : ''}`}>
-                {stats.picking}
-              </span>
+              <Package className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
+              <div className="flex flex-col items-center gap-0">
+                <span className="text-[9px] sm:text-xs font-medium leading-tight">
+                  <span className="sm:hidden">Pick</span>
+                  <span className="hidden sm:inline">Picking</span>
+                </span>
+                <span className={`text-xs sm:text-sm font-bold ${animatingCounters.has('picking') ? 'animate-bounce-count' : ''}`}>
+                  {stats.picking}
+                </span>
+              </div>
             </TabsTrigger>
             <TabsTrigger 
               value="packing" 
-              className="flex flex-col items-center justify-center gap-1 sm:gap-1.5 py-2 px-1 sm:py-3 sm:px-2 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-purple-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation"
+              className="flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-purple-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation min-h-[60px] sm:min-h-[72px]"
               data-testid="tab-packing"
             >
-              <Box className="h-3.5 w-3.5 sm:h-5 sm:w-5 flex-shrink-0" />
-              <span className="text-[8px] sm:text-xs font-medium leading-none">
-                Pack
-              </span>
-              <span className={`text-[11px] sm:text-sm font-bold leading-none ${animatingCounters.has('packing') ? 'animate-bounce-count' : ''}`}>
-                {stats.packing}
-              </span>
+              <Box className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
+              <div className="flex flex-col items-center gap-0">
+                <span className="text-[9px] sm:text-xs font-medium leading-tight">
+                  <span className="sm:hidden">Pack</span>
+                  <span className="hidden sm:inline">Packing</span>
+                </span>
+                <span className={`text-xs sm:text-sm font-bold ${animatingCounters.has('packing') ? 'animate-bounce-count' : ''}`}>
+                  {stats.packing}
+                </span>
+              </div>
             </TabsTrigger>
             <TabsTrigger 
               value="ready" 
-              className="flex flex-col items-center justify-center gap-1 sm:gap-1.5 py-2 px-1 sm:py-3 sm:px-2 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-green-600 dark:data-[state=active]:text-green-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-green-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation"
+              className="flex flex-col items-center justify-center gap-0.5 sm:gap-1 py-2.5 px-1 sm:py-4 sm:px-3 text-[10px] sm:text-sm font-semibold bg-gray-50 dark:bg-slate-800 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-green-600 dark:data-[state=active]:text-green-400 data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-green-500 rounded-md sm:rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-slate-700 data-[state=active]:hover:bg-white dark:data-[state=active]:hover:bg-slate-900 touch-manipulation min-h-[60px] sm:min-h-[72px]"
               data-testid="tab-ready"
             >
-              <Truck className="h-3.5 w-3.5 sm:h-5 sm:w-5 flex-shrink-0" />
-              <span className="text-[8px] sm:text-xs font-medium leading-none">
-                Ready
-              </span>
-              <span className={`text-[11px] sm:text-sm font-bold leading-none ${animatingCounters.has('ready') ? 'animate-bounce-count' : ''}`}>
-                {stats.ready}
-              </span>
+              <Truck className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mb-0.5" />
+              <div className="flex flex-col items-center gap-0">
+                <span className="text-[9px] sm:text-xs font-medium leading-tight">Ready</span>
+                <span className={`text-xs sm:text-sm font-bold ${animatingCounters.has('ready') ? 'animate-bounce-count' : ''}`}>
+                  {stats.ready}
+                </span>
+              </div>
             </TabsTrigger>
           </TabsList>
 
