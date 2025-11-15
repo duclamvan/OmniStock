@@ -91,6 +91,7 @@ import ReportsIndex from "@/pages/Reports";
 import CustomReport from "@/pages/Reports/CustomReport";
 import Settings from "@/pages/Settings";
 import UserManagement from "@/pages/UserManagement";
+import Profile from "@/pages/Profile";
 import StockLookup from "@/pages/Stock/StockLookup";
 import StockAdjustmentApprovals from "@/pages/Stock/StockAdjustmentApprovals";
 import OverAllocated from "@/pages/Stock/OverAllocated";
@@ -375,6 +376,8 @@ function Router() {
         <Route path="/reports">
           {() => <ProtectedRoute requireAdmin><ReportsIndex /></ProtectedRoute>}
         </Route>
+        {/* Profile Route - Accessible to all authenticated users */}
+        <Route path="/profile" component={Profile} />
         {/* Settings Routes */}
         <Route path="/settings">
           {() => <ProtectedRoute requireAdmin><Settings /></ProtectedRoute>}
