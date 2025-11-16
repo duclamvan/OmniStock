@@ -5,13 +5,13 @@ import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { nanoid } from "nanoid";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Popover,
   PopoverContent,
@@ -64,39 +64,10 @@ import {
   Upload,
   ImagePlus,
   Trash2,
-  Loader2,
-  Warehouse
+  Loader2
 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
-
-// Photo type with unique ID for safe concurrent deletion
-type PhotoData = {
-  id: string; // Unique ID for safe deletion
-  compressed: string;
-  thumbnail: string;
-  originalSize?: number;
-} | string; // Keep string for backward compatibility
-
-// Generate a stable ID for legacy string photos using hash
-const generateLegacyPhotoId = (photoString: string): string => {
-  // Use simple hash function for browser environment - stable and deterministic
-  let hash = 0;
-  for (let i = 0; i < Math.min(photoString.length, 100); i++) {
-    const char = photoString.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  return 'legacy_' + Math.abs(hash).toString(36).substring(0, 10);
-};
-
-// Get the ID from a photo (handles both new and legacy formats)
-const getPhotoId = (photo: PhotoData): string => {
-  if (typeof photo === 'string') {
-    return generateLegacyPhotoId(photo);
-  }
-  return photo.id;
-};
 
 interface ReceivingItem {
   id: string;
@@ -153,7 +124,7 @@ const fetchProductLocations = async (productId: string): Promise<string[]> => {
     
     return locations.map((loc: any) => loc.locationCode).filter(Boolean);
   } catch (error) {
-    console.info(`Product locations API call failed for product ${productId}, showing TBA:`, (error as any).message);
+    console.info(`Product locations API call failed for product ${productId}, showing TBA:`, error.message);
     return [];
   }
 };
@@ -190,10 +161,11 @@ const LazyImage = ({
   );
 };
 
-export default function ContinueReceiving() {
+export default function StartReceiving() {
   const { id } = useParams();
   const [location, navigate] = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth(); // Get current user for auto-populating "Received By"
   const barcodeRef = useRef<HTMLInputElement>(null);
   const lastSaveDataRef = useRef<any>(null); // Fix missing ref error for world-record speed
   const dataInitializedRef = useRef<string>(''); // Prevent double initialization - stores data key
@@ -201,6 +173,7 @@ export default function ContinueReceiving() {
   const updateTimerRef = useRef<NodeJS.Timeout | null>(null); // Timer for debounced updates
   const isInitialLoadRef = useRef<boolean>(true); // Track if we're in the initial load phase
   const prefilledDataProcessedRef = useRef<boolean>(false); // Track if prefilled data has been processed
+  const receivedByAutoPopulatedRef = useRef<boolean>(false); // Track if receivedBy has been auto-populated
   
   // Handle back navigation with proper query invalidation
   const handleBackNavigation = useCallback(() => {
@@ -208,25 +181,39 @@ export default function ContinueReceiving() {
     queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
     queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
     queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/receiving'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] }); // Refresh To Receive tab
     navigate('/receiving');
   }, [id, navigate]);
   
-  // Form state
-  const [receivedBy, setReceivedBy] = useState("Employee #1");
+  // Form state - Auto-populate "Received By" with current user's name or email
+  const [receivedBy, setReceivedBy] = useState(() => {
+    if (user) {
+      return user.name || user.email || "Employee #1";
+    }
+    return "Employee #1";
+  });
   const [carrier, setCarrier] = useState("");
   const [parcelCount, setParcelCount] = useState(1);
   const [scannedParcels, setScannedParcels] = useState(0);
   const [receivingItems, setReceivingItems] = useState<ReceivingItem[]>([]);
   const [notes, setNotes] = useState("");
   const [scannedTrackingNumbers, setScannedTrackingNumbers] = useState<string[]>([]);
+  // Photo type for backward compatibility
+  type PhotoData = {
+    id: string;
+    compressed: string;
+    thumbnail: string;
+    originalSize?: number;
+  } | string; // Keep string for backward compatibility
+  
   const [uploadedPhotos, setUploadedPhotos] = useState<PhotoData[]>([]);
-  const [deletingPhotoIds, setDeletingPhotoIds] = useState<Set<string>>(new Set()); // Track photos being deleted
   const [photosLoading, setPhotosLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const photoProcessingRef = useRef<boolean>(false);
   const photoUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
   const pendingPhotoUpdatesRef = useRef<PhotoData[]>([]);
+  const itemPhotoInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   
   // UI state
   const [currentStep, setCurrentStep] = useState(1);
@@ -328,7 +315,9 @@ export default function ContinueReceiving() {
         parcelCount: receiptData.parcelCount,
         notes: receiptData.notes
       });
-      setReceivedBy(receiptData.receivedBy || "Employee #1");
+      // Auto-populate receivedBy with current user if receipt doesn't have one
+      const defaultReceivedBy = user?.name || user?.email || "Employee #1";
+      setReceivedBy(receiptData.receivedBy || defaultReceivedBy);
       setCarrier(receiptData.carrier || shipment.endCarrier || shipment.carrier || "");
       setParcelCount(receiptData.parcelCount || shipment.totalUnits || 1);
       
@@ -685,7 +674,6 @@ export default function ContinueReceiving() {
       if (!receiptId) {
         const autoSaveData = {
           shipmentId: shipment?.id,
-          consolidationId: shipment?.consolidationId,
           receivedBy: receivedBy || "Employee #1",
           carrier: carrier || shipment?.carrier || "",
           parcelCount: parcelCount || shipment?.totalUnits || 1,
@@ -705,7 +693,7 @@ export default function ContinueReceiving() {
           }
         } catch (autoSaveError) {
           console.error('Auto-save failed:', autoSaveError);
-          throw new Error('Failed to create receipt: ' + (autoSaveError as Error).message);
+          throw new Error('Failed to create receipt: ' + autoSaveError.message);
         }
       }
       
@@ -726,10 +714,6 @@ export default function ContinueReceiving() {
         description: "Failed to save quantity update. Please try again.",
         variant: "destructive"
       });
-    },
-    onSuccess: () => {
-      // Invalidate storage query for real-time updates
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/storage'] });
     }
   });
   
@@ -754,10 +738,6 @@ export default function ContinueReceiving() {
     onError: (error, variables) => {
       console.error('Item update failed:', error);
       // Error handling is done in the calling function
-    },
-    onSuccess: () => {
-      // Invalidate storage query for real-time updates
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/storage'] });
     }
   });
   
@@ -846,7 +826,7 @@ export default function ContinueReceiving() {
           }
           
           // Play success sound
-          soundEffects.playSuccessBeep();
+          soundEffects.playSuccessSound();
           
           // Show toast notification
           toast({
@@ -955,42 +935,22 @@ export default function ContinueReceiving() {
   const handleBarcodeScan = async (value: string) => {
     if (currentStep === 1) {
       // Step 1: Scanning parcel barcodes
-      // Validate tracking number
-      const trimmedValue = value.trim();
-      if (trimmedValue.length === 0 || trimmedValue.length > 100) {
-        await soundEffects.playErrorBeep();
-        setScanFeedback({ type: 'error', message: 'Invalid tracking number length' });
-        setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
-        const { dismiss } = toast({
-          title: "Invalid Tracking Number",
-          description: "Tracking number must be between 1-100 characters",
-          variant: "destructive"
-        });
-        setTimeout(() => dismiss(), 3000);
-        setBarcodeScan("");
-        return;
-      }
-      
-      // Check if tracking number already scanned (case-insensitive)
-      const isDuplicate = scannedTrackingNumbers.some(
-        existing => existing.toLowerCase() === trimmedValue.toLowerCase()
-      );
-      
-      if (isDuplicate) {
+      // Check if tracking number already scanned
+      if (scannedTrackingNumbers.includes(value)) {
         await soundEffects.playDuplicateBeep();
-        setScanFeedback({ type: 'duplicate', message: `Already scanned: ${trimmedValue}` });
+        setScanFeedback({ type: 'duplicate', message: `Already scanned: ${value}` });
         setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
-        const { dismiss } = toast({
+        toast({
           title: "Already Scanned",
-          description: `Tracking number ${trimmedValue} has already been scanned`,
-          variant: "destructive"
+          description: `Tracking number ${value} has already been scanned`,
+          variant: "destructive",
+          duration: 3000
         });
-        setTimeout(() => dismiss(), 3000);
         setBarcodeScan("");
         return;
       }
       
-      const newTrackingNumbers = [...scannedTrackingNumbers, trimmedValue];
+      const newTrackingNumbers = [...scannedTrackingNumbers, value];
       // Always use actual tracking numbers count
       const newCount = Math.min(newTrackingNumbers.length, parcelCount);
       setScannedTrackingNumbers(newTrackingNumbers);
@@ -1015,7 +975,7 @@ export default function ContinueReceiving() {
       updateMetaMutation.mutate({ field: 'scannedParcels', value: newCount }, {
         onSuccess: () => {
           // Add tracking number
-          updateTrackingMutation.mutate({ action: 'add', trackingNumber: trimmedValue });
+          updateTrackingMutation.mutate({ action: 'add', trackingNumber: value });
           setSaveStatus('saved');
           setTimeout(() => setSaveStatus('idle'), 1000);
         }
@@ -1307,7 +1267,7 @@ export default function ContinueReceiving() {
     if (!item) return;
     
     // Calculate damaged quantity accounting for existing missing qty
-    const currentMissingQty = item.missingQty || 0;
+    const currentMissingQty = (item as any).missingQty || 0;
     // Clamp damaged qty to remaining available units (expectedQty - currentMissingQty)
     const damagedQty = Math.min(qty, item.expectedQty - currentMissingQty);
     // Received = Expected - Damaged - Missing
@@ -1389,7 +1349,7 @@ export default function ContinueReceiving() {
     if (!item) return;
     
     // Calculate missing quantity accounting for existing damaged qty
-    const currentDamagedQty = item.damagedQty || 0;
+    const currentDamagedQty = (item as any).damagedQty || 0;
     // Clamp missing qty to remaining available units (expectedQty - currentDamagedQty)
     const missingQty = Math.min(qty, item.expectedQty - currentDamagedQty);
     // Received = Expected - Damaged - Missing
@@ -1542,10 +1502,14 @@ export default function ContinueReceiving() {
       return await apiRequest('POST', '/api/imports/receipts/auto-save', data);
     },
     onSuccess: (response) => {
-      // Don't invalidate cache during active editing to prevent jumping values
+      // Invalidate receivable query only if this is the first receipt creation
+      // This ensures the shipment disappears from "To Receive" tab when moved to "Receiving"
+      if (!receipt && response?.receipt?.id) {
+        queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/receiving'] });
+      }
+      // Don't invalidate other caches during active editing to prevent jumping values
       // Data will be fresh when component remounts
-      // Invalidate storage query for real-time updates
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/storage'] });
     },
     onError: (error: any) => {
       console.error("Auto-save failed:", error);
@@ -1582,8 +1546,6 @@ export default function ContinueReceiving() {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/receiving'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/pending_approval'] });
-      // Invalidate storage query for real-time updates
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/storage'] });
       navigate('/receiving');
     },
     onError: (error: any) => {
@@ -1800,18 +1762,7 @@ export default function ContinueReceiving() {
   // Calculate item statistics for confirmation dialog
   const getItemStats = () => {
     const totalItems = receivingItems.length;
-    
-    // Count items that are fully verified (all units accounted for)
-    const verifiedItems = receivingItems.filter(item => {
-      const totalAccountedFor = item.receivedQty + (item.damagedQty || 0) + (item.missingQty || 0);
-      return totalAccountedFor === item.expectedQty;
-    }).length;
-    
-    // Count items with no issues (status = complete, no damage/missing)
-    const completeNoIssues = receivingItems.filter(item => 
-      item.status === 'complete' && !item.damagedQty && !item.missingQty
-    ).length;
-    
+    const completeItems = receivingItems.filter(item => item.status === 'complete').length;
     const damagedItems = receivingItems.filter(item => 
       item.status === 'damaged' || item.status === 'partial_damaged'
     ).length;
@@ -1822,8 +1773,7 @@ export default function ContinueReceiving() {
     
     return {
       totalItems,
-      verifiedItems,  // All units accounted for (including damaged/missing)
-      completeNoIssues,  // Perfect items with no damage/missing
+      completeItems,
       damagedItems,
       missingItems,
       partialItems
@@ -1904,7 +1854,6 @@ export default function ContinueReceiving() {
 
   // Photo upload handlers
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const itemPhotoInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -2114,114 +2063,72 @@ export default function ContinueReceiving() {
       e.target.value = '';
     }
   };
-
-  const handleRemovePhoto = async (index: number) => {
+  
+  const handleRemovePhoto = (index: number) => {
     // Store the photo being removed for potential restoration
     const photoToRemove = uploadedPhotos[index];
-    const photoId = getPhotoId(photoToRemove);
-    const receiptId = receipt?.receipt?.id || receipt?.id;
     
-    // Prevent rapid clicks by checking if this photo is already being deleted
-    if (deletingPhotoIds.has(photoId)) {
-      return; // Already deleting this photo
-    }
-    
-    // Mark photo as being deleted to disable the button
-    setDeletingPhotoIds(prev => new Set(prev).add(photoId));
-    
-    // Immediate optimistic UI update - remove photo instantly
-    const originalPhotos = [...uploadedPhotos];
-    setUploadedPhotos(prev => prev.filter((_, i) => i !== index));
-    
-    // Cancel any existing debounced updates to prevent conflicts
-    if (photoUpdateTimerRef.current) {
-      clearTimeout(photoUpdateTimerRef.current);
-      photoUpdateTimerRef.current = null;
-    }
-    
-    // If we have a receipt ID, use the optimized DELETE endpoint with photo ID
-    if (receiptId) {
-      try {
-        // Show saving indicator
-        setSaveStatus('saving');
+    // Immediate optimistic UI update using functional setState
+    // This ensures we're always working with the latest state
+    setUploadedPhotos(prev => {
+      // Filter out the photo at the specified index
+      const updated = prev.filter((_, i) => i !== index);
+      
+      // Store the updated state in ref for the debounced server update
+      pendingPhotoUpdatesRef.current = updated;
+      
+      // Clear any existing timer to debounce rapid removals
+      if (photoUpdateTimerRef.current) {
+        clearTimeout(photoUpdateTimerRef.current);
+      }
+      
+      // Set a new timer to send the update after a short delay
+      // This batches multiple rapid removals into a single server request
+      photoUpdateTimerRef.current = setTimeout(() => {
+        // Get the final state after all removals
+        const finalPhotos = pendingPhotoUpdatesRef.current;
         
-        // Call the dedicated DELETE endpoint with photo ID - SAFE operation
-        const response = await fetch(`/api/imports/receipts/${receiptId}/photos/${photoId}`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json'
+        // Convert to simple array for server (backward compatible)
+        const photosForServer = finalPhotos.map(photo => 
+          typeof photo === 'string' ? photo : photo.compressed
+        );
+        
+        setSaveStatus('saving');
+        updatePhotosMutation.mutate(photosForServer, {
+          onSuccess: () => {
+            setSaveStatus('saved');
+            setTimeout(() => setSaveStatus('idle'), 1000);
+            // Invalidate receipt query to ensure fresh photos when navigating back
+            queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
+          },
+          onError: () => {
+            // On error, sync state with what we tried to save
+            // This prevents inconsistency between UI and server
+            setUploadedPhotos(pendingPhotoUpdatesRef.current);
+            
+            toast({
+              title: "Save Failed",
+              description: "Failed to save photo changes. The photos have been restored.",
+              variant: "destructive"
+            });
+            setSaveStatus('idle');
           }
         });
         
-        const result = await response.json();
-        
-        if (!response.ok || !result.success) {
-          throw new Error(result.message || 'Failed to delete photo');
-        }
-        
-        // Success - photo is deleted instantly
-        setSaveStatus('saved');
-        setTimeout(() => setSaveStatus('idle'), 1000);
-        
-        // Invalidate cache to ensure consistency
-        queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
-        
-        // Clean up blob URL if needed
-        if (typeof photoToRemove === 'object' && photoToRemove?.compressed?.startsWith('blob:')) {
-          revokeImagePreview(photoToRemove.compressed);
-        }
-        
-        toast({
-          title: "Photo Deleted",
-          description: "Photo removed successfully",
-          className: "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800",
-          duration: 1500
-        });
-      } catch (error) {
-        // On error, rollback the UI change - restore photo at original position
-        setUploadedPhotos(originalPhotos);
-        
-        setSaveStatus('idle');
-        
-        const errorMessage = error instanceof Error ? error.message : "Failed to remove photo";
-        toast({
-          title: "Delete Failed",
-          description: errorMessage,
-          variant: "destructive"
-        });
-      } finally {
-        // Always remove from deleting set to re-enable button
-        setDeletingPhotoIds(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(photoId);
-          return newSet;
-        });
-      }
-    } else {
-      // No receipt yet - just update locally, will be saved when receipt is created
-      try {
-        pendingPhotoUpdatesRef.current = uploadedPhotos.filter((_, i) => i !== index);
-        
-        // Clean up blob URL if needed
-        if (typeof photoToRemove === 'object' && photoToRemove?.compressed?.startsWith('blob:')) {
-          revokeImagePreview(photoToRemove.compressed);
-        }
-        
-        toast({
-          title: "Photo Removed",
-          description: "Photo removed from pending uploads",
-          className: "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800",
-          duration: 1500
-        });
-      } finally {
-        // Remove from deleting set
-        setDeletingPhotoIds(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(photoId);
-          return newSet;
-        });
-      }
-    }
+        // Clear the timer ref
+        photoUpdateTimerRef.current = null;
+      }, 300); // 300ms delay to batch rapid removals
+      
+      return updated;
+    });
+    
+    // Instant feedback for each removal
+    toast({
+      title: "Photo Removed",
+      description: "Photo deleted",
+      className: "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800",
+      duration: 1500
+    });
   };
 
   // Initialize audio on first user interaction
@@ -2257,7 +2164,7 @@ export default function ContinueReceiving() {
           <CardContent className="p-6 text-center">
             <Package className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
             <p className="text-muted-foreground">Shipment not found</p>
-            <Button variant="outline" className="mt-4" onClick={() => window.history.back()}>
+            <Button variant="outline" className="mt-4" onClick={() => navigate('/receiving')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Receiving
             </Button>
@@ -2268,13 +2175,13 @@ export default function ContinueReceiving() {
   }
 
   return (
-    <div className="container mx-auto px-3 sm:px-4 py-4 max-w-4xl relative">
+    <div className="container mx-auto p-4 max-w-4xl relative">
       {/* Visual Feedback Components */}
       <ScanFeedback type={scanFeedback.type} message={scanFeedback.message} />
       <ScanLineAnimation isActive={scanMode} />
       <SuccessCheckmark show={showSuccessCheckmark} />
       {/* Save Status Indicator */}
-      <div className="fixed top-2 right-2 sm:top-4 sm:right-4 z-50">
+      <div className="fixed top-4 right-4 z-50">
         {saveStatus === 'saving' && (
           <div className="flex items-center gap-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg px-4 py-2 border border-gray-200 dark:border-gray-700 animate-in fade-in slide-in-from-top-1 duration-200">
             <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600"></div>
@@ -2289,109 +2196,148 @@ export default function ContinueReceiving() {
         )}
       </div>
       
-      {/* Header - Mobile Optimized */}
-      <div className="mb-4 space-y-3">
-        <div className="flex items-center justify-between">
+      {/* Header - Redesigned for mobile */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className="flex items-start gap-3">
           <Button 
             variant="ghost" 
-            size="icon"
-            className="sm:size-auto"
+            size="default" 
             onClick={handleBackNavigation}
+            className="h-11 px-3 flex-shrink-0"
           >
-            <ArrowLeft className="h-5 w-5" />
-            <span className="sr-only sm:not-sr-only sm:ml-2">Back</span>
+            <ArrowLeft className="h-5 w-5 mr-2" />
+            <span className="font-medium">Back</span>
           </Button>
-          <Badge className={getStatusColor(shipment.status)}>
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold leading-tight">Quick Receiving</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
+              {shipment.shipmentName || `Shipment #${shipment.id}`} • {shipment.trackingNumber}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Badge className={`${getStatusColor(shipment.status)} text-sm px-3 py-1`}>
             {shipment.status?.replace('_', ' ').toUpperCase()}
           </Badge>
-        </div>
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Continue Receiving</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">
-            {shipment.shipmentName || `Shipment #${shipment.id}`} • {shipment.trackingNumber}
-          </p>
-        </div>
-      </div>
-
-      {/* Progress Bar - Mobile Optimized */}
-      <div className="mb-4 sm:mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs sm:text-sm font-medium">Overall Progress</span>
-          <span className="text-xs sm:text-sm text-muted-foreground font-semibold">{Math.round(progress)}%</span>
-        </div>
-        <Progress value={progress} className="h-4 sm:h-3 bg-gray-200 dark:bg-gray-700" />
-        <div className="flex flex-wrap gap-y-1 gap-x-3 sm:gap-4 mt-2 text-[10px] sm:text-xs text-muted-foreground">
-          <span className="whitespace-nowrap">{unitLabel}: <span className="font-medium">{scannedParcels}/{parcelCount}</span></span>
-          <span className="whitespace-nowrap">Items: <span className="font-medium">{totalReceivedQty}/{totalExpectedQty}</span></span>
-          <span className="whitespace-nowrap">Verified: <span className="font-medium">{checkedItemsCount}/{totalItems}</span></span>
+          {receipt && receipt.receipt && (
+            <Link href={`/receiving/receipt/${receipt.receipt.id}`}>
+              <Button variant="outline" size="default" className="h-10">
+                <FileText className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">View Receipt</span>
+                <span className="sm:hidden">Receipt</span>
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
-      {/* Step Navigation - Mobile Optimized */}
-      <div className="grid grid-cols-2 gap-2 mb-4 sm:mb-6">
+      {/* Progress Bar - Redesigned */}
+      <div className="mb-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-base font-semibold text-gray-900 dark:text-gray-100">Overall Progress</span>
+          <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            {Math.round(progress)}%
+          </span>
+        </div>
+        <div className="relative">
+          <Progress 
+            value={progress} 
+            className="h-3 bg-gray-200 dark:bg-gray-700 shadow-inner rounded-full" 
+          />
+        </div>
+        <div className="grid grid-cols-3 gap-3 mt-4 text-sm">
+          <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <div className="font-bold text-gray-900 dark:text-gray-100">{scannedParcels}/{parcelCount}</div>
+            <div className="text-xs text-muted-foreground">{unitLabel}</div>
+          </div>
+          <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <div className="font-bold text-gray-900 dark:text-gray-100">{totalReceivedQty}/{totalExpectedQty}</div>
+            <div className="text-xs text-muted-foreground">Items</div>
+          </div>
+          <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <div className="font-bold text-gray-900 dark:text-gray-100">{checkedItemsCount}/{totalItems}</div>
+            <div className="text-xs text-muted-foreground">Verified</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Step Navigation - Redesigned */}
+      <div className="flex gap-3 mb-6">
         <Button
           variant={currentStep === 1 ? "default" : "outline"}
           onClick={() => setCurrentStep(1)}
-          className="h-auto py-3 px-2 sm:px-4"
+          className={`flex-1 h-12 text-base font-medium transition-all ${
+            currentStep === 1 
+              ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-md' 
+              : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+          }`}
         >
-          <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
-            <Package className="h-5 w-5 sm:h-4 sm:w-4" />
-            <span className="text-xs sm:text-sm leading-tight text-center sm:text-left">
-              <span className="hidden sm:inline">Step 1: </span>
-              <span className="sm:hidden">1:</span> Parcel
-            </span>
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
+              currentStep === 1 ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+            }`}>
+              1
+            </div>
+            <Package className="h-5 w-5" />
+            <span className="hidden sm:inline">Parcel Check</span>
           </div>
         </Button>
         <Button
           variant={currentStep === 2 ? "default" : "outline"}
           onClick={() => setCurrentStep(2)}
-          className="h-auto py-3 px-2 sm:px-4"
+          className={`flex-1 h-12 text-base font-medium transition-all ${
+            currentStep === 2 
+              ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-md' 
+              : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+          }`}
         >
-          <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
-            <CheckSquare className="h-5 w-5 sm:h-4 sm:w-4" />
-            <span className="text-xs sm:text-sm leading-tight text-center sm:text-left">
-              <span className="hidden sm:inline">Step 2: </span>
-              <span className="sm:hidden">2:</span> Items
-            </span>
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
+              currentStep === 2 ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+            }`}>
+              2
+            </div>
+            <CheckSquare className="h-5 w-5" />
+            <span className="hidden sm:inline">Item Checklist</span>
           </div>
         </Button>
       </div>
 
-      {/* Step 1: Parcel Verification */}
+      {/* Step 1: Parcel Verification - Redesigned */}
       {currentStep === 1 && (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <Card className={`
-            transition-all duration-500 border-2
+            transition-all duration-500 rounded-lg shadow-sm border bg-white dark:bg-gray-900
             ${scannedParcels === parcelCount && parcelCount > 0 
-              ? 'border-green-400 bg-green-50/50 dark:bg-green-950/20 shadow-green-100 dark:shadow-green-900/20' 
+              ? 'border-green-400 shadow-green-100 dark:shadow-green-900/20' 
               : scannedParcels > 0 
-                ? 'border-amber-400 bg-amber-50/50 dark:bg-amber-950/20 shadow-amber-100 dark:shadow-amber-900/20'
+                ? 'border-amber-400 shadow-amber-100 dark:shadow-amber-900/20'
                 : 'border-gray-200 dark:border-gray-700'
             }
           `}>
-            <CardHeader className="px-4 sm:px-6 pb-4">
-              <CardTitle className="flex flex-wrap items-center gap-2 text-base sm:text-lg">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-lg">
                 {scannedParcels === parcelCount && parcelCount > 0 ? (
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <CheckCircle2 className="h-6 w-6 text-green-600" />
                 ) : scannedParcels > 0 ? (
-                  <Clock className="h-5 w-5 text-amber-600" />
+                  <Clock className="h-6 w-6 text-amber-600" />
                 ) : (
-                  isPalletShipment ? <Layers className="h-5 w-5" /> : <Package className="h-5 w-5" />
+                  isPalletShipment ? <Layers className="h-6 w-6" /> : <Package className="h-6 w-6" />
                 )}
-                {unitLabel} Verification
+                <span className="font-semibold">{unitLabel} Verification</span>
                 {scannedParcels === parcelCount && parcelCount > 0 && (
-                  <Badge className="ml-auto bg-green-600 text-white">Complete</Badge>
+                  <Badge className="ml-auto bg-green-600 text-white shadow-sm px-3 py-1">Complete</Badge>
                 )}
                 {scannedParcels > 0 && scannedParcels < parcelCount && (
-                  <Badge className="ml-auto bg-amber-600 text-white">In Progress</Badge>
+                  <Badge className="ml-auto bg-amber-600 text-white shadow-sm px-3 py-1">In Progress</Badge>
                 )}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 px-4 sm:px-6">
+            <CardContent className="space-y-5">
               {/* Show skeleton loading when data is loading */}
               {(receiptLoading || isLoading) ? (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Skeleton className="h-4 w-20 mb-2" />
                       <Skeleton className="h-10 w-full" />
@@ -2401,7 +2347,7 @@ export default function ContinueReceiving() {
                       <Skeleton className="h-10 w-full" />
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Skeleton className="h-4 w-24 mb-2" />
                       <div className="flex items-center gap-2">
@@ -2434,103 +2380,105 @@ export default function ContinueReceiving() {
                 </div>
               ) : (
                 <>
-                  {/* Basic Info - Mobile Optimized */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  {/* Basic Info - Redesigned */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                      <Label className="text-xs sm:text-sm">Received By *</Label>
+                      <Label className="text-sm font-medium mb-2 block">Received By *</Label>
                       <Input
                         value={receivedBy}
                         onChange={(e) => handleReceivedByChange(e.target.value)}
                         onBlur={handleReceivedByBlur}
                         placeholder="Your name"
                         required
+                        className="h-11 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
                       />
                     </div>
                     <div>
-                      <Label className="text-xs sm:text-sm">Carrier *</Label>
+                      <Label className="text-sm font-medium mb-2 block">Carrier *</Label>
                       <Input
                         value={carrier}
                         onChange={(e) => handleCarrierChange(e.target.value)}
                         onBlur={handleCarrierBlur}
                         placeholder="DHL, UPS, FedEx..."
                         required
+                        className="h-11 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
                       />
                     </div>
                   </div>
 
-                  {/* Parcel Count - Mobile Optimized */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  {/* Parcel Count - Redesigned */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                      <Label className="text-xs sm:text-sm">Expected {unitLabel}</Label>
-                      <div className="flex items-center gap-2 mt-1">
+                      <Label className="text-sm font-medium mb-2 block">Expected {unitLabel}</Label>
+                      <div className="flex items-center gap-2">
                         <Button
                           type="button"
                           variant="outline"
-                          size="icon"
-                          className={`h-10 w-10 sm:h-9 sm:w-9 ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
+                          size="default"
                           onClick={() => handleParcelCountChange(Math.max(1, parcelCount - 1), true)}
                           disabled={parcelCount <= 1 || updateMetaMutation.isPending}
+                          className={`h-11 w-11 p-0 ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
                         >
-                          <Minus className="h-4 w-4" />
+                          <Minus className="h-5 w-5" />
                         </Button>
                         <Input
                           type="number"
                           value={parcelCount}
                           onChange={(e) => handleParcelCountChange(Math.max(1, parseInt(e.target.value) || 1), false)}
                           onBlur={handleParcelCountBlur}
-                          className="text-center"
+                          className="text-center h-11 text-lg font-semibold border-gray-300 dark:border-gray-600"
                           min="1"
                         />
                         <Button
                           type="button"
                           variant="outline"
-                          size="icon"
-                          className={`h-10 w-10 sm:h-9 sm:w-9 ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
+                          size="default"
                           onClick={() => handleParcelCountChange(parcelCount + 1, true)}
                           disabled={updateMetaMutation.isPending}
+                          className={`h-11 w-11 p-0 ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus className="h-5 w-5" />
                         </Button>
                       </div>
                     </div>
 
                     <div>
-                      <Label className="text-xs sm:text-sm">Received {unitLabel} (Manual)</Label>
-                      <div className="flex items-center gap-2 mt-1">
+                      <Label className="text-sm font-medium mb-2 block">Received {unitLabel} (Manual)</Label>
+                      <div className="flex items-center gap-2">
                         <Button
                           type="button"
                           variant="outline"
-                          size="icon"
-                          className={`h-10 w-10 sm:h-9 sm:w-9 ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
+                          size="default"
                           onClick={() => handleScannedParcelsChange(Math.max(0, scannedParcels - 1), true)}
                           disabled={scannedParcels === 0 || updateMetaMutation.isPending}
+                          className={`h-11 w-11 p-0 ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
                         >
-                          <Minus className="h-4 w-4" />
+                          <Minus className="h-5 w-5" />
                         </Button>
                         <Input
                           type="number"
                           value={scannedParcels}
                           onChange={(e) => handleScannedParcelsChange(Math.max(0, Math.min(parcelCount, parseInt(e.target.value) || 0)), false)}
                           onBlur={handleScannedParcelsBlur}
-                          className="text-center"
+                          className="text-center h-11 text-lg font-semibold border-gray-300 dark:border-gray-600"
                           min="0"
                           max={parcelCount}
                         />
                         <Button
                           type="button"
                           variant="outline"
-                          size="icon"
-                          className={`h-10 w-10 sm:h-9 sm:w-9 ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
+                          size="default"
                           onClick={() => handleScannedParcelsChange(Math.min(parcelCount, scannedParcels + 1), true)}
                           disabled={scannedParcels >= parcelCount || updateMetaMutation.isPending}
+                          className={`h-11 w-11 p-0 ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus className="h-5 w-5" />
                         </Button>
                       </div>
                     </div>
                   </div>
 
-              {/* Auto-Receive All Button */}
+              {/* Auto-Receive All Button - Redesigned */}
               <div>
                 <Button
                   type="button"
@@ -2544,29 +2492,31 @@ export default function ContinueReceiving() {
                     });
                   }}
                   disabled={scannedParcels >= parcelCount || updateMetaMutation.isPending}
-                  className={`w-full h-10 sm:h-11 ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
+                  className={`w-full h-11 font-medium shadow-sm ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
                 >
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  <CheckCircle2 className="h-5 w-5 mr-2" />
                   Receive All ({parcelCount})
                 </Button>
               </div>
 
-              {/* Parcel Progress - Mobile Optimized */}
-              <div className="bg-gray-50 dark:bg-gray-900 p-3 sm:p-4 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium">{unitLabel} Scanned</span>
-                  <span className="text-2xl font-bold text-green-600">
+              {/* Parcel Progress - Redesigned */}
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 p-5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-semibold text-base text-gray-900 dark:text-gray-100">{unitLabel} Scanned</span>
+                  <span className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
                     {scannedParcels} / {parcelCount}
                   </span>
                 </div>
-                <Progress 
-                  value={(scannedParcels / parcelCount) * 100} 
-                  className="h-3 bg-gray-200 dark:bg-gray-700"
-                />
+                <div className="relative">
+                  <Progress 
+                    value={(scannedParcels / parcelCount) * 100} 
+                    className="h-3 bg-gray-200 dark:bg-gray-700 shadow-inner rounded-full"
+                  />
+                </div>
                 {scannedParcels === parcelCount && parcelCount > 0 && (
-                  <div className="flex items-center gap-2 mt-2 text-green-600">
-                    <CheckCircle2 className="h-4 w-4" />
-                    <span className="text-sm">All {unitLabel.toLowerCase()} verified!</span>
+                  <div className="flex items-center gap-2 mt-3 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-3 py-2 rounded-lg">
+                    <CheckCircle2 className="h-5 w-5" />
+                    <span className="text-sm font-medium">All {unitLabel.toLowerCase()} verified!</span>
                   </div>
                 )}
                 
@@ -2615,15 +2565,15 @@ export default function ContinueReceiving() {
                 )}
               </div>
 
-              {/* Scan Parcels - Mobile Optimized */}
+              {/* Scan Parcels - Redesigned */}
               <div className="col-span-full">
-                <Label className="text-sm sm:text-base font-medium mb-2 sm:mb-3 block">Scan {unitLabel}</Label>
+                <Label className="text-base font-semibold mb-3 block text-gray-900 dark:text-gray-100">Scan {unitLabel}</Label>
                 <div className="w-full">
                   <ScanInputPulse isScanning={scanMode}>
-                    <div className={`relative w-full rounded-lg border-2 transition-all duration-300 overflow-hidden ${
+                    <div className={`relative w-full rounded-xl border transition-all duration-300 overflow-hidden shadow-sm ${
                       scanMode 
-                        ? 'border-blue-400 bg-blue-50 dark:bg-blue-950/30 shadow-lg ring-2 ring-blue-200 dark:ring-blue-800' 
-                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:border-gray-400 dark:hover:border-gray-500'
+                        ? 'border-blue-400 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/40 dark:to-blue-900/30 shadow-md ring-2 ring-blue-200 dark:ring-blue-800' 
+                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-600'
                     }`}>
                       <div className="flex items-center">
                         <div className="flex-1 relative">
@@ -2648,12 +2598,12 @@ export default function ContinueReceiving() {
                               }
                             }}
                             placeholder={`Scan or type ${isPalletShipment ? 'pallet' : 'parcel'} tracking number...`}
-                            className="border-0 bg-transparent focus:ring-0 focus:outline-none text-sm sm:text-lg h-12 sm:h-14 px-3 sm:px-4 pr-12 placeholder:text-gray-500 dark:placeholder:text-gray-400 font-mono"
+                            className="border-0 bg-transparent focus:ring-0 focus:outline-none text-lg h-14 px-5 pr-14 placeholder:text-gray-400 dark:placeholder:text-gray-500 font-mono"
                             autoComplete="off"
                             spellCheck={false}
                           />
-                          <ScanLine className={`absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 transition-all duration-200 ${
-                            scanMode ? 'text-blue-500 animate-pulse' : 'text-gray-400'
+                          <ScanLine className={`absolute right-5 top-1/2 transform -translate-y-1/2 h-6 w-6 transition-all duration-200 ${
+                            scanMode ? 'text-blue-600 animate-pulse' : 'text-gray-400'
                           }`} />
                         </div>
                         <div className="flex-shrink-0 border-l border-gray-200 dark:border-gray-700">
@@ -2667,10 +2617,10 @@ export default function ContinueReceiving() {
                                 setTimeout(() => barcodeRef.current?.focus(), 100);
                               }
                             }}
-                            className={`h-12 sm:h-14 px-4 sm:px-6 rounded-none hover:bg-transparent transition-all duration-200 ${
+                            className={`h-14 px-6 rounded-none hover:bg-transparent transition-all duration-200 ${
                               scanMode 
-                                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' 
-                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400' 
+                                : 'text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400'
                             }`}
                           >
                             <Camera className={`h-6 w-6 transition-transform duration-200 ${
@@ -2684,9 +2634,9 @@ export default function ContinueReceiving() {
                   
                   {/* Scan Mode Indicator */}
                   {scanMode && (
-                    <div className="mt-2 text-center">
-                      <span className="inline-flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 font-medium">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <div className="mt-3 text-center">
+                      <span className="inline-flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300 font-semibold bg-blue-100 dark:bg-blue-900/30 px-4 py-2 rounded-full">
+                        <div className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-pulse"></div>
                         Scanner Active - Point camera at barcode or type manually
                       </span>
                     </div>
@@ -2694,162 +2644,35 @@ export default function ContinueReceiving() {
                 </div>
               </div>
 
-                  {/* Photos Upload - Step 1 */}
-                  <div className="space-y-3">
-                    <Label className="text-xs sm:text-sm">Photos</Label>
-                    <div className="flex items-center gap-4">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="gap-2"
-                      >
-                        <ImagePlus className="h-4 w-4" />
-                        Add Photos
-                      </Button>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handlePhotoUpload}
-                        className="hidden"
-                      />
-                      <span className="text-xs text-muted-foreground">
-                        Upload photos of the shipment
-                      </span>
-                    </div>
-
-                    {/* Upload Progress Bar */}
-                    {photosLoading && uploadProgress > 0 && (
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs text-muted-foreground">
-                            Compressing and uploading...
-                          </span>
-                          <span className="text-xs font-medium">{uploadProgress}%</span>
-                        </div>
-                        <Progress value={uploadProgress} className="h-2" />
-                      </div>
-                    )}
-
-                    {/* Photos Preview Grid */}
-                    {(uploadedPhotos.length > 0 || photosLoading || previewUrls.length > 0) && (
-                      <div className="relative">
-                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
-                          {/* Preview URLs while processing */}
-                          {previewUrls.map((preview, index) => (
-                            <div key={`preview-${index}`} className="relative flex-shrink-0">
-                              <div className="relative w-20 h-20 rounded-lg overflow-hidden border-2 border-blue-400 dark:border-blue-600 animate-pulse">
-                                <img
-                                  src={preview}
-                                  alt={`Processing ${index + 1}`}
-                                  className="w-full h-full object-cover opacity-70"
-                                />
-                                <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
-                                  <Loader2 className="h-4 w-4 text-white animate-spin" />
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                          
-                          {/* Uploaded photos */}
-                          {uploadedPhotos.map((photo, index) => {
-                            const isNewFormat = typeof photo === 'object' && 'thumbnail' in photo;
-                            const thumbnailSrc = isNewFormat ? photo.thumbnail : typeof photo === 'string' ? photo : undefined;
-                            const photoId = getPhotoId(photo);
-                            const isDeleting = deletingPhotoIds.has(photoId);
-                            
-                            return (
-                              <div key={isNewFormat ? photo.id : `photo-${index}`} className="relative flex-shrink-0 group">
-                                <div className={`relative w-20 h-20 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 transition-colors ${isDeleting ? 'opacity-50' : ''}`}>
-                                  <LazyImage
-                                    thumbnailSrc={thumbnailSrc}
-                                    alt={`Photo ${index + 1}`}
-                                    className="w-full h-full object-cover"
-                                  />
-                                  {isDeleting && (
-                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
-                                      <Loader2 className="h-4 w-4 text-white animate-spin" />
-                                    </div>
-                                  )}
-                                  <Button
-                                    type="button"
-                                    variant="destructive"
-                                    size="icon"
-                                    disabled={isDeleting}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (!isDeleting) {
-                                        handleRemovePhoto(index);
-                                      }
-                                    }}
-                                    className={`absolute top-0.5 right-0.5 h-5 w-5 ${isDeleting ? 'opacity-100 cursor-not-allowed' : 'opacity-0 group-hover:opacity-100'} transition-opacity z-30`}
-                                  >
-                                    {isDeleting ? (
-                                      <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                                    ) : (
-                                      <Trash2 className="h-2.5 w-2.5" />
-                                    )}
-                                  </Button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                          
-                          {/* Upload more button */}
-                          {!photosLoading && (
-                            <div
-                              className="flex-shrink-0 w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-600 transition-colors cursor-pointer flex flex-col items-center justify-center"
-                              onClick={() => fileInputRef.current?.click()}
-                            >
-                              <Upload className="h-5 w-5 text-gray-400" />
-                              <span className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Add</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Empty state */}
-                    {uploadedPhotos.length === 0 && !photosLoading && previewUrls.length === 0 && (
-                      <div className="flex items-center justify-center py-4 px-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700">
-                        <Camera className="h-5 w-5 text-gray-400 mr-2" />
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          No photos uploaded yet
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Quick Notes - Mobile Optimized */}
+                  {/* Quick Notes - Redesigned */}
                   <div>
-                    <Label className="text-xs sm:text-sm">Initial Notes</Label>
+                    <Label className="text-sm font-medium mb-2 block">Initial Notes</Label>
                     <Textarea
                       value={notes}
                       onChange={(e) => handleNotesChange(e.target.value)}
                       onBlur={handleNotesBlur}
                       placeholder="Any initial observations..."
-                      rows={2}
+                      rows={3}
+                      className="resize-none border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
                     />
                   </div>
 
+                  {/* Continue Button - Redesigned */}
                   <Button
                     onClick={() => setCurrentStep(2)}
                     disabled={!receivedBy || !carrier}
-                    className="w-full"
-                    size="default"
+                    className="w-full h-12 text-base font-semibold shadow-md bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                    size="lg"
                   >
                     {scannedParcels > 0 ? (
                       <>
                         Continue to Item Checklist
-                        <ArrowRight className="h-4 w-4 ml-2" />
+                        <ArrowRight className="h-5 w-5 ml-2" />
                       </>
                     ) : (
                       <>
                         Continue to Item Checklist
-                        <CheckSquare className="h-4 w-4 ml-2" />
+                        <CheckSquare className="h-5 w-5 ml-2" />
                       </>
                     )}
                   </Button>
@@ -2860,56 +2683,57 @@ export default function ContinueReceiving() {
         </div>
       )}
 
-      {/* Step 2: Item Checklist */}
+      {/* Step 2: Item Checklist - Redesigned */}
       {currentStep === 2 && (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <Card className={`
-            transition-all duration-500 border-2
+            transition-all duration-500 rounded-lg shadow-sm border bg-white dark:bg-gray-900
             ${completedItems === totalItems && totalItems > 0 
-              ? 'border-green-400 bg-green-50/50 dark:bg-green-950/20 shadow-green-100 dark:shadow-green-900/20' 
+              ? 'border-green-400 shadow-green-100 dark:shadow-green-900/20' 
               : completedItems > 0 
-                ? 'border-amber-400 bg-amber-50/50 dark:bg-amber-950/20 shadow-amber-100 dark:shadow-amber-900/20'
+                ? 'border-amber-400 shadow-amber-100 dark:shadow-amber-900/20'
                 : 'border-gray-200 dark:border-gray-700'
             }
           `}>
-            <CardHeader className="px-4 sm:px-6 pb-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-                <CardTitle className="flex flex-wrap items-center gap-2 text-base sm:text-lg">
+            <CardHeader className="pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                <CardTitle className="flex items-center gap-3 text-lg">
                   {completedItems === totalItems && totalItems > 0 ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    <CheckCircle2 className="h-6 w-6 text-green-600" />
                   ) : completedItems > 0 ? (
-                    <Clock className="h-5 w-5 text-amber-600" />
+                    <Clock className="h-6 w-6 text-amber-600" />
                   ) : (
-                    <CheckSquare className="h-5 w-5" />
+                    <CheckSquare className="h-6 w-6" />
                   )}
-                  Item Verification ({completedItems}/{totalItems})
+                  <span className="font-semibold">Item Verification ({completedItems}/{totalItems})</span>
                   {completedItems === totalItems && totalItems > 0 && (
-                    <Badge className="ml-auto bg-green-600 text-white">Complete</Badge>
+                    <Badge className="bg-green-600 text-white shadow-sm px-3 py-1">Complete</Badge>
                   )}
                   {completedItems > 0 && completedItems < totalItems && (
-                    <Badge className="ml-auto bg-amber-600 text-white">In Progress</Badge>
+                    <Badge className="bg-amber-600 text-white shadow-sm px-3 py-1">In Progress</Badge>
                   )}
                 </CardTitle>
-                <div className="flex gap-2 flex-shrink-0">
+                <div className="flex gap-2 flex-wrap">
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="default"
                     onClick={() => setShowAllItems(!showAllItems)}
+                    className="h-10 shadow-sm"
                   >
                     {showAllItems ? 'Show Active' : 'Show All'}
                   </Button>
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="default"
                     onClick={() => {
                       setScanMode(!scanMode);
                       if (!scanMode) {
                         setTimeout(() => barcodeRef.current?.focus(), 100);
                       }
                     }}
-                    className={scanMode ? 'bg-blue-50 border-blue-300' : ''}
+                    className={`h-10 shadow-sm ${scanMode ? 'bg-blue-100 border-blue-400 text-blue-700' : ''}`}
                   >
-                    <ScanLine className="h-4 w-4 mr-1" />
+                    <ScanLine className="h-5 w-5 mr-2" />
                     Scan Items
                   </Button>
                 </div>
@@ -2917,35 +2741,35 @@ export default function ContinueReceiving() {
               
               {/* Progress Summary - Mobile Optimized */}
               {receivingItems.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                  <div className="text-center">
-                    <div className="text-xl sm:text-2xl font-bold text-green-600">
+                <div className="flex gap-3 overflow-x-auto pb-2 px-1">
+                  <div className="flex items-center gap-2 bg-green-50 dark:bg-green-950/30 px-3 py-2 rounded-lg border border-green-200 dark:border-green-800 flex-shrink-0">
+                    <div className="text-lg font-bold text-green-600">
                       {receivingItems.filter(i => i.status === 'complete').length}
                     </div>
-                    <div className="text-xs text-muted-foreground">Complete</div>
+                    <div className="text-xs text-green-700 dark:text-green-400 font-medium">Complete</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-xl sm:text-2xl font-bold text-amber-600">
+                  <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-800 flex-shrink-0">
+                    <div className="text-lg font-bold text-amber-600">
                       {receivingItems.filter(i => i.status === 'pending').length}
                     </div>
-                    <div className="text-xs text-muted-foreground">Pending</div>
+                    <div className="text-xs text-amber-700 dark:text-amber-400 font-medium">Pending</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-xl sm:text-2xl font-bold text-red-600">
+                  <div className="flex items-center gap-2 bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded-lg border border-red-200 dark:border-red-800 flex-shrink-0">
+                    <div className="text-lg font-bold text-red-600">
                       {receivingItems.filter(i => i.status === 'damaged' || i.status === 'partial_damaged').length}
                     </div>
-                    <div className="text-xs text-muted-foreground">Damaged</div>
+                    <div className="text-xs text-red-700 dark:text-red-400 font-medium">Damaged</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-xl sm:text-2xl font-bold text-gray-600">
+                  <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 flex-shrink-0">
+                    <div className="text-lg font-bold text-gray-600 dark:text-gray-400">
                       {receivingItems.filter(i => i.status === 'missing' || i.status === 'partial_missing').length}
                     </div>
-                    <div className="text-xs text-muted-foreground">Missing</div>
+                    <div className="text-xs text-gray-700 dark:text-gray-400 font-medium">Missing</div>
                   </div>
                 </div>
               )}
             </CardHeader>
-            <CardContent className="space-y-3 px-4 sm:px-6">
+            <CardContent className="space-y-3">
               {/* Scan Input */}
               {scanMode && (
                 <ScanInputPulse isScanning={scanMode}>
@@ -2966,8 +2790,8 @@ export default function ContinueReceiving() {
                 </ScanInputPulse>
               )}
 
-              {/* Items List - Mobile Optimized */}
-              <div className="max-h-[60vh] sm:max-h-96 overflow-y-auto space-y-2 sm:space-y-3 pr-1">
+              {/* Items List */}
+              <div className="max-h-[700px] overflow-y-auto space-y-2 pr-1">
                 {/* Show skeleton loading when items are still loading */}
                 {receiptLoading || isLoading ? (
                   // Show skeleton items while loading
@@ -2995,10 +2819,28 @@ export default function ContinueReceiving() {
                       </div>
                     </div>
                   ))
-                ) : 
-                  receivingItems.filter(item => 
+                ) : (() => {
+                  const filteredItems = receivingItems.filter(item => 
                     showAllItems || item.status === 'pending' || item.receivedQty < item.expectedQty
-                  ).map((item) => {
+                  );
+                  
+                  // Sort items: pending first, then partial, then completed
+                  const sortedItems = [...filteredItems].sort((a, b) => {
+                    const statusOrder = {
+                      'pending': 0,
+                      'partial': 1,
+                      'partial_damaged': 2,
+                      'partial_missing': 3,
+                      'damaged': 4,
+                      'missing': 5,
+                      'complete': 6
+                    };
+                    return (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
+                  });
+                  
+                  return sortedItems;
+                })()
+                  .map((item) => {
                     const progress = (item.receivedQty / item.expectedQty) * 100;
                     const isComplete = item.status === 'complete';
                     const isDamaged = item.status === 'damaged' || item.status === 'partial_damaged';
@@ -3066,15 +2908,10 @@ export default function ContinueReceiving() {
                               {/* Top Row: Name + Quantity Display */}
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
-                                  <h4 className={`font-medium text-sm leading-tight truncate ${isComplete ? 'line-through opacity-60' : ''}`}>
+                                  <h4 className={`font-medium text-sm leading-tight ${isComplete ? 'line-through opacity-60' : ''}`}>
                                     {item.name}
                                   </h4>
                                   <div className="flex items-center gap-2 mt-0.5">
-                                    {item.sku && (
-                                      <span className="text-xs text-muted-foreground font-mono">
-                                        {item.sku}
-                                      </span>
-                                    )}
                                     {item.isNewProduct ? (
                                       <span className="text-xs text-orange-600 dark:text-orange-400 flex items-center gap-0.5" data-testid={`text-bin-location-${item.id}`}>
                                         <Package className="h-2.5 w-2.5" />
@@ -3098,12 +2935,12 @@ export default function ContinueReceiving() {
                                     {item.receivedQty}/{item.expectedQty}
                                   </span>
                                   {/* Damage/Missing Indicators */}
-                                  {(item.damagedQty ?? 0) > 0 && (
+                                  {(item as any).damagedQty > 0 && (
                                     <span className="text-xs text-red-600 dark:text-red-400" data-testid={`indicator-dmg-miss-${item.id}`}>
                                       <AlertTriangle className="h-3.5 w-3.5" />
                                     </span>
                                   )}
-                                  {(item.missingQty ?? 0) > 0 && (
+                                  {(item as any).missingQty > 0 && (
                                     <span className="text-xs text-gray-600 dark:text-gray-400">
                                       <X className="h-3.5 w-3.5" />
                                     </span>
@@ -3520,29 +3357,29 @@ export default function ContinueReceiving() {
             </CardContent>
           </Card>
 
-          {/* Photos Upload Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Camera className="h-5 w-5" />
-                Photos
-                <span className="text-sm font-normal text-muted-foreground ml-auto">
-                  {uploadedPhotos.length > 0 && `(${uploadedPhotos.length} uploaded)`}
+          {/* Photos Upload Section - Redesigned */}
+          <Card className="rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-lg">
+                <Camera className="h-6 w-6" />
+                <span className="font-semibold">Photos</span>
+                <span className="text-base font-normal text-muted-foreground ml-auto">
+                  {uploadedPhotos.length > 0 && `${uploadedPhotos.length} uploaded`}
                 </span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Upload Button */}
-              <div className="flex items-center gap-4">
+            <CardContent className="space-y-5">
+              {/* Upload Button - Redesigned */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
+                  size="default"
                   onClick={() => fileInputRef.current?.click()}
-                  className="gap-2"
+                  className="h-12 gap-2 font-medium shadow-sm"
                 >
-                  <ImagePlus className="h-4 w-4" />
-                  Add Photos
+                  <ImagePlus className="h-5 w-5" />
+                  <span>Add Photos</span>
                 </Button>
                 <input
                   ref={fileInputRef}
@@ -3570,27 +3407,27 @@ export default function ContinueReceiving() {
                 </div>
               )}
 
-              {/* Photos Grid - Horizontal Scrollable Layout */}
+              {/* Photos Grid - Redesigned Horizontal Scrollable Layout */}
               {(uploadedPhotos.length > 0 || photosLoading || previewUrls.length > 0) && (
                 <div className="relative">
-                  <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+                  <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-800">
                     {/* Show preview URLs while processing */}
                     {previewUrls.map((preview, index) => (
                       <div
                         key={`preview-${index}`}
                         className="relative flex-shrink-0 group"
                       >
-                        <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-blue-400 dark:border-blue-600 animate-pulse">
+                        <div className="relative w-36 h-36 rounded-xl overflow-hidden border-2 border-blue-400 dark:border-blue-600 shadow-md animate-pulse">
                           <img
                             src={preview}
                             alt={`Processing ${index + 1}`}
                             className="w-full h-full object-cover opacity-70"
                           />
                           <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
-                            <Loader2 className="h-6 w-6 text-white animate-spin" />
+                            <Loader2 className="h-7 w-7 text-white animate-spin" />
                           </div>
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                            <span className="text-white text-xs font-medium">
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2.5">
+                            <span className="text-white text-sm font-semibold">
                               Processing...
                             </span>
                           </div>
@@ -3606,8 +3443,6 @@ export default function ContinueReceiving() {
                       const sizeInfo = isNewFormat
                         ? `${Math.round(getBase64Size(photo.thumbnail) / 1024)}KB`
                         : null;
-                      const photoId = getPhotoId(photo);
-                      const isDeleting = deletingPhotoIds.has(photoId);
                       
                       return (
                         <div
@@ -3615,20 +3450,14 @@ export default function ContinueReceiving() {
                           className="relative flex-shrink-0 group"
                         >
                           {/* Photo Container - optimized for thumbnails only */}
-                          <div className={`relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 transition-colors ${isDeleting ? 'opacity-50' : ''}`}>
+                          <div className="relative w-36 h-36 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-200 shadow-sm hover:shadow-md">
                             <LazyImage
                               thumbnailSrc={thumbnailSrc}
                               alt={`Upload ${index + 1}`}
                               className="w-full h-full object-cover"
                             />
-                            {/* Show loading overlay when deleting */}
-                            {isDeleting && (
-                              <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
-                                <Loader2 className="h-6 w-6 text-white animate-spin" />
-                              </div>
-                            )}
                             {/* Overlay with photo info */}
-                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 z-10">
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2.5 z-10">
                               <span className="text-white text-xs font-medium block">
                                 Photo {index + 1}
                               </span>
@@ -3638,25 +3467,18 @@ export default function ContinueReceiving() {
                                 </span>
                               )}
                             </div>
-                            {/* Remove button - disabled during deletion */}
+                            {/* Remove button - instant update */}
                             <Button
                               type="button"
                               variant="destructive"
                               size="icon"
-                              disabled={isDeleting}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (!isDeleting) {
-                                  handleRemovePhoto(index);
-                                }
+                                handleRemovePhoto(index);
                               }}
-                              className={`absolute top-1 right-1 h-6 w-6 ${isDeleting ? 'opacity-100 cursor-not-allowed' : 'opacity-0 group-hover:opacity-100'} transition-opacity z-30`}
+                              className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                             >
-                              {isDeleting ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-3 w-3" />
-                              )}
+                              <Trash2 className="h-3 w-3" />
                             </Button>
                             {/* Optimization indicator for new format */}
                             {isNewFormat && (
@@ -3722,14 +3544,13 @@ export default function ContinueReceiving() {
             </CardContent>
           </Card>
 
-          {/* Action Buttons - Mobile Optimized */}
-          <div className="flex flex-col sm:flex-row gap-2 px-4 sm:px-6 pb-4 sm:pb-6">
+          {/* Action Buttons */}
+          <div className="flex gap-3">
             <Button
               variant="outline"
               onClick={() => setCurrentStep(1)}
-              className="w-full sm:flex-1 h-10 sm:h-11"
+              className="flex-1"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Step 1
             </Button>
             <Button
@@ -3739,13 +3560,11 @@ export default function ContinueReceiving() {
                 receivingItems.some(item => item.status === 'pending') ||
                 receivingItems.length === 0
               }
-              className="w-full sm:flex-1 h-12 sm:h-14 bg-green-600 hover:bg-green-700 text-white"
+              className="flex-1"
+              size="lg"
             >
               {completeReceivingMutation.isPending ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-                  Processing...
-                </>
+                <>Processing...</>
               ) : (
                 <>
                   <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -3769,10 +3588,8 @@ export default function ContinueReceiving() {
               
               {(() => {
                 const stats = getItemStats();
-                const verificationRate = stats.totalItems > 0 ? (stats.verifiedItems / stats.totalItems) * 100 : 0;
+                const completionRate = stats.totalItems > 0 ? (stats.completeItems / stats.totalItems) * 100 : 0;
                 const parcelProgress = parcelCount > 0 ? (scannedParcels / parcelCount) * 100 : 0;
-                const hasIssues = stats.damagedItems > 0 || stats.missingItems > 0;
-                const allPerfect = stats.completeNoIssues === stats.totalItems;
                 
                 return (
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-5 rounded-xl border border-blue-100 dark:border-gray-700 space-y-4">
@@ -3785,49 +3602,31 @@ export default function ContinueReceiving() {
                       {/* Items Progress */}
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Items Verified</span>
+                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Items Complete</span>
                           <span className={`text-sm font-bold px-3 py-1 rounded-full shadow-sm ${
-                            verificationRate === 100 
-                              ? hasIssues 
+                            completionRate === 100 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border border-green-200' 
+                              : completionRate > 0 
                                 ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border border-amber-200'
-                                : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border border-green-200'
-                              : verificationRate > 0 
-                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border border-blue-200'
                                 : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border border-gray-200'
                           }`}>
-                            {stats.verifiedItems}/{stats.totalItems}
+                            {stats.completeItems}/{stats.totalItems}
                           </span>
                         </div>
                         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
                           <div 
                             className={`h-3 rounded-full transition-all duration-500 ease-out ${
-                              verificationRate === 100 
-                                ? hasIssues
+                              completionRate === 100 
+                                ? 'bg-green-500 shadow-sm' 
+                                : completionRate > 0 
                                   ? 'bg-amber-500 shadow-sm'
-                                  : 'bg-green-500 shadow-sm'
-                                : verificationRate > 0 
-                                  ? 'bg-blue-500 shadow-sm'
                                   : 'bg-gray-400'
                             }`}
-                            style={{ width: `${verificationRate}%` }}
+                            style={{ width: `${completionRate}%` }}
                           />
                         </div>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-medium text-gray-500 dark:text-gray-400">
-                            {Math.round(verificationRate)}% verified
-                          </span>
-                          {verificationRate === 100 && hasIssues && (
-                            <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-medium">
-                              <AlertTriangle className="h-3 w-3" />
-                              {stats.completeNoIssues} perfect, {stats.verifiedItems - stats.completeNoIssues} with issues
-                            </span>
-                          )}
-                          {verificationRate === 100 && !hasIssues && (
-                            <span className="flex items-center gap-1 text-green-600 dark:text-green-400 font-medium">
-                              <CheckCircle2 className="h-3 w-3" />
-                              All perfect
-                            </span>
-                          )}
+                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                          {Math.round(completionRate)}% complete
                         </div>
                       </div>
 
@@ -3892,23 +3691,11 @@ export default function ContinueReceiving() {
                     )}
                     
                     {/* Completion Status */}
-                    {verificationRate === 100 && parcelProgress === 100 && (
-                      <div className={`flex items-center gap-2 px-4 py-3 border rounded-lg ${
-                        allPerfect
-                          ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800'
-                          : 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800'
-                      }`}>
-                        <CheckCircle2 className={`h-4 w-4 ${
-                          allPerfect ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'
-                        }`} />
-                        <span className={`text-sm font-medium ${
-                          allPerfect 
-                            ? 'text-green-800 dark:text-green-200' 
-                            : 'text-amber-800 dark:text-amber-200'
-                        }`}>
-                          {allPerfect
-                            ? 'All items and parcels received successfully!'
-                            : 'All items and parcels verified with issues noted'}
+                    {completionRate === 100 && parcelProgress === 100 && (
+                      <div className="flex items-center gap-2 px-4 py-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg">
+                        <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        <span className="text-sm font-medium text-green-800 dark:text-green-200">
+                          All items and parcels received successfully!
                         </span>
                       </div>
                     )}
