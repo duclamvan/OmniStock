@@ -3146,6 +3146,7 @@ router.get("/shipments/receiving", async (req, res) => {
     // Load consolidation items for each shipment
     if (formattedShipments.length > 0) {
       const consolidationIds = formattedShipments.map(s => s.consolidationId).filter(Boolean) as number[];
+      const shipmentIds = formattedShipments.map(s => s.id);
       
       if (consolidationIds.length > 0) {
         // Get all consolidation items
@@ -3162,6 +3163,13 @@ router.get("/shipments/receiving", async (req, res) => {
           .filter(ci => ci.itemType === 'purchase')
           .map(ci => ci.itemId);
         
+        // Get receiving items to track received quantities
+        const allReceivingItems = await db
+          .select()
+          .from(receiptItems)
+          .leftJoin(receipts, eq(receiptItems.receiptId, receipts.id))
+          .where(inArray(receipts.shipmentId, shipmentIds));
+        
         const [customItemsData, purchaseItemsData] = await Promise.all([
           customItemIds.length > 0
             ? db.select().from(customItems).where(inArray(customItems.id, customItemIds))
@@ -3174,6 +3182,16 @@ router.get("/shipments/receiving", async (req, res) => {
         // Create lookup maps
         const customItemsMap = new Map(customItemsData.map(item => [item.id, item]));
         const purchaseItemsMap = new Map(purchaseItemsData.map(item => [item.id, item]));
+        
+        // Create map of received quantities by shipmentId and itemId
+        const receivedQuantitiesMap = new Map<string, number>();
+        for (const { receipt_items: ri, receipts: receipt } of allReceivingItems) {
+          if (ri && receipt) {
+            const key = `${receipt.shipmentId}-${ri.itemType}-${ri.itemId}`;
+            const current = receivedQuantitiesMap.get(key) || 0;
+            receivedQuantitiesMap.set(key, current + (ri.receivedQuantity || 0));
+          }
+        }
         
         // Group by consolidationId with full item details
         const itemsByConsolidationId: Record<number, any[]> = {};
@@ -3195,14 +3213,22 @@ router.get("/shipments/receiving", async (req, res) => {
           }
         }
         
-        // Attach items array to each shipment
+        // Attach items array to each shipment with received quantities
         formattedShipments = formattedShipments.map(shipment => {
           const items = shipment.consolidationId ? (itemsByConsolidationId[shipment.consolidationId] || []) : [];
-          const totalQuantity = items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+          const itemsWithProgress = items.map((item: any) => {
+            const key = `${shipment.id}-${item.itemType}-${item.id}`;
+            const receivedQuantity = receivedQuantitiesMap.get(key) || 0;
+            return {
+              ...item,
+              receivedQuantity
+            };
+          });
+          const totalQuantity = itemsWithProgress.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
           return {
             ...shipment,
-            items,
-            itemCount: items.length,
+            items: itemsWithProgress,
+            itemCount: itemsWithProgress.length,
             totalQuantity
           };
         });
