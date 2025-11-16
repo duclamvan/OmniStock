@@ -13,7 +13,7 @@ A React and TypeScript application built with Vite, utilizing Shadcn/ui (Radix U
 An Express.js application written in TypeScript (ESM modules), providing RESTful API endpoints with consistent error handling.
 
 ## Authentication System
-Supports Facebook OAuth Login and traditional email/password authentication, with session management via HTTP-only cookies.
+**Replit Auth** with optional **Twilio SMS Two-Factor Authentication (2FA)**. Primary authentication uses Replit's OpenID Connect supporting Google, GitHub, X (Twitter), Apple, and email/password login. Session management via HTTP-only cookies with automatic token refresh. Optional 2FA adds SMS verification layer: users can enable 2FA in User Settings by providing phone number (E.164 format), receiving 6-digit SMS codes via Twilio Verify API. When enabled, users complete Replit Auth first, then verify SMS code before accessing the application. Database tracks 2FA status (`twoFactorEnabled`, `twoFactorVerified`, `phoneNumber` fields in users table).
 
 ## Database Design
 Utilizes PostgreSQL with Neon serverless driver and Drizzle ORM. The schema supports a full e-commerce workflow, including users, products, orders, customers, warehouses, suppliers, returns, inventory tracking (variants, stock), multi-currency financial tracking, and an audit trail.
@@ -61,4 +61,4 @@ Utilizes PostgreSQL with Neon serverless driver and Drizzle ORM. The schema supp
 
 ## Other APIs
 - **Frankfurter API** (https://frankfurter.dev/): Free, open-source currency exchange rate API for real-time and historical exchange rates. Provides reliable EUR-based conversion rates for multi-currency support across the application.
-- **Facebook Graph API**: For fetching customer profile pictures and names.
+- **Twilio Verify API**: SMS verification service for two-factor authentication. Sends 6-digit codes to user phone numbers for additional security layer. Configured with TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_VERIFY_SERVICE_SID environment variables.

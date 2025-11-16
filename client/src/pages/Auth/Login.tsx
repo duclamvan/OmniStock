@@ -67,10 +67,7 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const response = await apiRequest("/api/2fa/send-code", {
-        method: "POST",
-        body: JSON.stringify({ phoneNumber }),
-      });
+      const response = await apiRequest("POST", "/api/2fa/send-code", { phoneNumber });
 
       if (response.ok) {
         setIsCodeSent(true);
@@ -113,10 +110,7 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const response = await apiRequest("/api/2fa/verify", {
-        method: "POST",
-        body: JSON.stringify({ phoneNumber, code: verificationCode }),
-      });
+      const response = await apiRequest("POST", "/api/2fa/verify", { phoneNumber, code: verificationCode });
 
       if (response.ok) {
         toast({

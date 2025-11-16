@@ -644,8 +644,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Mark user as 2FA verified for this session
-      await storage.setUser2FAVerified(req.user.id, true);
+      // Get user ID from session claims
+      const userId = req.user.claims?.sub;
+      if (!userId) {
+        return res.status(500).json({ message: 'User ID not found in session' });
+      }
+
+      // Mark user as 2FA verified in database for this session
+      await storage.setUser2FAVerified(userId, true);
+      
+      console.log(`✅ User ${userId} successfully verified 2FA`);
 
       res.json({ success: true, verified: true });
     } catch (error) {
