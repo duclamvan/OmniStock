@@ -5607,6 +5607,18 @@ router.post("/receipts/auto-save", async (req, res) => {
 
     // Update or create receipt items if explicitly provided
     if (items && items.length > 0) {
+      // Get existing receipt items to preserve itemType
+      const existingItems = await db
+        .select()
+        .from(receiptItems)
+        .where(eq(receiptItems.receiptId, receipt.id));
+      
+      // Create a map of itemId -> itemType for quick lookup
+      const itemTypeMap = new Map();
+      existingItems.forEach(item => {
+        itemTypeMap.set(item.itemId, item.itemType);
+      });
+      
       // Delete existing receipt items for this receipt
       await db
         .delete(receiptItems)
@@ -5619,10 +5631,15 @@ router.post("/receipts/auto-save", async (req, res) => {
           ? parseInt((item.itemId || item.id).toString()) 
           : (item.itemId || item.id);
         
+        // Preserve the original itemType from the database, or default to 'custom'
+        const itemType = itemTypeMap.get(itemId) || 'custom';
+        
         return {
           receiptId: receipt.id,
           itemId: itemId,
-          itemType: 'purchase', // Default to purchase type
+          itemType: itemType, // Use preserved itemType
+          productId: item.productId || null, // Include productId
+          sku: item.sku || null, // Include SKU
           expectedQuantity: item.expectedQuantity || item.expectedQty || 1,
           receivedQuantity: item.receivedQuantity || item.receivedQty || 0,
           damagedQuantity: item.damagedQuantity || 0,
