@@ -143,6 +143,11 @@ function normalizeSQLColumn(column: any) {
   `;
 }
 
+// Helper to convert snake_case to camelCase
+function snakeToCamel(str: string): string {
+  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+}
+
 // Helper to get settings by category as an object
 async function getSettingsByCategory(category: string): Promise<Record<string, any>> {
   const allSettings = await storage.getAppSettings();

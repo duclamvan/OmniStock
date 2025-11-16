@@ -1399,15 +1399,23 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <p className="text-gray-500 dark:text-gray-400 text-xs">Items</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100">
-                        {order.items?.length || 0} item(s)
-                      </p>
+                      {isLoading ? (
+                        <div className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                      ) : (
+                        <p className="font-medium text-gray-900 dark:text-gray-100">
+                          {order.items?.length || 0} item(s)
+                        </p>
+                      )}
                     </div>
                     <div>
                       <p className="text-gray-500 dark:text-gray-400 text-xs">Total Amount</p>
-                      <p className="font-bold text-gray-900 dark:text-gray-100">
-                        {formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'EUR')}
-                      </p>
+                      {isLoading ? (
+                        <div className="h-5 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                      ) : (
+                        <p className="font-bold text-gray-900 dark:text-gray-100">
+                          {formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'EUR')}
+                        </p>
+                      )}
                     </div>
                   </div>
                   
