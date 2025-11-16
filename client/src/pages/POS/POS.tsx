@@ -453,72 +453,87 @@ export default function POS() {
                       <div className="space-y-2 pr-4">
                         {cart.map((item) => (
                           <Card key={item.id} className="p-3">
-                            <div className="flex items-start gap-3">
+                            <div className="flex gap-3">
                               {/* Product Image */}
                               {item.imageUrl ? (
                                 <img
                                   src={item.imageUrl}
                                   alt={item.name}
-                                  className="w-16 h-16 object-cover rounded-md border border-gray-200 dark:border-gray-700 shrink-0"
+                                  className="w-20 h-20 object-cover rounded-lg border-2 border-gray-200 dark:border-gray-700 shrink-0"
                                   data-testid={`img-cart-item-${item.id}`}
                                 />
                               ) : (
-                                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700 flex items-center justify-center shrink-0">
-                                  <Package className="h-6 w-6 text-gray-400" />
+                                <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-lg border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center shrink-0">
+                                  <Package className="h-8 w-8 text-gray-400" />
                                 </div>
                               )}
                               
-                              {/* Item Info */}
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-medium text-sm line-clamp-2">{item.name}</h4>
-                                {item.sku && (
-                                  <p className="text-xs text-muted-foreground">SKU: {item.sku}</p>
-                                )}
-                                <p className="text-sm font-semibold text-primary mt-1">
-                                  {currency} {item.price.toFixed(2)}
-                                </p>
-                              </div>
+                              {/* Item Info & Controls */}
+                              <div className="flex-1 min-w-0 space-y-2">
+                                {/* Product Name - Full Display */}
+                                <div>
+                                  <h4 className="font-semibold text-sm leading-tight break-words">{item.name}</h4>
+                                  {item.sku && (
+                                    <p className="text-xs text-muted-foreground mt-0.5">SKU: {item.sku}</p>
+                                  )}
+                                </div>
 
-                              {/* Quantity Controls */}
-                              <div className="flex items-center gap-2 shrink-0">
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                  data-testid={`button-decrease-${item.id}`}
-                                >
-                                  <Minus className="h-3 w-3" />
-                                </Button>
-                                <span className="font-bold min-w-[2rem] text-center">
-                                  {item.quantity}
-                                </span>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                  data-testid={`button-increase-${item.id}`}
-                                >
-                                  <Plus className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
-                                  onClick={() => removeFromCart(item.id)}
-                                  data-testid={`button-remove-${item.id}`}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
+                                {/* Price & Quantity Row */}
+                                <div className="flex items-center justify-between gap-3">
+                                  {/* Unit Price */}
+                                  <div className="text-sm">
+                                    <span className="text-muted-foreground">Unit: </span>
+                                    <span className="font-semibold text-primary">
+                                      {currency} {item.price.toFixed(2)}
+                                    </span>
+                                  </div>
 
-                            {/* Item Total */}
-                            <div className="flex justify-end mt-2 pt-2 border-t">
-                              <span className="font-semibold">
-                                {currency} {(item.price * item.quantity).toFixed(2)}
-                              </span>
+                                  {/* Quantity Controls */}
+                                  <div className="flex items-center gap-1.5">
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                      data-testid={`button-decrease-${item.id}`}
+                                    >
+                                      <Minus className="h-3 w-3" />
+                                    </Button>
+                                    <span className="font-bold min-w-[2.5rem] text-center text-base">
+                                      {item.quantity}
+                                    </span>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                      data-testid={`button-increase-${item.id}`}
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+
+                                {/* Subtotal & Remove */}
+                                <div className="flex items-center justify-between pt-1.5 border-t">
+                                  <div className="text-sm">
+                                    <span className="text-muted-foreground">Subtotal: </span>
+                                    <span className="font-bold text-base text-primary">
+                                      {currency} {(item.price * item.quantity).toFixed(2)}
+                                    </span>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30 -mr-2"
+                                    onClick={() => removeFromCart(item.id)}
+                                    data-testid={`button-remove-${item.id}`}
+                                  >
+                                    <X className="h-4 w-4 mr-1" />
+                                    Remove
+                                  </Button>
+                                </div>
+                              </div>
                             </div>
                           </Card>
                         ))}
