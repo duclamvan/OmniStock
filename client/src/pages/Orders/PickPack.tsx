@@ -13194,76 +13194,102 @@ export default function PickPack() {
                           addr.zipCode
                         ].filter(Boolean).join(' ').toLowerCase();
                       };
-                      
-                      // Categorize orders
-                      const czechiaSlovakia = readyOrders.filter(order => {
-                        // Check order ID prefix or notes content for CZ orders
-                        const orderId = order.orderId?.toLowerCase() || '';
-                        const notes = order.notes?.toLowerCase() || '';
+
+                      // Helper to get country code from shipping address
+                      const getCountryCode = (order: any): string => {
+                        if (!order.shippingAddress) return '';
+                        if (typeof order.shippingAddress === 'object' && order.shippingAddress.country) {
+                          return order.shippingAddress.country.toUpperCase();
+                        }
+                        // Fallback: try to extract from address string
                         const address = getAddressString(order);
-                        
-                        return orderId.includes('-cz') || 
-                               notes.includes('czech/slovak') || 
-                               address.includes('czech') || address.includes('česk') || 
-                               address.includes('slovakia') || address.includes('slovensk') ||
-                               address.includes('prague') || address.includes('praha') || 
-                               address.includes('bratislava') || address.includes('brno') || 
-                               address.includes('košice') || address.includes('plzeň') ||
-                               address.includes('ostrava') || address.includes('prešov') ||
-                               address.includes('nitra') || address.includes('trnava');
-                      });
+                        if (address.includes('czech') || address.includes('česk') || address.includes('prague') || address.includes('praha')) return 'CZ';
+                        if (address.includes('slovakia') || address.includes('slovensk') || address.includes('bratislava')) return 'SK';
+                        if (address.includes('germany') || address.includes('deutschland') || address.includes('berlin')) return 'DE';
+                        return '';
+                      };
                       
-                      const germanyEU = readyOrders.filter(order => {
-                        // Check order ID prefix or notes content for DE orders
-                        const orderId = order.orderId?.toLowerCase() || '';
-                        const notes = order.notes?.toLowerCase() || '';
+                      // Define carrier mappings (normalized)
+                      const czechCarriers = ['ppl', 'ppl cz', 'ppl czech', 'gls cz', 'gls czech'];
+                      const euCarriers = ['gls de', 'gls germany', 'dhl de', 'dhl germany'];
+                      const personalDeliveryMethods = ['personal delivery', 'hand delivery', 'personal'];
+                      const pickupMethods = ['customer pickup', 'store pickup', 'pickup', 'collect'];
+                      
+                      // Categorize each order - priority order: method first, then country, then fallbacks
+                      const categorizedOrders = readyOrders.map(order => {
+                        const method = (order.shippingMethod || '').toLowerCase().trim();
+                        const orderId = (order.orderId || '').toLowerCase();
+                        const notes = (order.notes || '').toLowerCase();
                         const address = getAddressString(order);
-                        const isCzechSlovak = czechiaSlovakia.includes(order);
+                        const countryCode = getCountryCode(order);
                         
-                        return !isCzechSlovak && (
-                          orderId.includes('-de') || 
-                          notes.includes('german/eu') ||
-                          address.includes('germany') || address.includes('deutschland') ||
-                          address.includes('berlin') || address.includes('munich') ||
-                          address.includes('düsseldorf') || address.includes('frankfurt') ||
-                          address.includes('hamburg') || address.includes('vienna') ||
-                          address.includes('zurich') || address.includes('geneva') ||
-                          address.includes('austria') || address.includes('switzerland') ||
-                          address.includes('france') || address.includes('italy') ||
-                          address.includes('spain') || address.includes('poland') ||
-                          address.includes('belgium')
-                        );
+                        // 1. Check for explicit personal delivery
+                        if (orderId.includes('-pd') || 
+                            personalDeliveryMethods.some(m => method === m || method.includes('personal delivery') || method.includes('hand delivery'))) {
+                          return { order, category: 'personal' };
+                        }
+                        
+                        // 2. Check for explicit pickup
+                        if (orderId.includes('-pu') || 
+                            pickupMethods.some(m => method === m || (method.includes('pickup') && !method.includes('ppl')))) {
+                          return { order, category: 'pickup' };
+                        }
+                        
+                        // 3. Check carrier-based categorization
+                        // PPL, GLS CZ → Czechia & Slovakia
+                        if (czechCarriers.some(carrier => method.includes(carrier)) ||
+                            method === 'ppl' || method.startsWith('ppl ') ||
+                            (method.includes('gls') && (method.includes('cz') || countryCode === 'CZ' || countryCode === 'SK'))) {
+                          return { order, category: 'czechia' };
+                        }
+                        
+                        // GLS DE, DHL → Germany & EU
+                        if (euCarriers.some(carrier => method.includes(carrier)) ||
+                            (method.includes('gls') && (method.includes('de') || countryCode === 'DE')) ||
+                            (method.includes('dhl') && countryCode !== 'CZ' && countryCode !== 'SK')) {
+                          return { order, category: 'germany' };
+                        }
+                        
+                        // 4. Fallback to order ID prefix
+                        if (orderId.includes('-cz')) {
+                          return { order, category: 'czechia' };
+                        }
+                        if (orderId.includes('-de')) {
+                          return { order, category: 'germany' };
+                        }
+                        
+                        // 5. Fallback to country code
+                        if (countryCode === 'CZ' || countryCode === 'SK') {
+                          return { order, category: 'czechia' };
+                        }
+                        
+                        // 6. Fallback to address string matching
+                        if (address.includes('czech') || address.includes('česk') || 
+                            address.includes('slovakia') || address.includes('slovensk') ||
+                            address.includes('prague') || address.includes('praha') || 
+                            address.includes('bratislava') || address.includes('brno')) {
+                          return { order, category: 'czechia' };
+                        }
+                        
+                        if (address.includes('germany') || address.includes('deutschland') ||
+                            address.includes('berlin') || address.includes('munich') ||
+                            address.includes('vienna') || address.includes('austria') ||
+                            address.includes('switzerland') || address.includes('france') ||
+                            address.includes('italy') || address.includes('spain') ||
+                            address.includes('poland') || address.includes('belgium')) {
+                          return { order, category: 'germany' };
+                        }
+                        
+                        // 7. Default to other
+                        return { order, category: 'other' };
                       });
                       
-                      const personalDelivery = readyOrders.filter(order => {
-                        // Check order ID prefix or notes content for PD orders
-                        const orderId = order.orderId?.toLowerCase() || '';
-                        const notes = order.notes?.toLowerCase() || '';
-                        const method = order.shippingMethod?.toLowerCase() || '';
-                        
-                        return orderId.includes('-pd') || 
-                               notes.includes('personal') ||
-                               method.includes('personal') || method.includes('hand deliver');
-                      });
-                      
-                      const pickup = readyOrders.filter(order => {
-                        // Check order ID prefix or notes content for PU orders
-                        const orderId = order.orderId?.toLowerCase() || '';
-                        const notes = order.notes?.toLowerCase() || '';
-                        const method = order.shippingMethod?.toLowerCase() || '';
-                        
-                        return orderId.includes('-pu') || 
-                               notes.includes('pickup') ||
-                               method.includes('pickup') || method.includes('collect');
-                      });
-                      
-                      // Other orders (not in any category)
-                      const otherOrders = readyOrders.filter(order => 
-                        !czechiaSlovakia.includes(order) && 
-                        !germanyEU.includes(order) && 
-                        !personalDelivery.includes(order) && 
-                        !pickup.includes(order)
-                      );
+                      // Group orders by category
+                      const czechiaSlovakia = categorizedOrders.filter(c => c.category === 'czechia').map(c => c.order);
+                      const germanyEU = categorizedOrders.filter(c => c.category === 'germany').map(c => c.order);
+                      const personalDelivery = categorizedOrders.filter(c => c.category === 'personal').map(c => c.order);
+                      const pickup = categorizedOrders.filter(c => c.category === 'pickup').map(c => c.order);
+                      const otherOrders = categorizedOrders.filter(c => c.category === 'other').map(c => c.order);
                       
                       const sections = [
                         { 
