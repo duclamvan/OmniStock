@@ -173,6 +173,8 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   updateUserRole(userId: string, role: string): Promise<void>;
   updateUserProfile(userId: string, updates: Partial<Pick<User, 'firstName' | 'lastName' | 'email'>>): Promise<User | undefined>;
+  updateUser2FA(userId: string, phoneNumber: string | null, enabled: boolean): Promise<User | undefined>;
+  setUser2FAVerified(userId: string, verified: boolean): Promise<void>;
 
   // Import Purchases
   getImportPurchases(): Promise<ImportPurchase[]>;
@@ -602,6 +604,28 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return result[0];
+  }
+
+  async updateUser2FA(userId: string, phoneNumber: string | null, enabled: boolean): Promise<User | undefined> {
+    const result = await db
+      .update(users)
+      .set({ 
+        phoneNumber, 
+        twoFactorEnabled: enabled,
+        twoFactorVerified: false,
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return result[0];
+  }
+
+  async setUser2FAVerified(userId: string, verified: boolean): Promise<void> {
+    await db
+      .update(users)
+      .set({ twoFactorVerified: verified, updatedAt: new Date() })
+      .where(eq(users.id, userId));
   }
 
   // Import Purchases

@@ -563,6 +563,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/2fa/setup - Enable/disable 2FA
+  app.post('/api/2fa/setup', async (req: any, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized - Please log in' });
+      }
+
+      const { phoneNumber, enabled } = req.body;
+
+      if (enabled && !phoneNumber) {
+        return res.status(400).json({ message: 'Phone number required to enable 2FA' });
+      }
+
+      const updatedUser = await storage.updateUser2FA(
+        req.user.id,
+        enabled ? phoneNumber : null,
+        enabled
+      );
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      res.json({
+        success: true,
+        twoFactorEnabled: updatedUser.twoFactorEnabled,
+        phoneNumber: updatedUser.phoneNumber
+      });
+    } catch (error) {
+      console.error('Error setting up 2FA:', error);
+      res.status(500).json({ message: 'Failed to setup 2FA' });
+    }
+  });
+
+  // POST /api/2fa/send-code - Send verification code
+  app.post('/api/2fa/send-code', async (req: any, res) => {
+    try {
+      const { phoneNumber } = req.body;
+
+      if (!phoneNumber) {
+        return res.status(400).json({ message: 'Phone number is required' });
+      }
+
+      const { sendVerificationCode } = await import('./services/twilioService.js');
+      const result = await sendVerificationCode(phoneNumber);
+
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: result.error || 'Failed to send verification code' 
+        });
+      }
+
+      res.json({ success: true, status: result.status });
+    } catch (error) {
+      console.error('Error sending verification code:', error);
+      res.status(500).json({ message: 'Failed to send verification code' });
+    }
+  });
+
+  // POST /api/2fa/verify - Verify SMS code
+  app.post('/api/2fa/verify', async (req: any, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized - Please log in' });
+      }
+
+      const { code, phoneNumber } = req.body;
+
+      if (!code || !phoneNumber) {
+        return res.status(400).json({ message: 'Code and phone number are required' });
+      }
+
+      const { verifyCode } = await import('./services/twilioService.js');
+      const result = await verifyCode(phoneNumber, code);
+
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: result.error || 'Invalid verification code' 
+        });
+      }
+
+      // Mark user as 2FA verified for this session
+      await storage.setUser2FAVerified(req.user.id, true);
+
+      res.json({ success: true, verified: true });
+    } catch (error) {
+      console.error('Error verifying code:', error);
+      res.status(500).json({ message: 'Failed to verify code' });
+    }
+  });
+
   // Serve GLS autofill userscript for Tampermonkey
   app.get('/api/download/gls-autofill-userscript', async (req, res) => {
     try {

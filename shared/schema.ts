@@ -11,6 +11,10 @@ export const users = pgTable('users', {
   lastName: varchar('last_name'),
   profileImageUrl: varchar('profile_image_url'),
   role: varchar('role').notNull().default('warehouse_operator'), // 'administrator' or 'warehouse_operator'
+  // Two-Factor Authentication fields
+  phoneNumber: varchar('phone_number'), // E.164 format: +420123456789
+  twoFactorEnabled: boolean('two_factor_enabled').notNull().default(false),
+  twoFactorVerified: boolean('two_factor_verified').notNull().default(false), // Track if they completed 2FA this session
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow()
 });
