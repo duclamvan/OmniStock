@@ -5918,6 +5918,54 @@ router.patch("/receipts/:id/items/:itemId", async (req, res) => {
       verifiedAt
     } = req.body;
     
+    // Check if receipt item exists
+    const [existingItem] = await db
+      .select()
+      .from(receiptItems)
+      .where(and(
+        eq(receiptItems.receiptId, receiptId),
+        eq(receiptItems.itemId, shipmentItemId)
+      ));
+    
+    // If item doesn't exist, create it first
+    if (!existingItem) {
+      const [newItem] = await db
+        .insert(receiptItems)
+        .values({
+          receiptId,
+          itemId: shipmentItemId,
+          itemType: 'custom', // Default, can be updated
+          expectedQuantity: 1,
+          receivedQuantity: receivedQuantity || 0,
+          damagedQuantity: damagedQuantity || 0,
+          missingQuantity: missingQuantity || 0,
+          condition: condition || 'pending',
+          barcode: barcode || null,
+          warehouseLocation: warehouseLocation || null,
+          additionalLocation: additionalLocation || null,
+          storageInstructions: storageInstructions || null,
+          notes: notes || null,
+          verifiedAt: verifiedAt ? new Date(verifiedAt) : null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning({
+          id: receiptItems.id,
+          receivedQuantity: receiptItems.receivedQuantity,
+          damagedQuantity: receiptItems.damagedQuantity,
+          missingQuantity: receiptItems.missingQuantity,
+          condition: receiptItems.condition,
+          barcode: receiptItems.barcode,
+          warehouseLocation: receiptItems.warehouseLocation,
+          additionalLocation: receiptItems.additionalLocation,
+          storageInstructions: receiptItems.storageInstructions,
+          notes: receiptItems.notes,
+          verifiedAt: receiptItems.verifiedAt
+        });
+      
+      return res.json({ success: true, updated: newItem });
+    }
+    
     // Build update object with only provided fields
     const updateData: any = { updatedAt: new Date() };
     if (receivedQuantity !== undefined) updateData.receivedQuantity = receivedQuantity;
@@ -5932,13 +5980,13 @@ router.patch("/receipts/:id/items/:itemId", async (req, res) => {
     if (notes !== undefined) updateData.notes = notes;
     if (verifiedAt !== undefined) updateData.verifiedAt = verifiedAt ? new Date(verifiedAt) : null;
     
-    // Single efficient update query - look for receipt item by its item_id field
+    // Update existing item
     const [updated] = await db
       .update(receiptItems)
       .set(updateData)
       .where(and(
         eq(receiptItems.receiptId, receiptId),
-        eq(receiptItems.itemId, shipmentItemId)  // Use item_id to find the receipt item
+        eq(receiptItems.itemId, shipmentItemId)
       ))
       .returning({ 
         id: receiptItems.id,
@@ -5953,10 +6001,6 @@ router.patch("/receipts/:id/items/:itemId", async (req, res) => {
         notes: receiptItems.notes,
         verifiedAt: receiptItems.verifiedAt
       });
-    
-    if (!updated) {
-      return res.status(404).json({ success: false, message: "Receipt item not found" });
-    }
     
     res.json({ success: true, updated });
   } catch (error) {
@@ -5976,6 +6020,40 @@ router.patch("/receipts/:id/items/:itemId/increment", async (req, res) => {
       return res.status(400).json({ success: false, message: "Delta value required" });
     }
     
+    // Check if receipt item exists
+    const [existingItem] = await db
+      .select()
+      .from(receiptItems)
+      .where(and(
+        eq(receiptItems.receiptId, receiptId),
+        eq(receiptItems.itemId, shipmentItemId)
+      ));
+    
+    // If item doesn't exist, create it first with the delta value
+    if (!existingItem) {
+      const initialQuantity = Math.max(0, delta);
+      const [newItem] = await db
+        .insert(receiptItems)
+        .values({
+          receiptId,
+          itemId: shipmentItemId,
+          itemType: 'custom', // Default, can be updated
+          expectedQuantity: 1,
+          receivedQuantity: initialQuantity,
+          damagedQuantity: 0,
+          missingQuantity: 0,
+          condition: 'pending',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning({
+          id: receiptItems.id,
+          receivedQuantity: receiptItems.receivedQuantity
+        });
+      
+      return res.json({ success: true, updated: newItem });
+    }
+    
     // Atomic increment using SQL - look for receipt item by its item_id field
     const [updated] = await db
       .update(receiptItems)
@@ -5991,10 +6069,6 @@ router.patch("/receipts/:id/items/:itemId/increment", async (req, res) => {
         id: receiptItems.id,
         receivedQuantity: receiptItems.receivedQuantity
       });
-    
-    if (!updated) {
-      return res.status(404).json({ success: false, message: "Receipt item not found" });
-    }
     
     res.json({ success: true, updated });
   } catch (error) {
