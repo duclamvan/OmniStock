@@ -574,12 +574,14 @@ function ReceiptProgressCarousel({ receipts }: { receipts: any[] }) {
       <ScrollArea className="w-full whitespace-nowrap">
         <div className="flex gap-4 px-4 pb-3">
           {receipts.map((receipt: any) => {
-            const totalItems = receipt.items?.length || 0;
-            const completedItems = receipt.items?.filter((i: any) => i.status === 'complete').length || 0;
-            const progress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+            // Calculate based on received quantities instead of status
+            const items = receipt.items || [];
+            const totalQuantity = items.reduce((sum: number, item: any) => sum + (item.expectedQuantity || item.quantity || 0), 0);
+            const receivedQuantity = items.reduce((sum: number, item: any) => sum + (item.receivedQuantity || 0), 0);
+            const progress = totalQuantity > 0 ? Math.round((receivedQuantity / totalQuantity) * 100) : 0;
             
-            // Determine progress color
-            let progressColor = 'text-gray-600';
+            // Determine progress color based on quantity completion
+            let progressColor = 'text-gray-500 dark:text-gray-400';
             let progressBg = 'bg-gray-100 dark:bg-gray-800';
             if (progress === 100) {
               progressColor = 'text-green-600 dark:text-green-500';
@@ -618,7 +620,7 @@ function ReceiptProgressCarousel({ receipts }: { receipts: any[] }) {
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-medium text-muted-foreground">Progress</span>
                         <span className={`font-bold text-base ${progressColor}`}>
-                          {completedItems}/{totalItems}
+                          {receivedQuantity}/{totalQuantity}
                         </span>
                       </div>
                       <Progress value={progress} className="h-2.5" />
@@ -1049,9 +1051,11 @@ function ReceivingShipmentCard({ shipment }: { shipment: any }) {
   const [, navigate] = useLocation();
   const [isExpanded, setIsExpanded] = useState(true);
   
-  const itemCount = shipment.items?.length || 0;
-  const receivedCount = shipment.items?.filter((i: any) => i.receivedQuantity > 0).length || 0;
-  const progress = itemCount > 0 ? Math.round((receivedCount / itemCount) * 100) : 0;
+  // Calculate based on total quantities
+  const items = shipment.items || [];
+  const totalQuantity = items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+  const receivedQuantity = items.reduce((sum: number, item: any) => sum + (item.receivedQuantity || 0), 0);
+  const progress = totalQuantity > 0 ? Math.round((receivedQuantity / totalQuantity) * 100) : 0;
 
   return (
     <Card className="overflow-hidden border-cyan-200 dark:border-cyan-800" data-testid={`card-shipment-${shipment.id}`}>
@@ -1070,7 +1074,11 @@ function ReceivingShipmentCard({ shipment }: { shipment: any }) {
             <div className="space-y-2 text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Package className="h-4 w-4" />
-                <span>{receivedCount}/{itemCount} items received</span>
+                <span className={`font-semibold ${
+                  progress === 100 ? 'text-green-600 dark:text-green-500' :
+                  progress > 0 ? 'text-amber-600 dark:text-amber-500' :
+                  'text-gray-500 dark:text-gray-400'
+                }`}>{receivedQuantity}/{totalQuantity}</span>
               </div>
               <Progress value={progress} className="h-2" />
             </div>
