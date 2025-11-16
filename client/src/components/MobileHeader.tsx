@@ -19,6 +19,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/hooks/useAuth';
 import logoPath from '@assets/logo_1754349267160.png';
 
 interface MobileHeaderProps {
@@ -45,6 +46,7 @@ export function MobileHeader({
   const { toast } = useToast();
   const { generalSettings } = useSettings();
   const { i18n, t } = useTranslation();
+  const { user } = useAuth();
   
   // Language toggle mutation
   const languageMutation = useMutation({
@@ -309,8 +311,10 @@ export function MobileHeader({
             <DropdownMenuContent align="end" className="w-56 bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">ronak_03</p>
-                  <p className="text-xs text-muted-foreground dark:text-gray-400">admin@daviesupply.com</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.email || 'User'}
+                  </p>
+                  <p className="text-xs text-muted-foreground dark:text-gray-400">{user?.email || ''}</p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
