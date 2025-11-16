@@ -6,13 +6,17 @@ import { relations, sql } from 'drizzle-orm';
 // Users table
 export const users = pgTable('users', {
   id: varchar('id').primaryKey(),
+  replitSub: varchar('replit_sub'), // Optional - only for Replit auth users
   email: varchar('email'),
   firstName: varchar('first_name'),
   lastName: varchar('last_name'),
   profileImageUrl: varchar('profile_image_url'),
   role: varchar('role').notNull().default('warehouse_operator'), // 'administrator' or 'warehouse_operator'
+  // Authentication provider
+  authProvider: varchar('auth_provider').notNull().default('replit'), // 'replit' | 'sms' | 'email'
   // Two-Factor Authentication fields
-  phoneNumber: varchar('phone_number'), // E.164 format: +420123456789
+  phoneNumber: varchar('phone_number').unique(), // E.164 format: +420123456789
+  phoneVerifiedAt: timestamp('phone_verified_at'), // When phone was verified
   twoFactorEnabled: boolean('two_factor_enabled').notNull().default(false),
   twoFactorVerified: boolean('two_factor_verified').notNull().default(false), // Track if they completed 2FA this session
   createdAt: timestamp('created_at').defaultNow(),

@@ -45,6 +45,7 @@ import {
   orderItems,
   orders,
   customers,
+  users,
   packingMaterials,
   customerShippingAddresses,
   productFiles,
@@ -659,6 +660,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error verifying code:', error);
       res.status(500).json({ message: 'Failed to verify code' });
+    }
+  });
+
+  // POST /api/auth/sms/start - Send SMS verification code for primary authentication
+  app.post('/api/auth/sms/start', async (req: any, res) => {
+    try {
+      const { phoneNumber } = req.body;
+
+      if (!phoneNumber) {
+        return res.status(400).json({ message: 'Phone number is required' });
+      }
+
+      // Normalize phone number to E.164 format
+      const normalizedPhone = normalizePhone(phoneNumber);
+      if (!normalizedPhone) {
+        return res.status(400).json({ message: 'Invalid phone number format. Please use E.164 format (e.g., +420123456789)' });
+      }
+
+      // Send verification code
+      const { sendVerificationCode } = await import('./services/twilioService.js');
+      const result = await sendVerificationCode(normalizedPhone);
+
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: result.error || 'Failed to send verification code' 
+        });
+      }
+
+      console.log(`📱 SMS verification code sent to ${normalizedPhone}`);
+      res.json({ success: true, phoneNumber: normalizedPhone });
+    } catch (error) {
+      console.error('Error sending SMS verification code:', error);
+      res.status(500).json({ message: 'Failed to send verification code' });
+    }
+  });
+
+  // POST /api/auth/sms/verify - Verify SMS code and create session for primary authentication
+  app.post('/api/auth/sms/verify', async (req: any, res) => {
+    try {
+      const { phoneNumber, code } = req.body;
+
+      if (!phoneNumber || !code) {
+        return res.status(400).json({ message: 'Phone number and verification code are required' });
+      }
+
+      // Normalize phone number
+      const normalizedPhone = normalizePhone(phoneNumber);
+      if (!normalizedPhone) {
+        return res.status(400).json({ message: 'Invalid phone number format' });
+      }
+
+      // Verify the code with Twilio
+      const { verifyCode } = await import('./services/twilioService.js');
+      const verificationResult = await verifyCode(normalizedPhone, code);
+
+      if (!verificationResult.success) {
+        return res.status(400).json({ 
+          message: verificationResult.error || 'Invalid verification code' 
+        });
+      }
+
+      // Find or create user by phone number
+      let user = await storage.getUserByPhone(normalizedPhone);
+
+      if (!user) {
+        // Create new SMS user
+        console.log(`📱 Creating new SMS user for ${normalizedPhone}`);
+        user = await storage.createUserWithPhone({
+          name: 'User', // Default name, user can update later
+          phone: normalizedPhone
+        });
+      } else {
+        // Update phoneVerifiedAt timestamp for existing user
+        await db
+          .update(users)
+          .set({ phoneVerifiedAt: new Date() })
+          .where(eq(users.id, user.id));
+      }
+
+      // Create session using req.login()
+      req.login(user, (err: any) => {
+        if (err) {
+          console.error('Error creating session:', err);
+          return res.status(500).json({ message: 'Failed to create session' });
+        }
+
+        console.log(`✅ SMS login successful for user ${user.id}`);
+        
+        res.json({
+          success: true,
+          user: {
+            id: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            role: user.role
+          }
+        });
+      });
+    } catch (error) {
+      console.error('Error verifying SMS code:', error);
+      res.status(500).json({ message: 'Failed to verify code and create session' });
     }
   });
 

@@ -170,6 +170,7 @@ export interface IStorage {
   getUserByPhone(phone: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   createUserWithPhone(userData: { name: string; phone: string }): Promise<User>;
+  createSmsUser(phoneNumber: string): Promise<User>;
   getAllUsers(): Promise<User[]>;
   updateUserRole(userId: string, role: string): Promise<void>;
   updateUserProfile(userId: string, updates: Partial<Pick<User, 'firstName' | 'lastName' | 'email'>>): Promise<User | undefined>;
@@ -559,7 +560,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByPhone(phone: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.phone, phone)).limit(1);
+    const [user] = await db.select().from(users).where(eq(users.phoneNumber, phone)).limit(1);
     return user;
   }
 
@@ -572,11 +573,42 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUserWithPhone(userData: { name: string; phone: string }): Promise<User> {
-    const [user] = await db.insert(users).values({
-      name: userData.name,
-      phone: userData.phone,
-    }).returning();
-    return user;
+    const { nanoid } = await import('nanoid');
+    try {
+      const [user] = await db.insert(users).values({
+        id: nanoid(),
+        firstName: userData.name,
+        phoneNumber: userData.phone,
+        authProvider: 'sms',
+        phoneVerifiedAt: new Date(),
+        role: 'warehouse_operator',
+      }).returning();
+      return user;
+    } catch (error: any) {
+      if (error.code === '23505') {
+        throw new Error('Phone number already registered');
+      }
+      throw error;
+    }
+  }
+
+  async createSmsUser(phoneNumber: string): Promise<User> {
+    const { nanoid } = await import('nanoid');
+    try {
+      const [user] = await db.insert(users).values({
+        id: nanoid(),
+        phoneNumber: phoneNumber,
+        authProvider: 'sms',
+        phoneVerifiedAt: new Date(),
+        role: 'warehouse_operator',
+      }).returning();
+      return user;
+    } catch (error: any) {
+      if (error.code === '23505') {
+        throw new Error('Phone number already registered');
+      }
+      throw error;
+    }
   }
 
   async getAllUsers(): Promise<User[]> {
