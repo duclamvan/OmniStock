@@ -2427,32 +2427,32 @@ export default function StartReceiving() {
                 </div>
               </div>
               
-              {/* Progress Summary */}
+              {/* Progress Summary - Mobile Optimized */}
               {receivingItems.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">
+                <div className="flex gap-3 overflow-x-auto pb-2 px-1">
+                  <div className="flex items-center gap-2 bg-green-50 dark:bg-green-950/30 px-3 py-2 rounded-lg border border-green-200 dark:border-green-800 flex-shrink-0">
+                    <div className="text-lg font-bold text-green-600">
                       {receivingItems.filter(i => i.status === 'complete').length}
                     </div>
-                    <div className="text-xs text-muted-foreground">Complete</div>
+                    <div className="text-xs text-green-700 dark:text-green-400 font-medium">Complete</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-amber-600">
+                  <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-800 flex-shrink-0">
+                    <div className="text-lg font-bold text-amber-600">
                       {receivingItems.filter(i => i.status === 'pending').length}
                     </div>
-                    <div className="text-xs text-muted-foreground">Pending</div>
+                    <div className="text-xs text-amber-700 dark:text-amber-400 font-medium">Pending</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-red-600">
+                  <div className="flex items-center gap-2 bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded-lg border border-red-200 dark:border-red-800 flex-shrink-0">
+                    <div className="text-lg font-bold text-red-600">
                       {receivingItems.filter(i => i.status === 'damaged' || i.status === 'partial_damaged').length}
                     </div>
-                    <div className="text-xs text-muted-foreground">Damaged</div>
+                    <div className="text-xs text-red-700 dark:text-red-400 font-medium">Damaged</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-600">
+                  <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 flex-shrink-0">
+                    <div className="text-lg font-bold text-gray-600 dark:text-gray-400">
                       {receivingItems.filter(i => i.status === 'missing' || i.status === 'partial_missing').length}
                     </div>
-                    <div className="text-xs text-muted-foreground">Missing</div>
+                    <div className="text-xs text-gray-700 dark:text-gray-400 font-medium">Missing</div>
                   </div>
                 </div>
               )}
