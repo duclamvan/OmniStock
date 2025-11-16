@@ -116,7 +116,7 @@ const navigation = [
   },
   {
     name: "Settings",
-    href: "/settings",
+    href: "/user-settings",
     icon: Settings,
   },
 ];

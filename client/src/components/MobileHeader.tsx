@@ -320,7 +320,7 @@ export function MobileHeader({
                   <span className="text-gray-900 dark:text-gray-100">{t('common:profile')}</span>
                 </DropdownMenuItem>
               </Link>
-              <Link href="/settings">
+              <Link href="/user-settings">
                 <DropdownMenuItem className="hover:bg-gray-100 dark:hover:bg-gray-700">
                   <Settings className="mr-2 h-4 w-4 text-gray-700 dark:text-gray-300" />
                   <span className="text-gray-900 dark:text-gray-100">{t('common:settings')}</span>

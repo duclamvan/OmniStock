@@ -47,3 +47,24 @@ export type ThemeSurface = keyof typeof themeClasses.surface;
 export type ThemeText = keyof typeof themeClasses.text;
 export type ThemeBorder = keyof typeof themeClasses.border;
 export type ThemeBadgeVariant = keyof typeof themeClasses.badge;
+
+export function applyThemePreference(theme: 'light' | 'dark'): void {
+  if (theme === 'dark') {
+    document.documentElement.classList.add('dark');
+    localStorage.setItem('theme', 'dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+    localStorage.setItem('theme', 'light');
+  }
+}
+
+export function getCurrentTheme(): 'light' | 'dark' {
+  if (typeof window === 'undefined') return 'light';
+  return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+}
+
+export function getStoredTheme(): 'light' | 'dark' | null {
+  if (typeof window === 'undefined') return null;
+  const stored = localStorage.getItem('theme');
+  return stored === 'dark' ? 'dark' : stored === 'light' ? 'light' : null;
+}
