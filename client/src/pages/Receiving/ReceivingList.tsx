@@ -1022,9 +1022,14 @@ function ToReceiveShipmentCard({ shipment }: { shipment: any }) {
                 <h4 className="text-sm font-semibold text-black dark:text-white">Items:</h4>
                 <div className="space-y-1 max-h-40 overflow-y-auto">
                   {shipment.items.map((item: any, idx: number) => (
-                    <div key={idx} className="flex justify-between text-sm p-2 bg-muted/30 rounded">
-                      <span className="truncate text-black dark:text-white">{item.productName || item.name}</span>
-                      <span className="font-semibold ml-2 text-black dark:text-white">×{item.quantity}</span>
+                    <div key={idx} className="flex flex-col gap-1 text-sm p-2 bg-muted/30 rounded">
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="text-black dark:text-white font-medium">{item.productName || item.name}</span>
+                        <span className="font-semibold text-black dark:text-white shrink-0">×{item.quantity}</span>
+                      </div>
+                      {item.category && (
+                        <span className="text-xs text-muted-foreground">{item.category}</span>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1110,15 +1115,20 @@ function ReceivingShipmentCard({ shipment }: { shipment: any }) {
                     const isPartial = receivedQty > 0 && receivedQty < totalQty;
                     
                     return (
-                      <div key={idx} className="flex justify-between items-center text-sm p-2 bg-muted/30 rounded">
-                        <span className="truncate text-black dark:text-white">{item.productName || item.name}</span>
-                        <span className={`font-semibold ${
-                          isComplete ? 'text-green-600 dark:text-green-500' :
-                          isPartial ? 'text-amber-600 dark:text-amber-500' :
-                          'text-gray-500 dark:text-gray-400'
-                        }`}>
-                          {receivedQty}/{totalQty}
-                        </span>
+                      <div key={idx} className="flex flex-col gap-1 text-sm p-2 bg-muted/30 rounded">
+                        <div className="flex justify-between items-start gap-2">
+                          <span className="text-black dark:text-white font-medium">{item.productName || item.name}</span>
+                          <span className={`font-semibold shrink-0 ${
+                            isComplete ? 'text-green-600 dark:text-green-500' :
+                            isPartial ? 'text-amber-600 dark:text-amber-500' :
+                            'text-gray-500 dark:text-gray-400'
+                          }`}>
+                            {receivedQty}/{totalQty}
+                          </span>
+                        </div>
+                        {item.category && (
+                          <span className="text-xs text-muted-foreground">{item.category}</span>
+                        )}
                       </div>
                     );
                   })}
@@ -1196,9 +1206,14 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
                 <h4 className="text-sm font-semibold text-black dark:text-white">Items:</h4>
                 <div className="space-y-1 max-h-40 overflow-y-auto">
                   {shipment.items.map((item: any, idx: number) => (
-                    <div key={idx} className="flex justify-between text-sm p-2 bg-muted/30 rounded">
-                      <span className="truncate text-black dark:text-white">{item.productName || item.name}</span>
-                      <span className="font-semibold ml-2 text-black dark:text-white">×{item.quantity}</span>
+                    <div key={idx} className="flex flex-col gap-1 text-sm p-2 bg-muted/30 rounded">
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="text-black dark:text-white font-medium">{item.productName || item.name}</span>
+                        <span className="font-semibold text-black dark:text-white shrink-0">×{item.quantity}</span>
+                      </div>
+                      {item.category && (
+                        <span className="text-xs text-muted-foreground">{item.category}</span>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1276,9 +1291,14 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
                 <h4 className="text-sm font-semibold text-black dark:text-white">Items:</h4>
                 <div className="space-y-1 max-h-40 overflow-y-auto">
                   {shipment.items.map((item: any, idx: number) => (
-                    <div key={idx} className="flex justify-between text-sm p-2 bg-muted/30 rounded">
-                      <span className="truncate text-black dark:text-white">{item.productName || item.name}</span>
-                      <span className="font-semibold ml-2 text-black dark:text-white">×{item.quantity}</span>
+                    <div key={idx} className="flex flex-col gap-1 text-sm p-2 bg-muted/30 rounded">
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="text-black dark:text-white font-medium">{item.productName || item.name}</span>
+                        <span className="font-semibold text-black dark:text-white shrink-0">×{item.quantity}</span>
+                      </div>
+                      {item.category && (
+                        <span className="text-xs text-muted-foreground">{item.category}</span>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1356,9 +1376,14 @@ function ArchivedShipmentCard({ shipment }: { shipment: any }) {
                 <h4 className="text-sm font-semibold text-black dark:text-white">Items:</h4>
                 <div className="space-y-1 max-h-40 overflow-y-auto">
                   {shipment.items.map((item: any, idx: number) => (
-                    <div key={idx} className="flex justify-between text-sm p-2 bg-muted/30 rounded">
-                      <span className="truncate text-black dark:text-white">{item.productName || item.name}</span>
-                      <span className="font-semibold ml-2 text-black dark:text-white">×{item.quantity}</span>
+                    <div key={idx} className="flex flex-col gap-1 text-sm p-2 bg-muted/30 rounded">
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="text-black dark:text-white font-medium">{item.productName || item.name}</span>
+                        <span className="font-semibold text-black dark:text-white shrink-0">×{item.quantity}</span>
+                      </div>
+                      {item.category && (
+                        <span className="text-xs text-muted-foreground">{item.category}</span>
+                      )}
                     </div>
                   ))}
                 </div>
