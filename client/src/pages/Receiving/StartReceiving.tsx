@@ -2479,7 +2479,7 @@ export default function StartReceiving() {
               )}
 
               {/* Items List */}
-              <div className="max-h-96 overflow-y-auto space-y-3 pr-1">
+              <div className="max-h-[700px] overflow-y-auto space-y-2 pr-1">
                 {/* Show skeleton loading when items are still loading */}
                 {receiptLoading || isLoading ? (
                   // Show skeleton items while loading
@@ -2576,16 +2576,16 @@ export default function StartReceiving() {
                           hover:shadow-md
                         `}
                       >
-                        <div className="p-4">
+                        <div className="p-3 sm:p-4">
                           {/* Grid Layout: Left Column (Image) + Right Column (Details & Controls) */}
-                          <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-5">
+                          <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-3 sm:gap-5">
                             {/* Left Column - Product Image */}
                             <div className="flex justify-center sm:justify-start">
-                              <div className="relative flex-shrink-0 w-24 h-24">
+                              <div className="relative flex-shrink-0 w-16 h-16 sm:w-24 sm:h-24">
                                 <LazyImage 
                                   thumbnailSrc={item.imageUrl}
                                   alt={item.name}
-                                  className="w-24 h-24 object-contain rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm bg-white dark:bg-gray-800"
+                                  className="w-16 h-16 sm:w-24 sm:h-24 object-contain rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm bg-white dark:bg-gray-800"
                                 />
                                 {/* Status Icon Overlay */}
                                 <div className={`absolute -top-1.5 -right-1.5 w-7 h-7 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center transition-transform duration-200 shadow-sm ${isComplete ? 'scale-110' : ''} z-10`}>
@@ -2595,11 +2595,11 @@ export default function StartReceiving() {
                             </div>
                             
                             {/* Right Column - All Item Details and Controls */}
-                            <div className="flex flex-col gap-3 min-w-0">
+                            <div className="flex flex-col gap-2 sm:gap-3 min-w-0">
                               {/* Header Section: Name, SKU, and Status Badge */}
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
-                                  <h4 className={`font-semibold text-base leading-tight ${isComplete ? 'line-through opacity-60' : ''}`}>
+                                  <h4 className={`font-semibold text-sm sm:text-base leading-tight ${isComplete ? 'line-through opacity-60' : ''}`}>
                                     {item.name}
                                   </h4>
                                   {item.sku && (
@@ -2653,10 +2653,10 @@ export default function StartReceiving() {
                               </div>
                               
                               {/* Progress Section */}
-                              <div className="space-y-2">
+                              <div className="space-y-1">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-xs text-muted-foreground">Progress</span>
-                                  <span className={`text-sm font-bold ${
+                                  <span className="text-[10px] sm:text-xs text-muted-foreground">Progress</span>
+                                  <span className={`text-xs sm:text-sm font-bold ${
                                     progress >= 100 ? 'text-green-600' : 
                                     progress > 0 ? 'text-amber-600' : 
                                     'text-gray-500'
@@ -2664,7 +2664,7 @@ export default function StartReceiving() {
                                     {item.receivedQty} / {item.expectedQty} units
                                   </span>
                                 </div>
-                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 sm:h-2 overflow-hidden">
                                   <div 
                                     className={`h-full transition-all duration-300 ease-out ${
                                       progress >= 100 ? 'bg-green-500' :
@@ -2677,33 +2677,33 @@ export default function StartReceiving() {
                               </div>
                               
                               {/* Controls Section - Redesigned */}
-                              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                                 {/* Quantity Controls */}
-                                <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg p-1.5 border border-gray-300 dark:border-gray-600 shadow-sm">
+                                <div className="flex items-center gap-1.5 bg-white dark:bg-gray-800 rounded-lg p-1 border border-gray-300 dark:border-gray-600 shadow-sm">
                                   <Button
                                     variant="ghost"
                                     size="default"
                                     onClick={() => updateItemQuantity(item.id, -1)}
                                     disabled={item.receivedQty === 0}
-                                    className="h-10 w-10 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    className="h-8 w-8 sm:h-10 sm:w-10 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
-                                    <Minus className="h-5 w-5" />
+                                    <Minus className="h-4 w-4 sm:h-5 sm:w-5" />
                                   </Button>
-                                  <span className="text-lg font-bold font-mono w-20 text-center px-2">
+                                  <span className="text-base sm:text-lg font-bold font-mono w-16 sm:w-20 text-center px-1 sm:px-2">
                                     {item.receivedQty}/{item.expectedQty}
                                   </span>
                                   <Button
                                     variant="ghost"
                                     size="default"
                                     onClick={() => updateItemQuantity(item.id, 1)}
-                                    className="h-10 w-10 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    className="h-8 w-8 sm:h-10 sm:w-10 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
-                                    <Plus className="h-5 w-5" />
+                                    <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
                                   </Button>
                                 </div>
 
                                 {/* Action Buttons Group */}
-                                <div className="flex gap-2 flex-wrap">
+                                <div className="flex gap-1.5 sm:gap-2 flex-wrap">
                                   <Button
                                     variant={item.status === 'complete' ? "default" : "outline"}
                                     size="default"
@@ -2726,39 +2726,39 @@ export default function StartReceiving() {
                                         updateItemFieldMutation.mutate({ itemId: item.id, field: 'status', value: 'complete' });
                                       }
                                     }}
-                                    className={`h-10 min-w-[80px] font-medium transition-colors shadow-sm ${
+                                    className={`h-9 sm:h-10 min-w-[70px] sm:min-w-[80px] text-xs sm:text-sm font-medium transition-colors shadow-sm ${
                                       item.status === 'complete'
                                         ? 'bg-green-600 hover:bg-green-700 border-green-600 text-white'
                                         : 'border-green-500 hover:border-green-600 hover:bg-green-50 text-green-700'
                                     }`}
                                   >
-                                    <Check className="h-4 w-4 mr-1.5" />
+                                    <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
                                     OK
                                   </Button>
                                   <Button
                                     variant={isDamaged ? "destructive" : "outline"}
                                     size="default"
                                     onClick={() => toggleItemStatus(item.id, 'damaged')}
-                                    className={`h-10 min-w-[80px] font-medium transition-colors shadow-sm ${
+                                    className={`h-9 sm:h-10 min-w-[70px] sm:min-w-[80px] text-xs sm:text-sm font-medium transition-colors shadow-sm ${
                                       isDamaged
                                         ? 'bg-red-600 hover:bg-red-700 border-red-600 text-white'
                                         : 'border-red-500 hover:border-red-600 hover:bg-red-50 text-red-700'
                                     }`}
                                   >
-                                    <AlertTriangle className="h-4 w-4 mr-1.5" />
+                                    <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
                                     DMG
                                   </Button>
                                   <Button
                                     variant={isMissing ? "secondary" : "outline"}
                                     size="default"
                                     onClick={() => toggleItemStatus(item.id, 'missing')}
-                                    className={`h-10 min-w-[80px] font-medium transition-colors shadow-sm ${
+                                    className={`h-9 sm:h-10 min-w-[70px] sm:min-w-[80px] text-xs sm:text-sm font-medium transition-colors shadow-sm ${
                                       isMissing
                                         ? 'bg-gray-600 hover:bg-gray-700 border-gray-600 text-white'
                                         : 'border-gray-500 hover:border-gray-600 hover:bg-gray-50 text-gray-700'
                                     }`}
                                   >
-                                    <X className="h-4 w-4 mr-1.5" />
+                                    <X className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
                                     MISS
                                   </Button>
                                 </div>
