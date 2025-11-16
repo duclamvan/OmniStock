@@ -427,15 +427,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     passport.authenticate('facebook', { scope: ['email'] })
   );
 
-  // Auth user endpoint (mock for development)
+  // Auth user endpoint - returns authenticated user data
   app.get('/api/auth/user', async (req: any, res) => {
-    // Return mock user for testing without auth
-    res.json({
-      id: "test-user",
-      email: "test@example.com",
-      firstName: "Test",
-      lastName: "User"
-    });
+    try {
+      // Check if user is authenticated
+      if (!req.user) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
+
+      let userId: string;
+      
+      // Handle different authentication methods
+      if (req.user.claims?.sub) {
+        // Replit Auth: user ID is in claims.sub
+        userId = String(req.user.claims.sub);
+      } else if (req.user.id) {
+        // SMS Auth: user object is stored directly in session
+        userId = req.user.id;
+      } else {
+        return res.status(401).json({ message: 'Invalid session data' });
+      }
+      
+      // Fetch full user data from database
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Return user data without sensitive fields
+      res.json({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        profileImageUrl: user.profileImageUrl,
+        phoneNumber: user.phoneNumber,
+        authProvider: user.authProvider,
+        twoFactorEnabled: user.twoFactorEnabled
+      });
+    } catch (error) {
+      console.error('Error fetching authenticated user:', error);
+      res.status(500).json({ message: 'Failed to fetch user data' });
+    }
   });
 
   // Role-checking middleware
