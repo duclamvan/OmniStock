@@ -40,6 +40,7 @@ import {
   productLocations,
   purchaseItems,
   importPurchases,
+  shipments,
   receipts,
   receiptItems,
   orderItems,
@@ -11823,6 +11824,107 @@ Important:
     } catch (error) {
       console.error('Error deleting app setting:', error);
       res.status(500).json({ message: 'Failed to delete app setting' });
+    }
+  });
+
+  // ============================================================================
+  // IMPORTS & RECEIVING ROUTES
+  // ============================================================================
+
+  // Get shipments by receiving status - To Receive
+  app.get('/api/imports/shipments/to-receive', async (req, res) => {
+    try {
+      const shipmentsData = await db
+        .select()
+        .from(shipments)
+        .where(
+          and(
+            eq(shipments.status, 'delivered'),
+            or(
+              isNull(shipments.receivingStatus),
+              eq(shipments.receivingStatus, '')
+            )
+          )
+        )
+        .orderBy(desc(shipments.deliveredAt));
+      res.json(shipmentsData);
+    } catch (error) {
+      console.error('Error fetching to-receive shipments:', error);
+      res.status(500).json({ message: 'Failed to fetch shipments' });
+    }
+  });
+
+  // Get shipments by receiving status - Receiving
+  app.get('/api/imports/shipments/receiving', async (req, res) => {
+    try {
+      const shipmentsData = await db
+        .select()
+        .from(shipments)
+        .where(eq(shipments.receivingStatus, 'receiving'))
+        .orderBy(desc(shipments.updatedAt));
+      res.json(shipmentsData);
+    } catch (error) {
+      console.error('Error fetching receiving shipments:', error);
+      res.status(500).json({ message: 'Failed to fetch shipments' });
+    }
+  });
+
+  // Get shipments by receiving status - Storage (pending approval)
+  app.get('/api/imports/shipments/storage', async (req, res) => {
+    try {
+      const shipmentsData = await db
+        .select()
+        .from(shipments)
+        .where(eq(shipments.receivingStatus, 'pending_approval'))
+        .orderBy(desc(shipments.updatedAt));
+      res.json(shipmentsData);
+    } catch (error) {
+      console.error('Error fetching storage shipments:', error);
+      res.status(500).json({ message: 'Failed to fetch shipments' });
+    }
+  });
+
+  // Get shipments by receiving status - Completed
+  app.get('/api/imports/shipments/completed', async (req, res) => {
+    try {
+      const shipmentsData = await db
+        .select()
+        .from(shipments)
+        .where(eq(shipments.receivingStatus, 'completed'))
+        .orderBy(desc(shipments.updatedAt));
+      res.json(shipmentsData);
+    } catch (error) {
+      console.error('Error fetching completed shipments:', error);
+      res.status(500).json({ message: 'Failed to fetch shipments' });
+    }
+  });
+
+  // Get shipments by receiving status - Archived
+  app.get('/api/imports/shipments/archived', async (req, res) => {
+    try {
+      const shipmentsData = await db
+        .select()
+        .from(shipments)
+        .where(eq(shipments.receivingStatus, 'archived'))
+        .orderBy(desc(shipments.updatedAt));
+      res.json(shipmentsData);
+    } catch (error) {
+      console.error('Error fetching archived shipments:', error);
+      res.status(500).json({ message: 'Failed to fetch shipments' });
+    }
+  });
+
+  // Get all receipts
+  app.get('/api/imports/receipts', async (req, res) => {
+    try {
+      const receiptsData = await db
+        .select()
+        .from(receipts)
+        .orderBy(desc(receipts.receivedAt));
+      res.json(receiptsData);
+    } catch (error) {
+      console.error('Error fetching receipts:', error);
+      res.status(500).json({ message: 'Failed to fetch receipts' });
     }
   });
 
