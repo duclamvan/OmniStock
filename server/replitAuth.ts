@@ -84,9 +84,22 @@ export async function setupAuth(app: Express) {
     verified: passport.AuthenticateCallback
   ) => {
     console.log("Verifying user authentication");
-    const user = {};
+    const user: any = {};
     updateUserSession(user, tokens);
     await upsertUser(tokens.claims());
+    
+    // Load the full user from database to get role and other fields
+    const dbUser = await storage.getUser(String(tokens.claims()["sub"]));
+    if (dbUser) {
+      user.id = dbUser.id;
+      user.email = dbUser.email;
+      user.firstName = dbUser.firstName;
+      user.lastName = dbUser.lastName;
+      user.role = dbUser.role;
+      user.profileImageUrl = dbUser.profileImageUrl;
+      user.createdAt = dbUser.createdAt;
+    }
+    
     verified(null, user);
   };
 
@@ -194,12 +207,23 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   if (now <= user.expires_at) {
     // Check if 2FA verification is required
     try {
-      const dbUser = await storage.getUser(user.claims?.sub);
+      const dbUser = await storage.getUser(user.claims?.sub || user.id);
       if (dbUser && dbUser.twoFactorEnabled && !dbUser.twoFactorVerified) {
         return res.status(403).json({ 
           message: "Two-factor authentication required",
           requireTwoFactor: true
         });
+      }
+      
+      // Update user session with latest database data (including role)
+      if (dbUser && !user.role) {
+        user.id = dbUser.id;
+        user.email = dbUser.email;
+        user.firstName = dbUser.firstName;
+        user.lastName = dbUser.lastName;
+        user.role = dbUser.role;
+        user.profileImageUrl = dbUser.profileImageUrl;
+        user.createdAt = dbUser.createdAt;
       }
     } catch (error) {
       console.error("Error checking 2FA status:", error);
@@ -217,6 +241,19 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     const config = await getOidcConfig();
     const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
     updateUserSession(user, tokenResponse);
+    
+    // Reload user data from database after token refresh
+    const dbUser = await storage.getUser(user.claims?.sub || user.id);
+    if (dbUser) {
+      user.id = dbUser.id;
+      user.email = dbUser.email;
+      user.firstName = dbUser.firstName;
+      user.lastName = dbUser.lastName;
+      user.role = dbUser.role;
+      user.profileImageUrl = dbUser.profileImageUrl;
+      user.createdAt = dbUser.createdAt;
+    }
+    
     return next();
   } catch (error) {
     res.status(401).json({ message: "Unauthorized" });
