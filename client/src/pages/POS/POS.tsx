@@ -34,6 +34,7 @@ interface CartItem {
   quantity: number;
   type: 'product' | 'variant' | 'bundle';
   sku?: string;
+  imageUrl?: string;
 }
 
 export default function POS() {
@@ -162,6 +163,7 @@ export default function POS() {
         quantity: 1,
         type: itemType,
         sku: item.sku,
+        imageUrl: item.imageUrl,
       }]);
     }
     
@@ -447,6 +449,20 @@ export default function POS() {
                         {cart.map((item) => (
                           <Card key={item.id} className="p-3">
                             <div className="flex items-start gap-3">
+                              {/* Product Image */}
+                              {item.imageUrl ? (
+                                <img
+                                  src={item.imageUrl}
+                                  alt={item.name}
+                                  className="w-16 h-16 object-cover rounded-md border border-gray-200 dark:border-gray-700 shrink-0"
+                                  data-testid={`img-cart-item-${item.id}`}
+                                />
+                              ) : (
+                                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700 flex items-center justify-center shrink-0">
+                                  <Package className="h-6 w-6 text-gray-400" />
+                                </div>
+                              )}
+                              
                               {/* Item Info */}
                               <div className="flex-1 min-w-0">
                                 <h4 className="font-medium text-sm line-clamp-2">{item.name}</h4>
