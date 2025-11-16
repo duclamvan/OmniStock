@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from "@/hooks/useAuth";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -157,6 +158,7 @@ export default function StartReceiving() {
   const { id } = useParams();
   const [location, navigate] = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth(); // Get current user for auto-populating "Received By"
   const barcodeRef = useRef<HTMLInputElement>(null);
   const lastSaveDataRef = useRef<any>(null); // Fix missing ref error for world-record speed
   const dataInitializedRef = useRef<string>(''); // Prevent double initialization - stores data key
@@ -164,6 +166,7 @@ export default function StartReceiving() {
   const updateTimerRef = useRef<NodeJS.Timeout | null>(null); // Timer for debounced updates
   const isInitialLoadRef = useRef<boolean>(true); // Track if we're in the initial load phase
   const prefilledDataProcessedRef = useRef<boolean>(false); // Track if prefilled data has been processed
+  const receivedByAutoPopulatedRef = useRef<boolean>(false); // Track if receivedBy has been auto-populated
   
   // Handle back navigation with proper query invalidation
   const handleBackNavigation = useCallback(() => {
@@ -175,8 +178,13 @@ export default function StartReceiving() {
     navigate('/receiving');
   }, [id, navigate]);
   
-  // Form state
-  const [receivedBy, setReceivedBy] = useState("Employee #1");
+  // Form state - Auto-populate "Received By" with current user's name or email
+  const [receivedBy, setReceivedBy] = useState(() => {
+    if (user) {
+      return user.name || user.email || "Employee #1";
+    }
+    return "Employee #1";
+  });
   const [carrier, setCarrier] = useState("");
   const [parcelCount, setParcelCount] = useState(1);
   const [scannedParcels, setScannedParcels] = useState(0);
@@ -288,7 +296,9 @@ export default function StartReceiving() {
         parcelCount: receiptData.parcelCount,
         notes: receiptData.notes
       });
-      setReceivedBy(receiptData.receivedBy || "Employee #1");
+      // Auto-populate receivedBy with current user if receipt doesn't have one
+      const defaultReceivedBy = user?.name || user?.email || "Employee #1";
+      setReceivedBy(receiptData.receivedBy || defaultReceivedBy);
       setCarrier(receiptData.carrier || shipment.endCarrier || shipment.carrier || "");
       setParcelCount(receiptData.parcelCount || shipment.totalUnits || 1);
       

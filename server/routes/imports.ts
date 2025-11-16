@@ -3048,34 +3048,70 @@ router.get("/shipments/to-receive", async (req, res) => {
       shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
     }));
 
-    // Load shipment items if there are any shipments
+    // Load consolidation items for each shipment
     if (formattedShipments.length > 0) {
-      const shipmentIds = formattedShipments.map(s => s.id);
-      const allItems = await db
-        .select()
-        .from(shipmentItems)
-        .where(inArray(shipmentItems.shipmentId, shipmentIds));
+      const consolidationIds = formattedShipments.map(s => s.consolidationId).filter(Boolean) as number[];
       
-      // Group items by shipmentId in memory
-      const itemsByShipmentId: Record<number, typeof allItems> = {};
-      for (const item of allItems) {
-        if (!itemsByShipmentId[item.shipmentId]) {
-          itemsByShipmentId[item.shipmentId] = [];
+      if (consolidationIds.length > 0) {
+        // Get all consolidation items
+        const allConsolidationItems = await db
+          .select()
+          .from(consolidationItems)
+          .where(inArray(consolidationItems.consolidationId, consolidationIds));
+        
+        // Get all custom and purchase items
+        const customItemIds = allConsolidationItems
+          .filter(ci => ci.itemType === 'custom')
+          .map(ci => ci.itemId);
+        const purchaseItemIds = allConsolidationItems
+          .filter(ci => ci.itemType === 'purchase')
+          .map(ci => ci.itemId);
+        
+        const [customItemsData, purchaseItemsData] = await Promise.all([
+          customItemIds.length > 0
+            ? db.select().from(customItems).where(inArray(customItems.id, customItemIds))
+            : Promise.resolve([]),
+          purchaseItemIds.length > 0
+            ? db.select().from(purchaseItems).where(inArray(purchaseItems.id, purchaseItemIds))
+            : Promise.resolve([])
+        ]);
+        
+        // Create lookup maps
+        const customItemsMap = new Map(customItemsData.map(item => [item.id, item]));
+        const purchaseItemsMap = new Map(purchaseItemsData.map(item => [item.id, item]));
+        
+        // Group by consolidationId with full item details
+        const itemsByConsolidationId: Record<number, any[]> = {};
+        for (const ci of allConsolidationItems) {
+          if (!itemsByConsolidationId[ci.consolidationId]) {
+            itemsByConsolidationId[ci.consolidationId] = [];
+          }
+          
+          const itemData = ci.itemType === 'custom'
+            ? customItemsMap.get(ci.itemId)
+            : purchaseItemsMap.get(ci.itemId);
+          
+          if (itemData) {
+            itemsByConsolidationId[ci.consolidationId].push({
+              ...itemData,
+              itemType: ci.itemType,
+              consolidationItemId: ci.id
+            });
+          }
         }
-        itemsByShipmentId[item.shipmentId].push(item);
+        
+        // Attach items array to each shipment
+        formattedShipments = formattedShipments.map(shipment => {
+          const items = shipment.consolidationId ? (itemsByConsolidationId[shipment.consolidationId] || []) : [];
+          const totalQuantity = items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+          return {
+            ...shipment,
+            items,
+            itemCount: items.length,
+            totalQuantity
+          };
+        });
       }
-      
-      // Attach items array to each shipment
-      formattedShipments = formattedShipments.map(shipment => {
-        const items = itemsByShipmentId[shipment.id] || [];
-        const totalQuantity = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-        return {
-          ...shipment,
-          items,
-          itemCount: items.length,
-          totalQuantity
-        };
-      });
     }
 
     // Filter financial data based on user role
@@ -3107,34 +3143,70 @@ router.get("/shipments/receiving", async (req, res) => {
       shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
     }));
 
-    // Load shipment items if there are any shipments
+    // Load consolidation items for each shipment
     if (formattedShipments.length > 0) {
-      const shipmentIds = formattedShipments.map(s => s.id);
-      const allItems = await db
-        .select()
-        .from(shipmentItems)
-        .where(inArray(shipmentItems.shipmentId, shipmentIds));
+      const consolidationIds = formattedShipments.map(s => s.consolidationId).filter(Boolean) as number[];
       
-      // Group items by shipmentId in memory
-      const itemsByShipmentId: Record<number, typeof allItems> = {};
-      for (const item of allItems) {
-        if (!itemsByShipmentId[item.shipmentId]) {
-          itemsByShipmentId[item.shipmentId] = [];
+      if (consolidationIds.length > 0) {
+        // Get all consolidation items
+        const allConsolidationItems = await db
+          .select()
+          .from(consolidationItems)
+          .where(inArray(consolidationItems.consolidationId, consolidationIds));
+        
+        // Get all custom and purchase items
+        const customItemIds = allConsolidationItems
+          .filter(ci => ci.itemType === 'custom')
+          .map(ci => ci.itemId);
+        const purchaseItemIds = allConsolidationItems
+          .filter(ci => ci.itemType === 'purchase')
+          .map(ci => ci.itemId);
+        
+        const [customItemsData, purchaseItemsData] = await Promise.all([
+          customItemIds.length > 0
+            ? db.select().from(customItems).where(inArray(customItems.id, customItemIds))
+            : Promise.resolve([]),
+          purchaseItemIds.length > 0
+            ? db.select().from(purchaseItems).where(inArray(purchaseItems.id, purchaseItemIds))
+            : Promise.resolve([])
+        ]);
+        
+        // Create lookup maps
+        const customItemsMap = new Map(customItemsData.map(item => [item.id, item]));
+        const purchaseItemsMap = new Map(purchaseItemsData.map(item => [item.id, item]));
+        
+        // Group by consolidationId with full item details
+        const itemsByConsolidationId: Record<number, any[]> = {};
+        for (const ci of allConsolidationItems) {
+          if (!itemsByConsolidationId[ci.consolidationId]) {
+            itemsByConsolidationId[ci.consolidationId] = [];
+          }
+          
+          const itemData = ci.itemType === 'custom'
+            ? customItemsMap.get(ci.itemId)
+            : purchaseItemsMap.get(ci.itemId);
+          
+          if (itemData) {
+            itemsByConsolidationId[ci.consolidationId].push({
+              ...itemData,
+              itemType: ci.itemType,
+              consolidationItemId: ci.id
+            });
+          }
         }
-        itemsByShipmentId[item.shipmentId].push(item);
+        
+        // Attach items array to each shipment
+        formattedShipments = formattedShipments.map(shipment => {
+          const items = shipment.consolidationId ? (itemsByConsolidationId[shipment.consolidationId] || []) : [];
+          const totalQuantity = items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+          return {
+            ...shipment,
+            items,
+            itemCount: items.length,
+            totalQuantity
+          };
+        });
       }
-      
-      // Attach items array to each shipment
-      formattedShipments = formattedShipments.map(shipment => {
-        const items = itemsByShipmentId[shipment.id] || [];
-        const totalQuantity = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-        return {
-          ...shipment,
-          items,
-          itemCount: items.length,
-          totalQuantity
-        };
-      });
     }
 
     // Filter financial data based on user role
@@ -3166,34 +3238,70 @@ router.get("/shipments/storage", async (req, res) => {
       shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
     }));
 
-    // Load shipment items if there are any shipments
+    // Load consolidation items for each shipment
     if (formattedShipments.length > 0) {
-      const shipmentIds = formattedShipments.map(s => s.id);
-      const allItems = await db
-        .select()
-        .from(shipmentItems)
-        .where(inArray(shipmentItems.shipmentId, shipmentIds));
+      const consolidationIds = formattedShipments.map(s => s.consolidationId).filter(Boolean) as number[];
       
-      // Group items by shipmentId in memory
-      const itemsByShipmentId: Record<number, typeof allItems> = {};
-      for (const item of allItems) {
-        if (!itemsByShipmentId[item.shipmentId]) {
-          itemsByShipmentId[item.shipmentId] = [];
+      if (consolidationIds.length > 0) {
+        // Get all consolidation items
+        const allConsolidationItems = await db
+          .select()
+          .from(consolidationItems)
+          .where(inArray(consolidationItems.consolidationId, consolidationIds));
+        
+        // Get all custom and purchase items
+        const customItemIds = allConsolidationItems
+          .filter(ci => ci.itemType === 'custom')
+          .map(ci => ci.itemId);
+        const purchaseItemIds = allConsolidationItems
+          .filter(ci => ci.itemType === 'purchase')
+          .map(ci => ci.itemId);
+        
+        const [customItemsData, purchaseItemsData] = await Promise.all([
+          customItemIds.length > 0
+            ? db.select().from(customItems).where(inArray(customItems.id, customItemIds))
+            : Promise.resolve([]),
+          purchaseItemIds.length > 0
+            ? db.select().from(purchaseItems).where(inArray(purchaseItems.id, purchaseItemIds))
+            : Promise.resolve([])
+        ]);
+        
+        // Create lookup maps
+        const customItemsMap = new Map(customItemsData.map(item => [item.id, item]));
+        const purchaseItemsMap = new Map(purchaseItemsData.map(item => [item.id, item]));
+        
+        // Group by consolidationId with full item details
+        const itemsByConsolidationId: Record<number, any[]> = {};
+        for (const ci of allConsolidationItems) {
+          if (!itemsByConsolidationId[ci.consolidationId]) {
+            itemsByConsolidationId[ci.consolidationId] = [];
+          }
+          
+          const itemData = ci.itemType === 'custom'
+            ? customItemsMap.get(ci.itemId)
+            : purchaseItemsMap.get(ci.itemId);
+          
+          if (itemData) {
+            itemsByConsolidationId[ci.consolidationId].push({
+              ...itemData,
+              itemType: ci.itemType,
+              consolidationItemId: ci.id
+            });
+          }
         }
-        itemsByShipmentId[item.shipmentId].push(item);
+        
+        // Attach items array to each shipment
+        formattedShipments = formattedShipments.map(shipment => {
+          const items = shipment.consolidationId ? (itemsByConsolidationId[shipment.consolidationId] || []) : [];
+          const totalQuantity = items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+          return {
+            ...shipment,
+            items,
+            itemCount: items.length,
+            totalQuantity
+          };
+        });
       }
-      
-      // Attach items array to each shipment
-      formattedShipments = formattedShipments.map(shipment => {
-        const items = itemsByShipmentId[shipment.id] || [];
-        const totalQuantity = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-        return {
-          ...shipment,
-          items,
-          itemCount: items.length,
-          totalQuantity
-        };
-      });
     }
 
     // Filter financial data based on user role
@@ -3226,34 +3334,70 @@ router.get("/shipments/completed", async (req, res) => {
       shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
     }));
 
-    // Load shipment items if there are any shipments
+    // Load consolidation items for each shipment
     if (formattedShipments.length > 0) {
-      const shipmentIds = formattedShipments.map(s => s.id);
-      const allItems = await db
-        .select()
-        .from(shipmentItems)
-        .where(inArray(shipmentItems.shipmentId, shipmentIds));
+      const consolidationIds = formattedShipments.map(s => s.consolidationId).filter(Boolean) as number[];
       
-      // Group items by shipmentId in memory
-      const itemsByShipmentId: Record<number, typeof allItems> = {};
-      for (const item of allItems) {
-        if (!itemsByShipmentId[item.shipmentId]) {
-          itemsByShipmentId[item.shipmentId] = [];
+      if (consolidationIds.length > 0) {
+        // Get all consolidation items
+        const allConsolidationItems = await db
+          .select()
+          .from(consolidationItems)
+          .where(inArray(consolidationItems.consolidationId, consolidationIds));
+        
+        // Get all custom and purchase items
+        const customItemIds = allConsolidationItems
+          .filter(ci => ci.itemType === 'custom')
+          .map(ci => ci.itemId);
+        const purchaseItemIds = allConsolidationItems
+          .filter(ci => ci.itemType === 'purchase')
+          .map(ci => ci.itemId);
+        
+        const [customItemsData, purchaseItemsData] = await Promise.all([
+          customItemIds.length > 0
+            ? db.select().from(customItems).where(inArray(customItems.id, customItemIds))
+            : Promise.resolve([]),
+          purchaseItemIds.length > 0
+            ? db.select().from(purchaseItems).where(inArray(purchaseItems.id, purchaseItemIds))
+            : Promise.resolve([])
+        ]);
+        
+        // Create lookup maps
+        const customItemsMap = new Map(customItemsData.map(item => [item.id, item]));
+        const purchaseItemsMap = new Map(purchaseItemsData.map(item => [item.id, item]));
+        
+        // Group by consolidationId with full item details
+        const itemsByConsolidationId: Record<number, any[]> = {};
+        for (const ci of allConsolidationItems) {
+          if (!itemsByConsolidationId[ci.consolidationId]) {
+            itemsByConsolidationId[ci.consolidationId] = [];
+          }
+          
+          const itemData = ci.itemType === 'custom'
+            ? customItemsMap.get(ci.itemId)
+            : purchaseItemsMap.get(ci.itemId);
+          
+          if (itemData) {
+            itemsByConsolidationId[ci.consolidationId].push({
+              ...itemData,
+              itemType: ci.itemType,
+              consolidationItemId: ci.id
+            });
+          }
         }
-        itemsByShipmentId[item.shipmentId].push(item);
+        
+        // Attach items array to each shipment
+        formattedShipments = formattedShipments.map(shipment => {
+          const items = shipment.consolidationId ? (itemsByConsolidationId[shipment.consolidationId] || []) : [];
+          const totalQuantity = items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+          return {
+            ...shipment,
+            items,
+            itemCount: items.length,
+            totalQuantity
+          };
+        });
       }
-      
-      // Attach items array to each shipment
-      formattedShipments = formattedShipments.map(shipment => {
-        const items = itemsByShipmentId[shipment.id] || [];
-        const totalQuantity = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-        return {
-          ...shipment,
-          items,
-          itemCount: items.length,
-          totalQuantity
-        };
-      });
     }
 
     // Filter financial data based on user role
@@ -3286,34 +3430,70 @@ router.get("/shipments/archived", async (req, res) => {
       shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
     }));
 
-    // Load shipment items if there are any shipments
+    // Load consolidation items for each shipment
     if (formattedShipments.length > 0) {
-      const shipmentIds = formattedShipments.map(s => s.id);
-      const allItems = await db
-        .select()
-        .from(shipmentItems)
-        .where(inArray(shipmentItems.shipmentId, shipmentIds));
+      const consolidationIds = formattedShipments.map(s => s.consolidationId).filter(Boolean) as number[];
       
-      // Group items by shipmentId in memory
-      const itemsByShipmentId: Record<number, typeof allItems> = {};
-      for (const item of allItems) {
-        if (!itemsByShipmentId[item.shipmentId]) {
-          itemsByShipmentId[item.shipmentId] = [];
+      if (consolidationIds.length > 0) {
+        // Get all consolidation items
+        const allConsolidationItems = await db
+          .select()
+          .from(consolidationItems)
+          .where(inArray(consolidationItems.consolidationId, consolidationIds));
+        
+        // Get all custom and purchase items
+        const customItemIds = allConsolidationItems
+          .filter(ci => ci.itemType === 'custom')
+          .map(ci => ci.itemId);
+        const purchaseItemIds = allConsolidationItems
+          .filter(ci => ci.itemType === 'purchase')
+          .map(ci => ci.itemId);
+        
+        const [customItemsData, purchaseItemsData] = await Promise.all([
+          customItemIds.length > 0
+            ? db.select().from(customItems).where(inArray(customItems.id, customItemIds))
+            : Promise.resolve([]),
+          purchaseItemIds.length > 0
+            ? db.select().from(purchaseItems).where(inArray(purchaseItems.id, purchaseItemIds))
+            : Promise.resolve([])
+        ]);
+        
+        // Create lookup maps
+        const customItemsMap = new Map(customItemsData.map(item => [item.id, item]));
+        const purchaseItemsMap = new Map(purchaseItemsData.map(item => [item.id, item]));
+        
+        // Group by consolidationId with full item details
+        const itemsByConsolidationId: Record<number, any[]> = {};
+        for (const ci of allConsolidationItems) {
+          if (!itemsByConsolidationId[ci.consolidationId]) {
+            itemsByConsolidationId[ci.consolidationId] = [];
+          }
+          
+          const itemData = ci.itemType === 'custom'
+            ? customItemsMap.get(ci.itemId)
+            : purchaseItemsMap.get(ci.itemId);
+          
+          if (itemData) {
+            itemsByConsolidationId[ci.consolidationId].push({
+              ...itemData,
+              itemType: ci.itemType,
+              consolidationItemId: ci.id
+            });
+          }
         }
-        itemsByShipmentId[item.shipmentId].push(item);
+        
+        // Attach items array to each shipment
+        formattedShipments = formattedShipments.map(shipment => {
+          const items = shipment.consolidationId ? (itemsByConsolidationId[shipment.consolidationId] || []) : [];
+          const totalQuantity = items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+          return {
+            ...shipment,
+            items,
+            itemCount: items.length,
+            totalQuantity
+          };
+        });
       }
-      
-      // Attach items array to each shipment
-      formattedShipments = formattedShipments.map(shipment => {
-        const items = itemsByShipmentId[shipment.id] || [];
-        const totalQuantity = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-        return {
-          ...shipment,
-          items,
-          itemCount: items.length,
-          totalQuantity
-        };
-      });
     }
 
     // Filter financial data based on user role
