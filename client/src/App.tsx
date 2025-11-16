@@ -80,7 +80,6 @@ import AtWarehouse from "@/pages/Imports/AtWarehouse";
 import InternationalTransit from "@/pages/Imports/InternationalTransit";
 import ImportKanbanDashboard from "@/pages/Imports/ImportKanbanDashboard";
 import ReceivingList from "@/pages/Receiving/ReceivingList";
-import StartReceiving from "@/pages/Receiving/StartReceiving";
 import ContinueReceiving from "@/pages/Receiving/ContinueReceiving";
 import ReceiptDetails from "@/pages/Receiving/ReceiptDetails";
 import ReviewApprove from "@/pages/Receiving/ReviewApprove";
@@ -347,7 +346,7 @@ function Router() {
         {/* Receiving Routes */}
         <Route path="/receiving" component={ReceivingList} />
         <Route path="/receiving/storage" component={ItemsToStore} />
-        <Route path="/receiving/start/:id" component={StartReceiving} />
+        <Route path="/receiving/start/:id" component={ContinueReceiving} />
         <Route path="/receiving/continue/:id" component={ContinueReceiving} />
         <Route path="/receiving/receipt/:id" component={ContinueReceiving} />
         <Route path="/receiving/details/:id" component={ReceiptDetails} />
