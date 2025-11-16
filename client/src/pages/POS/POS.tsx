@@ -219,6 +219,7 @@ export default function POS() {
         })),
         subtotal: subtotal.toString(),
         total: total.toString(),
+        grandTotal: total.toString(),
         paymentMethod: 'cash',
         fulfillmentStage: 'completed',
       };
