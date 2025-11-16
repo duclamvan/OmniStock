@@ -1,4 +1,3 @@
-import { useAuth } from "@/hooks/useAuth";
 import { MobileResponsiveLayout } from "./MobileResponsiveLayout";
 
 interface LayoutProps {
@@ -6,12 +5,6 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading || !isAuthenticated) {
-    return null;
-  }
-
   return (
     <MobileResponsiveLayout>
       {children}

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth.tsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,11 +12,23 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
-  const { isAdministrator, isLoading } = useAuth();
+  const { isAuthenticated, isAdministrator, isLoading } = useAuth();
   const [, navigate] = useLocation();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate('/login');
+    }
+  }, [isLoading, isAuthenticated, navigate]);
 
   // While checking authentication, render nothing or a loading state
   if (isLoading) {
+    return null;
+  }
+
+  // If user is not authenticated, don't render anything (will redirect via useEffect)
+  if (!isAuthenticated) {
     return null;
   }
 
