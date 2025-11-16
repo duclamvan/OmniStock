@@ -211,7 +211,9 @@ export default function POS() {
         customerId: null,
         warehouseId: selectedWarehouse,
         currency: currency,
-        status: 'completed',
+        orderStatus: 'completed',
+        paymentStatus: 'paid',
+        orderType: 'pos',
         items: cart.map(item => ({
           productId: item.productId,
           variantId: item.variantId,
@@ -224,6 +226,9 @@ export default function POS() {
         grandTotal: total.toString(),
         paymentMethod: 'cash',
         fulfillmentStage: 'completed',
+        customerEmail: 'walkin@pos.local',
+        customerName: 'Walk-in Customer',
+        customerPhone: '+420000000000',
       };
 
       return await apiRequest('POST', '/api/orders', orderData);
