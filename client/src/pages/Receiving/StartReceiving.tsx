@@ -1874,74 +1874,118 @@ export default function StartReceiving() {
         )}
       </div>
       
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={handleBackNavigation}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+      {/* Header - Redesigned for mobile */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className="flex items-start gap-3">
+          <Button 
+            variant="ghost" 
+            size="default" 
+            onClick={handleBackNavigation}
+            className="h-11 px-3 flex-shrink-0"
+          >
+            <ArrowLeft className="h-5 w-5 mr-2" />
+            <span className="font-medium">Back</span>
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Quick Receiving</h1>
-            <p className="text-sm text-muted-foreground">
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold leading-tight">Quick Receiving</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
               {shipment.shipmentName || `Shipment #${shipment.id}`} • {shipment.trackingNumber}
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Badge className={getStatusColor(shipment.status)}>
+        <div className="flex flex-wrap gap-2">
+          <Badge className={`${getStatusColor(shipment.status)} text-sm px-3 py-1`}>
             {shipment.status?.replace('_', ' ').toUpperCase()}
           </Badge>
           {receipt && (
             <Link href={`/receiving/receipt/${receipt.id}`}>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="default" className="h-10">
                 <FileText className="h-4 w-4 mr-2" />
-                View Receipt
+                <span className="hidden sm:inline">View Receipt</span>
+                <span className="sm:hidden">Receipt</span>
               </Button>
             </Link>
           )}
         </div>
       </div>
 
-      {/* Progress Bar */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">Overall Progress</span>
-          <span className="text-sm text-muted-foreground">{Math.round(progress)}% Complete</span>
+      {/* Progress Bar - Redesigned */}
+      <div className="mb-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-base font-semibold text-gray-900 dark:text-gray-100">Overall Progress</span>
+          <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            {Math.round(progress)}%
+          </span>
         </div>
-        <Progress value={progress} className="h-3 bg-gray-200 dark:bg-gray-700" />
-        <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
-          <span>{unitLabel}: {scannedParcels}/{parcelCount}</span>
-          <span>Items Received: {totalReceivedQty}/{totalExpectedQty}</span>
-          <span>Verified: {checkedItemsCount}/{totalItems} items</span>
+        <div className="relative">
+          <Progress 
+            value={progress} 
+            className="h-3 bg-gray-200 dark:bg-gray-700 shadow-inner rounded-full" 
+          />
+        </div>
+        <div className="grid grid-cols-3 gap-3 mt-4 text-sm">
+          <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <div className="font-bold text-gray-900 dark:text-gray-100">{scannedParcels}/{parcelCount}</div>
+            <div className="text-xs text-muted-foreground">{unitLabel}</div>
+          </div>
+          <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <div className="font-bold text-gray-900 dark:text-gray-100">{totalReceivedQty}/{totalExpectedQty}</div>
+            <div className="text-xs text-muted-foreground">Items</div>
+          </div>
+          <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <div className="font-bold text-gray-900 dark:text-gray-100">{checkedItemsCount}/{totalItems}</div>
+            <div className="text-xs text-muted-foreground">Verified</div>
+          </div>
         </div>
       </div>
 
-      {/* Step Navigation */}
-      <div className="flex gap-2 mb-6">
+      {/* Step Navigation - Redesigned */}
+      <div className="flex gap-3 mb-6">
         <Button
           variant={currentStep === 1 ? "default" : "outline"}
           onClick={() => setCurrentStep(1)}
-          className="flex-1"
+          className={`flex-1 h-12 text-base font-medium transition-all ${
+            currentStep === 1 
+              ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-md' 
+              : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+          }`}
         >
-          <Package className="h-4 w-4 mr-2" />
-          Step 1: Parcel Check
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
+              currentStep === 1 ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+            }`}>
+              1
+            </div>
+            <Package className="h-5 w-5" />
+            <span className="hidden sm:inline">Parcel Check</span>
+          </div>
         </Button>
         <Button
           variant={currentStep === 2 ? "default" : "outline"}
           onClick={() => setCurrentStep(2)}
-          className="flex-1"
+          className={`flex-1 h-12 text-base font-medium transition-all ${
+            currentStep === 2 
+              ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-md' 
+              : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+          }`}
         >
-          <CheckSquare className="h-4 w-4 mr-2" />
-          Step 2: Item Checklist
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
+              currentStep === 2 ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+            }`}>
+              2
+            </div>
+            <CheckSquare className="h-5 w-5" />
+            <span className="hidden sm:inline">Item Checklist</span>
+          </div>
         </Button>
       </div>
 
-      {/* Step 1: Parcel Verification */}
+      {/* Step 1: Parcel Verification - Redesigned */}
       {currentStep === 1 && (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <Card className={`
-            transition-all duration-500 border-2 bg-white dark:bg-gray-900
+            transition-all duration-500 rounded-lg shadow-sm border bg-white dark:bg-gray-900
             ${scannedParcels === parcelCount && parcelCount > 0 
               ? 'border-green-400 shadow-green-100 dark:shadow-green-900/20' 
               : scannedParcels > 0 
@@ -1949,25 +1993,25 @@ export default function StartReceiving() {
                 : 'border-gray-200 dark:border-gray-700'
             }
           `}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-lg">
                 {scannedParcels === parcelCount && parcelCount > 0 ? (
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <CheckCircle2 className="h-6 w-6 text-green-600" />
                 ) : scannedParcels > 0 ? (
-                  <Clock className="h-5 w-5 text-amber-600" />
+                  <Clock className="h-6 w-6 text-amber-600" />
                 ) : (
-                  isPalletShipment ? <Layers className="h-5 w-5" /> : <Package className="h-5 w-5" />
+                  isPalletShipment ? <Layers className="h-6 w-6" /> : <Package className="h-6 w-6" />
                 )}
-                {unitLabel} Verification
+                <span className="font-semibold">{unitLabel} Verification</span>
                 {scannedParcels === parcelCount && parcelCount > 0 && (
-                  <Badge className="ml-auto bg-green-600 text-white">Complete</Badge>
+                  <Badge className="ml-auto bg-green-600 text-white shadow-sm px-3 py-1">Complete</Badge>
                 )}
                 {scannedParcels > 0 && scannedParcels < parcelCount && (
-                  <Badge className="ml-auto bg-amber-600 text-white">In Progress</Badge>
+                  <Badge className="ml-auto bg-amber-600 text-white shadow-sm px-3 py-1">In Progress</Badge>
                 )}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-5">
               {/* Show skeleton loading when data is loading */}
               {(receiptLoading || isLoading) ? (
                 <div className="space-y-4">
@@ -2014,108 +2058,110 @@ export default function StartReceiving() {
                 </div>
               ) : (
                 <>
-                  {/* Basic Info */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Basic Info - Redesigned */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                      <Label>Received By *</Label>
+                      <Label className="text-sm font-medium mb-2 block">Received By *</Label>
                       <Input
                         value={receivedBy}
                         onChange={(e) => handleReceivedByChange(e.target.value)}
                         onBlur={handleReceivedByBlur}
                         placeholder="Your name"
                         required
+                        className="h-11 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
                       />
                     </div>
                     <div>
-                      <Label>Carrier *</Label>
+                      <Label className="text-sm font-medium mb-2 block">Carrier *</Label>
                       <Input
                         value={carrier}
                         onChange={(e) => handleCarrierChange(e.target.value)}
                         onBlur={handleCarrierBlur}
                         placeholder="DHL, UPS, FedEx..."
                         required
+                        className="h-11 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
                       />
                     </div>
                   </div>
 
-                  {/* Parcel Count */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Parcel Count - Redesigned */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                      <Label>Expected {unitLabel}</Label>
+                      <Label className="text-sm font-medium mb-2 block">Expected {unitLabel}</Label>
                       <div className="flex items-center gap-2">
                         <Button
                           type="button"
                           variant="outline"
-                          size="sm"
+                          size="default"
                           onClick={() => handleParcelCountChange(Math.max(1, parcelCount - 1), true)}
                           disabled={parcelCount <= 1 || updateMetaMutation.isPending}
-                          className={updateMetaMutation.isPending ? 'opacity-50' : ''}
+                          className={`h-11 w-11 p-0 ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
                         >
-                          <Minus className="h-4 w-4" />
+                          <Minus className="h-5 w-5" />
                         </Button>
                         <Input
                           type="number"
                           value={parcelCount}
                           onChange={(e) => handleParcelCountChange(Math.max(1, parseInt(e.target.value) || 1), false)}
                           onBlur={handleParcelCountBlur}
-                          className="text-center"
+                          className="text-center h-11 text-lg font-semibold border-gray-300 dark:border-gray-600"
                           min="1"
                         />
                         <Button
                           type="button"
                           variant="outline"
-                          size="sm"
+                          size="default"
                           onClick={() => handleParcelCountChange(parcelCount + 1, true)}
                           disabled={updateMetaMutation.isPending}
-                          className={updateMetaMutation.isPending ? 'opacity-50' : ''}
+                          className={`h-11 w-11 p-0 ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus className="h-5 w-5" />
                         </Button>
                       </div>
                     </div>
 
                     <div>
-                      <Label>Received {unitLabel} (Manual)</Label>
+                      <Label className="text-sm font-medium mb-2 block">Received {unitLabel} (Manual)</Label>
                       <div className="flex items-center gap-2">
                         <Button
                           type="button"
                           variant="outline"
-                          size="sm"
+                          size="default"
                           onClick={() => handleScannedParcelsChange(Math.max(0, scannedParcels - 1), true)}
                           disabled={scannedParcels === 0 || updateMetaMutation.isPending}
-                          className={updateMetaMutation.isPending ? 'opacity-50' : ''}
+                          className={`h-11 w-11 p-0 ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
                         >
-                          <Minus className="h-4 w-4" />
+                          <Minus className="h-5 w-5" />
                         </Button>
                         <Input
                           type="number"
                           value={scannedParcels}
                           onChange={(e) => handleScannedParcelsChange(Math.max(0, Math.min(parcelCount, parseInt(e.target.value) || 0)), false)}
                           onBlur={handleScannedParcelsBlur}
-                          className="text-center"
+                          className="text-center h-11 text-lg font-semibold border-gray-300 dark:border-gray-600"
                           min="0"
                           max={parcelCount}
                         />
                         <Button
                           type="button"
                           variant="outline"
-                          size="sm"
+                          size="default"
                           onClick={() => handleScannedParcelsChange(Math.min(parcelCount, scannedParcels + 1), true)}
                           disabled={scannedParcels >= parcelCount || updateMetaMutation.isPending}
-                          className={updateMetaMutation.isPending ? 'opacity-50' : ''}
+                          className={`h-11 w-11 p-0 ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus className="h-5 w-5" />
                         </Button>
                       </div>
                     </div>
                   </div>
 
-              {/* Auto-Receive All Button */}
+              {/* Auto-Receive All Button - Redesigned */}
               <div>
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
+                  size="default"
                   onClick={() => {
                     handleScannedParcelsChange(parcelCount, true);
                     toast({
@@ -2124,29 +2170,31 @@ export default function StartReceiving() {
                     });
                   }}
                   disabled={scannedParcels >= parcelCount || updateMetaMutation.isPending}
-                  className={`w-full ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
+                  className={`w-full h-11 font-medium shadow-sm ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
                 >
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  <CheckCircle2 className="h-5 w-5 mr-2" />
                   Receive All ({parcelCount})
                 </Button>
               </div>
 
-              {/* Parcel Progress */}
-              <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium">{unitLabel} Scanned</span>
-                  <span className="text-2xl font-bold text-green-600">
+              {/* Parcel Progress - Redesigned */}
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 p-5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-semibold text-base text-gray-900 dark:text-gray-100">{unitLabel} Scanned</span>
+                  <span className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
                     {scannedParcels} / {parcelCount}
                   </span>
                 </div>
-                <Progress 
-                  value={(scannedParcels / parcelCount) * 100} 
-                  className="h-3 bg-gray-200 dark:bg-gray-700"
-                />
+                <div className="relative">
+                  <Progress 
+                    value={(scannedParcels / parcelCount) * 100} 
+                    className="h-3 bg-gray-200 dark:bg-gray-700 shadow-inner rounded-full"
+                  />
+                </div>
                 {scannedParcels === parcelCount && parcelCount > 0 && (
-                  <div className="flex items-center gap-2 mt-2 text-green-600">
-                    <CheckCircle2 className="h-4 w-4" />
-                    <span className="text-sm">All {unitLabel.toLowerCase()} verified!</span>
+                  <div className="flex items-center gap-2 mt-3 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-3 py-2 rounded-lg">
+                    <CheckCircle2 className="h-5 w-5" />
+                    <span className="text-sm font-medium">All {unitLabel.toLowerCase()} verified!</span>
                   </div>
                 )}
                 
@@ -2195,15 +2243,15 @@ export default function StartReceiving() {
                 )}
               </div>
 
-              {/* Scan Parcels */}
+              {/* Scan Parcels - Redesigned */}
               <div className="col-span-full">
-                <Label className="text-base font-medium mb-3 block">Scan {unitLabel}</Label>
+                <Label className="text-base font-semibold mb-3 block text-gray-900 dark:text-gray-100">Scan {unitLabel}</Label>
                 <div className="w-full">
                   <ScanInputPulse isScanning={scanMode}>
-                    <div className={`relative w-full rounded-lg border-2 transition-all duration-300 overflow-hidden ${
+                    <div className={`relative w-full rounded-xl border transition-all duration-300 overflow-hidden shadow-sm ${
                       scanMode 
-                        ? 'border-blue-400 bg-blue-50 dark:bg-blue-950/30 shadow-lg ring-2 ring-blue-200 dark:ring-blue-800' 
-                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:border-gray-400 dark:hover:border-gray-500'
+                        ? 'border-blue-400 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/40 dark:to-blue-900/30 shadow-md ring-2 ring-blue-200 dark:ring-blue-800' 
+                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-600'
                     }`}>
                       <div className="flex items-center">
                         <div className="flex-1 relative">
@@ -2228,12 +2276,12 @@ export default function StartReceiving() {
                               }
                             }}
                             placeholder={`Scan or type ${isPalletShipment ? 'pallet' : 'parcel'} tracking number...`}
-                            className="border-0 bg-transparent focus:ring-0 focus:outline-none text-lg h-14 px-4 pr-12 placeholder:text-gray-500 dark:placeholder:text-gray-400 font-mono"
+                            className="border-0 bg-transparent focus:ring-0 focus:outline-none text-lg h-14 px-5 pr-14 placeholder:text-gray-400 dark:placeholder:text-gray-500 font-mono"
                             autoComplete="off"
                             spellCheck={false}
                           />
-                          <ScanLine className={`absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 transition-all duration-200 ${
-                            scanMode ? 'text-blue-500 animate-pulse' : 'text-gray-400'
+                          <ScanLine className={`absolute right-5 top-1/2 transform -translate-y-1/2 h-6 w-6 transition-all duration-200 ${
+                            scanMode ? 'text-blue-600 animate-pulse' : 'text-gray-400'
                           }`} />
                         </div>
                         <div className="flex-shrink-0 border-l border-gray-200 dark:border-gray-700">
@@ -2249,8 +2297,8 @@ export default function StartReceiving() {
                             }}
                             className={`h-14 px-6 rounded-none hover:bg-transparent transition-all duration-200 ${
                               scanMode 
-                                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' 
-                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400' 
+                                : 'text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400'
                             }`}
                           >
                             <Camera className={`h-6 w-6 transition-transform duration-200 ${
@@ -2264,9 +2312,9 @@ export default function StartReceiving() {
                   
                   {/* Scan Mode Indicator */}
                   {scanMode && (
-                    <div className="mt-2 text-center">
-                      <span className="inline-flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 font-medium">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <div className="mt-3 text-center">
+                      <span className="inline-flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300 font-semibold bg-blue-100 dark:bg-blue-900/30 px-4 py-2 rounded-full">
+                        <div className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-pulse"></div>
                         Scanner Active - Point camera at barcode or type manually
                       </span>
                     </div>
@@ -2274,33 +2322,35 @@ export default function StartReceiving() {
                 </div>
               </div>
 
-                  {/* Quick Notes */}
+                  {/* Quick Notes - Redesigned */}
                   <div>
-                    <Label>Initial Notes</Label>
+                    <Label className="text-sm font-medium mb-2 block">Initial Notes</Label>
                     <Textarea
                       value={notes}
                       onChange={(e) => handleNotesChange(e.target.value)}
                       onBlur={handleNotesBlur}
                       placeholder="Any initial observations..."
-                      rows={2}
+                      rows={3}
+                      className="resize-none border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
                     />
                   </div>
 
+                  {/* Continue Button - Redesigned */}
                   <Button
                     onClick={() => setCurrentStep(2)}
                     disabled={!receivedBy || !carrier}
-                    className="w-full"
+                    className="w-full h-12 text-base font-semibold shadow-md bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                     size="lg"
                   >
                     {scannedParcels > 0 ? (
                       <>
                         Continue to Item Checklist
-                        <ArrowRight className="h-4 w-4 ml-2" />
+                        <ArrowRight className="h-5 w-5 ml-2" />
                       </>
                     ) : (
                       <>
                         Continue to Item Checklist
-                        <CheckSquare className="h-4 w-4 ml-2" />
+                        <CheckSquare className="h-5 w-5 ml-2" />
                       </>
                     )}
                   </Button>
@@ -2311,11 +2361,11 @@ export default function StartReceiving() {
         </div>
       )}
 
-      {/* Step 2: Item Checklist */}
+      {/* Step 2: Item Checklist - Redesigned */}
       {currentStep === 2 && (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <Card className={`
-            transition-all duration-500 border-2 bg-white dark:bg-gray-900
+            transition-all duration-500 rounded-lg shadow-sm border bg-white dark:bg-gray-900
             ${completedItems === totalItems && totalItems > 0 
               ? 'border-green-400 shadow-green-100 dark:shadow-green-900/20' 
               : completedItems > 0 
@@ -2323,44 +2373,45 @@ export default function StartReceiving() {
                 : 'border-gray-200 dark:border-gray-700'
             }
           `}>
-            <CardHeader>
-              <div className="flex items-center justify-between mb-3">
-                <CardTitle className="flex items-center gap-2">
+            <CardHeader className="pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                <CardTitle className="flex items-center gap-3 text-lg">
                   {completedItems === totalItems && totalItems > 0 ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    <CheckCircle2 className="h-6 w-6 text-green-600" />
                   ) : completedItems > 0 ? (
-                    <Clock className="h-5 w-5 text-amber-600" />
+                    <Clock className="h-6 w-6 text-amber-600" />
                   ) : (
-                    <CheckSquare className="h-5 w-5" />
+                    <CheckSquare className="h-6 w-6" />
                   )}
-                  Item Verification ({completedItems}/{totalItems})
+                  <span className="font-semibold">Item Verification ({completedItems}/{totalItems})</span>
                   {completedItems === totalItems && totalItems > 0 && (
-                    <Badge className="ml-auto bg-green-600 text-white">Complete</Badge>
+                    <Badge className="bg-green-600 text-white shadow-sm px-3 py-1">Complete</Badge>
                   )}
                   {completedItems > 0 && completedItems < totalItems && (
-                    <Badge className="ml-auto bg-amber-600 text-white">In Progress</Badge>
+                    <Badge className="bg-amber-600 text-white shadow-sm px-3 py-1">In Progress</Badge>
                   )}
                 </CardTitle>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="default"
                     onClick={() => setShowAllItems(!showAllItems)}
+                    className="h-10 shadow-sm"
                   >
                     {showAllItems ? 'Show Active' : 'Show All'}
                   </Button>
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="default"
                     onClick={() => {
                       setScanMode(!scanMode);
                       if (!scanMode) {
                         setTimeout(() => barcodeRef.current?.focus(), 100);
                       }
                     }}
-                    className={scanMode ? 'bg-blue-50 border-blue-300' : ''}
+                    className={`h-10 shadow-sm ${scanMode ? 'bg-blue-100 border-blue-400 text-blue-700' : ''}`}
                   >
-                    <ScanLine className="h-4 w-4 mr-1" />
+                    <ScanLine className="h-5 w-5 mr-2" />
                     Scan Items
                   </Button>
                 </div>
@@ -2509,7 +2560,7 @@ export default function StartReceiving() {
                       <div 
                         key={item.id} 
                         className={`
-                          border rounded-lg transition-all duration-300 ease-in-out
+                          rounded-lg shadow-sm transition-all duration-300 ease-in-out border
                           border-l-4 ${borderColor} ${bgColor}
                           ${isComplete ? 'opacity-75' : ''}
                           hover:shadow-md
@@ -2517,18 +2568,18 @@ export default function StartReceiving() {
                       >
                         <div className="p-4">
                           {/* Grid Layout: Left Column (Image) + Right Column (Details & Controls) */}
-                          <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-5">
                             {/* Left Column - Product Image */}
                             <div className="flex justify-center sm:justify-start">
-                              <div className="relative flex-shrink-0 w-20 h-20">
+                              <div className="relative flex-shrink-0 w-24 h-24">
                                 <LazyImage 
                                   thumbnailSrc={item.imageUrl}
                                   alt={item.name}
-                                  className="w-20 h-20 object-contain rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-lg bg-white dark:bg-gray-800"
+                                  className="w-24 h-24 object-contain rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm bg-white dark:bg-gray-800"
                                 />
                                 {/* Status Icon Overlay */}
-                                <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center transition-transform duration-200 ${isComplete ? 'scale-110' : ''} z-10`}>
-                                  <StatusIcon className={`h-3 w-3 ${iconColor}`} />
+                                <div className={`absolute -top-1.5 -right-1.5 w-7 h-7 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center transition-transform duration-200 shadow-sm ${isComplete ? 'scale-110' : ''} z-10`}>
+                                  <StatusIcon className={`h-4 w-4 ${iconColor}`} />
                                 </div>
                               </div>
                             </div>
@@ -2615,29 +2666,29 @@ export default function StartReceiving() {
                                 </div>
                               </div>
                               
-                              {/* Controls Section */}
+                              {/* Controls Section - Redesigned */}
                               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                                 {/* Quantity Controls */}
-                                <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg p-1 border shadow-sm">
+                                <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg p-1.5 border border-gray-300 dark:border-gray-600 shadow-sm">
                                   <Button
                                     variant="ghost"
-                                    size="sm"
+                                    size="default"
                                     onClick={() => updateItemQuantity(item.id, -1)}
                                     disabled={item.receivedQty === 0}
-                                    className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    className="h-10 w-10 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
-                                    <Minus className="h-4 w-4" />
+                                    <Minus className="h-5 w-5" />
                                   </Button>
-                                  <span className="text-base font-bold font-mono w-16 text-center px-2">
+                                  <span className="text-lg font-bold font-mono w-20 text-center px-2">
                                     {item.receivedQty}/{item.expectedQty}
                                   </span>
                                   <Button
                                     variant="ghost"
-                                    size="sm"
+                                    size="default"
                                     onClick={() => updateItemQuantity(item.id, 1)}
-                                    className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    className="h-10 w-10 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
-                                    <Plus className="h-4 w-4" />
+                                    <Plus className="h-5 w-5" />
                                   </Button>
                                 </div>
 
@@ -2645,7 +2696,7 @@ export default function StartReceiving() {
                                 <div className="flex gap-2 flex-wrap">
                                   <Button
                                     variant={item.status === 'complete' ? "default" : "outline"}
-                                    size="sm"
+                                    size="default"
                                     onClick={() => {
                                       const updatedItems = receivingItems.map(i => 
                                         i.id === item.id 
@@ -2665,39 +2716,39 @@ export default function StartReceiving() {
                                         updateItemFieldMutation.mutate({ itemId: item.id, field: 'status', value: 'complete' });
                                       }
                                     }}
-                                    className={`min-w-[70px] transition-colors shadow-sm ${
+                                    className={`h-10 min-w-[80px] font-medium transition-colors shadow-sm ${
                                       item.status === 'complete'
                                         ? 'bg-green-600 hover:bg-green-700 border-green-600 text-white'
                                         : 'border-green-500 hover:border-green-600 hover:bg-green-50 text-green-700'
                                     }`}
                                   >
-                                    <Check className="h-3 w-3 mr-1" />
+                                    <Check className="h-4 w-4 mr-1.5" />
                                     OK
                                   </Button>
                                   <Button
                                     variant={isDamaged ? "destructive" : "outline"}
-                                    size="sm"
+                                    size="default"
                                     onClick={() => toggleItemStatus(item.id, 'damaged')}
-                                    className={`min-w-[70px] transition-colors shadow-sm ${
+                                    className={`h-10 min-w-[80px] font-medium transition-colors shadow-sm ${
                                       isDamaged
                                         ? 'bg-red-600 hover:bg-red-700 border-red-600 text-white'
                                         : 'border-red-500 hover:border-red-600 hover:bg-red-50 text-red-700'
                                     }`}
                                   >
-                                    <AlertTriangle className="h-3 w-3 mr-1" />
+                                    <AlertTriangle className="h-4 w-4 mr-1.5" />
                                     DMG
                                   </Button>
                                   <Button
                                     variant={isMissing ? "secondary" : "outline"}
-                                    size="sm"
+                                    size="default"
                                     onClick={() => toggleItemStatus(item.id, 'missing')}
-                                    className={`min-w-[70px] transition-colors shadow-sm ${
+                                    className={`h-10 min-w-[80px] font-medium transition-colors shadow-sm ${
                                       isMissing
                                         ? 'bg-gray-600 hover:bg-gray-700 border-gray-600 text-white'
                                         : 'border-gray-500 hover:border-gray-600 hover:bg-gray-50 text-gray-700'
                                     }`}
                                   >
-                                    <X className="h-3 w-3 mr-1" />
+                                    <X className="h-4 w-4 mr-1.5" />
                                     MISS
                                   </Button>
                                 </div>
@@ -2752,29 +2803,29 @@ export default function StartReceiving() {
             </CardContent>
           </Card>
 
-          {/* Photos Upload Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Camera className="h-5 w-5" />
-                Photos
-                <span className="text-sm font-normal text-muted-foreground ml-auto">
-                  {uploadedPhotos.length > 0 && `(${uploadedPhotos.length} uploaded)`}
+          {/* Photos Upload Section - Redesigned */}
+          <Card className="rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-lg">
+                <Camera className="h-6 w-6" />
+                <span className="font-semibold">Photos</span>
+                <span className="text-base font-normal text-muted-foreground ml-auto">
+                  {uploadedPhotos.length > 0 && `${uploadedPhotos.length} uploaded`}
                 </span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Upload Button */}
-              <div className="flex items-center gap-4">
+            <CardContent className="space-y-5">
+              {/* Upload Button - Redesigned */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
+                  size="default"
                   onClick={() => fileInputRef.current?.click()}
-                  className="gap-2"
+                  className="h-12 gap-2 font-medium shadow-sm"
                 >
-                  <ImagePlus className="h-4 w-4" />
-                  Add Photos
+                  <ImagePlus className="h-5 w-5" />
+                  <span>Add Photos</span>
                 </Button>
                 <input
                   ref={fileInputRef}
@@ -2802,27 +2853,27 @@ export default function StartReceiving() {
                 </div>
               )}
 
-              {/* Photos Grid - Horizontal Scrollable Layout */}
+              {/* Photos Grid - Redesigned Horizontal Scrollable Layout */}
               {(uploadedPhotos.length > 0 || photosLoading || previewUrls.length > 0) && (
                 <div className="relative">
-                  <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+                  <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-800">
                     {/* Show preview URLs while processing */}
                     {previewUrls.map((preview, index) => (
                       <div
                         key={`preview-${index}`}
                         className="relative flex-shrink-0 group"
                       >
-                        <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-blue-400 dark:border-blue-600 animate-pulse">
+                        <div className="relative w-36 h-36 rounded-xl overflow-hidden border-2 border-blue-400 dark:border-blue-600 shadow-md animate-pulse">
                           <img
                             src={preview}
                             alt={`Processing ${index + 1}`}
                             className="w-full h-full object-cover opacity-70"
                           />
                           <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
-                            <Loader2 className="h-6 w-6 text-white animate-spin" />
+                            <Loader2 className="h-7 w-7 text-white animate-spin" />
                           </div>
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                            <span className="text-white text-xs font-medium">
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2.5">
+                            <span className="text-white text-sm font-semibold">
                               Processing...
                             </span>
                           </div>
@@ -2845,14 +2896,14 @@ export default function StartReceiving() {
                           className="relative flex-shrink-0 group"
                         >
                           {/* Photo Container - optimized for thumbnails only */}
-                          <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 transition-colors">
+                          <div className="relative w-36 h-36 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-200 shadow-sm hover:shadow-md">
                             <LazyImage
                               thumbnailSrc={thumbnailSrc}
                               alt={`Upload ${index + 1}`}
                               className="w-full h-full object-cover"
                             />
                             {/* Overlay with photo info */}
-                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 z-10">
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2.5 z-10">
                               <span className="text-white text-xs font-medium block">
                                 Photo {index + 1}
                               </span>
