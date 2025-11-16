@@ -559,7 +559,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Unauthorized - Please log in' });
       }
 
-      const { firstName, lastName, email } = req.body;
+      const { firstName, lastName, email, phoneNumber, profileImageUrl } = req.body;
       const updates: any = {};
 
       if (firstName !== undefined) updates.firstName = firstName;
@@ -578,6 +578,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         updates.email = normalizedEmail;
       }
+      
+      // Handle phone number updates
+      if (phoneNumber !== undefined) {
+        // Allow empty string to clear phone number
+        if (phoneNumber === '') {
+          updates.phoneNumber = null;
+        } else {
+          // Validate E.164 format if provided
+          const e164Regex = /^\+[1-9]\d{1,14}$/;
+          if (!e164Regex.test(phoneNumber)) {
+            return res.status(400).json({ 
+              message: 'Invalid phone number format',
+              field: 'phoneNumber',
+              error: 'Phone number must be in E.164 format (e.g., +420123456789)'
+            });
+          }
+          updates.phoneNumber = phoneNumber;
+        }
+      }
+      
+      // Handle profile image URL updates
+      if (profileImageUrl !== undefined) {
+        updates.profileImageUrl = profileImageUrl || null;
+      }
 
       const updatedUser = await storage.updateUserProfile(req.user.id, updates);
       
@@ -590,6 +614,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: updatedUser.email,
         firstName: updatedUser.firstName,
         lastName: updatedUser.lastName,
+        phoneNumber: updatedUser.phoneNumber,
+        profileImageUrl: updatedUser.profileImageUrl,
         role: updatedUser.role,
         createdAt: updatedUser.createdAt
       });
