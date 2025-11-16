@@ -3046,23 +3046,23 @@ export default function ContinueReceiving() {
                           hover:shadow-sm
                         `}
                       >
-                        <div className="p-2">
-                          {/* Compact Row Layout */}
-                          <div className="flex items-center gap-2">
+                        <div className="p-3">
+                          {/* Row Layout with Labels */}
+                          <div className="flex items-start gap-3">
                             {/* Product Image with Status Icon */}
                             <div className="relative flex-shrink-0">
                               <LazyImage 
                                 thumbnailSrc={item.imageUrl}
                                 alt={item.name}
-                                className="w-12 h-12 object-contain rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+                                className="w-16 h-16 object-contain rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
                               />
-                              <div className={`absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center ${isComplete ? 'scale-110' : ''}`}>
-                                <StatusIcon className={`h-2.5 w-2.5 ${iconColor}`} />
+                              <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center ${isComplete ? 'scale-110' : ''}`}>
+                                <StatusIcon className={`h-3 w-3 ${iconColor}`} />
                               </div>
                             </div>
                             
                             {/* Main Content Area */}
-                            <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                            <div className="flex-1 min-w-0 flex flex-col gap-2">
                               {/* Top Row: Name + Quantity Display */}
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
@@ -3088,9 +3088,9 @@ export default function ContinueReceiving() {
                                   </div>
                                 </div>
                                 
-                                {/* Compact Quantity Display */}
-                                <div className="flex items-center gap-1.5 flex-shrink-0">
-                                  <span className={`text-xs font-bold font-mono ${
+                                {/* Quantity Display */}
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <span className={`text-sm font-bold font-mono ${
                                     progress >= 100 ? 'text-green-600' : 
                                     progress > 0 ? 'text-amber-600' : 
                                     'text-gray-500'
@@ -3100,16 +3100,16 @@ export default function ContinueReceiving() {
                                   {/* Damage/Missing Indicators */}
                                   {item.damagedQty > 0 && (
                                     <span className="text-xs text-red-600 dark:text-red-400" data-testid={`indicator-dmg-miss-${item.id}`}>
-                                      <AlertTriangle className="h-3 w-3" />
+                                      <AlertTriangle className="h-3.5 w-3.5" />
                                     </span>
                                   )}
                                   {item.missingQty > 0 && (
                                     <span className="text-xs text-gray-600 dark:text-gray-400">
-                                      <X className="h-3 w-3" />
+                                      <X className="h-3.5 w-3.5" />
                                     </span>
                                   )}
                                   <Badge 
-                                    className={`text-[10px] px-1.5 py-0 h-5 ${getItemStatusColor(item.status)}`}
+                                    className={`text-xs px-2 py-0.5 ${getItemStatusColor(item.status)}`}
                                     variant={isComplete ? 'default' : isPending ? 'outline' : 'secondary'}
                                   >
                                     {item.status === 'partial_damaged' ? 'P.DMG' : 
@@ -3122,18 +3122,18 @@ export default function ContinueReceiving() {
                                 </div>
                               </div>
                               
-                              {/* Compact Controls Row */}
-                              <div className="flex items-center gap-1.5 flex-wrap">
+                              {/* Controls Row */}
+                              <div className="flex items-center gap-2 flex-wrap">
                                 {/* Quantity Controls */}
-                                <div className="flex items-center gap-0.5 bg-white dark:bg-gray-800 rounded border">
+                                <div className="flex items-center gap-1 bg-white dark:bg-gray-800 rounded border">
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => updateItemQuantity(item.id, -1)}
                                     disabled={item.receivedQty === 0}
-                                    className="h-6 w-6 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
-                                    <Minus className="h-3 w-3" />
+                                    <Minus className="h-4 w-4" />
                                   </Button>
                                   {editingItemId === item.id ? (
                                     <input
@@ -3148,14 +3148,14 @@ export default function ContinueReceiving() {
                                           cancelEditing();
                                         }
                                       }}
-                                      className="w-12 text-center text-sm font-bold font-mono px-1 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800"
+                                      className="w-16 text-center text-base font-bold font-mono px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800"
                                       min="0"
                                       max={item.expectedQty}
                                       autoFocus
                                     />
                                   ) : (
                                     <span 
-                                      className="text-sm font-bold font-mono w-12 text-center px-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                                      className="text-base font-bold font-mono w-16 text-center px-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
                                       onClick={() => startEditing(item.id, item.receivedQty)}
                                       title="Click to edit quantity"
                                     >
@@ -3166,13 +3166,13 @@ export default function ContinueReceiving() {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => updateItemQuantity(item.id, 1)}
-                                    className="h-6 w-6 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
-                                    <Plus className="h-3 w-3" />
+                                    <Plus className="h-4 w-4" />
                                   </Button>
                                 </div>
 
-                                {/* Action Buttons - Compact */}
+                                {/* Action Buttons with Labels */}
                                 <Button
                                   variant={item.status === 'complete' ? "default" : "outline"}
                                   size="sm"
@@ -3227,13 +3227,14 @@ export default function ContinueReceiving() {
                                         updateItemFieldMutation.mutate({ itemId: item.id, field: 'status', value: 'complete' });
                                       }
                                     }}
-                                  className={`h-6 px-2 text-xs transition-colors ${
+                                  className={`min-w-[70px] transition-colors shadow-sm ${
                                     item.status === 'complete'
                                       ? 'bg-green-600 hover:bg-green-700 border-green-600 text-white'
                                       : 'border-green-500 hover:border-green-600 hover:bg-green-50 text-green-700'
                                   }`}
                                 >
-                                  <Check className="h-3 w-3" />
+                                  <Check className="h-3.5 w-3.5 mr-1" />
+                                  OK
                                 </Button>
                                 <Popover 
                                     open={dmgPopoverOpen[item.id] || false} 
@@ -3260,13 +3261,14 @@ export default function ContinueReceiving() {
                                             setDmgPopoverOpen({ ...dmgPopoverOpen, [item.id]: true });
                                           }
                                         }}
-                                        className={`h-6 px-2 text-xs transition-colors ${
+                                        className={`min-w-[70px] transition-colors shadow-sm ${
                                           isDamaged
                                             ? 'bg-red-600 hover:bg-red-700 border-red-600 text-white'
                                             : 'border-red-500 hover:border-red-600 hover:bg-red-50 text-red-700'
                                         }`}
                                       >
-                                        <AlertTriangle className="h-3 w-3" />
+                                        <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+                                        DMG
                                       </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-72 p-4" align="start">
@@ -3366,13 +3368,14 @@ export default function ContinueReceiving() {
                                             setMissPopoverOpen({ ...missPopoverOpen, [item.id]: true });
                                           }
                                         }}
-                                        className={`h-6 px-2 text-xs transition-colors ${
+                                        className={`min-w-[70px] transition-colors shadow-sm ${
                                           isMissing
                                             ? 'bg-gray-600 hover:bg-gray-700 border-gray-600 text-white'
                                             : 'border-gray-500 hover:border-gray-600 hover:bg-gray-50 text-gray-700'
                                         }`}
                                       >
-                                        <X className="h-3 w-3" />
+                                        <X className="h-3.5 w-3.5 mr-1" />
+                                        MISS
                                       </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-72 p-4" align="start">
@@ -3447,41 +3450,37 @@ export default function ContinueReceiving() {
                                       </div>
                                     </PopoverContent>
                                   </Popover>
-                                  
-                                  {/* Notes Field with Camera Button - Show when needed */}
-                                  {(isDamaged || isMissing || item.notes) && (
-                                    <>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => itemPhotoInputRefs.current[item.id]?.click()}
-                                        className="h-6 w-6 p-0 border-blue-500 hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 text-blue-700 dark:text-blue-400"
-                                        title="Upload photos"
-                                        data-testid={`button-camera-${item.id}`}
-                                      >
-                                        <Camera className="h-3 w-3" />
-                                      </Button>
-                                      <input
-                                        ref={(el) => itemPhotoInputRefs.current[item.id] = el}
-                                        type="file"
-                                        accept="image/*"
-                                        multiple
-                                        onChange={(e) => handleItemPhotoUpload(e, item.id)}
-                                        className="hidden"
-                                        data-testid={`input-item-photo-${item.id}`}
-                                      />
-                                    </>
-                                  )}
                                 </div>
                                 
-                                {/* Notes Input - Full Width Below */}
+                                {/* Notes Section - Full Width Below Controls */}
                                 {(isDamaged || isMissing || item.notes) && (
-                                  <Input
-                                    value={item.notes || ''}
-                                    onChange={(e) => updateItemNotes(item.id, e.target.value)}
-                                    placeholder="Add notes..."
-                                    className="text-xs h-7 bg-white dark:bg-gray-800 w-full"
-                                  />
+                                  <div className="flex items-center gap-2 w-full">
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => itemPhotoInputRefs.current[item.id]?.click()}
+                                      className="flex-shrink-0 h-9 w-9 transition-colors shadow-sm border-blue-500 hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 text-blue-700 dark:text-blue-400"
+                                      title="Upload photos for this item"
+                                      data-testid={`button-camera-${item.id}`}
+                                    >
+                                      <Camera className="h-4 w-4" />
+                                    </Button>
+                                    <input
+                                      ref={(el) => itemPhotoInputRefs.current[item.id] = el}
+                                      type="file"
+                                      accept="image/*"
+                                      multiple
+                                      onChange={(e) => handleItemPhotoUpload(e, item.id)}
+                                      className="hidden"
+                                      data-testid={`input-item-photo-${item.id}`}
+                                    />
+                                    <Input
+                                      value={item.notes || ''}
+                                      onChange={(e) => updateItemNotes(item.id, e.target.value)}
+                                      placeholder="Add notes about this item..."
+                                      className="text-sm bg-white dark:bg-gray-800 flex-1"
+                                    />
+                                  </div>
                                 )}
                               </div>
                             </div>
