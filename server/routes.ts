@@ -43,6 +43,8 @@ import {
   shipments,
   receipts,
   receiptItems,
+  consolidationItems,
+  customItems,
   orderItems,
   orders,
   customers,
@@ -11850,7 +11852,7 @@ Important:
   // Get shipments by receiving status - To Receive
   app.get('/api/imports/shipments/to-receive', async (req, res) => {
     try {
-      const shipmentsData = await db
+      const shipmentList = await db
         .select()
         .from(shipments)
         .where(
@@ -11863,7 +11865,40 @@ Important:
           )
         )
         .orderBy(desc(shipments.deliveredAt));
-      res.json(shipmentsData);
+      
+      // Get items for each shipment from consolidation
+      const shipmentsWithItems = await Promise.all(
+        shipmentList.map(async (shipment) => {
+          let items: any[] = [];
+          let itemCount = 0;
+          
+          if (shipment.consolidationId) {
+            const consolidationItemList = await db
+              .select({
+                id: customItems.id,
+                name: customItems.name,
+                quantity: customItems.quantity,
+                weight: customItems.weight,
+                trackingNumber: customItems.trackingNumber,
+                unitPrice: customItems.unitPrice
+              })
+              .from(consolidationItems)
+              .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
+              .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
+            
+            items = consolidationItemList;
+            itemCount = consolidationItemList.length;
+          }
+          
+          return {
+            ...shipment,
+            items,
+            itemCount
+          };
+        })
+      );
+      
+      res.json(shipmentsWithItems);
     } catch (error) {
       console.error('Error fetching to-receive shipments:', error);
       res.status(500).json({ message: 'Failed to fetch shipments' });
@@ -11873,12 +11908,44 @@ Important:
   // Get shipments by receiving status - Receiving
   app.get('/api/imports/shipments/receiving', async (req, res) => {
     try {
-      const shipmentsData = await db
+      const shipmentList = await db
         .select()
         .from(shipments)
         .where(eq(shipments.receivingStatus, 'receiving'))
         .orderBy(desc(shipments.updatedAt));
-      res.json(shipmentsData);
+      
+      const shipmentsWithItems = await Promise.all(
+        shipmentList.map(async (shipment) => {
+          let items: any[] = [];
+          let itemCount = 0;
+          
+          if (shipment.consolidationId) {
+            const consolidationItemList = await db
+              .select({
+                id: customItems.id,
+                name: customItems.name,
+                quantity: customItems.quantity,
+                weight: customItems.weight,
+                trackingNumber: customItems.trackingNumber,
+                unitPrice: customItems.unitPrice
+              })
+              .from(consolidationItems)
+              .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
+              .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
+            
+            items = consolidationItemList;
+            itemCount = consolidationItemList.length;
+          }
+          
+          return {
+            ...shipment,
+            items,
+            itemCount
+          };
+        })
+      );
+      
+      res.json(shipmentsWithItems);
     } catch (error) {
       console.error('Error fetching receiving shipments:', error);
       res.status(500).json({ message: 'Failed to fetch shipments' });
@@ -11888,12 +11955,44 @@ Important:
   // Get shipments by receiving status - Storage (pending approval)
   app.get('/api/imports/shipments/storage', async (req, res) => {
     try {
-      const shipmentsData = await db
+      const shipmentList = await db
         .select()
         .from(shipments)
         .where(eq(shipments.receivingStatus, 'pending_approval'))
         .orderBy(desc(shipments.updatedAt));
-      res.json(shipmentsData);
+      
+      const shipmentsWithItems = await Promise.all(
+        shipmentList.map(async (shipment) => {
+          let items: any[] = [];
+          let itemCount = 0;
+          
+          if (shipment.consolidationId) {
+            const consolidationItemList = await db
+              .select({
+                id: customItems.id,
+                name: customItems.name,
+                quantity: customItems.quantity,
+                weight: customItems.weight,
+                trackingNumber: customItems.trackingNumber,
+                unitPrice: customItems.unitPrice
+              })
+              .from(consolidationItems)
+              .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
+              .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
+            
+            items = consolidationItemList;
+            itemCount = consolidationItemList.length;
+          }
+          
+          return {
+            ...shipment,
+            items,
+            itemCount
+          };
+        })
+      );
+      
+      res.json(shipmentsWithItems);
     } catch (error) {
       console.error('Error fetching storage shipments:', error);
       res.status(500).json({ message: 'Failed to fetch shipments' });
@@ -11903,12 +12002,44 @@ Important:
   // Get shipments by receiving status - Completed
   app.get('/api/imports/shipments/completed', async (req, res) => {
     try {
-      const shipmentsData = await db
+      const shipmentList = await db
         .select()
         .from(shipments)
         .where(eq(shipments.receivingStatus, 'completed'))
         .orderBy(desc(shipments.updatedAt));
-      res.json(shipmentsData);
+      
+      const shipmentsWithItems = await Promise.all(
+        shipmentList.map(async (shipment) => {
+          let items: any[] = [];
+          let itemCount = 0;
+          
+          if (shipment.consolidationId) {
+            const consolidationItemList = await db
+              .select({
+                id: customItems.id,
+                name: customItems.name,
+                quantity: customItems.quantity,
+                weight: customItems.weight,
+                trackingNumber: customItems.trackingNumber,
+                unitPrice: customItems.unitPrice
+              })
+              .from(consolidationItems)
+              .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
+              .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
+            
+            items = consolidationItemList;
+            itemCount = consolidationItemList.length;
+          }
+          
+          return {
+            ...shipment,
+            items,
+            itemCount
+          };
+        })
+      );
+      
+      res.json(shipmentsWithItems);
     } catch (error) {
       console.error('Error fetching completed shipments:', error);
       res.status(500).json({ message: 'Failed to fetch shipments' });
@@ -11918,12 +12049,44 @@ Important:
   // Get shipments by receiving status - Archived
   app.get('/api/imports/shipments/archived', async (req, res) => {
     try {
-      const shipmentsData = await db
+      const shipmentList = await db
         .select()
         .from(shipments)
         .where(eq(shipments.receivingStatus, 'archived'))
         .orderBy(desc(shipments.updatedAt));
-      res.json(shipmentsData);
+      
+      const shipmentsWithItems = await Promise.all(
+        shipmentList.map(async (shipment) => {
+          let items: any[] = [];
+          let itemCount = 0;
+          
+          if (shipment.consolidationId) {
+            const consolidationItemList = await db
+              .select({
+                id: customItems.id,
+                name: customItems.name,
+                quantity: customItems.quantity,
+                weight: customItems.weight,
+                trackingNumber: customItems.trackingNumber,
+                unitPrice: customItems.unitPrice
+              })
+              .from(consolidationItems)
+              .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
+              .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
+            
+            items = consolidationItemList;
+            itemCount = consolidationItemList.length;
+          }
+          
+          return {
+            ...shipment,
+            items,
+            itemCount
+          };
+        })
+      );
+      
+      res.json(shipmentsWithItems);
     } catch (error) {
       console.error('Error fetching archived shipments:', error);
       res.status(500).json({ message: 'Failed to fetch shipments' });
