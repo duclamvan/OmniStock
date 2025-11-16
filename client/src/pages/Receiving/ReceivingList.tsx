@@ -557,50 +557,89 @@ function StickyHeaderScanHeader({
 // ============================================================================
 
 function ReceiptProgressCarousel({ receipts }: { receipts: any[] }) {
+  const [, navigate] = useLocation();
+
   if (!receipts || receipts.length === 0) {
     return null;
   }
 
   return (
-    <div className="mb-4">
-      <h3 className="text-sm font-semibold mb-2 px-4">Active Receipts</h3>
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-3 px-4">
+        <h3 className="text-base font-semibold text-foreground">Active Receipts</h3>
+        <Badge variant="secondary" className="text-xs">
+          {receipts.length}
+        </Badge>
+      </div>
       <ScrollArea className="w-full whitespace-nowrap">
-        <div className="flex gap-3 px-4 pb-2">
+        <div className="flex gap-4 px-4 pb-3">
           {receipts.map((receipt: any) => {
             const totalItems = receipt.items?.length || 0;
             const completedItems = receipt.items?.filter((i: any) => i.status === 'complete').length || 0;
             const progress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
-            const statusColor = progress === 100 ? 'green' : progress > 0 ? 'amber' : 'gray';
+            
+            // Determine progress color
+            let progressColor = 'text-gray-600';
+            let progressBg = 'bg-gray-100 dark:bg-gray-800';
+            if (progress === 100) {
+              progressColor = 'text-green-600 dark:text-green-500';
+              progressBg = 'bg-green-50 dark:bg-green-950/30';
+            } else if (progress > 0) {
+              progressColor = 'text-amber-600 dark:text-amber-500';
+              progressBg = 'bg-amber-50 dark:bg-amber-950/30';
+            }
 
             return (
-              <Card key={receipt.id} className="w-[280px] shrink-0">
-                <CardHeader className="p-4 pb-2">
-                  <div className="flex items-start justify-between">
+              <Card 
+                key={receipt.id} 
+                className="w-[300px] shrink-0 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-[1.02] active:scale-[0.98] border-l-4 border-l-blue-500"
+                onClick={() => navigate(`/receiving/start/${receipt.shipmentId}`)}
+                data-testid={`card-receipt-${receipt.id}`}
+              >
+                <CardHeader className="p-5 pb-3">
+                  <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <CardTitle className="text-base mb-1 truncate">
+                      <CardTitle className="text-lg mb-1.5 truncate font-bold">
                         Receipt #{receipt.id}
                       </CardTitle>
-                      <CardDescription className="text-xs truncate">
+                      <CardDescription className="text-sm truncate font-medium">
                         {receipt.shipment?.shipmentName || `Shipment #${receipt.shipmentId}`}
                       </CardDescription>
                     </div>
-                    <Badge className={getStatusColor(receipt.status)}>
-                      {receipt.status}
+                    <Badge className={`${getStatusColor(receipt.status)} text-xs shrink-0`}>
+                      {receipt.status.replace('_', ' ').toUpperCase()}
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="p-4 pt-2">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Progress</span>
-                      <span className={`font-semibold text-${statusColor}-600`}>
-                        {completedItems}/{totalItems}
-                      </span>
+                <CardContent className="p-5 pt-2">
+                  <div className="space-y-3">
+                    {/* Progress Section */}
+                    <div className={`p-3 rounded-lg ${progressBg}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-muted-foreground">Progress</span>
+                        <span className={`font-bold text-base ${progressColor}`}>
+                          {completedItems}/{totalItems}
+                        </span>
+                      </div>
+                      <Progress value={progress} className="h-2.5" />
                     </div>
-                    <Progress value={progress} className="h-2" />
-                    <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
-                      <span>{receipt.carrier}</span>
-                      <span>{format(new Date(receipt.receivedAt), 'MMM dd, HH:mm')}</span>
+                    
+                    {/* Metadata */}
+                    <div className="flex items-center justify-between text-sm pt-1">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Truck className="h-4 w-4" />
+                        <span className="font-medium">{receipt.carrier || 'Unknown'}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Clock className="h-4 w-4" />
+                        <span className="text-xs">{format(new Date(receipt.receivedAt), 'MMM dd, HH:mm')}</span>
+                      </div>
+                    </div>
+                    
+                    {/* Continue CTA */}
+                    <div className="pt-2 flex items-center justify-center gap-2 text-blue-600 dark:text-blue-400 text-sm font-semibold">
+                      <span>Continue Receiving</span>
+                      <ChevronRight className="h-4 w-4" />
                     </div>
                   </div>
                 </CardContent>
