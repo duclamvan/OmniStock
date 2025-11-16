@@ -539,13 +539,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Unauthorized - Please log in' });
       }
 
+      // Always fetch fresh data from database to ensure role is up-to-date
+      const userId = req.user.claims?.sub || req.user.id;
+      const dbUser = await storage.getUser(userId);
+      
+      if (!dbUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Update session with latest data
+      req.user.id = dbUser.id;
+      req.user.email = dbUser.email;
+      req.user.firstName = dbUser.firstName;
+      req.user.lastName = dbUser.lastName;
+      req.user.role = dbUser.role;
+      req.user.createdAt = dbUser.createdAt;
+
       res.json({
-        id: req.user.id,
-        email: req.user.email,
-        firstName: req.user.firstName,
-        lastName: req.user.lastName,
-        role: req.user.role,
-        createdAt: req.user.createdAt
+        id: dbUser.id,
+        email: dbUser.email,
+        firstName: dbUser.firstName,
+        lastName: dbUser.lastName,
+        role: dbUser.role,
+        createdAt: dbUser.createdAt
       });
     } catch (error) {
       console.error('Error fetching current user:', error);
