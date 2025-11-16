@@ -3040,142 +3040,100 @@ export default function ContinueReceiving() {
                       <div 
                         key={item.id} 
                         className={`
-                          border rounded-lg transition-all duration-300 ease-in-out
+                          border rounded-md transition-all duration-200 ease-in-out
                           border-l-4 ${borderColor} ${bgColor}
                           ${isComplete ? 'opacity-75' : ''}
-                          hover:shadow-md
+                          hover:shadow-sm
                         `}
                       >
-                        <div className="p-4">
-                          {/* Grid Layout: Left Column (Image) + Right Column (Details & Controls) */}
-                          <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-4">
-                            {/* Left Column - Product Image */}
-                            <div className="flex justify-center sm:justify-start">
-                              <div className="relative flex-shrink-0 w-20 h-20">
-                                <LazyImage 
-                                  thumbnailSrc={item.imageUrl}
-                                  alt={item.name}
-                                  className="w-20 h-20 object-contain rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-lg bg-white dark:bg-gray-800"
-                                />
-                                {/* Status Icon Overlay */}
-                                <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center transition-transform duration-200 ${isComplete ? 'scale-110' : ''} z-10`}>
-                                  <StatusIcon className={`h-3 w-3 ${iconColor}`} />
-                                </div>
+                        <div className="p-2">
+                          {/* Compact Row Layout */}
+                          <div className="flex items-center gap-2">
+                            {/* Product Image with Status Icon */}
+                            <div className="relative flex-shrink-0">
+                              <LazyImage 
+                                thumbnailSrc={item.imageUrl}
+                                alt={item.name}
+                                className="w-12 h-12 object-contain rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+                              />
+                              <div className={`absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center ${isComplete ? 'scale-110' : ''}`}>
+                                <StatusIcon className={`h-2.5 w-2.5 ${iconColor}`} />
                               </div>
                             </div>
                             
-                            {/* Right Column - All Item Details and Controls */}
-                            <div className="flex flex-col gap-3 min-w-0">
-                              {/* Header Section: Name, SKU, and Status Badge */}
+                            {/* Main Content Area */}
+                            <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                              {/* Top Row: Name + Quantity Display */}
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
-                                  <h4 className={`font-semibold text-base leading-tight ${isComplete ? 'line-through opacity-60' : ''}`}>
+                                  <h4 className={`font-medium text-sm leading-tight truncate ${isComplete ? 'line-through opacity-60' : ''}`}>
                                     {item.name}
                                   </h4>
-                                  {item.sku && (
-                                    <p className="text-xs text-muted-foreground font-mono mt-1">
-                                      SKU: {item.sku}
-                                    </p>
-                                  )}
-                                  {/* Warehouse Locations Display */}
-                                  <div className="mt-1">
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    {item.sku && (
+                                      <span className="text-xs text-muted-foreground font-mono">
+                                        {item.sku}
+                                      </span>
+                                    )}
                                     {item.isNewProduct ? (
-                                      <p 
-                                        className="text-xs text-orange-600 dark:text-orange-400 font-medium flex items-center gap-1"
-                                        data-testid={`text-bin-location-${item.id}`}
-                                      >
-                                        <Package className="h-3 w-3" />
-                                        Bin: TBA (New Product)
-                                      </p>
+                                      <span className="text-xs text-orange-600 dark:text-orange-400 flex items-center gap-0.5" data-testid={`text-bin-location-${item.id}`}>
+                                        <Package className="h-2.5 w-2.5" />
+                                        New
+                                      </span>
                                     ) : item.warehouseLocations && item.warehouseLocations.length > 0 ? (
-                                      <div>
-                                        <p className="text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1 mb-1">
-                                          <Package className="h-3 w-3" />
-                                          Bin{item.warehouseLocations.length > 1 ? 's' : ''}:
-                                        </p>
-                                        <div 
-                                          className="flex flex-wrap gap-1"
-                                          data-testid={`text-bin-location-${item.id}`}
-                                        >
-                                          {item.warehouseLocations.map((location, index) => (
-                                            <span
-                                              key={index}
-                                              className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded-md font-mono"
-                                            >
-                                              {location}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      </div>
+                                      <span className="text-xs text-blue-600 dark:text-blue-400 font-mono" data-testid={`text-bin-location-${item.id}`}>
+                                        {item.warehouseLocations.join(', ')}
+                                      </span>
                                     ) : null}
                                   </div>
                                 </div>
                                 
-                                {/* Status Badge */}
-                                <Badge 
-                                  className={`text-xs whitespace-nowrap flex-shrink-0 ${getItemStatusColor(item.status)}`}
-                                  variant={isComplete ? 'default' : isPending ? 'outline' : 'secondary'}
-                                >
-                                  {item.status === 'partial_damaged' ? 'PARTIAL DMG' : 
-                                   item.status === 'partial_missing' ? 'PARTIAL MISS' : 
-                                   item.status.toUpperCase()}
-                                </Badge>
-                              </div>
-                              
-                              {/* Progress Section */}
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-xs text-muted-foreground">Progress</span>
-                                  <span className={`text-sm font-bold ${
+                                {/* Compact Quantity Display */}
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                  <span className={`text-xs font-bold font-mono ${
                                     progress >= 100 ? 'text-green-600' : 
                                     progress > 0 ? 'text-amber-600' : 
                                     'text-gray-500'
                                   }`}>
-                                    {item.receivedQty} / {item.expectedQty} units
+                                    {item.receivedQty}/{item.expectedQty}
                                   </span>
+                                  {/* Damage/Missing Indicators */}
+                                  {item.damagedQty > 0 && (
+                                    <span className="text-xs text-red-600 dark:text-red-400" data-testid={`indicator-dmg-miss-${item.id}`}>
+                                      <AlertTriangle className="h-3 w-3" />
+                                    </span>
+                                  )}
+                                  {item.missingQty > 0 && (
+                                    <span className="text-xs text-gray-600 dark:text-gray-400">
+                                      <X className="h-3 w-3" />
+                                    </span>
+                                  )}
+                                  <Badge 
+                                    className={`text-[10px] px-1.5 py-0 h-5 ${getItemStatusColor(item.status)}`}
+                                    variant={isComplete ? 'default' : isPending ? 'outline' : 'secondary'}
+                                  >
+                                    {item.status === 'partial_damaged' ? 'P.DMG' : 
+                                     item.status === 'partial_missing' ? 'P.MISS' : 
+                                     item.status === 'complete' ? '✓' :
+                                     item.status === 'damaged' ? 'DMG' :
+                                     item.status === 'missing' ? 'MISS' :
+                                     item.status === 'partial' ? 'PART' : 'PEND'}
+                                  </Badge>
                                 </div>
-                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-                                  <div 
-                                    className={`h-full transition-all duration-300 ease-out ${
-                                      progress >= 100 ? 'bg-green-500' :
-                                      progress > 0 ? 'bg-amber-500' :
-                                      'bg-gray-300'
-                                    }`}
-                                    style={{ width: `${Math.min(100, progress)}%` }}
-                                  />
-                                </div>
-                                
-                                {/* Damaged/Missing Quantity Indicator */}
-                                {((item.damagedQty && item.damagedQty > 0) || (item.missingQty && item.missingQty > 0)) && (
-                                  <div className="flex items-center gap-2 text-xs pt-1" data-testid={`indicator-dmg-miss-${item.id}`}>
-                                    {item.damagedQty && item.damagedQty > 0 && (
-                                      <span className="flex items-center gap-1 text-red-600 dark:text-red-400 font-medium bg-red-50 dark:bg-red-950 px-2 py-0.5 rounded">
-                                        <AlertTriangle className="h-3 w-3" />
-                                        {item.damagedQty} damaged
-                                      </span>
-                                    )}
-                                    {item.missingQty && item.missingQty > 0 && (
-                                      <span className="flex items-center gap-1 text-gray-600 dark:text-gray-400 font-medium bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
-                                        <X className="h-3 w-3" />
-                                        {item.missingQty} missing
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
                               </div>
                               
-                              {/* Controls Section */}
-                              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                              {/* Compact Controls Row */}
+                              <div className="flex items-center gap-1.5 flex-wrap">
                                 {/* Quantity Controls */}
-                                <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg p-1 border shadow-sm">
+                                <div className="flex items-center gap-0.5 bg-white dark:bg-gray-800 rounded border">
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => updateItemQuantity(item.id, -1)}
                                     disabled={item.receivedQty === 0}
-                                    className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    className="h-6 w-6 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
-                                    <Minus className="h-4 w-4" />
+                                    <Minus className="h-3 w-3" />
                                   </Button>
                                   {editingItemId === item.id ? (
                                     <input
@@ -3190,14 +3148,14 @@ export default function ContinueReceiving() {
                                           cancelEditing();
                                         }
                                       }}
-                                      className="w-16 text-center text-base font-bold font-mono px-1 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800"
+                                      className="w-12 text-center text-sm font-bold font-mono px-1 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800"
                                       min="0"
                                       max={item.expectedQty}
                                       autoFocus
                                     />
                                   ) : (
                                     <span 
-                                      className="text-base font-bold font-mono w-16 text-center px-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                                      className="text-sm font-bold font-mono w-12 text-center px-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
                                       onClick={() => startEditing(item.id, item.receivedQty)}
                                       title="Click to edit quantity"
                                     >
@@ -3208,18 +3166,17 @@ export default function ContinueReceiving() {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => updateItemQuantity(item.id, 1)}
-                                    className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    className="h-6 w-6 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
-                                    <Plus className="h-4 w-4" />
+                                    <Plus className="h-3 w-3" />
                                   </Button>
                                 </div>
 
-                                {/* Action Buttons Group */}
-                                <div className="flex gap-2 flex-wrap">
-                                  <Button
-                                    variant={item.status === 'complete' ? "default" : "outline"}
-                                    size="sm"
-                                    onClick={() => {
+                                {/* Action Buttons - Compact */}
+                                <Button
+                                  variant={item.status === 'complete' ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => {
                                       // Toggle behavior: if complete, restore previous state; otherwise set to complete
                                       if (item.status === 'complete') {
                                         // Deselect: restore previous quantity and status
@@ -3270,16 +3227,15 @@ export default function ContinueReceiving() {
                                         updateItemFieldMutation.mutate({ itemId: item.id, field: 'status', value: 'complete' });
                                       }
                                     }}
-                                    className={`min-w-[70px] transition-colors shadow-sm ${
-                                      item.status === 'complete'
-                                        ? 'bg-green-600 hover:bg-green-700 border-green-600 text-white'
-                                        : 'border-green-500 hover:border-green-600 hover:bg-green-50 text-green-700'
-                                    }`}
-                                  >
-                                    <Check className="h-3 w-3 mr-1" />
-                                    OK
-                                  </Button>
-                                  <Popover 
+                                  className={`h-6 px-2 text-xs transition-colors ${
+                                    item.status === 'complete'
+                                      ? 'bg-green-600 hover:bg-green-700 border-green-600 text-white'
+                                      : 'border-green-500 hover:border-green-600 hover:bg-green-50 text-green-700'
+                                  }`}
+                                >
+                                  <Check className="h-3 w-3" />
+                                </Button>
+                                <Popover 
                                     open={dmgPopoverOpen[item.id] || false} 
                                     onOpenChange={(open) => {
                                       // Only allow opening if not already damaged, or allow closing
@@ -3304,14 +3260,13 @@ export default function ContinueReceiving() {
                                             setDmgPopoverOpen({ ...dmgPopoverOpen, [item.id]: true });
                                           }
                                         }}
-                                        className={`min-w-[70px] transition-colors shadow-sm ${
+                                        className={`h-6 px-2 text-xs transition-colors ${
                                           isDamaged
                                             ? 'bg-red-600 hover:bg-red-700 border-red-600 text-white'
                                             : 'border-red-500 hover:border-red-600 hover:bg-red-50 text-red-700'
                                         }`}
                                       >
-                                        <AlertTriangle className="h-3 w-3 mr-1" />
-                                        DMG
+                                        <AlertTriangle className="h-3 w-3" />
                                       </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-72 p-4" align="start">
@@ -3411,14 +3366,13 @@ export default function ContinueReceiving() {
                                             setMissPopoverOpen({ ...missPopoverOpen, [item.id]: true });
                                           }
                                         }}
-                                        className={`min-w-[70px] transition-colors shadow-sm ${
+                                        className={`h-6 px-2 text-xs transition-colors ${
                                           isMissing
                                             ? 'bg-gray-600 hover:bg-gray-700 border-gray-600 text-white'
                                             : 'border-gray-500 hover:border-gray-600 hover:bg-gray-50 text-gray-700'
                                         }`}
                                       >
-                                        <X className="h-3 w-3 mr-1" />
-                                        MISS
+                                        <X className="h-3 w-3" />
                                       </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-72 p-4" align="start">
@@ -3493,44 +3447,46 @@ export default function ContinueReceiving() {
                                       </div>
                                     </PopoverContent>
                                   </Popover>
+                                  
+                                  {/* Notes Field with Camera Button - Show when needed */}
+                                  {(isDamaged || isMissing || item.notes) && (
+                                    <>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => itemPhotoInputRefs.current[item.id]?.click()}
+                                        className="h-6 w-6 p-0 border-blue-500 hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 text-blue-700 dark:text-blue-400"
+                                        title="Upload photos"
+                                        data-testid={`button-camera-${item.id}`}
+                                      >
+                                        <Camera className="h-3 w-3" />
+                                      </Button>
+                                      <input
+                                        ref={(el) => itemPhotoInputRefs.current[item.id] = el}
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={(e) => handleItemPhotoUpload(e, item.id)}
+                                        className="hidden"
+                                        data-testid={`input-item-photo-${item.id}`}
+                                      />
+                                    </>
+                                  )}
                                 </div>
-                              </div>
-
-                              {/* Notes Field with Camera Button - Show when needed */}
-                              {(isDamaged || isMissing || item.notes) && (
-                                <div className="transition-all duration-200 flex items-center gap-2">
-                                  {/* Camera Button for Item-Specific Photos */}
-                                  <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => itemPhotoInputRefs.current[item.id]?.click()}
-                                    className="flex-shrink-0 h-9 w-9 transition-colors shadow-sm border-blue-500 hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 text-blue-700 dark:text-blue-400"
-                                    title="Upload photos for this item"
-                                    data-testid={`button-camera-${item.id}`}
-                                  >
-                                    <Camera className="h-4 w-4" />
-                                  </Button>
-                                  <input
-                                    ref={(el) => itemPhotoInputRefs.current[item.id] = el}
-                                    type="file"
-                                    accept="image/*"
-                                    multiple
-                                    onChange={(e) => handleItemPhotoUpload(e, item.id)}
-                                    className="hidden"
-                                    data-testid={`input-item-photo-${item.id}`}
-                                  />
+                                
+                                {/* Notes Input - Full Width Below */}
+                                {(isDamaged || isMissing || item.notes) && (
                                   <Input
                                     value={item.notes || ''}
                                     onChange={(e) => updateItemNotes(item.id, e.target.value)}
-                                    placeholder="Add notes about this item..."
-                                    className="text-sm bg-white dark:bg-gray-800 flex-1"
+                                    placeholder="Add notes..."
+                                    className="text-xs h-7 bg-white dark:bg-gray-800 w-full"
                                   />
-                                </div>
-                              )}
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
                     );
                   })}
               </div>
