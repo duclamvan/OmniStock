@@ -5787,16 +5787,18 @@ router.post("/receipts/auto-save", async (req, res) => {
 
     // Update or create receipt items if explicitly provided
     if (items && items.length > 0) {
-      // Get existing receipt items to preserve itemType
+      // Get existing receipt items to preserve itemType and expectedQuantity
       const existingItems = await db
         .select()
         .from(receiptItems)
         .where(eq(receiptItems.receiptId, receipt.id));
       
-      // Create a map of itemId -> itemType for quick lookup
+      // Create maps for quick lookup - preserve both itemType AND expectedQuantity
       const itemTypeMap = new Map();
+      const expectedQuantityMap = new Map();
       existingItems.forEach(item => {
         itemTypeMap.set(item.itemId, item.itemType);
+        expectedQuantityMap.set(item.itemId, item.expectedQuantity);
       });
       
       // Delete existing receipt items for this receipt
@@ -5814,13 +5816,17 @@ router.post("/receipts/auto-save", async (req, res) => {
         // Preserve the original itemType from the database, or default to 'custom'
         const itemType = itemTypeMap.get(itemId) || 'custom';
         
+        // CRITICAL FIX: Preserve expectedQuantity from database if not provided
+        // Priority: provided value → existing DB value → default to 1
+        const expectedQty = item.expectedQuantity || item.expectedQty || expectedQuantityMap.get(itemId) || 1;
+        
         return {
           receiptId: receipt.id,
           itemId: itemId,
           itemType: itemType, // Use preserved itemType
           productId: item.productId || null, // Include productId
           sku: item.sku || null, // Include SKU
-          expectedQuantity: item.expectedQuantity || item.expectedQty || 1,
+          expectedQuantity: expectedQty,
           receivedQuantity: item.receivedQuantity || item.receivedQty || 0,
           damagedQuantity: item.damagedQuantity || 0,
           missingQuantity: item.missingQuantity || 0,

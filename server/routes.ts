@@ -148,6 +148,20 @@ function snakeToCamel(str: string): string {
   return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 }
 
+// Helper to parse setting values (JSON or primitives)
+function deepParse(value: string | null | undefined): any {
+  if (value === null || value === undefined) return value;
+  if (typeof value !== 'string') return value;
+  
+  // Try to parse as JSON (handles objects, arrays, booleans, numbers)
+  try {
+    return JSON.parse(value);
+  } catch {
+    // If JSON parsing fails, return as string
+    return value;
+  }
+}
+
 // Helper to get settings by category as an object
 async function getSettingsByCategory(category: string): Promise<Record<string, any>> {
   const allSettings = await storage.getAppSettings();
