@@ -1263,50 +1263,50 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               <h2 className="text-mobile-lg font-semibold">Orders ({filteredOrders?.length || 0})</h2>
               <div className="flex items-center gap-2 flex-wrap">
                 {/* View Mode Toggle */}
-                <div className="flex items-center gap-1 border rounded-md">
+                <div className="flex items-center gap-0.5 sm:gap-1 border rounded-md">
                   <Button
                     variant={viewMode === 'normal' ? 'default' : 'ghost'}
                     size="sm"
                     onClick={() => handleViewModeChange('normal')}
-                    className="h-7 px-2 text-xs rounded-r-none"
+                    className="h-8 sm:h-7 px-2 text-xs rounded-r-none"
                     data-testid="button-viewNormal"
                   >
-                    <List className="h-3 w-3 mr-1" />
-                    Normal
+                    <List className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
+                    <span className="hidden sm:inline">Normal</span>
                   </Button>
                   <Button
                     variant={viewMode === 'compact' ? 'default' : 'ghost'}
                     size="sm"
                     onClick={() => handleViewModeChange('compact')}
-                    className="h-7 px-2 text-xs rounded-l-none"
+                    className="h-8 sm:h-7 px-2 text-xs rounded-l-none"
                     data-testid="button-viewCompact"
                   >
-                    <AlignJustify className="h-3 w-3 mr-1" />
-                    Compact
+                    <AlignJustify className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
+                    <span className="hidden sm:inline">Compact</span>
                   </Button>
                 </div>
 
                 {/* Expand/Collapse All Toggle */}
-                <div className="flex items-center gap-1 border rounded-md">
+                <div className="flex items-center gap-0.5 sm:gap-1 border rounded-md">
                   <Button
                     variant={!expandAll ? 'default' : 'ghost'}
                     size="sm"
                     onClick={() => handleExpandAllChange(false)}
-                    className="h-7 px-2 text-xs rounded-r-none"
+                    className="h-8 sm:h-7 px-2 text-xs rounded-r-none"
                     data-testid="button-collapseAll"
                   >
-                    <ChevronUp className="h-3 w-3 mr-1" />
-                    Collapsed
+                    <ChevronUp className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
+                    <span className="hidden sm:inline">Collapsed</span>
                   </Button>
                   <Button
                     variant={expandAll ? 'default' : 'ghost'}
                     size="sm"
                     onClick={() => handleExpandAllChange(true)}
-                    className="h-7 px-2 text-xs rounded-l-none"
+                    className="h-8 sm:h-7 px-2 text-xs rounded-l-none"
                     data-testid="button-expandAll"
                   >
-                    <ChevronDown className="h-3 w-3 mr-1" />
-                    Expanded
+                    <ChevronDown className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
+                    <span className="hidden sm:inline">Expanded</span>
                   </Button>
                 </div>
                 {viewMode === 'normal' && (
