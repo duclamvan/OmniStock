@@ -294,6 +294,16 @@
   [class*="Card"] {
     transition: all 0.3s ease-in-out;
   }
+  
+  /* Make all SVG icons click-through so buttons are fully clickable */
+  button svg,
+  a svg,
+  [role="button"] svg,
+  [role="link"] svg,
+  [data-testid*="button"] svg,
+  [data-testid*="link"] svg {
+    pointer-events: none;
+  }
 }
 
 /* Custom styles for the WMS application */
