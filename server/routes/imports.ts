@@ -3629,6 +3629,8 @@ router.post("/receipts", async (req, res) => {
       receiptId: receipt.id,
       itemId: item.id,
       itemType: item.itemType,
+      productId: (item as any).productId || null, // Link to products table if available
+      sku: (item as any).sku || null, // Store SKU for easier product matching
       expectedQuantity: item.quantity || 1,
       receivedQuantity: 0, // Will be updated during verification
       damagedQuantity: 0,
@@ -5363,12 +5365,13 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
       return res.status(404).json({ message: "No receipt found for this shipment" });
     }
     
-    // Get receipt items with LEFT JOINs for purchase and consolidation items
+    // Get receipt items with LEFT JOINs for purchase, custom, and consolidation items
     // This single query replaces the N+1 problem!
     const receiptItemsWithDetails = await db
       .select({
         receiptItem: receiptItems,
         purchaseItem: purchaseItems,
+        customItem: customItems,
         consolidationItem: consolidationItems
       })
       .from(receiptItems)
@@ -5376,18 +5379,33 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
         eq(receiptItems.itemType, 'purchase'),
         eq(receiptItems.itemId, purchaseItems.id)
       ))
+      .leftJoin(customItems, and(
+        eq(receiptItems.itemType, 'custom'),
+        eq(receiptItems.itemId, customItems.id)
+      ))
       .leftJoin(consolidationItems, and(
         eq(receiptItems.itemType, 'consolidation'),
         eq(receiptItems.itemId, consolidationItems.id)
       ))
       .where(eq(receiptItems.receiptId, receipt.id));
     
-    // Transform the results to match the expected format
-    const itemsWithDetails = receiptItemsWithDetails.map(row => ({
-      ...row.receiptItem,
-      purchaseItem: row.purchaseItem,
-      consolidationItem: row.consolidationItem
-    }));
+    // Transform the results to match the expected format with item names
+    const itemsWithDetails = receiptItemsWithDetails.map(row => {
+      // Get the name from whichever item type exists
+      const name = row.purchaseItem?.name || row.customItem?.name || row.consolidationItem?.name || 'Unknown Item';
+      const sku = row.purchaseItem?.sku || row.customItem?.sku || null;
+      const imageUrl = row.purchaseItem?.imageUrl || null;
+      
+      return {
+        ...row.receiptItem,
+        name, // Add name to receipt item
+        sku,  // Add SKU to receipt item
+        imageUrl, // Add image URL if available
+        purchaseItem: row.purchaseItem,
+        customItem: row.customItem,
+        consolidationItem: row.consolidationItem
+      };
+    });
     
     // Return shipment, receipt, and items with details
     const responseData = {
