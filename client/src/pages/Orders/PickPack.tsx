@@ -13406,7 +13406,7 @@ export default function PickPack() {
                                 .map(order => (
                                 <Card 
                                   key={order.id} 
-                                  className="bg-white border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                                  className="bg-white dark:bg-gray-800 border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                                   onClick={() => setPreviewOrder(order)}
                                 >
                                   <CardContent className="p-2">
