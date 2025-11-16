@@ -1907,8 +1907,8 @@ export default function StartReceiving() {
           <Badge className={`${getStatusColor(shipment.status)} text-sm px-3 py-1`}>
             {shipment.status?.replace('_', ' ').toUpperCase()}
           </Badge>
-          {receipt && (
-            <Link href={`/receiving/receipt/${receipt.id}`}>
+          {receipt && receipt.receipt && (
+            <Link href={`/receiving/receipt/${receipt.receipt.id}`}>
               <Button variant="outline" size="default" className="h-10">
                 <FileText className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">View Receipt</span>
