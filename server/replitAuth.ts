@@ -134,13 +134,27 @@ export async function setupAuth(app: Express) {
       }
       
       console.log("User object received:", user);
-      req.logIn(user, (err) => {
+      req.logIn(user, async (err) => {
         if (err) {
           console.error("Login error:", err);
           return res.status(500).json({ error: "Login failed", details: err.message });
         }
         console.log("User logged in successfully");
         console.log("Is authenticated after login:", req.isAuthenticated());
+
+        // Check if user has 2FA enabled
+        try {
+          const dbUser = await storage.getUser(user.claims?.sub);
+          if (dbUser && dbUser.twoFactorEnabled && dbUser.phoneNumber) {
+            // Mark as not verified yet
+            await storage.setUser2FAVerified(dbUser.id, false);
+            // Redirect to login page with 2FA prompt
+            return res.redirect(`/login?require_2fa=true&phone=${encodeURIComponent(dbUser.phoneNumber)}`);
+          }
+        } catch (error) {
+          console.error("Error checking 2FA status:", error);
+        }
+
         return res.redirect("/");
       });
     })(req, res, next);
@@ -167,6 +181,18 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 
   const now = Math.floor(Date.now() / 1000);
   if (now <= user.expires_at) {
+    // Check if 2FA verification is required
+    try {
+      const dbUser = await storage.getUser(user.claims?.sub);
+      if (dbUser && dbUser.twoFactorEnabled && !dbUser.twoFactorVerified) {
+        return res.status(403).json({ 
+          message: "Two-factor authentication required",
+          requireTwoFactor: true
+        });
+      }
+    } catch (error) {
+      console.error("Error checking 2FA status:", error);
+    }
     return next();
   }
 
