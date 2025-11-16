@@ -367,7 +367,13 @@ export function MobileHeader({
                 </span>
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
-              <DropdownMenuItem className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+              <DropdownMenuItem 
+                onClick={() => {
+                  window.location.href = '/api/logout';
+                }}
+                className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                data-testid="button-logout"
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>{t('common:logout')}</span>
               </DropdownMenuItem>
