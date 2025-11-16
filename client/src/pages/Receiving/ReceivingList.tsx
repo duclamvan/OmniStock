@@ -1095,21 +1095,25 @@ function ReceivingShipmentCard({ shipment }: { shipment: any }) {
               <div className="space-y-2">
                 <h4 className="text-sm font-semibold text-black dark:text-white">Items:</h4>
                 <div className="space-y-1 max-h-40 overflow-y-auto">
-                  {shipment.items.map((item: any, idx: number) => (
-                    <div key={idx} className="flex justify-between items-center text-sm p-2 bg-muted/30 rounded">
-                      <span className="truncate text-black dark:text-white">{item.productName || item.name}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-black dark:text-white">
-                          {item.receivedQuantity || 0}/{item.quantity}
+                  {shipment.items.map((item: any, idx: number) => {
+                    const receivedQty = item.receivedQuantity || 0;
+                    const totalQty = item.quantity;
+                    const isComplete = receivedQty >= totalQty;
+                    const isPartial = receivedQty > 0 && receivedQty < totalQty;
+                    
+                    return (
+                      <div key={idx} className="flex justify-between items-center text-sm p-2 bg-muted/30 rounded">
+                        <span className="truncate text-black dark:text-white">{item.productName || item.name}</span>
+                        <span className={`font-semibold ${
+                          isComplete ? 'text-green-600 dark:text-green-500' :
+                          isPartial ? 'text-amber-600 dark:text-amber-500' :
+                          'text-gray-500 dark:text-gray-400'
+                        }`}>
+                          {receivedQty}/{totalQty}
                         </span>
-                        {item.receivedQuantity >= item.quantity ? (
-                          <CheckCircle className="h-4 w-4 text-green-600" />
-                        ) : item.receivedQuantity > 0 ? (
-                          <AlertCircle className="h-4 w-4 text-amber-600" />
-                        ) : null}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
