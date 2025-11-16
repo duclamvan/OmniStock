@@ -7,7 +7,22 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { Search, Package, MapPin, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X, Plus, Minus } from "lucide-react";
+import { Search, Package, MapPin, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X, Plus, Minus, Filter, ArrowUpDown as SortIcon } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Link } from "wouter";
 import { fuzzySearch } from "@/lib/fuzzySearch";
@@ -62,6 +77,8 @@ export default function StockLookup() {
   const [selectedLocation, setSelectedLocation] = useState<ProductLocation | null>(null);
   const [barcodeMode, setBarcodeMode] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("name-asc");
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const { lowStockThreshold, enableBarcodeScanning } = useInventoryDefaults();
@@ -123,6 +140,11 @@ export default function StockLookup() {
   // Fetch warehouses for location display
   const { data: warehouses = [] } = useQuery<any[]>({
     queryKey: ['/api/warehouses'],
+  });
+
+  // Fetch categories for filtering
+  const { data: categories = [] } = useQuery<any[]>({
+    queryKey: ['/api/categories'],
   });
 
   // Fetch over-allocated items
@@ -190,41 +212,75 @@ export default function StockLookup() {
     });
   }, [rawProducts]);
 
-  // Filter products using fuzzy search - supports multiple search terms
+  // Filter and sort products
   const filteredProducts = useMemo(() => {
-    if (!searchQuery.trim()) return products;
+    let result = products;
     
-    // Split by spaces to handle multiple SKUs/product names
-    const searchTerms = searchQuery.trim().split(/\s+/);
-    
-    // If only one search term, use regular fuzzy search
-    if (searchTerms.length === 1) {
-      return fuzzySearch(products, searchQuery, {
-        fields: ['name', 'sku', 'barcode', 'categoryName'],
-        threshold: 0.3
-      }).map(result => result.item);
+    // Filter by category
+    if (selectedCategory !== "all") {
+      result = result.filter(p => p.categoryName === selectedCategory);
     }
     
-    // Multiple search terms: find products that match any of the terms
-    const matchedProductIds = new Set<string>();
-    const matchedProducts: EnrichedProduct[] = [];
-    
-    searchTerms.forEach(term => {
-      const results = fuzzySearch(products, term, {
-        fields: ['name', 'sku', 'barcode', 'categoryName'],
-        threshold: 0.3
-      });
+    // Filter by search query
+    if (searchQuery.trim()) {
+      // Split by spaces to handle multiple SKUs/product names
+      const searchTerms = searchQuery.trim().split(/\s+/);
       
-      results.forEach(result => {
-        if (!matchedProductIds.has(result.item.id)) {
-          matchedProductIds.add(result.item.id);
-          matchedProducts.push(result.item);
-        }
-      });
+      // If only one search term, use regular fuzzy search
+      if (searchTerms.length === 1) {
+        result = fuzzySearch(result, searchQuery, {
+          fields: ['name', 'sku', 'barcode', 'categoryName'],
+          threshold: 0.3
+        }).map(r => r.item);
+      } else {
+        // Multiple search terms: find products that match any of the terms
+        const matchedProductIds = new Set<string>();
+        const matchedProducts: EnrichedProduct[] = [];
+        
+        searchTerms.forEach(term => {
+          const results = fuzzySearch(result, term, {
+            fields: ['name', 'sku', 'barcode', 'categoryName'],
+            threshold: 0.3
+          });
+          
+          results.forEach(r => {
+            if (!matchedProductIds.has(r.item.id)) {
+              matchedProductIds.add(r.item.id);
+              matchedProducts.push(r.item);
+            }
+          });
+        });
+        
+        result = matchedProducts;
+      }
+    }
+    
+    // Sort products
+    const sorted = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case 'name-asc':
+          return a.name.localeCompare(b.name);
+        case 'name-desc':
+          return b.name.localeCompare(a.name);
+        case 'stock-asc':
+          return a.totalStock - b.totalStock;
+        case 'stock-desc':
+          return b.totalStock - a.totalStock;
+        case 'sku-asc':
+          return (a.sku || '').localeCompare(b.sku || '');
+        case 'sku-desc':
+          return (b.sku || '').localeCompare(a.sku || '');
+        case 'category-asc':
+          return (a.categoryName || '').localeCompare(b.categoryName || '');
+        case 'category-desc':
+          return (b.categoryName || '').localeCompare(a.categoryName || '');
+        default:
+          return 0;
+      }
     });
     
-    return matchedProducts;
-  }, [products, searchQuery]);
+    return sorted;
+  }, [products, searchQuery, selectedCategory, sortBy]);
 
   // Fetch variants for selected product
   const { data: selectedVariants = [] } = useQuery<Variant[]>({
@@ -369,6 +425,125 @@ export default function StockLookup() {
                 <span>{filteredProducts.length} results</span>
               </div>
             </>
+          )}
+
+          {/* Filter and Sort Controls */}
+          {!barcodeMode && (
+            <div className="mt-3 flex gap-2">
+              {/* Category Filter */}
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="flex-1 h-9 text-sm" data-testid="select-category-filter">
+                  <div className="flex items-center gap-1.5">
+                    <Filter className="h-3.5 w-3.5 text-gray-500" />
+                    <SelectValue placeholder="All Categories" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map((cat: any) => (
+                    <SelectItem key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Sort Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9 px-3" data-testid="button-sort-menu">
+                    <SortIcon className="h-3.5 w-3.5 mr-1.5" />
+                    Sort
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel className="text-xs font-semibold text-gray-500">Sort By</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  
+                  <DropdownMenuItem 
+                    onClick={() => setSortBy('name-asc')}
+                    className={sortBy === 'name-asc' ? 'bg-gray-100 dark:bg-gray-800' : ''}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-sm">Name (A-Z)</span>
+                      {sortBy === 'name-asc' && <span className="text-blue-600">✓</span>}
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setSortBy('name-desc')}
+                    className={sortBy === 'name-desc' ? 'bg-gray-100 dark:bg-gray-800' : ''}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-sm">Name (Z-A)</span>
+                      {sortBy === 'name-desc' && <span className="text-blue-600">✓</span>}
+                    </div>
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator />
+                  
+                  <DropdownMenuItem 
+                    onClick={() => setSortBy('stock-desc')}
+                    className={sortBy === 'stock-desc' ? 'bg-gray-100 dark:bg-gray-800' : ''}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-sm">Stock (High-Low)</span>
+                      {sortBy === 'stock-desc' && <span className="text-blue-600">✓</span>}
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setSortBy('stock-asc')}
+                    className={sortBy === 'stock-asc' ? 'bg-gray-100 dark:bg-gray-800' : ''}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-sm">Stock (Low-High)</span>
+                      {sortBy === 'stock-asc' && <span className="text-blue-600">✓</span>}
+                    </div>
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator />
+                  
+                  <DropdownMenuItem 
+                    onClick={() => setSortBy('sku-asc')}
+                    className={sortBy === 'sku-asc' ? 'bg-gray-100 dark:bg-gray-800' : ''}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-sm">SKU (A-Z)</span>
+                      {sortBy === 'sku-asc' && <span className="text-blue-600">✓</span>}
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setSortBy('sku-desc')}
+                    className={sortBy === 'sku-desc' ? 'bg-gray-100 dark:bg-gray-800' : ''}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-sm">SKU (Z-A)</span>
+                      {sortBy === 'sku-desc' && <span className="text-blue-600">✓</span>}
+                    </div>
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator />
+                  
+                  <DropdownMenuItem 
+                    onClick={() => setSortBy('category-asc')}
+                    className={sortBy === 'category-asc' ? 'bg-gray-100 dark:bg-gray-800' : ''}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-sm">Category (A-Z)</span>
+                      {sortBy === 'category-asc' && <span className="text-blue-600">✓</span>}
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setSortBy('category-desc')}
+                    className={sortBy === 'category-desc' ? 'bg-gray-100 dark:bg-gray-800' : ''}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-sm">Category (Z-A)</span>
+                      {sortBy === 'category-desc' && <span className="text-blue-600">✓</span>}
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           )}
         </div>
       </div>
