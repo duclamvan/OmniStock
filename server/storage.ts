@@ -176,6 +176,7 @@ export interface IStorage {
   updateUserProfile(userId: string, updates: Partial<Pick<User, 'firstName' | 'lastName' | 'email'>>): Promise<User | undefined>;
   updateUser2FA(userId: string, phoneNumber: string | null, enabled: boolean): Promise<User | undefined>;
   setUser2FAVerified(userId: string, verified: boolean): Promise<void>;
+  upsertUser(userData: { id: string; email?: string | null; firstName?: string | null; lastName?: string | null; profileImageUrl?: string | null; replitSub?: string | null }): Promise<User>;
 
   // Import Purchases
   getImportPurchases(): Promise<ImportPurchase[]>;
@@ -658,6 +659,45 @@ export class DatabaseStorage implements IStorage {
       .update(users)
       .set({ twoFactorVerified: verified, updatedAt: new Date() })
       .where(eq(users.id, userId));
+  }
+
+  async upsertUser(userData: { id: string; email?: string | null; firstName?: string | null; lastName?: string | null; profileImageUrl?: string | null; replitSub?: string | null }): Promise<User> {
+    // Check if user exists
+    const existingUser = await this.getUser(userData.id);
+    
+    if (existingUser) {
+      // Update existing user
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          profileImageUrl: userData.profileImageUrl,
+          replitSub: userData.replitSub || userData.id,
+          authProvider: 'replit',
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userData.id))
+        .returning();
+      return updatedUser;
+    } else {
+      // Create new user
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          id: userData.id,
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          profileImageUrl: userData.profileImageUrl,
+          replitSub: userData.replitSub || userData.id,
+          authProvider: 'replit',
+          role: 'warehouse_operator',
+        })
+        .returning();
+      return newUser;
+    }
   }
 
   // Import Purchases
