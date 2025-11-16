@@ -5817,8 +5817,10 @@ router.post("/receipts/auto-save", async (req, res) => {
         const itemType = itemTypeMap.get(itemId) || 'custom';
         
         // CRITICAL FIX: Preserve expectedQuantity from database if not provided
+        // Ensure itemId is converted to number for map lookup
         // Priority: provided value → existing DB value → default to 1
-        const expectedQty = item.expectedQuantity || item.expectedQty || expectedQuantityMap.get(itemId) || 1;
+        const existingExpectedQty = expectedQuantityMap.get(Number(itemId));
+        const expectedQty = item.expectedQuantity || item.expectedQty || existingExpectedQty || 1;
         
         return {
           receiptId: receipt.id,
