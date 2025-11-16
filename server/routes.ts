@@ -7868,6 +7868,31 @@ Important:
     }
   });
 
+  app.post('/api/notifications/mark-all-read', async (req: any, res) => {
+    try {
+      const userId = req.user?.id || "test-user";
+
+      // Mark all unread notifications as read for this user
+      const result = await db
+        .update(notifications)
+        .set({ isRead: true })
+        .where(and(
+          eq(notifications.userId, userId),
+          eq(notifications.isRead, false)
+        ))
+        .returning();
+
+      res.json({ 
+        success: true, 
+        markedCount: result.length,
+        message: `Marked ${result.length} notification(s) as read`
+      });
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      res.status(500).json({ message: "Failed to mark all notifications as read" });
+    }
+  });
+
   // Services endpoints
   app.get('/api/services', async (req, res) => {
     try {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'wouter';
 import { Menu, Bell, Sun, Moon, User, Settings, LogOut, Search, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -89,6 +89,35 @@ export function MobileHeader({
     queryKey: ['/api/notifications'],
     refetchInterval: 30000, // Refetch every 30 seconds
   });
+  
+  // Mark all notifications as read mutation
+  const markAllAsReadMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest('POST', '/api/notifications/mark-all-read', {});
+      return res.json();
+    },
+    onSuccess: () => {
+      // Invalidate both queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-count'] });
+    },
+  });
+
+  // Track notification dropdown state
+  const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
+  const wasDropdownOpen = useRef(false);
+  
+  // Mark all as read when dropdown closes (only if it was actually opened and had unread notifications)
+  useEffect(() => {
+    if (!notificationDropdownOpen && wasDropdownOpen.current && unreadCount > 0) {
+      // Dropdown just closed, it was previously open, and there were unread notifications
+      markAllAsReadMutation.mutate();
+      wasDropdownOpen.current = false;
+    } else if (notificationDropdownOpen) {
+      // Dropdown is now open, track this
+      wasDropdownOpen.current = true;
+    }
+  }, [notificationDropdownOpen, unreadCount]);
   
   // Determine if header should be collapsed
   const isCollapsed = scrollDir === 'down' && isPastThreshold && !isAtTop && !isSearchExpanded;
@@ -205,7 +234,7 @@ export function MobileHeader({
         {/* Right: Actions */}
         <div className="flex items-center gap-1 flex-shrink-0">
           {/* Notifications Dropdown */}
-          <DropdownMenu>
+          <DropdownMenu open={notificationDropdownOpen} onOpenChange={setNotificationDropdownOpen}>
             <DropdownMenuTrigger asChild>
               <Button 
                 variant="ghost" 
