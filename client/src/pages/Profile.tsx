@@ -523,7 +523,9 @@ export default function Profile() {
                     {user.createdAt ? format(new Date(user.createdAt), 'PPP') : 'N/A'}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {user.createdAt ? formatDistanceToNow(new Date(user.createdAt), { addSuffix: true }) : ''}
+                    {user.createdAt && !isNaN(new Date(user.createdAt).getTime()) 
+                      ? formatDistanceToNow(new Date(user.createdAt), { addSuffix: true }) 
+                      : ''}
                   </p>
                 </div>
               </div>
@@ -604,7 +606,9 @@ export default function Profile() {
                       </div>
                       <p className="text-xs text-gray-500 dark:text-gray-500 flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true })}
+                        {order.createdAt && !isNaN(new Date(order.createdAt).getTime()) 
+                          ? formatDistanceToNow(new Date(order.createdAt), { addSuffix: true })
+                          : 'Date unknown'}
                       </p>
                     </div>
                   </div>
