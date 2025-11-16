@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -32,8 +31,6 @@ import {
   Camera,
   Lock,
   Settings as SettingsIcon,
-  UserCircle,
-  Bell,
   Key
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
@@ -399,12 +396,12 @@ export default function UserSettings() {
   // Loading skeleton
   if (isLoading) {
     return (
-      <div className="space-y-6 max-w-6xl mx-auto p-4 md:p-6">
+      <div className="space-y-6 max-w-4xl mx-auto p-4">
         <div>
           <Skeleton className="h-9 w-64 mb-2" />
           <Skeleton className="h-5 w-96" />
         </div>
-        {[1, 2, 3].map(i => (
+        {[1, 2, 3, 4].map(i => (
           <Card key={i}>
             <CardHeader>
               <Skeleton className="h-6 w-48" />
@@ -422,7 +419,7 @@ export default function UserSettings() {
   // Error state
   if (isError || !user) {
     return (
-      <div className="space-y-6 max-w-6xl mx-auto p-4 md:p-6">
+      <div className="space-y-6 max-w-4xl mx-auto p-4">
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -448,724 +445,698 @@ export default function UserSettings() {
   }
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto p-4 md:p-6">
+    <div className="space-y-6 max-w-4xl mx-auto p-4 pb-20">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <SettingsIcon className="h-8 w-8 text-primary" />
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <SettingsIcon className="h-6 w-6 md:h-8 md:w-8 text-primary" />
             User Settings
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
+          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mt-1 md:mt-2">
             Manage your account preferences and personal information
           </p>
         </div>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full max-w-3xl">
-          <TabsTrigger value="profile" data-testid="tab-profile">
-            <UserCircle className="h-4 w-4 mr-2" />
-            Profile
-          </TabsTrigger>
-          <TabsTrigger value="security" data-testid="tab-security">
-            <Shield className="h-4 w-4 mr-2" />
-            Security
-          </TabsTrigger>
-          <TabsTrigger value="preferences" data-testid="tab-preferences">
-            <SettingsIcon className="h-4 w-4 mr-2" />
-            Preferences
-          </TabsTrigger>
-          <TabsTrigger value="account" data-testid="tab-account">
-            <UserIcon className="h-4 w-4 mr-2" />
-            Account
-          </TabsTrigger>
-        </TabsList>
+      {/* Profile Picture Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Camera className="h-5 w-5 text-primary" />
+            <CardTitle>Profile Picture</CardTitle>
+          </div>
+          <CardDescription>
+            Upload a profile picture to personalize your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-6">
+            <div className="relative">
+              {profileImagePreview || user.profileImageUrl ? (
+                <img 
+                  src={profileImagePreview || user.profileImageUrl || ''} 
+                  alt="Profile" 
+                  className="h-20 w-20 md:h-24 md:w-24 rounded-full object-cover border-4 border-gray-200 dark:border-gray-700"
+                  data-testid="img-profile-preview"
+                />
+              ) : (
+                <div className="h-20 w-20 md:h-24 md:w-24 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border-4 border-gray-200 dark:border-gray-700">
+                  <UserIcon className="h-10 w-10 md:h-12 md:w-12 text-primary" />
+                </div>
+              )}
+            </div>
+            <div className="space-y-3">
+              <Label 
+                htmlFor="profile-image" 
+                className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 md:h-10 px-3 md:px-4 py-2"
+                data-testid="label-upload-image"
+              >
+                <Camera className="h-4 w-4 mr-2" />
+                {updateProfileImageMutation.isPending ? 'Uploading...' : 'Upload Photo'}
+              </Label>
+              <Input
+                id="profile-image"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageUpload}
+                disabled={updateProfileImageMutation.isPending}
+                data-testid="input-profile-image"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Max 5MB. JPG, PNG, GIF
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* Profile Tab */}
-        <TabsContent value="profile" className="space-y-6">
-          {/* Profile Image */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Camera className="h-5 w-5 text-primary" />
-                <CardTitle>Profile Picture</CardTitle>
-              </div>
-              <CardDescription>
-                Upload a profile picture to personalize your account
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-6">
-                <div className="relative">
-                  {profileImagePreview || user.profileImageUrl ? (
-                    <img 
-                      src={profileImagePreview || user.profileImageUrl || ''} 
-                      alt="Profile" 
-                      className="h-24 w-24 rounded-full object-cover border-4 border-gray-200 dark:border-gray-700"
-                      data-testid="img-profile-preview"
-                    />
-                  ) : (
-                    <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border-4 border-gray-200 dark:border-gray-700">
-                      <UserIcon className="h-12 w-12 text-primary" />
-                    </div>
+      {/* Personal Information Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <UserIcon className="h-5 w-5 text-primary" />
+            <CardTitle>Personal Information</CardTitle>
+          </div>
+          <CardDescription>
+            Update your personal details
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...personalInfoForm}>
+            <form onSubmit={personalInfoForm.handleSubmit((data) => updatePersonalInfoMutation.mutate(data))} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={personalInfoForm.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First Name</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="John" 
+                          {...field} 
+                          data-testid="input-first-name"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </div>
-                <div className="space-y-3">
-                  <Label 
-                    htmlFor="profile-image" 
-                    className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
-                    data-testid="label-upload-image"
-                  >
-                    <Camera className="h-4 w-4 mr-2" />
-                    {updateProfileImageMutation.isPending ? 'Uploading...' : 'Upload Photo'}
-                  </Label>
-                  <Input
-                    id="profile-image"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageUpload}
-                    disabled={updateProfileImageMutation.isPending}
-                    data-testid="input-profile-image"
-                  />
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Maximum file size: 5MB. Supported formats: JPG, PNG, GIF
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Personal Information */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <UserIcon className="h-5 w-5 text-primary" />
-                <CardTitle>Personal Information</CardTitle>
-              </div>
-              <CardDescription>
-                Update your personal details
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...personalInfoForm}>
-                <form onSubmit={personalInfoForm.handleSubmit((data) => updatePersonalInfoMutation.mutate(data))} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={personalInfoForm.control}
-                      name="firstName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>First Name</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="John" 
-                              {...field} 
-                              data-testid="input-first-name"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={personalInfoForm.control}
-                      name="lastName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Last Name</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="Doe" 
-                              {...field} 
-                              data-testid="input-last-name"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={personalInfoForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email Address</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="email"
-                            placeholder="john.doe@example.com" 
-                            {...field} 
-                            data-testid="input-email"
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          This email will be used for account recovery and notifications
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button 
-                    type="submit" 
-                    disabled={updatePersonalInfoMutation.isPending || !personalInfoForm.formState.isDirty}
-                    data-testid="button-save-personal-info"
-                  >
-                    {updatePersonalInfoMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save Changes
-                      </>
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-
-          {/* Contact Information */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Smartphone className="h-5 w-5 text-primary" />
-                <CardTitle>Contact Information</CardTitle>
-              </div>
-              <CardDescription>
-                Manage your contact details
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...contactInfoForm}>
-                <form onSubmit={contactInfoForm.handleSubmit((data) => updateContactInfoMutation.mutate(data))} className="space-y-6">
-                  <FormField
-                    control={contactInfoForm.control}
-                    name="phoneNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="tel"
-                            placeholder="+420123456789" 
-                            {...field} 
-                            data-testid="input-contact-phone"
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Enter your phone number in E.164 format (e.g., +420123456789)
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button 
-                    type="submit" 
-                    disabled={updateContactInfoMutation.isPending || !contactInfoForm.formState.isDirty}
-                    data-testid="button-save-contact-info"
-                  >
-                    {updateContactInfoMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save Changes
-                      </>
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Security Tab */}
-        <TabsContent value="security" className="space-y-6">
-          {/* Two-Factor Authentication */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-primary" />
-                <CardTitle>Two-Factor Authentication (2FA)</CardTitle>
-              </div>
-              <CardDescription>
-                Add an extra layer of security to your account with SMS verification
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* 2FA Status Toggle */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                <div className="space-y-1">
-                  <Label className="text-base font-medium">
-                    Status: {user?.twoFactorEnabled ? (
-                      <Badge className="ml-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                        Enabled
-                      </Badge>
-                    ) : (
-                      <Badge className="ml-2 bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200">
-                        Disabled
-                      </Badge>
-                    )}
-                  </Label>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {user?.twoFactorEnabled 
-                      ? `Active on ${user.phoneNumber || 'your phone'}` 
-                      : 'Enable 2FA to secure your account with SMS verification'}
-                  </p>
-                </div>
-                <Switch
-                  checked={user?.twoFactorEnabled || false}
-                  onCheckedChange={(checked) => {
-                    if (!checked && user?.twoFactorEnabled) {
-                      setupTwoFactorMutation.mutate({ phoneNumber: null, enabled: false });
-                    }
-                  }}
-                  disabled={setupTwoFactorMutation.isPending}
-                  data-testid="switch-2fa-toggle"
+                />
+                <FormField
+                  control={personalInfoForm.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last Name</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Doe" 
+                          {...field} 
+                          data-testid="input-last-name"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
 
-              {/* Enable 2FA Flow */}
-              {!user?.twoFactorEnabled && (
-                <div className="space-y-4 pt-4 border-t dark:border-gray-700">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone-number-2fa">Phone Number for 2FA</Label>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+              <FormField
+                control={personalInfoForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email Address</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="email"
+                        placeholder="john.doe@example.com" 
+                        {...field} 
+                        data-testid="input-email"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      This email will be used for account recovery and notifications
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button 
+                type="submit" 
+                disabled={updatePersonalInfoMutation.isPending || !personalInfoForm.formState.isDirty}
+                data-testid="button-save-personal-info"
+                className="w-full md:w-auto"
+              >
+                {updatePersonalInfoMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+
+      {/* Contact Information Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Smartphone className="h-5 w-5 text-primary" />
+            <CardTitle>Contact Information</CardTitle>
+          </div>
+          <CardDescription>
+            Manage your contact details
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...contactInfoForm}>
+            <form onSubmit={contactInfoForm.handleSubmit((data) => updateContactInfoMutation.mutate(data))} className="space-y-6">
+              <FormField
+                control={contactInfoForm.control}
+                name="phoneNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="tel"
+                        placeholder="+420123456789" 
+                        {...field} 
+                        data-testid="input-contact-phone"
+                      />
+                    </FormControl>
+                    <FormDescription>
                       Enter your phone number in E.164 format (e.g., +420123456789)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button 
+                type="submit" 
+                disabled={updateContactInfoMutation.isPending || !contactInfoForm.formState.isDirty}
+                data-testid="button-save-contact-info"
+                className="w-full md:w-auto"
+              >
+                {updateContactInfoMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+
+      {/* Two-Factor Authentication Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-primary" />
+            <CardTitle>Two-Factor Authentication (2FA)</CardTitle>
+          </div>
+          <CardDescription>
+            Add an extra layer of security to your account with SMS verification
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* 2FA Status Toggle */}
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <div className="space-y-1 flex-1">
+              <Label className="text-base font-medium">
+                Status: {user?.twoFactorEnabled ? (
+                  <Badge className="ml-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                    Enabled
+                  </Badge>
+                ) : (
+                  <Badge className="ml-2 bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200">
+                    Disabled
+                  </Badge>
+                )}
+              </Label>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {user?.twoFactorEnabled 
+                  ? `Active on ${user.phoneNumber || 'your phone'}` 
+                  : 'Enable 2FA to secure your account with SMS verification'}
+              </p>
+            </div>
+            <Switch
+              checked={user?.twoFactorEnabled || false}
+              onCheckedChange={(checked) => {
+                if (!checked && user?.twoFactorEnabled) {
+                  setupTwoFactorMutation.mutate({ phoneNumber: null, enabled: false });
+                }
+              }}
+              disabled={setupTwoFactorMutation.isPending}
+              data-testid="switch-2fa-toggle"
+            />
+          </div>
+
+          {/* Enable 2FA Flow */}
+          {!user?.twoFactorEnabled && (
+            <div className="space-y-4 pt-4 border-t dark:border-gray-700">
+              <div className="space-y-2">
+                <Label htmlFor="phone-number-2fa">Phone Number for 2FA</Label>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Enter your phone number in E.164 format (e.g., +420123456789)
+                </p>
+                <Input
+                  id="phone-number-2fa"
+                  type="tel"
+                  placeholder="+420123456789"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  disabled={codeSent || sendCodeMutation.isPending}
+                  data-testid="input-phone-number-2fa"
+                />
+              </div>
+
+              {!codeSent ? (
+                <Button
+                  onClick={() => {
+                    if (!phoneNumber || !phoneNumber.startsWith('+')) {
+                      toast({
+                        title: 'Invalid Phone Number',
+                        description: 'Please enter a valid phone number in E.164 format (e.g., +420123456789)',
+                        variant: 'destructive',
+                      });
+                      return;
+                    }
+                    sendCodeMutation.mutate(phoneNumber);
+                  }}
+                  disabled={!phoneNumber || sendCodeMutation.isPending}
+                  data-testid="button-send-code-2fa"
+                  className="w-full md:w-auto"
+                >
+                  {sendCodeMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Smartphone className="mr-2 h-4 w-4" />
+                      Send Verification Code
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg">
+                    <Check className="h-4 w-4" />
+                    Code sent to {phoneNumber}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="verification-code-2fa">Verification Code</Label>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Enter the 6-digit code sent to your phone
                     </p>
                     <Input
-                      id="phone-number-2fa"
-                      type="tel"
-                      placeholder="+420123456789"
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                      disabled={codeSent || sendCodeMutation.isPending}
-                      data-testid="input-phone-number-2fa"
-                      className="max-w-md"
+                      id="verification-code-2fa"
+                      type="text"
+                      placeholder="123456"
+                      maxLength={6}
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
+                      disabled={verifyCodeMutation.isPending}
+                      data-testid="input-verification-code-2fa"
                     />
                   </div>
 
-                  {!codeSent ? (
+                  <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
                     <Button
                       onClick={() => {
-                        if (!phoneNumber || !phoneNumber.startsWith('+')) {
+                        if (verificationCode.length !== 6) {
                           toast({
-                            title: 'Invalid Phone Number',
-                            description: 'Please enter a valid phone number in E.164 format (e.g., +420123456789)',
+                            title: 'Invalid Code',
+                            description: 'Please enter a 6-digit verification code',
                             variant: 'destructive',
                           });
                           return;
                         }
-                        sendCodeMutation.mutate(phoneNumber);
+                        verifyCodeMutation.mutate({ 
+                          phone: phoneNumber, 
+                          code: verificationCode 
+                        });
                       }}
-                      disabled={!phoneNumber || sendCodeMutation.isPending}
-                      data-testid="button-send-code-2fa"
+                      disabled={verificationCode.length !== 6 || verifyCodeMutation.isPending}
+                      data-testid="button-verify-enable-2fa"
+                      className="flex-1 md:flex-initial"
                     >
-                      {sendCodeMutation.isPending ? (
+                      {verifyCodeMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Sending...
+                          Verifying...
                         </>
                       ) : (
                         <>
-                          <Smartphone className="mr-2 h-4 w-4" />
-                          Send Verification Code
+                          <Check className="mr-2 h-4 w-4" />
+                          Verify & Enable 2FA
                         </>
                       )}
                     </Button>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg">
-                        <Check className="h-4 w-4" />
-                        Code sent to {phoneNumber}
-                      </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="verification-code-2fa">Verification Code</Label>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Enter the 6-digit code sent to your phone
-                        </p>
-                        <Input
-                          id="verification-code-2fa"
-                          type="text"
-                          placeholder="123456"
-                          maxLength={6}
-                          value={verificationCode}
-                          onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
-                          disabled={verifyCodeMutation.isPending}
-                          data-testid="input-verification-code-2fa"
-                          className="max-w-md"
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <Button
-                          onClick={() => {
-                            if (verificationCode.length !== 6) {
-                              toast({
-                                title: 'Invalid Code',
-                                description: 'Please enter a 6-digit verification code',
-                                variant: 'destructive',
-                              });
-                              return;
-                            }
-                            verifyCodeMutation.mutate({ 
-                              phone: phoneNumber, 
-                              code: verificationCode 
-                            });
-                          }}
-                          disabled={verificationCode.length !== 6 || verifyCodeMutation.isPending}
-                          data-testid="button-verify-enable-2fa"
-                        >
-                          {verifyCodeMutation.isPending ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Verifying...
-                            </>
-                          ) : (
-                            <>
-                              <Check className="mr-2 h-4 w-4" />
-                              Verify & Enable 2FA
-                            </>
-                          )}
-                        </Button>
-
-                        {resendCountdown > 0 ? (
-                          <p className="text-sm text-gray-600 dark:text-gray-400" data-testid="text-resend-countdown">
-                            Resend code in {resendCountdown}s
-                          </p>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            onClick={() => sendCodeMutation.mutate(phoneNumber)}
-                            disabled={sendCodeMutation.isPending}
-                            data-testid="button-resend-code-2fa"
-                          >
-                            {sendCodeMutation.isPending ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Sending...
-                              </>
-                            ) : (
-                              'Resend Code'
-                            )}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Disable 2FA Flow */}
-              {user?.twoFactorEnabled && (
-                <div className="space-y-4 pt-4 border-t dark:border-gray-700">
-                  <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
-                    <p className="text-sm text-amber-900 dark:text-amber-200">
-                      <strong>Warning:</strong> Disabling 2FA will remove the extra security layer from your account. You can re-enable it at any time.
-                    </p>
-                  </div>
-                  <Button
-                    variant="destructive"
-                    onClick={() => setupTwoFactorMutation.mutate({ phoneNumber: null, enabled: false })}
-                    disabled={setupTwoFactorMutation.isPending}
-                    data-testid="button-disable-2fa"
-                  >
-                    {setupTwoFactorMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Disabling...
-                      </>
+                    {resendCountdown > 0 ? (
+                      <p className="text-sm text-gray-600 dark:text-gray-400 text-center md:text-left" data-testid="text-resend-countdown">
+                        Resend code in {resendCountdown}s
+                      </p>
                     ) : (
-                      'Disable 2FA'
+                      <Button
+                        variant="outline"
+                        onClick={() => sendCodeMutation.mutate(phoneNumber)}
+                        disabled={sendCodeMutation.isPending}
+                        data-testid="button-resend-code-2fa"
+                        className="flex-1 md:flex-initial"
+                      >
+                        {sendCodeMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          'Resend Code'
+                        )}
+                      </Button>
                     )}
-                  </Button>
+                  </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
-
-          {/* Password Change - Only for email/password auth */}
-          {user.authProvider === 'email' && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Key className="h-5 w-5 text-primary" />
-                  <CardTitle>Change Password</CardTitle>
-                </div>
-                <CardDescription>
-                  Update your account password
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Form {...passwordForm}>
-                  <form onSubmit={passwordForm.handleSubmit((data) => updatePasswordMutation.mutate(data))} className="space-y-6">
-                    <FormField
-                      control={passwordForm.control}
-                      name="currentPassword"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Current Password</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="password"
-                              placeholder="Enter current password" 
-                              {...field} 
-                              data-testid="input-current-password"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={passwordForm.control}
-                      name="newPassword"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>New Password</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="password"
-                              placeholder="Enter new password" 
-                              {...field} 
-                              data-testid="input-new-password"
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Password must be at least 8 characters long
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={passwordForm.control}
-                      name="confirmPassword"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Confirm New Password</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="password"
-                              placeholder="Confirm new password" 
-                              {...field} 
-                              data-testid="input-confirm-password"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <Button 
-                      type="submit" 
-                      disabled={updatePasswordMutation.isPending}
-                      data-testid="button-change-password"
-                    >
-                      {updatePasswordMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Changing Password...
-                        </>
-                      ) : (
-                        <>
-                          <Lock className="mr-2 h-4 w-4" />
-                          Change Password
-                        </>
-                      )}
-                    </Button>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
+            </div>
           )}
-        </TabsContent>
 
-        {/* Preferences Tab */}
-        <TabsContent value="preferences" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Languages className="h-5 w-5 text-primary" />
-                <CardTitle>Language & Display</CardTitle>
+          {/* Disable 2FA Flow */}
+          {user?.twoFactorEnabled && (
+            <div className="space-y-4 pt-4 border-t dark:border-gray-700">
+              <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                <p className="text-sm text-amber-900 dark:text-amber-200">
+                  <strong>Warning:</strong> Disabling 2FA will remove the extra security layer from your account. You can re-enable it at any time.
+                </p>
               </div>
-              <CardDescription>
-                Customize your interface preferences
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Language Selector */}
-              <div className="space-y-3">
-                <Label className="text-base font-medium">Language</Label>
-                <RadioGroup 
-                  value={i18n.language} 
-                  onValueChange={(value) => handleLanguageChange(value as 'en' | 'vi')}
-                  className="flex flex-col gap-3"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="en" id="lang-en" data-testid="radio-language-en" />
-                    <Label htmlFor="lang-en" className="font-normal cursor-pointer">
-                      English
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="vi" id="lang-vi" data-testid="radio-language-vi" />
-                    <Label htmlFor="lang-vi" className="font-normal cursor-pointer">
-                      Tiếng Việt
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
+              <Button
+                variant="destructive"
+                onClick={() => setupTwoFactorMutation.mutate({ phoneNumber: null, enabled: false })}
+                disabled={setupTwoFactorMutation.isPending}
+                data-testid="button-disable-2fa"
+                className="w-full md:w-auto"
+              >
+                {setupTwoFactorMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Disabling...
+                  </>
+                ) : (
+                  'Disable 2FA'
+                )}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-              <Separator />
-
-              {/* Theme Selector */}
-              <div className="space-y-3">
-                <Label className="text-base font-medium">Theme</Label>
-                <RadioGroup 
-                  value={isDarkMode ? 'dark' : 'light'} 
-                  onValueChange={(value) => handleThemeChange(value as 'light' | 'dark')}
-                  className="flex flex-col gap-3"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="light" id="theme-light" data-testid="radio-theme-light" />
-                    <Label htmlFor="theme-light" className="font-normal cursor-pointer flex items-center gap-2">
-                      <Sun className="h-4 w-4" />
-                      Light Mode
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="dark" id="theme-dark" data-testid="radio-theme-dark" />
-                    <Label htmlFor="theme-dark" className="font-normal cursor-pointer flex items-center gap-2">
-                      <Moon className="h-4 w-4" />
-                      Dark Mode
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Account Tab */}
-        <TabsContent value="account" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <UserIcon className="h-5 w-5 text-primary" />
-                <CardTitle>Account Details</CardTitle>
-              </div>
-              <CardDescription>
-                Read-only information about your account
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* User ID */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    <UserIcon className="h-4 w-4" />
-                    User ID
-                  </div>
-                  <p className="text-gray-900 dark:text-white font-mono text-sm" data-testid="text-user-id">
-                    {user.id}
-                  </p>
-                </div>
-
-                {/* Email */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    <Mail className="h-4 w-4" />
-                    Email Address
-                  </div>
-                  <p className="text-gray-900 dark:text-white font-medium" data-testid="text-account-email">
-                    {user.email || 'N/A'}
-                  </p>
-                </div>
-
-                {/* Role */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    <Shield className="h-4 w-4" />
-                    Account Role
-                  </div>
-                  <Badge 
-                    className={getRoleBadgeColor(user.role)} 
-                    data-testid="badge-account-role"
-                  >
-                    {formatRole(user.role)}
-                  </Badge>
-                </div>
-
-                {/* Auth Provider */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    <Key className="h-4 w-4" />
-                    Authentication Method
-                  </div>
-                  <Badge 
-                    className={getAuthProviderBadgeColor(user.authProvider)} 
-                    data-testid="badge-auth-provider"
-                  >
-                    {formatAuthProvider(user.authProvider)}
-                  </Badge>
-                </div>
-
-                {/* Account Created */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    <Calendar className="h-4 w-4" />
-                    Account Created
-                  </div>
-                  <p className="text-gray-900 dark:text-white" data-testid="text-account-created">
-                    {user.createdAt && !isNaN(new Date(user.createdAt).getTime()) 
-                      ? format(new Date(user.createdAt), 'PPP') 
-                      : 'N/A'}
-                  </p>
-                  {user.createdAt && !isNaN(new Date(user.createdAt).getTime()) && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {formatDistanceToNow(new Date(user.createdAt), { addSuffix: true })}
-                    </p>
+      {/* Password Change - Only for email/password auth */}
+      {user.authProvider === 'email' && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Key className="h-5 w-5 text-primary" />
+              <CardTitle>Change Password</CardTitle>
+            </div>
+            <CardDescription>
+              Update your account password
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...passwordForm}>
+              <form onSubmit={passwordForm.handleSubmit((data) => updatePasswordMutation.mutate(data))} className="space-y-6">
+                <FormField
+                  control={passwordForm.control}
+                  name="currentPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Current Password</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="password"
+                          placeholder="Enter current password" 
+                          {...field} 
+                          data-testid="input-current-password"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </div>
+                />
 
-                {/* Last Updated */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    <RefreshCw className="h-4 w-4" />
-                    Last Updated
-                  </div>
-                  <p className="text-gray-900 dark:text-white" data-testid="text-account-updated">
-                    {user.updatedAt && !isNaN(new Date(user.updatedAt).getTime())
-                      ? format(new Date(user.updatedAt), 'PPP') 
-                      : 'N/A'}
-                  </p>
-                  {user.updatedAt && !isNaN(new Date(user.updatedAt).getTime()) && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {formatDistanceToNow(new Date(user.updatedAt), { addSuffix: true })}
-                    </p>
+                <FormField
+                  control={passwordForm.control}
+                  name="newPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>New Password</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="password"
+                          placeholder="Enter new password" 
+                          {...field} 
+                          data-testid="input-new-password"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Password must be at least 8 characters long
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </div>
+                />
+
+                <FormField
+                  control={passwordForm.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirm New Password</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="password"
+                          placeholder="Confirm new password" 
+                          {...field} 
+                          data-testid="input-confirm-password"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <Button 
+                  type="submit" 
+                  disabled={updatePasswordMutation.isPending}
+                  data-testid="button-change-password"
+                  className="w-full md:w-auto"
+                >
+                  {updatePasswordMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Changing Password...
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="mr-2 h-4 w-4" />
+                      Change Password
+                    </>
+                  )}
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Language & Theme Preferences Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Languages className="h-5 w-5 text-primary" />
+            <CardTitle>Language & Display</CardTitle>
+          </div>
+          <CardDescription>
+            Customize your interface preferences
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Language Selector */}
+          <div className="space-y-3">
+            <Label className="text-base font-medium">Language</Label>
+            <RadioGroup 
+              value={i18n.language} 
+              onValueChange={(value) => handleLanguageChange(value as 'en' | 'vi')}
+              className="flex flex-col gap-3"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="en" id="lang-en" data-testid="radio-language-en" />
+                <Label htmlFor="lang-en" className="font-normal cursor-pointer">
+                  English
+                </Label>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="vi" id="lang-vi" data-testid="radio-language-vi" />
+                <Label htmlFor="lang-vi" className="font-normal cursor-pointer">
+                  Tiếng Việt
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          <Separator />
+
+          {/* Theme Selector */}
+          <div className="space-y-3">
+            <Label className="text-base font-medium">Theme</Label>
+            <RadioGroup 
+              value={isDarkMode ? 'dark' : 'light'} 
+              onValueChange={(value) => handleThemeChange(value as 'light' | 'dark')}
+              className="flex flex-col gap-3"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="light" id="theme-light" data-testid="radio-theme-light" />
+                <Label htmlFor="theme-light" className="font-normal cursor-pointer flex items-center gap-2">
+                  <Sun className="h-4 w-4" />
+                  Light Mode
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="dark" id="theme-dark" data-testid="radio-theme-dark" />
+                <Label htmlFor="theme-dark" className="font-normal cursor-pointer flex items-center gap-2">
+                  <Moon className="h-4 w-4" />
+                  Dark Mode
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Account Details Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <UserIcon className="h-5 w-5 text-primary" />
+            <CardTitle>Account Details</CardTitle>
+          </div>
+          <CardDescription>
+            Read-only information about your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* User ID */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                <UserIcon className="h-4 w-4" />
+                User ID
+              </div>
+              <p className="text-gray-900 dark:text-white font-mono text-sm break-all" data-testid="text-user-id">
+                {user.id}
+              </p>
+            </div>
+
+            {/* Email */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Mail className="h-4 w-4" />
+                Email Address
+              </div>
+              <p className="text-gray-900 dark:text-white font-medium break-all" data-testid="text-account-email">
+                {user.email || 'N/A'}
+              </p>
+            </div>
+
+            {/* Role */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Shield className="h-4 w-4" />
+                Account Role
+              </div>
+              <Badge 
+                className={getRoleBadgeColor(user.role)} 
+                data-testid="badge-account-role"
+              >
+                {formatRole(user.role)}
+              </Badge>
+            </div>
+
+            {/* Auth Provider */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Key className="h-4 w-4" />
+                Authentication Method
+              </div>
+              <Badge 
+                className={getAuthProviderBadgeColor(user.authProvider)} 
+                data-testid="badge-auth-provider"
+              >
+                {formatAuthProvider(user.authProvider)}
+              </Badge>
+            </div>
+
+            {/* Account Created */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Calendar className="h-4 w-4" />
+                Account Created
+              </div>
+              <p className="text-gray-900 dark:text-white" data-testid="text-account-created">
+                {user.createdAt && !isNaN(new Date(user.createdAt).getTime()) 
+                  ? format(new Date(user.createdAt), 'PPP') 
+                  : 'N/A'}
+              </p>
+              {user.createdAt && !isNaN(new Date(user.createdAt).getTime()) && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {formatDistanceToNow(new Date(user.createdAt), { addSuffix: true })}
+                </p>
+              )}
+            </div>
+
+            {/* Last Updated */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                <RefreshCw className="h-4 w-4" />
+                Last Updated
+              </div>
+              <p className="text-gray-900 dark:text-white" data-testid="text-account-updated">
+                {user.updatedAt && !isNaN(new Date(user.updatedAt).getTime())
+                  ? format(new Date(user.updatedAt), 'PPP') 
+                  : 'N/A'}
+              </p>
+              {user.updatedAt && !isNaN(new Date(user.updatedAt).getTime()) && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {formatDistanceToNow(new Date(user.updatedAt), { addSuffix: true })}
+                </p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
