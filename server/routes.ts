@@ -277,8 +277,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const express = await import('express');
   app.use('/uploads', express.default.static('uploads'));
 
-  // Auth middleware (disabled for testing)
-  // await setupAuth(app);
+  // Auth middleware
+  await setupAuth(app);
 
   // Phone verification storage (in production, use Redis or database)
   const phoneVerificationCodes = new Map<string, { code: string; expires: number; attempts: number }>();
