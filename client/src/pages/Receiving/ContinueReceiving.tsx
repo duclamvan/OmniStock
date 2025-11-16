@@ -685,6 +685,7 @@ export default function ContinueReceiving() {
       if (!receiptId) {
         const autoSaveData = {
           shipmentId: shipment?.id,
+          consolidationId: shipment?.consolidationId,
           receivedBy: receivedBy || "Employee #1",
           carrier: carrier || shipment?.carrier || "",
           parcelCount: parcelCount || shipment?.totalUnits || 1,
