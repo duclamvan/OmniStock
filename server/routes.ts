@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth } from "./replitAuth";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 import { seedMockData } from "./mockData";
 import { cacheMiddleware, invalidateCache } from "./cache";
 import multer from "multer";
@@ -11850,7 +11850,7 @@ Important:
   // ============================================================================
 
   // Get shipments by receiving status - To Receive
-  app.get('/api/imports/shipments/to-receive', async (req, res) => {
+  app.get('/api/imports/shipments/to-receive', isAuthenticated, async (req, res) => {
     try {
       const shipmentList = await db
         .select()
@@ -11906,7 +11906,7 @@ Important:
   });
 
   // Get shipments by receiving status - Receiving
-  app.get('/api/imports/shipments/receiving', async (req, res) => {
+  app.get('/api/imports/shipments/receiving', isAuthenticated, async (req, res) => {
     try {
       const shipmentList = await db
         .select()
@@ -11953,7 +11953,7 @@ Important:
   });
 
   // Get shipments by receiving status - Storage (pending approval)
-  app.get('/api/imports/shipments/storage', async (req, res) => {
+  app.get('/api/imports/shipments/storage', isAuthenticated, async (req, res) => {
     try {
       const shipmentList = await db
         .select()
@@ -12000,7 +12000,7 @@ Important:
   });
 
   // Get shipments by receiving status - Completed
-  app.get('/api/imports/shipments/completed', async (req, res) => {
+  app.get('/api/imports/shipments/completed', isAuthenticated, async (req, res) => {
     try {
       const shipmentList = await db
         .select()
@@ -12047,7 +12047,7 @@ Important:
   });
 
   // Get shipments by receiving status - Archived
-  app.get('/api/imports/shipments/archived', async (req, res) => {
+  app.get('/api/imports/shipments/archived', isAuthenticated, async (req, res) => {
     try {
       const shipmentList = await db
         .select()
@@ -12094,7 +12094,7 @@ Important:
   });
 
   // Get all receipts
-  app.get('/api/imports/receipts', async (req, res) => {
+  app.get('/api/imports/receipts', isAuthenticated, async (req, res) => {
     try {
       const receiptsData = await db
         .select()
