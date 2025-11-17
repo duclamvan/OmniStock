@@ -81,7 +81,6 @@ import InternationalTransit from "@/pages/Imports/InternationalTransit";
 import ImportKanbanDashboard from "@/pages/Imports/ImportKanbanDashboard";
 import ReceivingList from "@/pages/Receiving/ReceivingList";
 import StartReceiving from "@/pages/Receiving/StartReceiving";
-import ContinueReceiving from "@/pages/Receiving/ContinueReceiving";
 import ReceiptDetails from "@/pages/Receiving/ReceiptDetails";
 import ReviewApprove from "@/pages/Receiving/ReviewApprove";
 import ItemsToStore from "@/pages/Receiving/ItemsToStore";
@@ -348,8 +347,8 @@ function Router() {
         <Route path="/receiving" component={ReceivingList} />
         <Route path="/receiving/storage" component={ItemsToStore} />
         <Route path="/receiving/start/:id" component={StartReceiving} />
-        <Route path="/receiving/continue/:id" component={ContinueReceiving} />
-        <Route path="/receiving/receipt/:id" component={ContinueReceiving} />
+        <Route path="/receiving/continue/:id" component={StartReceiving} />
+        <Route path="/receiving/receipt/:id" component={StartReceiving} />
         <Route path="/receiving/details/:id" component={ReceiptDetails} />
         <Route path="/receiving/approve/:id" component={ReviewApprove} />
         {/* Reports Routes */}
