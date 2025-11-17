@@ -2085,38 +2085,97 @@ export default function StartReceiving() {
                 </div>
               ) : (
                 <>
-                  {/* Basic Info - Read-only Display */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  {/* Basic Info - Editable */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                      <Label className="text-sm font-medium mb-2 block text-muted-foreground">Received By</Label>
-                      <div className="h-11 px-4 flex items-center bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md">
-                        <User className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span className="text-base font-medium">{receivedBy || 'N/A'}</span>
-                      </div>
+                      <Label className="text-sm font-medium mb-2 block">Received By *</Label>
+                      <Input
+                        value={receivedBy}
+                        onChange={(e) => handleReceivedByChange(e.target.value)}
+                        onBlur={handleReceivedByBlur}
+                        placeholder="Your name"
+                        required
+                        className="h-11 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
+                      />
                     </div>
                     <div>
-                      <Label className="text-sm font-medium mb-2 block text-muted-foreground">Carrier</Label>
-                      <div className="h-11 px-4 flex items-center bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md">
-                        <Truck className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span className="text-base font-medium">{carrier || 'N/A'}</span>
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium mb-2 block text-muted-foreground">Expected {unitLabel}</Label>
-                      <div className="h-11 px-4 flex items-center bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md">
-                        <Package className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span className="text-base font-medium">{parcelCount}</span>
-                      </div>
+                      <Label className="text-sm font-medium mb-2 block">Carrier *</Label>
+                      <Input
+                        value={carrier}
+                        onChange={(e) => handleCarrierChange(e.target.value)}
+                        onBlur={handleCarrierBlur}
+                        placeholder="DHL, UPS, FedEx..."
+                        required
+                        className="h-11 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
+                      />
                     </div>
                   </div>
 
-                  {/* Received Parcels Display */}
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block text-muted-foreground">Received {unitLabel}</Label>
-                    <div className="h-16 px-6 flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/40 dark:to-blue-900/30 border-2 border-blue-200 dark:border-blue-800 rounded-lg">
-                      <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
-                        {scannedParcels} / {parcelCount}
-                      </span>
+                  {/* Parcel Count - Editable with +/- buttons */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">Expected {unitLabel}</Label>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="default"
+                          onClick={() => handleParcelCountChange(Math.max(1, parcelCount - 1), true)}
+                          disabled={parcelCount <= 1 || updateMetaMutation.isPending}
+                          className={`h-11 w-11 p-0 ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
+                        >
+                          <Minus className="h-5 w-5" />
+                        </Button>
+                        <Input
+                          type="number"
+                          value={parcelCount}
+                          onChange={(e) => handleParcelCountChange(Math.max(1, parseInt(e.target.value) || 1), false)}
+                          onBlur={handleParcelCountBlur}
+                          className="text-center h-11 text-lg font-semibold border-gray-300 dark:border-gray-600"
+                          min="1"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="default"
+                          onClick={() => handleParcelCountChange(parcelCount + 1, true)}
+                          disabled={updateMetaMutation.isPending}
+                          className={`h-11 w-11 p-0 ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
+                        >
+                          <Plus className="h-5 w-5" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">Received {unitLabel}</Label>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="default"
+                          onClick={() => handleScannedParcelsChange(Math.max(0, scannedParcels - 1), true)}
+                          disabled={scannedParcels === 0 || updateMetaMutation.isPending}
+                          className={`h-11 w-11 p-0 ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
+                        >
+                          <Minus className="h-5 w-5" />
+                        </Button>
+                        <div className="flex-1 h-11 px-4 flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/40 dark:to-blue-900/30 border-2 border-blue-200 dark:border-blue-800 rounded-md">
+                          <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
+                            {scannedParcels} / {parcelCount}
+                          </span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="default"
+                          onClick={() => handleScannedParcelsChange(Math.min(parcelCount, scannedParcels + 1), true)}
+                          disabled={scannedParcels >= parcelCount || updateMetaMutation.isPending}
+                          className={`h-11 w-11 p-0 ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
+                        >
+                          <Plus className="h-5 w-5" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
 
