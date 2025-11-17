@@ -319,9 +319,15 @@ function PricingMobileCard({ item, index, qty, unitCost, shippingCost, landingCo
   );
 }
 
-// Generate suggested location for new items based on product characteristics
-function generateSuggestedLocation(item: StorageItem): string {
-  // Use product characteristics to generate a smart suggestion
+// Generate suggested location using AI or fallback to smart heuristics
+function generateSuggestedLocationWithAI(item: StorageItem, aiSuggestions: Map<string | number, { location: string; reasoning: string; zone: string; accessibility: string }>): string {
+  // Try AI suggestion first
+  const key = item.productId || item.sku || item.productName;
+  if (aiSuggestions.has(key)) {
+    return aiSuggestions.get(key)!.location;
+  }
+  
+  // Fallback to heuristic-based suggestion
   const seed = item.productId || item.sku || item.productName || 'default';
   const hash = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   
@@ -355,6 +361,12 @@ function generateSuggestedLocation(item: StorageItem): string {
   return `WH1-${aisle}-${rack}-${level}-${bin}`;
 }
 
+// Helper to get AI suggestion reasoning
+function getAIReasoning(item: StorageItem, aiSuggestions: Map<string | number, { location: string; reasoning: string; zone: string; accessibility: string }>): string | null {
+  const key = item.productId || item.sku || item.productName;
+  return aiSuggestions.has(key) ? aiSuggestions.get(key)!.reasoning : null;
+}
+
 export default function ItemsToStore() {
   const [location, navigate] = useLocation();
   const { toast } = useToast();
@@ -380,6 +392,7 @@ export default function ItemsToStore() {
   const [pricingReceiptId, setPricingReceiptId] = useState<number | null>(null);
   const [displayCurrency, setDisplayCurrency] = useState<'EUR' | 'CZK'>('EUR');
   const [allocationMethod, setAllocationMethod] = useState<'AUTO' | 'WEIGHT' | 'VALUE' | 'UNITS' | 'HYBRID'>('AUTO');
+  const [aiSuggestions, setAiSuggestions] = useState<Map<string | number, { location: string; reasoning: string; zone: string; accessibility: string }>>(new Map());
 
   // Refs
   const locationInputRef = useRef<HTMLInputElement>(null);
@@ -508,6 +521,67 @@ export default function ItemsToStore() {
     }
   }, [receiptsWithItems.length, selectedReceipt]);
 
+  // Fetch AI location suggestions for items without existing locations
+  useEffect(() => {
+    const fetchAISuggestions = async () => {
+      // Only fetch for items without existing locations
+      const itemsNeedingSuggestions = items.filter(item => 
+        item.existingLocations.length === 0 && 
+        !aiSuggestions.has(item.productId || item.sku || item.productName)
+      );
+
+      if (itemsNeedingSuggestions.length === 0) return;
+
+      // Fetch AI suggestions in parallel (limit to 3 concurrent requests to avoid API rate limits)
+      const batchSize = 3;
+      for (let i = 0; i < itemsNeedingSuggestions.length; i += batchSize) {
+        const batch = itemsNeedingSuggestions.slice(i, i + batchSize);
+        
+        await Promise.all(
+          batch.map(async (item) => {
+            try {
+              const response = await fetch('/api/imports/suggest-storage-location', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  productId: item.productId,
+                  productName: item.productName,
+                  category: item.description || ''
+                })
+              });
+
+              if (response.ok) {
+                const data = await response.json();
+                setAiSuggestions(prev => {
+                  const newMap = new Map(prev);
+                  const key = item.productId || item.sku || item.productName;
+                  newMap.set(key, {
+                    location: data.suggestedLocation,
+                    reasoning: data.reasoning,
+                    zone: data.zone,
+                    accessibility: data.accessibility
+                  });
+                  return newMap;
+                });
+              }
+            } catch (error) {
+              console.error(`Failed to fetch AI suggestion for ${item.productName}:`, error);
+            }
+          })
+        );
+
+        // Small delay between batches to be respectful of API
+        if (i + batchSize < itemsNeedingSuggestions.length) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+    };
+
+    if (items.length > 0) {
+      fetchAISuggestions();
+    }
+  }, [items.length]); // Only run when items length changes
+
   // Save location assignments to localStorage whenever items change
   useEffect(() => {
     if (items.length > 0) {
@@ -580,12 +654,12 @@ export default function ItemsToStore() {
   // Auto-prefill suggested location when sheet opens
   useEffect(() => {
     if (showScanner && currentItem) {
-      const suggestedLocation = getSuggestedLocation(currentItem) || generateSuggestedLocation(currentItem);
+      const suggestedLocation = getSuggestedLocation(currentItem) || generateSuggestedLocationWithAI(currentItem, aiSuggestions);
       if (suggestedLocation) {
         setLocationCode(suggestedLocation);
       }
     }
-  }, [showScanner, currentItem]);
+  }, [showScanner, currentItem, aiSuggestions]);
 
   // Calculate progress
   const totalItems = filteredItems.length;
@@ -1413,10 +1487,10 @@ export default function ItemsToStore() {
                     <div className="p-4 space-y-3">
                       {/* Prominent Location Display */}
                       <div className="bg-amber-50 dark:bg-amber-950/20 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <MapPin className="h-5 w-5 text-amber-700 dark:text-amber-400" />
                           <span className="text-2xl font-mono font-bold text-amber-700 dark:text-amber-400">
-                            {getSuggestedLocation(item) || generateSuggestedLocation(item)}
+                            {getSuggestedLocation(item) || generateSuggestedLocationWithAI(item, aiSuggestions)}
                           </span>
                           {item.existingLocations.some(loc => loc.isPrimary) && (
                             <Badge className="ml-2 bg-yellow-500 text-white">
@@ -1425,6 +1499,12 @@ export default function ItemsToStore() {
                             </Badge>
                           )}
                         </div>
+                        {/* AI Reasoning */}
+                        {getAIReasoning(item, aiSuggestions) && (
+                          <div className="mt-2 text-xs text-amber-700 dark:text-amber-400 italic">
+                            <span className="font-semibold">AI:</span> {getAIReasoning(item, aiSuggestions)}
+                          </div>
+                        )}
                       </div>
 
                       {/* Quick Stats */}
@@ -1579,7 +1659,7 @@ export default function ItemsToStore() {
           setLocationCode("");
         } else if (open && currentItem) {
           // Initialize location code when opening with suggested location
-          const suggestedLocation = getSuggestedLocation(currentItem) || generateSuggestedLocation(currentItem);
+          const suggestedLocation = getSuggestedLocation(currentItem) || generateSuggestedLocationWithAI(currentItem, aiSuggestions);
           if (suggestedLocation) {
             setLocationCode(suggestedLocation);
           }
@@ -1634,10 +1714,17 @@ export default function ItemsToStore() {
                     <span className="font-mono text-xs font-semibold">{getSuggestedLocation(currentItem)}</span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 bg-blue-50 rounded-lg px-3 py-2">
-                    <Navigation className="h-3.5 w-3.5 text-blue-600" />
-                    <span className="text-xs text-blue-700">Suggested:</span>
-                    <span className="font-mono text-xs font-semibold">{generateSuggestedLocation(currentItem)}</span>
+                  <div className="bg-blue-50 rounded-lg px-3 py-2 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Navigation className="h-3.5 w-3.5 text-blue-600" />
+                      <span className="text-xs text-blue-700">AI Suggested:</span>
+                      <span className="font-mono text-xs font-semibold">{generateSuggestedLocationWithAI(currentItem, aiSuggestions)}</span>
+                    </div>
+                    {getAIReasoning(currentItem, aiSuggestions) && (
+                      <p className="text-xs text-blue-600 italic pl-5">
+                        {getAIReasoning(currentItem, aiSuggestions)}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
