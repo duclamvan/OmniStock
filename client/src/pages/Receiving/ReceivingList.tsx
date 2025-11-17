@@ -558,22 +558,34 @@ function StickyHeaderScanHeader({
 
 function ReceiptProgressCarousel({ receipts }: { receipts: any[] }) {
   const [, navigate] = useLocation();
+  const [isExpanded, setIsExpanded] = useState(true);
 
   if (!receipts || receipts.length === 0) {
     return null;
   }
 
   return (
-    <div className="mb-6">
-      <div className="flex items-center justify-between mb-3 px-4">
-        <h3 className="text-base font-semibold text-foreground">Active Receipts</h3>
-        <Badge variant="secondary" className="text-xs">
-          {receipts.length}
-        </Badge>
+    <div className="mb-6 mt-4">
+      <div 
+        className="flex items-center justify-between mb-3 px-4 cursor-pointer hover:bg-muted/30 py-2 rounded-lg transition-colors"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center gap-2">
+          <h3 className="text-base font-semibold text-foreground">Active Receipts</h3>
+          <Badge variant="secondary" className="text-xs">
+            {receipts.length}
+          </Badge>
+        </div>
+        {isExpanded ? (
+          <ChevronUp className="h-5 w-5 text-muted-foreground" />
+        ) : (
+          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+        )}
       </div>
-      <ScrollArea className="w-full whitespace-nowrap">
-        <div className="flex gap-4 px-4 pb-3">
-          {receipts.map((receipt: any) => {
+      {isExpanded && (
+        <ScrollArea className="w-full whitespace-nowrap">
+          <div className="flex gap-4 px-4 pb-3">
+            {receipts.map((receipt: any) => {
             // Calculate based on received quantities instead of status
             const items = receipt.items || [];
             const totalQuantity = items.reduce((sum: number, item: any) => sum + (item.expectedQuantity || item.quantity || 0), 0);
@@ -650,6 +662,7 @@ function ReceiptProgressCarousel({ receipts }: { receipts: any[] }) {
           })}
         </div>
       </ScrollArea>
+      )}
     </div>
   );
 }
