@@ -22,6 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { ScanFeedback, ScanLineAnimation, ScanInputPulse, SuccessCheckmark } from "@/components/ScanFeedback";
@@ -59,7 +60,8 @@ import {
   Upload,
   ImagePlus,
   Trash2,
-  Loader2
+  Loader2,
+  Warehouse
 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
@@ -3200,7 +3202,7 @@ export default function StartReceiving() {
               variant="outline"
               onClick={() => {
                 setShowSuccessDialog(false);
-                navigate('/receiving');
+                navigate('/receiving', { replace: true });
               }}
               className="w-full sm:w-auto"
               data-testid="button-close-success"
@@ -3210,7 +3212,11 @@ export default function StartReceiving() {
             <Button
               onClick={() => {
                 setShowSuccessDialog(false);
-                navigate(`/storage?shipmentId=${completedShipmentId}`);
+                // Store shipment ID in sessionStorage for reliable handoff
+                if (completedShipmentId) {
+                  sessionStorage.setItem('autoSelectShipmentId', completedShipmentId.toString());
+                }
+                navigate('/storage', { replace: true });
               }}
               className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700"
               data-testid="button-go-to-storage"

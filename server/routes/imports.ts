@@ -6264,19 +6264,57 @@ router.patch("/receipts/:id/photos", async (req, res) => {
   }
 });
 
-// PATCH endpoint for status changes
-router.patch("/receipts/:id/status", async (req, res) => {
+// PATCH endpoint for status changes (restricted to specific transitions for safety)
+router.patch("/receipts/:id/status", async (req: any, res) => {
   try {
     const receiptId = parseInt(req.params.id);
-    const { status } = req.body;
+    let { status } = req.body;
     
     if (!status) {
       return res.status(400).json({ success: false, message: "Status is required" });
     }
     
-    const validStatuses = ['to_receive', 'pending_verification', 'receiving', 'pending_approval', 'approved', 'completed', 'rejected'];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ success: false, message: "Invalid status" });
+    // Normalize status: trim whitespace and convert to lowercase
+    status = status.trim().toLowerCase();
+    
+    // Get current receipt to validate status transition
+    const [currentReceipt] = await db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.id, receiptId))
+      .limit(1);
+    
+    if (!currentReceipt) {
+      return res.status(404).json({ success: false, message: "Receipt not found" });
+    }
+    
+    // Define allowed status transitions
+    const allowedTransitions: Record<string, string[]> = {
+      'completed': ['to_receive'], // Only allow sending completed receipts back to receive
+      'pending_approval': ['receiving'], // Allow sending back to receiving for corrections
+      // Add other safe transitions as needed
+    };
+    
+    const currentStatus = currentReceipt.status;
+    const allowedNext = allowedTransitions[currentStatus] || [];
+    
+    // Audit logging for status change attempts
+    const userId = req.user?.id || 'unknown';
+    const userName = req.user?.username || 'unknown';
+    const timestamp = new Date().toISOString();
+    
+    console.log(`[AUDIT] Status change attempt - Receipt: ${receiptId}, User: ${userName} (${userId}), From: ${currentStatus}, To: ${status}, Time: ${timestamp}`);
+    
+    if (!allowedNext.includes(status)) {
+      // Log failed attempt
+      console.log(`[AUDIT] Status change DENIED - Receipt: ${receiptId}, User: ${userName}, Reason: Transition not allowed`);
+      
+      // Return 403 for disallowed transitions (not 400)
+      // Don't expose internal state in error message
+      return res.status(403).json({ 
+        success: false, 
+        message: "This status transition is not allowed" 
+      });
     }
     
     const [updated] = await db
@@ -6288,9 +6326,8 @@ router.patch("/receipts/:id/status", async (req, res) => {
       .where(eq(receipts.id, receiptId))
       .returning();
     
-    if (!updated) {
-      return res.status(404).json({ success: false, message: "Receipt not found" });
-    }
+    // Log successful status change
+    console.log(`[AUDIT] Status change SUCCESS - Receipt: ${receiptId}, User: ${userName}, From: ${currentStatus}, To: ${status}`);
     
     res.json({ success: true, receipt: updated });
   } catch (error) {

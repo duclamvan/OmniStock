@@ -480,15 +480,6 @@ export default function ItemsToStore() {
           });
         }
         
-        // Restore selected receipt
-        const savedReceipt = localStorage.getItem('itemsToStore_selectedReceipt');
-        if (savedReceipt && !selectedReceipt) {
-          const receiptId = parseInt(savedReceipt);
-          if (receiptsWithItems.some((r: ReceiptWithItems) => r.receipt.id === receiptId)) {
-            setSelectedReceipt(receiptId);
-          }
-        }
-        
         // Restore selected item index
         const savedIndex = localStorage.getItem('itemsToStore_selectedItemIndex');
         if (savedIndex) {
@@ -510,29 +501,46 @@ export default function ItemsToStore() {
       }
 
       setItems(allItems);
+    }
+  }, [receiptsWithItems.length]);
 
-      // Auto-select receipt based on URL parameter (from Complete Receiving flow)
-      const urlParams = new URLSearchParams(window.location.search);
-      const shipmentIdParam = urlParams.get('shipmentId');
-      if (shipmentIdParam && receiptsWithItems.length > 0 && !selectedReceipt) {
-        const targetShipmentId = parseInt(shipmentIdParam);
-        const matchingReceipt = receiptsWithItems.find((r: ReceiptWithItems) => 
-          r.shipment?.id === targetShipmentId
-        );
-        if (matchingReceipt) {
-          setSelectedReceipt(matchingReceipt.receipt.id);
-          // Clear URL parameter after selection
-          navigate('/storage', { replace: true });
-        }
-      } else if (receiptsWithItems.length > 0 && !selectedReceipt) {
-        // Auto-select first receipt if available and nothing was restored or matched
-        const savedReceipt = localStorage.getItem('itemsToStore_selectedReceipt');
-        if (!savedReceipt) {
-          setSelectedReceipt(receiptsWithItems[0].receipt.id);
-        }
+  // Separate effect for sessionStorage handoff - runs when data becomes available
+  useEffect(() => {
+    // Only run when we have data and no receipt is selected yet
+    if (!receiptsWithItems || receiptsWithItems.length === 0 || selectedReceipt) {
+      return;
+    }
+
+    // Priority 1: Auto-select receipt based on sessionStorage (from Complete Receiving flow)
+    const autoSelectShipmentId = sessionStorage.getItem('autoSelectShipmentId');
+    if (autoSelectShipmentId) {
+      const targetShipmentId = parseInt(autoSelectShipmentId);
+      const matchingReceipt = receiptsWithItems.find((r: ReceiptWithItems) => 
+        r.shipment?.id === targetShipmentId
+      );
+      if (matchingReceipt) {
+        setSelectedReceipt(matchingReceipt.receipt.id);
+        // Save to localStorage for persistence
+        localStorage.setItem('itemsToStore_selectedReceipt', matchingReceipt.receipt.id.toString());
+        // Clear sessionStorage after successful selection
+        sessionStorage.removeItem('autoSelectShipmentId');
+        return;
       }
     }
-  }, [receiptsWithItems.length, selectedReceipt, location, navigate]);
+
+    // Priority 2: Restore from localStorage
+    const savedReceipt = localStorage.getItem('itemsToStore_selectedReceipt');
+    if (savedReceipt) {
+      const receiptId = parseInt(savedReceipt);
+      if (receiptsWithItems.some((r: ReceiptWithItems) => r.receipt.id === receiptId)) {
+        setSelectedReceipt(receiptId);
+        return;
+      }
+    }
+
+    // Priority 3: Auto-select first receipt if nothing was restored or matched
+    setSelectedReceipt(receiptsWithItems[0].receipt.id);
+  }, [receiptsWithItems, selectedReceipt]);
 
   // Fetch AI location suggestions for items without existing locations
   useEffect(() => {
