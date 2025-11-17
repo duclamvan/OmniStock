@@ -916,6 +916,23 @@ export default function StartReceiving() {
   const handleBarcodeScan = async (value: string) => {
     if (currentStep === 1) {
       // Step 1: Scanning parcel barcodes
+      
+      // Validate tracking number against shipment's tracking list
+      const shipmentTrackingNumbers = shipment?.endTrackingNumbers || [];
+      if (shipmentTrackingNumbers.length > 0 && !shipmentTrackingNumbers.includes(value)) {
+        await soundEffects.playErrorBeep();
+        setScanFeedback({ type: 'error', message: `Invalid tracking number: ${value}` });
+        setTimeout(() => setScanFeedback({ type: null, message: '' }), 3000);
+        toast({
+          title: "Invalid Tracking Number",
+          description: `${value} is not in this shipment's tracking list`,
+          variant: "destructive",
+          duration: 4000
+        });
+        setBarcodeScan("");
+        return;
+      }
+      
       // Check if tracking number already scanned
       if (scannedTrackingNumbers.includes(value)) {
         await soundEffects.playDuplicateBeep();
