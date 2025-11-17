@@ -178,10 +178,12 @@ export default function StartReceiving() {
     navigate('/receiving');
   }, [id, navigate]);
   
-  // Form state - Auto-populate "Received By" with current user's name or email
+  // Form state - Auto-populate "Received By" with current user's first name
   const [receivedBy, setReceivedBy] = useState(() => {
     if (user) {
-      return user.name || user.email || "Employee #1";
+      // Extract first name from full name (split by space and take first part)
+      const firstName = user.name?.split(' ')[0] || user.email?.split('@')[0] || "Employee #1";
+      return firstName;
     }
     return "Employee #1";
   });
@@ -296,9 +298,9 @@ export default function StartReceiving() {
         parcelCount: receiptData.parcelCount,
         notes: receiptData.notes
       });
-      // Auto-populate receivedBy with current user if receipt doesn't have one
-      const defaultReceivedBy = user?.name || user?.email || "Employee #1";
-      setReceivedBy(receiptData.receivedBy || defaultReceivedBy);
+      // Auto-populate receivedBy with current user's first name if receipt doesn't have one
+      const firstName = user?.name?.split(' ')[0] || user?.email?.split('@')[0] || "Employee #1";
+      setReceivedBy(receiptData.receivedBy || firstName);
       setCarrier(receiptData.carrier || shipment.endCarrier || shipment.carrier || "");
       setParcelCount(receiptData.parcelCount || shipment.totalUnits || 1);
       
