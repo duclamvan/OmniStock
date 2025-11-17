@@ -13,11 +13,6 @@ import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -77,8 +72,6 @@ interface ReceivingItem {
   productId?: string; // Product ID for fetching real locations
   expectedQty: number;
   receivedQty: number;
-  damagedQty?: number; // Track damaged quantity
-  missingQty?: number; // Track missing quantity
   status: 'pending' | 'complete' | 'partial' | 'damaged' | 'missing' | 'partial_damaged' | 'partial_missing';
   notes?: string;
   checked: boolean;
@@ -213,7 +206,6 @@ export default function StartReceiving() {
   const photoProcessingRef = useRef<boolean>(false);
   const photoUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
   const pendingPhotoUpdatesRef = useRef<PhotoData[]>([]);
-  const itemPhotoInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   
   // UI state
   const [currentStep, setCurrentStep] = useState(1);
@@ -225,17 +217,6 @@ export default function StartReceiving() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [scanFeedback, setScanFeedback] = useState<{ type: 'success' | 'error' | 'duplicate' | 'complete' | null; message: string }>({ type: null, message: '' });
   const [showSuccessCheckmark, setShowSuccessCheckmark] = useState(false);
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [editingValue, setEditingValue] = useState<string>('');
-  
-  // DMG/MISS popover state
-  const [dmgPopoverOpen, setDmgPopoverOpen] = useState<Record<string, boolean>>({});
-  const [missPopoverOpen, setMissPopoverOpen] = useState<Record<string, boolean>>({});
-  const [dmgQuantity, setDmgQuantity] = useState<Record<string, string>>({});
-  const [missQuantity, setMissQuantity] = useState<Record<string, string>>({});
-  
-  // Store previous state for toggle buttons (to restore when deselecting)
-  const [previousItemState, setPreviousItemState] = useState<Record<string, { receivedQty: number; status: ReceivingItem['status'] }>>({});
 
   // OPTIMIZED QUERIES: Smart caching prevents duplicate requests
   const { data: shipment, isLoading } = useQuery({
@@ -1221,211 +1202,6 @@ export default function StartReceiving() {
     });
   }, [receivingItems, toast, updateItemFieldMutation]);
 
-  // Handle direct quantity edit
-  const handleQuantityEdit = useCallback((itemId: string, value: string) => {
-    const item = receivingItems.find(i => i.id === itemId);
-    if (!item) return;
-
-    // Parse the input value
-    const newQty = parseInt(value, 10);
-    if (isNaN(newQty) || newQty < 0) {
-      // Invalid input, cancel editing
-      setEditingItemId(null);
-      return;
-    }
-
-    // Cap at expected quantity
-    const finalQty = Math.min(newQty, item.expectedQty);
-    const delta = finalQty - (item.receivedQty || 0);
-
-    if (delta === 0) {
-      // No change, just exit edit mode
-      setEditingItemId(null);
-      return;
-    }
-
-    // Update using existing updateItemQuantity logic
-    updateItemQuantity(itemId, delta);
-    
-    // Exit edit mode
-    setEditingItemId(null);
-  }, [receivingItems, updateItemQuantity]);
-
-  const startEditing = useCallback((itemId: string, currentQty: number) => {
-    setEditingItemId(itemId);
-    setEditingValue(currentQty.toString());
-  }, []);
-
-  const cancelEditing = useCallback(() => {
-    setEditingItemId(null);
-    setEditingValue('');
-  }, []);
-
-  // Handle DMG/MISS popover actions
-  const handleDmgAction = useCallback((itemId: string, qty: number) => {
-    const item = receivingItems.find(i => i.id === itemId);
-    if (!item) return;
-    
-    // Calculate damaged quantity accounting for existing missing qty
-    const currentMissingQty = (item as any).missingQty || 0;
-    // Clamp damaged qty to remaining available units (expectedQty - currentMissingQty)
-    const damagedQty = Math.min(qty, item.expectedQty - currentMissingQty);
-    // Received = Expected - Damaged - Missing
-    const newReceivedQty = Math.max(0, item.expectedQty - damagedQty - currentMissingQty);
-    
-    // Calculate status based on all quantities
-    let finalStatus: ReceivingItem['status'];
-    if (damagedQty === 0 && currentMissingQty === 0) {
-      // No discrepancies - revert to normal status
-      if (newReceivedQty === 0) {
-        finalStatus = 'pending';
-      } else if (newReceivedQty < item.expectedQty) {
-        finalStatus = 'partial';
-      } else {
-        finalStatus = 'complete';
-      }
-    } else if (damagedQty > 0) {
-      // Has damage
-      finalStatus = (damagedQty + currentMissingQty) < item.expectedQty ? 'partial_damaged' : 'damaged';
-    } else {
-      // Has missing (but no damage)
-      finalStatus = currentMissingQty < item.expectedQty ? 'partial_missing' : 'missing';
-    }
-    
-    // Optimistic UI update - update damaged qty, received qty, and status
-    const updatedItems = receivingItems.map(i => {
-      if (i.id === itemId) {
-        return { 
-          ...i, 
-          damagedQty: damagedQty,
-          receivedQty: newReceivedQty,
-          status: finalStatus 
-        };
-      }
-      return i;
-    });
-    
-    setReceivingItems(updatedItems);
-    
-    // Update damaged quantity, received quantity, and status on the backend
-    const receiptId = receipt?.receipt?.id || receipt?.id;
-    if (!receiptId) return;
-    
-    const updatePayload = {
-      damagedQuantity: damagedQty,
-      receivedQuantity: newReceivedQty,
-      status: finalStatus
-    };
-    
-    fetch(`/api/imports/receipts/${receiptId}/items/${itemId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatePayload)
-    }).then(response => {
-      if (response.ok) {
-        // Invalidate queries to refresh data
-        queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/items-to-store'] });
-        queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
-        
-        toast({
-          title: "Damage Recorded",
-          description: `${damagedQty} unit(s) marked as damaged`,
-        });
-      } else {
-        toast({
-          title: "Update Failed",
-          description: "Failed to save damaged quantity",
-          variant: "destructive"
-        });
-      }
-    });
-    
-    setDmgPopoverOpen({ ...dmgPopoverOpen, [itemId]: false });
-    setDmgQuantity({ ...dmgQuantity, [itemId]: '' });
-  }, [receivingItems, receipt, toast, dmgPopoverOpen, dmgQuantity, id]);
-
-  const handleMissAction = useCallback((itemId: string, qty: number) => {
-    const item = receivingItems.find(i => i.id === itemId);
-    if (!item) return;
-    
-    // Calculate missing quantity accounting for existing damaged qty
-    const currentDamagedQty = (item as any).damagedQty || 0;
-    // Clamp missing qty to remaining available units (expectedQty - currentDamagedQty)
-    const missingQty = Math.min(qty, item.expectedQty - currentDamagedQty);
-    // Received = Expected - Damaged - Missing
-    const newReceivedQty = Math.max(0, item.expectedQty - missingQty - currentDamagedQty);
-    
-    // Calculate status based on all quantities
-    let finalStatus: ReceivingItem['status'];
-    if (missingQty === 0 && currentDamagedQty === 0) {
-      // No discrepancies - revert to normal status
-      if (newReceivedQty === 0) {
-        finalStatus = 'pending';
-      } else if (newReceivedQty < item.expectedQty) {
-        finalStatus = 'partial';
-      } else {
-        finalStatus = 'complete';
-      }
-    } else if (missingQty > 0) {
-      // Has missing
-      finalStatus = (missingQty + currentDamagedQty) < item.expectedQty ? 'partial_missing' : 'missing';
-    } else {
-      // Has damage (but no missing)
-      finalStatus = currentDamagedQty < item.expectedQty ? 'partial_damaged' : 'damaged';
-    }
-    
-    // Optimistic UI update - update missing qty, received qty, and status
-    const updatedItems = receivingItems.map(i => {
-      if (i.id === itemId) {
-        return { 
-          ...i, 
-          missingQty: missingQty,
-          receivedQty: newReceivedQty,
-          status: finalStatus 
-        };
-      }
-      return i;
-    });
-    
-    setReceivingItems(updatedItems);
-    
-    // Update missing quantity, received quantity, and status on the backend
-    const receiptId = receipt?.receipt?.id || receipt?.id;
-    if (!receiptId) return;
-    
-    const updatePayload = {
-      missingQuantity: missingQty,
-      receivedQuantity: newReceivedQty,
-      status: finalStatus
-    };
-    
-    fetch(`/api/imports/receipts/${receiptId}/items/${itemId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatePayload)
-    }).then(response => {
-      if (response.ok) {
-        // Invalidate queries to refresh data
-        queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/items-to-store'] });
-        queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
-        
-        toast({
-          title: "Missing Items Recorded",
-          description: `${missingQty} unit(s) marked as missing`,
-        });
-      } else {
-        toast({
-          title: "Update Failed",
-          description: "Failed to save missing quantity",
-          variant: "destructive"
-        });
-      }
-    });
-    
-    setMissPopoverOpen({ ...missPopoverOpen, [itemId]: false });
-    setMissQuantity({ ...missQuantity, [itemId]: '' });
-  }, [receivingItems, receipt, toast, missPopoverOpen, missQuantity, id]);
-
   // Update receipt mutation
   const updateReceiptMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -1972,94 +1748,6 @@ export default function StartReceiving() {
       photoProcessingRef.current = false;
       
       // Clear the input value to allow uploading the same file again
-      e.target.value = '';
-    }
-  };
-  
-  // Item-specific photo upload handler
-  const handleItemPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, itemId: string) => {
-    const files = e.target.files;
-    if (!files || files.length === 0 || photoProcessingRef.current) return;
-    
-    // Prevent concurrent uploads
-    photoProcessingRef.current = true;
-    const filesArray = Array.from(files);
-    const totalFiles = filesArray.length;
-    
-    // Show upload progress
-    setPhotosLoading(true);
-    setUploadProgress(0);
-    
-    try {
-      // Compress all images with thumbnails in parallel
-      const compressedPhotosWithThumbnails = await compressImagesWithThumbnailsInParallel(
-        filesArray,
-        {
-          maxWidth: 1920,
-          maxHeight: 1920,
-          quality: 0.8,
-          format: 'jpeg'
-        },
-        (processed, total) => {
-          setUploadProgress(Math.round((processed / total) * 100));
-        }
-      );
-      
-      // Generate unique IDs and create photo objects
-      const newPhotos: PhotoData[] = compressedPhotosWithThumbnails.map((photo, index) => ({
-        id: `photo_${Date.now()}_${index}_${Math.random().toString(36).substring(2, 9)}`,
-        compressed: photo.compressed,
-        thumbnail: photo.thumbnail,
-        originalSize: photo.originalSize
-      }));
-      
-      // Update state with new photo objects
-      setUploadedPhotos(prev => {
-        const updated = [...prev, ...newPhotos];
-        
-        // Save photos to server
-        const photosForServer = updated.map(photo => 
-          typeof photo === 'string' ? photo : photo.compressed
-        );
-        
-        updatePhotosMutation.mutate(photosForServer, {
-          onSuccess: () => {
-            setSaveStatus('saved');
-            setTimeout(() => setSaveStatus('idle'), 1000);
-            queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
-          }
-        });
-        
-        setSaveStatus('saving');
-        return updated;
-      });
-      
-      // Calculate size reduction
-      const originalSize = filesArray.reduce((sum, file) => sum + file.size, 0);
-      const compressedSize = compressedPhotosWithThumbnails.reduce((sum, photo) => {
-        return sum + getBase64Size(photo.compressed) + getBase64Size(photo.thumbnail);
-      }, 0);
-      const reduction = Math.round(((originalSize - compressedSize) / originalSize) * 100);
-      
-      toast({
-        title: "Item Photo Uploaded",
-        description: `Successfully uploaded ${totalFiles} photo${totalFiles > 1 ? 's' : ''} for this item${reduction > 0 ? ` (${reduction}% smaller)` : ''}`,
-        className: "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800",
-        duration: 3000
-      });
-      
-    } catch (error) {
-      console.error('Item photo upload error:', error);
-      toast({
-        title: "Upload Failed",
-        description: "Failed to process photos. Please try again.",
-        variant: "destructive",
-        duration: 4000
-      });
-    } finally {
-      setPhotosLoading(false);
-      setUploadProgress(0);
-      photoProcessingRef.current = false;
       e.target.value = '';
     }
   };
@@ -2882,447 +2570,215 @@ export default function StartReceiving() {
                       <div 
                         key={item.id} 
                         className={`
-                          border rounded-md transition-all duration-200 ease-in-out
+                          rounded-lg shadow-sm transition-all duration-300 ease-in-out border
                           border-l-4 ${borderColor} ${bgColor}
                           ${isComplete ? 'opacity-75' : ''}
-                          hover:shadow-sm
+                          hover:shadow-md
                         `}
                       >
-                        <div className="p-3">
-                          {/* Row Layout with Labels */}
-                          <div className="flex items-start gap-3">
-                            {/* Product Image with Status Icon */}
-                            <div className="relative flex-shrink-0">
-                              <LazyImage 
-                                thumbnailSrc={item.imageUrl}
-                                alt={item.name}
-                                className="w-16 h-16 object-contain rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
-                              />
-                              <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center ${isComplete ? 'scale-110' : ''}`}>
-                                <StatusIcon className={`h-3 w-3 ${iconColor}`} />
+                        <div className="p-3 sm:p-4">
+                          {/* Grid Layout: Left Column (Image) + Right Column (Details & Controls) */}
+                          <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-3 sm:gap-5">
+                            {/* Left Column - Product Image */}
+                            <div className="flex justify-center sm:justify-start">
+                              <div className="relative flex-shrink-0 w-16 h-16 sm:w-24 sm:h-24">
+                                <LazyImage 
+                                  thumbnailSrc={item.imageUrl}
+                                  alt={item.name}
+                                  className="w-16 h-16 sm:w-24 sm:h-24 object-contain rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm bg-white dark:bg-gray-800"
+                                />
+                                {/* Status Icon Overlay */}
+                                <div className={`absolute -top-1.5 -right-1.5 w-7 h-7 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center transition-transform duration-200 shadow-sm ${isComplete ? 'scale-110' : ''} z-10`}>
+                                  <StatusIcon className={`h-4 w-4 ${iconColor}`} />
+                                </div>
                               </div>
                             </div>
                             
-                            {/* Main Content Area */}
-                            <div className="flex-1 min-w-0 flex flex-col gap-2">
-                              {/* Top Row: Name + Quantity Display */}
+                            {/* Right Column - All Item Details and Controls */}
+                            <div className="flex flex-col gap-2 sm:gap-3 min-w-0">
+                              {/* Header Section: Name, SKU, and Status Badge */}
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
-                                  <h4 className={`font-medium text-sm leading-tight ${isComplete ? 'line-through opacity-60' : ''}`}>
+                                  <h4 className={`font-semibold text-sm sm:text-base leading-tight ${isComplete ? 'line-through opacity-60' : ''}`}>
                                     {item.name}
                                   </h4>
-                                  <div className="flex items-center gap-2 mt-0.5">
+                                  {item.sku && (
+                                    <p className="text-xs text-muted-foreground font-mono mt-1">
+                                      SKU: {item.sku}
+                                    </p>
+                                  )}
+                                  {/* Warehouse Locations Display */}
+                                  <div className="mt-1">
                                     {item.isNewProduct ? (
-                                      <span className="text-xs text-orange-600 dark:text-orange-400 flex items-center gap-0.5" data-testid={`text-bin-location-${item.id}`}>
-                                        <Package className="h-2.5 w-2.5" />
-                                        New
-                                      </span>
+                                      <p 
+                                        className="text-xs text-orange-600 dark:text-orange-400 font-medium flex items-center gap-1"
+                                        data-testid={`text-bin-location-${item.id}`}
+                                      >
+                                        <Package className="h-3 w-3" />
+                                        Bin: TBA (New Product)
+                                      </p>
                                     ) : item.warehouseLocations && item.warehouseLocations.length > 0 ? (
-                                      <span className="text-xs text-blue-600 dark:text-blue-400 font-mono" data-testid={`text-bin-location-${item.id}`}>
-                                        {item.warehouseLocations.join(', ')}
-                                      </span>
+                                      <div>
+                                        <p className="text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1 mb-1">
+                                          <Package className="h-3 w-3" />
+                                          Bin{item.warehouseLocations.length > 1 ? 's' : ''}:
+                                        </p>
+                                        <div 
+                                          className="flex flex-wrap gap-1"
+                                          data-testid={`text-bin-location-${item.id}`}
+                                        >
+                                          {item.warehouseLocations.map((location, index) => (
+                                            <span
+                                              key={index}
+                                              className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded-md font-mono"
+                                            >
+                                              {location}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
                                     ) : null}
                                   </div>
                                 </div>
                                 
-                                {/* Quantity Display */}
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                  <span className={`text-sm font-bold font-mono ${
+                                {/* Status Badge */}
+                                <Badge 
+                                  className={`text-xs whitespace-nowrap flex-shrink-0 ${getItemStatusColor(item.status)}`}
+                                  variant={isComplete ? 'default' : isPending ? 'outline' : 'secondary'}
+                                >
+                                  {item.status === 'partial_damaged' ? 'PARTIAL DMG' : 
+                                   item.status === 'partial_missing' ? 'PARTIAL MISS' : 
+                                   item.status.toUpperCase()}
+                                </Badge>
+                              </div>
+                              
+                              {/* Progress Section */}
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[10px] sm:text-xs text-muted-foreground">Progress</span>
+                                  <span className={`text-xs sm:text-sm font-bold ${
                                     progress >= 100 ? 'text-green-600' : 
                                     progress > 0 ? 'text-amber-600' : 
                                     'text-gray-500'
                                   }`}>
-                                    {item.receivedQty}/{item.expectedQty}
+                                    {item.receivedQty} / {item.expectedQty} units
                                   </span>
-                                  {/* Damage/Missing Indicators */}
-                                  {(item as any).damagedQty > 0 && (
-                                    <span className="text-xs text-red-600 dark:text-red-400" data-testid={`indicator-dmg-miss-${item.id}`}>
-                                      <AlertTriangle className="h-3.5 w-3.5" />
-                                    </span>
-                                  )}
-                                  {(item as any).missingQty > 0 && (
-                                    <span className="text-xs text-gray-600 dark:text-gray-400">
-                                      <X className="h-3.5 w-3.5" />
-                                    </span>
-                                  )}
-                                  <Badge 
-                                    className={`text-xs px-2 py-0.5 ${getItemStatusColor(item.status)}`}
-                                    variant={isComplete ? 'default' : isPending ? 'outline' : 'secondary'}
-                                  >
-                                    {item.status === 'partial_damaged' ? 'P.DMG' : 
-                                     item.status === 'partial_missing' ? 'P.MISS' : 
-                                     item.status === 'complete' ? '✓' :
-                                     item.status === 'damaged' ? 'DMG' :
-                                     item.status === 'missing' ? 'MISS' :
-                                     item.status === 'partial' ? 'PART' : 'PEND'}
-                                  </Badge>
+                                </div>
+                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 sm:h-2 overflow-hidden">
+                                  <div 
+                                    className={`h-full transition-all duration-300 ease-out ${
+                                      progress >= 100 ? 'bg-green-500' :
+                                      progress > 0 ? 'bg-amber-500' :
+                                      'bg-gray-300'
+                                    }`}
+                                    style={{ width: `${Math.min(100, progress)}%` }}
+                                  />
                                 </div>
                               </div>
                               
-                              {/* Controls Row */}
-                              <div className="flex items-center gap-2 flex-wrap">
+                              {/* Controls Section - Redesigned */}
+                              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                                 {/* Quantity Controls */}
-                                <div className="flex items-center gap-1 bg-white dark:bg-gray-800 rounded border">
+                                <div className="flex items-center gap-1.5 bg-white dark:bg-gray-800 rounded-lg p-1 border border-gray-300 dark:border-gray-600 shadow-sm">
                                   <Button
                                     variant="ghost"
-                                    size="sm"
+                                    size="default"
                                     onClick={() => updateItemQuantity(item.id, -1)}
                                     disabled={item.receivedQty === 0}
-                                    className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    className="h-8 w-8 sm:h-10 sm:w-10 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
-                                    <Minus className="h-4 w-4" />
+                                    <Minus className="h-4 w-4 sm:h-5 sm:w-5" />
                                   </Button>
-                                  {editingItemId === item.id ? (
-                                    <input
-                                      type="number"
-                                      value={editingValue}
-                                      onChange={(e) => setEditingValue(e.target.value)}
-                                      onBlur={() => handleQuantityEdit(item.id, editingValue)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          handleQuantityEdit(item.id, editingValue);
-                                        } else if (e.key === 'Escape') {
-                                          cancelEditing();
-                                        }
-                                      }}
-                                      className="w-16 text-center text-base font-bold font-mono px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800"
-                                      min="0"
-                                      max={item.expectedQty}
-                                      autoFocus
-                                    />
-                                  ) : (
-                                    <span 
-                                      className="text-base font-bold font-mono w-16 text-center px-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
-                                      onClick={() => startEditing(item.id, item.receivedQty)}
-                                      title="Click to edit quantity"
-                                    >
-                                      {item.receivedQty}/{item.expectedQty}
-                                    </span>
-                                  )}
+                                  <span className="text-base sm:text-lg font-bold font-mono w-16 sm:w-20 text-center px-1 sm:px-2">
+                                    {item.receivedQty}/{item.expectedQty}
+                                  </span>
                                   <Button
                                     variant="ghost"
-                                    size="sm"
+                                    size="default"
                                     onClick={() => updateItemQuantity(item.id, 1)}
-                                    className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    className="h-8 w-8 sm:h-10 sm:w-10 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
-                                    <Plus className="h-4 w-4" />
+                                    <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
                                   </Button>
                                 </div>
 
-                                {/* Action Buttons with Labels */}
-                                <Button
-                                  variant={item.status === 'complete' ? "default" : "outline"}
-                                  size="sm"
-                                  onClick={() => {
-                                      // Toggle behavior: if complete, restore previous state; otherwise set to complete
-                                      if (item.status === 'complete') {
-                                        // Deselect: restore previous quantity and status
-                                        const prevState = previousItemState[item.id];
-                                        const restoredQty = prevState?.receivedQty ?? 0;
-                                        const restoredStatus = prevState?.status ?? 'pending';
-                                        
-                                        const updatedItems = receivingItems.map(i => 
-                                          i.id === item.id 
-                                            ? { ...i, receivedQty: restoredQty, status: restoredStatus as ReceivingItem['status'], checked: restoredQty > 0 }
-                                            : i
-                                        );
-                                        setReceivingItems(updatedItems);
-                                        
-                                        // Update server
-                                        const delta = restoredQty - item.receivedQty;
+                                {/* Action Buttons Group */}
+                                <div className="flex gap-1.5 sm:gap-2 flex-wrap">
+                                  <Button
+                                    variant={item.status === 'complete' ? "default" : "outline"}
+                                    size="default"
+                                    onClick={() => {
+                                      const updatedItems = receivingItems.map(i => 
+                                        i.id === item.id 
+                                          ? { ...i, receivedQty: i.expectedQty, status: 'complete' as const, checked: true }
+                                          : i
+                                      );
+                                      setReceivingItems(updatedItems);
+                                      // Update the item on server
+                                      const itemToUpdate = updatedItems.find(i => i.id === item.id);
+                                      if (itemToUpdate) {
+                                        // Update quantity to expected
+                                        const delta = itemToUpdate.expectedQty - item.receivedQty;
                                         if (delta !== 0) {
                                           updateItemQuantityMutation.mutate({ itemId: item.id, delta });
                                         }
-                                        updateItemFieldMutation.mutate({ itemId: item.id, field: 'status', value: restoredStatus });
-                                        
-                                        // Clear stored previous state
-                                        setPreviousItemState(prev => {
-                                          const updated = { ...prev };
-                                          delete updated[item.id];
-                                          return updated;
-                                        });
-                                      } else {
-                                        // Store current state before changing to complete
-                                        setPreviousItemState(prev => ({
-                                          ...prev,
-                                          [item.id]: { receivedQty: item.receivedQty, status: item.status }
-                                        }));
-                                        
-                                        // Select: set to complete
-                                        const updatedItems = receivingItems.map(i => 
-                                          i.id === item.id 
-                                            ? { ...i, receivedQty: i.expectedQty, status: 'complete' as const, checked: true }
-                                            : i
-                                        );
-                                        setReceivingItems(updatedItems);
-                                        
-                                        // Update server
-                                        const delta = item.expectedQty - item.receivedQty;
-                                        if (delta !== 0) {
-                                          updateItemQuantityMutation.mutate({ itemId: item.id, delta });
-                                        }
+                                        // Update status to complete
                                         updateItemFieldMutation.mutate({ itemId: item.id, field: 'status', value: 'complete' });
                                       }
                                     }}
-                                  className={`min-w-[70px] transition-colors shadow-sm ${
-                                    item.status === 'complete'
-                                      ? 'bg-green-600 hover:bg-green-700 border-green-600 text-white'
-                                      : 'border-green-500 hover:border-green-600 hover:bg-green-50 text-green-700'
-                                  }`}
-                                >
-                                  <Check className="h-3.5 w-3.5 mr-1" />
-                                  OK
-                                </Button>
-                                <Popover 
-                                    open={dmgPopoverOpen[item.id] || false} 
-                                    onOpenChange={(open) => {
-                                      // Only allow opening if not already damaged, or allow closing
-                                      if (open && !isDamaged) {
-                                        setDmgPopoverOpen({ ...dmgPopoverOpen, [item.id]: true });
-                                      } else if (!open) {
-                                        setDmgPopoverOpen({ ...dmgPopoverOpen, [item.id]: false });
-                                      }
-                                    }}
+                                    className={`h-9 sm:h-10 min-w-[70px] sm:min-w-[80px] text-xs sm:text-sm font-medium transition-colors shadow-sm ${
+                                      item.status === 'complete'
+                                        ? 'bg-green-600 hover:bg-green-700 border-green-600 text-white'
+                                        : 'border-green-500 hover:border-green-600 hover:bg-green-50 text-green-700'
+                                    }`}
                                   >
-                                    <PopoverTrigger asChild>
-                                      <Button
-                                        variant={isDamaged ? "destructive" : "outline"}
-                                        size="sm"
-                                        onClick={(e) => {
-                                          // If already damaged, clear damage instead of opening popover
-                                          if (isDamaged) {
-                                            e.preventDefault();
-                                            handleDmgAction(item.id, 0);
-                                          } else {
-                                            // Otherwise allow popover to open
-                                            setDmgPopoverOpen({ ...dmgPopoverOpen, [item.id]: true });
-                                          }
-                                        }}
-                                        className={`min-w-[70px] transition-colors shadow-sm ${
-                                          isDamaged
-                                            ? 'bg-red-600 hover:bg-red-700 border-red-600 text-white'
-                                            : 'border-red-500 hover:border-red-600 hover:bg-red-50 text-red-700'
-                                        }`}
-                                      >
-                                        <AlertTriangle className="h-3.5 w-3.5 mr-1" />
-                                        DMG
-                                      </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-72 p-4" align="start">
-                                      <div className="space-y-3">
-                                        <div>
-                                          <h4 className="font-semibold text-sm mb-1">Mark as Damaged</h4>
-                                          <p className="text-xs text-muted-foreground">
-                                            How many units are damaged? ({item.expectedQty} expected)
-                                          </p>
-                                        </div>
-                                        <div className="space-y-2">
-                                          <Input
-                                            type="number"
-                                            min="0"
-                                            max={item.expectedQty}
-                                            placeholder="Enter quantity"
-                                            value={dmgQuantity[item.id] || ''}
-                                            onChange={(e) => setDmgQuantity({ ...dmgQuantity, [item.id]: e.target.value })}
-                                            className="text-sm"
-                                            data-testid={`input-dmg-qty-${item.id}`}
-                                          />
-                                          <div className="flex gap-2 flex-wrap">
-                                            <Button
-                                              variant="outline"
-                                              size="sm"
-                                              onClick={() => {
-                                                setDmgQuantity({ ...dmgQuantity, [item.id]: '1' });
-                                                handleDmgAction(item.id, 1);
-                                              }}
-                                              className="text-xs"
-                                            >
-                                              1
-                                            </Button>
-                                            <Button
-                                              variant="outline"
-                                              size="sm"
-                                              onClick={() => {
-                                                setDmgQuantity({ ...dmgQuantity, [item.id]: '5' });
-                                                handleDmgAction(item.id, 5);
-                                              }}
-                                              className="text-xs"
-                                            >
-                                              5
-                                            </Button>
-                                            <Button
-                                              variant="outline"
-                                              size="sm"
-                                              onClick={() => {
-                                                setDmgQuantity({ ...dmgQuantity, [item.id]: item.expectedQty.toString() });
-                                                handleDmgAction(item.id, item.expectedQty);
-                                              }}
-                                              className="text-xs"
-                                            >
-                                              All
-                                            </Button>
-                                          </div>
-                                          <Button
-                                            onClick={() => {
-                                              const qty = parseInt(dmgQuantity[item.id] || '0');
-                                              if (qty > 0) {
-                                                handleDmgAction(item.id, qty);
-                                              }
-                                            }}
-                                            className="w-full bg-red-600 hover:bg-red-700 text-white"
-                                            size="sm"
-                                            disabled={!dmgQuantity[item.id] || parseInt(dmgQuantity[item.id]) <= 0}
-                                            data-testid={`button-confirm-dmg-${item.id}`}
-                                          >
-                                            Confirm Damage
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    </PopoverContent>
-                                  </Popover>
-                                  <Popover 
-                                    open={missPopoverOpen[item.id] || false} 
-                                    onOpenChange={(open) => {
-                                      // Only allow opening if not already missing, or allow closing
-                                      if (open && !isMissing) {
-                                        setMissPopoverOpen({ ...missPopoverOpen, [item.id]: true });
-                                      } else if (!open) {
-                                        setMissPopoverOpen({ ...missPopoverOpen, [item.id]: false });
-                                      }
-                                    }}
+                                    <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
+                                    OK
+                                  </Button>
+                                  <Button
+                                    variant={isDamaged ? "destructive" : "outline"}
+                                    size="default"
+                                    onClick={() => toggleItemStatus(item.id, 'damaged')}
+                                    className={`h-9 sm:h-10 min-w-[70px] sm:min-w-[80px] text-xs sm:text-sm font-medium transition-colors shadow-sm ${
+                                      isDamaged
+                                        ? 'bg-red-600 hover:bg-red-700 border-red-600 text-white'
+                                        : 'border-red-500 hover:border-red-600 hover:bg-red-50 text-red-700'
+                                    }`}
                                   >
-                                    <PopoverTrigger asChild>
-                                      <Button
-                                        variant={isMissing ? "secondary" : "outline"}
-                                        size="sm"
-                                        onClick={(e) => {
-                                          // If already missing, clear missing instead of opening popover
-                                          if (isMissing) {
-                                            e.preventDefault();
-                                            handleMissAction(item.id, 0);
-                                          } else {
-                                            // Otherwise allow popover to open
-                                            setMissPopoverOpen({ ...missPopoverOpen, [item.id]: true });
-                                          }
-                                        }}
-                                        className={`min-w-[70px] transition-colors shadow-sm ${
-                                          isMissing
-                                            ? 'bg-gray-600 hover:bg-gray-700 border-gray-600 text-white'
-                                            : 'border-gray-500 hover:border-gray-600 hover:bg-gray-50 text-gray-700'
-                                        }`}
-                                      >
-                                        <X className="h-3.5 w-3.5 mr-1" />
-                                        MISS
-                                      </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-72 p-4" align="start">
-                                      <div className="space-y-3">
-                                        <div>
-                                          <h4 className="font-semibold text-sm mb-1">Mark as Missing</h4>
-                                          <p className="text-xs text-muted-foreground">
-                                            How many units are missing? ({item.expectedQty} expected)
-                                          </p>
-                                        </div>
-                                        <div className="space-y-2">
-                                          <Input
-                                            type="number"
-                                            min="0"
-                                            max={item.expectedQty}
-                                            placeholder="Enter quantity"
-                                            value={missQuantity[item.id] || ''}
-                                            onChange={(e) => setMissQuantity({ ...missQuantity, [item.id]: e.target.value })}
-                                            className="text-sm"
-                                            data-testid={`input-miss-qty-${item.id}`}
-                                          />
-                                          <div className="flex gap-2 flex-wrap">
-                                            <Button
-                                              variant="outline"
-                                              size="sm"
-                                              onClick={() => {
-                                                setMissQuantity({ ...missQuantity, [item.id]: '1' });
-                                                handleMissAction(item.id, 1);
-                                              }}
-                                              className="text-xs"
-                                            >
-                                              1
-                                            </Button>
-                                            <Button
-                                              variant="outline"
-                                              size="sm"
-                                              onClick={() => {
-                                                setMissQuantity({ ...missQuantity, [item.id]: '5' });
-                                                handleMissAction(item.id, 5);
-                                              }}
-                                              className="text-xs"
-                                            >
-                                              5
-                                            </Button>
-                                            <Button
-                                              variant="outline"
-                                              size="sm"
-                                              onClick={() => {
-                                                setMissQuantity({ ...missQuantity, [item.id]: item.expectedQty.toString() });
-                                                handleMissAction(item.id, item.expectedQty);
-                                              }}
-                                              className="text-xs"
-                                            >
-                                              All
-                                            </Button>
-                                          </div>
-                                          <Button
-                                            onClick={() => {
-                                              const qty = parseInt(missQuantity[item.id] || '0');
-                                              if (qty > 0) {
-                                                handleMissAction(item.id, qty);
-                                              }
-                                            }}
-                                            className="w-full bg-gray-600 hover:bg-gray-700 text-white"
-                                            size="sm"
-                                            disabled={!missQuantity[item.id] || parseInt(missQuantity[item.id]) <= 0}
-                                            data-testid={`button-confirm-miss-${item.id}`}
-                                          >
-                                            Confirm Missing
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    </PopoverContent>
-                                  </Popover>
+                                    <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
+                                    DMG
+                                  </Button>
+                                  <Button
+                                    variant={isMissing ? "secondary" : "outline"}
+                                    size="default"
+                                    onClick={() => toggleItemStatus(item.id, 'missing')}
+                                    className={`h-9 sm:h-10 min-w-[70px] sm:min-w-[80px] text-xs sm:text-sm font-medium transition-colors shadow-sm ${
+                                      isMissing
+                                        ? 'bg-gray-600 hover:bg-gray-700 border-gray-600 text-white'
+                                        : 'border-gray-500 hover:border-gray-600 hover:bg-gray-50 text-gray-700'
+                                    }`}
+                                  >
+                                    <X className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
+                                    MISS
+                                  </Button>
                                 </div>
-                                
-                                {/* Notes Section - Full Width Below Controls */}
-                                {(isDamaged || isMissing || item.notes) && (
-                                  <div className="flex items-center gap-2 w-full">
-                                    <Button
-                                      variant="outline"
-                                      size="icon"
-                                      onClick={() => itemPhotoInputRefs.current[item.id]?.click()}
-                                      className="flex-shrink-0 h-9 w-9 transition-colors shadow-sm border-blue-500 hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 text-blue-700 dark:text-blue-400"
-                                      title="Upload photos for this item"
-                                      data-testid={`button-camera-${item.id}`}
-                                    >
-                                      <Camera className="h-4 w-4" />
-                                    </Button>
-                                    <input
-                                      ref={(el) => itemPhotoInputRefs.current[item.id] = el}
-                                      type="file"
-                                      accept="image/*"
-                                      multiple
-                                      onChange={(e) => handleItemPhotoUpload(e, item.id)}
-                                      className="hidden"
-                                      data-testid={`input-item-photo-${item.id}`}
-                                    />
-                                    <Input
-                                      value={item.notes || ''}
-                                      onChange={(e) => updateItemNotes(item.id, e.target.value)}
-                                      placeholder="Add notes about this item..."
-                                      className="text-sm bg-white dark:bg-gray-800 flex-1"
-                                    />
-                                  </div>
-                                )}
                               </div>
+
+                              {/* Notes Field - Show when needed */}
+                              {(isDamaged || isMissing || item.notes) && (
+                                <div className="transition-all duration-200">
+                                  <Input
+                                    value={item.notes || ''}
+                                    onChange={(e) => updateItemNotes(item.id, e.target.value)}
+                                    placeholder="Add notes about this item..."
+                                    className="text-sm bg-white dark:bg-gray-800"
+                                  />
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
+                      </div>
                     );
                   })}
               </div>
