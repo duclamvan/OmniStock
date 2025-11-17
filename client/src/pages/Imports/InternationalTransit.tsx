@@ -762,12 +762,12 @@ export default function InternationalTransit() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4">
         <div>
-          <h1 className="text-3xl font-bold">International Transit</h1>
-          <p className="text-muted-foreground">AI-powered shipment tracking with delivery predictions</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">International Transit</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">AI-powered shipment tracking with delivery predictions</p>
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
           <div className="relative flex-1 md:w-80">
@@ -1230,13 +1230,13 @@ export default function InternationalTransit() {
 
       {/* Color Legend - Collapsible */}
       <details className="mb-4">
-        <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2">
+        <summary className="cursor-pointer text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2">
           <Info className="h-4 w-4" />
           Shipment Type Color Guide
         </summary>
         <Card className="mt-2">
-          <CardContent className="pt-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <CardContent className="pt-3 sm:pt-4 px-3 sm:px-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 text-xs sm:text-sm">
               <div className="flex items-center gap-2">
                 <div className="h-3 w-12 bg-red-500 rounded"></div>
                 <div>
@@ -1279,47 +1279,47 @@ export default function InternationalTransit() {
       </details>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Shipments</CardTitle>
-            <Plane className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
+            <CardTitle className="text-xs sm:text-sm font-medium">Active</CardTitle>
+            <Plane className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-active-shipments">
+          <CardContent className="p-3 sm:p-4 pt-0 sm:pt-0">
+            <div className="text-xl sm:text-2xl font-bold" data-testid="text-active-shipments">
               {filteredShipments.filter(s => s.status !== 'delivered').length}
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Transit</CardTitle>
-            <Globe className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
+            <CardTitle className="text-xs sm:text-sm font-medium">In Transit</CardTitle>
+            <Globe className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
+          <CardContent className="p-3 sm:p-4 pt-0 sm:pt-0">
+            <div className="text-xl sm:text-2xl font-bold text-purple-600">
               {filteredShipments.filter(s => s.status === 'in transit').length}
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Transit</CardTitle>
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
+            <CardTitle className="text-xs sm:text-sm font-medium">Alerts</CardTitle>
+            <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
+          <CardContent className="p-3 sm:p-4 pt-0 sm:pt-0">
+            <div className="text-xl sm:text-2xl font-bold text-yellow-600">
               {filteredShipments.filter(s => s.status === 'in transit').length}
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Delivered</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
+            <CardTitle className="text-xs sm:text-sm font-medium">Delivered</CardTitle>
+            <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+          <CardContent className="p-3 sm:p-4 pt-0 sm:pt-0">
+            <div className="text-xl sm:text-2xl font-bold text-green-600">
               {filteredShipments.filter(s => s.status === 'delivered').length}
             </div>
           </CardContent>
@@ -1343,18 +1343,18 @@ export default function InternationalTransit() {
             <div className="space-y-3">
               {filteredPendingShipments.map((pending) => (
                 <div key={pending.id} className="bg-yellow-50 dark:bg-yellow-950/30 rounded-lg p-3 border border-yellow-200 dark:border-yellow-800">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-3">
-                      <Package className="h-4 w-4 text-yellow-600" />
-                      <div>
-                        <p className="font-semibold text-sm">{pending.name}</p>
-                        <p className="text-xs text-muted-foreground">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-2">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <Package className="h-4 w-4 text-yellow-600 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm truncate">{pending.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">
                           {pending.location} • {pending.warehouse} • {pending.itemCount} items
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="outline" className="text-xs flex items-center">
+                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                      <Badge variant="outline" className="text-[10px] sm:text-xs flex items-center px-2 py-1">
                         {(() => {
                           const method = pending.shippingMethod;
                           const iconClass = "h-3 w-3 mr-1";
@@ -1370,11 +1370,13 @@ export default function InternationalTransit() {
                             return <Package className={iconClass} />;
                           }
                         })()}
-                        {pending.shippingMethod?.replace(/_/g, ' ').toUpperCase() || 'STANDARD'}
+                        <span className="hidden sm:inline">{pending.shippingMethod?.replace(/_/g, ' ').toUpperCase() || 'STANDARD'}</span>
+                        <span className="sm:hidden">{pending.shippingMethod?.replace(/_/g, ' ').split(' ')[0] || 'STD'}</span>
                       </Badge>
                       <Button 
                         size="sm" 
                         variant="outline"
+                        className="text-xs px-2"
                         onClick={() => {
                           // Quick ship with defaults
                           const generateShipmentName = () => {
@@ -1413,20 +1415,22 @@ export default function InternationalTransit() {
                         }}
                         data-testid={`button-quick-ship-${pending.id}`}
                       >
-                        <Zap className="h-3 w-3 mr-1" />
-                        Quick Ship
+                        <Zap className="h-3 w-3 sm:mr-1" />
+                        <span className="hidden sm:inline">Quick Ship</span>
                       </Button>
                       <Button 
                         size="sm" 
                         variant="default"
+                        className="text-xs px-2"
                         onClick={() => {
                           setSelectedPendingShipment(pending);
                           setIsCreateShipmentOpen(true);
                         }}
                         data-testid={`button-add-tracking-${pending.id}`}
                       >
-                        <Plus className="h-3 w-3 mr-1" />
-                        {pending.trackingNumber ? 'Update Tracking' : 'Add Tracking'}
+                        <Plus className="h-3 w-3 sm:mr-1" />
+                        <span className="hidden sm:inline">{pending.trackingNumber ? 'Update' : 'Add'}</span>
+                        <span className="sm:hidden">Track</span>
                       </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -1488,13 +1492,14 @@ export default function InternationalTransit() {
             </div>
             
             {/* Sort and Filter Controls */}
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="flex items-center gap-2 flex-1">
-                <Filter className="h-4 w-4 text-muted-foreground" />
-                <Select value={filterType} onValueChange={setFilterType}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Filter by type" />
-                  </SelectTrigger>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-1 min-w-[140px]">
+                  <Filter className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <Select value={filterType} onValueChange={setFilterType}>
+                    <SelectTrigger className="w-full text-xs sm:text-sm">
+                      <SelectValue placeholder="Filter by type" />
+                    </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">
                       <div className="flex items-center gap-2">
@@ -1552,31 +1557,35 @@ export default function InternationalTransit() {
                     </SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="in transit">In Transit</SelectItem>
-                    <SelectItem value="delivered">Delivered</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
-                <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
+                </div>
+                
+                <div className="flex items-center gap-2 flex-1 min-w-[120px]">
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="w-full text-xs sm:text-sm">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="in transit">In Transit</SelectItem>
+                      <SelectItem value="delivered">Delivered</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex items-center gap-2 flex-1 min-w-[140px]">
+                  <ArrowUpDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                    <SelectTrigger className="w-full text-xs sm:text-sm">
+                      <SelectValue placeholder="Sort" />
+                    </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="delivery">Delivery Date</SelectItem>
                     <SelectItem value="type">Shipment Type</SelectItem>
                     <SelectItem value="status">Status</SelectItem>
                   </SelectContent>
                 </Select>
+                </div>
               </div>
             </div>
           </div>
@@ -1615,18 +1624,18 @@ export default function InternationalTransit() {
                     className="hover:shadow-md transition-all duration-300 cursor-pointer border"
                     onClick={() => setViewShipmentDetails(shipment)}
                   >
-                    <CardContent className="p-4">
+                    <CardContent className="p-3 sm:p-4">
                       {/* Compact Header Row */}
-                      <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex flex-col sm:flex-row sm:items-start gap-3 mb-3">
                         {/* Left: Type Icon + Name + Metadata */}
                         <div className="flex items-start gap-2.5 flex-1 min-w-0">
                           <div className="shrink-0 mt-0.5">
-                            {getShipmentTypeIcon(shipment.shipmentType || shipment.carrier || shipment.shippingMethod || '', 'h-6 w-6')}
+                            {getShipmentTypeIcon(shipment.shipmentType || shipment.carrier || shipment.shippingMethod || '', 'h-5 w-5 sm:h-6 sm:w-6')}
                           </div>
                           <div className="flex-1 min-w-0">
                             {/* Title + Type Badge */}
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-bold text-lg truncate" data-testid={`shipment-tracking-${shipment.id}`}>
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <h3 className="font-bold text-base sm:text-lg truncate" data-testid={`shipment-tracking-${shipment.id}`}>
                                 {shipment.shipmentName || shipment.trackingNumber || `Shipment #${shipment.id}`}
                               </h3>
                               {shipment.shipmentType && (() => {
@@ -1640,7 +1649,7 @@ export default function InternationalTransit() {
                             </div>
                             
                             {/* Compact Metadata Row */}
-                            <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
+                            <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-muted-foreground flex-wrap">
                               {shipment.shipmentType && (() => {
                                 const typeInfo = formatShipmentType(shipment.shipmentType);
                                 return <span className="font-semibold">{typeInfo.label}</span>;
@@ -1670,8 +1679,8 @@ export default function InternationalTransit() {
                         </div>
                         
                         {/* Right: ETA Badge + Status + Actions */}
-                        <div className="flex items-start gap-2 flex-shrink-0">
-                          <Badge className={`text-xs whitespace-nowrap h-7 ${getETAColor(shipment)}`}>
+                        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap sm:flex-shrink-0">
+                          <Badge className={`text-[10px] sm:text-xs whitespace-nowrap h-6 sm:h-7 px-2 ${getETAColor(shipment)}`}>
                             <CalendarDays className="h-3 w-3 mr-1" />
                             {getTimeRemaining(shipment)}
                           </Badge>
@@ -1686,7 +1695,7 @@ export default function InternationalTransit() {
                           >
                             <SelectTrigger 
                               onClick={(e) => e.stopPropagation()}
-                              className={`w-32 h-8 ${shipment.status === 'delivered' ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-950 dark:border-green-800 dark:text-green-200' : shipment.status === 'in transit' ? 'bg-purple-50 border-purple-200 text-purple-800 dark:bg-purple-950 dark:border-purple-800 dark:text-purple-200' : 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-200'}`}
+                              className={`w-28 sm:w-32 h-7 sm:h-8 text-xs ${shipment.status === 'delivered' ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-950 dark:border-green-800 dark:text-green-200' : shipment.status === 'in transit' ? 'bg-purple-50 border-purple-200 text-purple-800 dark:bg-purple-950 dark:border-purple-800 dark:text-purple-200' : 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-200'}`}
                             >
                               <SelectValue />
                             </SelectTrigger>
@@ -1703,10 +1712,10 @@ export default function InternationalTransit() {
                               <Button 
                                 variant="ghost" 
                                 size="sm" 
-                                className="h-8 w-8 p-0"
+                                className="h-7 w-7 sm:h-8 sm:w-8 p-0"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <MoreVertical className="h-4 w-4" />
+                                <MoreVertical className="h-3 w-3 sm:h-4 sm:w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
