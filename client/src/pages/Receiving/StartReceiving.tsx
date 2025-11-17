@@ -2085,7 +2085,7 @@ export default function StartReceiving() {
                 </div>
               ) : (
                 <>
-                  {/* Basic Info - Editable */}
+                  {/* Basic Info & Parcel Count - Combined Section */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                       <Label className="text-sm font-medium mb-2 block">Received By *</Label>
@@ -2109,10 +2109,6 @@ export default function StartReceiving() {
                         className="h-11 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
                       />
                     </div>
-                  </div>
-
-                  {/* Parcel Count - Editable with +/- buttons */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                       <Label className="text-sm font-medium mb-2 block">Expected {unitLabel}</Label>
                       <div className="flex items-center gap-2">
@@ -2146,7 +2142,6 @@ export default function StartReceiving() {
                         </Button>
                       </div>
                     </div>
-
                     <div>
                       <Label className="text-sm font-medium mb-2 block">Received {unitLabel}</Label>
                       <div className="flex items-center gap-2">
