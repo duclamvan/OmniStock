@@ -2097,40 +2097,7 @@ export default function StartReceiving() {
                         className="h-11 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
                       />
                     </div>
-                    <div>
-                      <Label className="text-sm font-medium mb-2 block">Expected {unitLabel}</Label>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="default"
-                          onClick={() => handleParcelCountChange(Math.max(1, parcelCount - 1), true)}
-                          disabled={parcelCount <= 1 || updateMetaMutation.isPending}
-                          className={`h-11 w-11 p-0 ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
-                        >
-                          <Minus className="h-5 w-5" />
-                        </Button>
-                        <Input
-                          type="number"
-                          value={parcelCount}
-                          onChange={(e) => handleParcelCountChange(Math.max(1, parseInt(e.target.value) || 1), false)}
-                          onBlur={handleParcelCountBlur}
-                          className="text-center h-11 text-lg font-semibold border-gray-300 dark:border-gray-600"
-                          min="1"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="default"
-                          onClick={() => handleParcelCountChange(parcelCount + 1, true)}
-                          disabled={updateMetaMutation.isPending}
-                          className={`h-11 w-11 p-0 ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
-                        >
-                          <Plus className="h-5 w-5" />
-                        </Button>
-                      </div>
-                    </div>
-                    <div>
+                    <div className="md:col-span-2">
                       <Label className="text-sm font-medium mb-2 block">Received {unitLabel}</Label>
                       <div className="flex items-center gap-2">
                         <Button
