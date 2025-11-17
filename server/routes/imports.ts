@@ -8020,6 +8020,21 @@ router.post("/suggest-storage-location", async (req, res) => {
       return res.status(400).json({ message: "Product name is required" });
     }
     
+    // Check if we already have a cached AI suggestion for this product
+    if (productId) {
+      const cachedSuggestion = await storage.getAiLocationSuggestionByProduct(productId);
+      if (cachedSuggestion) {
+        return res.json({
+          suggestedLocation: cachedSuggestion.locationCode,
+          reasoning: cachedSuggestion.reasoning,
+          zone: cachedSuggestion.zone,
+          accessibility: cachedSuggestion.accessibilityLevel,
+          cached: true,
+          generatedAt: cachedSuggestion.generatedAt
+        });
+      }
+    }
+    
     const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
     if (!DEEPSEEK_API_KEY) {
       return res.status(500).json({ message: "DEEPSEEK_API_KEY not configured" });
@@ -8186,8 +8201,34 @@ Respond with ONLY a JSON object with this structure:
       throw new Error('Failed to parse AI suggestion');
     }
     
+    // Save AI suggestion to database for future use (one-time generation per product)
+    if (productId) {
+      try {
+        await storage.createAiLocationSuggestion({
+          productId,
+          customItemId: null,
+          locationCode: suggestion.suggestedLocation,
+          zone: suggestion.zone,
+          accessibilityLevel: suggestion.accessibility,
+          reasoning: suggestion.reasoning,
+          metadata: {
+            salesFrequency,
+            salesProfile,
+            avgInventoryAge: Math.round(avgInventoryAge),
+            ageProfile,
+            totalStock,
+            category: category || 'General'
+          }
+        });
+      } catch (dbError) {
+        // Log error but don't fail the request - suggestion is still valid
+        console.error('Failed to save AI suggestion to database:', dbError);
+      }
+    }
+    
     res.json({
       ...suggestion,
+      cached: false,
       analytics: {
         salesFrequency,
         salesProfile,
