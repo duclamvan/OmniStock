@@ -5426,6 +5426,20 @@ router.get("/receipts", async (req, res) => {
       ...row.receipt,
       shipment: row.shipment
     }));
+    
+    // Fetch receipt items for all receipts
+    if (transformedReceipts.length > 0) {
+      const receiptIds = transformedReceipts.map(r => r.id);
+      const allReceiptItems = await db
+        .select()
+        .from(receiptItems)
+        .where(inArray(receiptItems.receiptId, receiptIds));
+      
+      // Attach items to each receipt
+      transformedReceipts.forEach(receipt => {
+        receipt.items = allReceiptItems.filter(item => item.receiptId === receipt.id);
+      });
+    }
 
     // Add mock receipts if no real receipts exist to populate receipts section
     if (transformedReceipts.length === 0) {
