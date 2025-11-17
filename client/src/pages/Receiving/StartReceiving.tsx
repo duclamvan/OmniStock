@@ -1979,15 +1979,8 @@ export default function StartReceiving() {
               : 'hover:bg-gray-50 dark:hover:bg-gray-800'
           }`}
         >
-          <div className="flex items-center gap-2">
-            <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
-              currentStep === 1 ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-            }`}>
-              1
-            </div>
-            <Package className="h-5 w-5" />
-            <span className="hidden sm:inline">Parcel Check</span>
-          </div>
+          <Package className="h-5 w-5 mr-2" />
+          <span>Parcel Check</span>
         </Button>
         <Button
           variant={currentStep === 2 ? "default" : "outline"}
@@ -1998,15 +1991,8 @@ export default function StartReceiving() {
               : 'hover:bg-gray-50 dark:hover:bg-gray-800'
           }`}
         >
-          <div className="flex items-center gap-2">
-            <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
-              currentStep === 2 ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-            }`}>
-              2
-            </div>
-            <CheckSquare className="h-5 w-5" />
-            <span className="hidden sm:inline">Item Checklist</span>
-          </div>
+          <CheckSquare className="h-5 w-5 mr-2" />
+          <span>Item Checklist</span>
         </Button>
       </div>
 
