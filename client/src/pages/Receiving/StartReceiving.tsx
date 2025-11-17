@@ -298,9 +298,9 @@ export default function StartReceiving() {
         parcelCount: receiptData.parcelCount,
         notes: receiptData.notes
       });
-      // Auto-populate receivedBy with current user's first name if receipt doesn't have one
-      const firstName = user?.name?.split(' ')[0] || user?.email?.split('@')[0] || "Employee #1";
-      setReceivedBy(receiptData.receivedBy || firstName);
+      // Always use current user's first name if available, otherwise use saved value
+      const firstName = user?.name?.split(' ')[0] || user?.email?.split('@')[0];
+      setReceivedBy(firstName || receiptData.receivedBy || "Employee #1");
       setCarrier(receiptData.carrier || shipment.endCarrier || shipment.carrier || "");
       setParcelCount(receiptData.parcelCount || shipment.totalUnits || 1);
       
