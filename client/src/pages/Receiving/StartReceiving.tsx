@@ -215,6 +215,8 @@ export default function StartReceiving() {
   const [barcodeScan, setBarcodeScan] = useState("");
   const [showAllItems, setShowAllItems] = useState(true);
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [completedShipmentId, setCompletedShipmentId] = useState<number | null>(null);
   const [hasShownCompletionToast, setHasShownCompletionToast] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [scanFeedback, setScanFeedback] = useState<{ type: 'success' | 'error' | 'duplicate' | 'complete' | null; message: string }>({ type: null, message: '' });
@@ -1335,13 +1337,18 @@ export default function StartReceiving() {
     onSuccess: (data) => {
       toast({
         title: "Receiving Completed",
-        description: "The shipment has been successfully received and is now pending approval"
+        description: "The shipment has been successfully received and is now ready for storage"
       });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/receiving'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/pending_approval'] });
-      navigate('/receiving');
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/storage'] });
+      
+      // Store shipment ID and show success dialog
+      const shipmentId = receipt?.receipt?.shipmentId || receipt?.shipmentId || parseInt(id || '0');
+      setCompletedShipmentId(shipmentId);
+      setShowSuccessDialog(true);
     },
     onError: (error: any) => {
       toast({
@@ -3159,6 +3166,61 @@ export default function StartReceiving() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl">Receiving Complete!</DialogTitle>
+                <DialogDescription className="mt-1">
+                  Shipment has been successfully received
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <p className="text-sm text-blue-900 dark:text-blue-100 mb-2 font-medium">
+                What's next?
+              </p>
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                The items are now ready to be stored in the warehouse. You can proceed to the Storage page to assign locations to each item.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowSuccessDialog(false);
+                navigate('/receiving');
+              }}
+              className="w-full sm:w-auto"
+              data-testid="button-close-success"
+            >
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                setShowSuccessDialog(false);
+                navigate(`/storage?shipmentId=${completedShipmentId}`);
+              }}
+              className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700"
+              data-testid="button-go-to-storage"
+            >
+              <Warehouse className="h-4 w-4 mr-2" />
+              Go to Storage
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

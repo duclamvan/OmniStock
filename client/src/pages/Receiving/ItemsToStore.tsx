@@ -511,15 +511,28 @@ export default function ItemsToStore() {
 
       setItems(allItems);
 
-      // Auto-select first receipt if available and nothing was restored
-      if (receiptsWithItems.length > 0 && !selectedReceipt) {
+      // Auto-select receipt based on URL parameter (from Complete Receiving flow)
+      const urlParams = new URLSearchParams(window.location.search);
+      const shipmentIdParam = urlParams.get('shipmentId');
+      if (shipmentIdParam && receiptsWithItems.length > 0 && !selectedReceipt) {
+        const targetShipmentId = parseInt(shipmentIdParam);
+        const matchingReceipt = receiptsWithItems.find((r: ReceiptWithItems) => 
+          r.shipment?.id === targetShipmentId
+        );
+        if (matchingReceipt) {
+          setSelectedReceipt(matchingReceipt.receipt.id);
+          // Clear URL parameter after selection
+          navigate('/storage', { replace: true });
+        }
+      } else if (receiptsWithItems.length > 0 && !selectedReceipt) {
+        // Auto-select first receipt if available and nothing was restored or matched
         const savedReceipt = localStorage.getItem('itemsToStore_selectedReceipt');
         if (!savedReceipt) {
           setSelectedReceipt(receiptsWithItems[0].receipt.id);
         }
       }
     }
-  }, [receiptsWithItems.length, selectedReceipt]);
+  }, [receiptsWithItems.length, selectedReceipt, location, navigate]);
 
   // Fetch AI location suggestions for items without existing locations
   useEffect(() => {

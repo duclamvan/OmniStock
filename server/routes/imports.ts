@@ -6264,6 +6264,41 @@ router.patch("/receipts/:id/photos", async (req, res) => {
   }
 });
 
+// PATCH endpoint for status changes
+router.patch("/receipts/:id/status", async (req, res) => {
+  try {
+    const receiptId = parseInt(req.params.id);
+    const { status } = req.body;
+    
+    if (!status) {
+      return res.status(400).json({ success: false, message: "Status is required" });
+    }
+    
+    const validStatuses = ['to_receive', 'pending_verification', 'receiving', 'pending_approval', 'approved', 'completed', 'rejected'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ success: false, message: "Invalid status" });
+    }
+    
+    const [updated] = await db
+      .update(receipts)
+      .set({ 
+        status,
+        updatedAt: new Date()
+      })
+      .where(eq(receipts.id, receiptId))
+      .returning();
+    
+    if (!updated) {
+      return res.status(404).json({ success: false, message: "Receipt not found" });
+    }
+    
+    res.json({ success: true, receipt: updated });
+  } catch (error) {
+    console.error("Error updating receipt status:", error);
+    res.status(500).json({ success: false, message: "Failed to update status" });
+  }
+});
+
 // DELETE endpoint for single photo removal (ID-based for concurrent safety)
 router.delete("/receipts/:receiptId/photos/:photoId", async (req, res) => {
   try {

@@ -1253,9 +1253,42 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
 
 function CompletedShipmentCard({ shipment }: { shipment: any }) {
   const [, navigate] = useLocation();
+  const { toast } = useToast();
   const [isExpanded, setIsExpanded] = useState(true);
   
   const itemCount = shipment.items?.length || 0;
+
+  const sendBackToReceiveMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/imports/receipts/${shipment.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'to_receive' }),
+      });
+      if (!response.ok) throw new Error('Failed to update status');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/completed'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/to-receive'] });
+      toast({
+        title: "Status Updated",
+        description: "Receipt sent back to Receive status",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update receipt status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSendBackToReceive = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    sendBackToReceiveMutation.mutate();
+  };
 
   return (
     <Card className="overflow-hidden border-green-200 dark:border-green-800" data-testid={`card-shipment-${shipment.id}`}>
@@ -1284,15 +1317,39 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
               )}
             </div>
           </div>
-          <div className="flex flex-col items-end gap-2">
-            <Badge className={getStatusColor('complete')}>
-              Complete
-            </Badge>
-            {isExpanded ? (
-              <ChevronUp className="h-5 w-5 text-muted-foreground" />
-            ) : (
-              <ChevronDown className="h-5 w-5 text-muted-foreground" />
-            )}
+          <div className="flex items-center gap-2">
+            <div className="flex flex-col items-end gap-2">
+              <Badge className={getStatusColor('complete')}>
+                Complete
+              </Badge>
+              {isExpanded ? (
+                <ChevronUp className="h-5 w-5 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-muted-foreground" />
+              )}
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  data-testid={`button-menu-${shipment.id}`}
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={handleSendBackToReceive}
+                  disabled={sendBackToReceiveMutation.isPending}
+                  data-testid={`menu-item-send-back-${shipment.id}`}
+                >
+                  <Undo2 className="h-4 w-4 mr-2" />
+                  Send Back to Receive
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </CardHeader>
