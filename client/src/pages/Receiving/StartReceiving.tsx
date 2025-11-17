@@ -2110,9 +2110,18 @@ export default function StartReceiving() {
                         >
                           <Minus className="h-5 w-5" />
                         </Button>
-                        <div className="flex-1 h-11 px-4 flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/40 dark:to-blue-900/30 border-2 border-blue-200 dark:border-blue-800 rounded-md">
+                        <div className="flex-1 h-11 px-4 flex items-center justify-center gap-2 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/40 dark:to-blue-900/30 border-2 border-blue-200 dark:border-blue-800 rounded-md">
+                          <Input
+                            type="number"
+                            value={scannedParcels}
+                            onChange={(e) => handleScannedParcelsChange(Math.max(0, Math.min(parcelCount, parseInt(e.target.value) || 0)), false)}
+                            onBlur={() => handleScannedParcelsChange(scannedParcels, true)}
+                            className="w-20 text-center h-8 text-2xl font-bold bg-transparent border-0 focus:ring-0 focus:outline-none p-0 bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                            min="0"
+                            max={parcelCount}
+                          />
                           <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
-                            {scannedParcels} / {parcelCount}
+                            / {parcelCount}
                           </span>
                         </div>
                         <Button
