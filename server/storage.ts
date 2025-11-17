@@ -12,6 +12,7 @@ import {
   customerBillingAddresses,
   suppliers,
   products,
+  aiLocationSuggestions,
   productVariants,
   productFiles,
   orderFiles,
@@ -72,6 +73,8 @@ import {
   type InsertSupplier,
   type Product,
   type InsertProduct,
+  type AiLocationSuggestion,
+  type InsertAiLocationSuggestion,
   type ProductVariant,
   type InsertProductVariant,
   type ProductFile,
@@ -256,6 +259,11 @@ export interface IStorage {
   createProductVariant(variant: any): Promise<ProductVariant>;
   updateProductVariant(id: string, variant: any): Promise<ProductVariant | undefined>;
   deleteProductVariant(id: string): Promise<boolean>;
+
+  // AI Location Suggestions
+  getAiLocationSuggestionByProduct(productId: string): Promise<AiLocationSuggestion | undefined>;
+  getAiLocationSuggestionByCustomItem(customItemId: number): Promise<AiLocationSuggestion | undefined>;
+  createAiLocationSuggestion(suggestion: InsertAiLocationSuggestion): Promise<AiLocationSuggestion>;
 
   // Product Locations
   getProductLocations(productId: string): Promise<ProductLocation[]>;
@@ -1814,6 +1822,48 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error deleting product variant:', error);
       return false;
+    }
+  }
+
+  // AI Location Suggestions
+  async getAiLocationSuggestionByProduct(productId: string): Promise<AiLocationSuggestion | undefined> {
+    try {
+      const [suggestion] = await db
+        .select()
+        .from(aiLocationSuggestions)
+        .where(eq(aiLocationSuggestions.productId, productId))
+        .limit(1);
+      return suggestion;
+    } catch (error) {
+      console.error('Error getting AI location suggestion by product:', error);
+      return undefined;
+    }
+  }
+
+  async getAiLocationSuggestionByCustomItem(customItemId: number): Promise<AiLocationSuggestion | undefined> {
+    try {
+      const [suggestion] = await db
+        .select()
+        .from(aiLocationSuggestions)
+        .where(eq(aiLocationSuggestions.customItemId, customItemId))
+        .limit(1);
+      return suggestion;
+    } catch (error) {
+      console.error('Error getting AI location suggestion by custom item:', error);
+      return undefined;
+    }
+  }
+
+  async createAiLocationSuggestion(suggestion: InsertAiLocationSuggestion): Promise<AiLocationSuggestion> {
+    try {
+      const [newSuggestion] = await db
+        .insert(aiLocationSuggestions)
+        .values(suggestion)
+        .returning();
+      return newSuggestion;
+    } catch (error) {
+      console.error('Error creating AI location suggestion:', error);
+      throw error;
     }
   }
 
