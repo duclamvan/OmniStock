@@ -496,6 +496,21 @@ export const products = pgTable('products', {
   packagingRequirement: text('packaging_requirement').default('carton') // 'carton', 'outer_carton', 'nylon_wrap'
 });
 
+// AI Location Suggestions table - stores one AI-generated warehouse location suggestion per product
+export const aiLocationSuggestions = pgTable('ai_location_suggestions', {
+  id: serial('id').primaryKey(),
+  productId: varchar('product_id').references(() => products.id, { onDelete: 'cascade' }).unique(), // One suggestion per product
+  customItemId: integer('custom_item_id').references(() => purchaseItems.id, { onDelete: 'cascade' }).unique(), // For items without product IDs
+  locationCode: text('location_code').notNull(), // e.g., "WH1-A01-R01-L01-B1"
+  zone: text('zone').notNull(), // e.g., "Shelves A", "Pallets B", "Office C"
+  accessibilityLevel: text('accessibility_level').notNull(), // "High", "Medium", "Low"
+  reasoning: text('reasoning').notNull(), // AI explanation for why this location was chosen
+  metadata: jsonb('metadata'), // Optional additional data (sales frequency, turnover rate, etc.)
+  generatedAt: timestamp('generated_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
 // Product Variants table
 export const productVariants = pgTable('product_variants', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
@@ -1271,6 +1286,7 @@ export const insertProductTieredPricingSchema = createInsertSchema(productTiered
 export const insertProductBundleSchema = createInsertSchema(productBundles).omit({ id: true, bundleId: true, createdAt: true, updatedAt: true });
 export const insertBundleItemSchema = createInsertSchema(bundleItems).omit({ id: true, createdAt: true });
 export const insertProductFileSchema = createInsertSchema(productFiles).omit({ id: true, uploadedAt: true });
+export const insertAiLocationSuggestionSchema = createInsertSchema(aiLocationSuggestions).omit({ id: true, generatedAt: true, createdAt: true, updatedAt: true });
 export const insertOrderFileSchema = createInsertSchema(orderFiles).omit({ id: true, uploadedAt: true });
 export const insertDailySequenceSchema = createInsertSchema(dailySequences).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true });
@@ -1367,6 +1383,8 @@ export type LayoutBin = typeof layoutBins.$inferSelect;
 export type InsertLayoutBin = z.infer<typeof insertLayoutBinSchema>;
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
+export type AiLocationSuggestion = typeof aiLocationSuggestions.$inferSelect;
+export type InsertAiLocationSuggestion = z.infer<typeof insertAiLocationSuggestionSchema>;
 export type ProductVariant = typeof productVariants.$inferSelect;
 export type InsertProductVariant = z.infer<typeof insertProductVariantSchema>;
 export type ProductTieredPricing = typeof productTieredPricing.$inferSelect;
