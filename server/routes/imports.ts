@@ -17,6 +17,7 @@ import {
   landedCosts,
   products,
   productLocations,
+  aiLocationSuggestions,
   shipmentCosts,
   shipmentCartons,
   costAllocations,
@@ -8022,7 +8023,12 @@ router.post("/suggest-storage-location", async (req, res) => {
     
     // Check if we already have a cached AI suggestion for this product
     if (productId) {
-      const cachedSuggestion = await storage.getAiLocationSuggestionByProduct(productId);
+      const [cachedSuggestion] = await db
+        .select()
+        .from(aiLocationSuggestions)
+        .where(eq(aiLocationSuggestions.productId, productId))
+        .limit(1);
+      
       if (cachedSuggestion) {
         return res.json({
           suggestedLocation: cachedSuggestion.locationCode,
@@ -8202,24 +8208,27 @@ Respond with ONLY a JSON object with this structure:
     }
     
     // Save AI suggestion to database for future use (one-time generation per product)
+    // Use onConflictDoNothing to handle race conditions where multiple requests generate for same product
     if (productId) {
       try {
-        await storage.createAiLocationSuggestion({
-          productId,
-          customItemId: null,
-          locationCode: suggestion.suggestedLocation,
-          zone: suggestion.zone,
-          accessibilityLevel: suggestion.accessibility,
-          reasoning: suggestion.reasoning,
-          metadata: {
-            salesFrequency,
-            salesProfile,
-            avgInventoryAge: Math.round(avgInventoryAge),
-            ageProfile,
-            totalStock,
-            category: category || 'General'
-          }
-        });
+        await db.insert(aiLocationSuggestions)
+          .values({
+            productId,
+            customItemId: null,
+            locationCode: suggestion.suggestedLocation,
+            zone: suggestion.zone,
+            accessibilityLevel: suggestion.accessibility,
+            reasoning: suggestion.reasoning,
+            metadata: {
+              salesFrequency,
+              salesProfile,
+              avgInventoryAge: Math.round(avgInventoryAge),
+              ageProfile,
+              totalStock,
+              category: category || 'General'
+            }
+          })
+          .onConflictDoNothing({ target: aiLocationSuggestions.productId });
       } catch (dbError) {
         // Log error but don't fail the request - suggestion is still valid
         console.error('Failed to save AI suggestion to database:', dbError);
