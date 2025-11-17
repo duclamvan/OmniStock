@@ -1508,6 +1508,27 @@ export default function StartReceiving() {
   };
 
   const handleSubmit = async () => {
+    // Check if receipt is already completed
+    const receiptStatus = receipt?.receipt?.status || receipt?.status;
+    if (receiptStatus === 'pending_approval' || receiptStatus === 'verified' || receiptStatus === 'approved') {
+      toast({
+        title: "Already Completed",
+        description: "This receipt has already been completed and is awaiting approval.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Check if shipment is in receiving status
+    if (shipment?.receivingStatus !== 'receiving') {
+      toast({
+        title: "Cannot Complete",
+        description: `This shipment is not in receiving status (current: ${shipment?.receivingStatus || 'none'}). Please work on a shipment that is currently being received.`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // Check if all items have been processed
     const pendingItems = receivingItems.filter(item => item.status === 'pending');
     
