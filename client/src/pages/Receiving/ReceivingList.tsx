@@ -1235,13 +1235,12 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
             
             <Button
               size="lg"
-              variant="outline"
-              className="w-full h-12 text-base"
-              onClick={() => navigate(`/receiving/receipt/${shipment.id}`)}
-              data-testid={`button-view-details-${shipment.id}`}
+              className="w-full h-12 text-base bg-amber-600 hover:bg-amber-700"
+              onClick={() => navigate('/storage')}
+              data-testid={`button-go-to-storage-${shipment.id}`}
             >
-              <Eye className="h-5 w-5 mr-2" />
-              View Details
+              <Warehouse className="h-5 w-5 mr-2" />
+              Go to Storage
             </Button>
           </div>
         </CardContent>
