@@ -402,6 +402,9 @@ function Router() {
         <Route path="/settings/system">
           {() => <ProtectedRoute requireAdmin><Settings /></ProtectedRoute>}
         </Route>
+        <Route path="/settings/roles">
+          {() => <ProtectedRoute requireAdmin><Settings /></ProtectedRoute>}
+        </Route>
         {/* User Management Route */}
         <Route path="/user-management">
           {() => <ProtectedRoute requireAdmin><UserManagement /></ProtectedRoute>}

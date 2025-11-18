@@ -1050,6 +1050,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                        location.includes('/settings/financial') ? 'Financial Settings' :
                        location.includes('/settings/inventory') ? 'Inventory Settings' :
                        location.includes('/settings/system') ? 'System Settings' :
+                       location.includes('/settings/roles') ? 'Roles Settings' :
                        'Dashboard'}
                     </span>
                   </>

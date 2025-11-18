@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings as SettingsIcon, DollarSign, ShoppingCart, Package, Warehouse, Truck } from "lucide-react";
+import { Settings as SettingsIcon, DollarSign, ShoppingCart, Package, Warehouse, Truck, Shield } from "lucide-react";
 import GeneralSettings from "./GeneralSettings";
 import ShippingSettings from "./ShippingSettings";
 import OrderSettings from "./OrderSettings";
 import FinancialSettings from "./FinancialSettings";
 import InventorySettings from "./InventorySettings";
 import SystemSettings from "./SystemSettings";
+import RolesSettings from "./RolesSettings";
 
 export default function Settings() {
   const [location, navigate] = useLocation();
@@ -23,7 +24,7 @@ export default function Settings() {
       </div>
 
       <Tabs value={tab} onValueChange={(value) => navigate(`/settings/${value}`)} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-2 h-auto p-1.5 sm:p-2">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 gap-1.5 sm:gap-2 h-auto p-1.5 sm:p-2">
           <TabsTrigger value="general" className="gap-2" data-testid="tab-general">
             <SettingsIcon className="h-4 w-4" />
             <span className="hidden sm:inline">General</span>
@@ -47,6 +48,10 @@ export default function Settings() {
           <TabsTrigger value="system" className="gap-2" data-testid="tab-system">
             <Warehouse className="h-4 w-4" />
             <span className="hidden sm:inline">System</span>
+          </TabsTrigger>
+          <TabsTrigger value="roles" className="gap-2" data-testid="tab-roles">
+            <Shield className="h-4 w-4" />
+            <span className="hidden sm:inline">Roles</span>
           </TabsTrigger>
         </TabsList>
 
@@ -72,6 +77,10 @@ export default function Settings() {
 
         <TabsContent value="system">
           <SystemSettings />
+        </TabsContent>
+
+        <TabsContent value="roles">
+          <RolesSettings />
         </TabsContent>
       </Tabs>
     </div>
