@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { ShieldAlert, Users } from "lucide-react";
 import { formatDate } from "@/lib/currencyUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -33,11 +34,21 @@ interface User {
 }
 
 export default function UserManagement() {
-  const { isAdministrator, isLoading: authLoading } = useAuth();
+  const { user, isAdministrator, isLoading: authLoading, refetch: refetchAuth } = useAuth();
   const { toast } = useToast();
 
+  // Debug: Log auth state
+  console.log('🔍 UserManagement Auth State:', {
+    user,
+    isAdministrator: isAdministrator,
+    isAdministratorType: typeof isAdministrator,
+    isAdministratorExplicit: user?.role === 'administrator',
+    authLoading,
+    userRole: user?.role,
+  });
+
   // Fetch all users
-  const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
+  const { data: users = [], isLoading: usersLoading, refetch: refetchUsers } = useQuery<User[]>({
     queryKey: ['/api/users'],
     enabled: isAdministrator,
   });
@@ -116,19 +127,55 @@ export default function UserManagement() {
     );
   }
 
+  // Handler to force refresh auth and user data
+  const handleForceRefresh = async () => {
+    console.log('🔄 Force refreshing auth and user data...');
+    try {
+      await refetchAuth();
+      await refetchUsers();
+      toast({
+        title: "Refreshed",
+        description: "Authentication and user data reloaded",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to refresh data",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Show access denied if not administrator
   if (!isAdministrator) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Card className="max-w-md w-full">
-          <CardContent className="p-8 text-center">
+          <CardContent className="p-8 text-center space-y-4">
             <ShieldAlert className="h-16 w-16 text-red-500 dark:text-red-400 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
               Access Denied
             </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              You do not have permission to access this page. Only administrators can manage users.
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              You don't have permission to access this page. Only administrators can manage users.
             </p>
+            {user && (
+              <div className="text-sm text-left bg-muted p-4 rounded-lg space-y-2">
+                <p><strong>Your Account:</strong></p>
+                <p>Email: {user.email || 'N/A'}</p>
+                <p>Name: {user.firstName} {user.lastName}</p>
+                <p className="text-red-600 dark:text-red-400">
+                  <strong>Current Role: {user.role}</strong>
+                </p>
+              </div>
+            )}
+            <Button 
+              onClick={handleForceRefresh}
+              className="w-full"
+              data-testid="button-force-refresh"
+            >
+              Force Refresh Session
+            </Button>
           </CardContent>
         </Card>
       </div>

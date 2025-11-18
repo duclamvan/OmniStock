@@ -1317,39 +1317,15 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex flex-col items-end gap-2">
-              <Badge className={getStatusColor('complete')}>
-                Complete
-              </Badge>
-              {isExpanded ? (
-                <ChevronUp className="h-5 w-5 text-muted-foreground" />
-              ) : (
-                <ChevronDown className="h-5 w-5 text-muted-foreground" />
-              )}
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  data-testid={`button-menu-${shipment.id}`}
-                >
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={handleSendBackToReceive}
-                  disabled={sendBackToReceiveMutation.isPending}
-                  data-testid={`menu-item-send-back-${shipment.id}`}
-                >
-                  <Undo2 className="h-4 w-4 mr-2" />
-                  Send Back to Receive
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="flex flex-col items-end gap-2">
+            <Badge className={getStatusColor('complete')}>
+              Complete
+            </Badge>
+            {isExpanded ? (
+              <ChevronUp className="h-5 w-5 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="h-5 w-5 text-muted-foreground" />
+            )}
           </div>
         </div>
       </CardHeader>
@@ -1376,16 +1352,40 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
               </div>
             )}
             
-            <Button
-              size="lg"
-              variant="outline"
-              className="w-full h-12 text-base"
-              onClick={() => navigate(`/receiving/receipt/${shipment.id}`)}
-              data-testid={`button-view-details-${shipment.id}`}
-            >
-              <Eye className="h-5 w-5 mr-2" />
-              View Details
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                size="lg"
+                variant="outline"
+                className="flex-1 h-12 text-base"
+                onClick={() => navigate(`/receiving/receipt/${shipment.id}`)}
+                data-testid={`button-view-details-${shipment.id}`}
+              >
+                <Eye className="h-5 w-5 mr-2" />
+                View Details
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="h-12 px-3"
+                    data-testid={`button-menu-${shipment.id}`}
+                  >
+                    <MoreVertical className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={handleSendBackToReceive}
+                    disabled={sendBackToReceiveMutation.isPending}
+                    data-testid={`menu-item-send-back-${shipment.id}`}
+                  >
+                    <Undo2 className="h-4 w-4 mr-2" />
+                    Send Back to Receive
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </CardContent>
       )}
