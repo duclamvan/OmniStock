@@ -11,7 +11,7 @@ export const users = pgTable('users', {
   firstName: varchar('first_name'),
   lastName: varchar('last_name'),
   profileImageUrl: varchar('profile_image_url'),
-  role: varchar('role').notNull().default('warehouse_operator'), // 'administrator' or 'warehouse_operator'
+  role: varchar('role'), // 'administrator' or 'warehouse_operator' - nullable for pending users
   // Authentication provider
   authProvider: varchar('auth_provider').notNull().default('replit'), // 'replit' | 'sms' | 'email'
   // Two-Factor Authentication fields

@@ -502,6 +502,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Unauthorized - Please log in' });
       }
 
+      // Block users with no role assigned
+      if (!req.user.role) {
+        return res.status(403).json({ message: 'Account pending role assignment' });
+      }
+
       if (!allowedRoles.includes(req.user.role)) {
         return res.status(403).json({ message: 'Forbidden - Insufficient permissions' });
       }

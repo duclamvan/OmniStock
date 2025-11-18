@@ -12,7 +12,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
-  const { isAuthenticated, isAdministrator, isLoading } = useAuth();
+  const { isAuthenticated, isAdministrator, isLoading, user } = useAuth();
   const [, navigate] = useLocation();
 
   // Redirect to login if not authenticated
@@ -30,6 +30,36 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
   // If user is not authenticated, don't render anything (will redirect via useEffect)
   if (!isAuthenticated) {
     return null;
+  }
+
+  // If user has no role assigned, show pending approval screen
+  if (!user?.role) {
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] p-4">
+        <Card className="w-full max-w-md" data-testid="pending-approval-card">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="rounded-full bg-yellow-500/10 p-3">
+                <ShieldX className="h-10 w-10 text-yellow-500" data-testid="icon-pending-approval" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl" data-testid="text-pending-approval-title">
+              Pending Approval
+            </CardTitle>
+            <CardDescription data-testid="text-pending-approval-description">
+              Account awaiting role assignment
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert>
+              <AlertDescription data-testid="text-pending-approval-message">
+                Your account is awaiting role assignment. Please contact an administrator.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   // If admin access is required and user is not an administrator
