@@ -493,7 +493,9 @@ export const products = pgTable('products', {
   unitWidthCm: decimal('unit_width_cm', { precision: 10, scale: 2 }),
   unitHeightCm: decimal('unit_height_cm', { precision: 10, scale: 2 }),
   // Packaging requirement for intelligent carton packing
-  packagingRequirement: text('packaging_requirement').default('carton') // 'carton', 'outer_carton', 'nylon_wrap'
+  packagingRequirement: text('packaging_requirement').default('carton'), // 'carton', 'outer_carton', 'nylon_wrap'
+  // Reorder rate - percentage of customers who reordered within 1 year (0-100)
+  reorderRate: decimal('reorder_rate', { precision: 5, scale: 2 })
 });
 
 // AI Location Suggestions table - stores one AI-generated warehouse location suggestion per product

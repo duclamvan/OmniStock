@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,7 +36,9 @@ import {
   MapPinned,
   Truck,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  Repeat,
+  RefreshCw
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { format } from "date-fns";
@@ -45,6 +47,8 @@ import ProductFiles from "@/components/ProductFiles";
 import ProductLocations from "@/components/ProductLocations";
 import ProductVariants from "@/components/ProductVariants";
 import { ImagePlaceholder } from "@/components/ImagePlaceholder";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 const IMAGE_PURPOSE_CONFIG = {
   main: { label: 'Main WMS Image', icon: ImageIcon, color: 'text-blue-600' },
@@ -59,6 +63,7 @@ export default function ProductDetails() {
   const [, navigate] = useLocation();
   const { canAccessFinancialData } = useAuth();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const { toast } = useToast();
 
   const { data: product, isLoading } = useQuery<any>({
     queryKey: ['/api/products', id],
@@ -85,6 +90,31 @@ export default function ProductDetails() {
   const { data: bundles = [] } = useQuery<any[]>({
     queryKey: ['/api/bundles'],
     staleTime: 5 * 60 * 1000,
+  });
+
+  const recalculateReorderRate = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/products/${id}/reorder-rate`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Failed to recalculate reorder rate');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products', id] });
+      toast({
+        title: "Success",
+        description: "Reorder rate recalculated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to recalculate reorder rate",
+        variant: "destructive",
+      });
+    },
   });
 
   if (isLoading) {
@@ -290,6 +320,33 @@ export default function ProductDetails() {
               </CardContent>
             </Card>
           )}
+
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Reorder Rate</CardTitle>
+                <Repeat className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">
+                {product.reorderRate !== null && product.reorderRate !== undefined ? `${parseFloat(product.reorderRate).toFixed(1)}%` : 'N/A'}
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <p className="text-xs text-muted-foreground">1-year repeat rate</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => recalculateReorderRate.mutate()}
+                  disabled={recalculateReorderRate.isPending}
+                  className="h-6 px-2"
+                  data-testid="button-recalculate-reorder-rate"
+                >
+                  <RefreshCw className={`h-3 w-3 ${recalculateReorderRate.isPending ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 

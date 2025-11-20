@@ -253,6 +253,8 @@ export interface IStorage {
   updateProduct(id: string, product: any): Promise<Product | undefined>;
   deleteProduct(id: string): Promise<boolean>;
   getLowStockProducts(): Promise<Product[]>;
+  calculateProductReorderRate(productId: string): Promise<number>;
+  updateProductReorderRate(productId: string, rate: number): Promise<void>;
 
   // Product Variants
   getProductVariants(productId: string): Promise<ProductVariant[]>;
@@ -1768,6 +1770,77 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error fetching low stock products:', error);
       return [];
+    }
+  }
+
+  async calculateProductReorderRate(productId: string): Promise<number> {
+    try {
+      // Use SQL with CTE to calculate reorder rate
+      const result = await db.execute(sql`
+        WITH customer_first_orders AS (
+          SELECT DISTINCT
+            o.customer_id,
+            MIN(o.created_at) as first_order_date
+          FROM orders o
+          INNER JOIN order_items oi ON o.id = oi.order_id
+          WHERE oi.product_id = ${productId}
+            AND o.status IN ('completed', 'shipped', 'delivered')
+            AND o.customer_id IS NOT NULL
+          GROUP BY o.customer_id
+        ),
+        customer_reorders AS (
+          SELECT DISTINCT
+            cfo.customer_id,
+            CASE 
+              WHEN EXISTS (
+                SELECT 1
+                FROM orders o2
+                INNER JOIN order_items oi2 ON o2.id = oi2.order_id
+                WHERE o2.customer_id = cfo.customer_id
+                  AND oi2.product_id = ${productId}
+                  AND o2.status IN ('completed', 'shipped', 'delivered')
+                  AND o2.created_at > cfo.first_order_date
+                  AND o2.created_at <= cfo.first_order_date + INTERVAL '365 days'
+              ) THEN 1
+              ELSE 0
+            END as reordered
+          FROM customer_first_orders cfo
+        )
+        SELECT 
+          COUNT(*) as total_customers,
+          SUM(reordered) as customers_who_reordered
+        FROM customer_reorders
+      `);
+
+      const row = result.rows[0] as any;
+      const totalCustomers = parseInt(row.total_customers) || 0;
+      const customersWhoReordered = parseInt(row.customers_who_reordered) || 0;
+
+      // Only calculate if there are at least 5 customers
+      if (totalCustomers < 5) {
+        return -1; // Indicate insufficient data
+      }
+
+      const rate = (customersWhoReordered / totalCustomers) * 100;
+      return parseFloat(rate.toFixed(2));
+    } catch (error) {
+      console.error('Error calculating reorder rate:', error);
+      return -1;
+    }
+  }
+
+  async updateProductReorderRate(productId: string, rate: number): Promise<void> {
+    try {
+      await db
+        .update(products)
+        .set({ 
+          reorderRate: rate >= 0 ? rate.toString() : null,
+          updatedAt: new Date()
+        })
+        .where(eq(products.id, productId));
+    } catch (error) {
+      console.error('Error updating reorder rate:', error);
+      throw error;
     }
   }
 

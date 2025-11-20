@@ -3745,6 +3745,67 @@ Important:
     }
   });
 
+  // Product Reorder Rate endpoints
+  app.get('/api/products/:id/reorder-rate', async (req, res) => {
+    try {
+      const productId = req.params.id;
+
+      // Calculate the reorder rate
+      const rate = await storage.calculateProductReorderRate(productId);
+
+      // Update the product with the calculated rate
+      if (rate >= 0) {
+        await storage.updateProductReorderRate(productId, rate);
+      }
+
+      res.json({ 
+        productId,
+        reorderRate: rate >= 0 ? rate : null,
+        hasInsufficientData: rate < 0
+      });
+    } catch (error) {
+      console.error("Error calculating product reorder rate:", error);
+      res.status(500).json({ message: "Failed to calculate product reorder rate" });
+    }
+  });
+
+  app.post('/api/products/calculate-reorder-rates', async (req, res) => {
+    try {
+      // Get all products
+      const allProducts = await storage.getProducts();
+      
+      let calculated = 0;
+      let skipped = 0;
+
+      // Calculate reorder rate for each product
+      for (const product of allProducts) {
+        try {
+          const rate = await storage.calculateProductReorderRate(product.id);
+          await storage.updateProductReorderRate(product.id, rate);
+          
+          if (rate >= 0) {
+            calculated++;
+          } else {
+            skipped++;
+          }
+        } catch (error) {
+          console.error(`Error calculating reorder rate for product ${product.id}:`, error);
+          skipped++;
+        }
+      }
+
+      res.json({ 
+        message: "Reorder rates calculated successfully",
+        totalProducts: allProducts.length,
+        calculated,
+        skipped
+      });
+    } catch (error) {
+      console.error("Error calculating reorder rates for all products:", error);
+      res.status(500).json({ message: "Failed to calculate reorder rates" });
+    }
+  });
+
   // Product Order History endpoint
   app.get('/api/products/:id/order-history', async (req, res) => {
     try {

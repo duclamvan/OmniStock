@@ -64,6 +64,7 @@ export default function InventoryReports() {
         quantity: p.quantity || 0,
         price: parseFloat(p.priceCzk || '0'),
         totalValue: (p.quantity || 0) * parseFloat(p.priceCzk || '0'),
+        reorderRate: p.reorderRate ? parseFloat(p.reorderRate) : null,
       }))
       .sort((a, b) => b.totalValue - a.totalValue)
       .slice(0, 10);
@@ -266,6 +267,7 @@ export default function InventoryReports() {
                   <TableHead className="text-right">Quantity</TableHead>
                   <TableHead className="text-right">Unit Price</TableHead>
                   <TableHead className="text-right">Total Value</TableHead>
+                  <TableHead className="text-right">Reorder Rate</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -275,6 +277,9 @@ export default function InventoryReports() {
                     <TableCell className="text-right">{product.quantity}</TableCell>
                     <TableCell className="text-right">{formatCurrency(product.price, 'CZK')}</TableCell>
                     <TableCell className="text-right font-semibold">{formatCurrency(product.totalValue, 'CZK')}</TableCell>
+                    <TableCell className="text-right">
+                      {product.reorderRate !== null ? `${product.reorderRate.toFixed(1)}%` : 'N/A'}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
