@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Package, AlertTriangle, TrendingDown, DollarSign, PackageCheck } from "lucide-react";
+import { Package, AlertTriangle, TrendingDown, DollarSign } from "lucide-react";
 import { calculateInventoryMetrics, preparePieChartData } from "@/lib/reportUtils";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
@@ -69,22 +69,6 @@ export default function InventoryReports() {
       .slice(0, 10);
   }, [products]);
 
-  const reorderProducts = useMemo(() => {
-    return (products as any[])
-      .filter((p: any) => p.reorderRate !== null && p.reorderRate !== undefined && p.quantity <= p.reorderRate)
-      .map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        sku: p.sku,
-        quantity: p.quantity || 0,
-        reorderRate: p.reorderRate,
-        lowStockAlert: p.lowStockAlert || 5,
-      }))
-      .sort((a, b) => a.quantity - b.quantity);
-  }, [products]);
-
-  const reorderCount = reorderProducts.length;
-
   const handleExportExcel = () => {
     try {
       const exportData = (products as any[]).map((p: any) => ({
@@ -92,7 +76,6 @@ export default function InventoryReports() {
         'SKU': p.sku || '',
         'Stock': p.quantity || 0,
         'Low Stock Alert': p.lowStockAlert || 0,
-        'Reorder Rate': p.reorderRate !== null && p.reorderRate !== undefined ? p.reorderRate : '',
         'Price': parseFloat(p.priceCzk || '0'),
         'Total Value': (p.quantity || 0) * parseFloat(p.priceCzk || '0'),
         'Status': (p.quantity || 0) === 0 ? 'Out of Stock' : (p.quantity || 0) <= (p.lowStockAlert || 5) ? 'Low Stock' : 'In Stock',
@@ -130,10 +113,10 @@ export default function InventoryReports() {
       ];
 
       exportToPDF(
-        'Low Stock Alert',
         exportData,
         columns,
-        `Inventory_Report_${format(new Date(), 'yyyy-MM-dd')}`
+        `Inventory_Report_${format(new Date(), 'yyyy-MM-dd')}`,
+        'Low Stock Alert'
       );
 
       toast({
@@ -211,21 +194,6 @@ export default function InventoryReports() {
         />
       </div>
 
-      {/* Needs Reorder Metric */}
-      {reorderCount > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <MetricCard
-            title="Products Need Reorder"
-            value={reorderCount}
-            subtitle="products below reorder rate"
-            icon={PackageCheck}
-            iconColor="text-purple-600"
-            iconBgColor="bg-purple-100"
-            testId="metric-needs-reorder"
-          />
-        </div>
-      )}
-
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PieChartCard
@@ -241,48 +209,6 @@ export default function InventoryReports() {
           testId="chart-stock-levels"
         />
       </div>
-
-      {/* Products Need Reorder */}
-      {reorderCount > 0 && (
-        <Card data-testid="table-needs-reorder" className="border-purple-200 dark:border-purple-800">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PackageCheck className="h-5 w-5 text-purple-600" />
-              Products Need Reorder
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Product</TableHead>
-                    <TableHead>SKU</TableHead>
-                    <TableHead className="text-right">Current Stock</TableHead>
-                    <TableHead className="text-right">Reorder Rate</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {reorderProducts.slice(0, 10).map((product: any) => (
-                    <TableRow key={product.id}>
-                      <TableCell className="font-medium">{product.name}</TableCell>
-                      <TableCell>{product.sku}</TableCell>
-                      <TableCell className="text-right">{product.quantity}</TableCell>
-                      <TableCell className="text-right">{product.reorderRate}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="border-purple-500 text-purple-700 bg-purple-50 dark:bg-purple-950 dark:text-purple-300">
-                          Reorder Now
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Low Stock Alerts */}
       <Card data-testid="table-low-stock">

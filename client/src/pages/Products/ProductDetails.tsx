@@ -143,9 +143,6 @@ export default function ProductDetails() {
 
   // Stock status
   const stockStatus = product.quantity <= (product.lowStockAlert || 5) ? 'critical' : product.quantity <= (product.lowStockAlert || 5) * 2 ? 'low' : 'healthy';
-  
-  // Reorder status
-  const needsReorder = product.reorderRate !== null && product.reorderRate !== undefined && product.quantity <= product.reorderRate;
 
   // Parse packing instructions
   let packingInstructions: any[] = [];
@@ -248,12 +245,6 @@ export default function ProductDetails() {
                   In Stock
                 </Badge>
               )}
-              {needsReorder && (
-                <Badge variant="outline" className="mt-2 border-purple-500 text-purple-700 bg-purple-50">
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                  Reorder Needed
-                </Badge>
-              )}
             </CardContent>
           </Card>
 
@@ -344,19 +335,6 @@ export default function ProductDetails() {
                   <p className="text-muted-foreground">Low Stock Alert</p>
                   <p className="font-medium">{product.lowStockAlert || 5} units</p>
                 </div>
-                {product.reorderRate !== null && product.reorderRate !== undefined && (
-                  <div>
-                    <p className="text-muted-foreground">Reorder Rate</p>
-                    <p className="font-medium flex items-center gap-1">
-                      {product.reorderRate} units
-                      {needsReorder && (
-                        <Badge variant="outline" className="border-purple-500 text-purple-700 text-xs">
-                          Reorder Now
-                        </Badge>
-                      )}
-                    </p>
-                  </div>
-                )}
               </div>
               {product.description && (
                 <div className="pt-2 border-t">
