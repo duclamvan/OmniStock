@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { 
   ChartLine, 
@@ -23,8 +23,39 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useAuth } from "@/hooks/use-auth";
 
-const navigation = [
+interface NavItem {
+  name: string;
+  href?: string;
+  icon?: any;
+  adminOnly?: boolean;
+  children?: NavItem[];
+}
+
+// Recursive function to filter navigation items based on user role
+function filterNavItems(items: NavItem[], isAdmin: boolean): NavItem[] {
+  return items
+    .filter(item => {
+      // Filter out admin-only items for non-administrators
+      if (item.adminOnly && !isAdmin) {
+        return false;
+      }
+      return true;
+    })
+    .map(item => {
+      // Recursively filter children if they exist
+      if (item.children && item.children.length > 0) {
+        return {
+          ...item,
+          children: filterNavItems(item.children, isAdmin)
+        };
+      }
+      return item;
+    });
+}
+
+const navigation: NavItem[] = [
   {
     name: "Dashboard",
     href: "/",
@@ -113,6 +144,7 @@ const navigation = [
     name: "Employees",
     href: "/employees",
     icon: Users,
+    adminOnly: true,
   },
   {
     name: "Reports",
@@ -128,13 +160,19 @@ const navigation = [
 
 export function Sidebar() {
   const [location] = useLocation();
+  const { isAdministrator } = useAuth();
   const navRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<{ [key: string]: HTMLElement | null }>({});
+  
+  // Filter navigation items based on user role (memoized for performance)
+  const filteredNavigation = useMemo(() => {
+    return filterNavItems(navigation, isAdministrator);
+  }, [isAdministrator]);
   
   // Find parent menus that should be open based on current location
   const getInitialOpenItems = () => {
     const openMenus: string[] = [];
-    navigation.forEach(item => {
+    filteredNavigation.forEach(item => {
       if (item.children) {
         const hasActiveChild = item.children.some(child => child.href === location);
         if (hasActiveChild) {
@@ -163,7 +201,7 @@ export function Sidebar() {
       let activeKey = location;
       
       // Check if it's a child item
-      navigation.forEach(item => {
+      filteredNavigation.forEach(item => {
         if (item.children) {
           const activeChild = item.children.find(child => child.href === location);
           if (activeChild) {
@@ -204,7 +242,7 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 py-4 overflow-y-auto" ref={navRef}>
         <div className="px-4 space-y-1">
-          {navigation.map((item) => {
+          {filteredNavigation.map((item) => {
             if (item.children) {
               const isOpen = openItems.includes(item.name);
               const isActive = item.children.some(child => location === child.href);
