@@ -110,6 +110,11 @@ const navigation = [
     icon: PackageCheck,
   },
   {
+    name: "Employees",
+    href: "/employees",
+    icon: Users,
+  },
+  {
     name: "Reports",
     href: "/reports",
     icon: BarChart3,

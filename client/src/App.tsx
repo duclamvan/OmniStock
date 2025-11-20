@@ -90,6 +90,7 @@ import ReportsIndex from "@/pages/Reports";
 import CustomReport from "@/pages/Reports/CustomReport";
 import Settings from "@/pages/Settings";
 import UserManagement from "@/pages/UserManagement";
+import Employees from "@/pages/Employees";
 import Profile from "@/pages/Profile";
 import UserSettings from "@/pages/UserSettings";
 import StockLookup from "@/pages/Stock/StockLookup";
@@ -351,6 +352,10 @@ function Router() {
         <Route path="/receiving/receipt/:id" component={StartReceiving} />
         <Route path="/receiving/details/:id" component={ReceiptDetails} />
         <Route path="/receiving/approve/:id" component={ReviewApprove} />
+        {/* Employees Route */}
+        <Route path="/employees">
+          {() => <ProtectedRoute requireAdmin><Employees /></ProtectedRoute>}
+        </Route>
         {/* Reports Routes */}
         <Route path="/reports/custom">
           {() => <ProtectedRoute requireAdmin><CustomReport /></ProtectedRoute>}
