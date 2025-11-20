@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useReports } from "@/contexts/ReportsContext";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ReportHeader } from "@/components/reports/ReportHeader";
 import { MetricCard } from "@/components/reports/MetricCard";
 import { BarChartCard } from "@/components/reports/BarChartCard";
@@ -32,6 +33,11 @@ export default function InventoryReports() {
   
   const { data: deadStockProducts = [], isLoading: deadStockLoading } = useQuery({ 
     queryKey: ['/api/reports/dead-stock', deadStockDays],
+    queryFn: async () => {
+      const response = await fetch(`/api/reports/dead-stock?days=${deadStockDays}`);
+      if (!response.ok) throw new Error('Failed to fetch dead stock');
+      return response.json();
+    },
     enabled: deadStockDays > 0
   });
   
@@ -41,6 +47,16 @@ export default function InventoryReports() {
   
   const { data: colorTrends = [], isLoading: colorTrendsLoading } = useQuery({ 
     queryKey: ['/api/reports/color-trends', 'Gel Polish', colorTrendsStartDate, colorTrendsEndDate],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        categoryName: 'Gel Polish',
+        ...(colorTrendsStartDate && { startDate: colorTrendsStartDate }),
+        ...(colorTrendsEndDate && { endDate: colorTrendsEndDate })
+      });
+      const response = await fetch(`/api/reports/color-trends?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch color trends');
+      return response.json();
+    },
     enabled: true
   });
 
@@ -154,26 +170,27 @@ export default function InventoryReports() {
     }
   };
 
-  const handleSendReorderAlerts = async () => {
-    try {
-      const response = await fetch('/api/reports/reorder-alerts/notify', {
+  const sendReorderAlertsMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('/api/reports/reorder-alerts/notify', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
       });
-      const data = await response.json();
-      
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reports/reorder-alerts'] });
       toast({
         title: "Email Feature",
         description: data.message || "Email notifications feature coming soon",
       });
-    } catch (error) {
+    },
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to send email notifications",
+        description: error.message || "Failed to send email notifications",
         variant: "destructive",
       });
-    }
-  };
+    },
+  });
 
   if (productsLoading) {
     return (
@@ -415,14 +432,15 @@ export default function InventoryReports() {
               <CardDescription>Products below minimum stock level</CardDescription>
             </div>
             <Button
-              onClick={handleSendReorderAlerts}
+              onClick={() => sendReorderAlertsMutation.mutate()}
               variant="outline"
               size="sm"
               className="flex items-center gap-2"
+              disabled={sendReorderAlertsMutation.isPending}
               data-testid="button-send-email-alerts"
             >
               <Mail className="h-4 w-4" />
-              Send Email Alert
+              {sendReorderAlertsMutation.isPending ? 'Sending...' : 'Send Email Alert'}
             </Button>
           </div>
         </CardHeader>
