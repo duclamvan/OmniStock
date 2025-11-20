@@ -759,7 +759,7 @@ export const stockAdjustmentRequests = pgTable('stock_adjustment_requests', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
   productId: varchar('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
   locationId: varchar('location_id').notNull().references(() => productLocations.id, { onDelete: 'cascade' }),
-  requestedBy: varchar('requested_by').notNull().references(() => users.id),
+  requestedBy: varchar('requested_by').references(() => users.id), // Allow NULL to preserve audit trail when user is deleted
   adjustmentType: text('adjustment_type').notNull(), // 'add', 'remove', 'set'
   currentQuantity: integer('current_quantity').notNull(), // snapshot at time of request
   requestedQuantity: integer('requested_quantity').notNull(), // the new quantity value

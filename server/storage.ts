@@ -722,8 +722,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertUser(userData: { id: string; email?: string | null; firstName?: string | null; lastName?: string | null; profileImageUrl?: string | null; replitSub?: string | null }): Promise<User> {
-    // Check if user exists
-    const existingUser = await this.getUser(userData.id);
+    // Check if user exists by ID or email
+    let existingUser = await this.getUser(userData.id);
+    
+    if (!existingUser && userData.email) {
+      // Also check by email to handle duplicate email scenarios
+      const [userByEmail] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, userData.email));
+      existingUser = userByEmail || null;
+    }
     
     if (existingUser) {
       // Update existing user
@@ -738,7 +747,7 @@ export class DatabaseStorage implements IStorage {
           authProvider: 'replit',
           updatedAt: new Date(),
         })
-        .where(eq(users.id, userData.id))
+        .where(eq(users.id, existingUser.id))
         .returning();
       return updatedUser;
     } else {
@@ -753,7 +762,7 @@ export class DatabaseStorage implements IStorage {
           profileImageUrl: userData.profileImageUrl,
           replitSub: userData.replitSub || userData.id,
           authProvider: 'replit',
-          role: 'warehouse_operator',
+          role: null,
         })
         .returning();
       return newUser;
