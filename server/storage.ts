@@ -1784,7 +1784,7 @@ export class DatabaseStorage implements IStorage {
           FROM orders o
           INNER JOIN order_items oi ON o.id = oi.order_id
           WHERE oi.product_id = ${productId}
-            AND o.status IN ('completed', 'shipped', 'delivered')
+            AND o.order_status IN ('completed', 'shipped', 'delivered')
             AND o.customer_id IS NOT NULL
           GROUP BY o.customer_id
         ),
@@ -1798,7 +1798,7 @@ export class DatabaseStorage implements IStorage {
                 INNER JOIN order_items oi2 ON o2.id = oi2.order_id
                 WHERE o2.customer_id = cfo.customer_id
                   AND oi2.product_id = ${productId}
-                  AND o2.status IN ('completed', 'shipped', 'delivered')
+                  AND o2.order_status IN ('completed', 'shipped', 'delivered')
                   AND o2.created_at > cfo.first_order_date
                   AND o2.created_at <= cfo.first_order_date + INTERVAL '365 days'
               ) THEN 1
