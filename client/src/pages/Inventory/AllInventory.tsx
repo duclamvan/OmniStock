@@ -90,6 +90,7 @@ export default function AllInventory() {
       actions: true,
       // Default hidden columns
       lowStockAlert: false,
+      reorderRate: false,
       priceCzk: false,
       importCostUsd: false,
       importCostCzk: false,
@@ -389,6 +390,7 @@ export default function AllInventory() {
             barcode: row.Barcode || row.barcode || null,
             quantity: Number(row.Quantity || row.quantity || 0),
             lowStockAlert: Number(row['Low Stock Alert'] || row.lowStockAlert || 0),
+            reorderRate: row['Reorder Rate'] || row.reorderRate ? Number(row['Reorder Rate'] || row.reorderRate) : null,
             priceEur: row['Price EUR'] || row.priceEur || '0',
             priceCzk: row['Price CZK'] || row.priceCzk || '0',
             importCostUsd: row['Import Cost USD'] || row.importCostUsd || null,
@@ -511,13 +513,42 @@ export default function AllInventory() {
     return results.length > 0;
   });
 
-  const getStockStatus = (quantity: number, lowStockAlert: number) => {
+  const getStockStatus = (quantity: number, lowStockAlert: number, reorderRate?: number) => {
+    const needsReorder = reorderRate && quantity <= reorderRate;
+    
     if (quantity <= lowStockAlert) {
-      return <Badge variant="destructive">Low Stock</Badge>;
+      return (
+        <div className="flex flex-col gap-1">
+          <Badge variant="destructive">Low Stock</Badge>
+          {needsReorder && (
+            <Badge variant="outline" className="border-purple-500 text-purple-700 bg-purple-50 dark:bg-purple-950 dark:text-purple-300">
+              Reorder Now
+            </Badge>
+          )}
+        </div>
+      );
     } else if (quantity <= lowStockAlert * 2) {
-      return <Badge variant="outline" className="text-orange-600 dark:text-orange-400 border-orange-600 dark:border-orange-500">Warning</Badge>;
+      return (
+        <div className="flex flex-col gap-1">
+          <Badge variant="outline" className="text-orange-600 dark:text-orange-400 border-orange-600 dark:border-orange-500">Warning</Badge>
+          {needsReorder && (
+            <Badge variant="outline" className="border-purple-500 text-purple-700 bg-purple-50 dark:bg-purple-950 dark:text-purple-300">
+              Reorder Now
+            </Badge>
+          )}
+        </div>
+      );
     } else {
-      return <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">In Stock</Badge>;
+      return (
+        <div className="flex flex-col gap-1">
+          <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">In Stock</Badge>
+          {needsReorder && (
+            <Badge variant="outline" className="border-purple-500 text-purple-700 bg-purple-50 dark:bg-purple-950 dark:text-purple-300">
+              Reorder Now
+            </Badge>
+          )}
+        </div>
+      );
     }
   };
 
@@ -635,6 +666,13 @@ export default function AllInventory() {
       className: "text-right",
     },
     {
+      key: "reorderRate",
+      header: "Reorder Rate",
+      sortable: true,
+      className: "text-right",
+      cell: (product) => product.reorderRate || '-',
+    },
+    {
       key: "priceEur",
       header: "Price EUR",
       sortable: true,
@@ -699,7 +737,7 @@ export default function AllInventory() {
     {
       key: "status",
       header: "Status",
-      cell: (product) => getStockStatus(product.quantity, product.lowStockAlert),
+      cell: (product) => getStockStatus(product.quantity, product.lowStockAlert, product.reorderRate),
     },
     {
       key: "actions",
@@ -1203,6 +1241,34 @@ export default function AllInventory() {
             </CardContent>
           </Card>
 
+          {/* Needs Reorder */}
+          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
+            <CardContent className="p-3 sm:p-4 md:p-6">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                    Needs Reorder
+                  </p>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <p className="text-xl sm:text-2xl md:text-3xl font-bold text-purple-600 dark:text-purple-400 truncate cursor-help">
+                          {formatCompactNumber(filteredProducts?.filter((p: any) => p.reorderRate && p.quantity <= p.reorderRate).length || 0)}
+                        </p>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="font-mono">{(filteredProducts?.filter((p: any) => p.reorderRate && p.quantity <= p.reorderRate).length || 0).toLocaleString()} items</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950">
+                  <Package className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-purple-600 dark:text-purple-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Total Value */}
           <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
             <CardContent className="p-3 sm:p-4 md:p-6">
@@ -1343,6 +1409,7 @@ export default function AllInventory() {
                     { key: 'quantity', label: 'Qty' },
                     { key: 'unitsSold', label: 'Units Sold' },
                     { key: 'lowStockAlert', label: 'Low Stock Alert' },
+                    { key: 'reorderRate', label: 'Reorder Rate' },
                     { key: 'status', label: 'Status' },
                     { key: 'warehouseId', label: 'Warehouse' },
                   ].map(col => (

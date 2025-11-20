@@ -458,6 +458,7 @@ export const products = pgTable('products', {
   description: text('description'),
   quantity: integer('quantity').default(0),
   lowStockAlert: integer('low_stock_alert').default(5),
+  reorderRate: integer('reorder_rate'),
   priceCzk: decimal('price_czk'),
   priceEur: decimal('price_eur'),
   priceUsd: decimal('price_usd'),

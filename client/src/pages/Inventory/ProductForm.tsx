@@ -122,6 +122,7 @@ const productSchema = z.object({
   description: z.string().optional(),
   quantity: z.coerce.number().min(0).default(0),
   lowStockAlert: z.coerce.number().min(0).default(5),
+  reorderRate: z.coerce.number().min(0).optional(),
   priceCzk: z.coerce.number().min(0).optional(),
   priceEur: z.coerce.number().min(0).optional(),
   importCostUsd: z.coerce.number().min(0).optional(),
@@ -717,6 +718,7 @@ export default function ProductForm() {
         description: product.description || '',
         quantity: product.quantity || 0,
         lowStockAlert: product.lowStockAlert || 5,
+        reorderRate: product.reorderRate ? parseInt(product.reorderRate) : undefined,
         priceCzk: product.priceCzk ? parseFloat(product.priceCzk) : undefined,
         priceEur: product.priceEur ? parseFloat(product.priceEur) : undefined,
         importCostUsd: product.importCostUsd ? parseFloat(product.importCostUsd) : undefined,
@@ -2050,6 +2052,21 @@ export default function ProductForm() {
                         className="mt-1"
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="reorderRate" className="text-sm font-medium">Reorder Rate</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      {...form.register('reorderRate')}
+                      placeholder="Minimum stock level to trigger reorder"
+                      data-testid="input-reorder-rate"
+                      className="mt-1"
+                    />
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Alert when stock reaches this level or below
+                    </p>
                   </div>
 
                   <div>
