@@ -555,6 +555,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // DELETE /api/users/:userId - Delete user (admin-only)
+  app.delete('/api/users/:userId', requireRole(['administrator']), async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const currentUser = (req as any).user;
+
+      // Prevent self-deletion
+      if (currentUser && currentUser.id === userId) {
+        return res.status(403).json({ message: 'You cannot delete your own account' });
+      }
+
+      await storage.deleteUser(userId);
+      res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      res.status(500).json({ message: 'Failed to delete user' });
+    }
+  });
+
   // GET /api/users/me - Get current user info (authenticated users)
   app.get('/api/users/me', async (req: any, res) => {
     try {

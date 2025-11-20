@@ -176,6 +176,7 @@ export interface IStorage {
   createSmsUser(phoneNumber: string): Promise<User>;
   getAllUsers(): Promise<User[]>;
   updateUserRole(userId: string, role: string): Promise<void>;
+  deleteUser(userId: string): Promise<void>;
   updateUserProfile(userId: string, updates: Partial<Pick<User, 'firstName' | 'lastName' | 'email'>>): Promise<User | undefined>;
   updateUser2FA(userId: string, phoneNumber: string | null, enabled: boolean): Promise<User | undefined>;
   setUser2FAVerified(userId: string, verified: boolean): Promise<void>;
@@ -636,6 +637,10 @@ export class DatabaseStorage implements IStorage {
       .update(users)
       .set({ role, updatedAt: new Date() })
       .where(eq(users.id, userId));
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    await db.delete(users).where(eq(users.id, userId));
   }
 
   async updateUserProfile(userId: string, updates: Partial<Pick<User, 'firstName' | 'lastName' | 'email'>>): Promise<User | undefined> {
