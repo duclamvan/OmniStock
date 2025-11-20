@@ -48,6 +48,8 @@ import {
   ticketComments,
   orderFulfillmentLogs,
   appSettings,
+  receipts,
+  notifications,
   type User,
   type InsertUser,
   type Employee,
@@ -650,7 +652,35 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteUser(userId: string): Promise<void> {
-    await db.delete(users).where(eq(users.id, userId));
+    // Delete user and all related records in a transaction
+    await db.transaction(async (tx) => {
+      // Delete notifications (not historically critical)
+      await tx.delete(notifications).where(eq(notifications.userId, userId));
+      
+      // Set user references to null in various tables to preserve historical data
+      // Orders - preserve billing history
+      await tx.update(orders).set({ billerId: null }).where(eq(orders.billerId, userId));
+      
+      // Stock adjustment requests - preserve audit trail
+      await tx.update(stockAdjustmentRequests).set({ requestedBy: null }).where(eq(stockAdjustmentRequests.requestedBy, userId));
+      await tx.update(stockAdjustmentRequests).set({ approvedBy: null }).where(eq(stockAdjustmentRequests.approvedBy, userId));
+      
+      // Tickets - preserve ticket history
+      await tx.update(tickets).set({ assignedTo: null }).where(eq(tickets.assignedTo, userId));
+      await tx.update(tickets).set({ createdBy: null }).where(eq(tickets.createdBy, userId));
+      
+      // Ticket comments - preserve comment history
+      await tx.update(ticketComments).set({ createdBy: null }).where(eq(ticketComments.createdBy, userId));
+      
+      // Order fulfillment logs - preserve performance metrics
+      await tx.update(orderFulfillmentLogs).set({ userId: null as any }).where(eq(orderFulfillmentLogs.userId, userId));
+      
+      // App settings - preserve settings history
+      await tx.update(appSettings).set({ updatedBy: null }).where(eq(appSettings.updatedBy, userId));
+      
+      // Finally, delete the user
+      await tx.delete(users).where(eq(users.id, userId));
+    });
   }
 
   async updateUserProfile(userId: string, updates: Partial<Pick<User, 'firstName' | 'lastName' | 'email'>>): Promise<User | undefined> {
