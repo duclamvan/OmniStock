@@ -1,6 +1,28 @@
 # Overview
 Davie Supply is a full-stack web application designed for comprehensive warehouse and order management, aiming to optimize supply chain operations. It covers the entire order lifecycle, inventory tracking, customer relationship management (CRM), and multi-currency financial reporting. Key capabilities include real-time Vietnamese diacritics search, customer-specific pricing, external shipping API integrations, extensive settings management, and professional PDF packing list generation. The project's vision includes advanced warehouse mapping, a comprehensive Pick & Pack workflow, and AI-powered optimization to enhance efficiency and accuracy in supply chain logistics.
 
+# Recent Changes (November 20, 2025)
+
+## Critical Bug Fixes
+1. **User Deletion System** - Fixed foreign key constraint violation when deleting users:
+   - Changed `stock_adjustment_requests.requested_by` schema to allow NULL (preserves audit trail)
+   - Applied SQL migration: `ALTER TABLE stock_adjustment_requests ALTER COLUMN requested_by DROP NOT NULL`
+   - Updated `deleteUser` method to properly handle all foreign key relationships
+   - Strategy: Sets user references to NULL (preserves history) instead of cascading deletes
+   - Only notifications are deleted (not historically important)
+
+2. **Authentication Duplicate Key Error** - Fixed server crash on login with existing email:
+   - Updated `upsertUser` to check for existing users by both ID and email
+   - Previously only checked by ID, causing duplicate key violations on email unique constraint
+   - Now properly handles cases where user exists with same email but different ID
+   - Maintains correct default role: `null` for new users (security requirement)
+
+3. **Employee Management System** - Completed implementation with:
+   - Admin-only access control via `requireRole(['administrator'])`
+   - Recursive navigation filtering in sidebar to hide admin-only links from non-admins
+   - Memoized filtering for performance optimization
+   - Created 6 sample employees for testing with complete payroll data
+
 # User Preferences
 Preferred communication style: Simple, everyday language.
 
