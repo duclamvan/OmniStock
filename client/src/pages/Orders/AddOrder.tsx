@@ -1583,12 +1583,19 @@ export default function AddOrder() {
       }
     );
 
+    const totalBeforeStoreCredit = calculated.grandTotal + shipping + adjustment;
+    
+    // Calculate store credit to apply (up to available credit or order total, whichever is less)
+    const availableStoreCredit = selectedCustomer?.storeCredit ? parseFloat(selectedCustomer.storeCredit) : 0;
+    const storeCreditApplied = Math.min(availableStoreCredit, Math.max(0, totalBeforeStoreCredit));
+
     return {
       subtotal: rawSubtotal,
       taxAmount: calculated.taxAmount,
-      grandTotal: calculated.grandTotal + shipping + adjustment,
+      storeCreditApplied: storeCreditApplied,
+      grandTotal: totalBeforeStoreCredit - storeCreditApplied,
     };
-  }, [orderItems, form.watch('currency'), form.watch('shippingCost'), form.watch('discountValue'), form.watch('discountType'), form.watch('adjustment'), form.watch('taxRate'), showTaxInvoice, financialHelpers]);
+  }, [orderItems, form.watch('currency'), form.watch('shippingCost'), form.watch('discountValue'), form.watch('discountType'), form.watch('adjustment'), form.watch('taxRate'), showTaxInvoice, financialHelpers, selectedCustomer]);
 
   // Legacy helper functions for backward compatibility
   const calculateSubtotal = () => totals.subtotal;
@@ -4535,6 +4542,17 @@ export default function AddOrder() {
                           )}
                         </span>
                       </div>
+                      {totals.storeCreditApplied > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600 flex items-center gap-1">
+                            <CreditCard className="h-3 w-3" />
+                            Store Credit:
+                          </span>
+                          <span className="font-medium text-blue-600">
+                            -{formatCurrency(totals.storeCreditApplied, form.watch('currency'))}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div className="border-t pt-3 space-y-2">
                       <div className="flex items-center justify-between gap-2">
@@ -4714,6 +4732,17 @@ export default function AddOrder() {
                     )}
                   </span>
                 </div>
+                {totals.storeCreditApplied > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 flex items-center gap-1">
+                      <CreditCard className="h-3 w-3" />
+                      Store Credit:
+                    </span>
+                    <span className="font-medium text-blue-600">
+                      -{formatCurrency(totals.storeCreditApplied, form.watch('currency'))}
+                    </span>
+                  </div>
+                )}
               </div>
               <Separator />
               <div className="space-y-2">
