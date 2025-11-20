@@ -71,7 +71,7 @@ export default function InventoryReports() {
 
   const reorderProducts = useMemo(() => {
     return (products as any[])
-      .filter((p: any) => p.reorderRate && p.quantity <= p.reorderRate)
+      .filter((p: any) => p.reorderRate !== null && p.reorderRate !== undefined && p.quantity <= p.reorderRate)
       .map((p: any) => ({
         id: p.id,
         name: p.name,
@@ -92,7 +92,7 @@ export default function InventoryReports() {
         'SKU': p.sku || '',
         'Stock': p.quantity || 0,
         'Low Stock Alert': p.lowStockAlert || 0,
-        'Reorder Rate': p.reorderRate || '',
+        'Reorder Rate': p.reorderRate !== null && p.reorderRate !== undefined ? p.reorderRate : '',
         'Price': parseFloat(p.priceCzk || '0'),
         'Total Value': (p.quantity || 0) * parseFloat(p.priceCzk || '0'),
         'Status': (p.quantity || 0) === 0 ? 'Out of Stock' : (p.quantity || 0) <= (p.lowStockAlert || 5) ? 'Low Stock' : 'In Stock',

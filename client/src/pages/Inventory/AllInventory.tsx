@@ -390,7 +390,7 @@ export default function AllInventory() {
             barcode: row.Barcode || row.barcode || null,
             quantity: Number(row.Quantity || row.quantity || 0),
             lowStockAlert: Number(row['Low Stock Alert'] || row.lowStockAlert || 0),
-            reorderRate: row['Reorder Rate'] || row.reorderRate ? Number(row['Reorder Rate'] || row.reorderRate) : null,
+            reorderRate: (row['Reorder Rate'] !== null && row['Reorder Rate'] !== undefined) || (row.reorderRate !== null && row.reorderRate !== undefined) ? Number(row['Reorder Rate'] ?? row.reorderRate) : null,
             priceEur: row['Price EUR'] || row.priceEur || '0',
             priceCzk: row['Price CZK'] || row.priceCzk || '0',
             importCostUsd: row['Import Cost USD'] || row.importCostUsd || null,
@@ -514,7 +514,7 @@ export default function AllInventory() {
   });
 
   const getStockStatus = (quantity: number, lowStockAlert: number, reorderRate?: number) => {
-    const needsReorder = reorderRate && quantity <= reorderRate;
+    const needsReorder = reorderRate !== null && reorderRate !== undefined && quantity <= reorderRate;
     
     if (quantity <= lowStockAlert) {
       return (
@@ -670,7 +670,7 @@ export default function AllInventory() {
       header: "Reorder Rate",
       sortable: true,
       className: "text-right",
-      cell: (product) => product.reorderRate || '-',
+      cell: (product) => product.reorderRate !== null && product.reorderRate !== undefined ? product.reorderRate : '-',
     },
     {
       key: "priceEur",
@@ -1253,11 +1253,11 @@ export default function AllInventory() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <p className="text-xl sm:text-2xl md:text-3xl font-bold text-purple-600 dark:text-purple-400 truncate cursor-help">
-                          {formatCompactNumber(filteredProducts?.filter((p: any) => p.reorderRate && p.quantity <= p.reorderRate).length || 0)}
+                          {formatCompactNumber(filteredProducts?.filter((p: any) => p.reorderRate !== null && p.reorderRate !== undefined && p.quantity <= p.reorderRate).length || 0)}
                         </p>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="font-mono">{(filteredProducts?.filter((p: any) => p.reorderRate && p.quantity <= p.reorderRate).length || 0).toLocaleString()} items</p>
+                        <p className="font-mono">{(filteredProducts?.filter((p: any) => p.reorderRate !== null && p.reorderRate !== undefined && p.quantity <= p.reorderRate).length || 0).toLocaleString()} items</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>

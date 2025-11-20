@@ -718,7 +718,7 @@ export default function ProductForm() {
         description: product.description || '',
         quantity: product.quantity || 0,
         lowStockAlert: product.lowStockAlert || 5,
-        reorderRate: product.reorderRate ? parseInt(product.reorderRate) : undefined,
+        reorderRate: product.reorderRate !== null && product.reorderRate !== undefined ? parseInt(product.reorderRate) : undefined,
         priceCzk: product.priceCzk ? parseFloat(product.priceCzk) : undefined,
         priceEur: product.priceEur ? parseFloat(product.priceEur) : undefined,
         importCostUsd: product.importCostUsd ? parseFloat(product.importCostUsd) : undefined,

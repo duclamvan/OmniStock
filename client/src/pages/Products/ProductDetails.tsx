@@ -145,7 +145,7 @@ export default function ProductDetails() {
   const stockStatus = product.quantity <= (product.lowStockAlert || 5) ? 'critical' : product.quantity <= (product.lowStockAlert || 5) * 2 ? 'low' : 'healthy';
   
   // Reorder status
-  const needsReorder = product.reorderRate && product.quantity <= product.reorderRate;
+  const needsReorder = product.reorderRate !== null && product.reorderRate !== undefined && product.quantity <= product.reorderRate;
 
   // Parse packing instructions
   let packingInstructions: any[] = [];
@@ -344,7 +344,7 @@ export default function ProductDetails() {
                   <p className="text-muted-foreground">Low Stock Alert</p>
                   <p className="font-medium">{product.lowStockAlert || 5} units</p>
                 </div>
-                {product.reorderRate && (
+                {product.reorderRate !== null && product.reorderRate !== undefined && (
                   <div>
                     <p className="text-muted-foreground">Reorder Rate</p>
                     <p className="font-medium flex items-center gap-1">
