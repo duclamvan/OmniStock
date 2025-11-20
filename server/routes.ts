@@ -684,6 +684,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Employee Management API Endpoints
+
+  // GET /api/employees - List all employees (admin-only)
+  app.get('/api/employees', requireRole(['administrator']), async (req, res) => {
+    try {
+      const employees = await storage.getEmployees();
+      res.json(employees);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      res.status(500).json({ message: 'Failed to fetch employees' });
+    }
+  });
+
+  // GET /api/employees/:id - Get single employee (admin-only)
+  app.get('/api/employees/:id', requireRole(['administrator']), async (req, res) => {
+    try {
+      const employeeId = parseInt(req.params.id);
+      const employee = await storage.getEmployee(employeeId);
+      
+      if (!employee) {
+        return res.status(404).json({ message: 'Employee not found' });
+      }
+      
+      res.json(employee);
+    } catch (error) {
+      console.error('Error fetching employee:', error);
+      res.status(500).json({ message: 'Failed to fetch employee' });
+    }
+  });
+
+  // POST /api/employees - Create new employee (admin-only)
+  app.post('/api/employees', requireRole(['administrator']), async (req, res) => {
+    try {
+      const employee = await storage.createEmployee(req.body);
+      res.json(employee);
+    } catch (error) {
+      console.error('Error creating employee:', error);
+      res.status(500).json({ message: 'Failed to create employee' });
+    }
+  });
+
+  // PATCH /api/employees/:id - Update employee (admin-only)
+  app.patch('/api/employees/:id', requireRole(['administrator']), async (req, res) => {
+    try {
+      const employeeId = parseInt(req.params.id);
+      const employee = await storage.updateEmployee(employeeId, req.body);
+      
+      if (!employee) {
+        return res.status(404).json({ message: 'Employee not found' });
+      }
+      
+      res.json(employee);
+    } catch (error) {
+      console.error('Error updating employee:', error);
+      res.status(500).json({ message: 'Failed to update employee' });
+    }
+  });
+
+  // DELETE /api/employees/:id - Delete employee (admin-only)
+  app.delete('/api/employees/:id', requireRole(['administrator']), async (req, res) => {
+    try {
+      const employeeId = parseInt(req.params.id);
+      await storage.deleteEmployee(employeeId);
+      res.json({ message: 'Employee deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting employee:', error);
+      res.status(500).json({ message: 'Failed to delete employee' });
+    }
+  });
+
   // POST /api/2fa/setup - Enable/disable 2FA
   app.post('/api/2fa/setup', async (req: any, res) => {
     try {
