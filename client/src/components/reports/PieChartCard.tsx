@@ -33,8 +33,36 @@ export function PieChartCard({
   formatValue = (value) => value.toLocaleString(),
   testId,
 }: PieChartCardProps) {
-  const renderLabel = (entry: PieDataItem) => {
-    return `${entry.name}: ${entry.percentage || '0'}%`;
+  const RADIAN = Math.PI / 180;
+  
+  const renderCustomLabel = ({
+    cx,
+    cy,
+    midAngle,
+    innerRadius,
+    outerRadius,
+    percent,
+    name,
+  }: any) => {
+    // Only show label if percentage is above 5% to avoid clutter
+    if (percent < 0.05) return null;
+    
+    const radius = outerRadius + 25;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+    return (
+      <text
+        x={x}
+        y={y}
+        fill="hsl(var(--foreground))"
+        textAnchor={x > cx ? 'start' : 'end'}
+        dominantBaseline="central"
+        className="text-xs font-medium"
+      >
+        {`${name}: ${(percent * 100).toFixed(1)}%`}
+      </text>
+    );
   };
 
   return (
@@ -49,8 +77,8 @@ export function PieChartCard({
               data={data}
               cx="50%"
               cy="50%"
-              labelLine={false}
-              label={renderLabel}
+              labelLine={true}
+              label={renderCustomLabel}
               outerRadius={80}
               fill="#8884d8"
               dataKey="value"
