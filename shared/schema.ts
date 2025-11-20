@@ -23,6 +23,37 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at').defaultNow()
 });
 
+// Employees table
+export const employees = pgTable('employees', {
+  id: serial('id').primaryKey(),
+  employeeId: varchar('employee_id').notNull().unique(), // Custom employee ID (e.g., EMP001)
+  firstName: varchar('first_name').notNull(),
+  lastName: varchar('last_name').notNull(),
+  email: varchar('email'),
+  phone: varchar('phone'),
+  address: text('address'),
+  // Employment details
+  position: varchar('position').notNull(), // Job title
+  department: varchar('department').notNull(), // e.g., Warehouse, Administration, Sales
+  hireDate: date('hire_date').notNull(),
+  terminationDate: date('termination_date'), // null if currently employed
+  status: varchar('status').notNull().default('active'), // active, on_leave, terminated
+  // Payroll details
+  salary: decimal('salary', { precision: 10, scale: 2 }).notNull(), // Base salary amount
+  paymentFrequency: varchar('payment_frequency').notNull().default('monthly'), // monthly, biweekly, weekly
+  currency: varchar('currency').notNull().default('CZK'), // CZK, EUR, USD
+  bankAccount: varchar('bank_account'), // Bank account number for salary payments
+  bankName: varchar('bank_name'),
+  taxId: varchar('tax_id'), // Tax identification number
+  insuranceId: varchar('insurance_id'), // Health insurance ID
+  // Additional info
+  emergencyContact: varchar('emergency_contact'),
+  emergencyPhone: varchar('emergency_phone'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
 // Categories table
 export const categories = pgTable('categories', {
   id: serial('id').primaryKey(),
@@ -1266,6 +1297,7 @@ export const serviceItemsRelations = relations(serviceItems, ({ one }) => ({
 
 // Export schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertImportPurchaseSchema = createInsertSchema(importPurchases).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPurchaseItemSchema = createInsertSchema(purchaseItems).omit({ id: true, createdAt: true, updatedAt: true });
@@ -1347,6 +1379,8 @@ export const insertProductCostHistorySchema = createInsertSchema(productCostHist
 // Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type Employee = typeof employees.$inferSelect;
+export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
 export type Category = typeof categories.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type ImportPurchase = typeof importPurchases.$inferSelect;
