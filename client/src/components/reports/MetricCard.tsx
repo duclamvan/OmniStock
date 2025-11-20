@@ -26,17 +26,23 @@ export function MetricCard({
   trend,
   testId,
 }: MetricCardProps) {
+  const valueString = typeof value === 'string' ? value : value.toString();
+  
   return (
     <Card data-testid={testId}>
       <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-slate-600">{title}</p>
-            <p className="text-2xl font-bold text-slate-900 mt-1" data-testid={`${testId}-value`}>
+            <p 
+              className="text-xl md:text-2xl font-bold text-slate-900 mt-1 break-words leading-tight" 
+              data-testid={`${testId}-value`}
+              title={valueString}
+            >
               {value}
             </p>
             {subtitle && (
-              <p className="text-xs text-slate-500 mt-1">{subtitle}</p>
+              <p className="text-xs text-slate-500 mt-1 truncate" title={subtitle}>{subtitle}</p>
             )}
             {trend && (
               <p className={cn(
@@ -47,7 +53,7 @@ export function MetricCard({
               </p>
             )}
           </div>
-          <div className={cn("p-3 rounded-lg ml-4", iconBgColor)}>
+          <div className={cn("p-3 rounded-lg flex-shrink-0", iconBgColor)}>
             <Icon className={cn("h-6 w-6", iconColor)} />
           </div>
         </div>
