@@ -549,6 +549,11 @@ export interface IStorage {
   createAppSetting(data: InsertAppSetting): Promise<AppSetting>;
   updateAppSetting(key: string, data: Partial<InsertAppSetting>): Promise<AppSetting>;
   deleteAppSetting(key: string): Promise<void>;
+
+  // Analytics & Reports
+  getDeadStockProducts(daysSinceLastSale: number): Promise<Product[]>;
+  getReorderAlerts(): Promise<Product[]>;
+  getColorTrendReport(categoryName: string, startDate?: Date, endDate?: Date): Promise<any[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -5358,6 +5363,127 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error(`Error deleting app setting with key ${key}:`, error);
       throw new Error(`Failed to delete app setting with key: ${key}`);
+    }
+  }
+
+  // Analytics & Reports
+  async getDeadStockProducts(daysSinceLastSale: number): Promise<Product[]> {
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - daysSinceLastSale);
+
+      const deadStockProducts = await db
+        .select()
+        .from(products)
+        .where(
+          or(
+            lt(products.lastSoldAt, cutoffDate),
+            and(
+              isNull(products.lastSoldAt),
+              sql`NOT EXISTS (SELECT 1 FROM ${orderItems} WHERE ${orderItems.productId} = ${products.id})`
+            )
+          )
+        )
+        .orderBy(asc(products.lastSoldAt));
+
+      return deadStockProducts;
+    } catch (error) {
+      console.error('Error getting dead stock products:', error);
+      throw new Error('Failed to retrieve dead stock products');
+    }
+  }
+
+  async getReorderAlerts(): Promise<Product[]> {
+    try {
+      const reorderAlerts = await db
+        .select()
+        .from(products)
+        .where(
+          and(
+            not(isNull(products.minStockLevel)),
+            sql`${products.quantity} < ${products.minStockLevel}`
+          )
+        )
+        .orderBy(sql`(${products.quantity}::float / ${products.minStockLevel}) ASC`);
+
+      return reorderAlerts;
+    } catch (error) {
+      console.error('Error getting reorder alerts:', error);
+      throw new Error('Failed to retrieve reorder alerts');
+    }
+  }
+
+  async getColorTrendReport(categoryName: string, startDate?: Date, endDate?: Date): Promise<any[]> {
+    try {
+      let query = db
+        .select({
+          variantName: productVariants.name,
+          productId: products.id,
+          productName: products.name,
+          imageUrl: productVariants.imageUrl,
+          totalQuantitySold: sql<number>`SUM(${orderItems.quantity})`,
+          saleMonth: sql<string>`DATE_TRUNC('month', ${orders.createdAt})`,
+        })
+        .from(productVariants)
+        .innerJoin(products, eq(productVariants.productId, products.id))
+        .innerJoin(categories, eq(products.categoryId, categories.id))
+        .innerJoin(orderItems, eq(productVariants.id, orderItems.variantId))
+        .innerJoin(orders, eq(orderItems.orderId, orders.id))
+        .where(
+          and(
+            eq(categories.name, categoryName),
+            inArray(orders.orderStatus, ['completed', 'shipped', 'delivered'])
+          )
+        );
+
+      if (startDate) {
+        query = query.where(gte(orders.createdAt, startDate));
+      }
+
+      if (endDate) {
+        query = query.where(lte(orders.createdAt, endDate));
+      }
+
+      const results: any = await query
+        .groupBy(
+          productVariants.name,
+          products.id,
+          products.name,
+          productVariants.imageUrl,
+          sql`DATE_TRUNC('month', ${orders.createdAt})`
+        )
+        .orderBy(sql`SUM(${orderItems.quantity}) DESC`);
+
+      // Group by variant name and aggregate sales by month
+      const trendMap = new Map<string, any>();
+
+      results.forEach((row: any) => {
+        const key = row.variantName;
+        if (!trendMap.has(key)) {
+          trendMap.set(key, {
+            variantName: row.variantName,
+            productId: row.productId,
+            productName: row.productName,
+            imageUrl: row.imageUrl,
+            totalQuantitySold: 0,
+            salesByMonth: [],
+          });
+        }
+
+        const trend = trendMap.get(key);
+        trend.totalQuantitySold += Number(row.totalQuantitySold);
+        trend.salesByMonth.push({
+          month: row.saleMonth,
+          quantity: Number(row.totalQuantitySold),
+        });
+      });
+
+      return Array.from(trendMap.values()).sort(
+        (a, b) => b.totalQuantitySold - a.totalQuantitySold
+      );
+    } catch (error) {
+      console.error('Error getting color trend report:', error);
+      throw new Error('Failed to retrieve color trend report');
     }
   }
 }

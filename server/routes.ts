@@ -8868,6 +8868,56 @@ Important:
     });
   }
 
+  // Dead Stock Report
+  app.get('/api/reports/dead-stock', requireRole(['administrator']), async (req, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 200;
+      const deadStock = await storage.getDeadStockProducts(days);
+      res.json(deadStock);
+    } catch (error) {
+      console.error("Error generating dead stock report:", error);
+      res.status(500).json({ message: "Failed to generate dead stock report" });
+    }
+  });
+
+  // Reorder Alerts
+  app.get('/api/reports/reorder-alerts', requireRole(['administrator', 'warehouse_operator']), async (req, res) => {
+    try {
+      const alerts = await storage.getReorderAlerts();
+      res.json(alerts);
+    } catch (error) {
+      console.error("Error generating reorder alerts:", error);
+      res.status(500).json({ message: "Failed to generate reorder alerts" });
+    }
+  });
+
+  // Color Trend Tracking
+  app.get('/api/reports/color-trends', requireRole(['administrator']), async (req, res) => {
+    try {
+      const { categoryName, startDate, endDate } = req.query;
+      const trends = await storage.getColorTrendReport(
+        categoryName as string || 'Gel Polish',
+        startDate ? new Date(startDate as string) : undefined,
+        endDate ? new Date(endDate as string) : undefined
+      );
+      res.json(trends);
+    } catch (error) {
+      console.error("Error generating color trends report:", error);
+      res.status(500).json({ message: "Failed to generate color trends report" });
+    }
+  });
+
+  // Reorder Alert Email Notifications (placeholder for SendGrid)
+  app.post('/api/reports/reorder-alerts/notify', requireRole(['administrator']), async (req, res) => {
+    try {
+      // TODO: Implement SendGrid email notifications
+      res.json({ message: 'Email notifications feature pending SendGrid setup' });
+    } catch (error) {
+      console.error("Error sending reorder alert notifications:", error);
+      res.status(500).json({ message: "Failed to send reorder alert notifications" });
+    }
+  });
+
   // Geocoding endpoint for address search
   app.get('/api/geocode', async (req, res) => {
     try {

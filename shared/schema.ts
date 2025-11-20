@@ -495,7 +495,11 @@ export const products = pgTable('products', {
   // Packaging requirement for intelligent carton packing
   packagingRequirement: text('packaging_requirement').default('carton'), // 'carton', 'outer_carton', 'nylon_wrap'
   // Reorder rate - percentage of customers who reordered within 1 year (0-100)
-  reorderRate: decimal('reorder_rate', { precision: 5, scale: 2 })
+  reorderRate: decimal('reorder_rate', { precision: 5, scale: 2 }),
+  // Stock level management for reorder alerts
+  minStockLevel: integer('min_stock_level'), // Minimum stock level for reorder alerts
+  maxStockLevel: integer('max_stock_level'), // Maximum/target stock level
+  lastSoldAt: timestamp('last_sold_at') // Track when product was last sold for dead stock analysis
 });
 
 // AI Location Suggestions table - stores one AI-generated warehouse location suggestion per product

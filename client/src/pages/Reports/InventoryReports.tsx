@@ -1,27 +1,48 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useReports } from "@/contexts/ReportsContext";
 import { ReportHeader } from "@/components/reports/ReportHeader";
 import { MetricCard } from "@/components/reports/MetricCard";
 import { BarChartCard } from "@/components/reports/BarChartCard";
 import { PieChartCard } from "@/components/reports/PieChartCard";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Package, AlertTriangle, TrendingDown, DollarSign } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Package, AlertTriangle, TrendingDown, DollarSign, Clock, Mail, Palette } from "lucide-react";
 import { calculateInventoryMetrics, preparePieChartData } from "@/lib/reportUtils";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 export default function InventoryReports() {
   const { toast } = useToast();
   const { getDateRangeValues } = useReports();
+  const [deadStockDays, setDeadStockDays] = useState(200);
+  const [colorTrendsStartDate, setColorTrendsStartDate] = useState('');
+  const [colorTrendsEndDate, setColorTrendsEndDate] = useState('');
 
   const { data: products = [], isLoading: productsLoading } = useQuery({ queryKey: ['/api/products'] });
   const { data: categories = [] } = useQuery({ queryKey: ['/api/categories'] });
+  
+  const { data: deadStockProducts = [], isLoading: deadStockLoading } = useQuery({ 
+    queryKey: ['/api/reports/dead-stock', deadStockDays],
+    enabled: deadStockDays > 0
+  });
+  
+  const { data: reorderAlerts = [], isLoading: reorderAlertsLoading } = useQuery({ 
+    queryKey: ['/api/reports/reorder-alerts']
+  });
+  
+  const { data: colorTrends = [], isLoading: colorTrendsLoading } = useQuery({ 
+    queryKey: ['/api/reports/color-trends', 'Gel Polish', colorTrendsStartDate, colorTrendsEndDate],
+    enabled: true
+  });
 
   const inventoryMetrics = useMemo(() => {
     return calculateInventoryMetrics(products as any[]);
@@ -128,6 +149,27 @@ export default function InventoryReports() {
       toast({
         title: "Export Failed",
         description: "Failed to export inventory report to PDF",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSendReorderAlerts = async () => {
+    try {
+      const response = await fetch('/api/reports/reorder-alerts/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await response.json();
+      
+      toast({
+        title: "Email Feature",
+        description: data.message || "Email notifications feature coming soon",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send email notifications",
         variant: "destructive",
       });
     }
@@ -285,6 +327,255 @@ export default function InventoryReports() {
               </TableBody>
             </Table>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Dead Stock Report */}
+      <Card data-testid="card-dead-stock">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-slate-600" />
+                Dead Stock Report
+              </CardTitle>
+              <CardDescription>Products with 0 sales in the specified period</CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="dead-stock-days" className="text-sm">Days threshold:</Label>
+              <Input
+                id="dead-stock-days"
+                type="number"
+                value={deadStockDays}
+                onChange={(e) => setDeadStockDays(parseInt(e.target.value) || 200)}
+                className="w-24"
+                min={1}
+                data-testid="input-dead-stock-days"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {deadStockLoading ? (
+            <Skeleton className="h-64 w-full" />
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product Name</TableHead>
+                    <TableHead>SKU</TableHead>
+                    <TableHead className="text-right">Days Since Last Sale</TableHead>
+                    <TableHead className="text-right">Current Stock</TableHead>
+                    <TableHead className="text-right">Value</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(deadStockProducts as any[]).map((product: any) => {
+                    const daysSince = product.lastSoldAt 
+                      ? differenceInDays(new Date(), new Date(product.lastSoldAt))
+                      : null;
+                    const value = (product.quantity || 0) * parseFloat(product.sellingPriceCzk || '0');
+                    
+                    return (
+                      <TableRow key={product.id} data-testid={`row-dead-stock-${product.id}`}>
+                        <TableCell className="font-medium">{product.name}</TableCell>
+                        <TableCell>{product.sku || 'N/A'}</TableCell>
+                        <TableCell className="text-right">
+                          {daysSince !== null ? `${daysSince} days` : 'Never sold'}
+                        </TableCell>
+                        <TableCell className="text-right">{product.quantity || 0}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(value, 'CZK')}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {(deadStockProducts as any[]).length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-slate-500">
+                        No dead stock products found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Reorder Alerts */}
+      <Card data-testid="card-reorder-alerts">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-orange-600" />
+                Reorder Alerts
+              </CardTitle>
+              <CardDescription>Products below minimum stock level</CardDescription>
+            </div>
+            <Button
+              onClick={handleSendReorderAlerts}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+              data-testid="button-send-email-alerts"
+            >
+              <Mail className="h-4 w-4" />
+              Send Email Alert
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {reorderAlertsLoading ? (
+            <Skeleton className="h-64 w-full" />
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product Name</TableHead>
+                    <TableHead>SKU</TableHead>
+                    <TableHead className="text-right">Current Stock</TableHead>
+                    <TableHead className="text-right">Min Level</TableHead>
+                    <TableHead className="text-right">Shortage</TableHead>
+                    <TableHead>Urgency</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(reorderAlerts as any[]).map((product: any) => {
+                    const shortage = (product.minStockLevel || 0) - (product.quantity || 0);
+                    const urgencyPercent = product.minStockLevel > 0 
+                      ? ((product.quantity || 0) / product.minStockLevel) * 100 
+                      : 0;
+                    const isUrgent = urgencyPercent < 50;
+
+                    return (
+                      <TableRow key={product.id} data-testid={`row-reorder-${product.id}`}>
+                        <TableCell className="font-medium">{product.name}</TableCell>
+                        <TableCell>{product.sku || 'N/A'}</TableCell>
+                        <TableCell className="text-right">{product.quantity || 0}</TableCell>
+                        <TableCell className="text-right">{product.minStockLevel || 0}</TableCell>
+                        <TableCell className="text-right">{shortage}</TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={isUrgent ? "destructive" : "default"}
+                            data-testid={`badge-urgency-${product.id}`}
+                          >
+                            {isUrgent ? 'Critical' : 'Low'}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {(reorderAlerts as any[]).length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-slate-500">
+                        No reorder alerts
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Color Trend Tracking (Gel Polish) */}
+      <Card data-testid="card-color-trends">
+        <CardHeader>
+          <div>
+            <CardTitle className="flex items-center gap-2 mb-4">
+              <Palette className="h-5 w-5 text-purple-600" />
+              Color Trend Tracking - Gel Polish
+            </CardTitle>
+            <CardDescription className="mb-4">Sales trends by color/variant for Gel Polish category</CardDescription>
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="color-trends-start" className="text-sm">Start Date:</Label>
+                <Input
+                  id="color-trends-start"
+                  type="date"
+                  value={colorTrendsStartDate}
+                  onChange={(e) => setColorTrendsStartDate(e.target.value)}
+                  className="w-40"
+                  data-testid="input-color-trends-start"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="color-trends-end" className="text-sm">End Date:</Label>
+                <Input
+                  id="color-trends-end"
+                  type="date"
+                  value={colorTrendsEndDate}
+                  onChange={(e) => setColorTrendsEndDate(e.target.value)}
+                  className="w-40"
+                  data-testid="input-color-trends-end"
+                />
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {colorTrendsLoading ? (
+            <Skeleton className="h-96 w-full" />
+          ) : (
+            <div className="space-y-6">
+              {/* Bar Chart */}
+              <div className="h-80" data-testid="chart-color-trends">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={(colorTrends as any[]).slice(0, 10)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="variantName" 
+                      angle={-45}
+                      textAnchor="end"
+                      height={100}
+                    />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="totalQuantitySold" fill="#8b5cf6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Table */}
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Color/Variant</TableHead>
+                      <TableHead>Product</TableHead>
+                      <TableHead className="text-right">Total Sales</TableHead>
+                      <TableHead>Trend</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(colorTrends as any[]).map((trend: any, index: number) => (
+                      <TableRow key={`${trend.variantName}-${index}`} data-testid={`row-color-trend-${index}`}>
+                        <TableCell className="font-medium">{trend.variantName}</TableCell>
+                        <TableCell>{trend.productName}</TableCell>
+                        <TableCell className="text-right">{trend.totalQuantitySold} units</TableCell>
+                        <TableCell>
+                          <Badge variant={index < 3 ? "default" : "secondary"}>
+                            {index < 3 ? 'Top Seller' : 'Popular'}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {(colorTrends as any[]).length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-slate-500">
+                          No color trend data available
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
