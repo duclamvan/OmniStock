@@ -393,6 +393,20 @@ export const suppliers = pgTable('suppliers', {
   createdAt: timestamp('created_at').defaultNow()
 });
 
+// Supplier Files table for document management
+export const supplierFiles = pgTable('supplier_files', {
+  id: text('id').primaryKey(),
+  supplierId: text('supplier_id').references(() => suppliers.id, { onDelete: 'cascade' }),
+  fileName: text('file_name').notNull(),
+  fileType: text('file_type').notNull(),
+  fileUrl: text('file_url').notNull(),
+  fileSize: integer('file_size'),
+  mimeType: text('mime_type'),
+  uploadedBy: text('uploaded_by'),
+  uploadedAt: timestamp('uploaded_at').notNull().defaultNow(),
+  isActive: boolean('is_active').default(true)
+});
+
 export const warehouses = pgTable('warehouses', {
   id: text('id').primaryKey(), // WH-XX-YY format
   name: text('name').notNull(),
@@ -499,6 +513,8 @@ export const products = pgTable('products', {
   importCostUsd: decimal('import_cost_usd'),
   importCostCzk: decimal('import_cost_czk'),
   importCostEur: decimal('import_cost_eur'),
+  importCostVnd: decimal('import_cost_vnd'),
+  importCostCny: decimal('import_cost_cny'),
   imageUrl: varchar('image_url'),
   images: jsonb('images'), // Array of {url: string, purpose: string, isPrimary: boolean}
   barcode: varchar('barcode'),
@@ -520,6 +536,11 @@ export const products = pgTable('products', {
   packingInstructionsTexts: jsonb('packing_instructions_texts'),
   // Latest landing cost tracking
   latestLandingCost: decimal('latest_landing_cost', { precision: 12, scale: 4 }),
+  landingCostEur: decimal('landing_cost_eur', { precision: 12, scale: 4 }),
+  landingCostUsd: decimal('landing_cost_usd', { precision: 12, scale: 4 }),
+  landingCostVnd: decimal('landing_cost_vnd', { precision: 12, scale: 4 }),
+  landingCostCzk: decimal('landing_cost_czk', { precision: 12, scale: 4 }),
+  landingCostCny: decimal('landing_cost_cny', { precision: 12, scale: 4 }),
   // AI-powered packing dimensions and weight
   unitWeightKg: decimal('unit_weight_kg', { precision: 10, scale: 3 }),
   unitLengthCm: decimal('unit_length_cm', { precision: 10, scale: 2 }),
@@ -532,7 +553,8 @@ export const products = pgTable('products', {
   // Stock level management for reorder alerts
   minStockLevel: integer('min_stock_level'), // Minimum stock level for reorder alerts
   maxStockLevel: integer('max_stock_level'), // Maximum/target stock level
-  lastSoldAt: timestamp('last_sold_at') // Track when product was last sold for dead stock analysis
+  lastSoldAt: timestamp('last_sold_at'), // Track when product was last sold for dead stock analysis
+  allocated: boolean('allocated').default(false) // Track if product is allocated to orders
 });
 
 // AI Location Suggestions table - stores one AI-generated warehouse location suggestion per product
@@ -634,8 +656,11 @@ export const orders = pgTable('orders', {
   subtotal: decimal('subtotal').default('0'),
   discountType: varchar('discount_type'),
   discountValue: decimal('discount_value').default('0'),
+  discount: decimal('discount').default('0'),
   taxRate: decimal('tax_rate').default('0'),
   taxAmount: decimal('tax_amount').default('0'),
+  tax: decimal('tax').default('0'),
+  totalCost: decimal('total_cost').default('0'),
   shippingMethod: varchar('shipping_method'),
   paymentMethod: varchar('payment_method'),
   shippingCost: decimal('shipping_cost').default('0'),
@@ -676,7 +701,8 @@ export const orders = pgTable('orders', {
   pplStatus: varchar('ppl_status'), // 'pending', 'created', 'cancelled', 'error'
   // COD (Cash on Delivery) fields
   codAmount: decimal('cod_amount', { precision: 10, scale: 2 }),
-  codCurrency: varchar('cod_currency')
+  codCurrency: varchar('cod_currency'),
+  allocated: boolean('allocated').default(false) // Track if order inventory is allocated
 });
 
 // Product Files table for document management
@@ -1315,6 +1341,7 @@ export const insertCustomerShippingAddressSchema = createInsertSchema(customerSh
 export const insertCustomerBillingAddressSchema = createInsertSchema(customerBillingAddresses).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCustomerBadgeSchema = createInsertSchema(customerBadges).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
+export const insertSupplierFileSchema = createInsertSchema(supplierFiles).omit({ id: true, uploadedAt: true });
 export const insertWarehouseSchema = createInsertSchema(warehouses).omit({ createdAt: true });
 export const insertWarehouseFileSchema = createInsertSchema(warehouseFiles).omit({ id: true, createdAt: true });
 export const insertWarehouseFinancialContractSchema = createInsertSchema(warehouseFinancialContracts).omit({ id: true, createdAt: true, updatedAt: true });
@@ -1413,6 +1440,8 @@ export type CustomerBadge = typeof customerBadges.$inferSelect;
 export type InsertCustomerBadge = z.infer<typeof insertCustomerBadgeSchema>;
 export type Supplier = typeof suppliers.$inferSelect;
 export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
+export type SupplierFile = typeof supplierFiles.$inferSelect;
+export type InsertSupplierFile = z.infer<typeof insertSupplierFileSchema>;
 export type Warehouse = typeof warehouses.$inferSelect;
 export type InsertWarehouse = z.infer<typeof insertWarehouseSchema>;
 export type WarehouseFile = typeof warehouseFiles.$inferSelect;

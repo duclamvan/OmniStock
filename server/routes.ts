@@ -2962,10 +2962,10 @@ Important:
   });
 
   // Supplier Files endpoints
-  app.get('/api/suppliers/:id/files', async (req, res) => {
+  app.get('/api/suppliers/:supplierId/files', async (req, res) => {
     try {
-      // TODO: Implement supplier files feature
-      res.json([]);
+      const files = await storage.getSupplierFiles(req.params.supplierId);
+      res.json(files);
     } catch (error) {
       console.error("Error fetching supplier files:", error);
       res.status(500).json({ message: "Failed to fetch supplier files" });
@@ -2995,9 +2995,9 @@ Important:
     }
   });
 
-  app.post('/api/suppliers/:id/files', async (req: any, res) => {
+  app.post('/api/suppliers/:supplierId/files', async (req: any, res) => {
     try {
-      const { fileName, fileType, fileUrl, fileSize } = req.body;
+      const { fileName, fileType, fileUrl, fileSize, mimeType } = req.body;
 
       const objectStorageService = new ObjectStorageService();
       const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
@@ -3009,11 +3009,12 @@ Important:
       );
 
       const fileData = {
-        supplierId: req.params.id,
+        supplierId: req.params.supplierId,
         fileName,
         fileType,
         fileUrl: objectPath,
         fileSize,
+        mimeType,
         uploadedBy: "test-user",
       };
 
@@ -3025,9 +3026,27 @@ Important:
     }
   });
 
+  // Delete supplier file - using the standard pattern /api/supplier-files/:fileId
+  app.delete('/api/supplier-files/:fileId', async (req: any, res) => {
+    try {
+      const deleted = await storage.deleteSupplierFile(req.params.fileId);
+      if (!deleted) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting supplier file:", error);
+      res.status(500).json({ message: "Failed to delete supplier file" });
+    }
+  });
+
+  // Keep backward compatibility with old route pattern
   app.delete('/api/suppliers/:id/files/:fileId', async (req: any, res) => {
     try {
-      await storage.deleteSupplierFile(req.params.fileId);
+      const deleted = await storage.deleteSupplierFile(req.params.fileId);
+      if (!deleted) {
+        return res.status(404).json({ message: "File not found" });
+      }
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting supplier file:", error);
@@ -3206,7 +3225,7 @@ Important:
         }
       }
 
-      res.json(updatedSuupdatedBundledBundle);
+      res.json(updatedBundle);
     } catch (error) {
       console.error("Error updating bundle:", error);
       res.status(500).json({ message: "Failed to update bundle" });

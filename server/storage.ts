@@ -12,6 +12,7 @@ import {
   customerShippingAddresses,
   customerBillingAddresses,
   suppliers,
+  supplierFiles,
   products,
   aiLocationSuggestions,
   productVariants,
@@ -76,6 +77,8 @@ import {
   type InsertCustomerBillingAddress,
   type Supplier,
   type InsertSupplier,
+  type SupplierFile,
+  type InsertSupplierFile,
   type Product,
   type InsertProduct,
   type AiLocationSuggestion,
@@ -156,6 +159,61 @@ import * as badgeService from './services/badgeService';
 
 // Re-export db for backward compatibility with methods still using global db
 const db = database;
+
+// SQL normalization helper - creates REPLACE chain for Vietnamese and Czech diacritics
+// This allows database-level filtering instead of loading entire tables
+// IMPORTANT: Apply LOWER() first, then REPLACE operations on the lowercased value
+function normalizeSQLColumn(column: any) {
+  return sql`
+    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+      LOWER(${column}),
+      'á', 'a'), 'à', 'a'), 'ả', 'a'), 'ã', 'a'), 'ạ', 'a'),
+      'ă', 'a'), 'ắ', 'a'), 'ằ', 'a'), 'ẳ', 'a'), 'ẵ', 'a'), 'ặ', 'a'),
+      'â', 'a'), 'ấ', 'a'), 'ầ', 'a'), 'ẩ', 'a'), 'ẫ', 'a'), 'ậ', 'a'),
+      'đ', 'd'),
+      'é', 'e'), 'è', 'e'), 'ẻ', 'e'), 'ẽ', 'e'), 'ẹ', 'e'),
+      'ê', 'e'), 'ế', 'e'), 'ề', 'e'), 'ể', 'e'), 'ễ', 'e'), 'ệ', 'e'),
+      'í', 'i'), 'ì', 'i'), 'ỉ', 'i'), 'ĩ', 'i'), 'ị', 'i'),
+      'ó', 'o'), 'ò', 'o'), 'ỏ', 'o'), 'õ', 'o'), 'ọ', 'o'),
+      'ô', 'o'), 'ố', 'o'), 'ồ', 'o'), 'ổ', 'o'), 'ỗ', 'o'), 'ộ', 'o'),
+      'ơ', 'o'), 'ớ', 'o'), 'ờ', 'o'), 'ở', 'o'), 'ỡ', 'o'), 'ợ', 'o'),
+      'ú', 'u'), 'ù', 'u'), 'ủ', 'u'), 'ũ', 'u'), 'ụ', 'u'),
+      'ư', 'u'), 'ứ', 'u'), 'ừ', 'u'), 'ử', 'u'), 'ữ', 'u'), 'ự', 'u'),
+      'ý', 'y'), 'ỳ', 'y'), 'ỷ', 'y'), 'ỹ', 'y'), 'ỵ', 'y'),
+      'ě', 'e'), 'ň', 'n'), 'ř', 'r'), 'š', 's'), 'ť', 't'), 'ů', 'u'), 'ž', 'z'),
+      'ď', 'd'), 'č', 'c'), 'ĺ', 'l'), 'ľ', 'l'), 'ŕ', 'r')
+  `;
+}
+
+// Helper to normalize search query
+function normalizeSearchQuery(str: string): string {
+  const diacriticsMap: Record<string, string> = {
+    'á': 'a', 'à': 'a', 'ả': 'a', 'ã': 'a', 'ạ': 'a',
+    'ă': 'a', 'ắ': 'a', 'ằ': 'a', 'ẳ': 'a', 'ẵ': 'a', 'ặ': 'a',
+    'â': 'a', 'ấ': 'a', 'ầ': 'a', 'ẩ': 'a', 'ẫ': 'a', 'ậ': 'a',
+    'đ': 'd',
+    'é': 'e', 'è': 'e', 'ẻ': 'e', 'ẽ': 'e', 'ẹ': 'e',
+    'ê': 'e', 'ế': 'e', 'ề': 'e', 'ể': 'e', 'ễ': 'e', 'ệ': 'e',
+    'í': 'i', 'ì': 'i', 'ỉ': 'i', 'ĩ': 'i', 'ị': 'i',
+    'ó': 'o', 'ò': 'o', 'ỏ': 'o', 'õ': 'o', 'ọ': 'o',
+    'ô': 'o', 'ố': 'o', 'ồ': 'o', 'ổ': 'o', 'ỗ': 'o', 'ộ': 'o',
+    'ơ': 'o', 'ớ': 'o', 'ờ': 'o', 'ở': 'o', 'ỡ': 'o', 'ợ': 'o',
+    'ú': 'u', 'ù': 'u', 'ủ': 'u', 'ũ': 'u', 'ụ': 'u',
+    'ư': 'u', 'ứ': 'u', 'ừ': 'u', 'ử': 'u', 'ữ': 'u', 'ự': 'u',
+    'ý': 'y', 'ỳ': 'y', 'ỷ': 'y', 'ỹ': 'y', 'ỵ': 'y',
+    'ě': 'e', 'ň': 'n', 'ř': 'r', 'š': 's', 'ť': 't', 'ů': 'u', 'ž': 'z',
+    'ď': 'd', 'č': 'c', 'ĺ': 'l', 'ľ': 'l', 'ŕ': 'r'
+  };
+
+  return str.split('').map(char => {
+    return diacriticsMap[char.toLowerCase()] || char.toLowerCase();
+  }).join('');
+}
 
 // Define types for missing entities (these should match what the app expects)
 export type Return = any;
@@ -404,6 +462,18 @@ export interface IStorage {
   createSupplier(supplier: any): Promise<Supplier>;
   updateSupplier(id: string, supplier: any): Promise<Supplier | undefined>;
   deleteSupplier(id: string): Promise<boolean>;
+  
+  // Supplier Files
+  getSupplierFiles(supplierId: string): Promise<SupplierFile[]>;
+  createSupplierFile(file: InsertSupplierFile): Promise<SupplierFile>;
+  deleteSupplierFile(fileId: string): Promise<boolean>;
+  
+  // Address Helper (for shipping addresses)
+  getAddress(addressId: string): Promise<CustomerShippingAddress | undefined>;
+  
+  // Product Search
+  searchProducts(query: string, includeInactive?: boolean): Promise<Product[]>;
+  getProductsOrderCounts(productIds: string[]): Promise<{productId: string, count: number}[]>;
 
   // Returns
   getReturns(): Promise<Return[]>;
@@ -3664,6 +3734,112 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error deleting supplier:', error);
       return false;
+    }
+  }
+
+  async getSupplierFiles(supplierId: string): Promise<SupplierFile[]> {
+    try {
+      const files = await db
+        .select()
+        .from(supplierFiles)
+        .where(eq(supplierFiles.supplierId, supplierId));
+      return files;
+    } catch (error) {
+      console.error('Error fetching supplier files:', error);
+      return [];
+    }
+  }
+
+  async createSupplierFile(fileData: InsertSupplierFile): Promise<SupplierFile> {
+    try {
+      const fileId = `SF-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      const [file] = await db
+        .insert(supplierFiles)
+        .values({ ...fileData, id: fileId })
+        .returning();
+      return file;
+    } catch (error) {
+      console.error('Error creating supplier file:', error);
+      throw error;
+    }
+  }
+
+  async deleteSupplierFile(fileId: string): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(supplierFiles)
+        .where(eq(supplierFiles.id, fileId));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting supplier file:', error);
+      return false;
+    }
+  }
+
+  async getAddress(addressId: string): Promise<CustomerShippingAddress | undefined> {
+    try {
+      const [address] = await db
+        .select()
+        .from(customerShippingAddresses)
+        .where(eq(customerShippingAddresses.id, addressId));
+      return address || undefined;
+    } catch (error) {
+      console.error('Error fetching address:', error);
+      return undefined;
+    }
+  }
+
+  async searchProducts(query: string, includeInactive: boolean = false): Promise<Product[]> {
+    try {
+      const normalizedQuery = normalizeSearchQuery(query);
+      const conditions = [
+        sql`${normalizeSQLColumn(products.name)} LIKE ${`%${normalizedQuery}%`}`,
+        sql`${normalizeSQLColumn(products.vietnameseName)} LIKE ${`%${normalizedQuery}%`}`,
+        sql`${normalizeSQLColumn(products.sku)} LIKE ${`%${normalizedQuery}%`}`,
+        sql`${normalizeSQLColumn(products.barcode)} LIKE ${`%${normalizedQuery}%`}`
+      ];
+
+      if (!includeInactive) {
+        return await db
+          .select()
+          .from(products)
+          .where(and(eq(products.isActive, true), or(...conditions)))
+          .orderBy(products.name);
+      } else {
+        return await db
+          .select()
+          .from(products)
+          .where(or(...conditions))
+          .orderBy(products.name);
+      }
+    } catch (error) {
+      console.error('Error searching products:', error);
+      return [];
+    }
+  }
+
+  async getProductsOrderCounts(productIds: string[]): Promise<{productId: string, count: number}[]> {
+    try {
+      if (productIds.length === 0) {
+        return [];
+      }
+
+      const result = await db
+        .select({
+          productId: orderItems.productId,
+          count: sql<number>`COUNT(DISTINCT ${orderItems.orderId})`.as('count')
+        })
+        .from(orderItems)
+        .where(inArray(orderItems.productId, productIds))
+        .groupBy(orderItems.productId);
+
+      return result.map(r => ({
+        productId: r.productId || '',
+        count: Number(r.count) || 0
+      }));
+    } catch (error) {
+      console.error('Error getting product order counts:', error);
+      return [];
     }
   }
 
