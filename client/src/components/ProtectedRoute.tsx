@@ -44,18 +44,30 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
               </div>
             </div>
             <CardTitle className="text-2xl" data-testid="text-pending-approval-title">
-              Pending Approval
+              Waiting for Admin Approval
             </CardTitle>
             <CardDescription data-testid="text-pending-approval-description">
-              Account awaiting role assignment
+              Your access request is pending
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Alert>
               <AlertDescription data-testid="text-pending-approval-message">
-                Your account is awaiting role assignment. Please contact an administrator.
+                Your account has been created successfully, but you don't have access yet. 
+                Please wait for an administrator to assign you a role and grant access to the system.
               </AlertDescription>
             </Alert>
+            <div className="text-center text-sm text-muted-foreground">
+              <p>Contact your administrator if you need immediate access.</p>
+            </div>
+            <Button 
+              onClick={() => navigate('/logout')} 
+              variant="outline"
+              className="w-full"
+              data-testid="button-logout"
+            >
+              Logout
+            </Button>
           </CardContent>
         </Card>
       </div>
