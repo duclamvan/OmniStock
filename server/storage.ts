@@ -1,5 +1,6 @@
 import {
   users,
+  employees,
   categories,
   importPurchases,
   purchaseItems,
@@ -49,6 +50,8 @@ import {
   appSettings,
   type User,
   type InsertUser,
+  type Employee,
+  type InsertEmployee,
   type Category,
   type InsertCategory,
   type ImportPurchase,
@@ -181,6 +184,13 @@ export interface IStorage {
   updateUser2FA(userId: string, phoneNumber: string | null, enabled: boolean): Promise<User | undefined>;
   setUser2FAVerified(userId: string, verified: boolean): Promise<void>;
   upsertUser(userData: { id: string; email?: string | null; firstName?: string | null; lastName?: string | null; profileImageUrl?: string | null; replitSub?: string | null }): Promise<User>;
+
+  // Employees
+  getEmployees(): Promise<Employee[]>;
+  getEmployee(id: number): Promise<Employee | undefined>;
+  createEmployee(employee: InsertEmployee): Promise<Employee>;
+  updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee | undefined>;
+  deleteEmployee(id: number): Promise<void>;
 
   // Import Purchases
   getImportPurchases(): Promise<ImportPurchase[]>;
@@ -718,6 +728,43 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return newUser;
     }
+  }
+
+  // Employees
+  async getEmployees(): Promise<Employee[]> {
+    return await db
+      .select()
+      .from(employees)
+      .orderBy(desc(employees.createdAt));
+  }
+
+  async getEmployee(id: number): Promise<Employee | undefined> {
+    const [employee] = await db
+      .select()
+      .from(employees)
+      .where(eq(employees.id, id));
+    return employee || undefined;
+  }
+
+  async createEmployee(employee: InsertEmployee): Promise<Employee> {
+    const [newEmployee] = await db
+      .insert(employees)
+      .values(employee)
+      .returning();
+    return newEmployee;
+  }
+
+  async updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee | undefined> {
+    const [updated] = await db
+      .update(employees)
+      .set({ ...employee, updatedAt: new Date() })
+      .where(eq(employees.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteEmployee(id: number): Promise<void> {
+    await db.delete(employees).where(eq(employees.id, id));
   }
 
   // Import Purchases
