@@ -7,7 +7,7 @@ import { TrendLineChart } from "@/components/reports/TrendLineChart";
 import { PieChartCard } from "@/components/reports/PieChartCard";
 import { MonthlyComparisonTable } from "@/components/reports/MonthlyComparisonTable";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DollarSign, TrendingUp, PiggyBank, Percent } from "lucide-react";
+import { Coins, TrendingUp, PiggyBank, Percent } from "lucide-react";
 import { aggregateMonthlyRevenue, convertToBaseCurrency, preparePieChartData } from "@/lib/reportUtils";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
@@ -261,7 +261,7 @@ export default function FinancialReports() {
         <MetricCard
           title="Total Revenue"
           value={formatCurrency(metrics.totalRevenue, 'CZK')}
-          icon={DollarSign}
+          icon={Coins}
           iconColor="text-green-600"
           iconBgColor="bg-green-100"
           testId="metric-total-revenue"

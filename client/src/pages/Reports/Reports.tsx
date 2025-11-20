@@ -9,7 +9,8 @@ import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import {
   TrendingUp,
   TrendingDown,
-  DollarSign,
+  Euro,
+  Coins,
   Package,
   Users,
   ShoppingCart,
@@ -418,7 +419,7 @@ export default function Reports() {
                   </TooltipProvider>
                 </div>
                 <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
-                  <DollarSign className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                  <Coins className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
                 </div>
               </div>
             </CardContent>
@@ -446,7 +447,7 @@ export default function Reports() {
                   </TooltipProvider>
                 </div>
                 <div className="flex-shrink-0 p-2 sm:p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
-                  <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
+                  <Euro className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
             </CardContent>
@@ -763,7 +764,7 @@ export default function Reports() {
           <CardContent className="p-6">
             <div className="flex items-center gap-3">
               <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
-                <DollarSign className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                <Coins className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
                 <p className="text-sm font-medium text-slate-600 dark:text-slate-400">

@@ -8,7 +8,7 @@ import { PieChartCard } from "@/components/reports/PieChartCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DollarSign, TrendingUp, AlertCircle, PieChart } from "lucide-react";
+import { Coins, TrendingUp, AlertCircle, PieChart } from "lucide-react";
 import { convertToBaseCurrency, preparePieChartData } from "@/lib/reportUtils";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
@@ -223,7 +223,7 @@ export default function ExpenseReports() {
         <MetricCard
           title="Total Expenses"
           value={formatCurrency(metrics.totalExpenses, 'CZK')}
-          icon={DollarSign}
+          icon={Coins}
           iconColor="text-red-600"
           iconBgColor="bg-red-100"
           testId="metric-total-expenses"

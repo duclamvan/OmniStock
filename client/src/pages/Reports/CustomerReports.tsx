@@ -8,7 +8,7 @@ import { PieChartCard } from "@/components/reports/PieChartCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, DollarSign, UserCheck, TrendingUp } from "lucide-react";
+import { Users, Coins, UserCheck, TrendingUp } from "lucide-react";
 import { aggregateCustomerMetrics, convertToBaseCurrency, preparePieChartData } from "@/lib/reportUtils";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
@@ -197,7 +197,7 @@ export default function CustomerReports() {
         <MetricCard
           title="Avg Lifetime Value"
           value={formatCurrency(metrics.avgLifetimeValue, 'CZK')}
-          icon={DollarSign}
+          icon={Coins}
           iconColor="text-purple-600"
           iconBgColor="bg-purple-100"
           testId="metric-avg-ltv"

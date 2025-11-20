@@ -4,7 +4,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import {
   BarChart3,
-  DollarSign,
+  Coins,
   ShoppingBag,
   Package,
   Users,
@@ -22,7 +22,7 @@ import ExpenseReports from "./ExpenseReports";
 
 const reportTabs = [
   { value: '/reports', label: 'Overview', icon: LayoutDashboard },
-  { value: '/reports/financial', label: 'Financial', icon: DollarSign },
+  { value: '/reports/financial', label: 'Financial', icon: Coins },
   { value: '/reports/sales', label: 'Sales', icon: ShoppingBag },
   { value: '/reports/inventory', label: 'Inventory', icon: Package },
   { value: '/reports/customers', label: 'Customers', icon: Users },

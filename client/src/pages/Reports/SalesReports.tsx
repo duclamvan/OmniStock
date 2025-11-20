@@ -9,7 +9,7 @@ import { BarChartCard } from "@/components/reports/BarChartCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShoppingCart, TrendingUp, Package, DollarSign } from "lucide-react";
+import { ShoppingCart, TrendingUp, Package, Coins } from "lucide-react";
 import { aggregateProductSales, aggregateMonthlyRevenue, preparePieChartData } from "@/lib/reportUtils";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
@@ -208,7 +208,7 @@ export default function SalesReports() {
         <MetricCard
           title="Total Revenue"
           value={formatCurrency(metrics.totalRevenue, 'CZK')}
-          icon={DollarSign}
+          icon={Coins}
           iconColor="text-green-600"
           iconBgColor="bg-green-100"
           testId="metric-total-revenue"

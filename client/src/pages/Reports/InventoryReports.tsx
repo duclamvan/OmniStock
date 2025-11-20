@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Package, AlertTriangle, TrendingDown, DollarSign, Clock, Mail, Palette } from "lucide-react";
+import { Package, AlertTriangle, TrendingDown, Coins, Clock, Mail, Palette } from "lucide-react";
 import { calculateInventoryMetrics, preparePieChartData } from "@/lib/reportUtils";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
@@ -229,7 +229,7 @@ export default function InventoryReports() {
         <MetricCard
           title="Total Value"
           value={formatCurrency(inventoryMetrics.totalValue, 'CZK')}
-          icon={DollarSign}
+          icon={Coins}
           iconColor="text-green-600"
           iconBgColor="bg-green-100"
           testId="metric-total-value"
