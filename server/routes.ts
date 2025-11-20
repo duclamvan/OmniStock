@@ -542,12 +542,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { userId } = req.params;
       const { role } = req.body;
 
-      if (!role) {
-        return res.status(400).json({ message: 'Role is required' });
-      }
-
-      if (!['administrator', 'warehouse_operator'].includes(role)) {
-        return res.status(400).json({ message: 'Invalid role. Must be either "administrator" or "warehouse_operator"' });
+      // Allow null to revoke access
+      if (role !== null && role !== undefined && !['administrator', 'warehouse_operator'].includes(role)) {
+        return res.status(400).json({ message: 'Invalid role. Must be either "administrator", "warehouse_operator", or null' });
       }
 
       await storage.updateUserRole(userId, role);

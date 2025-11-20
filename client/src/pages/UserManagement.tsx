@@ -29,7 +29,7 @@ interface User {
   email: string | null;
   firstName: string | null;
   lastName: string | null;
-  role: string;
+  role: string | null;
   createdAt: string;
 }
 
@@ -77,11 +77,23 @@ export default function UserManagement() {
 
   // Handle role change
   const handleRoleChange = (userId: string, newRole: string) => {
-    updateRoleMutation.mutate({ userId, role: newRole });
+    // Convert "none" to null for backend
+    const roleToSend = newRole === "none" ? null : newRole;
+    updateRoleMutation.mutate({ userId, role: roleToSend as string });
   };
 
   // Get badge variant for role
-  const getRoleBadge = (role: string) => {
+  const getRoleBadge = (role: string | null) => {
+    if (!role) {
+      return (
+        <Badge 
+          className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+          data-testid={`badge-role-none`}
+        >
+          None
+        </Badge>
+      );
+    }
     if (role === 'administrator') {
       return (
         <Badge 
@@ -250,7 +262,7 @@ export default function UserManagement() {
                       </TableCell>
                       <TableCell>
                         <Select
-                          value={user.role}
+                          value={user.role || "none"}
                           onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
                           disabled={updateRoleMutation.isPending}
                           data-testid={`select-role-${user.id}`}
@@ -259,6 +271,12 @@ export default function UserManagement() {
                             <SelectValue placeholder="Select role" />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem 
+                              value="none" 
+                              data-testid={`select-option-none-${user.id}`}
+                            >
+                              None
+                            </SelectItem>
                             <SelectItem 
                               value="administrator" 
                               data-testid={`select-option-administrator-${user.id}`}
