@@ -85,6 +85,7 @@ import { optimizeCartonPacking } from "./services/cartonPackingService";
 import { TrackingService } from "./services/tracking";
 import OpenAI from "openai";
 import passport from "passport";
+import { localization } from "./localization";
 
 // Vietnamese and Czech diacritics normalization for accent-insensitive search
 function normalizeVietnamese(str: string): string {

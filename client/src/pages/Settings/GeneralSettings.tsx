@@ -590,7 +590,7 @@ export default function GeneralSettings() {
                     name="default_language"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default Language</FormLabel>
+                        <FormLabel>Language</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-default_language">
