@@ -65,14 +65,12 @@ export default function LandingCostList() {
   const landingCostQueries = useQueries({
     queries: shipments.map(shipment => ({
       queryKey: [`/api/imports/shipments/${shipment.id}/landing-cost-summary`],
-      queryFn: async () => {
-        const response = await fetch(`/api/imports/shipments/${shipment.id}/landing-cost-summary`);
-        if (!response.ok) return null;
-        return response.json() as Promise<LandingCostSummary>;
-      },
       enabled: !!shipment.id
     }))
   });
+
+  // Check if any landing cost queries are still loading
+  const isLoadingCosts = landingCostQueries.some(q => q.isLoading);
 
   // Combine shipments with their landing cost data
   const shipmentsWithCosts = useMemo(() => {
@@ -130,11 +128,17 @@ export default function LandingCostList() {
     return formatCurrency(cost, shipment.shippingCostCurrency || 'USD');
   };
 
-  if (isLoading) {
+  if (isLoading || isLoadingCosts) {
     return (
       <div className="container mx-auto p-3 md:p-6">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div className="h-20 bg-gray-100 rounded"></div>
+            <div className="h-20 bg-gray-100 rounded"></div>
+            <div className="h-20 bg-gray-100 rounded"></div>
+            <div className="h-20 bg-gray-100 rounded"></div>
+          </div>
           <div className="h-64 bg-gray-100 rounded"></div>
         </div>
       </div>

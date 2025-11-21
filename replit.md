@@ -15,9 +15,17 @@ Davie Supply is a full-stack web application for comprehensive warehouse and ord
 
 4. **Developer Experience** - Added dev-only validation error panels to AddOrder and ProductForm showing form.formState.errors for easier debugging, plus enhanced error logging and toast notifications
 
+## New Features
+1. **Landing Cost Management** - Added dedicated Landing Cost section under Imports with two new pages:
+   - Landing Cost List: Displays all shipments with cost status badges (Costed, Pending, No Costs), stats overview, search/filter functionality
+   - Landing Cost Details: Shows full landing cost calculation reusing CostsPanel component from Receiving workflow
+   - Fixed React hooks violation by using useQueries instead of map+useQuery for dynamic landing cost summary fetching
+   - Integrated with navigation breadcrumbs and routing system
+
 ## Testing Results
 - Dashboard: ✅ All metrics displaying correctly, no runtime errors
 - Product/Order Forms: ✅ Form validation and submission logic fixed, ready for end-to-end testing
+- Landing Cost Pages: ✅ React hooks compliance verified, ready for e2e testing
 - Pending: Full e2e form submission tests (interrupted by unrelated session handling issue)
 
 # User Preferences
