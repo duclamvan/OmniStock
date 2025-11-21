@@ -89,7 +89,15 @@ export async function setupAuth(app: Express) {
     await upsertUser(tokens.claims());
     
     // Load the full user from database to get role and other fields
-    const dbUser = await storage.getUser(String(tokens.claims()["sub"]));
+    // Try by ID first (normal case), then by replitSub (test case)
+    const sub = String(tokens.claims()["sub"]);
+    let dbUser = await storage.getUser(sub);
+    
+    // Fallback: if not found by ID, try by replitSub (for backwards compatibility or test scenarios)
+    if (!dbUser) {
+      dbUser = await storage.getUserByReplitSub(sub);
+    }
+    
     if (dbUser) {
       user.id = dbUser.id;
       user.email = dbUser.email;

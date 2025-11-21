@@ -234,6 +234,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByPhone(phone: string): Promise<User | undefined>;
+  getUserByReplitSub(replitSub: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   createUserWithPhone(userData: { name: string; phone: string }): Promise<User>;
   createSmsUser(phoneNumber: string): Promise<User>;
@@ -660,6 +661,11 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByPhone(phone: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.phoneNumber, phone)).limit(1);
+    return user;
+  }
+
+  async getUserByReplitSub(replitSub: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.replitSub, replitSub)).limit(1);
     return user;
   }
 

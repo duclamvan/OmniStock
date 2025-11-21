@@ -583,9 +583,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Always fetch fresh data from database to ensure role is up-to-date
       const userId = req.user.claims?.sub || req.user.id;
-      const dbUser = await storage.getUser(userId);
+      let dbUser = await storage.getUser(userId);
+      
+      // Fallback: if not found by ID, try by replitSub (for backwards compatibility or test scenarios)
+      if (!dbUser && userId) {
+        dbUser = await storage.getUserByReplitSub(userId);
+      }
       
       if (!dbUser) {
+        console.error('User not found:', userId, 'Session user:', req.user);
         return res.status(404).json({ message: 'User not found' });
       }
 
