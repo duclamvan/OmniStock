@@ -21,7 +21,7 @@ const formSchema = z.object({
   // Company Information
   company_name: z.string().default('Davie Supply'),
   company_email: z.string().email().optional().or(z.literal('')),
-  company_phone: z.string().default(''),
+  company_phone: z.union([z.string(), z.number()]).transform(val => String(val)).refine(val => !/\s/.test(val), "Phone number cannot contain spaces").default(''),
   company_address: z.string().default(''),
   company_city: z.string().default(''),
   company_zip: z.string().default(''),
