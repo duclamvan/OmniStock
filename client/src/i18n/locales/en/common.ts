@@ -215,6 +215,39 @@ const common = {
   languageChanged: 'Language changed successfully',
   languageChangeFailed: 'Failed to change language',
   
+  // Sidebar Navigation Additional Keys
+  stock: 'Stock',
+  stockLookup: 'Stock Lookup',
+  adjustmentApprovals: 'Adjustment Approvals',
+  files: 'Files',
+  services: 'Services',
+  imports: 'Imports',
+  kanbanDashboard: 'Kanban Dashboard',
+  purchaseOrders: 'Purchase Orders',
+  consolidation: 'Consolidation',
+  internationalTransit: 'International Transit',
+  itemsToStore: 'Items To Store',
+  employees: 'Employees',
+  warehouseMap: 'Warehouse Map',
+  preOrders: 'Pre-Orders',
+  
+  // Additional Dashboard Metrics
+  revenueProfitCashFlowMetrics: 'Revenue, profit, and cash flow metrics',
+  ordersFulfilled: 'Orders fulfilled',
+  activeIssues: 'Active issues',
+  reviewNeeded: 'Review needed',
+  stockApprovals: 'Stock Approvals',
+  vsLastMonth: '% vs last month',
+  margin: 'Margin',
+  avgOrderValue: 'Avg Order Value',
+  perTransaction: 'Per transaction',
+  agedReceivables: 'Aged Receivables',
+  currencyDistribution: 'Currency Distribution',
+  thisMonthVsLastMonth: 'This month vs last month',
+  inventoryRiskAlerts: 'Inventory Risk Alerts',
+  stockIssuesRequiringAttention: 'Stock issues requiring attention',
+  olderthan24h: '>24h old',
+  
 } as const;
 
 export default common;

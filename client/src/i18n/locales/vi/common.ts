@@ -222,6 +222,39 @@ const common = {
   languageChanged: 'Đã thay đổi ngôn ngữ thành công',
   languageChangeFailed: 'Thay đổi ngôn ngữ thất bại',
   
+  // Sidebar Navigation Additional Keys
+  stock: 'Tồn kho',
+  stockLookup: 'Tra cứu tồn kho',
+  adjustmentApprovals: 'Phê duyệt điều chỉnh',
+  files: 'Tệp tin',
+  services: 'Dịch vụ',
+  imports: 'Nhập khẩu',
+  kanbanDashboard: 'Bảng Kanban',
+  purchaseOrders: 'Đơn đặt hàng',
+  consolidation: 'Hợp nhất',
+  internationalTransit: 'Vận chuyển quốc tế',
+  itemsToStore: 'Hàng cần lưu kho',
+  employees: 'Nhân viên',
+  warehouseMap: 'Sơ đồ kho',
+  preOrders: 'Đơn đặt trước',
+  
+  // Additional Dashboard Metrics
+  revenueProfitCashFlowMetrics: 'Doanh thu, lợi nhuận và dòng tiền',
+  ordersFulfilled: 'Đơn đã xử lý',
+  activeIssues: 'Vấn đề đang xử lý',
+  reviewNeeded: 'Cần xem xét',
+  stockApprovals: 'Phê duyệt tồn kho',
+  vsLastMonth: '% so với tháng trước',
+  margin: 'Biên lợi nhuận',
+  avgOrderValue: 'Giá trị đơn TB',
+  perTransaction: 'Mỗi giao dịch',
+  agedReceivables: 'Công nợ quá hạn',
+  currencyDistribution: 'Phân bổ tiền tệ',
+  thisMonthVsLastMonth: 'Tháng này so với tháng trước',
+  inventoryRiskAlerts: 'Cảnh báo rủi ro tồn kho',
+  stockIssuesRequiringAttention: 'Vấn đề tồn kho cần chú ý',
+  olderthan24h: '>24 giờ',
+  
 } as const;
 
 export default common;

@@ -267,7 +267,7 @@ export function Dashboard() {
                     <p className={`text-3xl font-bold mt-1 ${(operationsPulse?.ordersAtRiskOfSLA || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}`} data-testid="value-sla-breach-risk">
                       {operationsPulse?.ordersAtRiskOfSLA || 0}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">&gt;24h old</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('common:olderthan24h')}</p>
                   </div>
                   <div className={`p-3 rounded-lg ${(operationsPulse?.ordersAtRiskOfSLA || 0) > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-gray-100 dark:bg-slate-700'}`}>
                     <AlertCircle className={`h-6 w-6 ${(operationsPulse?.ordersAtRiskOfSLA || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`} />
@@ -281,11 +281,11 @@ export function Dashboard() {
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-today-throughput">Today's Throughput</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-today-throughput">{t('common:todaysThroughput')}</p>
                     <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1" data-testid="value-today-throughput">
                       {operationsPulse?.pickPackThroughputToday || 0}
                     </p>
-                    <p className="text-xs text-green-600 dark:text-green-400 mt-1">Orders fulfilled</p>
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-1">{t('common:ordersFulfilled')}</p>
                   </div>
                   <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
                     <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
@@ -299,11 +299,11 @@ export function Dashboard() {
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-carrier-exceptions">Carrier Exceptions</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-carrier-exceptions">{t('common:carrierExceptions')}</p>
                     <p className={`text-3xl font-bold mt-1 ${(operationsPulse?.carrierExceptions || 0) > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-gray-900 dark:text-gray-100'}`} data-testid="value-carrier-exceptions">
                       {operationsPulse?.carrierExceptions || 0}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Active issues</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('common:activeIssues')}</p>
                   </div>
                   <div className={`p-3 rounded-lg ${(operationsPulse?.carrierExceptions || 0) > 0 ? 'bg-orange-100 dark:bg-orange-900/30' : 'bg-gray-100 dark:bg-slate-700'}`}>
                     <Truck className={`h-6 w-6 ${(operationsPulse?.carrierExceptions || 0) > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'}`} />
@@ -318,12 +318,12 @@ export function Dashboard() {
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-stock-approvals">Stock Approvals</p>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-stock-approvals">{t('common:stockApprovals')}</p>
                       <p className={`text-3xl font-bold mt-1 ${(operationsPulse?.pendingStockAdjustments || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}`} data-testid="value-stock-approvals">
                         {operationsPulse?.pendingStockAdjustments || 0}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
-                        Review needed <ArrowRight className="h-3 w-3" />
+                        {t('common:reviewNeeded')} <ArrowRight className="h-3 w-3" />
                       </p>
                     </div>
                     <div className={`p-3 rounded-lg ${(operationsPulse?.pendingStockAdjustments || 0) > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-gray-100 dark:bg-slate-700'}`}>
@@ -344,9 +344,9 @@ export function Dashboard() {
         <div className="mb-4">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-financial-control">
             <Euro className="h-5 w-5" />
-            Financial Control
+            {t('common:financialControl')}
           </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">Revenue, profit, and cash flow metrics</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('common:revenueProfitCashFlowMetrics')}</p>
         </div>
 
         {financialLoading && !financialControl ? (
@@ -360,7 +360,7 @@ export function Dashboard() {
               <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-total-revenue">Total Revenue</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-total-revenue">{t('common:totalRevenue')}</p>
                     <Euro className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   </div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-total-revenue">
@@ -374,7 +374,7 @@ export function Dashboard() {
                         <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
                       )}
                       <span className={`text-xs ${financialControl.cashConversionByCurrency.EUR.trend >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                        {Math.abs(financialControl.cashConversionByCurrency.EUR.trend).toFixed(1)}% vs last month
+                        {Math.abs(financialControl.cashConversionByCurrency.EUR.trend).toFixed(1)}{t('common:vsLastMonth')}
                       </span>
                     </div>
                   )}
@@ -385,14 +385,14 @@ export function Dashboard() {
               <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-net-profit">Net Profit</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-net-profit">{t('common:netProfit')}</p>
                     <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
                   </div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-net-profit">
                     {formatCurrency(financialControl?.netProfit || 0, 'EUR')}
                   </p>
                   <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                    Margin: <span className="font-semibold text-green-600 dark:text-green-400" data-testid="value-profit-margin">{financialControl?.profitMarginPercent.toFixed(1)}%</span>
+                    {t('common:margin')}: <span className="font-semibold text-green-600 dark:text-green-400" data-testid="value-profit-margin">{financialControl?.profitMarginPercent.toFixed(1)}%</span>
                   </p>
                 </CardContent>
               </Card>
@@ -401,7 +401,7 @@ export function Dashboard() {
               <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-average-order-value">Avg Order Value</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-average-order-value">{t('common:avgOrderValue')}</p>
                     <DollarSign className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                   </div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-average-order-value">

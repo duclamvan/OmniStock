@@ -20,17 +20,19 @@ import {
   Ticket,
   ClipboardList
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAuth } from "@/hooks/use-auth";
 
 interface NavItem {
-  name: string;
+  labelKey: string;
   href?: string;
   icon?: any;
   adminOnly?: boolean;
   children?: NavItem[];
+  namespace?: string;
 }
 
 // Recursive function to filter navigation items based on user role
@@ -57,109 +59,120 @@ function filterNavItems(items: NavItem[], isAdmin: boolean): NavItem[] {
 
 const navigation: NavItem[] = [
   {
-    name: "Dashboard",
+    labelKey: "dashboard",
     href: "/",
     icon: ChartLine,
+    namespace: "common"
   },
   {
-    name: "Orders",
+    labelKey: "orders",
     icon: ShoppingCart,
+    namespace: "orders",
     children: [
-      { name: "All Orders", href: "/orders" },
-      { name: "Add Order", href: "/orders/add" },
-      { name: "To Fulfill", href: "/orders/to-fulfill" },
-      { name: "Shipped", href: "/orders/shipped" },
-      { name: "Pay Later", href: "/orders/pay-later" },
-      { name: "Pre-Orders", href: "/orders/pre-orders" },
+      { labelKey: "orders", href: "/orders", namespace: "orders" },
+      { labelKey: "addOrder", href: "/orders/add", namespace: "orders" },
+      { labelKey: "toFulfill", href: "/orders/to-fulfill", namespace: "orders" },
+      { labelKey: "shipped", href: "/orders/shipped", namespace: "orders" },
+      { labelKey: "payLater", href: "/orders/pay-later", namespace: "orders" },
+      { labelKey: "preOrders", href: "/orders/pre-orders" },
     ],
   },
   {
-    name: "Inventory",
+    labelKey: "inventory",
     href: "/inventory",
     icon: Package,
+    namespace: "inventory"
   },
   {
-    name: "Warehouse",
+    labelKey: "warehouse",
     icon: Warehouse,
+    namespace: "warehouse",
     children: [
-      { name: "All Warehouses", href: "/warehouses" },
-      { name: "Warehouse Map", href: "/warehouses/map" },
-      { name: "Add Warehouse", href: "/warehouses/add" },
+      { labelKey: "warehouses", href: "/warehouses", namespace: "warehouse" },
+      { labelKey: "warehouseMap", href: "/warehouses/map" },
+      { labelKey: "addWarehouse", href: "/warehouses/add", namespace: "warehouse" },
     ],
   },
   {
-    name: "Stock",
+    labelKey: "stock",
     icon: ClipboardList,
     children: [
-      { name: "Stock Lookup", href: "/stock" },
-      { name: "Adjustment Approvals", href: "/stock/approvals" },
+      { labelKey: "stockLookup", href: "/stock" },
+      { labelKey: "adjustmentApprovals", href: "/stock/approvals" },
     ],
   },
   {
-    name: "Discounts",
+    labelKey: "discounts",
     href: "/discounts",
     icon: Percent,
+    namespace: "financial"
   },
   {
-    name: "Customers",
+    labelKey: "customers",
     href: "/customers",
     icon: Users,
+    namespace: "customers"
   },
   {
-    name: "Files",
+    labelKey: "files",
     href: "/files",
     icon: FileText,
   },
   {
-    name: "Services",
+    labelKey: "services",
     href: "/services",
     icon: Wrench,
   },
   {
-    name: "Tickets",
+    labelKey: "tickets",
     href: "/tickets",
     icon: Ticket,
+    namespace: "system"
   },
   {
-    name: "Imports",
+    labelKey: "imports",
     icon: Globe,
     children: [
-      { name: "Kanban Dashboard", href: "/imports/kanban" },
-      { name: "Purchase Orders", href: "/purchase-orders" },
-      { name: "Consolidation", href: "/consolidation" },
-      { name: "International Transit", href: "/imports/international-transit" },
+      { labelKey: "kanbanDashboard", href: "/imports/kanban" },
+      { labelKey: "purchaseOrders", href: "/purchase-orders" },
+      { labelKey: "consolidation", href: "/consolidation" },
+      { labelKey: "internationalTransit", href: "/imports/international-transit" },
     ],
   },
   {
-    name: "Receiving",
+    labelKey: "receiving",
     href: "/receiving",
     icon: Package,
+    namespace: "warehouse"
   },
   {
-    name: "Items To Store",
+    labelKey: "itemsToStore",
     href: "/receiving/storage",
     icon: PackageCheck,
   },
   {
-    name: "Employees",
+    labelKey: "employees",
     href: "/employees",
     icon: Users,
     adminOnly: true,
   },
   {
-    name: "Reports",
+    labelKey: "reports",
     href: "/reports",
     icon: BarChart3,
+    namespace: "reports"
   },
   {
-    name: "Settings",
+    labelKey: "settings",
     href: "/user-settings",
     icon: Settings,
+    namespace: "common"
   },
 ];
 
 export function Sidebar() {
   const [location] = useLocation();
+  const { t } = useTranslation();
   const { isAdministrator } = useAuth();
   const navRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<{ [key: string]: HTMLElement | null }>({});
@@ -176,7 +189,7 @@ export function Sidebar() {
       if (item.children) {
         const hasActiveChild = item.children.some(child => child.href === location);
         if (hasActiveChild) {
-          openMenus.push(item.name);
+          openMenus.push(item.labelKey);
         }
       }
     });
@@ -205,10 +218,10 @@ export function Sidebar() {
         if (item.children) {
           const activeChild = item.children.find(child => child.href === location);
           if (activeChild) {
-            activeKey = `${item.name}-${activeChild.href}`;
+            activeKey = `${item.labelKey}-${activeChild.href}`;
           }
         } else if (item.href === location) {
-          activeKey = item.name;
+          activeKey = item.labelKey;
         }
       });
       
@@ -223,12 +236,18 @@ export function Sidebar() {
     }, 100);
   }, [location]);
 
-  const toggleItem = (name: string) => {
+  const toggleItem = (labelKey: string) => {
     setOpenItems(prev => 
-      prev.includes(name) 
-        ? prev.filter(item => item !== name)
-        : [...prev, name]
+      prev.includes(labelKey) 
+        ? prev.filter(item => item !== labelKey)
+        : [...prev, labelKey]
     );
+  };
+
+  // Helper function to get translated label
+  const getLabel = (item: NavItem) => {
+    const namespace = item.namespace || "common";
+    return t(`${namespace}:${item.labelKey}`);
   };
 
   return (
@@ -244,21 +263,21 @@ export function Sidebar() {
         <div className="px-4 space-y-1">
           {filteredNavigation.map((item) => {
             if (item.children) {
-              const isOpen = openItems.includes(item.name);
+              const isOpen = openItems.includes(item.labelKey);
               const isActive = item.children.some(child => location === child.href);
               
               return (
                 <div
-                  key={item.name}
+                  key={item.labelKey}
                   ref={el => {
                     if (isActive && el) {
-                      itemRefs.current[item.name] = el;
+                      itemRefs.current[item.labelKey] = el;
                     }
                   }}
                 >
                   <Collapsible
                     open={isOpen}
-                    onOpenChange={() => toggleItem(item.name)}
+                    onOpenChange={() => toggleItem(item.labelKey)}
                   >
                     <CollapsibleTrigger asChild>
                       <Button
@@ -270,7 +289,7 @@ export function Sidebar() {
                       >
                       <div className="flex items-center">
                         <item.icon className="mr-3 h-5 w-5" />
-                        {item.name}
+                        {getLabel(item)}
                       </div>
                       <ChevronDown className={cn(
                         "h-4 w-4 transition-transform",
@@ -287,7 +306,7 @@ export function Sidebar() {
                             key={child.href}
                             ref={el => {
                               if (isChildActive && el) {
-                                itemRefs.current[`${item.name}-${child.href}`] = el;
+                                itemRefs.current[`${item.labelKey}-${child.href}`] = el;
                               }
                             }}
                           >
@@ -300,7 +319,7 @@ export function Sidebar() {
                                   isChildActive && "bg-slate-100 dark:bg-gray-800 text-slate-900 dark:text-gray-100"
                                 )}
                               >
-                                {child.name}
+                                {getLabel(child)}
                               </Button>
                             </Link>
                           </div>
@@ -317,10 +336,10 @@ export function Sidebar() {
             
             return (
               <div
-                key={item.name}
+                key={item.labelKey}
                 ref={el => {
                   if (isActive && el) {
-                    itemRefs.current[item.name] = el;
+                    itemRefs.current[item.labelKey] = el;
                   }
                 }}
               >
@@ -333,7 +352,7 @@ export function Sidebar() {
                     )}
                   >
                     <item.icon className="mr-3 h-5 w-5" />
-                    {item.name}
+                    {getLabel(item)}
                   </Button>
                 </Link>
               </div>
