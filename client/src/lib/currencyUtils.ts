@@ -92,7 +92,14 @@ export function getCurrencySymbol(currency: Currency): string {
 export function formatDate(date: Date | string | null | undefined): string {
   if (!date) return '';
   
-  const d = typeof date === 'string' ? new Date(date) : date;
+  let d: Date;
+  if (typeof date === 'string') {
+    d = new Date(date);
+  } else if (date instanceof Date) {
+    d = date;
+  } else {
+    return '';
+  }
   
   if (isNaN(d.getTime())) return '';
   

@@ -847,7 +847,7 @@ export function Dashboard() {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600 dark:text-gray-400">Trend</span>
                   <span className={`font-semibold ${systemAlerts?.returnsSpike.spikePercent && systemAlerts.returnsSpike.spikePercent > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`} data-testid="value-returns-trend">
-                    {systemAlerts?.returnsSpike.spikePercent >= 0 ? '+' : ''}{systemAlerts?.returnsSpike.spikePercent.toFixed(1)}%
+                    {(systemAlerts?.returnsSpike.spikePercent ?? 0) >= 0 ? '+' : ''}{(systemAlerts?.returnsSpike.spikePercent ?? 0).toFixed(1)}%
                   </span>
                 </div>
               </CardContent>
