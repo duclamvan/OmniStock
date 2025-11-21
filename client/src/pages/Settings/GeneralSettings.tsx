@@ -248,14 +248,14 @@ export default function GeneralSettings() {
     },
     onSuccess: async (values) => {
       console.log('💾 Settings saved! Checking language change...', {
-        newLanguage: values.default_language,
-        originalLanguage: originalSettings.default_language,
+        desiredLanguage: values.default_language,
         currentI18nLanguage: i18n.language,
       });
       
-      // CRITICAL: Change language immediately if default_language was updated
-      if (values.default_language && values.default_language !== originalSettings.default_language) {
-        console.log(`🌐 Changing language from ${originalSettings.default_language} to ${values.default_language}`);
+      // CRITICAL: Change language if the desired language differs from current i18n language
+      // This ensures language switches even if it was already saved in the database
+      if (values.default_language && values.default_language !== i18n.language) {
+        console.log(`🌐 Changing language from ${i18n.language} to ${values.default_language}`);
         try {
           await i18n.changeLanguage(values.default_language);
           // Persist to localStorage immediately
@@ -265,10 +265,7 @@ export default function GeneralSettings() {
           console.error('❌ Failed to change language:', error);
         }
       } else {
-        console.log('⏭️ No language change needed', {
-          sameAsOriginal: values.default_language === originalSettings.default_language,
-          noLanguageValue: !values.default_language,
-        });
+        console.log('⏭️ Language already matches desired setting');
       }
       
       // Invalidate ALL settings caches to ensure changes take effect immediately
