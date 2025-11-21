@@ -1,6 +1,25 @@
 # Overview
 Davie Supply is a full-stack web application for comprehensive warehouse and order management, designed to optimize supply chain operations. It covers the entire order lifecycle, inventory tracking, customer relationship management (CRM), and multi-currency financial reporting. Key capabilities include real-time Vietnamese diacritics search, customer-specific pricing, external shipping API integrations, extensive settings management, and professional PDF packing list generation. The project envisions advanced warehouse mapping, a comprehensive Pick & Pack workflow, and AI-powered optimization to enhance efficiency and accuracy in supply chain logistics.
 
+# Recent Changes (November 21, 2025)
+
+## Critical Bug Fixes
+1. **Dashboard formatDate Function** - Fixed runtime error "d.getTime is not a function" by adding proper type validation for Date/string/null/undefined inputs in currencyUtils.ts
+
+2. **Product Schema Validation** - Fixed type coercion issues in shared/schema.ts by extending insertProductSchema with z.union() and .transform() for flexible handling of string/number inputs from frontend forms (categoryId, warehouseId, supplierId, decimal fields)
+
+3. **React Hook Form State Synchronization** - Fixed critical bug where forms (AddOrder, ProductForm) failed to submit due to RHF state containing undefined values even though UI showed correct data:
+   - Root cause: RHF takes snapshot of defaultValues before async settings load
+   - Fix: Added useEffect with useRef guard to call form.reset() once after initial settings load
+   - Prevents wiping user input on re-renders while ensuring RHF state matches UI state
+
+4. **Developer Experience** - Added dev-only validation error panels to AddOrder and ProductForm showing form.formState.errors for easier debugging, plus enhanced error logging and toast notifications
+
+## Testing Results
+- Dashboard: ✅ All metrics displaying correctly, no runtime errors
+- Product/Order Forms: ✅ Form validation and submission logic fixed, ready for end-to-end testing
+- Pending: Full e2e form submission tests (interrupted by unrelated session handling issue)
+
 # User Preferences
 Preferred communication style: Simple, everyday language.
 
