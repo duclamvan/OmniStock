@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   Calculator, 
   Package, 
@@ -17,7 +18,10 @@ import {
   DollarSign,
   Calendar,
   Truck,
-  ArrowRight
+  ArrowRight,
+  ChevronDown,
+  ChevronRight,
+  Box
 } from "lucide-react";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/currencyUtils";
@@ -55,6 +59,7 @@ interface LandingCostSummary {
 export default function LandingCostList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [expandedShipments, setExpandedShipments] = useState<number[]>([]);
 
   // Fetch all shipments
   const { data: shipments = [], isLoading } = useQuery<Shipment[]>({
@@ -337,6 +342,76 @@ export default function LandingCostList() {
                         </>
                       )}
                     </div>
+
+                    {/* Items List - Collapsible */}
+                    {shipment.items && shipment.items.length > 0 && (
+                      <Collapsible
+                        open={expandedShipments.includes(shipment.id)}
+                        onOpenChange={(isOpen) => {
+                          setExpandedShipments(prev => {
+                            if (isOpen) {
+                              // Expand: add the ID only if not already present
+                              return prev.includes(shipment.id) ? prev : [...prev, shipment.id];
+                            } else {
+                              // Collapse: remove the ID
+                              return prev.filter(id => id !== shipment.id);
+                            }
+                          });
+                        }}
+                        className="mt-3"
+                      >
+                        <CollapsibleTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-between hover:bg-muted/50"
+                            data-testid={`button-toggle-items-${shipment.id}`}
+                          >
+                            <span className="flex items-center gap-2">
+                              <Box className="h-4 w-4" />
+                              <span className="font-medium">
+                                {expandedShipments.includes(shipment.id) ? 'Hide' : 'Show'} Items ({shipment.items.length})
+                              </span>
+                            </span>
+                            {expandedShipments.includes(shipment.id) ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="mt-2">
+                          <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-3 bg-white dark:bg-gray-950">
+                            {shipment.items.map((item: any, idx: number) => (
+                              <div
+                                key={idx}
+                                className="flex flex-col gap-1 text-sm p-2 bg-muted/30 rounded hover:bg-muted/50 transition-colors"
+                                data-testid={`item-${shipment.id}-${idx}`}
+                              >
+                                <div className="flex justify-between items-start gap-2">
+                                  <span className="font-medium flex-1">
+                                    {item.productName || item.name || `Item ${idx + 1}`}
+                                  </span>
+                                  <span className="font-semibold shrink-0">
+                                    ×{item.quantity || 1}
+                                  </span>
+                                </div>
+                                {(item.sku || item.category) && (
+                                  <div className="flex gap-3 text-xs text-muted-foreground">
+                                    {item.sku && (
+                                      <span>SKU: {item.sku}</span>
+                                    )}
+                                    {item.category && (
+                                      <span>• {item.category}</span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    )}
                   </div>
 
                   {/* Right Section - Actions */}
