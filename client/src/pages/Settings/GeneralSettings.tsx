@@ -1280,6 +1280,22 @@ export default function GeneralSettings() {
           </TabsContent>
         </Tabs>
 
+        {/* Development: Show Validation Errors */}
+        {import.meta.env.DEV && Object.keys(form.formState.errors).length > 0 && (
+          <Card className="border-red-500 bg-red-50 dark:bg-red-950/20">
+            <CardHeader>
+              <CardTitle className="text-red-700 dark:text-red-400 text-sm">
+                ⚠️ Form Validation Errors ({Object.keys(form.formState.errors).length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <pre className="text-xs text-red-600 dark:text-red-300 overflow-auto max-h-48">
+                {JSON.stringify(form.formState.errors, null, 2)}
+              </pre>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Sticky Action Bar */}
         <div className="sticky bottom-0 bg-white dark:bg-slate-950 border-t pt-4 pb-2 -mx-1 px-1 sm:px-0 sm:mx-0">
           <div className="flex justify-end">
