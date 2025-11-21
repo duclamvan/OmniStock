@@ -455,6 +455,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
             { name: "Purchase Orders", href: "/purchase-orders" },
             { name: "Consolidation", href: "/consolidation" },
             { name: "International Transit", href: "/imports/international-transit" },
+            { name: "Landing Costs", href: "/imports/landing-costs" },
           ],
         },
         {

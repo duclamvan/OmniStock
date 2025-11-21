@@ -79,6 +79,8 @@ import CreatePurchase from "@/pages/Imports/CreatePurchase";
 import AtWarehouse from "@/pages/Imports/AtWarehouse";
 import InternationalTransit from "@/pages/Imports/InternationalTransit";
 import ImportKanbanDashboard from "@/pages/Imports/ImportKanbanDashboard";
+import LandingCostList from "@/pages/Imports/LandingCostList";
+import LandingCostDetails from "@/pages/Imports/LandingCostDetails";
 import ReceivingList from "@/pages/Receiving/ReceivingList";
 import StartReceiving from "@/pages/Receiving/StartReceiving";
 import ReceiptDetails from "@/pages/Receiving/ReceiptDetails";
@@ -340,6 +342,12 @@ function Router() {
         </Route>
         <Route path="/imports/international-transit">
           {() => <ProtectedRoute requireAdmin><InternationalTransit /></ProtectedRoute>}
+        </Route>
+        <Route path="/imports/landing-costs/:id">
+          {() => <ProtectedRoute requireAdmin><LandingCostDetails /></ProtectedRoute>}
+        </Route>
+        <Route path="/imports/landing-costs">
+          {() => <ProtectedRoute requireAdmin><LandingCostList /></ProtectedRoute>}
         </Route>
         <Route path="/imports">
           {() => <ProtectedRoute requireAdmin><ImportKanbanDashboard /></ProtectedRoute>}
