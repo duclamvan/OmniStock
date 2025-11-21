@@ -168,53 +168,53 @@ export default function GeneralSettings() {
     },
   });
 
-  // Reset form when settings load
+  // Reset form when settings load (with proper fallbacks matching defaultValues)
   useEffect(() => {
     if (!isLoading) {
       const snapshot = {
-        company_name: generalSettings.companyName,
-        company_email: generalSettings.companyEmail,
-        company_phone: generalSettings.companyPhone,
-        company_address: generalSettings.companyAddress,
-        company_city: generalSettings.companyCity,
-        company_zip: generalSettings.companyZip,
-        company_country: generalSettings.companyCountry,
-        company_website: generalSettings.companyWebsite,
-        company_vat_id: generalSettings.companyVatId,
-        company_logo_url: generalSettings.companyLogoUrl,
-        company_invoice_stamp: generalSettings.companyInvoiceStamp,
-        company_facebook_url: generalSettings.companyFacebookUrl,
-        company_whatsapp_number: generalSettings.companyWhatsAppNumber,
-        company_zalo_number: generalSettings.companyZaloNumber,
-        company_linkedin_url: generalSettings.companyLinkedInUrl,
-        company_instagram_url: generalSettings.companyInstagramUrl,
-        default_language: generalSettings.defaultLanguage,
-        default_date_format: generalSettings.defaultDateFormat,
-        default_time_format: generalSettings.defaultTimeFormat,
-        default_timezone: generalSettings.defaultTimezone,
-        number_format: generalSettings.numberFormat,
-        default_currency: generalSettings.defaultCurrency,
-        currency_display: generalSettings.currencyDisplay,
-        default_priority: generalSettings.defaultPriority,
-        default_order_location: generalSettings.defaultOrderLocation,
-        working_days: generalSettings.workingDays,
-        business_hours_start: generalSettings.businessHoursStart,
-        business_hours_end: generalSettings.businessHoursEnd,
-        warehouse_emergency_contact: generalSettings.warehouseEmergencyContact,
-        warehouse_contact_email: generalSettings.warehouseContactEmail,
-        pickup_cutoff_time: generalSettings.pickupCutoffTime,
-        max_order_processing_days: generalSettings.maxOrderProcessingDays,
-        enable_email_notifications: generalSettings.enableEmailNotifications,
-        enable_sms_notifications: generalSettings.enableSmsNotifications,
-        low_stock_alert_email: generalSettings.lowStockAlertEmail,
-        order_status_change_notifications: generalSettings.orderStatusChangeNotifications,
-        daily_summary_report_email: generalSettings.dailySummaryReportEmail,
-        weekly_report_email: generalSettings.weeklyReportEmail,
-        customer_portal_enabled: generalSettings.customerPortalEnabled,
-        return_policy_text: generalSettings.returnPolicyText,
-        enable_ai_address_parsing: generalSettings.enableAiAddressParsing,
-        enable_ai_carton_packing: generalSettings.enableAiCartonPacking,
-        audit_log_retention_days: generalSettings.auditLogRetentionDays,
+        company_name: generalSettings.companyName || 'Davie Supply',
+        company_email: generalSettings.companyEmail || '',
+        company_phone: generalSettings.companyPhone || '',
+        company_address: generalSettings.companyAddress || '',
+        company_city: generalSettings.companyCity || '',
+        company_zip: generalSettings.companyZip || '',
+        company_country: generalSettings.companyCountry || '',
+        company_website: generalSettings.companyWebsite || '',
+        company_vat_id: generalSettings.companyVatId || '',
+        company_logo_url: generalSettings.companyLogoUrl || '',
+        company_invoice_stamp: generalSettings.companyInvoiceStamp || '',
+        company_facebook_url: generalSettings.companyFacebookUrl || '',
+        company_whatsapp_number: generalSettings.companyWhatsAppNumber || '',
+        company_zalo_number: generalSettings.companyZaloNumber || '',
+        company_linkedin_url: generalSettings.companyLinkedInUrl || '',
+        company_instagram_url: generalSettings.companyInstagramUrl || '',
+        default_language: generalSettings.defaultLanguage || 'en',
+        default_date_format: generalSettings.defaultDateFormat || 'DD/MM/YYYY',
+        default_time_format: generalSettings.defaultTimeFormat || '24-hour',
+        default_timezone: generalSettings.defaultTimezone || 'Europe/Prague',
+        number_format: generalSettings.numberFormat || '1,000.00',
+        default_currency: generalSettings.defaultCurrency || 'CZK',
+        currency_display: generalSettings.currencyDisplay || 'symbol',
+        default_priority: generalSettings.defaultPriority || 'medium',
+        default_order_location: generalSettings.defaultOrderLocation || '',
+        working_days: generalSettings.workingDays || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+        business_hours_start: generalSettings.businessHoursStart || '09:00',
+        business_hours_end: generalSettings.businessHoursEnd || '17:00',
+        warehouse_emergency_contact: generalSettings.warehouseEmergencyContact || '',
+        warehouse_contact_email: generalSettings.warehouseContactEmail || '',
+        pickup_cutoff_time: generalSettings.pickupCutoffTime || '14:00',
+        max_order_processing_days: generalSettings.maxOrderProcessingDays || 2,
+        enable_email_notifications: generalSettings.enableEmailNotifications ?? true,
+        enable_sms_notifications: generalSettings.enableSmsNotifications ?? false,
+        low_stock_alert_email: generalSettings.lowStockAlertEmail ?? true,
+        order_status_change_notifications: generalSettings.orderStatusChangeNotifications ?? true,
+        daily_summary_report_email: generalSettings.dailySummaryReportEmail ?? false,
+        weekly_report_email: generalSettings.weeklyReportEmail ?? true,
+        customer_portal_enabled: generalSettings.customerPortalEnabled ?? false,
+        return_policy_text: generalSettings.returnPolicyText || '',
+        enable_ai_address_parsing: generalSettings.enableAiAddressParsing ?? false,
+        enable_ai_carton_packing: generalSettings.enableAiCartonPacking ?? false,
+        audit_log_retention_days: generalSettings.auditLogRetentionDays || 90,
       };
       setOriginalSettings(snapshot);
       form.reset(snapshot);
@@ -243,8 +243,8 @@ export default function GeneralSettings() {
       await Promise.all(savePromises);
     },
     onSuccess: async () => {
-      // Invalidate and refetch settings to get true persisted state
-      await queryClient.invalidateQueries({ queryKey: ['/api/settings', 'general'] });
+      // Invalidate ALL settings caches to ensure changes take effect immediately
+      await queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
       
       // The useEffect will automatically update originalSettings when new data loads
       toast({
