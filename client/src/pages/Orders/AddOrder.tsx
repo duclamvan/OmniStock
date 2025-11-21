@@ -538,24 +538,47 @@ export default function AddOrder() {
     setAddressSuggestions([]);
   };
 
-  const form = useForm<z.infer<typeof addOrderSchema>>({
-    resolver: zodResolver(addOrderSchema),
-    defaultValues: {
-      orderType: 'ord',
-      currency: defaultCurrency as any,
-      priority: 'medium',
-      orderStatus: 'pending',
-      paymentStatus: 'pending',
-      paymentMethod: defaultPaymentMethod as any,
-      shippingMethod: defaultCarrier as any,
+  // Helper function to build default values for the form
+  const buildDefaultValues = useCallback(() => {
+    return {
+      orderType: 'ord' as const,
+      currency: (defaultCurrency || 'CZK') as any,
+      priority: 'medium' as const,
+      orderStatus: 'pending' as const,
+      paymentStatus: 'pending' as const,
+      paymentMethod: (defaultPaymentMethod || 'Bank Transfer') as any,
+      shippingMethod: (defaultCarrier || 'GLS DE') as any,
       discountValue: 0,
-      taxRate: financialHelpers.getDefaultTaxRate(defaultCurrency) * 100,
+      taxRate: financialHelpers.getDefaultTaxRate(defaultCurrency || 'CZK') * 100,
       shippingCost: 0,
       actualShippingCost: 0,
       adjustment: 0,
       orderLocation: '',
-    },
+    };
+  }, [defaultCurrency, defaultPaymentMethod, defaultCarrier, financialHelpers]);
+
+  const form = useForm<z.infer<typeof addOrderSchema>>({
+    resolver: zodResolver(addOrderSchema),
+    defaultValues: buildDefaultValues(),
   });
+
+  // Track if initial reset has happened
+  const hasResetRef = useRef(false);
+
+  // Reset form with proper defaults after settings finish loading (once only)
+  useEffect(() => {
+    if (!hasResetRef.current && defaultCurrency && defaultPaymentMethod && defaultCarrier) {
+      if (import.meta.env.DEV) {
+        console.log('[AddOrder] Settings loaded, resetting form with defaults:', {
+          defaultCurrency,
+          defaultPaymentMethod,
+          defaultCarrier,
+        });
+      }
+      form.reset(buildDefaultValues());
+      hasResetRef.current = true;
+    }
+  }, [defaultCurrency, defaultPaymentMethod, defaultCarrier, buildDefaultValues, form]);
 
   // Auto-fill order location based on device type or stored preference
   useEffect(() => {
@@ -1774,7 +1797,14 @@ export default function AddOrder() {
           </div>
         </div>
 
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
+          console.error('Order form validation errors:', errors);
+          toast({
+            title: "Form Validation Error",
+            description: "Please check all required fields and try again",
+            variant: "destructive",
+          });
+        })}>
           <div className="space-y-4 sm:space-y-6">
             {/* Mobile-Only Settings (at top) */}
             <div className="lg:hidden space-y-4">
@@ -4625,6 +4655,36 @@ export default function AddOrder() {
                       </div>
                       <p className="text-xs text-gray-500">Click to edit or Round Up</p>
                     </div>
+
+                    {/* Dev-Only Form Errors Display */}
+                    {import.meta.env.DEV && Object.keys(form.formState.errors).length > 0 && (
+                      <Accordion type="single" collapsible className="mb-3">
+                        <AccordionItem value="form-errors" className="border border-red-200 dark:border-red-800 rounded-lg">
+                          <AccordionTrigger className="px-3 py-2 hover:no-underline">
+                            <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                              <AlertCircle className="h-4 w-4" />
+                              <span className="text-sm font-medium">
+                                Form Validation Errors ({Object.keys(form.formState.errors).length})
+                              </span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="px-3 pb-3">
+                            <Alert variant="destructive" className="mb-0">
+                              <AlertDescription>
+                                <div className="space-y-1 text-xs font-mono">
+                                  {Object.entries(form.formState.errors).map(([field, error]) => (
+                                    <div key={field} className="flex gap-2">
+                                      <span className="font-bold">{field}:</span>
+                                      <span>{error?.message?.toString() || 'Invalid value'}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </AlertDescription>
+                            </Alert>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    )}
 
                     <div className="pt-3 space-y-2">
                       {orderId ? (

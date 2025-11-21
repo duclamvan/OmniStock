@@ -344,14 +344,19 @@ export default function ProductForm() {
     enabled: isEditMode && !!id,
   });
 
-  const form = useForm<z.infer<typeof productSchema>>({
-    resolver: zodResolver(productSchema),
-    defaultValues: {
+  // Helper function to build default values for the form
+  const buildDefaultValues = useCallback(() => {
+    return {
       quantity: 0,
-      lowStockAlert: lowStockThreshold,
+      lowStockAlert: lowStockThreshold || 10,
       categoryId: isEditMode ? undefined : (categoryIdFromUrl || undefined),
       warehouseId: isEditMode ? undefined : (defaultWarehouse || undefined),
-    },
+    };
+  }, [lowStockThreshold, categoryIdFromUrl, defaultWarehouse, isEditMode]);
+
+  const form = useForm<z.infer<typeof productSchema>>({
+    resolver: zodResolver(productSchema),
+    defaultValues: buildDefaultValues(),
   });
 
   const tierForm = useForm<z.infer<typeof tieredPricingSchema>>({
@@ -360,6 +365,24 @@ export default function ProductForm() {
       priceType: 'tiered',
     },
   });
+
+  // Track if initial reset has happened
+  const hasResetRef = useRef(false);
+
+  // Reset form with proper defaults after settings finish loading (add mode only, once)
+  useEffect(() => {
+    if (!isEditMode && !hasResetRef.current && lowStockThreshold !== undefined) {
+      if (import.meta.env.DEV) {
+        console.log('[ProductForm] Settings loaded, resetting form with defaults:', {
+          lowStockThreshold,
+          defaultWarehouse,
+          categoryIdFromUrl,
+        });
+      }
+      form.reset(buildDefaultValues());
+      hasResetRef.current = true;
+    }
+  }, [lowStockThreshold, defaultWarehouse, buildDefaultValues, form, isEditMode]);
 
   // Watch import cost fields for auto-conversion
   const importCostUsd = form.watch('importCostUsd');
@@ -1696,7 +1719,12 @@ export default function ProductForm() {
         </div>
 
         <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
-          console.log('Form validation errors:', errors);
+          console.error('Product form validation errors:', errors);
+          toast({
+            title: "Form Validation Error",
+            description: "Please check all required fields and try again",
+            variant: "destructive",
+          });
         })} className="space-y-4">
           {/* Summary Card (Edit mode only) */}
           {isEditMode && (
@@ -3472,6 +3500,38 @@ export default function ProductForm() {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
+
+          {/* Dev-Only Form Errors Display */}
+          {import.meta.env.DEV && Object.keys(form.formState.errors).length > 0 && (
+            <div className="max-w-7xl mx-auto px-4 pb-4">
+              <Accordion type="single" collapsible>
+                <AccordionItem value="form-errors" className="border border-red-200 dark:border-red-800 rounded-lg">
+                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                    <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="text-sm font-medium">
+                        Form Validation Errors ({Object.keys(form.formState.errors).length})
+                      </span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-3">
+                    <Alert variant="destructive" className="mb-0">
+                      <AlertDescription>
+                        <div className="space-y-1 text-xs font-mono">
+                          {Object.entries(form.formState.errors).map(([field, error]) => (
+                            <div key={field} className="flex gap-2">
+                              <span className="font-bold">{field}:</span>
+                              <span>{error?.message?.toString() || 'Invalid value'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </AlertDescription>
+                    </Alert>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
+          )}
 
           {/* Bottom Action Bar */}
           <div className="sticky bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t shadow-lg rounded-t-2xl p-4 z-10">
