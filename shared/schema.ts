@@ -1347,7 +1347,42 @@ export const insertWarehouseFileSchema = createInsertSchema(warehouseFiles).omit
 export const insertWarehouseFinancialContractSchema = createInsertSchema(warehouseFinancialContracts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertWarehouseLayoutSchema = createInsertSchema(warehouseLayouts).omit({ id: true, generatedAt: true, createdAt: true, updatedAt: true });
 export const insertLayoutBinSchema = createInsertSchema(layoutBins).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertProductSchema = createInsertSchema(products)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    // Allow string or number for ID fields and convert to string
+    categoryId: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    warehouseId: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    supplierId: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    packingMaterialId: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    // Allow string or number for decimal price fields and convert to string
+    priceCzk: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    priceEur: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    priceUsd: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    priceVnd: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    priceCny: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    importCostUsd: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    importCostCzk: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    importCostEur: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    importCostVnd: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    importCostCny: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    latestLandingCost: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    landingCostEur: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    landingCostUsd: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    landingCostVnd: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    landingCostCzk: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    landingCostCny: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    // Allow string or number for dimension/weight decimal fields
+    length: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    width: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    height: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    weight: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    unitWeightKg: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    unitLengthCm: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    unitWidthCm: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    unitHeightCm: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+    reorderRate: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? String(val) : null),
+  });
 export const insertProductVariantSchema = createInsertSchema(productVariants).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductTieredPricingSchema = createInsertSchema(productTieredPricing).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductBundleSchema = createInsertSchema(productBundles).omit({ id: true, bundleId: true, createdAt: true, updatedAt: true });
