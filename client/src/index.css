@@ -646,29 +646,43 @@ body > div[style*="z-index: 999999"] {
   }
 }
 
-/* Toast container optimizations - Disabled for 3D effect */
+/* Toast viewport positioned in top-right below notification bell */
 [data-radix-toast-viewport] {
   pointer-events: none !important;
   position: fixed !important;
-  right: 0 !important;
-  top: 0 !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  z-index: 2147483647 !important;
+  top: 72px !important; /* Below header (64px) + gap (8px) */
+  right: 16px !important;
+  width: auto !important;
+  max-width: 420px !important;
+  z-index: 100 !important; /* Above content, below modals (typically 1000+) */
 }
 
-/* 3D Toast Stack - iPhone Style */
+/* Mobile responsive viewport */
+@media (max-width: 640px) {
+  [data-radix-toast-viewport] {
+    right: 12px !important;
+    max-width: calc(100vw - 24px) !important;
+  }
+}
+
+/* 3D Toast Stack - Top Right Below Notification Bell */
 .toast-3d {
   pointer-events: auto !important;
-  position: fixed !important;
-  right: 1rem !important;
-  bottom: 1rem !important;
-  width: 350px !important;
+  position: relative !important; /* Changed from fixed - parent container handles positioning */
+  width: 100% !important;
+  max-width: 420px !important;
   transform-style: preserve-3d !important;
   backface-visibility: hidden !important;
   -webkit-backface-visibility: hidden !important;
   -webkit-font-smoothing: antialiased !important;
   will-change: transform, opacity !important;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 640px) {
+  .toast-3d {
+    max-width: calc(100vw - 32px) !important;
+  }
 }
 
 /* Animation states with enhanced smooth timing */
@@ -685,11 +699,11 @@ body > div[style*="z-index: 999999"] {
   animation: toast-stack-reposition 600ms cubic-bezier(0.165, 0.84, 0.44, 1) forwards !important;
 }
 
-/* Enhanced smooth animations for toast entry and stacking */
+/* Enhanced smooth animations for toast entry from top-right */
 @keyframes toast-3d-slide-in {
   0% {
     opacity: 0;
-    transform: perspective(1200px) translate3d(100%, 20px, -50px) scale(0.95);
+    transform: perspective(1200px) translate3d(100%, -20px, -50px) scale(0.95);
   }
   60% {
     opacity: 0.8;

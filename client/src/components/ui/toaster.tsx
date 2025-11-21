@@ -11,16 +11,16 @@ import {
 export function Toaster() {
   const { toasts } = useToast()
 
-  // Calculate stacking styles - all 3 toasts stacked vertically with no overlap
+  // Calculate stacking styles - toasts stack downward from top-right
   const getStackStyles = (index: number): React.CSSProperties => {
-    // Stack all toasts vertically with tighter spacing
-    const translateY = index * -90 // 90px gap between each toast
+    // Stack toasts downward with spacing
+    const translateY = index * 90 // 90px gap between each toast (downward)
     const scale = 1 - (index * 0.02) // Very subtle scaling for depth
     const opacity = 1 - (index * 0.1) // Slight opacity reduction for older toasts
     
     return {
       transform: `translate3d(0, ${translateY}px, 0) scale(${scale})`,
-      transformOrigin: 'bottom right',
+      transformOrigin: 'top right', // Stack from top-right
       zIndex: 100 - index,
       opacity: opacity,
       // Enhanced smooth transitions with spring-like easing
@@ -34,44 +34,31 @@ export function Toaster() {
 
   return (
     <ToastProvider>
-      {/* Wrapper for 3D perspective context */}
-      <div style={{ 
-        position: 'fixed',
-        top: 0,
-        right: 0,
-        bottom: 0,
-        left: 0,
-        pointerEvents: 'none',
-        perspective: '1000px',
-        perspectiveOrigin: 'right center'
-      }}>
-        {toasts.slice(0, 3).map(function ({ id, title, description, action, ...props }, index) {
-          return (
-            <Toast 
-              key={id} 
-              {...props} 
-              data-testid="toast-notification"
-              className="toast-stacked toast-3d"
-              style={{
-                ...getStackStyles(index),
-                pointerEvents: 'auto', // Re-enable pointer events for toasts
-                // Smooth entry animation for new toasts
-                animationDelay: index === 0 ? '0ms' : '0ms',
-                animationFillMode: 'both',
-              }}
-            >
-            <div className="grid gap-1">
-              {title && <ToastTitle data-testid="toast-title">{title}</ToastTitle>}
-              {description && (
-                <ToastDescription data-testid="toast-description">{description}</ToastDescription>
-              )}
-            </div>
-            {action}
-            <ToastClose />
-            </Toast>
-          )
-        })}
-      </div>
+      {toasts.slice(0, 3).map(function ({ id, title, description, action, ...props }, index) {
+        return (
+          <Toast 
+            key={id} 
+            {...props} 
+            data-testid="toast-notification"
+            className="toast-stacked toast-3d"
+            style={{
+              ...getStackStyles(index),
+              pointerEvents: 'auto',
+              animationDelay: index === 0 ? '0ms' : '0ms',
+              animationFillMode: 'both',
+            }}
+          >
+          <div className="grid gap-1">
+            {title && <ToastTitle data-testid="toast-title">{title}</ToastTitle>}
+            {description && (
+              <ToastDescription data-testid="toast-description">{description}</ToastDescription>
+            )}
+          </div>
+          {action}
+          <ToastClose />
+          </Toast>
+        )
+      })}
       <ToastViewport />
     </ToastProvider>
   )
