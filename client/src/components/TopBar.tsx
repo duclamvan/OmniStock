@@ -7,9 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { normalizeVietnamese } from "@/lib/fuzzySearch";
+import { useTranslation } from 'react-i18next';
 
 export function TopBar() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -27,27 +29,27 @@ export function TopBar() {
     {
       id: 1,
       type: 'order',
-      title: 'New Order Received',
-      description: 'Order #24005 from Jane Doe',
-      time: '2 minutes ago',
+      title: t('common:newOrderReceived'),
+      description: t('common:orderFrom', { number: '#24005', customer: 'Jane Doe' }),
+      time: t('common:minutesAgo', { count: 2 }),
       icon: '🛒',
       color: 'bg-blue-50'
     },
     {
       id: 2,
       type: 'shipping',
-      title: 'Order Shipped',
-      description: 'Order #24003 has been shipped',
-      time: '5 minutes ago',
+      title: t('common:orderShipped'),
+      description: t('common:orderHasBeenShipped', { number: '#24003' }),
+      time: t('common:minutesAgo', { count: 5 }),
       icon: '🚚',
       color: 'bg-green-50'
     },
     {
       id: 3,
       type: 'stock',
-      title: 'Low Stock Alert',
-      description: 'Nail Polish #197001 is running low',
-      time: '10 minutes ago',
+      title: t('common:lowStockAlert'),
+      description: t('common:productRunningLow', { product: 'Nail Polish #197001' }),
+      time: t('common:minutesAgo', { count: 10 }),
       icon: '⚠️',
       color: 'bg-orange-50'
     },
@@ -58,14 +60,14 @@ export function TopBar() {
       <header className="bg-white shadow-sm border-b border-slate-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h2 className="text-xl font-semibold text-slate-800">Dashboard</h2>
+            <h2 className="text-xl font-semibold text-slate-800">{t('common:dashboard')}</h2>
             
             {/* Vietnamese Search Bar */}
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
               <Input
                 type="text"
-                placeholder="Search..."
+                placeholder={t('common:searchPlaceholder')}
                 value={searchQuery}
                 onChange={handleSearch}
                 className="pl-10 w-80"
@@ -114,7 +116,7 @@ export function TopBar() {
       <Dialog open={showNotifications} onOpenChange={setShowNotifications}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Notifications</DialogTitle>
+            <DialogTitle>{t('common:notifications')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             {notifications.map((notification) => (

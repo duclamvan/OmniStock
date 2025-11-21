@@ -562,15 +562,15 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-700">Pending</Badge>;
+        return <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-700">{t('orders:pending')}</Badge>;
       case 'to_fulfill':
-        return <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700">To Fulfill</Badge>;
+        return <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700">{t('orders:toFulfill')}</Badge>;
       case 'ready_to_ship':
-        return <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700">Ready to Ship</Badge>;
+        return <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700">{t('orders:readyToShip')}</Badge>;
       case 'shipped':
-        return <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border-green-200 dark:border-green-700">Shipped</Badge>;
+        return <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border-green-200 dark:border-green-700">{t('orders:shipped')}</Badge>;
       case 'cancelled':
-        return <Badge variant="destructive">Cancelled</Badge>;
+        return <Badge variant="destructive">{t('orders:cancelled')}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -579,11 +579,11 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const getPaymentStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-700">Pending</Badge>;
+        return <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-700">{t('orders:pending')}</Badge>;
       case 'paid':
-        return <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border-green-200 dark:border-green-700">Paid</Badge>;
+        return <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border-green-200 dark:border-green-700">{t('orders:paid')}</Badge>;
       case 'pay_later':
-        return <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700">Pay Later</Badge>;
+        return <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700">{t('orders:payLater')}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -592,13 +592,15 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const getPageTitle = () => {
     switch (filter) {
       case 'to_fulfill':
-        return 'Orders to Fulfill';
+        return t('orders:ordersToFulfill');
       case 'shipped':
-        return 'Shipped Orders';
+        return t('orders:shippedOrders');
       case 'pay_later':
-        return 'Pay Later Orders';
+        return t('orders:payLaterOrders');
+      case 'pre_orders':
+        return t('orders:preOrdersPage');
       default:
-        return 'All Orders';
+        return t('orders:allOrders');
     }
   };
 
@@ -1022,7 +1024,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             <div className="absolute inset-0 border-4 border-cyan-200 dark:border-cyan-800 rounded-full"></div>
             <div className="absolute inset-0 border-4 border-cyan-600 dark:border-cyan-400 rounded-full border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-slate-600 dark:text-slate-400 font-medium">Loading orders...</p>
+          <p className="text-slate-600 dark:text-slate-400 font-medium">{t('orders:loadingOrders')}</p>
         </div>
       </div>
     );
@@ -1037,7 +1039,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             {getPageTitle()}
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mt-1">
-            Track and manage customer orders and shipments
+            {t('orders:trackAndManageOrders')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -1054,15 +1056,15 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+                <DropdownMenuLabel>{t('orders:exportOptions')}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleExportXLSX} data-testid="menu-export-xlsx">
                   <FileDown className="h-4 w-4 mr-2" />
-                  Export XLSX
+                  {t('orders:exportToExcel')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleExportPDF} data-testid="menu-export-pdf">
                   <FileText className="h-4 w-4 mr-2" />
-                  Export PDF
+                  {t('orders:exportToPDF')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -1076,7 +1078,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             className="hidden sm:inline-flex"
           >
             <FileDown className="h-4 w-4 mr-2" />
-            Export XLSX
+            {t('orders:exportToExcel')}
           </Button>
           <Button 
             variant="outline" 
@@ -1085,15 +1087,15 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             className="hidden sm:inline-flex"
           >
             <FileText className="h-4 w-4 mr-2" />
-            Export PDF
+            {t('orders:exportToPDF')}
           </Button>
           
           {/* Add Order Button - Always Visible */}
           <Link href="/orders/add">
             <Button data-testid="button-add-order" className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
-              <span className="hidden xs:inline sm:inline">Add Order</span>
-              <span className="inline xs:hidden sm:hidden">Add</span>
+              <span className="hidden xs:inline sm:inline">{t('orders:addOrder')}</span>
+              <span className="inline xs:hidden sm:hidden">{t('common:add')}</span>
             </Button>
           </Link>
         </div>
@@ -1108,7 +1110,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               <div className="flex items-start justify-between gap-3 h-full">
                 <div className="flex-1 min-w-0 flex flex-col">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Total Orders
+                    {t('orders:totalOrders')}
                   </p>
                   <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
                     {formatCompactNumber(statistics.totalOrders)}
@@ -1117,7 +1119,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                   {highScores.totalOrders > 0 && (
                     <div className="flex items-center gap-1 mt-2 text-xs text-amber-600 dark:text-amber-400">
                       <Zap className="h-3 w-3" />
-                      <span>Record: {formatCompactNumber(highScores.totalOrders)}</span>
+                      <span>{t('orders:record')}: {formatCompactNumber(highScores.totalOrders)}</span>
                     </div>
                   )}
                 </div>
@@ -1220,7 +1222,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-            <CardTitle>Filters & Search</CardTitle>
+            <CardTitle>{t('orders:filtersAndSearch')}</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
@@ -1228,7 +1230,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search orders..."
+                placeholder={t('orders:searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 h-10 focus:border-cyan-500 border-slate-200 dark:border-slate-800"
@@ -1238,17 +1240,17 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             {!filter && (
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="h-10 focus:border-cyan-500 border-slate-200 dark:border-slate-800" data-testid="select-status-filter">
-                  <SelectValue placeholder="Filter by status" />
+                  <SelectValue placeholder={t('orders:filterByStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Orders</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="awaiting_stock">Awaiting Stock</SelectItem>
-                  <SelectItem value="to_fulfill">To Fulfill</SelectItem>
-                  <SelectItem value="ready_to_ship">Ready to Ship</SelectItem>
-                  <SelectItem value="shipped">Shipped</SelectItem>
-                  <SelectItem value="delivered">Delivered</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="all">{t('orders:allOrders')}</SelectItem>
+                  <SelectItem value="pending">{t('orders:pending')}</SelectItem>
+                  <SelectItem value="awaiting_stock">{t('orders:awaitingStock')}</SelectItem>
+                  <SelectItem value="to_fulfill">{t('orders:toFulfill')}</SelectItem>
+                  <SelectItem value="ready_to_ship">{t('orders:readyToShip')}</SelectItem>
+                  <SelectItem value="shipped">{t('orders:shipped')}</SelectItem>
+                  <SelectItem value="delivered">{t('orders:delivered')}</SelectItem>
+                  <SelectItem value="cancelled">{t('orders:cancelled')}</SelectItem>
                 </SelectContent>
               </Select>
             )}
@@ -1262,7 +1264,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
           {/* Header with view toggle - Always Visible */}
           <div className="px-4 sm:px-0 pb-4 pt-4 sm:pt-0">
             <div className="flex items-center justify-between gap-3 flex-wrap">
-              <h2 className="text-mobile-lg font-semibold">Orders ({filteredOrders?.length || 0})</h2>
+              <h2 className="text-mobile-lg font-semibold">{t('orders:orders')} ({filteredOrders?.length || 0})</h2>
               <div className="flex items-center gap-2 flex-wrap">
                 {/* View Mode Toggle */}
                 <div className="flex items-center gap-0.5 sm:gap-1 border rounded-md">
@@ -1274,7 +1276,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     data-testid="button-viewNormal"
                   >
                     <List className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
-                    <span className="hidden sm:inline">Normal</span>
+                    <span className="hidden sm:inline">{t('orders:normalView')}</span>
                   </Button>
                   <Button
                     variant={viewMode === 'compact' ? 'default' : 'ghost'}
@@ -1284,7 +1286,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     data-testid="button-viewCompact"
                   >
                     <AlignJustify className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
-                    <span className="hidden sm:inline">Compact</span>
+                    <span className="hidden sm:inline">{t('orders:compactView')}</span>
                   </Button>
                 </div>
 

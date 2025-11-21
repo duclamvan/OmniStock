@@ -65,6 +65,7 @@ import { MobileHeader } from '@/components/MobileHeader';
 import { ChevronRight as BreadcrumbChevron, Home } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/useAuth.tsx';
+import { useTranslation } from 'react-i18next';
 
 interface MobileResponsiveLayoutProps {
   children: React.ReactNode;
@@ -168,6 +169,7 @@ function getLocalStorageNumber(key: string, defaultValue: number): number {
 export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps) {
   const [location] = useLocation();
   const { user, isAdministrator, isWarehouseOperator } = useAuth();
+  const { t } = useTranslation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const desktopNavRef = useRef<HTMLDivElement>(null);
   const mobileNavRef = useRef<HTMLDivElement>(null);
@@ -297,51 +299,51 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
     // Operational Section (Mobile-optimized for warehouse employees)
     {
       type: "section",
-      name: "Warehouse Operations",
+      name: t('common:warehouseOperations'),
       items: [
         {
-          name: "Pick & Pack",
+          name: t('common:pickAndPack'),
           href: "/orders/pick-pack",
           icon: PackageCheck,
           color: "text-amber-600 dark:text-amber-400",
-          description: "Order Fulfillment"
+          description: t('common:orderFulfillment')
         },
         {
-          name: "Receiving",
+          name: t('common:receiving'),
           href: "/receiving",
           icon: ClipboardCheck,
           color: "text-violet-600 dark:text-violet-400",
-          description: "Incoming Shipments"
+          description: t('common:incomingShipments')
         },
         {
-          name: "Storage",
+          name: t('common:storage'),
           href: "/receiving/storage",
           icon: PackageCheck,
           color: "text-lime-600 dark:text-lime-400",
-          description: "Items to Store"
+          description: t('common:itemsToStore')
         },
         {
-          name: "Stock",
+          name: t('common:stock'),
           href: "/stock",
           icon: Package,
           color: "text-indigo-600 dark:text-indigo-400",
-          description: "Inventory Lookup"
+          description: t('common:inventoryLookup')
         },
         {
-          name: "POS",
+          name: t('common:pos'),
           href: "/pos",
           icon: Store,
           color: "text-green-600 dark:text-green-400",
-          description: "Point of Sale"
+          description: t('common:pointOfSale')
         },
         {
-          name: "Shipping",
+          name: t('common:shipping'),
           icon: Send,
           color: "text-blue-500 dark:text-blue-400",
-          description: "Outbound Logistics",
+          description: t('common:outboundLogistics'),
           children: [
-            { name: "Shipping Management", href: "/shipping" },
-            { name: "Shipment Labels", href: "/shipping/labels" },
+            { name: t('common:shippingManagement'), href: "/shipping" },
+            { name: t('common:shipmentLabels'), href: "/shipping/labels" },
           ],
         },
       ]
@@ -349,142 +351,142 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
     // Admin/Management Section
     {
       type: "section",
-      name: "Administration",
+      name: t('common:administration'),
       items: [
         {
-          name: "Dashboard",
+          name: t('common:dashboard'),
           href: "/",
           icon: LayoutDashboard,
           color: "text-blue-600 dark:text-blue-400",
-          description: "Overview & Analytics"
+          description: t('common:overviewAndAnalytics')
         },
         {
-          name: "Orders",
+          name: t('common:orders'),
           icon: ShoppingCart,
           color: "text-emerald-600 dark:text-emerald-400",
-          description: "Order Management",
+          description: t('common:orderManagement'),
           children: [
-            { name: "All Orders", href: "/orders" },
-            { name: "Add Order", href: "/orders/add" },
-            { name: "To Fulfill", href: "/orders/to-fulfill" },
-            { name: "Shipped", href: "/orders/shipped" },
-            { name: "Pay Later", href: "/orders/pay-later" },
-            { name: "Pre-Orders", href: "/orders/pre-orders" },
+            { name: t('common:allOrders'), href: "/orders" },
+            { name: t('common:addOrder'), href: "/orders/add" },
+            { name: t('common:toFulfill'), href: "/orders/to-fulfill" },
+            { name: t('common:shipped'), href: "/orders/shipped" },
+            { name: t('common:payLater'), href: "/orders/pay-later" },
+            { name: t('common:preOrders'), href: "/orders/pre-orders" },
           ],
         },
         {
-          name: "Inventory",
+          name: t('common:inventory'),
           icon: Boxes,
           color: "text-purple-600 dark:text-purple-400",
-          description: "Product Management",
+          description: t('common:productManagement'),
           children: [
-            { name: "All Products", href: "/inventory" },
-            { name: "Categories", href: "/inventory/categories" },
-            { name: "Product Bundles", href: "/inventory/bundles" },
-            { name: "Packing Materials", href: "/packing-materials" },
-            { name: "Add Product", href: "/inventory/add" },
+            { name: t('common:allProducts'), href: "/inventory" },
+            { name: t('common:categories'), href: "/inventory/categories" },
+            { name: t('common:productBundles'), href: "/inventory/bundles" },
+            { name: t('common:packingMaterials'), href: "/packing-materials" },
+            { name: t('common:addProduct'), href: "/inventory/add" },
           ],
         },
         {
-          name: "Warehouses",
+          name: t('common:warehouses'),
           icon: Building2,
           color: "text-orange-600 dark:text-orange-400",
-          description: "Storage Facilities",
+          description: t('common:storageFacilities'),
           children: [
-            { name: "All Warehouses", href: "/warehouses" },
-            { name: "Warehouse Map", href: "/warehouses/map" },
-            { name: "Add Warehouse", href: "/warehouses/add" },
+            { name: t('common:allWarehouses'), href: "/warehouses" },
+            { name: t('common:warehouseMap'), href: "/warehouses/map" },
+            { name: t('common:addWarehouse'), href: "/warehouses/add" },
           ],
         },
         {
-          name: "Customers",
+          name: t('common:customers'),
           href: "/customers",
           icon: UserCheck,
           color: "text-indigo-600 dark:text-indigo-400",
-          description: "Client Management"
+          description: t('common:clientManagement')
         },
         {
-          name: "Suppliers",
+          name: t('common:suppliers'),
           href: "/suppliers",
           icon: Building,
           color: "text-teal-600 dark:text-teal-400",
-          description: "Vendor Network"
+          description: t('common:vendorNetwork')
         },
         {
-          name: "Discounts",
+          name: t('common:discounts'),
           href: "/discounts",
           icon: Percent,
           color: "text-red-600 dark:text-red-400",
-          description: "Pricing & Offers"
+          description: t('common:pricingAndOffers')
         },
         {
-          name: "Returns",
+          name: t('common:returns'),
           href: "/returns",
           icon: RefreshCw,
           color: "text-yellow-600 dark:text-yellow-400",
-          description: "Return Processing"
+          description: t('common:returnProcessing')
         },
         {
-          name: "Expenses",
+          name: t('common:expenses'),
           href: "/expenses",
           icon: Calculator,
           color: "text-pink-600 dark:text-pink-400",
-          description: "Cost Tracking"
+          description: t('common:costTracking')
         },
         {
-          name: "Services",
+          name: t('common:services'),
           href: "/services",
           icon: Wrench,
           color: "text-purple-600 dark:text-purple-400",
-          description: "Repairs & Services"
+          description: t('common:repairsAndServices')
         },
         {
-          name: "Tickets",
+          name: t('common:tickets'),
           href: "/tickets",
           icon: Ticket,
           color: "text-blue-600 dark:text-blue-400",
-          description: "Support Tickets"
+          description: t('common:supportTickets')
         },
         {
-          name: "Imports",
+          name: t('common:imports'),
           icon: Import,
           color: "text-cyan-600 dark:text-cyan-400",
-          description: "International Orders",
+          description: t('common:internationalOrders'),
           children: [
-            { name: "Kanban Dashboard", href: "/imports/kanban" },
-            { name: "Purchase Orders", href: "/purchase-orders" },
-            { name: "Consolidation", href: "/consolidation" },
-            { name: "International Transit", href: "/imports/international-transit" },
-            { name: "Landing Costs", href: "/imports/landing-costs" },
+            { name: t('common:kanbanDashboard'), href: "/imports/kanban" },
+            { name: t('common:purchaseOrders'), href: "/purchase-orders" },
+            { name: t('common:consolidation'), href: "/consolidation" },
+            { name: t('common:internationalTransit'), href: "/imports/international-transit" },
+            { name: t('common:landingCosts'), href: "/imports/landing-costs" },
           ],
         },
         {
-          name: "Reports",
+          name: t('common:reports'),
           href: "/reports",
           icon: FileText,
           color: "text-gray-600 dark:text-gray-400",
-          description: "Analytics & Reports"
+          description: t('common:analyticsAndReports')
         },
         {
-          name: "Settings",
+          name: t('common:settings'),
           icon: Settings,
           color: "text-slate-600 dark:text-slate-400",
-          description: "System Configuration",
+          description: t('common:systemConfiguration'),
           children: [
-            { name: "General", href: "/settings/general" },
-            { name: "Shipping", href: "/settings/shipping" },
-            { name: "Orders", href: "/settings/orders" },
-            { name: "Financial", href: "/settings/financial" },
-            { name: "Inventory", href: "/settings/inventory" },
-            { name: "System", href: "/settings/system" },
+            { name: t('common:general'), href: "/settings/general" },
+            { name: t('common:shipping'), href: "/settings/shipping" },
+            { name: t('common:orders'), href: "/settings/orders" },
+            { name: t('common:financial'), href: "/settings/financial" },
+            { name: t('common:inventory'), href: "/settings/inventory" },
+            { name: t('common:system'), href: "/settings/system" },
           ],
         },
         {
-          name: "User Management",
+          name: t('common:userManagement'),
           href: "/user-management",
           icon: Users,
           color: "text-indigo-600 dark:text-indigo-400",
-          description: "Manage Users & Roles"
+          description: t('common:manageUsersAndRoles')
         },
       ]
     }
@@ -941,7 +943,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                 <Link href="/">
                   <button className="hover:text-foreground transition-colors flex items-center gap-1">
                     <Home className="h-3 w-3" />
-                    <span className="hidden xl:inline">Home</span>
+                    <span className="hidden xl:inline">{t('common:dashboard')}</span>
                   </button>
                 </Link>
                 {location !== '/' && (
@@ -974,115 +976,115 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                           '/'
                         }>
                           <button className="hover:text-foreground transition-colors">
-                            {location.includes('/orders') ? 'Orders' :
-                             location.includes('/packing-materials') ? 'Packing Materials' :
-                             location.includes('/inventory') ? 'Inventory' :
-                             location.includes('/warehouses') ? 'Warehouses' :
-                             location.includes('/customers') ? 'Customers' :
-                             location.includes('/suppliers') ? 'Suppliers' :
-                             location.includes('/discounts') ? 'Discounts' :
-                             location.includes('/services') ? 'Services' :
-                             location.includes('/tickets') ? 'Tickets' :
-                             location.includes('/expenses') ? 'Expenses' :
-                             location.includes('/imports') ? 'Imports' :
-                             location.includes('/receiving') ? 'Receiving' :
-                             location.includes('/stock') ? 'Stock' :
-                             location.includes('/settings') ? 'Settings' :
-                             'Dashboard'}
+                            {location.includes('/orders') ? t('common:orders') :
+                             location.includes('/packing-materials') ? t('common:packingMaterials') :
+                             location.includes('/inventory') ? t('common:inventory') :
+                             location.includes('/warehouses') ? t('common:warehouses') :
+                             location.includes('/customers') ? t('common:customers') :
+                             location.includes('/suppliers') ? t('common:suppliers') :
+                             location.includes('/discounts') ? t('common:discounts') :
+                             location.includes('/services') ? t('common:services') :
+                             location.includes('/tickets') ? t('common:tickets') :
+                             location.includes('/expenses') ? t('common:expenses') :
+                             location.includes('/imports') ? t('common:imports') :
+                             location.includes('/receiving') ? t('common:receiving') :
+                             location.includes('/stock') ? t('common:stock') :
+                             location.includes('/settings') ? t('common:settings') :
+                             t('common:dashboard')}
                           </button>
                         </Link>
                       </>
                     )}
                     <BreadcrumbChevron className="h-3 w-3" />
                     <span className="text-foreground font-medium truncate">
-                      {location.includes('/orders/add') ? 'Add Order' :
-                       location.includes('/orders/edit') ? 'Edit Order' :
-                       location.includes('/orders/pick-pack') ? 'Pick & Pack' :
-                       location.includes('/orders/') ? 'Order Details' :
-                       location.includes('/orders') ? 'Orders' :
-                       location.includes('/packing-materials/add') ? 'Add Material' :
-                       location.includes('/packing-materials/edit') ? 'Edit Material' :
-                       location.includes('/packing-materials/') ? 'Material Details' :
-                       location.includes('/packing-materials') ? 'Packing Materials' :
-                       location.includes('/inventory/add') ? 'Add Product' :
-                       location.includes('/inventory/edit') ? 'Edit Product' :
-                       location.includes('/inventory/') ? 'Product Details' :
-                       location.includes('/inventory') ? 'Inventory' :
-                       location.includes('/warehouses/map') ? 'Warehouse Map' :
-                       location.includes('/warehouses/add') ? 'Add Warehouse' :
-                       location.includes('/warehouses/edit') ? 'Edit Warehouse' :
-                       location.includes('/warehouses/') ? 'Warehouse Details' :
-                       location.includes('/warehouses') ? 'Warehouses' :
-                       location.includes('/discounts/add') ? 'Add Discount' :
-                       location.includes('/discounts/') ? 'Discount Details' :
-                       location.includes('/discounts') ? 'Discounts' :
-                       location.includes('/customers/add') ? 'Add Customer' :
-                       location.includes('/customers/edit') ? 'Edit Customer' :
-                       location.includes('/customers/') ? 'Customer Details' :
-                       location.includes('/customers') ? 'Customers' :
-                       location.includes('/suppliers/add') ? 'Add Supplier' :
-                       location.includes('/suppliers/edit') ? 'Edit Supplier' :
-                       location.includes('/suppliers/') ? 'Supplier Details' :
-                       location.includes('/suppliers') ? 'Suppliers' :
-                       location.includes('/returns') ? 'Returns' :
-                       location.includes('/expenses/add') ? 'Add Expense' :
-                       location.includes('/expenses/') ? 'Expense Details' :
-                       location.includes('/expenses') ? 'Expenses' :
-                       location.includes('/services/add') ? 'Add Service' :
-                       location.includes('/services/edit') ? 'Edit Service' :
-                       location.includes('/services/') ? 'Service Details' :
-                       location.includes('/services') ? 'Services' :
-                       location.includes('/tickets/add') ? 'Add Ticket' :
-                       location.includes('/tickets/') ? 'Ticket Details' :
-                       location.includes('/tickets') ? 'Tickets' :
-                       location.includes('/pos') ? 'Point of Sale' :
-                       location.includes('/shipping') ? 'Shipping Management' :
-                       location.includes('/reports') ? 'Reports' :
-                       location.includes('/imports/dashboard') ? 'Import Dashboard' :
-                       location.includes('/imports/landing-costs/') ? 'Landing Cost Details' :
-                       location.includes('/imports/landing-costs') ? 'Landing Costs' :
-                       location.includes('/imports/') ? 'Import Details' :
-                       location.includes('/imports') ? 'Imports' :
-                       location.includes('/receiving/storage') ? 'Items to Store' :
-                       location.includes('/receiving/') ? 'Receiving Details' :
-                       location.includes('/receiving') ? 'Receiving' :
-                       location.includes('/stock') ? 'Stock Lookup' :
-                       location.includes('/settings/general') ? 'General Settings' :
-                       location.includes('/settings/shipping') ? 'Shipping Settings' :
-                       location.includes('/settings/orders') ? 'Order Settings' :
-                       location.includes('/settings/financial') ? 'Financial Settings' :
-                       location.includes('/settings/inventory') ? 'Inventory Settings' :
-                       location.includes('/settings/system') ? 'System Settings' :
-                       location.includes('/settings/roles') ? 'Roles Settings' :
-                       'Dashboard'}
+                      {location.includes('/orders/add') ? t('common:addOrder') :
+                       location.includes('/orders/edit') ? t('common:editOrder') :
+                       location.includes('/orders/pick-pack') ? t('common:pickAndPack') :
+                       location.includes('/orders/') ? t('common:orderDetails') :
+                       location.includes('/orders') ? t('common:orders') :
+                       location.includes('/packing-materials/add') ? t('common:addMaterial') :
+                       location.includes('/packing-materials/edit') ? t('common:editMaterial') :
+                       location.includes('/packing-materials/') ? t('common:materialDetails') :
+                       location.includes('/packing-materials') ? t('common:packingMaterials') :
+                       location.includes('/inventory/add') ? t('common:addProduct') :
+                       location.includes('/inventory/edit') ? t('common:editProduct') :
+                       location.includes('/inventory/') ? t('common:productDetails') :
+                       location.includes('/inventory') ? t('common:inventory') :
+                       location.includes('/warehouses/map') ? t('common:warehouseMap') :
+                       location.includes('/warehouses/add') ? t('common:addWarehouse') :
+                       location.includes('/warehouses/edit') ? t('common:editWarehouse') :
+                       location.includes('/warehouses/') ? t('common:warehouseDetails') :
+                       location.includes('/warehouses') ? t('common:warehouses') :
+                       location.includes('/discounts/add') ? t('common:addDiscount') :
+                       location.includes('/discounts/') ? t('common:discountDetails') :
+                       location.includes('/discounts') ? t('common:discounts') :
+                       location.includes('/customers/add') ? t('common:addCustomer') :
+                       location.includes('/customers/edit') ? t('common:editCustomer') :
+                       location.includes('/customers/') ? t('common:customerDetails') :
+                       location.includes('/customers') ? t('common:customers') :
+                       location.includes('/suppliers/add') ? t('common:addSupplier') :
+                       location.includes('/suppliers/edit') ? t('common:editSupplier') :
+                       location.includes('/suppliers/') ? t('common:supplierDetails') :
+                       location.includes('/suppliers') ? t('common:suppliers') :
+                       location.includes('/returns') ? t('common:returns') :
+                       location.includes('/expenses/add') ? t('common:addExpense') :
+                       location.includes('/expenses/') ? t('common:expenseDetails') :
+                       location.includes('/expenses') ? t('common:expenses') :
+                       location.includes('/services/add') ? t('common:addService') :
+                       location.includes('/services/edit') ? t('common:editService') :
+                       location.includes('/services/') ? t('common:serviceDetails') :
+                       location.includes('/services') ? t('common:services') :
+                       location.includes('/tickets/add') ? t('common:addTicket') :
+                       location.includes('/tickets/') ? t('common:ticketDetails') :
+                       location.includes('/tickets') ? t('common:tickets') :
+                       location.includes('/pos') ? t('common:pointOfSale') :
+                       location.includes('/shipping') ? t('common:shippingManagement') :
+                       location.includes('/reports') ? t('common:reports') :
+                       location.includes('/imports/dashboard') ? t('common:importDashboard') :
+                       location.includes('/imports/landing-costs/') ? t('common:landingCostDetails') :
+                       location.includes('/imports/landing-costs') ? t('common:landingCosts') :
+                       location.includes('/imports/') ? t('common:importDetails') :
+                       location.includes('/imports') ? t('common:imports') :
+                       location.includes('/receiving/storage') ? t('common:itemsToStore') :
+                       location.includes('/receiving/') ? t('common:receivingDetails') :
+                       location.includes('/receiving') ? t('common:receiving') :
+                       location.includes('/stock') ? t('common:stockLookup') :
+                       location.includes('/settings/general') ? t('common:generalSettings') :
+                       location.includes('/settings/shipping') ? t('common:shippingSettings') :
+                       location.includes('/settings/orders') ? t('common:orderSettings') :
+                       location.includes('/settings/financial') ? t('common:financialSettings') :
+                       location.includes('/settings/inventory') ? t('common:inventorySettings') :
+                       location.includes('/settings/system') ? t('common:systemSettings') :
+                       location.includes('/settings/roles') ? t('common:rolesSettings') :
+                       t('common:dashboard')}
                     </span>
                   </>
                 )}
               </nav>
               {/* Page Title */}
               <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 border-l pl-3 border-gray-200 dark:border-gray-700">
-                {location === '/' ? 'Dashboard' : 
-                 location.includes('/orders/pick-pack') ? 'Pick & Pack' :
-                 location.includes('/orders') ? 'Orders Management' :
-                 location.includes('/packing-materials') ? 'Packing Materials' :
-                 location.includes('/inventory') ? 'Inventory Management' :
-                 location.includes('/warehouses/map') ? 'Warehouse Space Map' :
-                 location.includes('/warehouses') ? 'Warehouse Management' :
-                 location.includes('/discounts') ? 'Discounts & Promotions' :
-                 location.includes('/customers') ? 'Customer Management' :
-                 location.includes('/suppliers') ? 'Supplier Management' :
-                 location.includes('/returns') ? 'Returns Processing' :
-                 location.includes('/expenses') ? 'Expense Tracking' :
-                 location.includes('/services') ? 'Service Management' :
-                 location.includes('/tickets') ? 'Support Tickets' :
-                 location.includes('/pos') ? 'Point of Sale' :
-                 location.includes('/shipping') ? 'Shipping Management' :
-                 location.includes('/reports') ? 'Reports & Analytics' :
-                 location.includes('/imports') ? 'Import Management' :
-                 location.includes('/receiving') ? 'Receiving & Storage' :
-                 location.includes('/stock') ? 'Stock Lookup' :
-                 location.includes('/settings') ? 'System Settings' :
-                 'Dashboard'}
+                {location === '/' ? t('common:dashboard') : 
+                 location.includes('/orders/pick-pack') ? t('common:pickAndPack') :
+                 location.includes('/orders') ? t('common:ordersManagement') :
+                 location.includes('/packing-materials') ? t('common:packingMaterials') :
+                 location.includes('/inventory') ? t('common:inventoryManagement') :
+                 location.includes('/warehouses/map') ? t('common:warehouseSpaceMap') :
+                 location.includes('/warehouses') ? t('common:warehouseManagement') :
+                 location.includes('/discounts') ? t('common:discountsAndPromotions') :
+                 location.includes('/customers') ? t('common:customerManagement') :
+                 location.includes('/suppliers') ? t('common:supplierManagement') :
+                 location.includes('/returns') ? t('common:returnsProcessing') :
+                 location.includes('/expenses') ? t('common:expenseTracking') :
+                 location.includes('/services') ? t('common:serviceManagement') :
+                 location.includes('/tickets') ? t('common:supportTickets') :
+                 location.includes('/pos') ? t('common:pointOfSale') :
+                 location.includes('/shipping') ? t('common:shippingManagement') :
+                 location.includes('/reports') ? t('common:reportsAndAnalytics') :
+                 location.includes('/imports') ? t('common:importManagement') :
+                 location.includes('/receiving') ? t('common:receivingAndStorage') :
+                 location.includes('/stock') ? t('common:stockLookup') :
+                 location.includes('/settings') ? t('common:systemSettings') :
+                 t('common:dashboard')}
               </h2>
               <div className="flex-1 max-w-sm ml-2">
                 <GlobalSearch />
@@ -1107,7 +1109,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                     </Link>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Notifications {dueTicketsCount > 0 && `(${dueTicketsCount})`}</p>
+                    <p>{t('common:notifications')} {dueTicketsCount > 0 && `(${dueTicketsCount})`}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -1138,7 +1140,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</p>
+                    <p>{isDarkMode ? t('common:lightMode') : t('common:darkMode')}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -1152,7 +1154,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                     </div>
                     <div className="text-left hidden xl:block">
                       <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{user?.firstName} {user?.lastName}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{user?.role === 'administrator' ? 'Administrator' : 'Warehouse Operator'}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{user?.role === 'administrator' ? t('common:administrator') : t('common:warehouseOperator')}</p>
                     </div>
                     <ChevronDown className="h-3.5 w-3.5 text-gray-500 hidden xl:block" />
                   </Button>
@@ -1168,19 +1170,19 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                   <Link href="/profile">
                     <DropdownMenuItem>
                       <User className="mr-2 h-4 w-4" />
-                      <span>My Profile</span>
+                      <span>{t('common:myProfile')}</span>
                     </DropdownMenuItem>
                   </Link>
                   <Link href="/settings">
                     <DropdownMenuItem>
                       <Settings className="mr-2 h-4 w-4" />
-                      <span>Settings</span>
+                      <span>{t('common:settings')}</span>
                     </DropdownMenuItem>
                   </Link>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="text-red-600 focus:text-red-600">
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>Logout</span>
+                    <span>{t('common:logout')}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

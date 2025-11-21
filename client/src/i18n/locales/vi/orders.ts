@@ -29,12 +29,15 @@ const orders = {
   paymentStatus: 'Trạng thái thanh toán',
   
   // Order Status
+  pending: 'Chờ xử lý',
+  awaitingStock: 'Chờ nhập hàng',
   toFulfill: 'Chờ xử lý',
   picking: 'Đang lấy hàng',
   packing: 'Đang đóng gói',
   readyToShip: 'Sẵn sàng giao hàng',
   shipped: 'Đã giao vận',
   delivered: 'Đã giao hàng',
+  cancelled: 'Đã hủy',
   processing: 'Đang xử lý',
   onHold: 'Tạm giữ',
   
@@ -85,20 +88,32 @@ const orders = {
   
   // AllOrders Page
   allOrders: 'Tất cả đơn hàng',
+  ordersToFulfill: 'Đơn hàng chờ xử lý',
+  shippedOrders: 'Đơn hàng đã giao vận',
+  payLaterOrders: 'Đơn thanh toán sau',
+  preOrdersPage: 'Đơn đặt trước',
+  trackAndManageOrders: 'Theo dõi và quản lý đơn hàng và vận chuyển',
   searchPlaceholder: 'Tìm kiếm đơn hàng...',
   exportToExcel: 'Xuất Excel',
   exportToPDF: 'Xuất PDF',
+  exportOptions: 'Tùy chọn xuất',
   bulkActions: 'Thao tác hàng loạt',
   viewMode: 'Chế độ xem',
   normalView: 'Bình thường',
   compactView: 'Thu gọn',
   expandAll: 'Mở rộng tất cả',
   collapseAll: 'Thu gọn tất cả',
+  expanded: 'Đã mở rộng',
+  collapsed: 'Đã thu gọn',
   selectAll: 'Chọn tất cả',
   deselectAll: 'Bỏ chọn tất cả',
   deleteSelected: 'Xóa đã chọn',
   changeStatus: 'Thay đổi trạng thái',
   changePaymentStatus: 'Thay đổi thanh toán',
+  showColumns: 'Hiển thị cột',
+  loadingOrders: 'Đang tải đơn hàng...',
+  filtersAndSearch: 'Bộ lọc & Tìm kiếm',
+  record: 'Kỷ lục',
   
   // Filters
   filterByStatus: 'Lọc theo trạng thái',
@@ -123,6 +138,7 @@ const orders = {
   totalRevenue: 'Tổng doanh thu',
   totalProfit: 'Tổng lợi nhuận',
   totalOrders: 'Tổng đơn hàng',
+  totalCustomers: 'Tổng khách hàng',
   newCustomers: 'Khách hàng mới',
   returningCustomers: 'Khách quay lại',
   

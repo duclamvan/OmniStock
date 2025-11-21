@@ -29,12 +29,15 @@ const orders = {
   paymentStatus: 'Payment Status',
   
   // Order Status
+  pending: 'Pending',
+  awaitingStock: 'Awaiting Stock',
   toFulfill: 'To Fulfill',
   picking: 'Picking',
   packing: 'Packing',
   readyToShip: 'Ready to Ship',
   shipped: 'Shipped',
   delivered: 'Delivered',
+  cancelled: 'Cancelled',
   processing: 'Processing',
   onHold: 'On Hold',
   
@@ -85,20 +88,32 @@ const orders = {
   
   // AllOrders Page
   allOrders: 'All Orders',
+  ordersToFulfill: 'Orders to Fulfill',
+  shippedOrders: 'Shipped Orders',
+  payLaterOrders: 'Pay Later Orders',
+  preOrdersPage: 'Pre-Orders',
+  trackAndManageOrders: 'Track and manage customer orders and shipments',
   searchPlaceholder: 'Search orders...',
   exportToExcel: 'Export to Excel',
   exportToPDF: 'Export to PDF',
+  exportOptions: 'Export Options',
   bulkActions: 'Bulk Actions',
   viewMode: 'View Mode',
   normalView: 'Normal',
   compactView: 'Compact',
   expandAll: 'Expand All',
   collapseAll: 'Collapse All',
+  expanded: 'Expanded',
+  collapsed: 'Collapsed',
   selectAll: 'Select All',
   deselectAll: 'Deselect All',
   deleteSelected: 'Delete Selected',
   changeStatus: 'Change Status',
   changePaymentStatus: 'Change Payment Status',
+  showColumns: 'Show Columns',
+  loadingOrders: 'Loading orders...',
+  filtersAndSearch: 'Filters & Search',
+  record: 'Record',
   
   // Filters
   filterByStatus: 'Filter by Status',
@@ -123,6 +138,7 @@ const orders = {
   totalRevenue: 'Total Revenue',
   totalProfit: 'Total Profit',
   totalOrders: 'Total Orders',
+  totalCustomers: 'Total Customers',
   newCustomers: 'New Customers',
   returningCustomers: 'Returning Customers',
   
