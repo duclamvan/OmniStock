@@ -167,7 +167,7 @@ function getLocalStorageNumber(key: string, defaultValue: number): number {
 
 export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps) {
   const [location] = useLocation();
-  const { isAdministrator, isWarehouseOperator } = useAuth();
+  const { user, isAdministrator, isWarehouseOperator } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const desktopNavRef = useRef<HTMLDivElement>(null);
   const mobileNavRef = useRef<HTMLDivElement>(null);
@@ -1151,8 +1151,8 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                       <User className="h-5 w-5 text-white" />
                     </div>
                     <div className="text-left hidden xl:block">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">ronak_03</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Admin</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{user?.firstName} {user?.lastName}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{user?.role === 'administrator' ? 'Administrator' : 'Warehouse Operator'}</p>
                     </div>
                     <ChevronDown className="h-3.5 w-3.5 text-gray-500 hidden xl:block" />
                   </Button>
@@ -1160,8 +1160,8 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium">ronak_03</p>
-                      <p className="text-xs text-muted-foreground">admin@daviesupply.com</p>
+                      <p className="text-sm font-medium">{user?.firstName} {user?.lastName}</p>
+                      <p className="text-xs text-muted-foreground">{user?.email}</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
