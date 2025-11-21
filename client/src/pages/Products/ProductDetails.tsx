@@ -49,19 +49,22 @@ import ProductVariants from "@/components/ProductVariants";
 import { ImagePlaceholder } from "@/components/ImagePlaceholder";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
-const IMAGE_PURPOSE_CONFIG = {
-  main: { label: 'Main WMS Image', icon: ImageIcon, color: 'text-blue-600' },
-  in_hand: { label: 'In Hand', icon: Hand, color: 'text-emerald-600' },
-  detail: { label: 'Detail Shot', icon: PackageOpen, color: 'text-indigo-600' },
-  packaging: { label: 'Packaging', icon: Package, color: 'text-orange-600' },
-  label: { label: 'Label/Barcode', icon: FileType, color: 'text-cyan-600' },
+// Image purpose config - will be converted to use translations inside the component
+const IMAGE_PURPOSE_ICONS = {
+  main: { icon: ImageIcon, color: 'text-blue-600', labelKey: 'mainWmsImage' },
+  in_hand: { icon: Hand, color: 'text-emerald-600', labelKey: 'inHand' },
+  detail: { icon: PackageOpen, color: 'text-indigo-600', labelKey: 'detailShot' },
+  packaging: { icon: Package, color: 'text-orange-600', labelKey: 'packagingLabel' },
+  label: { icon: FileType, color: 'text-cyan-600', labelKey: 'labelBarcode' },
 };
 
 export default function ProductDetails() {
   const { id } = useParams();
   const [, navigate] = useLocation();
   const { canAccessFinancialData } = useAuth();
+  const { t } = useTranslation(['products', 'common']);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const { toast } = useToast();
 
@@ -104,14 +107,14 @@ export default function ProductDetails() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/products', id] });
       toast({
-        title: "Success",
-        description: "Reorder rate recalculated successfully",
+        title: t('common:success'),
+        description: t('products:reorderRateSuccess'),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to recalculate reorder rate",
+        title: t('common:error'),
+        description: error.message || t('products:reorderRateError'),
         variant: "destructive",
       });
     },

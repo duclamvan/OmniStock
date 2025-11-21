@@ -61,6 +61,41 @@ const products = {
   productUpdated: 'Product updated successfully',
   productDeleted: 'Product deleted successfully',
   
+  // ProductDetails Page
+  productDetails: 'Product Details',
+  backToProducts: 'Back to Products',
+  editProductButton: 'Edit Product',
+  recalculateReorderRate: 'Recalculate Reorder Rate',
+  reorderRateSuccess: 'Reorder rate recalculated successfully',
+  reorderRateError: 'Failed to recalculate reorder rate',
+  
+  // Image Purpose Labels
+  mainWmsImage: 'Main WMS Image',
+  inHand: 'In Hand',
+  detailShot: 'Detail Shot',
+  packagingLabel: 'Packaging',
+  labelBarcode: 'Label/Barcode',
+  
+  // Product Info Sections
+  basicInformation: 'Basic Information',
+  pricingInformation: 'Pricing Information',
+  inventoryInformation: 'Inventory Information',
+  physicalAttributes: 'Physical Attributes',
+  packagingInfo: 'Packaging Information',
+  costHistory: 'Cost History',
+  tieredPricing: 'Tiered Pricing',
+  productLocations: 'Product Locations',
+  productFiles: 'Product Files',
+  productImages: 'Product Images',
+  bundleInformation: 'Bundle Information',
+  
+  // Table Headers
+  quantityRange: 'Quantity Range',
+  pricePerUnit: 'Price per Unit',
+  effectiveDate: 'Effective Date',
+  oldCost: 'Old Cost',
+  newCost: 'New Cost',
+  
 } as const;
 
 export default products;

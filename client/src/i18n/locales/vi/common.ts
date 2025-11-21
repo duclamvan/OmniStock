@@ -8,6 +8,8 @@
 const common = {
   // App-wide
   appName: 'Davie Supply',
+  brandTitle: 'Davie',
+  brandSubtitle: 'Quản lý Cung ứng',
   loading: 'Đang tải...',
   error: 'Lỗi',
   success: 'Thành công',

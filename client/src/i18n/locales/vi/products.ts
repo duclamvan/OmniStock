@@ -176,6 +176,41 @@ const products = {
   bestseller: 'Bán chạy',
   onSale: 'Đang giảm giá',
   
+  // ProductDetails Page
+  productDetails: 'Chi tiết sản phẩm',
+  backToProducts: 'Quay lại danh sách',
+  editProductButton: 'Chỉnh sửa sản phẩm',
+  recalculateReorderRate: 'Tính lại tỷ lệ đặt hàng',
+  reorderRateSuccess: 'Tính toán tỷ lệ đặt hàng thành công',
+  reorderRateError: 'Tính toán tỷ lệ đặt hàng thất bại',
+  
+  // Image Purpose Labels
+  mainWmsImage: 'Ảnh chính WMS',
+  inHand: 'Ảnh cầm tay',
+  detailShot: 'Ảnh chi tiết',
+  packagingLabel: 'Đóng gói',
+  labelBarcode: 'Nhãn/Barcode',
+  
+  // Product Info Sections
+  basicInformation: 'Thông tin cơ bản',
+  pricingInformation: 'Thông tin giá',
+  inventoryInformation: 'Thông tin tồn kho',
+  physicalAttributes: 'Thuộc tính vật lý',
+  packagingInfo: 'Thông tin đóng gói',
+  costHistory: 'Lịch sử giá nhập',
+  tieredPricing: 'Bảng giá theo số lượng',
+  productLocations: 'Vị trí sản phẩm',
+  productFiles: 'Tệp đính kèm',
+  productImages: 'Hình ảnh sản phẩm',
+  bundleInformation: 'Thông tin combo',
+  
+  // Table Headers
+  quantityRange: 'Khoảng số lượng',
+  pricePerUnit: 'Đơn giá',
+  effectiveDate: 'Ngày hiệu lực',
+  oldCost: 'Giá cũ',
+  newCost: 'Giá mới',
+  
 } as const;
 
 export default products;

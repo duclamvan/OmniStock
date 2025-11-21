@@ -74,7 +74,7 @@ const navigation: NavItem[] = [
       { labelKey: "toFulfill", href: "/orders/to-fulfill", namespace: "orders" },
       { labelKey: "shipped", href: "/orders/shipped", namespace: "orders" },
       { labelKey: "payLater", href: "/orders/pay-later", namespace: "orders" },
-      { labelKey: "preOrders", href: "/orders/pre-orders" },
+      { labelKey: "preOrders", href: "/orders/pre-orders", namespace: "orders" },
     ],
   },
   {
@@ -89,16 +89,17 @@ const navigation: NavItem[] = [
     namespace: "warehouse",
     children: [
       { labelKey: "warehouses", href: "/warehouses", namespace: "warehouse" },
-      { labelKey: "warehouseMap", href: "/warehouses/map" },
+      { labelKey: "warehouseMap", href: "/warehouses/map", namespace: "warehouse" },
       { labelKey: "addWarehouse", href: "/warehouses/add", namespace: "warehouse" },
     ],
   },
   {
     labelKey: "stock",
     icon: ClipboardList,
+    namespace: "inventory",
     children: [
-      { labelKey: "stockLookup", href: "/stock" },
-      { labelKey: "adjustmentApprovals", href: "/stock/approvals" },
+      { labelKey: "stockLookup", href: "/stock", namespace: "inventory" },
+      { labelKey: "adjustmentApprovals", href: "/stock/approvals", namespace: "inventory" },
     ],
   },
   {
@@ -117,11 +118,13 @@ const navigation: NavItem[] = [
     labelKey: "files",
     href: "/files",
     icon: FileText,
+    namespace: "common"
   },
   {
     labelKey: "services",
     href: "/services",
     icon: Wrench,
+    namespace: "common"
   },
   {
     labelKey: "tickets",
@@ -132,11 +135,12 @@ const navigation: NavItem[] = [
   {
     labelKey: "imports",
     icon: Globe,
+    namespace: "warehouse",
     children: [
-      { labelKey: "kanbanDashboard", href: "/imports/kanban" },
-      { labelKey: "purchaseOrders", href: "/purchase-orders" },
-      { labelKey: "consolidation", href: "/consolidation" },
-      { labelKey: "internationalTransit", href: "/imports/international-transit" },
+      { labelKey: "kanbanDashboard", href: "/imports/kanban", namespace: "warehouse" },
+      { labelKey: "purchaseOrders", href: "/purchase-orders", namespace: "warehouse" },
+      { labelKey: "consolidation", href: "/consolidation", namespace: "warehouse" },
+      { labelKey: "internationalTransit", href: "/imports/international-transit", namespace: "warehouse" },
     ],
   },
   {
@@ -149,11 +153,13 @@ const navigation: NavItem[] = [
     labelKey: "itemsToStore",
     href: "/receiving/storage",
     icon: PackageCheck,
+    namespace: "warehouse"
   },
   {
     labelKey: "employees",
     href: "/employees",
     icon: Users,
+    namespace: "common",
     adminOnly: true,
   },
   {
@@ -254,8 +260,8 @@ export function Sidebar() {
     <div className="w-64 bg-white dark:bg-slate-900 shadow-lg dark:shadow-gray-900/50 border-r border-slate-200 dark:border-gray-700 flex flex-col">
       {/* Logo/Brand */}
       <div className="p-6 border-b border-slate-200 dark:border-gray-700">
-        <h1 className="text-2xl font-bold text-primary dark:text-primary">Davie</h1>
-        <p className="text-sm text-slate-500 dark:text-gray-400">Supply Management</p>
+        <h1 className="text-2xl font-bold text-primary dark:text-primary">{t('common:brandTitle', 'Davie')}</h1>
+        <p className="text-sm text-slate-500 dark:text-gray-400">{t('common:brandSubtitle', 'Supply Management')}</p>
       </div>
 
       {/* Navigation */}
@@ -286,6 +292,7 @@ export function Sidebar() {
                           "w-full justify-between text-left font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
                           isActive && "bg-emerald-50 dark:bg-emerald-900/20 text-primary dark:text-primary border-r-2 border-primary dark:border-primary"
                         )}
+                        data-testid={`nav-${item.labelKey}`}
                       >
                       <div className="flex items-center">
                         <item.icon className="mr-3 h-5 w-5" />
@@ -318,6 +325,7 @@ export function Sidebar() {
                                   "w-full justify-start text-slate-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800",
                                   isChildActive && "bg-slate-100 dark:bg-gray-800 text-slate-900 dark:text-gray-100"
                                 )}
+                                data-testid={`nav-${child.labelKey}`}
                               >
                                 {getLabel(child)}
                               </Button>
@@ -350,6 +358,7 @@ export function Sidebar() {
                       "w-full justify-start font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
                       isActive && "bg-emerald-50 dark:bg-emerald-900/20 text-primary dark:text-primary border-r-2 border-primary dark:border-primary"
                     )}
+                    data-testid={`nav-${item.labelKey}`}
                   >
                     <item.icon className="mr-3 h-5 w-5" />
                     {getLabel(item)}

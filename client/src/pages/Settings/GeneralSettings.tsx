@@ -16,6 +16,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Building2, Save, Loader2, Globe, MapPin, User, Shield, Clock, Sparkles, FileText, Facebook, MessageCircle } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
+import i18n from "@/i18n/i18n";
 
 const formSchema = z.object({
   // Company Information
@@ -241,8 +242,22 @@ export default function GeneralSettings() {
       });
       
       await Promise.all(savePromises);
+      
+      // Return the values to access in onSuccess
+      return values;
     },
-    onSuccess: async () => {
+    onSuccess: async (values) => {
+      // CRITICAL: Change language immediately if default_language was updated
+      if (values.default_language && values.default_language !== originalSettings.default_language) {
+        try {
+          await i18n.changeLanguage(values.default_language);
+          // Persist to localStorage immediately
+          localStorage.setItem('app_language', values.default_language);
+        } catch (error) {
+          console.error('Failed to change language:', error);
+        }
+      }
+      
       // Invalidate ALL settings caches to ensure changes take effect immediately
       await queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
       

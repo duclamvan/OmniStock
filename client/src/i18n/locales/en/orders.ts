@@ -83,6 +83,62 @@ const orders = {
   orderDeleted: 'Order deleted successfully',
   orderShipped: 'Order shipped successfully',
   
+  // AllOrders Page
+  allOrders: 'All Orders',
+  searchPlaceholder: 'Search orders...',
+  exportToExcel: 'Export to Excel',
+  exportToPDF: 'Export to PDF',
+  bulkActions: 'Bulk Actions',
+  viewMode: 'View Mode',
+  normalView: 'Normal',
+  compactView: 'Compact',
+  expandAll: 'Expand All',
+  collapseAll: 'Collapse All',
+  selectAll: 'Select All',
+  deselectAll: 'Deselect All',
+  deleteSelected: 'Delete Selected',
+  changeStatus: 'Change Status',
+  changePaymentStatus: 'Change Payment Status',
+  
+  // Filters
+  filterByStatus: 'Filter by Status',
+  allStatuses: 'All Statuses',
+  
+  // Toast Messages
+  loadError: 'Failed to load orders',
+  updateSuccess: 'Order updated successfully',
+  updateError: 'Failed to update order',
+  deleteSuccess: 'Deleted {{count}} order(s) successfully',
+  deleteError: 'Failed to delete orders',
+  bulkUpdateSuccess: 'Updated {{count}} order(s) successfully',
+  bulkUpdateError: 'Failed to update orders',
+  paymentUpdateSuccess: 'Updated payment status for {{count}} order(s)',
+  paymentUpdateError: 'Failed to update payment status',
+  noDataToExport: 'No orders to export',
+  exportSuccessExcel: 'Exported {{count}} orders to XLSX',
+  exportSuccessPDF: 'Exported {{count}} orders to PDF',
+  exportError: 'Failed to export orders',
+  
+  // Statistics
+  totalRevenue: 'Total Revenue',
+  totalProfit: 'Total Profit',
+  totalOrders: 'Total Orders',
+  newCustomers: 'New Customers',
+  returningCustomers: 'Returning Customers',
+  
+  // Table Headers
+  customerNameHeader: 'Customer',
+  statusHeader: 'Status',
+  totalHeader: 'Total',
+  dateHeader: 'Date',
+  actionsHeader: 'Actions',
+  
+  // Confirmation
+  deleteConfirmTitle: 'Confirm Deletion',
+  deleteConfirmMessage: 'Are you sure you want to delete {{count}} order(s)? This action cannot be undone.',
+  deleteCancel: 'Cancel',
+  deleteConfirm: 'Delete',
+  
 } as const;
 
 export default orders;

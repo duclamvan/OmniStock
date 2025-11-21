@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCurrency, formatDate, formatCompactNumber } from "@/lib/currencyUtils";
@@ -134,6 +135,7 @@ function useDailyHighScores(statistics: {
 export default function AllOrders({ filter }: AllOrdersProps) {
   const { toast } = useToast();
   const { canAccessFinancialData } = useAuth();
+  const { t } = useTranslation(['orders', 'common']);
   const [location, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -314,8 +316,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   useEffect(() => {
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to load orders",
+        title: t('common:error'),
+        description: t('orders:loadError'),
         variant: "destructive",
       });
     }
@@ -352,15 +354,15 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] }); // Real-time Pick & Pack sync
       toast({
-        title: "Success",
-        description: "Order updated successfully",
+        title: t('common:success'),
+        description: t('orders:updateSuccess'),
       });
     },
     onError: (error) => {
       console.error("Order update error:", error);
       toast({
-        title: "Error",
-        description: "Failed to update order",
+        title: t('common:error'),
+        description: t('orders:updateError'),
         variant: "destructive",
       });
     },
@@ -398,8 +400,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     },
     onSuccess: (_, ids) => {
       toast({
-        title: "Success",
-        description: `Deleted ${ids.length} order(s) successfully`,
+        title: t('common:success'),
+        description: t('orders:deleteSuccess', { count: ids.length }),
       });
     },
     onError: (error: any, _, context) => {
@@ -411,8 +413,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       }
       console.error("Order delete error:", error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to delete orders",
+        title: t('common:error'),
+        description: error.message || t('orders:deleteError'),
         variant: "destructive",
       });
     },
@@ -456,8 +458,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     },
     onSuccess: (_, { orderIds }) => {
       toast({
-        title: "Success",
-        description: `Updated ${orderIds.length} order(s) successfully`,
+        title: t('common:success'),
+        description: t('orders:bulkUpdateSuccess', { count: orderIds.length }),
       });
     },
     onError: (error: any, _, context) => {
@@ -468,8 +470,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         });
       }
       toast({
-        title: "Error",
-        description: error.message || "Failed to update orders",
+        title: t('common:error'),
+        description: error.message || t('orders:bulkUpdateError'),
         variant: "destructive",
       });
     },
@@ -512,8 +514,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     },
     onSuccess: (_, { orderIds }) => {
       toast({
-        title: "Success",
-        description: `Updated payment status for ${orderIds.length} order(s)`,
+        title: t('common:success'),
+        description: t('orders:paymentUpdateSuccess', { count: orderIds.length }),
       });
     },
     onError: (error: any, _, context) => {
@@ -524,8 +526,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         });
       }
       toast({
-        title: "Error",
-        description: error.message || "Failed to update payment status",
+        title: t('common:error'),
+        description: error.message || t('orders:paymentUpdateError'),
         variant: "destructive",
       });
     },
@@ -922,8 +924,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       // Handle empty state
       if (!filteredOrders || filteredOrders.length === 0) {
         toast({
-          title: "No Data",
-          description: "No orders to export",
+          title: t('common:warning'),
+          description: t('orders:noDataToExport'),
           variant: "destructive",
         });
         return;
@@ -945,14 +947,14 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       exportToXLSX(exportData, 'orders', 'Orders');
 
       toast({
-        title: "Success",
-        description: `Exported ${filteredOrders.length} orders to XLSX`,
+        title: t('common:success'),
+        description: t('orders:exportSuccessExcel', { count: filteredOrders.length }),
       });
     } catch (error) {
       console.error('Export error:', error);
       toast({
-        title: "Error",
-        description: "Failed to export orders",
+        title: t('common:error'),
+        description: t('orders:exportError'),
         variant: "destructive",
       });
     }
@@ -964,8 +966,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       // Handle empty state
       if (!filteredOrders || filteredOrders.length === 0) {
         toast({
-          title: "No Data",
-          description: "No orders to export",
+          title: t('common:warning'),
+          description: t('orders:noDataToExport'),
           variant: "destructive",
         });
         return;
@@ -999,14 +1001,14 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       exportToPDF('Orders Report', exportData, columns, 'orders');
 
       toast({
-        title: "Success",
-        description: `Exported ${filteredOrders.length} orders to PDF`,
+        title: t('common:success'),
+        description: t('orders:exportSuccessPDF', { count: filteredOrders.length }),
       });
     } catch (error) {
       console.error('Export error:', error);
       toast({
-        title: "Error",
-        description: "Failed to export orders",
+        title: t('common:error'),
+        description: t('orders:exportError'),
         variant: "destructive",
       });
     }

@@ -1,6 +1,8 @@
 const common = {
   // App-wide
   appName: 'Davie Supply',
+  brandTitle: 'Davie',
+  brandSubtitle: 'Supply Management',
   loading: 'Loading...',
   error: 'Error',
   success: 'Success',
