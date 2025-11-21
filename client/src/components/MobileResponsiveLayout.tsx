@@ -1039,6 +1039,8 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                        location.includes('/shipping') ? 'Shipping Management' :
                        location.includes('/reports') ? 'Reports' :
                        location.includes('/imports/dashboard') ? 'Import Dashboard' :
+                       location.includes('/imports/landing-costs/') ? 'Landing Cost Details' :
+                       location.includes('/imports/landing-costs') ? 'Landing Costs' :
                        location.includes('/imports/') ? 'Import Details' :
                        location.includes('/imports') ? 'Imports' :
                        location.includes('/receiving/storage') ? 'Items to Store' :

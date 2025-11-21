@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useQuery, useQueries } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -61,14 +61,26 @@ export default function LandingCostList() {
     queryKey: ['/api/imports/shipments']
   });
 
-  // Fetch landing cost summary for each shipment
-  const shipmentsWithCosts = shipments.map(shipment => {
-    const { data: summary } = useQuery<LandingCostSummary>({
+  // Fetch landing cost summary for each shipment using useQueries (hook-safe)
+  const landingCostQueries = useQueries({
+    queries: shipments.map(shipment => ({
       queryKey: [`/api/imports/shipments/${shipment.id}/landing-cost-summary`],
+      queryFn: async () => {
+        const response = await fetch(`/api/imports/shipments/${shipment.id}/landing-cost-summary`);
+        if (!response.ok) return null;
+        return response.json() as Promise<LandingCostSummary>;
+      },
       enabled: !!shipment.id
-    });
-    return { ...shipment, landingCost: summary };
+    }))
   });
+
+  // Combine shipments with their landing cost data
+  const shipmentsWithCosts = useMemo(() => {
+    return shipments.map((shipment, index) => ({
+      ...shipment,
+      landingCost: landingCostQueries[index]?.data
+    }));
+  }, [shipments, landingCostQueries]);
 
   // Filter and search shipments
   const filteredShipments = shipmentsWithCosts.filter(shipment => {
