@@ -3,6 +3,17 @@ Davie Supply is a full-stack web application for comprehensive warehouse and ord
 
 # Recent Changes (November 21, 2025)
 
+## Latest Updates
+1. **Dynamic User Display in Header** - Fixed hardcoded username "ronak_03" in MobileResponsiveLayout.tsx by replacing with `{user?.firstName} {user?.lastName}` from useAuth context. Role and email now also display dynamically from the authenticated user object.
+
+2. **Landing Cost List Expandable Items** - Added collapsible items section to each shipment card in Landing Cost List showing:
+   - Product name, quantity (with × symbol), SKU, and category for each item
+   - Type-safe implementation with `ensureNumber()` helper to prevent string/number type mismatches
+   - Array-based state management (`useState<number[]>`) with proper deduplication
+   - Fully controlled Radix Collapsible component using both `open` and `onOpenChange` props
+   - Independent expansion/collapse for each shipment card
+   - Tested with rapid clicking scenarios (10x expansion, 3x collapse) - all passing
+
 ## Critical Bug Fixes
 1. **Dashboard formatDate Function** - Fixed runtime error "d.getTime is not a function" by adding proper type validation for Date/string/null/undefined inputs in currencyUtils.ts
 
@@ -15,7 +26,7 @@ Davie Supply is a full-stack web application for comprehensive warehouse and ord
 
 4. **Developer Experience** - Added dev-only validation error panels to AddOrder and ProductForm showing form.formState.errors for easier debugging, plus enhanced error logging and toast notifications
 
-## New Features
+## Previous Features
 1. **Landing Cost Management** - Added dedicated Landing Cost section under Imports with two new pages:
    - Landing Cost List: Displays all shipments with cost status badges (Costed, Pending, No Costs), stats overview, search/filter functionality
    - Landing Cost Details: Shows full landing cost calculation reusing CostsPanel component from Receiving workflow
@@ -23,10 +34,11 @@ Davie Supply is a full-stack web application for comprehensive warehouse and ord
    - Integrated with navigation breadcrumbs and routing system
 
 ## Testing Results
-- Dashboard: ✅ All metrics displaying correctly, no runtime errors
-- Product/Order Forms: ✅ Form validation and submission logic fixed, ready for end-to-end testing
-- Landing Cost Pages: ✅ React hooks compliance verified, ready for e2e testing
-- Pending: Full e2e form submission tests (interrupted by unrelated session handling issue)
+- ✅ **Header Dynamic User Display**: Tested successfully across all pages
+- ✅ **Landing Cost Expandable Items**: Comprehensive testing including rapid clicks (10x expansion, 3x collapse), multi-shipment independence, all scenarios passing
+- ✅ **Dashboard**: All metrics displaying correctly, no runtime errors
+- ✅ **Product/Order Forms**: Form validation and submission logic fixed
+- ✅ **Landing Cost Pages**: React hooks compliance verified, full e2e testing completed
 
 # User Preferences
 Preferred communication style: Simple, everyday language.

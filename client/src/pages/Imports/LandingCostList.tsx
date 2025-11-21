@@ -60,6 +60,11 @@ export default function LandingCostList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [expandedShipments, setExpandedShipments] = useState<number[]>([]);
+  
+  // Helper to ensure ID is always a number (defensive type coercion)
+  const ensureNumber = (id: number | string): number => {
+    return typeof id === 'string' ? parseInt(id, 10) : id;
+  };
 
   // Fetch all shipments
   const { data: shipments = [], isLoading } = useQuery<Shipment[]>({
@@ -346,15 +351,16 @@ export default function LandingCostList() {
                     {/* Items List - Collapsible */}
                     {shipment.items && shipment.items.length > 0 && (
                       <Collapsible
-                        open={expandedShipments.includes(shipment.id)}
+                        open={expandedShipments.includes(ensureNumber(shipment.id))}
                         onOpenChange={(isOpen) => {
+                          const shipmentIdNum = ensureNumber(shipment.id);
                           setExpandedShipments(prev => {
                             if (isOpen) {
                               // Expand: add the ID only if not already present
-                              return prev.includes(shipment.id) ? prev : [...prev, shipment.id];
+                              return prev.includes(shipmentIdNum) ? prev : [...prev, shipmentIdNum];
                             } else {
                               // Collapse: remove the ID
-                              return prev.filter(id => id !== shipment.id);
+                              return prev.filter(id => id !== shipmentIdNum);
                             }
                           });
                         }}
