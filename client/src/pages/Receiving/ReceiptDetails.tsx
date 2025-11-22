@@ -984,7 +984,7 @@ export default function ReceiptDetails() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <ClipboardCheck className="h-4 w-4" />
-            Receipt Tasks
+            {t('receiptTasks')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -1001,18 +1001,18 @@ export default function ReceiptDetails() {
               </div>
               <div className="flex-1">
                 <p className="font-medium text-sm">
-                  {allItemsVerified ? 'All Items Verified' : 'Verify All Items'}
+                  {allItemsVerified ? t('allItemsVerified') : t('verifyAllItems')}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {allItemsVerified 
-                    ? `${receipt.items?.length || 0} items verified`
-                    : `${receipt.items?.filter((item: any) => item.verifiedAt).length || 0}/${receipt.items?.length || 0} items verified`
+                    ? `${receipt.items?.length || 0} ${t('itemsVerified')}`
+                    : `${receipt.items?.filter((item: any) => item.verifiedAt).length || 0}/${receipt.items?.length || 0} ${t('itemsVerified')}`
                   }
                 </p>
               </div>
               {!allItemsVerified && (
                 <Badge variant="outline" className="text-orange-600 border-orange-600 text-xs h-5 px-1.5">
-                  Required
+                  {t('required')}
                 </Badge>
               )}
             </div>
@@ -1028,18 +1028,18 @@ export default function ReceiptDetails() {
               </div>
               <div className="flex-1">
                 <p className="font-medium text-sm">
-                  {receipt.status !== 'pending_verification' ? 'Verification Completed' : 'Complete Verification'}
+                  {receipt.status !== 'pending_verification' ? t('verificationCompleted') : t('completeVerification')}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {receipt.status !== 'pending_verification'
-                    ? `Verified by ${receipt.verifiedBy || 'Unknown'}`
-                    : 'Submit verification to send for approval'
+                    ? `${t('verifiedBy')} ${receipt.verifiedBy || t('verifiedByUnknown')}`
+                    : t('submitVerificationToSendForApproval')
                   }
                 </p>
               </div>
               {receipt.status === 'pending_verification' && (
                 <Badge variant="outline" className="text-blue-600 border-blue-600 text-xs h-5 px-1.5">
-                  Next Step
+                  {t('nextStep')}
                 </Badge>
               )}
             </div>
@@ -1057,22 +1057,22 @@ export default function ReceiptDetails() {
               </div>
               <div className="flex-1">
                 <p className="font-medium text-sm">
-                  {receipt.status === 'approved' ? 'Receipt Approved' : 
-                   (receipt.status === 'pending_approval' || receipt.status === 'verified') ? 'Ready for Approval' : 
-                   'Awaiting Approval'}
+                  {receipt.status === 'approved' ? t('receiptApproved') : 
+                   (receipt.status === 'pending_approval' || receipt.status === 'verified') ? t('readyForApproval') : 
+                   t('awaitingApproval')}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {receipt.status === 'approved'
-                    ? `Approved by ${receipt.approvedBy || 'Unknown'} - Items in inventory`
+                    ? `${t('approvedBy')} ${receipt.approvedBy || t('approvedByUnknown')} - ${t('itemsInInventory')}`
                     : (receipt.status === 'pending_approval' || receipt.status === 'verified')
-                    ? 'Click "Approve & Add to Inventory" button below'
-                    : 'Complete verification first'
+                    ? `${t('common:click', { ns: 'common' })} "${t('approveAndAddToInventory')}" ${t('common:button', { ns: 'common' })} ${t('common:below', { ns: 'common' })}`
+                    : t('completeVerificationFirst')
                   }
                 </p>
               </div>
               {(receipt.status === 'pending_approval' || receipt.status === 'verified') && (
                 <Badge variant="outline" className="text-orange-600 border-orange-600 text-xs h-5 px-1.5">
-                  Action Needed
+                  {t('actionNeeded')}
                 </Badge>
               )}
             </div>
@@ -1081,7 +1081,7 @@ export default function ReceiptDetails() {
           {/* Compact Progress Bar */}
           <div className="space-y-1.5">
             <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Overall Progress</span>
+              <span className="text-muted-foreground">{t('overallProgress')}</span>
               <span className="font-medium">
                 {receipt.status === 'approved' ? '100%' : 
                  (receipt.status === 'pending_approval' || receipt.status === 'verified') ? '75%' : 
@@ -1109,11 +1109,11 @@ export default function ReceiptDetails() {
                   className={allItemsVerified ? 'bg-green-600 hover:bg-green-700 h-8 text-sm' : 'h-8 text-sm'}
                 >
                   <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-                  {allItemsVerified ? 'Complete Verification' : 'Complete Verification (Verify Items First)'}
+                  {t('completeVerification')}
                 </Button>
                 {!allItemsVerified && (
                   <p className="text-xs text-muted-foreground self-center">
-                    Please verify all items before completing verification
+                    {t('pleaseVerifyAllItemsFirst')}
                   </p>
                 )}
               </>
@@ -1126,11 +1126,11 @@ export default function ReceiptDetails() {
                   className="bg-orange-600 hover:bg-orange-700 h-8 text-sm"
                 >
                   <Check className="h-3.5 w-3.5 mr-1.5" />
-                  Approve & Add to Inventory
+                  {t('approveAndAddToInventory')}
                 </Button>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Info className="h-3.5 w-3.5" />
-                  <span>Set prices and add verified items to inventory</span>
+                  <span>{t('setPricesAndAddVerifiedItemsToInventory')}</span>
                 </div>
               </>
             )}
@@ -1138,7 +1138,7 @@ export default function ReceiptDetails() {
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-1.5 text-green-600">
                   <CheckCircle className="h-4 w-4" />
-                  <span className="font-medium text-sm">All tasks completed - Items in inventory</span>
+                  <span className="font-medium text-sm">{t('allTasksCompleted')} - {t('itemsInInventory')}</span>
                 </div>
                 <Button
                   variant="ghost"
@@ -1149,7 +1149,7 @@ export default function ReceiptDetails() {
                   className="text-muted-foreground hover:text-destructive text-xs px-2 h-7"
                 >
                   <Undo2 className="h-3 w-3 mr-1" />
-                  Undo Approval
+                  {t('undoApproval')}
                 </Button>
               </div>
             )}
