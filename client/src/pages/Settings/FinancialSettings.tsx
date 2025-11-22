@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { DollarSign, Save, Loader2, Percent, CreditCard, Receipt, BookOpen } from "lucide-react";
+import { DollarSign, Save, Loader2, Percent, CreditCard, Receipt, BookOpen, Plus, X, Edit2, Tag } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
 
@@ -95,10 +95,18 @@ const valuesAreEqual = (a: any, b: any): boolean => {
 };
 
 export default function FinancialSettings() {
-  const { t } = useTranslation(['settings', 'common']);
+  const { t } = useTranslation(['settings', 'common', 'financial']);
   const { toast } = useToast();
   const { financialSettings, isLoading } = useSettings();
   const [originalSettings, setOriginalSettings] = useState<Partial<FormValues>>({});
+  
+  // Expense category management state (local state synced with financialSettings)
+  const [expenseCategories, setExpenseCategories] = useState<string[]>(
+    financialSettings.expenseCategories || []
+  );
+  const [newCategory, setNewCategory] = useState('');
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [editCategoryValue, setEditCategoryValue] = useState('');
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -135,6 +143,90 @@ export default function FinancialSettings() {
       track_expenses_by_category: financialSettings.trackExpensesByCategory,
     },
   });
+
+  // Sync local expenseCategories with context when financialSettings changes
+  useEffect(() => {
+    if (financialSettings.expenseCategories) {
+      setExpenseCategories(financialSettings.expenseCategories);
+    }
+  }, [financialSettings.expenseCategories]);
+
+  // Expense category handlers
+  const handleAddCategory = () => {
+    if (!newCategory.trim()) {
+      toast({
+        variant: "destructive",
+        title: t('common:error'),
+        description: t('financial:categoryNameRequired'),
+      });
+      return;
+    }
+    
+    if (expenseCategories.includes(newCategory.trim())) {
+      toast({
+        variant: "destructive",
+        title: t('common:error'),
+        description: t('financial:categoryAlreadyExists'),
+      });
+      return;
+    }
+    
+    setExpenseCategories([...expenseCategories, newCategory.trim()]);
+    setNewCategory('');
+  };
+
+  const handleEditCategory = (oldCategory: string) => {
+    if (!editCategoryValue.trim()) {
+      toast({
+        variant: "destructive",
+        title: t('common:error'),
+        description: t('financial:categoryNameRequired'),
+      });
+      return;
+    }
+    
+    if (editCategoryValue.trim() !== oldCategory && expenseCategories.includes(editCategoryValue.trim())) {
+      toast({
+        variant: "destructive",
+        title: t('common:error'),
+        description: t('financial:categoryAlreadyExists'),
+      });
+      return;
+    }
+    
+    setExpenseCategories(
+      expenseCategories.map(cat => cat === oldCategory ? editCategoryValue.trim() : cat)
+    );
+    setEditingCategory(null);
+    setEditCategoryValue('');
+  };
+
+  const handleDeleteCategory = (category: string) => {
+    setExpenseCategories(expenseCategories.filter(cat => cat !== category));
+  };
+
+  const handleSaveCategories = async () => {
+    try {
+      await apiRequest('POST', '/api/settings', {
+        key: 'expense_categories',
+        value: expenseCategories,
+        category: 'financial'
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+      
+      toast({
+        title: t('common:success'),
+        description: t('financial:categoriesSavedSuccessfully'),
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: t('common:error'),
+        description: error.message || t('financial:failedToSaveCategories'),
+      });
+    }
+  };
 
   // Capture snapshot when settings load
   useEffect(() => {

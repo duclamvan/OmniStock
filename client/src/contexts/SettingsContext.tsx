@@ -2,6 +2,26 @@ import { createContext, useContext, useMemo, ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getDefaultTaxRate, applyTax, calculateOrderTotals } from '@shared/utils/tax';
 
+// Default expense categories (fallback if not set in app_settings)
+export const DEFAULT_EXPENSE_CATEGORIES = [
+  'Office Supplies',
+  'Travel',
+  'Marketing',
+  'Salaries',
+  'Rent',
+  'Utilities',
+  'Supplies',
+  'Software',
+  'Equipment',
+  'Insurance',
+  'Legal',
+  'Consulting',
+  'Inventory',
+  'Shipping',
+  'Operations',
+  'General',
+];
+
 // Types for settings by category
 export interface GeneralSettings {
   companyName?: string;
@@ -200,6 +220,7 @@ export interface FinancialSettings {
   defaultPriceMargin?: number;
   taxCalculationMethod?: 'inclusive' | 'exclusive';
   roundingMethod?: 'nearest' | 'up' | 'down';
+  expenseCategories?: string[];
 }
 
 export interface SystemSettings {
@@ -485,10 +506,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [settings]
   );
 
-  const financialSettings = useMemo(
-    () => parseSettingsByCategory<FinancialSettings>(settings, 'financial'),
-    [settings]
-  );
+  const financialSettings = useMemo(() => {
+    const parsed = parseSettingsByCategory<FinancialSettings>(settings, 'financial');
+    // Ensure expenseCategories always has a value (fallback to defaults)
+    if (!parsed.expenseCategories || parsed.expenseCategories.length === 0) {
+      parsed.expenseCategories = DEFAULT_EXPENSE_CATEGORIES;
+    }
+    return parsed;
+  }, [settings]);
 
   const systemSettings = useMemo(
     () => parseSettingsByCategory<SystemSettings>(settings, 'system'),
