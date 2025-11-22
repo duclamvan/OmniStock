@@ -160,15 +160,15 @@ export default function LandingCostDetails() {
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       setPriceUpdates({});
       toast({
-        title: "Prices Updated",
-        description: "Selling prices have been successfully saved."
+        title: t('pricesUpdated'),
+        description: t('sellingPricesSaved')
       });
     },
     onError: (error) => {
       console.error('Error saving prices:', error);
       toast({
-        title: "Error",
-        description: "Failed to save prices. Please try again.",
+        title: t('error'),
+        description: t('failedToSavePrices'),
         variant: "destructive"
       });
     }
@@ -208,8 +208,8 @@ export default function LandingCostDetails() {
     const updates = Object.values(priceUpdates);
     if (updates.length === 0) {
       toast({
-        title: "No Changes",
-        description: "No price changes to save.",
+        title: t('noChanges'),
+        description: t('noPriceChanges'),
         variant: "default"
       });
       return;
@@ -346,7 +346,7 @@ export default function LandingCostDetails() {
                   {t('landedCostPerItem')} ({landingCostPreview.items.length})
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  View landed costs and set selling prices for each product
+                  {t('viewLandedCostsSetPrices')}
                 </CardDescription>
               </div>
               <Button
@@ -356,7 +356,7 @@ export default function LandingCostDetails() {
                 data-testid="button-save-prices"
               >
                 <Save className="h-3.5 w-3.5 mr-1.5" />
-                {savePricesMutation.isPending ? 'Saving...' : 'Save Prices'}
+                {savePricesMutation.isPending ? t('saving') : t('savePrices')}
               </Button>
             </div>
           </CardHeader>
@@ -395,12 +395,12 @@ export default function LandingCostDetails() {
                               SKU: {item.sku}
                             </Badge>
                             <span className="text-xs text-muted-foreground">
-                              Qty: <strong>{item.quantity}</strong>
+                              {t('quantity')}: <strong>{item.quantity}</strong>
                             </span>
                             {!product && (
                               <Badge variant="secondary" className="text-xs">
                                 <AlertCircle className="h-3 w-3 mr-1" />
-                                Not in inventory
+                                {t('notInInventory')}
                               </Badge>
                             )}
                           </div>
@@ -411,7 +411,7 @@ export default function LandingCostDetails() {
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
                         {/* Purchase Price */}
                         <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-2">
-                          <Label className="text-xs text-muted-foreground">Purchase Price</Label>
+                          <Label className="text-xs text-muted-foreground">{t('purchasePrice')}</Label>
                           <div className="mt-1">
                             <p className="text-sm font-semibold text-blue-700 dark:text-blue-400">
                               {formatCurrency(item.unitPrice, 'EUR')}
@@ -424,20 +424,20 @@ export default function LandingCostDetails() {
 
                         {/* Landed Cost EUR */}
                         <div className="bg-purple-50 dark:bg-purple-950/20 rounded-lg p-2">
-                          <Label className="text-xs text-muted-foreground">Landed Cost (EUR)</Label>
+                          <Label className="text-xs text-muted-foreground">{t('landedCostEUR')}</Label>
                           <div className="mt-1">
                             <p className="text-sm font-semibold text-purple-700 dark:text-purple-400">
                               {formatCurrency(item.landingCostPerUnit, 'EUR')}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              +{formatCurrency(item.totalAllocated / item.quantity, 'EUR')} costs
+                              +{formatCurrency(item.totalAllocated / item.quantity, 'EUR')} {t('costs')}
                             </p>
                           </div>
                         </div>
 
                         {/* Landed Cost CZK */}
                         <div className="bg-purple-50 dark:bg-purple-950/20 rounded-lg p-2">
-                          <Label className="text-xs text-muted-foreground">Landed Cost (CZK)</Label>
+                          <Label className="text-xs text-muted-foreground">{t('landedCostCZK')}</Label>
                           <div className="mt-1">
                             <p className="text-sm font-semibold text-purple-700 dark:text-purple-400">
                               {formatCurrency(landingCostCZK, 'CZK')}
@@ -451,7 +451,7 @@ export default function LandingCostDetails() {
                         {/* Margin Indicator */}
                         <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-2">
                           <Label className="text-xs text-muted-foreground">
-                            {displayPriceEUR > 0 ? 'Profit Margin' : 'Set Price'}
+                            {displayPriceEUR > 0 ? t('profitMargin') : t('setPrice')}
                           </Label>
                           <div className="mt-1">
                             {displayPriceEUR > 0 ? (
@@ -465,7 +465,7 @@ export default function LandingCostDetails() {
                               </>
                             ) : (
                               <p className="text-xs text-amber-600 dark:text-amber-400">
-                                No price set
+                                {t('noPriceSet')}
                               </p>
                             )}
                           </div>
@@ -476,13 +476,13 @@ export default function LandingCostDetails() {
                       <div className="border-t pt-3">
                         <Label className="text-xs font-semibold mb-2 block">
                           <DollarSign className="h-3 w-3 inline mr-1" />
-                          Set Selling Price
+                          {t('setSellingPrice')}
                         </Label>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {/* EUR Price Input */}
                           <div>
                             <Label htmlFor={`price-eur-${item.sku}`} className="text-xs text-muted-foreground">
-                              Selling Price (EUR)
+                              {t('sellingPriceEUR')}
                             </Label>
                             <Input
                               id={`price-eur-${item.sku}`}
@@ -500,7 +500,7 @@ export default function LandingCostDetails() {
                           {/* CZK Price Input */}
                           <div>
                             <Label htmlFor={`price-czk-${item.sku}`} className="text-xs text-muted-foreground">
-                              Selling Price (CZK)
+                              {t('sellingPriceCZK')}
                             </Label>
                             <Input
                               id={`price-czk-${item.sku}`}
@@ -526,13 +526,12 @@ export default function LandingCostDetails() {
             {landingCostPreview && landingCostPreview.items.length > 0 && (
               <Alert className="mt-4">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Pricing Information</AlertTitle>
+                <AlertTitle>{t('pricingInformation')}</AlertTitle>
                 <AlertDescription className="text-xs">
-                  Landed cost includes purchase price plus allocated freight, duty, customs, insurance, and other costs.
-                  Set selling prices above to update product prices in your inventory.
+                  {t('landedCostIncludes')}
                   {Object.keys(priceUpdates).length > 0 && (
                     <span className="font-semibold text-blue-600 dark:text-blue-400">
-                      {' '}({Object.keys(priceUpdates).length} unsaved changes)
+                      {' '}({Object.keys(priceUpdates).length} {t('unsavedChanges')})
                     </span>
                   )}
                 </AlertDescription>

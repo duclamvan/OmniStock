@@ -134,6 +134,94 @@ const orders = {
   phoneRequired: 'Phone required',
   phoneRequiredDesc: 'Please enter a phone number',
   
+  // Toast Messages - PPL/Shipping Labels
+  creatingCartonLabel: 'Creating Carton Label...',
+  creatingCartonLabelDesc: 'Generating new PPL shipping label. This may take a few seconds.',
+  cartonLabelAdded: 'Carton Label Added',
+  cartonLabelAddedDesc: 'New carton created with PPL tracking number: {{trackingNumber}}. You now have {{count}} carton(s).',
+  error: 'Error',
+  failedToAddCartonLabel: 'Failed to add carton label',
+  
+  // Toast Messages - Clipboard/Paste
+  pasteFailed: 'Paste failed',
+  pasteFailedClipboardAccess: 'Please allow clipboard access or paste manually',
+  pasteFailedClipboardAccessShort: 'Please allow clipboard access',
+  
+  // Toast Messages - Packing Validation
+  almostThere: 'Almost there!',
+  completeAllSteps: 'Please complete all required steps before finishing packing.',
+  
+  // Toast Messages - Shipping Errors
+  failedToShipOrders: 'Failed to ship some orders',
+  noLabelFound: 'No Label Found',
+  noLabelFoundDesc: 'No shipping label has been generated for this order yet.',
+  failedToLoadLabel: 'Failed to load shipping label',
+  
+  // Toast Messages - Address
+  success: 'Success',
+  addressSavedWithCustomer: 'Address saved (will be created with customer)',
+  
+  // Toast Messages - Weight/Packing Constraints
+  weightLimitExceeded: 'Weight Limit Exceeded',
+  glsWeightLimitDesc: 'GLS shipments cannot exceed 40kg per carton. Please reduce weight or split into multiple cartons.',
+  
+  // Toast Messages - Packing/Items
+  noItemsToPack: 'No items to pack in the current order',
+  failedToCreateAICartons: 'Failed to create AI-suggested cartons',
+  errorCreatingCarton: 'Error Creating Carton',
+  failedToSave: 'Failed to Save',
+  failedToRecalculateCartons: 'Failed to recalculate cartons',
+  
+  // Toast Messages - PPL Label Management
+  pplLabelsCreated: 'PPL Labels Created',
+  pplLabelCreationFailed: 'PPL Label Creation Failed',
+  pplLabelsCancelled: 'PPL Labels Cancelled',
+  pplLabelsCancelledDesc: 'Shipping labels have been cancelled with PPL',
+  pplLabelsRemoved: 'PPL Labels Removed',
+  pplLabelsRemovedDesc: 'Label data has been removed from the order',
+  pplLabelRetrieved: 'PPL Label Retrieved',
+  labelRetrievalFailed: 'Label Retrieval Failed',
+  
+  // Toast Messages - Packing Actions
+  repackingOrder: 'Repacking Order',
+  failedToInitiateRepacking: 'Failed to initiate repacking',
+  orderReset: 'Order Reset',
+  orderResetDesc: 'All picked quantities have been cleared.',
+  cannotCompletePacking: 'Cannot Complete Packing',
+  
+  // Toast Messages - Shipping Actions
+  failedToSaveTracking: 'Failed to save tracking numbers. Please try again.',
+  failedToShipOrder: 'Failed to ship order',
+  ordersReturnedToReady: 'Orders returned to ready status',
+  failedToUndoShipment: 'Failed to undo shipment',
+  
+  // Toast Messages - Generic/Actions
+  pleaseTryAgain: 'Please try again',
+  pleaseAddCartonsFirst: 'Please add cartons first before generating labels',
+  failedToPrintLabels: 'Failed to print labels',
+  cartonDataPreserved: 'Carton data preserved. Use \'Generate All Labels\' to create new labels.',
+  ordersShipped: 'Orders Shipped',
+  shipmentUndone: 'Shipment Undone',
+  
+  // Toast Messages - Documents/Printing
+  documentsSentToPrinter: 'Documents Sent to Printer',
+  printError: 'Print Error',
+  labelsSentToPrinter: 'Labels Sent to Printer',
+  
+  // Toast Messages - Clipboard/Copy
+  copied: 'Copied!',
+  copiedToClipboard: 'Copied to clipboard',
+  copyFailed: 'Copy failed',
+  
+  // Toast Messages - Label Generation
+  noCartons: 'No Cartons',
+  generatingLabels: 'Generating Labels...',
+  labelsGenerated: 'Labels Generated',
+  allLabelsDeleted: 'All Labels Deleted',
+  labelDeleted: 'Label Deleted',
+  generatingPPLLabel: 'Generating PPL Label...',
+  labelGenerated: 'Label Generated',
+  
   // Order Details Sections
   invoice: 'Invoice',
   customerInformation: 'Customer Information',

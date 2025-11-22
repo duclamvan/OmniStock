@@ -992,7 +992,7 @@ export default function AddCustomer() {
         shippingForm.reset();
       } catch (error: any) {
         toast({
-          title: "Error",
+          title: t('customers.error'),
           description: error.message || t('customers.failedToSaveShippingAddress'),
           variant: "destructive",
         });
@@ -1123,7 +1123,7 @@ export default function AddCustomer() {
         billingAddressForm.reset();
       } catch (error: any) {
         toast({
-          title: "Error",
+          title: t('customers.error'),
           description: error.message || t('customers.failedToSaveBillingAddress'),
           variant: "destructive",
         });
@@ -1369,7 +1369,7 @@ export default function AddCustomer() {
       
       toast({
         title: t('customers.addressParsed'),
-        description: `Successfully parsed address with ${data.confidence} confidence`,
+        description: t('customers.successfullyParsedAddressWithConfidence', { confidence: data.confidence }),
       });
       setRawShippingAddress("");
     },
@@ -1546,7 +1546,7 @@ export default function AddCustomer() {
       
       toast({
         title: t('customers.addressParsed'),
-        description: `Successfully parsed address with ${data.confidence} confidence`,
+        description: t('customers.successfullyParsedAddressWithConfidence', { confidence: data.confidence }),
       });
       setRawBillingAddress("");
     },
@@ -1650,7 +1650,7 @@ export default function AddCustomer() {
       
       toast({
         title: t('customers.addressParsed'),
-        description: `Successfully parsed address with ${data.confidence} confidence`,
+        description: t('customers.successfullyParsedAddressWithConfidence', { confidence: data.confidence }),
       });
       setRawBillingAddressForm("");
     },
@@ -1707,8 +1707,8 @@ export default function AddCustomer() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || `Failed to ${isEditMode ? 'update' : 'create'} customer`,
+        title: t('customers.error'),
+        description: error.message || (isEditMode ? t('customers.failedToUpdateCustomer') : t('customers.failedToCreateCustomer')),
         variant: "destructive",
       });
     },
@@ -1791,7 +1791,7 @@ export default function AddCustomer() {
                   <Input
                     id="facebookUrl"
                     {...form.register('facebookUrl')}
-                    placeholder="https://www.facebook.com/username"
+                    placeholder={t('customers.facebookUrlPlaceholder')}
                     className="text-base"
                     data-testid="input-facebookUrl"
                     onChange={(e) => {
@@ -1901,7 +1901,7 @@ export default function AddCustomer() {
                   <Input
                     id="facebookName"
                     {...form.register('facebookName')}
-                    placeholder="Customer's Facebook display name"
+                    placeholder={t('customers.facebookDisplayNamePlaceholder')}
                     className="text-base"
                     data-testid="input-facebookName"
                   />
@@ -1915,7 +1915,7 @@ export default function AddCustomer() {
                     {...form.register('name', {
                       onChange: () => setIsNameManuallyEdited(true)
                     })}
-                    placeholder="Customer's display name"
+                    placeholder={t('customers.customerDisplayNamePlaceholder')}
                     className="text-base"
                     data-testid="input-name"
                   />
@@ -1943,7 +1943,7 @@ export default function AddCustomer() {
                             {selectedCountryData.name}
                           </span>
                         ) : (
-                          "Select country..."
+                          t('customers.searchCountryPlaceholder')
                         )}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -1951,7 +1951,7 @@ export default function AddCustomer() {
                     <PopoverContent className="w-full p-0" align="start">
                       <Command>
                         <CommandInput 
-                          placeholder="Search country..." 
+                          placeholder={t('customers.searchCountryPlaceholder')} 
                           value={countrySearchQuery}
                           onValueChange={setCountrySearchQuery}
                           data-testid="input-country-search"
@@ -2071,7 +2071,7 @@ export default function AddCustomer() {
                     onValueChange={(value: 'CZK' | 'EUR') => form.setValue('preferredCurrency', value)}
                   >
                     <SelectTrigger className="w-full" data-testid="select-preferredCurrency">
-                      <SelectValue placeholder="Select currency" />
+                      <SelectValue placeholder={t('customers.selectCurrency')} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="EUR" data-testid="option-currency-EUR">EUR (Euro)</SelectItem>
@@ -2204,7 +2204,7 @@ export default function AddCustomer() {
                         id="rawShippingAddress"
                         value={rawShippingAddress}
                         onChange={(e) => setRawShippingAddress(e.target.value)}
-                        placeholder="e.g., John Doe, ABC Company, john@example.com, +420123456789, Main Street 123, Prague 110 00, Czech Republic"
+                        placeholder={t('customers.addressExamplePlaceholder')}
                         className="min-h-[100px]"
                         data-testid="textarea-rawShippingAddress"
                       />
@@ -2242,7 +2242,7 @@ export default function AddCustomer() {
                       <Input
                         id="shippingFirstName"
                         {...shippingForm.register('firstName')}
-                        placeholder="First name"
+                        placeholder={t('customers.firstNamePlaceholder')}
                         className={cn(
                           getConfidenceClass('firstName', shippingFieldConfidence),
                           shippingForm.formState.errors.firstName && "border-red-500"
@@ -2260,7 +2260,7 @@ export default function AddCustomer() {
                       <Input
                         id="shippingLastName"
                         {...shippingForm.register('lastName')}
-                        placeholder="Last name"
+                        placeholder={t('customers.lastNamePlaceholder')}
                         className={cn(
                           getConfidenceClass('lastName', shippingFieldConfidence),
                           shippingForm.formState.errors.lastName && "border-red-500"
@@ -2280,7 +2280,7 @@ export default function AddCustomer() {
                     <Input
                       id="shippingCompany"
                       {...shippingForm.register('company')}
-                      placeholder="Company name"
+                      placeholder={t('customers.companyNamePlaceholder')}
                       className={cn(getConfidenceClass('company', shippingFieldConfidence))}
                       data-testid="input-shippingCompany"
                     />
@@ -2295,7 +2295,7 @@ export default function AddCustomer() {
                         id="shippingEmail"
                         type="email"
                         {...shippingForm.register('email')}
-                        placeholder="email@example.com"
+                        placeholder={t('customers.emailPlaceholder')}
                         className={cn(getConfidenceClass('email', shippingFieldConfidence))}
                         data-testid="input-shippingEmail"
                       />
@@ -2322,7 +2322,7 @@ export default function AddCustomer() {
                             }
                           }
                         })}
-                        placeholder="+420123456789"
+                        placeholder={t('customers.phonePlaceholder')}
                         className={cn(getConfidenceClass('tel', shippingFieldConfidence))}
                         data-testid="input-shippingTel"
                       />
@@ -2337,7 +2337,7 @@ export default function AddCustomer() {
                       <Input
                         id="shippingStreet"
                         {...shippingForm.register('street')}
-                        placeholder="Street name"
+                        placeholder={t('customers.streetNamePlaceholder')}
                         className={cn(getConfidenceClass('street', shippingFieldConfidence))}
                         data-testid="input-shippingStreet"
                       />
@@ -2347,7 +2347,7 @@ export default function AddCustomer() {
                       <Input
                         id="shippingStreetNumber"
                         {...shippingForm.register('streetNumber')}
-                        placeholder="123"
+                        placeholder={t('customers.streetNumberPlaceholder')}
                         className={cn(getConfidenceClass('streetNumber', shippingFieldConfidence))}
                         data-testid="input-shippingStreetNumber"
                       />
@@ -2360,7 +2360,7 @@ export default function AddCustomer() {
                       <Input
                         id="shippingZipCode"
                         {...shippingForm.register('zipCode')}
-                        placeholder="110 00"
+                        placeholder={t('customers.postalCodePlaceholder')}
                         className={cn(getConfidenceClass('zipCode', shippingFieldConfidence))}
                         data-testid="input-shippingZipCode"
                       />
@@ -2370,7 +2370,7 @@ export default function AddCustomer() {
                       <Input
                         id="shippingCity"
                         {...shippingForm.register('city')}
-                        placeholder="Prague"
+                        placeholder={t('customers.cityPlaceholder')}
                         className={cn(getConfidenceClass('city', shippingFieldConfidence))}
                         data-testid="input-shippingCity"
                       />
@@ -2467,8 +2467,8 @@ export default function AddCustomer() {
                             .filter(Boolean)
                             .join(', ');
                           toast({
-                            title: "Validation Error",
-                            description: errorMessages || "Please fill in all required fields (First Name, Last Name)",
+                            title: t('customers.validationError'),
+                            description: errorMessages || t('customers.fillInRequiredFields'),
                             variant: "destructive",
                           });
                         }
@@ -2603,8 +2603,8 @@ export default function AddCustomer() {
                           billingAddressForm.setValue('zipCode', primaryAddress.zipCode || '');
                           billingAddressForm.setValue('country', primaryAddress.country || '');
                           toast({
-                            title: "Address Copied",
-                            description: "Shipping address has been copied to billing address",
+                            title: t('customers.addressCopied'),
+                            description: t('customers.shippingAddressCopiedToBilling'),
                           });
                         }
                       }}
@@ -2641,7 +2641,7 @@ export default function AddCustomer() {
                         id="rawBillingAddressForm"
                         value={rawBillingAddressForm}
                         onChange={(e) => setRawBillingAddressForm(e.target.value)}
-                        placeholder="e.g., John Doe, ABC Company, john@example.com, +420123456789, Main Street 123, Prague 110 00, Czech Republic"
+                        placeholder={t('customers.addressExamplePlaceholder')}
                         className="min-h-[100px]"
                         data-testid="textarea-rawBillingAddressForm"
                       />
@@ -2679,7 +2679,7 @@ export default function AddCustomer() {
                       <Input
                         id="billingFirstName"
                         {...billingAddressForm.register('firstName')}
-                        placeholder="First name"
+                        placeholder={t('customers.firstNamePlaceholder')}
                         className={cn(getConfidenceClass('firstName', billingAddressFieldConfidence))}
                         data-testid="input-billingFirstName"
                       />
@@ -2689,7 +2689,7 @@ export default function AddCustomer() {
                       <Input
                         id="billingLastName"
                         {...billingAddressForm.register('lastName')}
-                        placeholder="Last name"
+                        placeholder={t('customers.lastNamePlaceholder')}
                         className={cn(getConfidenceClass('lastName', billingAddressFieldConfidence))}
                         data-testid="input-billingLastName"
                       />
@@ -2701,7 +2701,7 @@ export default function AddCustomer() {
                     <Input
                       id="billingCompany"
                       {...billingAddressForm.register('company')}
-                      placeholder="Company name"
+                      placeholder={t('customers.companyNamePlaceholder')}
                       className={cn(getConfidenceClass('company', billingAddressFieldConfidence))}
                       data-testid="input-billingCompany"
                     />
@@ -2716,7 +2716,7 @@ export default function AddCustomer() {
                         id="billingEmail"
                         type="email"
                         {...billingAddressForm.register('email')}
-                        placeholder="email@example.com"
+                        placeholder={t('customers.emailPlaceholder')}
                         className={cn(getConfidenceClass('email', billingAddressFieldConfidence))}
                         data-testid="input-billingEmail"
                       />
@@ -2747,7 +2747,7 @@ export default function AddCustomer() {
                             }
                           }
                         })}
-                        placeholder="+420123456789"
+                        placeholder={t('customers.phonePlaceholder')}
                         className={cn(getConfidenceClass('tel', billingAddressFieldConfidence))}
                         data-testid="input-billingTel"
                       />
@@ -2762,7 +2762,7 @@ export default function AddCustomer() {
                       <Input
                         id="billingStreet"
                         {...billingAddressForm.register('street')}
-                        placeholder="Street name"
+                        placeholder={t('customers.streetNamePlaceholder')}
                         className={cn(getConfidenceClass('street', billingAddressFieldConfidence))}
                         data-testid="input-billingStreet"
                       />
@@ -2772,7 +2772,7 @@ export default function AddCustomer() {
                       <Input
                         id="billingStreetNumber"
                         {...billingAddressForm.register('streetNumber')}
-                        placeholder="123"
+                        placeholder={t('customers.streetNumberPlaceholder')}
                         className={cn(getConfidenceClass('streetNumber', billingAddressFieldConfidence))}
                         data-testid="input-billingStreetNumber"
                       />
@@ -2785,7 +2785,7 @@ export default function AddCustomer() {
                       <Input
                         id="billingZipCode"
                         {...billingAddressForm.register('zipCode')}
-                        placeholder="110 00"
+                        placeholder={t('customers.postalCodePlaceholder')}
                         className={cn(getConfidenceClass('zipCode', billingAddressFieldConfidence))}
                         data-testid="input-billingZipCode"
                       />
@@ -2795,7 +2795,7 @@ export default function AddCustomer() {
                       <Input
                         id="billingCity"
                         {...billingAddressForm.register('city')}
-                        placeholder="Prague"
+                        placeholder={t('customers.cityPlaceholder')}
                         className={cn(getConfidenceClass('city', billingAddressFieldConfidence))}
                         data-testid="input-billingCity"
                       />
@@ -2876,7 +2876,7 @@ export default function AddCustomer() {
                         <Input
                           id="billingIco"
                           {...billingAddressForm.register('ico')}
-                          placeholder="12345678"
+                          placeholder={t('customers.icoPlaceholder')}
                           data-testid="input-billingIco"
                         />
                         <p className="text-xs text-slate-500 mt-1">Czech company registration number</p>
@@ -2887,7 +2887,7 @@ export default function AddCustomer() {
                       <Input
                         id="billingVatId"
                         {...billingAddressForm.register('vatId')}
-                        placeholder="e.g., DE123456789"
+                        placeholder={t('customers.vatNumberExamplePlaceholder')}
                         data-testid="input-billingVatId"
                       />
                       <p className="text-xs text-slate-500 mt-1">Company VAT identification number</p>
@@ -2972,7 +2972,7 @@ export default function AddCustomer() {
                         <Input
                           id="ico"
                           {...form.register('ico')}
-                          placeholder="12345678"
+                          placeholder={t('customers.icoPlaceholder')}
                           onBlur={(e) => handleAresLookup(e.target.value)}
                           data-testid="input-ico"
                         />
@@ -2985,7 +2985,7 @@ export default function AddCustomer() {
                       <Input
                         id="dic"
                         {...form.register('dic')}
-                        placeholder="CZ12345678"
+                        placeholder={t('customers.vatNumberCzPlaceholder')}
                         readOnly
                         className="bg-slate-50"
                         data-testid="input-dic"

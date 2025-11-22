@@ -134,6 +134,94 @@ const orders = {
   phoneRequired: 'Cần số điện thoại',
   phoneRequiredDesc: 'Vui lòng nhập số điện thoại',
   
+  // Toast Messages - PPL/Shipping Labels
+  creatingCartonLabel: 'Đang tạo nhãn thùng...',
+  creatingCartonLabelDesc: 'Đang tạo nhãn vận chuyển PPL mới. Có thể mất vài giây.',
+  cartonLabelAdded: 'Đã thêm nhãn thùng',
+  cartonLabelAddedDesc: 'Đã tạo thùng mới với mã vận đơn PPL: {{trackingNumber}}. Bạn hiện có {{count}} thùng.',
+  error: 'Lỗi',
+  failedToAddCartonLabel: 'Không thể thêm nhãn thùng',
+  
+  // Toast Messages - Clipboard/Paste
+  pasteFailed: 'Dán thất bại',
+  pasteFailedClipboardAccess: 'Vui lòng cho phép truy cập clipboard hoặc dán thủ công',
+  pasteFailedClipboardAccessShort: 'Vui lòng cho phép truy cập clipboard',
+  
+  // Toast Messages - Packing Validation
+  almostThere: 'Sắp xong rồi!',
+  completeAllSteps: 'Vui lòng hoàn thành tất cả các bước trước khi kết thúc đóng gói.',
+  
+  // Toast Messages - Shipping Errors
+  failedToShipOrders: 'Không thể giao vận một số đơn hàng',
+  noLabelFound: 'Không tìm thấy nhãn',
+  noLabelFoundDesc: 'Chưa có nhãn vận chuyển được tạo cho đơn hàng này.',
+  failedToLoadLabel: 'Không thể tải nhãn vận chuyển',
+  
+  // Toast Messages - Address
+  success: 'Thành công',
+  addressSavedWithCustomer: 'Địa chỉ đã lưu (sẽ được tạo cùng khách hàng)',
+  
+  // Toast Messages - Weight/Packing Constraints
+  weightLimitExceeded: 'Vượt giới hạn trọng lượng',
+  glsWeightLimitDesc: 'Lô hàng GLS không thể vượt quá 40kg mỗi thùng. Vui lòng giảm trọng lượng hoặc chia thành nhiều thùng.',
+  
+  // Toast Messages - Packing/Items
+  noItemsToPack: 'Không có sản phẩm để đóng gói trong đơn hàng hiện tại',
+  failedToCreateAICartons: 'Không thể tạo thùng gợi ý bằng AI',
+  errorCreatingCarton: 'Lỗi tạo thùng',
+  failedToSave: 'Lưu thất bại',
+  failedToRecalculateCartons: 'Không thể tính toán lại thùng',
+  
+  // Toast Messages - PPL Label Management
+  pplLabelsCreated: 'Đã tạo nhãn PPL',
+  pplLabelCreationFailed: 'Tạo nhãn PPL thất bại',
+  pplLabelsCancelled: 'Đã hủy nhãn PPL',
+  pplLabelsCancelledDesc: 'Nhãn vận chuyển đã được hủy với PPL',
+  pplLabelsRemoved: 'Đã xóa nhãn PPL',
+  pplLabelsRemovedDesc: 'Dữ liệu nhãn đã được xóa khỏi đơn hàng',
+  pplLabelRetrieved: 'Đã lấy nhãn PPL',
+  labelRetrievalFailed: 'Lấy nhãn thất bại',
+  
+  // Toast Messages - Packing Actions
+  repackingOrder: 'Đang đóng gói lại đơn hàng',
+  failedToInitiateRepacking: 'Không thể bắt đầu đóng gói lại',
+  orderReset: 'Đã đặt lại đơn hàng',
+  orderResetDesc: 'Tất cả số lượng đã lấy đã được xóa.',
+  cannotCompletePacking: 'Không thể hoàn thành đóng gói',
+  
+  // Toast Messages - Shipping Actions
+  failedToSaveTracking: 'Không thể lưu mã vận đơn. Vui lòng thử lại.',
+  failedToShipOrder: 'Không thể giao vận đơn hàng',
+  ordersReturnedToReady: 'Đơn hàng đã được trả về trạng thái sẵn sàng',
+  failedToUndoShipment: 'Không thể hoàn tác giao vận',
+  
+  // Toast Messages - Generic/Actions
+  pleaseTryAgain: 'Vui lòng thử lại',
+  pleaseAddCartonsFirst: 'Vui lòng thêm thùng trước khi tạo nhãn',
+  failedToPrintLabels: 'Không thể in nhãn',
+  cartonDataPreserved: 'Dữ liệu thùng đã được bảo toàn. Sử dụng \'Tạo tất cả nhãn\' để tạo nhãn mới.',
+  ordersShipped: 'Đã giao vận đơn hàng',
+  shipmentUndone: 'Đã hoàn tác giao vận',
+  
+  // Toast Messages - Documents/Printing
+  documentsSentToPrinter: 'Đã gửi tài liệu đến máy in',
+  printError: 'Lỗi in',
+  labelsSentToPrinter: 'Đã gửi nhãn đến máy in',
+  
+  // Toast Messages - Clipboard/Copy
+  copied: 'Đã sao chép!',
+  copiedToClipboard: 'Đã sao chép vào clipboard',
+  copyFailed: 'Sao chép thất bại',
+  
+  // Toast Messages - Label Generation
+  noCartons: 'Không có thùng',
+  generatingLabels: 'Đang tạo nhãn...',
+  labelsGenerated: 'Đã tạo nhãn',
+  allLabelsDeleted: 'Đã xóa tất cả nhãn',
+  labelDeleted: 'Đã xóa nhãn',
+  generatingPPLLabel: 'Đang tạo nhãn PPL...',
+  labelGenerated: 'Đã tạo nhãn',
+  
   // Order Details Sections
   invoice: 'Hóa đơn',
   customerInformation: 'Thông tin khách hàng',

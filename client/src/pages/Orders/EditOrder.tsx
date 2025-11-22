@@ -5294,8 +5294,8 @@ export default function EditOrder() {
             setSelectedShippingAddress(newAddress);
             setShowShippingModal(false);
             toast({
-              title: "Success",
-              description: "Address saved (will be created with customer)",
+              title: t('success'),
+              description: t('addressSavedWithCustomer'),
             });
           } else if (editingAddress) {
             // For existing addresses, update them

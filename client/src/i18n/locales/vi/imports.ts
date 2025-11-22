@@ -1107,6 +1107,167 @@ const imports = {
   addedToInventorySuccess: '✓ Đã thêm vào kho',
   itemsAddedWithCosts: 'Đã thêm sản phẩm thành công với giá cập nhật.',
 
+  // ReceivingList - Scanning & Camera
+  cameraError: 'Lỗi Camera',
+  couldNotAccessCamera: 'Không thể truy cập camera',
+  cameraOn: 'Camera Bật',
+  cameraOff: 'Camera Tắt',
+  scanOrTypeBarcode: 'Quét hoặc nhập mã vạch',
+  scan: 'Quét',
+  undoLastScan: 'Hoàn tác lần quét cuối',
+  processingScan: 'Đang xử lý quét...',
+  
+  // ReceivingList - Filters & UI
+  allItemsFilter: 'Tất cả',
+  pendingFilter: 'Chờ xử lý',
+  issuesFilter: 'Có vấn đề',
+  activeReceipts: 'Phiếu nhận đang hoạt động',
+  receipt: 'Phiếu nhận',
+  
+  // ReviewApprove - Page & Headers
+  reviewApprove: 'Xem xét & Duyệt',
+  reviewReceivedShipment: 'Xem xét lô hàng đã nhận và duyệt hoặc từ chối',
+  hasDiscrepancies: 'Có sai lệch',
+  noIssues: 'Không có vấn đề',
+  shipmentInformation: 'Thông tin lô hàng',
+  shipmentName: 'Tên lô hàng',
+  parcelCount: 'Số kiện',
+  deliveredDate: 'Ngày giao hàng',
+  receivingNotes: 'Ghi chú nhận hàng:',
+  receivedItems: 'Sản phẩm đã nhận',
+  itemDetails: 'Chi tiết sản phẩm',
+  expected: 'Dự kiến',
+  damaged: 'hỏng',
+  missing: 'thiếu',
+  
+  // ReviewApprove - Toast Messages
+  shipmentApproved: 'Đã duyệt lô hàng',
+  shipmentApprovedSuccess: 'Lô hàng đã được duyệt thành công',
+  approvalFailed: 'Duyệt thất bại',
+  approvalFailedDesc: 'Không thể duyệt lô hàng. Vui lòng thử lại.',
+  shipmentRejected: 'Đã từ chối lô hàng',
+  shipmentRejectedDesc: 'Lô hàng đã bị từ chối',
+  rejectionFailed: 'Từ chối thất bại',
+  rejectionFailedDesc: 'Không thể từ chối lô hàng. Vui lòng thử lại.',
+  
+  // ReceiptDetails - Page & Headers
+  backToReceiving: 'Quay lại Nhận hàng',
+  viewArchivedShipmentDetails: 'Xem chi tiết lô hàng đã lưu trữ',
+  verifyAndProcessReceivedItems: 'Xác minh và xử lý sản phẩm đã nhận',
+  verifiedBy: 'Người xác minh',
+  approvedBy: 'Người duyệt',
+  
+  // ReceiptDetails - Toast Messages
+  itemUpdated: 'Đã cập nhật sản phẩm',
+  itemVerificationSaved: 'Đã lưu xác minh sản phẩm',
+  verificationComplete: 'Hoàn tất xác minh',
+  receiptSentForApproval: 'Phiếu nhận đã được gửi để duyệt',
+  receiptApproved: 'Đã duyệt phiếu nhận',
+  successfullyProcessed: 'Đã xử lý thành công',
+  newProductsCreated: 'sản phẩm mới đã tạo',
+  productsUpdated: 'sản phẩm đã cập nhật',
+  allItemsVerified: 'Tất cả sản phẩm đã xác minh',
+  allItemsAlreadyVerified: 'Tất cả sản phẩm đã được xác minh',
+  bulkVerificationStarted: 'Bắt đầu xác minh hàng loạt',
+  verifying: 'Đang xác minh',
+  verificationUndone: 'Đã hoàn tác xác minh',
+  verificationRemoved: 'Đã xóa xác minh khỏi sản phẩm này',
+  approvalUndone: 'Đã hoàn tác duyệt',
+  successfullyReverted: 'Đã hoàn tác thành công',
+  productsDeleted: 'sản phẩm đã xóa',
+  noVerifiedItems: 'Không có sản phẩm đã xác minh',
+  noItemsVerifiedYet: 'Chưa có sản phẩm nào được xác minh',
+  downloadStarted: 'Bắt đầu tải xuống',
+  downloadingPhotos: 'Đang tải xuống {{count}} ảnh...',
+  bulkUndoStarted: 'Bắt đầu hoàn tác hàng loạt',
+  removingVerification: 'Đang xóa xác minh khỏi {{count}} sản phẩm...',
+  
+  // ItemsToStore & StoreItems - Page & Headers
+  storeItems: 'Lưu kho sản phẩm',
+  assignWarehouseLocations: 'Phân bổ vị trí kho cho sản phẩm đã nhận',
+  saveComplete: 'Lưu & Hoàn tất',
+  storageProgress: 'Tiến độ lưu kho',
+  itemsStored: 'Sản phẩm đã lưu',
+  locationsAssigned: 'Vị trí đã phân bổ',
+  itemsToStore: 'Sản phẩm cần lưu kho',
+  currentItem: 'Sản phẩm hiện tại',
+  scanLocationBarcode: 'Quét mã vạch vị trí',
+  enterQuantity: 'Nhập số lượng',
+  currentLocations: 'Vị trí hiện tại',
+  assignedLocations: 'Vị trí đã phân bổ',
+  assignAllToLastLocation: 'Phân bổ tất cả cho vị trí cuối',
+  
+  // ItemsToStore & StoreItems - Toast Messages
+  invalidLocation: 'Vị trí không hợp lệ',
+  locationFormatInvalid: 'Định dạng mã vị trí không hợp lệ. Dùng định dạng: WH1-A01-R02-L03',
+  locationAlreadyAdded: 'Vị trí đã được thêm',
+  primaryLocationSet: 'Đã đặt vị trí chính',
+  isPrimaryLocation: 'là vị trí chính',
+  itemsStoredSuccessfully: 'Đã lưu kho sản phẩm thành công',
+  haveBeenStored: 'đã được lưu trong kho',
+  storageFailed: 'Lưu kho thất bại',
+  failedToStoreItems: 'Không thể lưu kho sản phẩm. Vui lòng thử lại.',
+  
+  // LandingCostDetails - Page & Headers
+  landedCostPerItem: 'Chi phí nhập hàng từng sản phẩm',
+  viewLandedCostsSetPrices: 'Xem chi phí nhập hàng và đặt giá bán cho từng sản phẩm',
+  savePrices: 'Lưu giá',
+  saving: 'Đang lưu...',
+  purchasePrice: 'Giá mua',
+  landedCostEUR: 'Chi phí nhập hàng (EUR)',
+  landedCostCZK: 'Chi phí nhập hàng (CZK)',
+  profitMargin: 'Lợi nhuận',
+  setPrice: 'Đặt giá',
+  noPriceSet: 'Chưa đặt giá',
+  setSellingPrice: 'Đặt giá bán',
+  sellingPriceEUR: 'Giá bán (EUR)',
+  sellingPriceCZK: 'Giá bán (CZK)',
+  
+  // LandingCostDetails - Toast Messages
+  pricesUpdated: 'Đã cập nhật giá',
+  sellingPricesSaved: 'Đã lưu giá bán thành công.',
+  failedToSavePrices: 'Không thể lưu giá. Vui lòng thử lại.',
+  noChanges: 'Không có thay đổi',
+  noPriceChanges: 'Không có thay đổi giá để lưu.',
+  
+  // LandingCostDetails - Alerts
+  pricingInformation: 'Thông tin giá',
+  landedCostIncludes: 'Chi phí nhập hàng bao gồm giá mua cộng với phí vận chuyển, thuế, hải quan, bảo hiểm và các chi phí khác. Đặt giá bán ở trên để cập nhật giá sản phẩm trong kho.',
+  unsavedChanges: 'thay đổi chưa lưu',
+  notInInventory: 'Không có trong kho',
+  
+  // InternationalTransit - Toast Messages
+  success: 'Thành công',
+  movedBackToWarehouse: 'Đã chuyển sản phẩm về kho',
+  failedToMoveBack: 'Không thể chuyển về kho',
+  quickShipCompleted: 'Gửi nhanh hoàn tất - đã tạo lô hàng và chuyển sang nhận hàng',
+  shipmentCreated: 'Đã tạo lô hàng thành công',
+  failedToCreateShipment: 'Không thể tạo lô hàng',
+  shipmentNameRegenerated: 'Đã tạo lại tên lô hàng',
+  failedToRegenerateName: 'Không thể tạo lại tên lô hàng',
+  shipmentMovedBackToPending: 'Đã chuyển lô hàng về chờ xử lý',
+  trackingUpdated: 'Đã cập nhật thông tin vận chuyển',
+  failedToUpdateTracking: 'Không thể cập nhật vận chuyển',
+  shipmentUpdated: 'Đã cập nhật lô hàng thành công',
+  failedToUpdateShipment: 'Không thể cập nhật lô hàng',
+  aiPredictionFailed: 'Dự đoán AI thất bại',
+  copied: 'Đã sao chép',
+  trackingNumberCopied: 'Đã sao chép mã vận đơn vào clipboard',
+  failedToCopy: 'Không thể sao chép vào clipboard',
+  
+  // Common Loading States
+  loadingShipmentDetails: 'Đang tải chi tiết lô hàng...',
+  failedToLoadShipmentDetails: 'Không thể tải chi tiết lô hàng',
+  loadingOrderDetails: 'Đang tải chi tiết đơn hàng...',
+  
+  // InternationalTransit - Additional UI
+  regenerateNameBasedOnContents: 'Tạo lại tên dựa trên nội dung',
+  generateNameFromItems: 'Tạo tên từ sản phẩm',
+  filterByType: 'Lọc theo loại',
+  sortBy: 'Sắp xếp',
+  
+  // CreatePurchase, SupplierProcessing, AtWarehouse - Placeholders (to be expanded)
+  
 } as const;
 
 export default imports;

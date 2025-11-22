@@ -1090,6 +1090,167 @@ const imports = {
   addedToInventorySuccess: '✓ Added to Inventory',
   itemsAddedWithCosts: 'Items successfully added with updated costs.',
 
+  // ReceivingList - Scanning & Camera
+  cameraError: 'Camera Error',
+  couldNotAccessCamera: 'Could not access camera',
+  cameraOn: 'Camera On',
+  cameraOff: 'Camera Off',
+  scanOrTypeBarcode: 'Scan or type barcode',
+  scan: 'Scan',
+  undoLastScan: 'Undo last scan',
+  processingScan: 'Processing scan...',
+  
+  // ReceivingList - Filters & UI
+  allItemsFilter: 'All',
+  pendingFilter: 'Pending',
+  issuesFilter: 'Issues',
+  activeReceipts: 'Active Receipts',
+  receipt: 'Receipt',
+  
+  // ReviewApprove - Page & Headers
+  reviewApprove: 'Review & Approve',
+  reviewReceivedShipment: 'Review the received shipment and approve or reject',
+  hasDiscrepancies: 'Has Discrepancies',
+  noIssues: 'No Issues',
+  shipmentInformation: 'Shipment Information',
+  shipmentName: 'Shipment Name',
+  parcelCount: 'Parcel Count',
+  deliveredDate: 'Delivered Date',
+  receivingNotes: 'Receiving Notes:',
+  receivedItems: 'Received Items',
+  itemDetails: 'Item Details',
+  expected: 'Expected',
+  damaged: 'damaged',
+  missing: 'missing',
+  
+  // ReviewApprove - Toast Messages
+  shipmentApproved: 'Shipment Approved',
+  shipmentApprovedSuccess: 'Shipment has been approved successfully',
+  approvalFailed: 'Approval Failed',
+  approvalFailedDesc: 'Failed to approve shipment. Please try again.',
+  shipmentRejected: 'Shipment Rejected',
+  shipmentRejectedDesc: 'Shipment has been rejected',
+  rejectionFailed: 'Rejection Failed',
+  rejectionFailedDesc: 'Failed to reject shipment. Please try again.',
+  
+  // ReceiptDetails - Page & Headers
+  backToReceiving: 'Back to Receiving',
+  viewArchivedShipmentDetails: 'View archived shipment details',
+  verifyAndProcessReceivedItems: 'Verify and process received items',
+  verifiedBy: 'Verified By',
+  approvedBy: 'Approved By',
+  
+  // ReceiptDetails - Toast Messages
+  itemUpdated: 'Item Updated',
+  itemVerificationSaved: 'Item verification has been saved',
+  verificationComplete: 'Verification Complete',
+  receiptSentForApproval: 'Receipt has been sent for approval',
+  receiptApproved: 'Receipt Approved',
+  successfullyProcessed: 'Successfully processed',
+  newProductsCreated: 'new products created',
+  productsUpdated: 'products updated',
+  allItemsVerified: 'All Items Verified',
+  allItemsAlreadyVerified: 'All items are already verified',
+  bulkVerificationStarted: 'Bulk Verification Started',
+  verifying: 'Verifying',
+  verificationUndone: 'Verification Undone',
+  verificationRemoved: 'Verification has been removed from this item',
+  approvalUndone: 'Approval Undone',
+  successfullyReverted: 'Successfully reverted',
+  productsDeleted: 'products deleted',
+  noVerifiedItems: 'No Verified Items',
+  noItemsVerifiedYet: 'No items have been verified yet',
+  downloadStarted: 'Download Started',
+  downloadingPhotos: 'Downloading {{count}} photos...',
+  bulkUndoStarted: 'Bulk Undo Started',
+  removingVerification: 'Removing verification from {{count}} items...',
+  
+  // ItemsToStore & StoreItems - Page & Headers
+  storeItems: 'Store Items',
+  assignWarehouseLocations: 'Assign warehouse locations to received items',
+  saveComplete: 'Save & Complete',
+  storageProgress: 'Storage Progress',
+  itemsStored: 'Items Stored',
+  locationsAssigned: 'Locations Assigned',
+  itemsToStore: 'Items to Store',
+  currentItem: 'Current Item',
+  scanLocationBarcode: 'Scan Location Barcode',
+  enterQuantity: 'Enter Quantity',
+  currentLocations: 'Current Locations',
+  assignedLocations: 'Assigned Locations',
+  assignAllToLastLocation: 'Assign All to Last Location',
+  
+  // ItemsToStore & StoreItems - Toast Messages
+  invalidLocation: 'Invalid Location',
+  locationFormatInvalid: 'Location code format is invalid. Use format: WH1-A01-R02-L03',
+  locationAlreadyAdded: 'Location already added',
+  primaryLocationSet: 'Primary Location Set',
+  isPrimaryLocation: 'is now the primary location',
+  itemsStoredSuccessfully: 'Items Stored Successfully',
+  haveBeenStored: 'have been stored in warehouse',
+  storageFailed: 'Storage Failed',
+  failedToStoreItems: 'Failed to store items. Please try again.',
+  
+  // LandingCostDetails - Page & Headers
+  landedCostPerItem: 'Landed Cost Per Item',
+  viewLandedCostsSetPrices: 'View landed costs and set selling prices for each product',
+  savePrices: 'Save Prices',
+  saving: 'Saving...',
+  purchasePrice: 'Purchase Price',
+  landedCostEUR: 'Landed Cost (EUR)',
+  landedCostCZK: 'Landed Cost (CZK)',
+  profitMargin: 'Profit Margin',
+  setPrice: 'Set Price',
+  noPriceSet: 'No price set',
+  setSellingPrice: 'Set Selling Price',
+  sellingPriceEUR: 'Selling Price (EUR)',
+  sellingPriceCZK: 'Selling Price (CZK)',
+  
+  // LandingCostDetails - Toast Messages
+  pricesUpdated: 'Prices Updated',
+  sellingPricesSaved: 'Selling prices have been successfully saved.',
+  failedToSavePrices: 'Failed to save prices. Please try again.',
+  noChanges: 'No Changes',
+  noPriceChanges: 'No price changes to save.',
+  
+  // LandingCostDetails - Alerts
+  pricingInformation: 'Pricing Information',
+  landedCostIncludes: 'Landed cost includes purchase price plus allocated freight, duty, customs, insurance, and other costs. Set selling prices above to update product prices in your inventory.',
+  unsavedChanges: 'unsaved changes',
+  notInInventory: 'Not in inventory',
+  
+  // InternationalTransit - Toast Messages
+  success: 'Success',
+  movedBackToWarehouse: 'Items have been moved back to warehouse',
+  failedToMoveBack: 'Failed to move back to warehouse',
+  quickShipCompleted: 'Quick ship completed - shipment created and moved to receiving',
+  shipmentCreated: 'Shipment created successfully',
+  failedToCreateShipment: 'Failed to create shipment',
+  shipmentNameRegenerated: 'Shipment name has been regenerated',
+  failedToRegenerateName: 'Failed to regenerate shipment name',
+  shipmentMovedBackToPending: 'Shipment moved back to pending',
+  trackingUpdated: 'Tracking information updated',
+  failedToUpdateTracking: 'Failed to update tracking',
+  shipmentUpdated: 'Shipment updated successfully',
+  failedToUpdateShipment: 'Failed to update shipment',
+  aiPredictionFailed: 'AI prediction failed',
+  copied: 'Copied',
+  trackingNumberCopied: 'Tracking number copied to clipboard',
+  failedToCopy: 'Failed to copy to clipboard',
+  
+  // Common Loading States
+  loadingShipmentDetails: 'Loading shipment details...',
+  failedToLoadShipmentDetails: 'Failed to load shipment details',
+  loadingOrderDetails: 'Loading order details...',
+  
+  // InternationalTransit - Additional UI
+  regenerateNameBasedOnContents: 'Regenerate name based on contents',
+  generateNameFromItems: 'Generate name from items',
+  filterByType: 'Filter by type',
+  sortBy: 'Sort',
+  
+  // CreatePurchase, SupplierProcessing, AtWarehouse - Placeholders (to be expanded)
+  
 } as const;
 
 export default imports;

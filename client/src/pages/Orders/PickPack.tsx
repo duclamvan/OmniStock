@@ -670,8 +670,8 @@ const CartonCard = memo(({
                         
                         if (isGLS && newWeight && parseFloat(newWeight) > 40) {
                           toast({
-                            title: "Weight Limit Exceeded",
-                            description: "GLS shipments cannot exceed 40kg per carton. Please reduce weight or split into multiple cartons.",
+                            title: t('weightLimitExceeded'),
+                            description: t('glsWeightLimitDesc'),
                             variant: "destructive"
                           });
                           return;
@@ -1902,8 +1902,8 @@ export default function PickPack() {
 
     if (!activePackingOrder || !activePackingOrder.items || activePackingOrder.items.length === 0) {
       toast({
-        title: "Error",
-        description: "No items to pack in the current order",
+        title: t('error'),
+        description: t('noItemsToPack'),
         variant: "destructive",
       });
       return;
@@ -2595,8 +2595,8 @@ export default function PickPack() {
       } catch (error) {
         console.error('❌ Error creating AI cartons:', error);
         toast({
-          title: "Error",
-          description: "Failed to create AI-suggested cartons",
+          title: t('error'),
+          description: t('failedToCreateAICartons'),
           variant: "destructive"
         });
       } finally {
@@ -2670,7 +2670,7 @@ export default function PickPack() {
         setCartonsDraft(prev => prev.filter(c => c.id !== variables.tempId));
       }
       toast({
-        title: "Error Creating Carton",
+        title: t('errorCreatingCarton'),
         description: error instanceof Error ? error.message : "Failed to create carton",
         variant: "destructive"
       });
@@ -2812,7 +2812,7 @@ export default function PickPack() {
     onError: (error: any) => {
       console.error(`❌ Failed to save tracking number:`, error);
       toast({
-        title: "Failed to Save",
+        title: t('failedToSave'),
         description: error.message || "Failed to update tracking number",
         variant: "destructive"
       });
@@ -2861,7 +2861,7 @@ export default function PickPack() {
     },
     onSuccess: (data) => {
       toast({
-        title: "PPL Labels Created",
+        title: t('pplLabelsCreated'),
         description: `Created ${data.shipmentNumbers?.length || 'shipping'} label(s)`,
       });
 
@@ -2899,7 +2899,7 @@ export default function PickPack() {
       }
       
       toast({
-        title: "PPL Label Creation Failed",
+        title: t('pplLabelCreationFailed'),
         description: errorMessage,
         variant: "destructive",
         duration: 10000, // Show for 10 seconds to allow reading
@@ -2914,8 +2914,8 @@ export default function PickPack() {
     },
     onSuccess: () => {
       toast({
-        title: "PPL Labels Cancelled",
-        description: "Shipping labels have been cancelled with PPL",
+        title: t('pplLabelsCancelled'),
+        description: t('pplLabelsCancelledDesc'),
       });
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
@@ -2923,7 +2923,7 @@ export default function PickPack() {
     onError: (error: any) => {
       console.error('Error cancelling PPL labels:', error);
       toast({
-        title: "Error",
+        title: t('error'),
         description: error.message || "Failed to cancel PPL labels",
         variant: "destructive"
       });
@@ -2937,15 +2937,15 @@ export default function PickPack() {
     },
     onSuccess: () => {
       toast({
-        title: "PPL Labels Removed",
-        description: "Label data has been removed from the order",
+        title: t('pplLabelsRemoved'),
+        description: t('pplLabelsRemovedDesc'),
       });
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
     },
     onError: (error: any) => {
       console.error('Error deleting PPL labels:', error);
       toast({
-        title: "Error",
+        title: t('error'),
         description: error.message || "Failed to delete PPL labels",
         variant: "destructive"
       });
@@ -2959,7 +2959,7 @@ export default function PickPack() {
     },
     onSuccess: (data) => {
       toast({
-        title: "PPL Label Retrieved",
+        title: t('pplLabelRetrieved'),
         description: `Successfully retrieved label for batch ${data.batchId}`,
       });
 
@@ -2992,7 +2992,7 @@ export default function PickPack() {
       }
       
       toast({
-        title: "Label Retrieval Failed",
+        title: t('labelRetrievalFailed'),
         description: errorMessage,
         variant: "destructive",
         duration: 10000,
@@ -3054,8 +3054,8 @@ export default function PickPack() {
     } catch (error) {
       console.error('Error recalculating cartons:', error);
       toast({
-        title: "Error",
-        description: "Failed to recalculate cartons",
+        title: t('error'),
+        description: t('failedToRecalculateCartons'),
         variant: "destructive"
       });
       // Reset flags on error too
@@ -4225,7 +4225,7 @@ export default function PickPack() {
         : "Order has been sent for repacking";
       
       toast({
-        title: "Repacking Order",
+        title: t('repackingOrder'),
         description: notificationMessage,
       });
       
@@ -4270,8 +4270,8 @@ export default function PickPack() {
         .catch(error => {
           console.error('Error repacking order:', error);
           toast({
-            title: "Error",
-            description: "Failed to initiate repacking",
+            title: t('error'),
+            description: t('failedToInitiateRepacking'),
             variant: "destructive"
           });
         });
@@ -5194,8 +5194,8 @@ export default function PickPack() {
     setShowResetOrderDialog(false);
     
     toast({
-      title: "Order Reset",
-      description: "All picked quantities have been cleared.",
+      title: t('orderReset'),
+      description: t('orderResetDesc'),
     });
   };
 
@@ -5340,8 +5340,8 @@ export default function PickPack() {
       } catch (error) {
         console.error('❌ Failed to save tracking numbers:', error);
         toast({
-          title: "Error",
-          description: "Failed to save tracking numbers. Please try again.",
+          title: t('error'),
+          description: t('failedToSaveTracking'),
           variant: "destructive"
         });
         return; // Abort completion
@@ -5417,7 +5417,7 @@ export default function PickPack() {
     
     if (missingChecks.length > 0) {
       toast({
-        title: "Cannot Complete Packing",
+        title: t('cannotCompletePacking'),
         description: `Please complete: ${missingChecks.join(', ')}`,
         variant: "destructive",
         duration: 5000,
@@ -5554,8 +5554,8 @@ export default function PickPack() {
       console.error('Error shipping order:', error);
       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
       toast({
-        title: "Error",
-        description: "Failed to ship order",
+        title: t('error'),
+        description: t('failedToShipOrder'),
         variant: "destructive"
       });
       setPendingShipments(null);
@@ -5581,14 +5581,14 @@ export default function PickPack() {
       setUndoTimeLeft(5);
       
       toast({
-        title: "Orders Shipped",
+        title: t('ordersShipped'),
         description: result.message || `${readyOrders.length} orders marked as shipped`,
       });
     } catch (error) {
       console.error('Error shipping orders:', error);
       toast({
-        title: "Error",
-        description: "Failed to ship some orders",
+        title: t('error'),
+        description: t('failedToShipOrders'),
         variant: "destructive"
       });
     }
@@ -5637,14 +5637,14 @@ export default function PickPack() {
       await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
       
       toast({
-        title: "Shipment Undone",
-        description: "Orders returned to ready status",
+        title: t('shipmentUndone'),
+        description: t('ordersReturnedToReady'),
       });
     } catch (error) {
       console.error('Error undoing shipment:', error);
       toast({
-        title: "Error",
-        description: "Failed to undo shipment",
+        title: t('error'),
+        description: t('failedToUndoShipment'),
         variant: "destructive"
       });
     } finally {
@@ -5659,7 +5659,7 @@ export default function PickPack() {
     setUndoTimeLeft(5);
     
     toast({
-      title: "Shipment Undone",
+      title: t('shipmentUndone'),
       description: `${recentlyShippedOrders.length} orders moved back to packing`,
     });
   };
@@ -7306,14 +7306,14 @@ export default function PickPack() {
                       
                       playSound('success');
                       toast({
-                        title: "Documents Sent to Printer",
+                        title: t('documentsSentToPrinter'),
                         description: `All ${documentsCount} document(s) merged and marked as printed`,
                       });
                     } catch (error: any) {
                       console.error('Error printing merged documents:', error);
                       const errorMsg = error?.message || 'Failed to merge and print documents';
                       toast({
-                        title: "Print Error",
+                        title: t('printError'),
                         description: errorMsg,
                         variant: "destructive"
                       });
@@ -7472,14 +7472,14 @@ export default function PickPack() {
                   try {
                     await navigator.clipboard.writeText(value);
                     toast({
-                      title: "Copied!",
+                      title: t('copied'),
                       description: `${fieldName} copied to clipboard`,
                       duration: 1500
                     });
                   } catch {
                     toast({
-                      title: "Copy failed",
-                      description: "Please try again",
+                      title: t('copyFailed'),
+                      description: t('pleaseTryAgain'),
                       variant: "destructive"
                     });
                   }
@@ -7620,13 +7620,13 @@ export default function PickPack() {
                   try {
                     await navigator.clipboard.writeText(value);
                     toast({
-                      title: "Copied to clipboard",
+                      title: t('copiedToClipboard'),
                       description: `${fieldName} copied`,
                     });
                   } catch {
                     toast({
-                      title: "Copy failed",
-                      description: "Please try again",
+                      title: t('copyFailed'),
+                      description: t('pleaseTryAgain'),
                       variant: "destructive"
                     });
                   }
@@ -8034,14 +8034,14 @@ export default function PickPack() {
                   try {
                     await navigator.clipboard.writeText(value);
                     toast({
-                      title: "Copied!",
+                      title: t('copied'),
                       description: `${fieldName} copied to clipboard`,
                       duration: 1500
                     });
                   } catch {
                     toast({
-                      title: "Copy failed",
-                      description: "Please try again",
+                      title: t('copyFailed'),
+                      description: t('pleaseTryAgain'),
                       variant: "destructive"
                     });
                   }
@@ -8889,14 +8889,14 @@ export default function PickPack() {
               try {
                 await navigator.clipboard.writeText(value);
                 toast({
-                  title: "Copied!",
+                  title: t('copied'),
                   description: `${fieldName} copied to clipboard`,
                   duration: 1500
                 });
               } catch {
                 toast({
-                  title: "Copy failed",
-                  description: "Please try again",
+                  title: t('copyFailed'),
+                  description: t('pleaseTryAgain'),
                   variant: "destructive"
                 });
               }
@@ -9331,8 +9331,8 @@ export default function PickPack() {
                         try {
                           if (cartons.length === 0) {
                             toast({
-                              title: "No Cartons",
-                              description: "Please add cartons first before generating labels",
+                              title: t('noCartons'),
+                              description: t('pleaseAddCartonsFirst'),
                               variant: "destructive"
                             });
                             return;
@@ -9341,7 +9341,7 @@ export default function PickPack() {
                           setIsGeneratingAllLabels(true);
                           console.log('🎯 Generating all PPL labels for', cartons.length, 'cartons');
                           toast({
-                            title: "Generating Labels...",
+                            title: t('generatingLabels'),
                             description: `Creating ${cartons.length} PPL shipping label(s) with COD support`,
                           });
 
@@ -9383,7 +9383,7 @@ export default function PickPack() {
                             : '';
                           
                           toast({
-                            title: "Labels Generated",
+                            title: t('labelsGenerated'),
                             description: trackingInfo 
                               ? `Successfully created ${cartons.length} PPL shipping label(s). ${trackingInfo}`
                               : `Successfully created ${cartons.length} PPL shipping label(s)`,
@@ -9391,7 +9391,7 @@ export default function PickPack() {
                         } catch (error: any) {
                           console.error('❌ Generate error:', error);
                           toast({
-                            title: "Error",
+                            title: t('error'),
                             description: error.message || "Failed to generate labels",
                             variant: "destructive"
                           });
@@ -9456,14 +9456,14 @@ export default function PickPack() {
                           }
                           
                           toast({
-                            title: "Labels Sent to Printer",
+                            title: t('labelsSentToPrinter'),
                             description: `${shipmentLabelsFromDB.length} label(s) opened for printing`,
                           });
                         } catch (error: any) {
                           console.error('Error printing labels:', error);
                           toast({
-                            title: "Error",
-                            description: "Failed to print labels",
+                            title: t('error'),
+                            description: t('failedToPrintLabels'),
                             variant: "destructive"
                           });
                         } finally {
@@ -9507,13 +9507,13 @@ export default function PickPack() {
                             setShipmentLabelsFromDB([]);
                             
                             toast({
-                              title: "All Labels Deleted",
-                              description: "Carton data preserved. Use 'Generate All Labels' to create new labels.",
+                              title: t('allLabelsDeleted'),
+                              description: t('cartonDataPreserved'),
                             });
                           } catch (error: any) {
                             console.error('❌ Delete error:', error);
                             toast({
-                              title: "Error",
+                              title: t('error'),
                               description: error.message || "Failed to delete labels",
                               variant: "destructive"
                             });
@@ -9635,7 +9635,7 @@ export default function PickPack() {
                                     }
                                   } catch (error) {
                                     toast({
-                                      title: "Error",
+                                      title: t('error'),
                                       description: "Failed to print label",
                                       variant: "destructive"
                                     });
@@ -9666,12 +9666,12 @@ export default function PickPack() {
                                         setShipmentLabelsFromDB(prev => [...prev]);
                                         console.log('✅ Delete refresh complete');
                                         toast({ 
-                                          title: "Label Deleted", 
+                                          title: t('labelDeleted'), 
                                           description: "Carton data preserved. You can regenerate the label if needed."
                                         });
                                       } catch (error) {
                                         toast({
-                                          title: "Error",
+                                          title: t('error'),
                                           description: "Failed to delete label",
                                           variant: "destructive"
                                         });
@@ -9766,7 +9766,7 @@ export default function PickPack() {
                                                   await fetchShipmentLabels();
                                                 } catch (error: any) {
                                                   toast({
-                                                    title: "❌ Error",
+                                                    title: t('error'),
                                                     description: error.message || "Failed to update tracking number",
                                                     variant: "destructive"
                                                   });
@@ -9800,7 +9800,7 @@ export default function PickPack() {
                                           setGeneratingLabelForCarton(prev => ({ ...prev, [carton.id]: true }));
                                           console.log(`🎯 Generate clicked for carton #${index + 1}`, carton.id);
                                           toast({
-                                            title: "Generating PPL Label...",
+                                            title: t('generatingPPLLabel'),
                                             description: "Creating shipping label from PPL API",
                                           });
                                           
@@ -9842,7 +9842,7 @@ export default function PickPack() {
                                           // Show tracking number in success message
                                           const trackingNumber = result.trackingNumber || result.trackingNumbers?.[0];
                                           toast({
-                                            title: "Label Generated",
+                                            title: t('labelGenerated'),
                                             description: trackingNumber 
                                               ? `PPL shipping label created. Tracking: ${trackingNumber}`
                                               : "PPL shipping label created successfully",
@@ -9981,12 +9981,12 @@ export default function PickPack() {
                                             console.log('✅ Delete refresh complete');
                                             
                                             toast({ 
-                                              title: "Label Deleted",
+                                              title: t('labelDeleted'),
                                               description: "Carton data preserved. You can regenerate the label if needed."
                                             });
                                           } catch (error) {
                                             toast({
-                                              title: "Error",
+                                              title: t('error'),
                                               description: "Failed to delete label",
                                               variant: "destructive"
                                             });
@@ -10130,12 +10130,12 @@ export default function PickPack() {
                                             setShipmentLabelsFromDB(prev => [...prev]);
                                             
                                             toast({ 
-                                              title: "Label Deleted", 
+                                              title: t('labelDeleted'), 
                                               description: "Label removed successfully."
                                             });
                                           } catch (error) {
                                             toast({
-                                              title: "Error",
+                                              title: t('error'),
                                               description: "Failed to delete label",
                                               variant: "destructive"
                                             });
@@ -10174,8 +10174,8 @@ export default function PickPack() {
                           
                           // Show loading toast
                           toast({
-                            title: "Creating Carton Label...",
-                            description: "Generating new PPL shipping label. This may take a few seconds.",
+                            title: t('creatingCartonLabel'),
+                            description: t('creatingCartonLabelDesc'),
                           });
                           
                           // Create PPL label (backend atomically creates carton + label)
@@ -10209,14 +10209,14 @@ export default function PickPack() {
                           const trackingNumber = labelResult.trackingNumber || labelResult.trackingNumbers?.[0] || 'N/A';
                           
                           toast({
-                            title: "Carton Label Added",
-                            description: `New carton created with PPL tracking number: ${trackingNumber}. You now have ${cartons.length + 1} carton(s).`,
+                            title: t('cartonLabelAdded'),
+                            description: t('cartonLabelAddedDesc', { trackingNumber, count: cartons.length + 1 }),
                           });
                         } catch (error: any) {
                           console.error('❌ Error adding carton label:', error);
                           toast({
-                            title: "Error",
-                            description: error.message || "Failed to add carton label",
+                            title: t('error'),
+                            description: error.message || t('failedToAddCartonLabel'),
                             variant: "destructive"
                           });
                         }
@@ -10356,8 +10356,8 @@ export default function PickPack() {
                                 }
                               } catch (error) {
                                 toast({
-                                  title: "Paste failed",
-                                  description: "Please allow clipboard access or paste manually",
+                                  title: t('pasteFailed'),
+                                  description: t('pasteFailedClipboardAccess'),
                                   variant: "destructive"
                                 });
                               }
@@ -10513,8 +10513,8 @@ export default function PickPack() {
                                 }
                               } catch (error) {
                                 toast({
-                                  title: "Paste failed",
-                                  description: "Please allow clipboard access or paste manually",
+                                  title: t('pasteFailed'),
+                                  description: t('pasteFailedClipboardAccess'),
                                   variant: "destructive"
                                 });
                               }
@@ -10627,8 +10627,8 @@ export default function PickPack() {
                                           }
                                         } catch (error) {
                                           toast({
-                                            title: "Paste failed",
-                                            description: "Please allow clipboard access",
+                                            title: t('pasteFailed'),
+                                            description: t('pasteFailedClipboardAccessShort'),
                                             variant: "destructive"
                                           });
                                         }
@@ -10887,7 +10887,7 @@ export default function PickPack() {
                       }, 2000);
                       
                       toast({
-                        title: "Almost there!",
+                        title: t('almostThere'),
                         description: message,
                         duration: 5000,
                       });
@@ -11051,8 +11051,8 @@ export default function PickPack() {
                   
                   // Fallback - show general message if we somehow got here
                   toast({
-                    title: "Almost there!",
-                    description: "Please complete all required steps before finishing packing.",
+                    title: t('almostThere'),
+                    description: t('completeAllSteps'),
                     duration: 5000,
                   });
                   playSound('error');
@@ -13413,8 +13413,8 @@ export default function PickPack() {
                                       console.error('Error shipping section:', error);
                                       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
                                       toast({
-                                        title: "Error",
-                                        description: "Failed to ship some orders",
+                                        title: t('error'),
+                                        description: t('failedToShipOrders'),
                                         variant: "destructive"
                                       });
                                       setPendingShipments(null);
@@ -13522,8 +13522,8 @@ export default function PickPack() {
                                                   playSound('success');
                                                 } else {
                                                   toast({
-                                                    title: "No Label Found",
-                                                    description: "No shipping label has been generated for this order yet.",
+                                                    title: t('noLabelFound'),
+                                                    description: t('noLabelFoundDesc'),
                                                     variant: "destructive"
                                                   });
                                                 }
@@ -13531,8 +13531,8 @@ export default function PickPack() {
                                             } catch (error) {
                                               console.error('Error fetching label:', error);
                                               toast({
-                                                title: "Error",
-                                                description: "Failed to load shipping label",
+                                                title: t('error'),
+                                                description: t('failedToLoadLabel'),
                                                 variant: "destructive"
                                               });
                                             }

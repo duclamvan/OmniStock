@@ -433,7 +433,7 @@ export default function EditCustomer() {
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-type">
-                            <SelectValue placeholder="Select type" />
+                            <SelectValue placeholder={t('customers.selectTypePlaceholder')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -480,7 +480,7 @@ export default function EditCustomer() {
                       <Select onValueChange={field.onChange} value={field.value || "cs"}>
                         <FormControl>
                           <SelectTrigger data-testid="select-language">
-                            <SelectValue placeholder="Select language" />
+                            <SelectValue placeholder={t('customers.selectLanguagePlaceholder')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -511,7 +511,7 @@ export default function EditCustomer() {
                       <Select onValueChange={field.onChange} value={field.value || "EUR"}>
                         <FormControl>
                           <SelectTrigger data-testid="select-preferredCurrency">
-                            <SelectValue placeholder="Select currency" />
+                            <SelectValue placeholder={t('customers.selectCurrency')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -541,7 +541,7 @@ export default function EditCustomer() {
                       <FormLabel>{t('customers.facebookName')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="Facebook display name" 
+                          placeholder={t('customers.facebookDisplayNamePlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-facebook-name"
@@ -560,7 +560,7 @@ export default function EditCustomer() {
                       <FormLabel>Facebook ID/Username</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="Facebook ID or username" 
+                          placeholder={t('customers.facebookIdPlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-facebook-id"
@@ -599,7 +599,7 @@ export default function EditCustomer() {
                     <FormLabel>{t('customers.profilePictureUrl')}</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="URL to profile picture" 
+                        placeholder={t('customers.profilePicturePlaceholder')} 
                         {...field} 
                         value={field.value || ""} 
                         data-testid="input-profile-picture"
@@ -630,7 +630,7 @@ export default function EditCustomer() {
                       <FormControl>
                         <Input 
                           type="email" 
-                          placeholder="customer@example.com" 
+                          placeholder={t('customers.emailPlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-email"
@@ -649,7 +649,7 @@ export default function EditCustomer() {
                       <FormLabel>{t('customers.phone')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="+1 234 567 8900" 
+                          placeholder={t('customers.phoneInternationalPlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-phone"
@@ -783,7 +783,7 @@ export default function EditCustomer() {
                     <FormLabel>{t('customers.companyName')}</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="Company name" 
+                        placeholder={t('customers.companyNamePlaceholder')} 
                         {...field} 
                         value={field.value || ""} 
                         data-testid="input-billing-company"
@@ -803,7 +803,7 @@ export default function EditCustomer() {
                       <FormLabel>{t('customers.firstName')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="First name" 
+                          placeholder={t('customers.firstNamePlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-billing-firstname"
@@ -822,7 +822,7 @@ export default function EditCustomer() {
                       <FormLabel>{t('customers.lastName')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="Last name" 
+                          placeholder={t('customers.lastNamePlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-billing-lastname"
@@ -844,7 +844,7 @@ export default function EditCustomer() {
                       <FormControl>
                         <Input 
                           type="email" 
-                          placeholder="billing@company.com" 
+                          placeholder={t('customers.billingEmailPlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-billing-email"
@@ -863,7 +863,7 @@ export default function EditCustomer() {
                       <FormLabel>{t('customers.phone')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="+420 123 456 789" 
+                          placeholder={t('customers.phonePlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-billing-tel"
@@ -884,7 +884,7 @@ export default function EditCustomer() {
                       <FormLabel>{t('customers.street')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="Street name" 
+                          placeholder={t('customers.streetNamePlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-billing-street"
@@ -903,7 +903,7 @@ export default function EditCustomer() {
                       <FormLabel>{t('customers.streetNumber')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="No." 
+                          placeholder={t('customers.streetNumberPlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-billing-streetnumber"
@@ -924,7 +924,7 @@ export default function EditCustomer() {
                       <FormLabel>{t('customers.city')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="City" 
+                          placeholder={t('customers.cityPlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-billing-city"
@@ -943,7 +943,7 @@ export default function EditCustomer() {
                       <FormLabel>Zip Code</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="Zip" 
+                          placeholder={t('customers.zipCodePlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-billing-zipcode"
@@ -993,7 +993,7 @@ export default function EditCustomer() {
                       <FormLabel>IČO (Czech Company ID)</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="12345678" 
+                          placeholder={t('customers.icoPlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-ico"
@@ -1012,7 +1012,7 @@ export default function EditCustomer() {
                       <FormLabel>DIČ (Czech Tax ID)</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="CZ12345678" 
+                          placeholder={t('customers.dicPlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-dic"
@@ -1031,7 +1031,7 @@ export default function EditCustomer() {
                       <FormLabel>{t('customers.vatNumber')}</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="CZ12345678" 
+                          placeholder={t('customers.vatNumberPlaceholder')} 
                           {...field} 
                           value={field.value || ""} 
                           data-testid="input-vat-number"
@@ -1073,7 +1073,7 @@ export default function EditCustomer() {
                     <FormLabel>{t('customers.vatCompanyName')}</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="Company name from VAT validation" 
+                        placeholder={t('customers.vatCompanyNamePlaceholder')} 
                         {...field} 
                         value={field.value || ""} 
                         data-testid="input-vat-company-name"
@@ -1095,7 +1095,7 @@ export default function EditCustomer() {
                     <FormLabel>{t('customers.vatCompanyAddress')}</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Company address from VAT validation" 
+                        placeholder={t('customers.vatCompanyAddressPlaceholder')} 
                         {...field} 
                         value={field.value || ""} 
                         rows={2}
@@ -1125,7 +1125,7 @@ export default function EditCustomer() {
                     <FormLabel>{t('customers.notes')}</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Additional notes about the customer..."
+                        placeholder={t('customers.notesPlaceholder')}
                         className="resize-none"
                         rows={4}
                         {...field}

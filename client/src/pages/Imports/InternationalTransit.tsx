@@ -894,7 +894,7 @@ export default function InternationalTransit() {
                             }
                           }}
                           disabled={regenerateNameMutation.isPending}
-                          title={selectedShipment ? "Regenerate name based on contents" : "Generate name from items"}
+                          title={selectedShipment ? t('regenerateNameBasedOnContents') : t('generateNameFromItems')}
                         >
                           <RefreshCw className={`h-4 w-4 ${regenerateNameMutation.isPending ? 'animate-spin' : ''}`} />
                         </Button>
