@@ -2392,7 +2392,7 @@ export default function ProductForm() {
                                   {t('common:cancel')}
                                 </Button>
                                 <Button type="submit" data-testid="button-save-tier">
-                                  {editingTier ? 'Update' : 'Add'} Tier
+                                  {editingTier ? t('products:tieredPricing.updateButton') : t('products:tieredPricing.addButton')}
                                 </Button>
                               </DialogFooter>
                             </form>
@@ -2407,9 +2407,9 @@ export default function ProductForm() {
                               <div className="flex items-center justify-between">
                                 <div>
                                   <div className="flex items-center gap-2">
-                                    <Badge variant="outline">{tier.priceType === 'wholesale' ? 'Wholesale' : 'Tiered'}</Badge>
+                                    <Badge variant="outline">{tier.priceType === 'wholesale' ? t('products:wholesale') : t('products:tiered')}</Badge>
                                     <span className="text-sm font-medium">
-                                      {tier.minQuantity}{tier.maxQuantity ? ` - ${tier.maxQuantity}` : '+'} units
+                                      {tier.minQuantity}{tier.maxQuantity ? ` - ${tier.maxQuantity}` : '+'} {t('products:tieredPricing.units')}
                                     </span>
                                   </div>
                                   <div className="text-xs text-slate-600 dark:text-slate-400 mt-1 flex gap-2 flex-wrap">
@@ -2440,15 +2440,15 @@ export default function ProductForm() {
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                       <AlertDialogHeader>
-                                        <AlertDialogTitle>Delete Tiered Pricing</AlertDialogTitle>
+                                        <AlertDialogTitle>{t('products:deleteTieredPrice')}</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                          Are you sure you want to delete this pricing tier?
+                                          {t('common:confirmDelete')}
                                         </AlertDialogDescription>
                                       </AlertDialogHeader>
                                       <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
                                         <AlertDialogAction onClick={() => deleteTieredPricingMutation.mutate(tier.id)}>
-                                          Delete
+                                          {t('common:delete')}
                                         </AlertDialogAction>
                                       </AlertDialogFooter>
                                     </AlertDialogContent>
@@ -2459,7 +2459,7 @@ export default function ProductForm() {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-xs text-slate-500 text-center py-4">No tiered pricing configured</p>
+                        <p className="text-xs text-slate-500 text-center py-4">{t('products:noTieredPricing')}</p>
                       )}
                       </>
                     ) : (
@@ -2468,10 +2468,10 @@ export default function ProductForm() {
                           <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                           <div>
                             <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-1">
-                              Tiered Pricing
+                              {t('products:tieredPricing.title')}
                             </h4>
                             <p className="text-xs text-amber-700 dark:text-amber-300">
-                              Set up volume-based pricing tiers after creating the product. This allows you to offer discounts for bulk purchases.
+                              {t('products:tieredPricing.dialogDescription')}
                             </p>
                           </div>
                         </div>
@@ -2755,25 +2755,25 @@ export default function ProductForm() {
                         
                         <div className="space-y-4">
                           <div>
-                            <Label htmlFor="variant-name">Variant Name *</Label>
+                            <Label htmlFor="variant-name">{t('products:variantName')} *</Label>
                             <Input
                               id="variant-name"
                               value={newVariant.name}
                               onChange={(e) => setNewVariant((prev) => ({ ...prev, name: e.target.value }))}
-                              placeholder="e.g., Size XL, Color Red"
+                              placeholder={t('products:enterVariantName')}
                               data-testid="input-variant-name"
                             />
                           </div>
                           
                           {/* Image Upload */}
                           <div>
-                            <Label>Variant Image</Label>
+                            <Label>{t('products:variantImage')}</Label>
                             <div className="mt-2">
                               {newVariantImagePreview ? (
                                 <div className="relative w-32 h-32 rounded border bg-slate-50 dark:bg-slate-800 overflow-hidden group">
                                   <img
                                     src={newVariantImagePreview}
-                                    alt="Variant preview"
+                                    alt={t('products:variantImage')}
                                     className="w-full h-full object-contain bg-slate-50 dark:bg-slate-900"
                                   />
                                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -2825,7 +2825,7 @@ export default function ProductForm() {
                                   />
                                   <div className="text-center">
                                     <ImageIcon className="h-8 w-8 mx-auto text-slate-400" />
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Upload Image</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('products:uploadVariantImage')}</p>
                                   </div>
                                 </label>
                               )}
@@ -2833,13 +2833,13 @@ export default function ProductForm() {
                           </div>
                           
                           <div>
-                            <Label htmlFor="variant-barcode">Barcode</Label>
+                            <Label htmlFor="variant-barcode">{t('products:barcode')}</Label>
                             <div className="relative">
                               <Input
                                 id="variant-barcode"
                                 value={newVariant.barcode}
                                 onChange={(e) => setNewVariant((prev) => ({ ...prev, barcode: e.target.value }))}
-                                placeholder="123456789012"
+                                placeholder={t('products:enterBarcode')}
                                 className="pr-10"
                                 data-testid="input-variant-barcode"
                               />
@@ -2862,14 +2862,14 @@ export default function ProductForm() {
                           </div>
                           
                           <div>
-                            <Label htmlFor="variant-quantity">Quantity</Label>
+                            <Label htmlFor="variant-quantity">{t('products:variantQuantity')}</Label>
                             <Input
                               id="variant-quantity"
                               type="number"
                               min="0"
                               value={newVariant.quantity}
                               onChange={(e) => setNewVariant((prev) => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))}
-                              placeholder="0"
+                              placeholder={t('products:enterQuantity')}
                               data-testid="input-variant-quantity"
                             />
                           </div>
@@ -2878,15 +2878,15 @@ export default function ProductForm() {
                           
                           <div className="space-y-3">
                             <div>
-                              <Label className="text-sm font-medium">Variant Price (Optional)</Label>
+                              <Label className="text-sm font-medium">{t('products:variants.variantPriceOptional')}</Label>
                               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                Leave blank to use product's default price. Enter value in any currency - others auto-convert.
+                                {t('products:variants.variantPriceHelper')}
                               </p>
                             </div>
                             
                             <div className="grid grid-cols-2 gap-3">
                               <div>
-                                <Label htmlFor="variant-price-czk" className="text-xs">Price CZK</Label>
+                                <Label htmlFor="variant-price-czk" className="text-xs">{t('products:variants.priceCzk')}</Label>
                                 <Input
                                   id="variant-price-czk"
                                   type="number"
@@ -2894,12 +2894,12 @@ export default function ProductForm() {
                                   min="0"
                                   value={newVariant.priceCzk}
                                   onChange={(e) => setNewVariant((prev) => ({ ...prev, priceCzk: e.target.value }))}
-                                  placeholder="Optional"
+                                  placeholder={t('products:variants.optional')}
                                   data-testid="input-variant-price-czk"
                                 />
                               </div>
                               <div>
-                                <Label htmlFor="variant-price-eur" className="text-xs">Price EUR</Label>
+                                <Label htmlFor="variant-price-eur" className="text-xs">{t('products:variants.priceEur')}</Label>
                                 <Input
                                   id="variant-price-eur"
                                   type="number"
@@ -2907,7 +2907,7 @@ export default function ProductForm() {
                                   min="0"
                                   value={newVariant.priceEur}
                                   onChange={(e) => setNewVariant((prev) => ({ ...prev, priceEur: e.target.value }))}
-                                  placeholder="Optional"
+                                  placeholder={t('products:variants.optional')}
                                   data-testid="input-variant-price-eur"
                                 />
                               </div>
@@ -2920,15 +2920,15 @@ export default function ProductForm() {
                               
                               <div className="space-y-3">
                                 <div>
-                                  <Label className="text-sm font-medium">Variant Import Cost (Optional)</Label>
+                                  <Label className="text-sm font-medium">{t('products:variants.variantImportCostOptional')}</Label>
                                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                    Leave blank to use product's default import cost. Enter value in any currency - others auto-convert.
+                                    {t('products:variants.variantImportCostHelper')}
                                   </p>
                                 </div>
                                 
                                 <div className="grid grid-cols-3 gap-3">
                                   <div>
-                                    <Label htmlFor="variant-cost-usd" className="text-xs">Import Cost USD</Label>
+                                    <Label htmlFor="variant-cost-usd" className="text-xs">{t('products:variants.importCostUsd')}</Label>
                                     <Input
                                       id="variant-cost-usd"
                                       type="number"
@@ -2936,12 +2936,12 @@ export default function ProductForm() {
                                       min="0"
                                       value={newVariant.importCostUsd}
                                       onChange={(e) => setNewVariant((prev) => ({ ...prev, importCostUsd: e.target.value }))}
-                                      placeholder="Optional"
+                                      placeholder={t('products:variants.optional')}
                                       data-testid="input-variant-cost-usd"
                                     />
                                   </div>
                                   <div>
-                                    <Label htmlFor="variant-cost-czk" className="text-xs">Import Cost CZK</Label>
+                                    <Label htmlFor="variant-cost-czk" className="text-xs">{t('products:variants.importCostCzk')}</Label>
                                     <Input
                                       id="variant-cost-czk"
                                       type="number"
@@ -2949,12 +2949,12 @@ export default function ProductForm() {
                                       min="0"
                                       value={newVariant.importCostCzk}
                                       onChange={(e) => setNewVariant((prev) => ({ ...prev, importCostCzk: e.target.value }))}
-                                      placeholder="Optional"
+                                      placeholder={t('products:variants.optional')}
                                       data-testid="input-variant-cost-czk"
                                     />
                                   </div>
                                   <div>
-                                    <Label htmlFor="variant-cost-eur" className="text-xs">Import Cost EUR</Label>
+                                    <Label htmlFor="variant-cost-eur" className="text-xs">{t('products:variants.importCostEur')}</Label>
                                     <Input
                                       id="variant-cost-eur"
                                       type="number"
@@ -2962,7 +2962,7 @@ export default function ProductForm() {
                                       min="0"
                                       value={newVariant.importCostEur}
                                       onChange={(e) => setNewVariant((prev) => ({ ...prev, importCostEur: e.target.value }))}
-                                      placeholder="Optional"
+                                      placeholder={t('products:variants.optional')}
                                       data-testid="input-variant-cost-eur"
                                     />
                                   </div>
@@ -2977,7 +2977,7 @@ export default function ProductForm() {
                             className="w-full" 
                             data-testid="button-save-variant"
                           >
-                            {newVariantImageUploading ? "Uploading..." : "Add Variant"}
+                            {newVariantImageUploading ? t('products:variants.uploadingImage') : t('products:variants.addVariantButton')}
                           </Button>
                         </div>
                       </DialogContent>
@@ -2987,42 +2987,42 @@ export default function ProductForm() {
                       <DialogTrigger asChild>
                         <Button type="button" size="sm" variant="outline" data-testid="button-add-series">
                           <ListPlus className="h-4 w-4 mr-2" />
-                          Add Series
+                          {t('products:variants.addSeriesButton')}
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-[500px]">
                         <DialogHeader>
-                          <DialogTitle>Add Variant Series</DialogTitle>
+                          <DialogTitle>{t('products:variants.addSeriesTitle')}</DialogTitle>
                           <DialogDescription>
-                            Create multiple variants using a pattern like "Size &lt;1-10&gt;"
+                            {t('products:variants.addSeriesDescription')}
                           </DialogDescription>
                         </DialogHeader>
                         
                         <div className="space-y-4">
                           <div>
-                            <Label htmlFor="series-pattern">Series Pattern *</Label>
+                            <Label htmlFor="series-pattern">{t('products:variants.seriesPattern')} *</Label>
                             <Input
                               id="series-pattern"
                               value={seriesInput}
                               onChange={(e) => setSeriesInput(e.target.value)}
-                              placeholder="e.g., Size <1-10> or Color <1-5>"
+                              placeholder={t('products:variants.seriesPatternPlaceholder')}
                               data-testid="input-series-pattern"
                             />
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                              Use &lt;start-end&gt; to generate a numbered series
+                              {t('products:variants.seriesPatternHelp')}
                             </p>
                           </div>
                           
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <Label htmlFor="series-quantity">Quantity per Variant</Label>
+                              <Label htmlFor="series-quantity">{t('products:variants.quantityPerVariant')}</Label>
                               <Input
                                 id="series-quantity"
                                 type="number"
                                 min="0"
                                 value={seriesQuantity}
                                 onChange={(e) => setSeriesQuantity(parseInt(e.target.value) || 0)}
-                                placeholder="0"
+                                placeholder={t('products:enterQuantity')}
                                 data-testid="input-series-quantity"
                               />
                             </div>
@@ -3032,15 +3032,15 @@ export default function ProductForm() {
                           
                           <div className="space-y-3">
                             <div>
-                              <Label className="text-sm font-medium">Variant Price (Optional)</Label>
+                              <Label className="text-sm font-medium">{t('products:variants.variantPriceOptional')}</Label>
                               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                Leave blank to use product's default price. Enter value in any currency - others auto-convert.
+                                {t('products:variants.variantPriceHelper')}
                               </p>
                             </div>
                             
                             <div className="grid grid-cols-2 gap-3">
                               <div>
-                                <Label htmlFor="series-price-czk" className="text-xs">Price CZK</Label>
+                                <Label htmlFor="series-price-czk" className="text-xs">{t('products:variants.priceCzk')}</Label>
                                 <Input
                                   id="series-price-czk"
                                   type="number"
@@ -3048,12 +3048,12 @@ export default function ProductForm() {
                                   min="0"
                                   value={seriesPriceCzk}
                                   onChange={(e) => setSeriesPriceCzk(e.target.value)}
-                                  placeholder="Optional"
+                                  placeholder={t('products:variants.optional')}
                                   data-testid="input-series-price-czk"
                                 />
                               </div>
                               <div>
-                                <Label htmlFor="series-price-eur" className="text-xs">Price EUR</Label>
+                                <Label htmlFor="series-price-eur" className="text-xs">{t('products:variants.priceEur')}</Label>
                                 <Input
                                   id="series-price-eur"
                                   type="number"
@@ -3061,7 +3061,7 @@ export default function ProductForm() {
                                   min="0"
                                   value={seriesPriceEur}
                                   onChange={(e) => setSeriesPriceEur(e.target.value)}
-                                  placeholder="Optional"
+                                  placeholder={t('products:variants.optional')}
                                   data-testid="input-series-price-eur"
                                 />
                               </div>
@@ -3074,15 +3074,15 @@ export default function ProductForm() {
                               
                               <div className="space-y-3">
                                 <div>
-                                  <Label className="text-sm font-medium">Variant Import Cost (Optional)</Label>
+                                  <Label className="text-sm font-medium">{t('products:variants.variantImportCostOptional')}</Label>
                                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                    Leave blank to use product's default import cost. Enter value in any currency - others auto-convert.
+                                    {t('products:variants.variantImportCostHelper')}
                                   </p>
                                 </div>
                                 
                                 <div className="grid grid-cols-3 gap-3">
                                   <div>
-                                    <Label htmlFor="series-cost-usd" className="text-xs">Import Cost USD</Label>
+                                    <Label htmlFor="series-cost-usd" className="text-xs">{t('products:variants.importCostUsd')}</Label>
                                     <Input
                                       id="series-cost-usd"
                                       type="number"
@@ -3090,12 +3090,12 @@ export default function ProductForm() {
                                       min="0"
                                       value={seriesImportCostUsd}
                                       onChange={(e) => setSeriesImportCostUsd(e.target.value)}
-                                      placeholder="Optional"
+                                      placeholder={t('products:variants.optional')}
                                       data-testid="input-series-cost-usd"
                                     />
                                   </div>
                                   <div>
-                                    <Label htmlFor="series-cost-czk" className="text-xs">Import Cost CZK</Label>
+                                    <Label htmlFor="series-cost-czk" className="text-xs">{t('products:variants.importCostCzk')}</Label>
                                     <Input
                                       id="series-cost-czk"
                                       type="number"
@@ -3103,12 +3103,12 @@ export default function ProductForm() {
                                       min="0"
                                       value={seriesImportCostCzk}
                                       onChange={(e) => setSeriesImportCostCzk(e.target.value)}
-                                      placeholder="Optional"
+                                      placeholder={t('products:variants.optional')}
                                       data-testid="input-series-cost-czk"
                                     />
                                   </div>
                                   <div>
-                                    <Label htmlFor="series-cost-eur" className="text-xs">Import Cost EUR</Label>
+                                    <Label htmlFor="series-cost-eur" className="text-xs">{t('products:variants.importCostEur')}</Label>
                                     <Input
                                       id="series-cost-eur"
                                       type="number"
@@ -3116,7 +3116,7 @@ export default function ProductForm() {
                                       min="0"
                                       value={seriesImportCostEur}
                                       onChange={(e) => setSeriesImportCostEur(e.target.value)}
-                                      placeholder="Optional"
+                                      placeholder={t('products:variants.optional')}
                                       data-testid="input-series-cost-eur"
                                     />
                                   </div>
@@ -3131,7 +3131,7 @@ export default function ProductForm() {
                             className="w-full"
                             data-testid="button-save-series"
                           >
-                            Add Variant Series
+                            {t('products:variants.addVariantSeriesButton')}
                           </Button>
                         </div>
                       </DialogContent>
@@ -3146,7 +3146,7 @@ export default function ProductForm() {
                       data-testid="button-bulk-scan"
                     >
                       <Barcode className="h-4 w-4 mr-2" />
-                      Bulk Scan Barcodes
+                      {t('products:variants.bulkScanBarcodesButton')}
                     </Button>
                     
                     {selectedVariants.length > 0 && (
@@ -3154,19 +3154,19 @@ export default function ProductForm() {
                         <AlertDialogTrigger asChild>
                           <Button type="button" variant="destructive" size="sm" data-testid="button-delete-selected">
                             <Trash2 className="h-4 w-4 mr-2" />
-                            Delete Selected ({selectedVariants.length})
+                            {t('products:variants.deleteSelected')} ({selectedVariants.length})
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Variants</AlertDialogTitle>
+                            <AlertDialogTitle>{t('products:variants.deleteVariantsTitle')}</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete {selectedVariants.length} variant(s)?
+                              {t('products:variants.deleteVariantsConfirm', { count: selectedVariants.length })}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={bulkDeleteVariants}>Delete</AlertDialogAction>
+                            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
+                            <AlertDialogAction onClick={bulkDeleteVariants}>{t('common:delete')}</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
@@ -3186,15 +3186,15 @@ export default function ProductForm() {
                                 data-testid="checkbox-select-all"
                               />
                             </TableHead>
-                            <TableHead className="w-20">Image</TableHead>
-                            <TableHead>Name</TableHead>
-                            <TableHead className="text-right">Barcode</TableHead>
-                            <TableHead className="w-24 text-right">Quantity</TableHead>
-                            <TableHead className="w-28 text-right">Price CZK</TableHead>
-                            <TableHead className="w-28 text-right">Price EUR</TableHead>
-                            {canAccessFinancialData && <TableHead className="w-28 text-right">Import Cost USD</TableHead>}
-                            {canAccessFinancialData && <TableHead className="w-28 text-right">Import Cost CZK</TableHead>}
-                            {canAccessFinancialData && <TableHead className="w-28 text-right">Import Cost EUR</TableHead>}
+                            <TableHead className="w-20">{t('products:variants.tableHeaders.image')}</TableHead>
+                            <TableHead>{t('products:variants.tableHeaders.name')}</TableHead>
+                            <TableHead className="text-right">{t('products:variants.tableHeaders.barcode')}</TableHead>
+                            <TableHead className="w-24 text-right">{t('products:variants.tableHeaders.quantity')}</TableHead>
+                            <TableHead className="w-28 text-right">{t('products:variants.tableHeaders.priceCzk')}</TableHead>
+                            <TableHead className="w-28 text-right">{t('products:variants.tableHeaders.priceEur')}</TableHead>
+                            {canAccessFinancialData && <TableHead className="w-28 text-right">{t('products:variants.tableHeaders.importCostUsd')}</TableHead>}
+                            {canAccessFinancialData && <TableHead className="w-28 text-right">{t('products:variants.tableHeaders.importCostCzk')}</TableHead>}
+                            {canAccessFinancialData && <TableHead className="w-28 text-right">{t('products:variants.tableHeaders.importCostEur')}</TableHead>}
                             <TableHead className="w-12"></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -3385,8 +3385,8 @@ export default function ProductForm() {
                   ) : (
                     <div className="text-center py-8 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50/50 dark:bg-slate-900/50">
                       <Tag className="h-10 w-10 mx-auto mb-2 text-slate-400" />
-                      <p className="text-sm text-slate-600 dark:text-slate-400">No variants added yet</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">Click "Add Variant" to create product variations</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{t('products:variants.noVariants')}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{t('products:variants.noVariantsHelper')}</p>
                     </div>
                   )}
                 </div>
@@ -3401,8 +3401,8 @@ export default function ProductForm() {
                     <PackageOpen className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">Packing & Shipping Details</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Dimensions, materials, and handling instructions</p>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('products:packing.title')}</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:packing.description')}</p>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -3412,23 +3412,23 @@ export default function ProductForm() {
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <Ruler className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                      <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Physical Specifications</h4>
+                      <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('products:packing.physicalSpecifications')}</h4>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <div>
-                        <Label htmlFor="length" className="text-sm font-medium">Length (cm)</Label>
+                        <Label htmlFor="length" className="text-sm font-medium">{t('products:packing.lengthCm')}</Label>
                         <Input type="number" step="0.1" min="0" {...form.register('length')} placeholder="0.0" data-testid="input-length" className="mt-1" />
                       </div>
                       <div>
-                        <Label htmlFor="width" className="text-sm font-medium">Width (cm)</Label>
+                        <Label htmlFor="width" className="text-sm font-medium">{t('products:packing.widthCm')}</Label>
                         <Input type="number" step="0.1" min="0" {...form.register('width')} placeholder="0.0" data-testid="input-width" className="mt-1" />
                       </div>
                       <div>
-                        <Label htmlFor="height" className="text-sm font-medium">Height (cm)</Label>
+                        <Label htmlFor="height" className="text-sm font-medium">{t('products:packing.heightCm')}</Label>
                         <Input type="number" step="0.1" min="0" {...form.register('height')} placeholder="0.0" data-testid="input-height" className="mt-1" />
                       </div>
                       <div>
-                        <Label htmlFor="weight" className="text-sm font-medium">Weight (kg)</Label>
+                        <Label htmlFor="weight" className="text-sm font-medium">{t('products:packing.weightKg')}</Label>
                         <Input type="number" step="0.001" min="0" {...form.register('weight')} placeholder="0.000" data-testid="input-weight" className="mt-1" />
                       </div>
                     </div>
@@ -3438,7 +3438,7 @@ export default function ProductForm() {
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <Package className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                      <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Packing Materials</h4>
+                      <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('products:packing.packingMaterials')}</h4>
                     </div>
                     <PackingMaterialsSelector
                       packingMaterials={packingMaterials}
@@ -3454,7 +3454,7 @@ export default function ProductForm() {
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <PackageOpen className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                      <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Handling Instructions</h4>
+                      <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('products:packing.handlingInstructions')}</h4>
                     </div>
                     <PackingInstructionsUploader
                       packingInstructionsTexts={packingInstructionsTexts}
@@ -3475,8 +3475,8 @@ export default function ProductForm() {
                     <FileText className="h-4 w-4 text-slate-600 dark:text-slate-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">Product Files & Documents</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Attached files and documentation</p>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('products:files.title')}</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:files.description')}</p>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -3490,10 +3490,10 @@ export default function ProductForm() {
                         <Info className="h-5 w-5 text-slate-600 dark:text-slate-400 shrink-0 mt-0.5" />
                         <div>
                           <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">
-                            Product Files
+                            {t('products:files.filesTitle')}
                           </h4>
                           <p className="text-xs text-slate-600 dark:text-slate-400">
-                            Documents and files can be attached after creating the product. This includes PDFs, images, specifications, and other documentation.
+                            {t('products:files.filesDescription')}
                           </p>
                         </div>
                       </div>
@@ -3513,7 +3513,7 @@ export default function ProductForm() {
                     <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
                       <AlertCircle className="h-4 w-4" />
                       <span className="text-sm font-medium">
-                        Form Validation Errors ({Object.keys(form.formState.errors).length})
+                        {t('products:formErrors.title')} ({Object.keys(form.formState.errors).length})
                       </span>
                     </div>
                   </AccordionTrigger>
@@ -3524,7 +3524,7 @@ export default function ProductForm() {
                           {Object.entries(form.formState.errors).map(([field, error]) => (
                             <div key={field} className="flex gap-2">
                               <span className="font-bold">{field}:</span>
-                              <span>{error?.message?.toString() || 'Invalid value'}</span>
+                              <span>{error?.message?.toString() || t('products:formErrors.invalidValue')}</span>
                             </div>
                           ))}
                         </div>
@@ -3546,7 +3546,7 @@ export default function ProductForm() {
                 data-testid="button-save-product"
               >
                 <Save className="h-4 w-4 mr-2" />
-                {isPending ? (isEditMode ? 'Updating...' : 'Creating...') : submitButtonText}
+                {isPending ? (isEditMode ? t('products:submit.updating') : t('products:submit.creating')) : submitButtonText}
               </Button>
               <Button 
                 type="button" 
@@ -3555,7 +3555,7 @@ export default function ProductForm() {
                 onClick={() => setLocation('/inventory')}
                 data-testid="button-cancel"
               >
-                Cancel
+                {t('products:submit.cancel')}
               </Button>
             </div>
           </div>
@@ -3564,35 +3564,35 @@ export default function ProductForm() {
           <Dialog open={isBulkScanDialogOpen} onOpenChange={setIsBulkScanDialogOpen}>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>Bulk Scan Barcodes</DialogTitle>
+                <DialogTitle>{t('products:bulkScan.title')}</DialogTitle>
                 <DialogDescription>
-                  Scan barcodes one by one. They will be automatically assigned to variants without barcodes (from first to last).
+                  {t('products:bulkScan.description')}
                 </DialogDescription>
               </DialogHeader>
               
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="bulk-barcodes">Scanned Barcodes</Label>
+                  <Label htmlFor="bulk-barcodes">{t('products:bulkScan.scannedBarcodes')}</Label>
                   <Textarea
                     id="bulk-barcodes"
                     value={bulkBarcodes}
                     onChange={(e) => setBulkBarcodes(e.target.value)}
-                    placeholder="Scan or paste barcodes here (one per line)"
+                    placeholder={t('products:bulkScan.placeholder')}
                     rows={10}
                     className="font-mono text-sm"
                     data-testid="input-bulk-barcodes"
                   />
                   <p className="text-xs text-slate-500 mt-2">
-                    Enter one barcode per line. Barcodes will be assigned to variants in order.
+                    {t('products:bulkScan.helperText')}
                   </p>
                 </div>
                 
                 <div className="flex items-center justify-between text-sm">
                   <div className="text-slate-600 dark:text-slate-400">
-                    <span className="font-medium">{variants.filter(v => !v.barcode).length}</span> variants without barcodes
+                    <span className="font-medium">{variants.filter(v => !v.barcode).length}</span> {t('products:bulkScan.variantsWithoutBarcodes')}
                   </div>
                   <div className="text-slate-600 dark:text-slate-400">
-                    <span className="font-medium">{bulkBarcodes.split('\n').filter(b => b.trim()).length}</span> barcodes entered
+                    <span className="font-medium">{bulkBarcodes.split('\n').filter(b => b.trim()).length}</span> {t('products:bulkScan.barcodesEntered')}
                   </div>
                 </div>
                 
@@ -3603,8 +3603,8 @@ export default function ProductForm() {
                   onClick={() => {
                     setIsScanning(true);
                     toast({
-                      title: "Scanner Ready",
-                      description: "Start scanning barcodes. Press Enter after each scan.",
+                      title: t('products:bulkScan.scannerReady'),
+                      description: t('products:bulkScan.scannerReadyDescription'),
                     });
                     setTimeout(() => {
                       setIsScanning(false);
@@ -3614,7 +3614,7 @@ export default function ProductForm() {
                   data-testid="button-start-scanning"
                 >
                   <Barcode className="h-4 w-4 mr-2" />
-                  {isScanning ? "Scanning..." : "Start Scanning"}
+                  {isScanning ? t('products:bulkScan.scanning') : t('products:bulkScan.startScanning')}
                 </Button>
               </div>
               
@@ -3628,7 +3628,7 @@ export default function ProductForm() {
                   }}
                   data-testid="button-cancel-bulk-scan"
                 >
-                  Cancel
+                  {t('common:cancel')}
                 </Button>
                 <Button
                   type="button"
@@ -3636,7 +3636,7 @@ export default function ProductForm() {
                   disabled={!bulkBarcodes.trim() || variants.filter(v => !v.barcode).length === 0}
                   data-testid="button-assign-barcodes"
                 >
-                  Assign Barcodes
+                  {t('products:bulkScan.assignBarcodes')}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -3658,7 +3658,7 @@ export default function ProductForm() {
                 {selectedImage && (
                   <img
                     src={selectedImage.preview}
-                    alt="Product image"
+                    alt={t('products:imageViewer.productImageAlt')}
                     className="max-h-[60vh] max-w-full object-contain rounded"
                   />
                 )}
@@ -3671,7 +3671,7 @@ export default function ProductForm() {
                   onClick={() => setImageViewerOpen(false)}
                   data-testid="button-close-viewer"
                 >
-                  Close
+                  {t('products:imageViewer.close')}
                 </Button>
                 <Button
                   type="button"
@@ -3684,15 +3684,15 @@ export default function ProductForm() {
                       link.click();
                       document.body.removeChild(link);
                       toast({
-                        title: "Download Started",
-                        description: "Your image is being downloaded.",
+                        title: t('products:imageViewer.downloadStarted'),
+                        description: t('products:imageViewer.downloadDescription'),
                       });
                     }
                   }}
                   data-testid="button-download-image"
                 >
                   <Upload className="h-4 w-4 mr-2 rotate-180" />
-                  Download
+                  {t('products:imageViewer.download')}
                 </Button>
               </DialogFooter>
             </DialogContent>

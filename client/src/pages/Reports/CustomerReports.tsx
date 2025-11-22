@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useReports } from "@/contexts/ReportsContext";
 import { ReportHeader } from "@/components/reports/ReportHeader";
 import { MetricCard } from "@/components/reports/MetricCard";
@@ -16,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
 export default function CustomerReports() {
+  const { t } = useTranslation(['reports', 'customers', 'common']);
   const { toast } = useToast();
   const { getDateRangeValues } = useReports();
   const { start: startDate, end: endDate } = getDateRangeValues();
@@ -62,11 +64,11 @@ export default function CustomerReports() {
     const lowValue = customerMetrics.filter(c => c.totalSpent <= 10000).length;
 
     return preparePieChartData([
-      { name: 'High Value (>50K)', value: highValue },
-      { name: 'Medium Value (10K-50K)', value: mediumValue },
-      { name: 'Low Value (<10K)', value: lowValue },
+      { name: t('reports:highValueCustomers'), value: highValue },
+      { name: t('reports:mediumValueCustomers'), value: mediumValue },
+      { name: t('reports:lowValueCustomers'), value: lowValue },
     ]);
-  }, [customerMetrics]);
+  }, [customerMetrics, t]);
 
   const purchaseFrequency = useMemo(() => {
     const frequent = customerMetrics.filter(c => c.orderCount >= 10).length;
@@ -75,12 +77,12 @@ export default function CustomerReports() {
     const oneTime = customerMetrics.filter(c => c.orderCount === 1).length;
 
     return preparePieChartData([
-      { name: 'Frequent (10+)', value: frequent },
-      { name: 'Regular (5-9)', value: regular },
-      { name: 'Occasional (2-4)', value: occasional },
-      { name: 'One-time', value: oneTime },
+      { name: t('reports:frequentBuyers'), value: frequent },
+      { name: t('reports:regularBuyers'), value: regular },
+      { name: t('reports:occasionalBuyers'), value: occasional },
+      { name: t('reports:oneTimeBuyers'), value: oneTime },
     ]);
-  }, [customerMetrics]);
+  }, [customerMetrics, t]);
 
   const topCustomersChartData = useMemo(() => {
     return topCustomers.map(c => ({
@@ -101,16 +103,16 @@ export default function CustomerReports() {
         'Last Order': c.lastOrderDate ? format(c.lastOrderDate, 'yyyy-MM-dd') : '-',
       }));
 
-      exportToXLSX(exportData, `Customer_Report_${format(new Date(), 'yyyy-MM-dd')}`, 'Customer Report');
+      exportToXLSX(exportData, `Customer_Report_${format(new Date(), 'yyyy-MM-dd')}`, t('reports:customerReport'));
       
       toast({
-        title: "Export Successful",
-        description: "Customer report exported to XLSX",
+        title: t('common:success'),
+        description: t('reports:exportSuccessful'),
       });
     } catch (error) {
       toast({
-        title: "Export Failed",
-        description: "Failed to export customer report",
+        title: t('common:error'),
+        description: t('reports:exportFailed'),
         variant: "destructive",
       });
     }
@@ -126,27 +128,27 @@ export default function CustomerReports() {
       }));
 
       const columns: PDFColumn[] = [
-        { key: 'customer', header: 'Customer' },
-        { key: 'orders', header: 'Orders' },
-        { key: 'spent', header: 'Total Spent' },
-        { key: 'avgOrder', header: 'Avg Order' },
+        { key: 'customer', header: t('customers:customer') },
+        { key: 'orders', header: t('common:orders') },
+        { key: 'spent', header: t('reports:totalSpent') },
+        { key: 'avgOrder', header: t('reports:avgOrderValue') },
       ];
 
       exportToPDF(
         exportData,
         columns,
         `Customer_Report_${format(new Date(), 'yyyy-MM-dd')}`,
-        'Top Customers'
+        t('reports:topCustomers')
       );
 
       toast({
-        title: "Export Successful",
-        description: "Customer report exported to PDF",
+        title: t('common:success'),
+        description: t('reports:exportSuccessful'),
       });
     } catch (error) {
       toast({
-        title: "Export Failed",
-        description: "Failed to export customer report to PDF",
+        title: t('common:error'),
+        description: t('reports:exportFailed'),
         variant: "destructive",
       });
     }
@@ -169,8 +171,8 @@ export default function CustomerReports() {
   return (
     <div className="space-y-6" data-testid="customer-reports">
       <ReportHeader
-        title="Customer Reports"
-        description="Customer analytics and segmentation"
+        title={t('reports:customerReport')}
+        description={t('reports:customerAnalyticsDesc')}
         onExportExcel={handleExportExcel}
         onExportPDF={handleExportPDF}
       />
@@ -178,7 +180,7 @@ export default function CustomerReports() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          title="Total Customers"
+          title={t('customers:totalCustomers')}
           value={metrics.totalCustomers}
           icon={Users}
           iconColor="text-blue-600"
@@ -186,16 +188,16 @@ export default function CustomerReports() {
           testId="metric-total-customers"
         />
         <MetricCard
-          title="Active Customers"
+          title={t('reports:activeCustomers')}
           value={metrics.activeCustomers}
-          subtitle="with orders"
+          subtitle={t('reports:withOrders')}
           icon={UserCheck}
           iconColor="text-green-600"
           iconBgColor="bg-green-100"
           testId="metric-active-customers"
         />
         <MetricCard
-          title="Avg Lifetime Value"
+          title={t('reports:avgLifetimeValue')}
           value={formatCurrency(metrics.avgLifetimeValue, 'CZK')}
           icon={Coins}
           iconColor="text-purple-600"
@@ -203,7 +205,7 @@ export default function CustomerReports() {
           testId="metric-avg-ltv"
         />
         <MetricCard
-          title="Avg Orders per Customer"
+          title={t('reports:averageOrdersPerCustomer')}
           value={metrics.avgOrdersPerCustomer.toFixed(1)}
           icon={TrendingUp}
           iconColor="text-orange-600"
@@ -214,10 +216,10 @@ export default function CustomerReports() {
 
       {/* Top Customers Chart */}
       <BarChartCard
-        title="Top 10 Customers by Revenue"
+        title={t('reports:top10CustomersByRevenue')}
         data={topCustomersChartData}
         bars={[
-          { dataKey: 'totalSpent', name: 'Total Spent (CZK)', color: '#3b82f6' },
+          { dataKey: 'totalSpent', name: `${t('reports:totalSpent')} (CZK)`, color: '#3b82f6' },
         ]}
         formatValue={(value) => formatCurrency(value, 'CZK')}
         testId="chart-top-customers"
@@ -226,12 +228,12 @@ export default function CustomerReports() {
       {/* Customer Segmentation */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PieChartCard
-          title="Customer Segmentation by Value"
+          title={t('reports:customerSegmentationByValue')}
           data={customerSegmentation}
           testId="chart-customer-segmentation"
         />
         <PieChartCard
-          title="Purchase Frequency"
+          title={t('reports:purchaseFrequency')}
           data={purchaseFrequency}
           testId="chart-purchase-frequency"
         />
@@ -240,18 +242,18 @@ export default function CustomerReports() {
       {/* Top Customers Table */}
       <Card data-testid="table-top-customers">
         <CardHeader>
-          <CardTitle>Top Customers by Revenue</CardTitle>
+          <CardTitle>{t('reports:topCustomersByRevenue')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Customer</TableHead>
-                  <TableHead className="text-right">Orders</TableHead>
-                  <TableHead className="text-right">Total Spent</TableHead>
-                  <TableHead className="text-right">Avg Order Value</TableHead>
-                  <TableHead>Last Order</TableHead>
+                  <TableHead>{t('customers:customer')}</TableHead>
+                  <TableHead className="text-right">{t('common:orders')}</TableHead>
+                  <TableHead className="text-right">{t('reports:totalSpent')}</TableHead>
+                  <TableHead className="text-right">{t('reports:avgOrderValue')}</TableHead>
+                  <TableHead>{t('reports:lastOrder')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -271,7 +273,7 @@ export default function CustomerReports() {
                 {topCustomers.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-slate-500">
-                      No customer data available
+                      {t('reports:noCustomerData')}
                     </TableCell>
                   </TableRow>
                 )}

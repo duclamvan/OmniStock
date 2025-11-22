@@ -62,7 +62,6 @@ const products = {
   productDeleted: 'Xóa sản phẩm thành công',
   
   // Product Variants
-  variants: 'Biến thể',
   productVariant: 'Biến thể sản phẩm',
   variantName: 'Tên biến thể',
   variantOptions: 'Tùy chọn biến thể',
@@ -198,7 +197,6 @@ const products = {
   physicalAttributes: 'Thuộc tính vật lý',
   packagingInfo: 'Thông tin đóng gói',
   costHistory: 'Lịch sử giá nhập',
-  tieredPricing: 'Bảng giá theo số lượng',
   productLocations: 'Vị trí sản phẩm',
   productFiles: 'Tệp đính kèm',
   productImages: 'Hình ảnh sản phẩm',
@@ -365,6 +363,130 @@ const products = {
   discardChanges: 'Hủy thay đổi',
   downloadInvoice: 'Tải hóa đơn',
   printLabel: 'In nhãn',
+  
+  // Search
+  searchItems: 'Tìm kiếm sản phẩm...',
+  searchProducts: 'Tìm kiếm sản phẩm...',
+  
+  // Variants - Extended
+  variants: {
+    addVariantButton: 'Thêm biến thể',
+    uploadingImage: 'Đang tải lên...',
+    addSeriesButton: 'Thêm loạt',
+    addSeriesTitle: 'Thêm loạt biến thể',
+    addSeriesDescription: 'Tạo nhiều biến thể sử dụng mẫu như "Kích thước <1-10>"',
+    seriesPattern: 'Mẫu loạt',
+    seriesPatternPlaceholder: 'vd: Kích thước <1-10> hoặc Màu <1-5>',
+    seriesPatternHelp: 'Sử dụng <bắt đầu-kết thúc> để tạo loạt số',
+    quantityPerVariant: 'Số lượng mỗi biến thể',
+    variantPriceOptional: 'Giá biến thể (Tùy chọn)',
+    variantPriceHelper: 'Để trống để sử dụng giá mặc định của sản phẩm. Nhập giá bằng bất kỳ loại tiền nào - các loại khác tự động chuyển đổi.',
+    variantImportCostOptional: 'Giá nhập biến thể (Tùy chọn)',
+    variantImportCostHelper: 'Để trống để sử dụng giá nhập mặc định của sản phẩm. Nhập giá bằng bất kỳ loại tiền nào - các loại khác tự động chuyển đổi.',
+    priceCzk: 'Giá CZK',
+    priceEur: 'Giá EUR',
+    importCostUsd: 'Giá nhập USD',
+    importCostCzk: 'Giá nhập CZK',
+    importCostEur: 'Giá nhập EUR',
+    optional: 'Tùy chọn',
+    addVariantSeriesButton: 'Thêm loạt biến thể',
+    bulkScanBarcodesButton: 'Quét mã vạch hàng loạt',
+    deleteSelected: 'Xóa đã chọn',
+    deleteVariantsTitle: 'Xóa biến thể',
+    deleteVariantsConfirm: 'Bạn có chắc chắn muốn xóa {{count}} biến thể?',
+    scanOrEnter: 'Quét hoặc nhập',
+    noVariants: 'Chưa có biến thể nào',
+    noVariantsHelper: 'Nhấn "Thêm biến thể" để tạo các biến thể sản phẩm',
+    addVariantTitle: 'Thêm biến thể sản phẩm',
+    addVariantDescription: 'Thêm biến thể mới với thuộc tính tùy chỉnh',
+    tableHeaders: {
+      image: 'Hình ảnh',
+      name: 'Tên',
+      barcode: 'Mã vạch',
+      quantity: 'Số lượng',
+      priceCzk: 'Giá CZK',
+      priceEur: 'Giá EUR',
+      importCostUsd: 'Giá nhập USD',
+      importCostCzk: 'Giá nhập CZK',
+      importCostEur: 'Giá nhập EUR',
+    },
+  },
+  
+  // Tiered Pricing - Extended
+  tieredPricing: {
+    title: 'Bảng giá theo số lượng',
+    dialogDescription: 'Đặt giá theo số lượng cho sản phẩm này',
+    addTier: 'Thêm bậc giá',
+    updateButton: 'Cập nhật bậc',
+    addButton: 'Thêm bậc',
+    units: 'đơn vị',
+    removeButton: 'Xóa bậc',
+  },
+  
+  // Packing & Shipping
+  packing: {
+    title: 'Chi tiết đóng gói & vận chuyển',
+    description: 'Kích thước, vật liệu và hướng dẫn xử lý',
+    physicalSpecifications: 'Thông số vật lý',
+    lengthCm: 'Dài (cm)',
+    widthCm: 'Rộng (cm)',
+    heightCm: 'Cao (cm)',
+    weightKg: 'Trọng lượng (kg)',
+    packingMaterials: 'Vật liệu đóng gói',
+    handlingInstructions: 'Hướng dẫn xử lý',
+  },
+  
+  // Files & Documents
+  files: {
+    title: 'Tệp và tài liệu sản phẩm',
+    description: 'Tệp đính kèm và tài liệu',
+    filesTitle: 'Tệp sản phẩm',
+    filesDescription: 'Tài liệu và tệp có thể được đính kèm sau khi tạo sản phẩm. Bao gồm PDF, hình ảnh, thông số kỹ thuật và tài liệu khác.',
+  },
+  
+  // Form Submission
+  submit: {
+    updating: 'Đang cập nhật...',
+    creating: 'Đang tạo...',
+    cancel: 'Hủy',
+  },
+  
+  // Bulk Scan Dialog
+  bulkScan: {
+    title: 'Quét mã vạch hàng loạt',
+    description: 'Quét mã vạch lần lượt. Chúng sẽ được tự động gán cho các biến thể chưa có mã vạch (từ đầu đến cuối).',
+    scannedBarcodes: 'Mã vạch đã quét',
+    placeholder: 'Quét hoặc dán mã vạch vào đây (mỗi dòng một mã)',
+    helperText: 'Nhập mỗi mã vạch một dòng. Mã vạch sẽ được gán theo thứ tự cho các biến thể.',
+    variantsWithoutBarcodes: 'biến thể chưa có mã vạch',
+    barcodesEntered: 'mã vạch đã nhập',
+    scannerReady: 'Máy quét sẵn sàng',
+    scannerReadyDescription: 'Bắt đầu quét mã vạch. Nhấn Enter sau mỗi lần quét.',
+    scanning: 'Đang quét...',
+    startScanning: 'Bắt đầu quét',
+    assignBarcodes: 'Gán mã vạch',
+  },
+  
+  // Image Viewer
+  imageViewer: {
+    productImageAlt: 'Hình ảnh sản phẩm',
+    close: 'Đóng',
+    download: 'Tải xuống',
+    downloadStarted: 'Bắt đầu tải xuống',
+    downloadDescription: 'Hình ảnh của bạn đang được tải xuống.',
+  },
+  
+  // Form Errors
+  formErrors: {
+    title: 'Lỗi xác thực biểu mẫu',
+    invalidValue: 'Giá trị không hợp lệ',
+  },
+  
+  // Warehouse Locations
+  warehouseLocations: {
+    title: 'Vị trí kho',
+    infoMessage: 'Vị trí kho có thể được thêm sau khi tạo sản phẩm.',
+  },
   
 } as const;
 

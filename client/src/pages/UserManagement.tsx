@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +54,7 @@ interface User {
 }
 
 export default function UserManagement() {
+  const { t } = useTranslation(['system', 'common']);
   const { user, isAdministrator, isLoading: authLoading, refetch: refetchAuth } = useAuth();
   const { toast } = useToast();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -83,14 +85,14 @@ export default function UserManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       toast({
-        title: "Success",
-        description: "User role updated successfully",
+        title: t('common:success'),
+        description: t('system:userRoleUpdatedSuccessfully'),
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update user role",
+        title: t('common:error'),
+        description: error.message || t('system:failedToUpdateUserRole'),
         variant: "destructive",
       });
     },
@@ -105,16 +107,16 @@ export default function UserManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       toast({
-        title: "Success",
-        description: "User deleted successfully",
+        title: t('common:success'),
+        description: t('system:userDeletedSuccessfully'),
       });
       setDeleteDialogOpen(false);
       setUserToDelete(null);
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to delete user",
+        title: t('common:error'),
+        description: error.message || t('system:failedToDeleteUser'),
         variant: "destructive",
       });
     },
@@ -147,7 +149,7 @@ export default function UserManagement() {
           className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
           data-testid={`badge-role-none`}
         >
-          None
+          {t('system:none')}
         </Badge>
       );
     }
@@ -157,7 +159,7 @@ export default function UserManagement() {
           className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
           data-testid={`badge-role-administrator`}
         >
-          Administrator
+          {t('system:administrator')}
         </Badge>
       );
     }
@@ -166,8 +168,8 @@ export default function UserManagement() {
         className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
         data-testid={`badge-role-warehouse-operator`}
       >
-        Warehouse Operator
-      </Badge>
+        {t('system:warehouseOperator')}
+        </Badge>
     );
   };
 
@@ -203,13 +205,13 @@ export default function UserManagement() {
       await refetchAuth();
       await refetchUsers();
       toast({
-        title: "Refreshed",
-        description: "Authentication and user data reloaded",
+        title: t('system:refreshed'),
+        description: t('system:authAndUserDataReloaded'),
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to refresh data",
+        title: t('common:error'),
+        description: t('system:failedToRefreshData'),
         variant: "destructive",
       });
     }
@@ -223,18 +225,18 @@ export default function UserManagement() {
           <CardContent className="p-8 text-center space-y-4">
             <ShieldAlert className="h-16 w-16 text-red-500 dark:text-red-400 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-              Access Denied
+              {t('system:accessDenied')}
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              You don't have permission to access this page. Only administrators can manage users.
+              {t('system:noPermissionOnlyAdmins')}
             </p>
             {user && (
               <div className="text-sm text-left bg-muted p-4 rounded-lg space-y-2">
-                <p><strong>Your Account:</strong></p>
-                <p>Email: {user.email || 'N/A'}</p>
-                <p>Name: {user.firstName} {user.lastName}</p>
+                <p><strong>{t('system:yourAccount')}:</strong></p>
+                <p>{t('system:email')}: {user.email || 'N/A'}</p>
+                <p>{t('common:name')}: {user.firstName} {user.lastName}</p>
                 <p className="text-red-600 dark:text-red-400">
-                  <strong>Current Role: {user.role}</strong>
+                  <strong>{t('system:currentRole')}: {user.role}</strong>
                 </p>
               </div>
             )}
@@ -243,7 +245,7 @@ export default function UserManagement() {
               className="w-full"
               data-testid="button-force-refresh"
             >
-              Force Refresh Session
+              {t('system:forceRefreshSession')}
             </Button>
           </CardContent>
         </Card>
@@ -257,10 +259,10 @@ export default function UserManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
-            User Management
+            {t('system:userManagement')}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage users and assign roles
+            {t('system:manageUsersAndAssignRoles')}
           </p>
         </div>
       </div>
@@ -270,7 +272,7 @@ export default function UserManagement() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            All Users ({users.length})
+            {t('system:allUsers')} ({users.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -282,18 +284,18 @@ export default function UserManagement() {
             </div>
           ) : users.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No users found
+              {t('system:noUsersFound')}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Created At</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>{t('common:name')}</TableHead>
+                    <TableHead>{t('system:email')}</TableHead>
+                    <TableHead>{t('system:role')}</TableHead>
+                    <TableHead>{t('system:createdAt')}</TableHead>
+                    <TableHead>{t('common:actions')}</TableHead>
                     <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -326,26 +328,26 @@ export default function UserManagement() {
                           data-testid={`select-role-${user.id}`}
                         >
                           <SelectTrigger className="w-[180px]" data-testid={`select-trigger-${user.id}`}>
-                            <SelectValue placeholder="Select role" />
+                            <SelectValue placeholder={t('system:selectRole')} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem 
                               value="none" 
                               data-testid={`select-option-none-${user.id}`}
                             >
-                              None
+                              {t('system:none')}
                             </SelectItem>
                             <SelectItem 
                               value="administrator" 
                               data-testid={`select-option-administrator-${user.id}`}
                             >
-                              Administrator
+                              {t('system:administrator')}
                             </SelectItem>
                             <SelectItem 
                               value="warehouse_operator"
                               data-testid={`select-option-warehouse-operator-${user.id}`}
                             >
-                              Warehouse Operator
+                              {t('system:warehouseOperator')}
                             </SelectItem>
                           </SelectContent>
                         </Select>
@@ -362,17 +364,17 @@ export default function UserManagement() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuLabel>{t('common:actions')}</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={() => toast({
-                                title: "Coming Soon",
-                                description: "Edit user functionality will be available soon",
+                                title: t('common:comingSoon'),
+                                description: t('system:editUserFunctionalitySoon'),
                               })}
                               data-testid={`menu-edit-${user.id}`}
                             >
                               <Pencil className="mr-2 h-4 w-4" />
-                              Edit Details
+                              {t('system:editDetails')}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleDeleteClick(user)}
@@ -380,7 +382,7 @@ export default function UserManagement() {
                               data-testid={`menu-delete-${user.id}`}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
-                              Delete User
+                              {t('system:deleteUser')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -398,15 +400,14 @@ export default function UserManagement() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent data-testid="dialog-delete-confirmation">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogTitle>{t('system:deleteUser')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong>{userToDelete ? formatUserName(userToDelete) : ''}</strong>?
-              This action cannot be undone and will permanently remove the user from the system.
+              {t('system:areYouSureDeleteUser', { name: userToDelete ? formatUserName(userToDelete) : '' })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel data-testid="button-cancel-delete">
-              Cancel
+              {t('common:cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
@@ -414,7 +415,7 @@ export default function UserManagement() {
               disabled={deleteUserMutation.isPending}
               data-testid="button-confirm-delete"
             >
-              {deleteUserMutation.isPending ? "Deleting..." : "Delete User"}
+              {deleteUserMutation.isPending ? t('common:deleting') : t('system:deleteUser')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

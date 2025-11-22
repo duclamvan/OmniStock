@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useTranslation } from 'react-i18next';
 import { useLocation, useRoute } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -60,6 +61,7 @@ export default function StoreItems() {
   const [match, params] = useRoute("/receiving/storage/:id");
   const { id } = params!;
   const { toast } = useToast();
+  const { t } = useTranslation(['inventory', 'common']);
   
   // State
   const [items, setItems] = useState<StorageItem[]>([]);

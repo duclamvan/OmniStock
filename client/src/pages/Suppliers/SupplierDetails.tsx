@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +38,7 @@ import { fuzzySearch } from "@/lib/fuzzySearch";
 export default function SupplierDetails() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
+  const { t } = useTranslation(['inventory', 'common']);
   const [productSearch, setProductSearch] = useState("");
   const [purchaseSearch, setPurchaseSearch] = useState("");
 
@@ -164,7 +166,7 @@ export default function SupplierDetails() {
         </div>
         <Button onClick={() => setLocation(`/suppliers/${id}/edit`)} className="shrink-0">
           <Pencil className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">Edit Supplier</span>
+          <span className="hidden sm:inline">{t('inventory:editSupplier')}</span>
         </Button>
       </div>
 
@@ -175,12 +177,12 @@ export default function SupplierDetails() {
           {/* Contact Information */}
           <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="text-gray-900 dark:text-gray-100">Contact Information</CardTitle>
+              <CardTitle className="text-gray-900 dark:text-gray-100">{t('inventory:contactInfo')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {supplier.contactPerson && (
                 <div>
-                  <p className="text-sm text-slate-600 mb-1">Contact Person</p>
+                  <p className="text-sm text-slate-600 mb-1">{t('inventory:contactPerson')}</p>
                   <p className="font-medium">{supplier.contactPerson}</p>
                 </div>
               )}
@@ -259,7 +261,7 @@ export default function SupplierDetails() {
               <div className="space-y-4">
                 <CardTitle className="flex items-center gap-2">
                   <Package className="h-5 w-5" />
-                  Products from this Supplier ({filteredProducts.length} of {supplierProducts.length})
+                  {t('inventory:supplierProducts')} ({filteredProducts.length} of {supplierProducts.length})
                 </CardTitle>
                 {supplierProducts.length > 0 && (
                   <div className="relative">
@@ -310,7 +312,7 @@ export default function SupplierDetails() {
               <div className="space-y-4">
                 <CardTitle className="flex items-center gap-2">
                   <ShoppingCart className="h-5 w-5" />
-                  Purchase History ({filteredPurchases.length} of {supplierPurchases.length})
+                  {t('inventory:supplierPurchases')} ({filteredPurchases.length} of {supplierPurchases.length})
                 </CardTitle>
                 {supplierPurchases.length > 0 && (
                   <div className="relative">
@@ -443,7 +445,7 @@ export default function SupplierDetails() {
           {/* Purchase Stats */}
           <Card>
             <CardHeader>
-              <CardTitle>Purchase Statistics</CardTitle>
+              <CardTitle>{t('inventory:totalPurchases')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3">

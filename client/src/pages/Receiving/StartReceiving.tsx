@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslation } from 'react-i18next';
 import { Skeleton } from "@/components/ui/skeleton";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -160,6 +161,7 @@ export default function StartReceiving() {
   const { id } = useParams();
   const [location, navigate] = useLocation();
   const { toast } = useToast();
+  const { t } = useTranslation(['inventory', 'common']);
   const { user } = useAuth(); // Get current user for auto-populating "Received By"
   const barcodeRef = useRef<HTMLInputElement>(null);
   const lastSaveDataRef = useRef<any>(null); // Fix missing ref error for world-record speed

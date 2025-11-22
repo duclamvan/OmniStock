@@ -1612,8 +1612,8 @@ export default function EditOrder() {
             if (applicablePrice) {
               productPrice = parseFloat(applicablePrice.price);
               toast({
-                title: "Customer Price Applied",
-                description: `Using customer-specific price: ${productPrice} ${selectedCurrency}`,
+                title: t('customerPriceApplied'),
+                description: t('usingCustomerPrice', { price: productPrice, currency: selectedCurrency }),
               });
             }
           }
@@ -1669,8 +1669,8 @@ export default function EditOrder() {
     
     if (variantsToAdd.length === 0) {
       toast({
-        title: "No variants selected",
-        description: "Please select at least one variant with quantity > 0",
+        title: t('noVariantsSelected'),
+        description: t('selectAtLeastOneVariant'),
         variant: "destructive",
       });
       return;
@@ -1736,11 +1736,11 @@ export default function EditOrder() {
     
     // Show appropriate toast message
     const messages = [];
-    if (addedCount > 0) messages.push(`${addedCount} variant(s) added`);
-    if (updatedCount > 0) messages.push(`${updatedCount} variant(s) updated`);
+    if (addedCount > 0) messages.push(t('variantsAdded', { count: addedCount }));
+    if (updatedCount > 0) messages.push(t('variantsUpdated', { count: updatedCount }));
     
     toast({
-      title: "Success",
+      title: t('common:success'),
       description: messages.join(', '),
     });
     
@@ -1799,8 +1799,8 @@ export default function EditOrder() {
       queryClient.invalidateQueries({ queryKey: ['/api/orders', id, 'files'] });
       
       toast({
-        title: "Success",
-        description: `${fileArray.length} file(s) uploaded successfully`,
+        title: t('common:success'),
+        description: t('filesUploadedSuccess', { count: fileArray.length }),
       });
       
       // Clear the input
@@ -1808,8 +1808,8 @@ export default function EditOrder() {
     } catch (error: any) {
       console.error('Error uploading files:', error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to upload files",
+        title: t('common:error'),
+        description: error.message || t('failedToUploadFiles'),
         variant: "destructive"
       });
     }
@@ -1829,14 +1829,14 @@ export default function EditOrder() {
       queryClient.invalidateQueries({ queryKey: ['/api/orders', id, 'files'] });
       
       toast({
-        title: "File removed",
-        description: "File has been removed successfully",
+        title: t('fileRemoved'),
+        description: t('fileRemovedSuccess'),
       });
     } catch (error: any) {
       console.error('Error deleting file:', error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to delete file",
+        title: t('common:error'),
+        description: error.message || t('failedToDeleteFile'),
         variant: "destructive"
       });
     }
@@ -1911,10 +1911,10 @@ export default function EditOrder() {
     // If there are validation errors, show them and prevent submission
     if (validationErrors.length > 0) {
       toast({
-        title: "Cannot Update Order",
+        title: t('cannotUpdateOrder'),
         description: (
           <div className="space-y-1">
-            <p className="font-medium">Please fix the following issues:</p>
+            <p className="font-medium">{t('pleaseFixFollowingIssues')}:</p>
             <ul className="list-disc list-inside space-y-1">
               {validationErrors.map((error, index) => (
                 <li key={index} className="text-sm">{error}</li>
@@ -2341,7 +2341,7 @@ export default function EditOrder() {
                         const noSpaces = e.target.value.replace(/\s/g, '');
                         setQuickCustomerPhone(noSpaces);
                       }}
-                      placeholder="+420776887045"
+                      placeholder={t('phonePlaceholder')}
                       data-testid="input-quick-customer-phone"
                     />
                     <p className="text-xs text-slate-500 mt-1">{t('formatWithoutSpaces')}</p>
@@ -2851,7 +2851,7 @@ export default function EditOrder() {
                                   }
                                 }}
                                 data-testid={`button-star-address-${address.id}`}
-                                title={address.isPrimary ? "Remove from primary" : "Set as primary"}
+                                title={address.isPrimary ? t('removeFromPrimary') : t('setAsPrimary')}
                               >
                                 <Star className={`h-3.5 w-3.5 ${address.isPrimary ? 'fill-amber-500' : ''}`} />
                               </Button>
@@ -2875,12 +2875,12 @@ export default function EditOrder() {
                                   
                                   navigator.clipboard.writeText(addressText);
                                   toast({
-                                    title: "Copied!",
-                                    description: "Address copied to clipboard",
+                                    title: t('copied'),
+                                    description: t('addressCopied'),
                                   });
                                 }}
                                 data-testid={`button-copy-address-${address.id}`}
-                                title="Copy address"
+                                title={t('copyAddress')}
                               >
                                 <Copy className="h-3.5 w-3.5" />
                               </Button>
@@ -3026,7 +3026,7 @@ export default function EditOrder() {
                       type="email"
                       value={newCustomer.email}
                       onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
-                      placeholder="email@example.com"
+                      placeholder={t('emailPlaceholder')}
                     />
                   </div>
                   <div>
@@ -3035,7 +3035,7 @@ export default function EditOrder() {
                       id="customerPhone"
                       value={newCustomer.phone}
                       onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
-                      placeholder="Type here"
+                      placeholder={t('typeHere')}
                     />
                   </div>
                   <div>
@@ -3044,7 +3044,7 @@ export default function EditOrder() {
                       id="company"
                       value={newCustomer.company}
                       onChange={(e) => setNewCustomer({ ...newCustomer, company: e.target.value })}
-                      placeholder="Type here"
+                      placeholder={t('typeHere')}
                     />
                   </div>
                 </div>
@@ -3059,7 +3059,7 @@ export default function EditOrder() {
                     id="rawNewCustomerAddress"
                     value={rawNewCustomerAddress}
                     onChange={(e) => setRawNewCustomerAddress(e.target.value)}
-                    placeholder="e.g., Nguyen anh van, Potocni 1299 vejprty, Bưu điện 43191 vejprty, Sdt 607638460"
+                    placeholder={t('addressExamplePlaceholder')}
                     className="min-h-[80px]"
                   />
                   <Button
@@ -3101,7 +3101,7 @@ export default function EditOrder() {
                           setShowAddressDropdown(false);
                         }
                       }}
-                      placeholder="Start typing an address..."
+                      placeholder={t('startTypingAddress')}
                       className="pr-10"
                     />
                     {addressAutocomplete && (
@@ -3166,7 +3166,7 @@ export default function EditOrder() {
                         id="street"
                         value={newCustomer.street}
                         onChange={(e) => setNewCustomer({ ...newCustomer, street: e.target.value })}
-                        placeholder="Street name"
+                        placeholder={t('streetName')}
                       />
                     </div>
                     <div>
@@ -3174,7 +3174,7 @@ export default function EditOrder() {
                         id="streetNumber"
                         value={newCustomer.streetNumber}
                         onChange={(e) => setNewCustomer({ ...newCustomer, streetNumber: e.target.value })}
-                        placeholder="Number"
+                        placeholder={t('number')}
                       />
                     </div>
                     <div>
@@ -3182,7 +3182,7 @@ export default function EditOrder() {
                         id="city"
                         value={newCustomer.city}
                         onChange={(e) => setNewCustomer({ ...newCustomer, city: e.target.value })}
-                        placeholder="City"
+                        placeholder={t('city')}
                       />
                     </div>
                     <div>
@@ -3190,7 +3190,7 @@ export default function EditOrder() {
                         id="zipCode"
                         value={newCustomer.zipCode}
                         onChange={(e) => setNewCustomer({ ...newCustomer, zipCode: e.target.value })}
-                        placeholder="Postal Code"
+                        placeholder={t('postalCode')}
                       />
                     </div>
                     <div>
@@ -3198,7 +3198,7 @@ export default function EditOrder() {
                         id="country"
                         value={newCustomer.country}
                         onChange={(e) => setNewCustomer({ ...newCustomer, country: e.target.value })}
-                        placeholder="Country"
+                        placeholder={t('country')}
                       />
                     </div>
                   </div>
@@ -3249,10 +3249,10 @@ export default function EditOrder() {
                     onClick={() => {
                       setBarcodeScanMode(!barcodeScanMode);
                       toast({
-                        title: barcodeScanMode ? "Barcode scan mode OFF" : "Barcode scan mode ON",
+                        title: barcodeScanMode ? t('barcodeScanModeOff') : t('barcodeScanModeOn'),
                         description: barcodeScanMode 
-                          ? "Normal mode: Products clear after adding" 
-                          : "Rapid mode: Keep scanning without clearing",
+                          ? t('normalModeDescription') 
+                          : t('rapidModeDescription'),
                       });
                     }}
                   >
@@ -3265,7 +3265,7 @@ export default function EditOrder() {
                 <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input
                   ref={productSearchRef}
-                  placeholder="Click to see all products (Vietnamese diacritics supported)..."
+                  placeholder={t('clickToSeeAllProducts')}
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
                   className="pl-10"
@@ -3407,8 +3407,8 @@ export default function EditOrder() {
               {showProductDropdown && productSearch.length >= 2 && (!filteredProducts || filteredProducts.length === 0) && (
                 <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-slate-800 shadow-lg p-4 text-center text-slate-500 dark:text-slate-400 z-50">
                   <Search className="h-6 w-6 mx-auto mb-2 text-slate-400 dark:text-slate-500" />
-                  <div>No products found for "{productSearch}"</div>
-                  <div className="text-xs mt-1">Try searching by name, SKU, or category</div>
+                  <div>{t('noProductsFoundFor', { search: productSearch })}</div>
+                  <div className="text-xs mt-1">{t('trySearchingByNameSKU')}</div>
                 </div>
               )}
             </div>
@@ -3471,17 +3471,17 @@ export default function EditOrder() {
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-slate-50 dark:bg-slate-900/50">
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Product</TableHead>
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center">Qty</TableHead>
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">Price</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300">{t('product')}</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center">{t('qty')}</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">{t('price')}</TableHead>
                           {showDiscountColumn && (
-                            <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">Discount</TableHead>
+                            <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">{t('discount')}</TableHead>
                           )}
                           {showVatColumn && (
-                            <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">VAT</TableHead>
+                            <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">{t('tax')}</TableHead>
                           )}
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">Total</TableHead>
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center w-20">Actions</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">{t('lineTotal')}</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center w-20">{t('common:actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -3520,22 +3520,22 @@ export default function EditOrder() {
                                   )}
                                   {item.bundleId && (
                                     <Badge className="text-xs px-1.5 py-0 bg-purple-100 text-purple-700 border-purple-300">
-                                      Bundle
+                                      {t('bundle')}
                                     </Badge>
                                   )}
                                   {item.serviceId && (
                                     <Badge variant="outline" className="text-xs px-1.5 py-0 border-orange-500 text-orange-600">
-                                      Service
+                                      {t('common:service')}
                                     </Badge>
                                   )}
                                 </div>
                                 <span className="text-xs text-slate-500 dark:text-slate-400">
-                                  {item.serviceId ? 'Service Item' : `SKU: ${item.sku}`}
+                                  {item.serviceId ? t('serviceItem') : `${t('sku')}: ${item.sku}`}
                                 </span>
                                 {item.serviceId && (
                                   <div className="mt-1 space-y-1">
                                     <Input
-                                      placeholder="Add note (optional)"
+                                      placeholder={t('addNoteOptional')}
                                       value={item.notes || ''}
                                       onChange={(e) => updateOrderItem(item.id, 'notes', e.target.value)}
                                       className="text-xs h-7 bg-purple-50 border-purple-200 text-purple-900 placeholder:text-purple-400"
@@ -3701,12 +3701,12 @@ export default function EditOrder() {
                                       data-testid={`menu-item-note-${item.id}`}
                                     >
                                       <StickyNote className="h-4 w-4 mr-2" />
-                                      {item.notes ? 'Edit Note' : 'Add Note'}
+                                      {item.notes ? t('editNote') : t('addNote')}
                                     </DropdownMenuItem>
                                     <DropdownMenuSub>
                                       <DropdownMenuSubTrigger>
                                         <Package className="h-4 w-4 mr-2" />
-                                        Quick Fill Note
+                                        {t('quickFillNote')}
                                       </DropdownMenuSubTrigger>
                                       <DropdownMenuSubContent>
                                         {QUICK_NOTE_TEMPLATES.map((template, idx) => (
@@ -3762,7 +3762,7 @@ export default function EditOrder() {
                                       data-testid={`button-toggle-note-${item.id}`}
                                     >
                                       <StickyNote className="h-3 w-3 mr-1.5" />
-                                      {expandedNotes.has(item.id) ? 'Hide' : 'Show'} Shipping Notes
+                                      {expandedNotes.has(item.id) ? t('common:hide') : t('common:show')} {t('shippingNotes')}
                                       <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${expandedNotes.has(item.id) ? 'rotate-180' : ''}`} />
                                     </Button>
                                   </CollapsibleTrigger>
@@ -3771,7 +3771,7 @@ export default function EditOrder() {
                                       <div className="flex items-start gap-2">
                                         <StickyNote className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                                         <div className="flex-1">
-                                          <p className="text-xs font-semibold text-amber-900 dark:text-amber-100 mb-1">Shipping Notes:</p>
+                                          <p className="text-xs font-semibold text-amber-900 dark:text-amber-100 mb-1">{t('shippingNotes')}:</p>
                                           <p className="text-sm text-amber-800 dark:text-amber-200 whitespace-pre-wrap">{item.notes}</p>
                                         </div>
                                       </div>
@@ -3820,17 +3820,17 @@ export default function EditOrder() {
                             )}
                             {item.bundleId && (
                               <Badge className="text-xs px-1.5 py-0 bg-purple-100 text-purple-700 border-purple-300">
-                                Bundle
+                                {t('bundle')}
                               </Badge>
                             )}
                             {item.serviceId && (
                               <Badge variant="outline" className="text-xs px-1.5 py-0 border-orange-500 text-orange-600">
-                                Service
+                                {t('common:service')}
                               </Badge>
                             )}
                           </div>
                           <p className="text-xs text-slate-500 dark:text-slate-400">
-                            {item.serviceId ? 'Service Item' : `SKU: ${item.sku}`}
+                            {item.serviceId ? t('serviceItem') : `${t('sku')}: ${item.sku}`}
                           </p>
                         </div>
                         
@@ -3852,7 +3852,7 @@ export default function EditOrder() {
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <Label htmlFor={`mobile-qty-${item.id}`} className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
-                              Quantity
+                              {t('quantity')}
                             </Label>
                             <Input
                               id={`mobile-qty-${item.id}`}
@@ -3866,7 +3866,7 @@ export default function EditOrder() {
                           </div>
                           <div>
                             <Label htmlFor={`mobile-price-${item.id}`} className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
-                              Price ({form.watch('currency')})
+                              {t('price')} ({form.watch('currency')})
                             </Label>
                             <Input
                               id={`mobile-price-${item.id}`}
@@ -3886,7 +3886,7 @@ export default function EditOrder() {
                             {showDiscountColumn && (
                               <div>
                                 <Label htmlFor={`mobile-discount-${item.id}`} className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
-                                  Discount ({form.watch('currency')})
+                                  {t('discount')} ({form.watch('currency')})
                                 </Label>
                                 <Input
                                   id={`mobile-discount-${item.id}`}
@@ -3902,7 +3902,7 @@ export default function EditOrder() {
                             {showVatColumn && (
                               <div>
                                 <Label htmlFor={`mobile-vat-${item.id}`} className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
-                                  VAT ({form.watch('currency')})
+                                  {t('tax')} ({form.watch('currency')})
                                 </Label>
                                 <Input
                                   id={`mobile-vat-${item.id}`}
@@ -3923,7 +3923,7 @@ export default function EditOrder() {
                           <div className="flex items-center justify-between mb-1.5">
                             <Label htmlFor={`mobile-notes-${item.id}`} className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                               <StickyNote className="h-3.5 w-3.5" />
-                              Shipping Notes (Optional)
+                              {t('shippingNotes')} ({t('common:optional')})
                             </Label>
                             {/* Quick note templates dropdown */}
                             <DropdownMenu>
@@ -3953,7 +3953,7 @@ export default function EditOrder() {
                           </div>
                           <Textarea
                             id={`mobile-notes-${item.id}`}
-                            placeholder="Add special instructions for packing or shipping..."
+                            placeholder={t('addPackingShippingInstructions')}
                             value={item.notes || ''}
                             onChange={(e) => updateOrderItem(item.id, 'notes', e.target.value)}
                             className="min-h-[80px] text-sm resize-none"
@@ -4024,10 +4024,10 @@ export default function EditOrder() {
             {/* Shipping & Payment Methods */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label htmlFor="shippingMethod" className="text-sm">Shipping Method</Label>
+                <Label htmlFor="shippingMethod" className="text-sm">{t('method')}</Label>
                 <Select value={form.watch('shippingMethod')} onValueChange={(value) => form.setValue('shippingMethod', value as any)}>
                   <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select shipping" />
+                    <SelectValue placeholder={t('selectShipping')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="GLS DE">GLS DE</SelectItem>
@@ -4039,10 +4039,10 @@ export default function EditOrder() {
               </div>
 
               <div>
-                <Label htmlFor="paymentMethod" className="text-sm">Payment Method</Label>
+                <Label htmlFor="paymentMethod" className="text-sm">{t('paymentMethod')}</Label>
                 <Select value={form.watch('paymentMethod')} onValueChange={(value) => form.setValue('paymentMethod', value as any)}>
                   <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select payment" />
+                    <SelectValue placeholder={t('selectPayment')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
@@ -4067,7 +4067,7 @@ export default function EditOrder() {
                 }}
               >
                 <Percent className="h-5 w-5 mr-2" />
-                Add Discount
+                {t('addDiscount')}
                 {showDiscount ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
               </Button>
             </div>
@@ -4089,8 +4089,8 @@ export default function EditOrder() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="flat">Amount</SelectItem>
-                          <SelectItem value="rate">Percentage</SelectItem>
+                          <SelectItem value="flat">{t('amount')}</SelectItem>
+                          <SelectItem value="rate">{t('percentage')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <Input
@@ -4110,7 +4110,7 @@ export default function EditOrder() {
 
                     {/* Quick discount buttons */}
                     <div className="mt-2">
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Quick select:</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('quickSelect')}:</div>
                       <div className="flex flex-wrap gap-1">
                         {form.watch('discountType') === 'rate' && [5, 10, 15, 20, 25].map(amount => (
                           <Button
@@ -4215,11 +4215,11 @@ export default function EditOrder() {
                   className="mt-1"
                   data-testid="input-actual-shipping-cost"
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Real cost from carrier</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('realCostFromCarrier')}</p>
               </div>
 
               <div>
-                <Label htmlFor="adjustment" className="text-sm">Adjustment</Label>
+                <Label htmlFor="adjustment" className="text-sm">{t('adjustment')}</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -4227,7 +4227,7 @@ export default function EditOrder() {
                   className="mt-1"
                   data-testid="input-adjustment"
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Rounding or other adjustments</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('roundingOrAdjustments')}</p>
               </div>
             </div>
 
@@ -4240,7 +4240,7 @@ export default function EditOrder() {
                   <div>
                     <Label htmlFor="codAmount" className="text-sm flex items-center gap-2">
                       <Banknote className="w-4 h-4" />
-                      {form.watch('shippingMethod') === 'DHL DE' ? 'Nachnahme (COD)' : 'Dobírka Amount (COD)'}
+                      {t('codAmount')}
                     </Label>
                     <Input
                       type="number"
@@ -4251,20 +4251,20 @@ export default function EditOrder() {
                       className="mt-1"
                       data-testid="input-dobirka-amount"
                     />
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Cash on delivery amount (optional)</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('cashOnDeliveryOptional')}</p>
                   </div>
 
                   <div>
                     <Label htmlFor="codCurrency" className="text-sm flex items-center gap-2">
                       <span className="w-4 h-4"></span>
-                      {form.watch('shippingMethod') === 'DHL DE' ? 'Nachnahme Currency' : 'Dobírka Currency'}
+                      {t('codCurrency')}
                     </Label>
                     <Select 
                       value={form.watch('codCurrency') || (form.watch('shippingMethod') === 'DHL DE' ? 'EUR' : 'CZK')}
                       onValueChange={(value) => form.setValue('codCurrency', value as any)}
                     >
                       <SelectTrigger className="mt-1" data-testid="select-dobirka-currency">
-                        <SelectValue placeholder="Select currency" />
+                        <SelectValue placeholder={t('selectCurrency')} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="CZK">CZK</SelectItem>
@@ -4272,7 +4272,7 @@ export default function EditOrder() {
                         <SelectItem value="USD">USD</SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Currency for cash on delivery</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('currencyForCod')}</p>
                   </div>
                 </div>
 
@@ -4281,10 +4281,10 @@ export default function EditOrder() {
             )}
 
             <div>
-              <Label htmlFor="notes" className="text-sm">Notes</Label>
+              <Label htmlFor="notes" className="text-sm">{t('orderNotes')}</Label>
               <Textarea
                 {...form.register('notes')}
-                placeholder="Additional order notes..."
+                placeholder={t('additionalOrderNotes')}
                 className="mt-1"
               />
             </div>
@@ -4304,7 +4304,7 @@ export default function EditOrder() {
                       id="grandTotal"
                       type="number"
                       step="0.01"
-                      placeholder="Enter desired total"
+                      placeholder={t('clickToEnter')}
                       value={grandTotalInput}
                       onChange={(e) => setGrandTotalInput(e.target.value)}
                       onBlur={handleGrandTotalChange}
@@ -4334,13 +4334,13 @@ export default function EditOrder() {
                           setGrandTotalInput(roundedTotal.toFixed(2));
                           
                           toast({
-                            title: "Total Rounded Up",
-                            description: `Grand total rounded from ${formatCurrency(currentTotal, form.watch('currency'))} to ${formatCurrency(roundedTotal, form.watch('currency'))}. Adjustment: ${formatCurrency(difference, form.watch('currency'))}`,
+                            title: t('totalRoundedUp'),
+                            description: `${t('grandTotal')} ${t('roundedUpDescription', { amount: formatCurrency(difference, form.watch('currency')) })}`,
                           });
                         } else {
                           toast({
-                            title: "Already Rounded",
-                            description: "The total is already a whole number",
+                            title: t('alreadyRounded'),
+                            description: t('totalAlreadyWhole'),
                           });
                         }
                       }}
@@ -4348,10 +4348,10 @@ export default function EditOrder() {
                       data-testid="button-round-up"
                     >
                       <ArrowUpCircle className="w-4 h-4 mr-1" />
-                      Round Up
+                      {t('roundUp')}
                     </Button>
                   </div>
-                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">Enter desired total or use Round Up button. Discount will auto-adjust.</p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">{t('clickToEditOrRoundUp')}</p>
                 </div>
               </div>
             </div>
@@ -4368,7 +4368,7 @@ export default function EditOrder() {
                 }}
               >
                 <Plus className="h-5 w-5 mr-2" />
-                Add Tax Invoice Section
+                {t('addTaxInvoiceSection')}
                 {showTaxInvoice ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
               </Button>
             </div>
@@ -4387,11 +4387,11 @@ export default function EditOrder() {
                   {form.watch('currency') === 'CZK' && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="relative">
-                        <Label htmlFor="ico">IČO</Label>
+                        <Label htmlFor="ico">{t('ico')}</Label>
                         <div className="relative">
                           <Input
                             {...form.register('ico')}
-                            placeholder="Company identification number"
+                            placeholder={t('companyIdentificationNumber')}
                           />
                           <Button
                             type="button"
@@ -4406,11 +4406,11 @@ export default function EditOrder() {
                       </div>
 
                       <div className="relative">
-                        <Label htmlFor="dic">DIČ</Label>
+                        <Label htmlFor="dic">{t('dic')}</Label>
                         <div className="relative">
                           <Input
                             {...form.register('dic')}
-                            placeholder="Tax identification number"
+                            placeholder={t('taxIdentificationNumber')}
                           />
                           <Button
                             type="button"
@@ -4425,11 +4425,11 @@ export default function EditOrder() {
                       </div>
 
                       <div className="sm:col-span-2 relative">
-                        <Label htmlFor="nameAndAddress">Jméno a Adresa</Label>
+                        <Label htmlFor="nameAndAddress">{t('nameAndAddress')}</Label>
                         <div className="relative">
                           <Textarea
                             {...form.register('nameAndAddress')}
-                            placeholder="Company name and address"
+                            placeholder={t('companyNameAndAddress')}
                             rows={3}
                           />
                           <Button
@@ -4445,7 +4445,7 @@ export default function EditOrder() {
                       </div>
 
                       <div>
-                        <Label htmlFor="taxRate">Tax Rate (%)</Label>
+                        <Label htmlFor="taxRate">{t('taxRatePercent')}</Label>
                         <Input
                           type="number"
                           step="0.01"
@@ -4460,11 +4460,11 @@ export default function EditOrder() {
                   {form.watch('currency') === 'EUR' && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="relative">
-                        <Label htmlFor="vatId">VAT ID (optional)</Label>
+                        <Label htmlFor="vatId">{t('vatIdOptional')}</Label>
                         <div className="relative">
                           <Input
                             {...form.register('vatId')}
-                            placeholder="EU VAT identification number"
+                            placeholder={t('euVatIdNumber')}
                           />
                           <Button
                             type="button"
@@ -4483,7 +4483,7 @@ export default function EditOrder() {
                         <div className="relative">
                           <Input
                             {...form.register('country')}
-                            placeholder="Country name"
+                            placeholder={t('countryName')}
                           />
                           <Button
                             type="button"
@@ -4498,11 +4498,11 @@ export default function EditOrder() {
                       </div>
 
                       <div className="sm:col-span-2 relative">
-                        <Label htmlFor="nameAndAddress">Name and Address</Label>
+                        <Label htmlFor="nameAndAddress">{t('nameAndAddress')}</Label>
                         <div className="relative">
                           <Textarea
                             {...form.register('nameAndAddress')}
-                            placeholder="Company name and address"
+                            placeholder={t('companyNameAndAddress')}
                             rows={3}
                           />
                           <Button
@@ -4518,7 +4518,7 @@ export default function EditOrder() {
                       </div>
 
                       <div>
-                        <Label htmlFor="taxRate">Tax Rate (%)</Label>
+                        <Label htmlFor="taxRate">{t('taxRatePercent')}</Label>
                         <Input
                           type="number"
                           step="0.01"
@@ -4543,10 +4543,10 @@ export default function EditOrder() {
                 <div>
                   <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                     <FileText className="h-4 w-4 text-blue-600" />
-                    Files & Documents
+                    {t('filesDocuments')}
                   </CardTitle>
                   <CardDescription className="text-xs sm:text-sm mt-1">
-                    Upload files and manage product documents
+                    {t('uploadFilesDocuments')}
                   </CardDescription>
                 </div>
                 <div>
@@ -4567,7 +4567,7 @@ export default function EditOrder() {
                     data-testid="button-upload-file"
                   >
                     <Upload className="h-4 w-4 mr-2" />
-                    Upload
+                    {t('uploadFiles')}
                   </Button>
                 </div>
               </div>
@@ -4580,7 +4580,7 @@ export default function EditOrder() {
                   <div>
                     <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
                       <Upload className="h-4 w-4" />
-                      Uploaded Files ({orderFiles.length})
+                      {t('uploadedFilesCount', { count: orderFiles.length })}
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {orderFiles.map((file: any) => (
@@ -4628,8 +4628,8 @@ export default function EditOrder() {
                 {orderFiles.length === 0 && (
                   <div className="text-center py-8 bg-slate-50 dark:bg-slate-900/20 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700">
                     <FileText className="mx-auto h-12 w-12 mb-3 text-slate-400 dark:text-slate-600" />
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">No files yet</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Upload files or add products with files</p>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('noFilesYet')}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('uploadFilesOrAddProducts')}</p>
                   </div>
                 )}
               </div>
@@ -4649,12 +4649,12 @@ export default function EditOrder() {
                     <CardHeader className="p-3 border-b">
                       <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                         <MapPin className="h-4 w-4 text-blue-600" />
-                        Order Location
+                        {t('orderLocation')}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-3">
                       <Input
-                        placeholder="e.g., Prague Warehouse, Main Office"
+                        placeholder={t('locationPlaceholder')}
                         value={form.watch('orderLocation') || ''}
                         onChange={(e) => form.setValue('orderLocation', e.target.value)}
                         data-testid="input-order-location"
@@ -4672,7 +4672,7 @@ export default function EditOrder() {
                     </CardHeader>
                     <CardContent className="p-3 space-y-3">
                       <div>
-                        <Label htmlFor="currency" className="text-xs">Currency</Label>
+                        <Label htmlFor="currency" className="text-xs">{t('currency')}</Label>
                         <Select value={form.watch('currency')} onValueChange={(value) => form.setValue('currency', value as any)}>
                           <SelectTrigger className="mt-1 h-9" data-testid="select-currency">
                             <SelectValue />
@@ -4688,7 +4688,7 @@ export default function EditOrder() {
                       </div>
 
                       <div>
-                        <Label htmlFor="priority" className="text-xs">Priority</Label>
+                        <Label htmlFor="priority" className="text-xs">{t('priority')}</Label>
                         <Select value={form.watch('priority')} onValueChange={(value) => form.setValue('priority', value as any)}>
                           <SelectTrigger className="mt-1 h-9">
                             <SelectValue />
@@ -4719,7 +4719,7 @@ export default function EditOrder() {
                       {/* Order Status and Payment Status side by side */}
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <Label htmlFor="orderStatus" className="text-xs">Order Status</Label>
+                          <Label htmlFor="orderStatus" className="text-xs">{t('orderStatus')}</Label>
                           <Select value={form.watch('orderStatus')} onValueChange={(value) => form.setValue('orderStatus', value as any)}>
                             <SelectTrigger className="mt-1 h-9">
                               <SelectValue />
@@ -4734,7 +4734,7 @@ export default function EditOrder() {
                               <SelectItem value="awaiting_stock">
                                 <div className="flex items-center gap-2">
                                   <div className="h-2 w-2 bg-orange-500 rounded-full" />
-                                  Awaiting Stock
+                                  {t('awaitingStock')}
                                 </div>
                               </SelectItem>
                               <SelectItem value="to_fulfill">
@@ -4772,7 +4772,7 @@ export default function EditOrder() {
                         </div>
 
                         <div>
-                          <Label htmlFor="paymentStatus" className="text-xs">Payment Status</Label>
+                          <Label htmlFor="paymentStatus" className="text-xs">{t('paymentStatus')}</Label>
                           <Select value={form.watch('paymentStatus')} onValueChange={(value) => form.setValue('paymentStatus', value as any)}>
                             <SelectTrigger className="mt-1 h-9" data-testid="select-payment-status">
                               <SelectValue />
@@ -4828,7 +4828,7 @@ export default function EditOrder() {
                             <div className="flex justify-between items-center mb-2">
                               <span className="text-sm font-medium flex items-center gap-1.5">
                                 <TrendingUp className="h-4 w-4 text-green-600" />
-                                Margin
+                                {t('margin')}
                               </span>
                               <MarginPill
                                 sellingPrice={totalSellingPrice}
@@ -4937,12 +4937,12 @@ export default function EditOrder() {
                         {updateOrderMutation.isPending ? (
                           <>
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Updating...
+                            {t('updating')}
                           </>
                         ) : (
                           <>
                             <Save className="h-4 w-4 mr-2" />
-                            Update Order
+                            {t('updateOrder')}
                           </>
                         )}
                       </Button>
@@ -4996,7 +4996,7 @@ export default function EditOrder() {
               {/* Breakdown */}
               <div className="space-y-2.5">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-600 dark:text-slate-400">Subtotal</span>
+                  <span className="text-slate-600 dark:text-slate-400">{t('subtotal')}</span>
                   <span className="font-medium text-slate-900 dark:text-slate-100">
                     {formatCurrency(calculateSubtotal(), form.watch('currency'))}
                   </span>
@@ -5005,7 +5005,7 @@ export default function EditOrder() {
                 {showTaxInvoice && (
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-600 dark:text-slate-400">
-                      Tax ({form.watch('taxRate') || 0}%)
+                      {t('tax')} ({form.watch('taxRate') || 0}%)
                     </span>
                     <span className="font-medium text-slate-900 dark:text-slate-100">
                       {formatCurrency(calculateTax(), form.watch('currency'))}
@@ -5014,7 +5014,7 @@ export default function EditOrder() {
                 )}
                 
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-600 dark:text-slate-400">Shipping</span>
+                  <span className="text-slate-600 dark:text-slate-400">{t('shipping')}</span>
                   <span className="font-medium text-slate-900 dark:text-slate-100">
                     {formatCurrency(Number(form.watch('shippingCost')) || 0, form.watch('currency'))}
                   </span>
@@ -5022,7 +5022,7 @@ export default function EditOrder() {
                 
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600 dark:text-slate-400">
-                    Discount{form.watch('discountType') === 'rate' && ` (${form.watch('discountValue') || 0}%)`}
+                    {t('discount')}{form.watch('discountType') === 'rate' && ` (${form.watch('discountValue') || 0}%)`}
                   </span>
                   <span className="font-medium text-green-600 dark:text-green-500">
                     -{formatCurrency(
@@ -5036,7 +5036,7 @@ export default function EditOrder() {
                 
                 {roundingAdjustment > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-600 dark:text-slate-400">Zaokrouhlení</span>
+                    <span className="text-slate-600 dark:text-slate-400">{t('rounding')}</span>
                     <span className="font-medium text-blue-600 dark:text-blue-500">
                       +{formatCurrency(roundingAdjustment, form.watch('currency'))}
                     </span>
@@ -5047,7 +5047,7 @@ export default function EditOrder() {
               {/* Grand Total */}
               <div className="pt-3 border-t">
                 <div className="flex justify-between items-center">
-                  <span className="text-base font-semibold text-slate-900 dark:text-slate-100">Total</span>
+                  <span className="text-base font-semibold text-slate-900 dark:text-slate-100">{t('grandTotal')}</span>
                   <span className="text-xl font-bold text-blue-600 dark:text-blue-500">
                     {formatCurrency(calculateGrandTotal(), form.watch('currency'))}
                   </span>
@@ -5057,8 +5057,8 @@ export default function EditOrder() {
               {/* Validation Warning - Mobile */}
               {(() => {
                 const missingFields: string[] = [];
-                if (!selectedCustomer) missingFields.push("Customer");
-                if (orderItems.length === 0) missingFields.push("Products");
+                if (!selectedCustomer) missingFields.push(t('customer'));
+                if (orderItems.length === 0) missingFields.push(t('products'));
                 
                 if (missingFields.length > 0) {
                   return (
@@ -5066,7 +5066,7 @@ export default function EditOrder() {
                       <div className="flex items-start gap-2">
                         <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                         <div className="text-sm text-amber-800 dark:text-amber-200">
-                          <p className="font-medium">Required fields missing:</p>
+                          <p className="font-medium">{t('requiredFieldsMissing')}:</p>
                           <p className="text-amber-700 dark:text-amber-300">{missingFields.join(", ")}</p>
                         </div>
                       </div>
@@ -5088,12 +5088,12 @@ export default function EditOrder() {
                 {updateOrderMutation.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Updating...
+                    {t('updating')}...
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Update Order
+                    {t('updateOrder')}
                   </>
                 )}
               </Button>
@@ -5107,19 +5107,19 @@ export default function EditOrder() {
       <Dialog open={showVariantDialog} onOpenChange={setShowVariantDialog}>
         <DialogContent className="max-w-3xl max-h-[80vh]">
           <DialogHeader>
-            <DialogTitle className="text-lg font-semibold">Select Product Variants</DialogTitle>
+            <DialogTitle className="text-lg font-semibold">{t('selectVariant')}</DialogTitle>
             <DialogDescription className="text-sm">
-              Choose variants and quantities for: <span className="font-semibold text-slate-900 dark:text-slate-100">{selectedProductForVariant?.name}</span>
+              {t('chooseVariantsFor')}: <span className="font-semibold text-slate-900 dark:text-slate-100">{selectedProductForVariant?.name}</span>
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-[400px] overflow-y-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50 dark:bg-slate-900/50">
-                  <TableHead className="font-semibold">Variant Name</TableHead>
-                  <TableHead className="font-semibold">Barcode</TableHead>
-                  <TableHead className="text-right font-semibold">Stock</TableHead>
-                  <TableHead className="text-right font-semibold w-[140px]">Quantity</TableHead>
+                  <TableHead className="font-semibold">{t('variantName')}</TableHead>
+                  <TableHead className="font-semibold">{t('barcode')}</TableHead>
+                  <TableHead className="text-right font-semibold">{t('stock')}</TableHead>
+                  <TableHead className="text-right font-semibold w-[140px]">{t('quantity')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -5180,7 +5180,7 @@ export default function EditOrder() {
               }}
               className="flex-1 sm:flex-none"
             >
-              Cancel
+              {t('common:cancel')}
             </Button>
             <Button
               type="button"
@@ -5189,7 +5189,7 @@ export default function EditOrder() {
               className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Selected Variants
+              {t('addSelectedVariants')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -5204,24 +5204,24 @@ export default function EditOrder() {
       }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-lg font-semibold">Shipping Notes</DialogTitle>
+            <DialogTitle className="text-lg font-semibold">{t('shippingNotes')}</DialogTitle>
             <DialogDescription className="text-sm">
-              Add shipping notes or special instructions for this item
+              {t('addShippingNotesInstructions')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="note-text" className="text-sm">Shipping Notes</Label>
+              <Label htmlFor="note-text" className="text-sm">{t('shippingNotes')}</Label>
               <Textarea
                 id="note-text"
                 value={editingNoteText}
                 onChange={(e) => setEditingNoteText(e.target.value)}
-                placeholder="Type your own note or select a predefined one below..."
+                placeholder={t('typeNoteOrSelectTemplate')}
                 className="mt-1 min-h-[120px]"
                 data-testid="textarea-item-note"
               />
               <div className="mt-3">
-                <p className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-2">Quick templates:</p>
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-2">{t('quickNoteTemplates')}:</p>
                 <div className="flex flex-wrap gap-2">
                   {[
                     "Handle with care - fragile item",
@@ -5255,7 +5255,7 @@ export default function EditOrder() {
                 setEditingNoteText("");
               }}
             >
-              Cancel
+              {t('common:cancel')}
             </Button>
             <Button
               type="button"
@@ -5273,7 +5273,7 @@ export default function EditOrder() {
               data-testid="button-save-note"
             >
               <Save className="h-4 w-4 mr-2" />
-              Save Note
+              {t('saveNote')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -5307,17 +5307,17 @@ export default function EditOrder() {
         }}
         editingAddress={editingAddress}
         existingAddresses={Array.isArray(shippingAddresses) ? shippingAddresses : []}
-        title={editingAddress ? "Edit Shipping Address" : "Add Shipping Address"}
-        description={editingAddress ? "Update the shipping address details below" : "Enter the new shipping address details below"}
+        title={editingAddress ? t('editAddress') : t('addNewAddress')}
+        description={editingAddress ? t('updateAddressDetails') : t('enterNewAddressDetails')}
       />
 
       {/* Delete Address Confirmation Dialog */}
       <AlertDialog open={!!addressToDelete} onOpenChange={(open) => !open && setAddressToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Shipping Address?</AlertDialogTitle>
+            <AlertDialogTitle>{t('deleteShippingAddress')}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this shipping address? This action cannot be undone.
+              {t('deleteAddressConfirmation')}
             </AlertDialogDescription>
             {addressToDelete && (
               <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-md text-sm text-slate-900 dark:text-slate-100">
@@ -5330,7 +5330,7 @@ export default function EditOrder() {
             )}
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (addressToDelete) {
@@ -5339,7 +5339,7 @@ export default function EditOrder() {
               }}
               className="bg-red-600 hover:bg-red-700"
             >
-              Delete Address
+              {t('deleteAddress')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

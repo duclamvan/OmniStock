@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
+import { useTranslation } from 'react-i18next';
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -73,6 +74,7 @@ type ReturnFormData = z.infer<typeof returnSchema>;
 export default function AddReturn() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { t } = useTranslation(['inventory', 'common']);
   const { inventorySettings } = useSettings();
   const scanningEnabled = inventorySettings.enableBarcodeScanning ?? true;
   const [returnId, setReturnId] = useState("");
@@ -450,7 +452,7 @@ export default function AddReturn() {
         </Button>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Create Return</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t('inventory:addReturn')}</h1>
             <p className="text-muted-foreground dark:text-gray-400 mt-1">Process customer returns and refunds</p>
           </div>
           <div className="text-right">

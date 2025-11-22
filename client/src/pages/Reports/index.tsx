@@ -1,4 +1,5 @@
 import { useLocation, Link } from "wouter";
+import { useTranslation } from 'react-i18next';
 import { ReportsProvider } from "@/contexts/ReportsContext";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
@@ -20,18 +21,19 @@ import CustomerReports from "./CustomerReports";
 import OrderReports from "./OrderReports";
 import ExpenseReports from "./ExpenseReports";
 
-const reportTabs = [
-  { value: '/reports', label: 'Overview', icon: LayoutDashboard },
-  { value: '/reports/financial', label: 'Financial', icon: Coins },
-  { value: '/reports/sales', label: 'Sales', icon: ShoppingBag },
-  { value: '/reports/inventory', label: 'Inventory', icon: Package },
-  { value: '/reports/customers', label: 'Customers', icon: Users },
-  { value: '/reports/orders', label: 'Orders', icon: ShoppingCart },
-  { value: '/reports/expenses', label: 'Expenses', icon: Receipt },
-];
-
 export default function ReportsIndex() {
   const [location, setLocation] = useLocation();
+  const { t } = useTranslation(['reports', 'common']);
+
+  const reportTabs = [
+    { value: '/reports', label: t('reports.overview'), icon: LayoutDashboard },
+    { value: '/reports/financial', label: t('reports.financialReport'), icon: Coins },
+    { value: '/reports/sales', label: t('reports.salesReport'), icon: ShoppingBag },
+    { value: '/reports/inventory', label: t('reports.inventoryReport'), icon: Package },
+    { value: '/reports/customers', label: t('reports.customerReport'), icon: Users },
+    { value: '/reports/orders', label: t('reports.orderReport'), icon: ShoppingCart },
+    { value: '/reports/expenses', label: t('reports.expenseReport'), icon: Receipt },
+  ];
 
   const getActiveTab = () => {
     const currentTab = reportTabs.find(tab => tab.value === location);
@@ -61,8 +63,8 @@ export default function ReportsIndex() {
     <ReportsProvider>
       <div className="space-y-6" data-testid="reports-container">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Reports</h1>
-          <p className="text-slate-600 mt-1">Comprehensive business analytics and insights</p>
+          <h1 className="text-3xl font-bold text-slate-900">{t('reports.reports')}</h1>
+          <p className="text-slate-600 mt-1">{t('reports.businessOverviewDesc')}</p>
         </div>
 
         <Card className="p-1">

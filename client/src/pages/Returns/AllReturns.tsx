@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ import {
 export default function AllReturns() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { t } = useTranslation(['inventory', 'common']);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedReturns, setSelectedReturns] = useState<any[]>([]);
@@ -382,7 +384,7 @@ export default function AllReturns() {
             <div className="absolute inset-0 border-4 border-cyan-200 dark:border-cyan-800 rounded-full"></div>
             <div className="absolute inset-0 border-4 border-cyan-600 dark:border-cyan-400 rounded-full border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-slate-600 dark:text-slate-400 font-medium">Loading returns...</p>
+          <p className="text-slate-600 dark:text-slate-400 font-medium">{t('inventory:loadingInventory')}</p>
         </div>
       </div>
     );
@@ -394,10 +396,10 @@ export default function AllReturns() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-            Returns Management
+            {t('inventory:returns')}
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mt-1">
-            Process customer returns and manage refunds
+            {t('inventory:manageProductsDescription')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -405,26 +407,26 @@ export default function AllReturns() {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" data-testid="button-export-returns">
                 <FileDown className="mr-2 h-4 w-4" />
-                Export
+                {t('inventory:export')}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('inventory:exportFormat')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleExportXLSX} data-testid="button-export-xlsx">
                 <FileDown className="mr-2 h-4 w-4" />
-                Export to XLSX
+                {t('inventory:exportAsXLSX')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExportPDF} data-testid="button-export-pdf">
                 <FileDown className="mr-2 h-4 w-4" />
-                Export to PDF
+                {t('inventory:exportAsPDF')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Link href="/returns/add">
             <Button data-testid="button-add-return">
               <Plus className="mr-2 h-4 w-4" />
-              Add Return
+              {t('inventory:addReturn')}
             </Button>
           </Link>
         </div>

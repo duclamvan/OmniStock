@@ -31,6 +31,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Upload, Download, Trash2, Edit, FileIcon, Search, Filter } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useTranslation } from 'react-i18next';
 
 const FILE_TYPES = [
   { value: "MSDS", label: "MSDS (Material Safety Data Sheet)" },
@@ -42,6 +43,7 @@ const FILE_TYPES = [
 ];
 
 export default function Files() {
+  const { t } = useTranslation(['system', 'common']);
   const { toast } = useToast();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingFile, setEditingFile] = useState<any>(null);
@@ -73,14 +75,14 @@ export default function Files() {
       queryClient.invalidateQueries({ queryKey: ["/api/product-files"] });
       setIsAddDialogOpen(false);
       toast({
-        title: "Success",
-        description: "File record created successfully",
+        title: t('common:success'),
+        description: t('common:createSuccess'),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to create file record",
+        title: t('common:error'),
+        description: t('common:createFailed'),
         variant: "destructive",
       });
     },
@@ -94,14 +96,14 @@ export default function Files() {
       queryClient.invalidateQueries({ queryKey: ["/api/product-files"] });
       setEditingFile(null);
       toast({
-        title: "Success",
-        description: "File updated successfully",
+        title: t('common:success'),
+        description: t('common:updateSuccess'),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update file",
+        title: t('common:error'),
+        description: t('common:updateFailed'),
         variant: "destructive",
       });
     },
@@ -113,14 +115,14 @@ export default function Files() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/product-files"] });
       toast({
-        title: "Success",
-        description: "File deleted successfully",
+        title: t('common:success'),
+        description: t('common:deleteSuccess', { count: 1, item: t('system:file').toLowerCase() }),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to delete file",
+        title: t('common:error'),
+        description: t('common:deleteFailed'),
         variant: "destructive",
       });
     },
@@ -177,23 +179,23 @@ export default function Files() {
       <Card>
         <CardHeader className="p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
-            <CardTitle className="text-xl sm:text-2xl font-bold">Files Management</CardTitle>
+            <CardTitle className="text-xl sm:text-2xl font-bold">{t('system:fileManagement')}</CardTitle>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="w-full sm:w-auto">
                   <Upload className="mr-2 h-4 w-4" />
-                  Add File
+                  {t('system:uploadNewFile')}
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>
-                    {editingFile ? "Edit File" : "Add New File"}
+                    {editingFile ? t('common:edit') + ' ' + t('system:file') : t('common:add') + ' ' + t('system:file')}
                   </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <Label htmlFor="fileName">File Name</Label>
+                    <Label htmlFor="fileName">{t('system:fileName')}</Label>
                     <Input
                       id="fileName"
                       name="fileName"
@@ -204,14 +206,14 @@ export default function Files() {
                   </div>
 
                   <div>
-                    <Label htmlFor="fileType">File Type</Label>
+                    <Label htmlFor="fileType">{t('system:fileType')}</Label>
                     <Select 
                       name="fileType" 
                       defaultValue={editingFile?.fileType || "Other"}
                       required
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select file type" />
+                        <SelectValue placeholder={t('common:select') + ' ' + t('system:fileType').toLowerCase()} />
                       </SelectTrigger>
                       <SelectContent>
                         {FILE_TYPES.map(type => (
@@ -224,13 +226,13 @@ export default function Files() {
                   </div>
 
                   <div>
-                    <Label htmlFor="productId">Product (Optional)</Label>
+                    <Label htmlFor="productId">{t('orders:product')} ({t('common:optional')})</Label>
                     <Select name="productId" defaultValue={editingFile?.productId || "NONE"}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a product" />
+                        <SelectValue placeholder={t('common:select') + ' ' + t('orders:product').toLowerCase()} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="NONE">No Product</SelectItem>
+                        <SelectItem value="NONE">{t('common:none')}</SelectItem>
                         {products.map((product: any) => (
                           <SelectItem key={product.id} value={product.id}>
                             {product.name} ({product.sku})
@@ -253,18 +255,18 @@ export default function Files() {
                   </div>
 
                   <div>
-                    <Label htmlFor="description">Description</Label>
+                    <Label htmlFor="description">{t('common:description')}</Label>
                     <Textarea
                       id="description"
                       name="description"
                       defaultValue={editingFile?.description}
-                      placeholder="Brief description of the file"
+                      placeholder={t('common:description')}
                       rows={3}
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="tags">Tags (comma-separated)</Label>
+                    <Label htmlFor="tags">{t('common:na')}</Label>
                     <Input
                       id="tags"
                       name="tags"
@@ -282,10 +284,10 @@ export default function Files() {
                         setEditingFile(null);
                       }}
                     >
-                      Cancel
+                      {t('common:cancel')}
                     </Button>
                     <Button type="submit">
-                      {editingFile ? "Update" : "Create"}
+                      {editingFile ? t('common:update') : t('common:create')}
                     </Button>
                   </div>
                 </form>
@@ -300,7 +302,7 @@ export default function Files() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Search files..."
+                  placeholder={t('common:search') + ' ' + t('system:files').toLowerCase() + '...'}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 h-10 sm:h-9"
@@ -310,10 +312,10 @@ export default function Files() {
             <Select value={filterType} onValueChange={setFilterType}>
               <SelectTrigger className="w-full sm:w-[200px] h-10 sm:h-9">
                 <Filter className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Filter by type" />
+                <SelectValue placeholder={t('common:filterByType')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="all">{t('common:allTypes')}</SelectItem>
                 {FILE_TYPES.map(type => (
                   <SelectItem key={type.value} value={type.value}>
                     {type.label}
@@ -325,10 +327,10 @@ export default function Files() {
 
           {/* Files Table/Cards */}
           {isLoading ? (
-            <div className="text-center py-8 text-sm sm:text-base">Loading files...</div>
+            <div className="text-center py-8 text-sm sm:text-base">{t('common:loading')}</div>
           ) : filteredFiles.length === 0 ? (
             <div className="text-center py-8 text-gray-500 text-sm sm:text-base">
-              No files found. Add your first file to get started.
+              {t('system:noFilesYet')}. {t('system:uploadNewFile')}.
             </div>
           ) : (
             <>
@@ -370,7 +372,7 @@ export default function Files() {
                             size="sm"
                             className="h-8 w-8 p-0"
                             onClick={() => {
-                              if (confirm("Are you sure you want to delete this file?")) {
+                              if (confirm(t('common:deleteConfirmation', { item: file.fileName }))) {
                                 deleteFileMutation.mutate(file.id);
                               }
                             }}
@@ -381,7 +383,7 @@ export default function Files() {
                       </div>
                       {file.products && (
                         <div className="text-xs">
-                          <span className="text-gray-500">Product: </span>
+                          <span className="text-gray-500">{t('orders:product')}: </span>
                           <span className="font-medium">{file.products.name}</span>
                         </div>
                       )}
@@ -415,13 +417,13 @@ export default function Files() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Type</TableHead>
-                      <TableHead>File Name</TableHead>
-                      <TableHead>Product</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Uploaded</TableHead>
-                      <TableHead>Tags</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>{t('common:type')}</TableHead>
+                      <TableHead>{t('system:fileName')}</TableHead>
+                      <TableHead>{t('orders:product')}</TableHead>
+                      <TableHead>{t('common:description')}</TableHead>
+                      <TableHead>{t('common:createdAt')}</TableHead>
+                      <TableHead>{t('common:na')}</TableHead>
+                      <TableHead className="text-right">{t('common:actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -498,7 +500,7 @@ export default function Files() {
                               variant="ghost"
                               size="sm"
                               onClick={() => {
-                                if (confirm("Are you sure you want to delete this file?")) {
+                                if (confirm(t('common:deleteConfirmation', { item: file.fileName }))) {
                                   deleteFileMutation.mutate(file.id);
                                 }
                               }}

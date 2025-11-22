@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useReports } from "@/contexts/ReportsContext";
 import { ReportHeader } from "@/components/reports/ReportHeader";
 import { MetricCard } from "@/components/reports/MetricCard";
@@ -15,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
 export default function FinancialReports() {
+  const { t } = useTranslation(['reports', 'financial', 'common']);
   const { toast } = useToast();
   const { getDateRangeValues, currencyFilter } = useReports();
   const { start: startDate, end: endDate } = getDateRangeValues();
@@ -179,16 +181,16 @@ export default function FinancialReports() {
         'Orders': m.orderCount,
       }));
 
-      exportToXLSX(exportData, `Financial_Report_${format(new Date(), 'yyyy-MM-dd')}`, 'Financial Report');
+      exportToXLSX(exportData, `Financial_Report_${format(new Date(), 'yyyy-MM-dd')}`, t('reports:financialReport'));
       
       toast({
-        title: "Export Successful",
-        description: "Financial report exported to XLSX",
+        title: t('common:success'),
+        description: t('reports:exportSuccessful'),
       });
     } catch (error) {
       toast({
-        title: "Export Failed",
-        description: "Failed to export financial report",
+        title: t('common:error'),
+        description: t('reports:exportFailed'),
         variant: "destructive",
       });
     }
@@ -205,28 +207,28 @@ export default function FinancialReports() {
       }));
 
       const columns: PDFColumn[] = [
-        { key: 'month', header: 'Month' },
-        { key: 'revenueCZK', header: 'Revenue' },
-        { key: 'profit', header: 'Profit' },
-        { key: 'margin', header: 'Margin' },
-        { key: 'orders', header: 'Orders' },
+        { key: 'month', header: t('common:month') },
+        { key: 'revenueCZK', header: t('reports:totalRevenue') },
+        { key: 'profit', header: t('reports:totalProfit') },
+        { key: 'margin', header: t('reports:profitMargin') },
+        { key: 'orders', header: t('common:orders') },
       ];
 
       exportToPDF(
         exportData,
         columns,
         `Financial_Report_${format(new Date(), 'yyyy-MM-dd')}`,
-        'Financial Report'
+        t('reports:financialReport')
       );
 
       toast({
-        title: "Export Successful",
-        description: "Financial report exported to PDF",
+        title: t('common:success'),
+        description: t('reports:exportSuccessful'),
       });
     } catch (error) {
       toast({
-        title: "Export Failed",
-        description: "Failed to export financial report to PDF",
+        title: t('common:error'),
+        description: t('reports:exportFailed'),
         variant: "destructive",
       });
     }
@@ -249,8 +251,8 @@ export default function FinancialReports() {
   return (
     <div className="space-y-6" data-testid="financial-reports">
       <ReportHeader
-        title="Financial Reports"
-        description="Revenue, profit, and cost analysis"
+        title={t('reports:financialReport')}
+        description={t('reports:financialOverviewDesc')}
         onExportExcel={handleExportExcel}
         onExportPDF={handleExportPDF}
         showCurrencyFilter
@@ -259,7 +261,7 @@ export default function FinancialReports() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          title="Total Revenue"
+          title={t('reports:totalRevenue')}
           value={formatCurrency(metrics.totalRevenue, 'CZK')}
           icon={Coins}
           iconColor="text-green-600"
@@ -267,7 +269,7 @@ export default function FinancialReports() {
           testId="metric-total-revenue"
         />
         <MetricCard
-          title="Total Profit"
+          title={t('reports:totalProfit')}
           value={formatCurrency(metrics.profit, 'CZK')}
           icon={TrendingUp}
           iconColor="text-blue-600"
@@ -275,7 +277,7 @@ export default function FinancialReports() {
           testId="metric-total-profit"
         />
         <MetricCard
-          title="Total Costs"
+          title={t('financial:totalCosts')}
           value={formatCurrency(metrics.totalCost, 'CZK')}
           icon={PiggyBank}
           iconColor="text-orange-600"
@@ -283,7 +285,7 @@ export default function FinancialReports() {
           testId="metric-total-costs"
         />
         <MetricCard
-          title="Profit Margin"
+          title={t('reports:profitMargin')}
           value={`${metrics.profitMargin.toFixed(1)}%`}
           icon={Percent}
           iconColor="text-purple-600"
@@ -294,12 +296,12 @@ export default function FinancialReports() {
 
       {/* Revenue Trends */}
       <TrendLineChart
-        title="Revenue Trends (Last 12 Months)"
+        title={t('reports:revenueTrendsLast12Months')}
         data={revenueChartData}
         lines={[
           { dataKey: 'CZK', name: 'CZK', color: '#3b82f6' },
-          { dataKey: 'EUR', name: 'EUR (in CZK)', color: '#10b981' },
-          { dataKey: 'USD', name: 'USD (in CZK)', color: '#f59e0b' },
+          { dataKey: 'EUR', name: `EUR (${t('common:in')} CZK)`, color: '#10b981' },
+          { dataKey: 'USD', name: `USD (${t('common:in')} CZK)`, color: '#f59e0b' },
         ]}
         formatValue={(value) => formatCurrency(value, 'CZK')}
         testId="chart-revenue-trends"
@@ -307,11 +309,11 @@ export default function FinancialReports() {
 
       {/* Profit Trends */}
       <TrendLineChart
-        title="Profit & Margin Trends"
+        title={t('reports:profitMarginTrends')}
         data={profitChartData}
         lines={[
-          { dataKey: 'profit', name: 'Profit (CZK)', color: '#3b82f6' },
-          { dataKey: 'margin', name: 'Margin %', color: '#10b981' },
+          { dataKey: 'profit', name: `${t('reports:totalProfit')} (CZK)`, color: '#3b82f6' },
+          { dataKey: 'margin', name: `${t('reports:profitMargin')} %`, color: '#10b981' },
         ]}
         formatValue={(value) => value.toLocaleString()}
         testId="chart-profit-trends"
@@ -319,7 +321,7 @@ export default function FinancialReports() {
 
       {/* Monthly Comparison Table */}
       <MonthlyComparisonTable
-        title="Monthly Financial Comparison"
+        title={t('reports:monthlyFinancialComparison')}
         data={monthlyData}
         formatCurrency={(value, currency) => formatCurrency(value, currency as any)}
         testId="table-monthly-comparison"
@@ -328,13 +330,13 @@ export default function FinancialReports() {
       {/* Revenue & Cost Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PieChartCard
-          title="Revenue by Currency"
+          title={t('reports:revenueByCurrency')}
           data={revenueByCurrencyData}
           formatValue={(value) => formatCurrency(value, 'CZK')}
           testId="chart-revenue-by-currency"
         />
         <PieChartCard
-          title="Cost Structure"
+          title={t('reports:costStructure')}
           data={costBreakdownData}
           formatValue={(value) => formatCurrency(value, 'CZK')}
           testId="chart-cost-breakdown"

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, Fragment, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useTranslation } from 'react-i18next';
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -370,6 +371,7 @@ function getAIReasoning(item: StorageItem, aiSuggestions: Map<string | number, {
 export default function ItemsToStore() {
   const [location, navigate] = useLocation();
   const { toast } = useToast();
+  const { t } = useTranslation(['inventory', 'common']);
 
   // State
   const [items, setItems] = useState<StorageItem[]>([]);

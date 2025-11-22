@@ -1,5 +1,6 @@
 import { lazy, Suspense, memo, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -132,29 +133,30 @@ const ActivitySkeleton = memo(() => (
 ActivitySkeleton.displayName = 'ActivitySkeleton';
 
 export default function CustomReport() {
+  const { t } = useTranslation(['reports', 'common']);
   const { toast } = useToast();
   
   // Test functions for the stacked notification system
   const triggerSuccessToast = () => {
     toast({
-      title: "✅ Success!",
-      description: "Your order has been successfully processed and shipped.",
+      title: `✅ ${t('common:success')}!`,
+      description: t('reports:orderProcessedSuccessfully'),
       variant: "default",
     });
   };
   
   const triggerErrorToast = () => {
     toast({
-      title: "❌ Error Occurred",
-      description: "Failed to process payment. Please check your card details.",
+      title: `❌ ${t('common:error')}`,
+      description: t('reports:paymentProcessingFailed'),
       variant: "destructive",
     });
   };
   
   const triggerInfoToast = () => {
     toast({
-      title: "ℹ️ Information",
-      description: "New inventory items have been added to warehouse location A-1-3.",
+      title: `ℹ️ ${t('common:information')}`,
+      description: t('reports:inventoryItemsAdded'),
       variant: "default",
     });
   };
@@ -163,29 +165,29 @@ export default function CustomReport() {
     // Trigger multiple toasts to test stacking
     setTimeout(() => {
       toast({
-        title: "📦 Order Received",
-        description: "Order #12345 has been received and is being prepared.",
+        title: `📦 ${t('reports:orderReceived')}`,
+        description: t('reports:orderBeingPrepared'),
       });
     }, 0);
     
     setTimeout(() => {
       toast({
-        title: "🚚 Shipment Update",
-        description: "Your shipment is out for delivery and will arrive today.",
+        title: `🚚 ${t('reports:shipmentUpdate')}`,
+        description: t('reports:shipmentOutForDelivery'),
       });
     }, 100);
     
     setTimeout(() => {
       toast({
-        title: "✨ New Feature",
-        description: "Check out our new inventory management dashboard!",
+        title: `✨ ${t('reports:newFeature')}`,
+        description: t('reports:checkNewDashboard'),
       });
     }, 200);
     
     setTimeout(() => {
       toast({
-        title: "⚠️ Low Stock Alert",
-        description: "Product SKU-789 is running low on stock. Reorder soon.",
+        title: `⚠️ ${t('reports:lowStockAlert')}`,
+        description: t('reports:productRunningLowStock'),
         variant: "destructive",
       });
     }, 300);
@@ -265,11 +267,11 @@ export default function CustomReport() {
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <Bell className="h-5 w-5" />
-            Test Notification System
+            {t('reports:testNotificationSystem')}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-gray-600 mb-4">Click buttons to test the stacked notification system (max 3 visible)</p>
+          <p className="text-sm text-gray-600 mb-4">{t('reports:clickButtonsToTest')}</p>
           <div className="flex flex-wrap gap-2">
             <Button
               onClick={triggerSuccessToast}
@@ -278,7 +280,7 @@ export default function CustomReport() {
               data-testid="button-success-toast"
             >
               <CheckCircle2 className="h-4 w-4 mr-1" />
-              Success
+              {t('common:success')}
             </Button>
             <Button
               onClick={triggerErrorToast}
@@ -287,7 +289,7 @@ export default function CustomReport() {
               data-testid="button-error-toast"
             >
               <AlertCircle className="h-4 w-4 mr-1" />
-              Error
+              {t('common:error')}
             </Button>
             <Button
               onClick={triggerInfoToast}
@@ -296,7 +298,7 @@ export default function CustomReport() {
               data-testid="button-info-toast"
             >
               <Info className="h-4 w-4 mr-1" />
-              Info
+              {t('common:information')}
             </Button>
             <Button
               onClick={triggerMultipleToasts}
@@ -305,7 +307,7 @@ export default function CustomReport() {
               data-testid="button-multiple-toasts"
             >
               <Bell className="h-4 w-4 mr-1" />
-              Trigger 4 Toasts (Test Stacking)
+              {t('reports:trigger4Toasts')}
             </Button>
           </div>
         </CardContent>
@@ -318,11 +320,11 @@ export default function CustomReport() {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-mobile-sm font-medium text-slate-600">Orders to Fulfill</p>
+                <p className="text-mobile-sm font-medium text-slate-600">{t('reports:ordersToFulfill')}</p>
                 <p className="text-mobile-2xl font-bold text-slate-900 mt-1">
                   {metrics?.fulfillOrdersToday || 0}+
                 </p>
-                <p className="text-xs text-slate-500 mt-1">Orders to fulfill</p>
+                <p className="text-xs text-slate-500 mt-1">{t('reports:ordersToFulfill')}</p>
               </div>
               <div className="p-2 sm:p-3 bg-emerald-100 rounded-lg ml-4">
                 <Truck className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
@@ -336,11 +338,11 @@ export default function CustomReport() {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-mobile-sm font-medium text-slate-600">Total Orders</p>
+                <p className="text-mobile-sm font-medium text-slate-600">{t('reports:totalOrders')}</p>
                 <p className="text-mobile-2xl font-bold text-slate-900 mt-1">
                   {metrics?.totalOrdersToday || 0}+
                 </p>
-                <p className="text-xs text-slate-500 mt-1">Shipped today</p>
+                <p className="text-xs text-slate-500 mt-1">{t('reports:shippedToday')}</p>
               </div>
               <div className="p-2 sm:p-3 bg-blue-100 rounded-lg ml-4">
                 <Package className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
@@ -354,11 +356,11 @@ export default function CustomReport() {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-mobile-sm font-medium text-slate-600">Total Revenue</p>
+                <p className="text-mobile-sm font-medium text-slate-600">{t('reports:totalRevenue')}</p>
                 <p className="text-mobile-xl font-bold text-slate-900 mt-1 break-all">
                   {formatCurrency(metrics?.totalRevenueToday || 0, 'EUR')}
                 </p>
-                <p className="text-xs text-emerald-600 mt-1">Today +10%</p>
+                <p className="text-xs text-emerald-600 mt-1">{t('reports:todayIncrease', { percent: '10' })}</p>
               </div>
               <div className="p-2 sm:p-3 bg-green-100 rounded-lg ml-4">
                 <Euro className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
@@ -372,11 +374,11 @@ export default function CustomReport() {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-mobile-sm font-medium text-slate-600">Total Profit</p>
+                <p className="text-mobile-sm font-medium text-slate-600">{t('reports:totalProfit')}</p>
                 <p className="text-mobile-xl font-bold text-slate-900 mt-1 break-all">
                   {formatCurrency(metrics?.totalProfitToday || 0, 'EUR')}
                 </p>
-                <p className="text-xs text-emerald-600 mt-1">Today +15% 🏆</p>
+                <p className="text-xs text-emerald-600 mt-1">{t('reports:todayIncrease', { percent: '15' })} 🏆</p>
               </div>
               <div className="p-2 sm:p-3 bg-yellow-100 rounded-lg ml-4">
                 <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
@@ -389,38 +391,38 @@ export default function CustomReport() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         <Card>
           <CardContent className="p-4 sm:p-6">
-            <p className="text-mobile-sm font-medium text-slate-600">This Month's Total Revenue</p>
+            <p className="text-mobile-sm font-medium text-slate-600">{t('reports:thisMonthTotalRevenue')}</p>
             <p className="text-mobile-xl font-bold text-slate-900 mt-1 break-all">
               {formatCurrency(metrics?.thisMonthRevenue || 0, 'EUR')}
             </p>
-            <p className="text-xs text-slate-500 mt-1">All currencies converted to EUR</p>
+            <p className="text-xs text-slate-500 mt-1">{t('reports:allCurrenciesConverted')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm font-medium text-slate-600">This Month's Total Profit</p>
+            <p className="text-sm font-medium text-slate-600">{t('reports:thisMonthTotalProfit')}</p>
             <p className="text-2xl font-bold text-slate-900">
               {formatCurrency(metrics?.thisMonthProfit || 0, 'EUR')}
             </p>
-            <p className="text-xs text-slate-500 mt-1">All currencies converted to EUR</p>
+            <p className="text-xs text-slate-500 mt-1">{t('reports:allCurrenciesConverted')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm font-medium text-slate-600">Last Month's Total Revenue</p>
+            <p className="text-sm font-medium text-slate-600">{t('reports:lastMonthTotalRevenue')}</p>
             <p className="text-2xl font-bold text-slate-900">
               {formatCurrency(metrics?.lastMonthRevenue || 0, 'EUR')}
             </p>
-            <p className="text-xs text-slate-500 mt-1">All currencies converted to EUR</p>
+            <p className="text-xs text-slate-500 mt-1">{t('reports:allCurrenciesConverted')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm font-medium text-slate-600">Last Month's Total Profit</p>
+            <p className="text-sm font-medium text-slate-600">{t('reports:lastMonthTotalProfit')}</p>
             <p className="text-2xl font-bold text-slate-900">
               {formatCurrency(metrics?.lastMonthProfit || 0, 'EUR')}
             </p>
-            <p className="text-xs text-slate-500 mt-1">All currencies converted to EUR</p>
+            <p className="text-xs text-slate-500 mt-1">{t('reports:allCurrenciesConverted')}</p>
           </CardContent>
         </Card>
       </div>
@@ -428,11 +430,11 @@ export default function CustomReport() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Revenue and Profit</CardTitle>
+            <CardTitle>{t('reports:revenueAndProfit')}</CardTitle>
             <select className="text-sm border border-slate-300 rounded px-3 py-1">
-              <option>Year</option>
-              <option>Month</option>
-              <option>Week</option>
+              <option>{t('common:year')}</option>
+              <option>{t('common:month')}</option>
+              <option>{t('common:week')}</option>
             </select>
           </CardHeader>
           <CardContent>
@@ -444,10 +446,10 @@ export default function CustomReport() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Total Expenses</CardTitle>
+            <CardTitle>{t('financial:totalExpenses')}</CardTitle>
             <select className="text-sm border border-slate-300 rounded px-3 py-1">
-              <option>This Year</option>
-              <option>Last Year</option>
+              <option>{t('reports:thisYear')}</option>
+              <option>{t('reports:lastYear')}</option>
             </select>
           </CardHeader>
           <CardContent>
@@ -460,15 +462,15 @@ export default function CustomReport() {
       {/* Yearly Report Chart */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Yearly Report</CardTitle>
+          <CardTitle>{t('reports:yearlyReport')}</CardTitle>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-blue-800 rounded"></div>
-              <span className="text-sm text-slate-600">Purchased</span>
+              <span className="text-sm text-slate-600">{t('reports:purchased')}</span>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-blue-400 rounded"></div>
-              <span className="text-sm text-slate-600">Sold Amount</span>
+              <span className="text-sm text-slate-600">{t('reports:soldAmount')}</span>
             </div>
           </div>
         </CardHeader>
@@ -483,7 +485,7 @@ export default function CustomReport() {
         {/* Unpaid Orders */}
         <Card>
           <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="text-mobile-lg">Unpaid Orders</CardTitle>
+            <CardTitle className="text-mobile-lg">{t('reports:unpaidOrders')}</CardTitle>
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
             {unpaidLoading ? (
@@ -506,11 +508,11 @@ export default function CustomReport() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Customer Name</TableHead>
-                        <TableHead>Order ID</TableHead>
-                        <TableHead>Order Date</TableHead>
-                        <TableHead>Order Value</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead>{t('common:customerName')}</TableHead>
+                        <TableHead>{t('common:orderID')}</TableHead>
+                        <TableHead>{t('common:orderDate')}</TableHead>
+                        <TableHead>{t('common:orderValue')}</TableHead>
+                        <TableHead>{t('common:status')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -563,11 +565,11 @@ export default function CustomReport() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Customer Name</TableHead>
-                        <TableHead>Order ID</TableHead>
-                        <TableHead>Order Date</TableHead>
-                        <TableHead>Order Value</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead>{t('common:customerName')}</TableHead>
+                        <TableHead>{t('common:orderID')}</TableHead>
+                        <TableHead>{t('common:orderDate')}</TableHead>
+                        <TableHead>{t('common:orderValue')}</TableHead>
+                        <TableHead>{t('common:status')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -579,7 +581,7 @@ export default function CustomReport() {
                                 {order.customer?.name?.[0] || 'U'}
                               </AvatarFallback>
                             </Avatar>
-                            <span>{order.customer?.name || 'Unknown'}</span>
+                            <span>{order.customer?.name || t('common:unknown')}</span>
                           </TableCell>
                           <TableCell>{order.orderId}</TableCell>
                           <TableCell>
@@ -590,7 +592,7 @@ export default function CustomReport() {
                           </TableCell>
                           <TableCell>
                             <Badge variant={order.paymentStatus === 'pay_later' ? 'default' : 'secondary'}>
-                              {order.paymentStatus === 'pay_later' ? 'Pay Later' : 'Pending'}
+                              {order.paymentStatus === 'pay_later' ? t('common:payLater') : t('common:pending')}
                             </Badge>
                           </TableCell>
                         </TableRow>
@@ -606,7 +608,7 @@ export default function CustomReport() {
         {/* User Activities */}
         <Card>
           <CardHeader>
-            <CardTitle>User Activities</CardTitle>
+            <CardTitle>{t('reports:userActivities')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -643,16 +645,16 @@ export default function CustomReport() {
       {/* Low in Stock Table */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Low in Stock</CardTitle>
+          <CardTitle>{t('reports:lowInStock')}</CardTitle>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-slate-600">View All Products</span>
+            <span className="text-sm text-slate-600">{t('common:viewAllProducts')}</span>
             <Button variant="outline" size="sm">
               <Filter className="mr-1 h-4 w-4" />
-              Filter
+              {t('common:filter')}
             </Button>
             <Button variant="outline" size="sm">
               <ArrowUpDown className="mr-1 h-4 w-4" />
-              Sort
+              {t('common:sort')}
             </Button>
           </div>
         </CardHeader>
@@ -663,14 +665,14 @@ export default function CustomReport() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Product ID</TableHead>
-                      <TableHead>Product Name</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>SKU</TableHead>
-                      <TableHead>Current Stock</TableHead>
-                      <TableHead>Low Stock Alert</TableHead>
-                      <TableHead>Supplier</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>{t('common:productID')}</TableHead>
+                      <TableHead>{t('common:productName')}</TableHead>
+                      <TableHead>{t('common:category')}</TableHead>
+                      <TableHead>{t('common:sku')}</TableHead>
+                      <TableHead>{t('common:currentStock')}</TableHead>
+                      <TableHead>{t('common:lowStockAlert')}</TableHead>
+                      <TableHead>{t('common:supplier')}</TableHead>
+                      <TableHead>{t('common:status')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -693,14 +695,14 @@ export default function CustomReport() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Product ID</TableHead>
-                    <TableHead>Product Name</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>SKU</TableHead>
-                    <TableHead>Current Stock</TableHead>
-                    <TableHead>Low Stock Alert</TableHead>
-                    <TableHead>Supplier</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>{t('common:productID')}</TableHead>
+                    <TableHead>{t('common:productName')}</TableHead>
+                    <TableHead>{t('common:category')}</TableHead>
+                    <TableHead>{t('common:sku')}</TableHead>
+                    <TableHead>{t('common:currentStock')}</TableHead>
+                    <TableHead>{t('common:lowStockAlert')}</TableHead>
+                    <TableHead>{t('common:supplier')}</TableHead>
+                    <TableHead>{t('common:status')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -714,7 +716,7 @@ export default function CustomReport() {
                       <TableCell>{product.lowStockAlert}</TableCell>
                       <TableCell>{product.supplier?.name || 'N/A'}</TableCell>
                       <TableCell>
-                        <Badge variant="destructive">Low Stock</Badge>
+                        <Badge variant="destructive">{t('reports:lowInStock')}</Badge>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -727,16 +729,16 @@ export default function CustomReport() {
       {/* Monthly Financial Summary Table */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Monthly Financial Summary</CardTitle>
+          <CardTitle>{t('reports:monthlyFinancialSummary')}</CardTitle>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-slate-600">All amounts in EUR</span>
+            <span className="text-sm text-slate-600">{t('reports:allAmountsInEUR')}</span>
             <Button variant="outline" size="sm">
               <Filter className="mr-1 h-4 w-4" />
-              Filter
+              {t('common:filter')}
             </Button>
             <Button variant="outline" size="sm">
               <ArrowUpDown className="mr-1 h-4 w-4" />
-              Sort
+              {t('common:sort')}
             </Button>
           </div>
         </CardHeader>
@@ -747,15 +749,15 @@ export default function CustomReport() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Month</TableHead>
-                      <TableHead>Total Profit EUR</TableHead>
-                      <TableHead>Total Revenue EUR</TableHead>
-                      <TableHead>Profit CZK Orders</TableHead>
-                      <TableHead>Revenue CZK Orders</TableHead>
-                      <TableHead>Profit EUR Orders</TableHead>
-                      <TableHead>Revenue EUR Orders</TableHead>
-                      <TableHead>Total Profit CZK</TableHead>
-                      <TableHead>Total Revenue CZK</TableHead>
+                      <TableHead>{t('common:month')}</TableHead>
+                      <TableHead>{t('reports:totalProfitEUR')}</TableHead>
+                      <TableHead>{t('reports:totalRevenueEUR')}</TableHead>
+                      <TableHead>{t('reports:profitCZKOrders')}</TableHead>
+                      <TableHead>{t('reports:revenueCZKOrders')}</TableHead>
+                      <TableHead>{t('reports:profitEUROrders')}</TableHead>
+                      <TableHead>{t('reports:revenueEUROrders')}</TableHead>
+                      <TableHead>{t('reports:totalProfitCZK')}</TableHead>
+                      <TableHead>{t('reports:totalRevenueCZK')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

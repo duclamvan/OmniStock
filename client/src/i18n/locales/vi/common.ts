@@ -35,8 +35,11 @@ const common = {
   searchPlaceholder: 'Tìm kiếm {{item}}...',
   filter: 'Lọc',
   filtersAndSearch: 'Bộ lọc & Tìm kiếm',
+  filtersSearch: 'Bộ lọc & Tìm kiếm',
   toggleColumns: 'Chuyển đổi cột',
+  columns: 'Cột',
   clear: 'Xóa',
+  clearAll: 'Xóa tất cả',
   reset: 'Đặt lại',
   export: 'Xuất dữ liệu',
   exportToXLSX: 'Xuất ra XLSX',
@@ -96,18 +99,26 @@ const common = {
   // Toast Notifications
   saveSuccess: 'Lưu thành công',
   saveFailed: 'Lưu thất bại',
-  deleteSuccess: 'Xóa thành công',
+  deleteSuccess: 'Đã xóa {{count}} {{item}} thành công',
   deleteFailed: 'Xóa thất bại',
+  deleteError: 'Không thể xóa {{item}}',
   createSuccess: 'Tạo mới thành công',
   createFailed: 'Tạo mới thất bại',
   updateSuccess: 'Cập nhật thành công',
   updateFailed: 'Cập nhật thất bại',
   uploadSuccess: 'Tải lên thành công',
   uploadFailed: 'Tải lên thất bại',
+  loadError: 'Không thể tải {{item}}',
+  cannotDeleteInUse: 'Không thể xóa {{item}} - đang được sử dụng trong các bản ghi hiện tại',
+  exportingItems: 'Đang xuất {{count}} {{item}}...',
   
   // Confirmation Dialogs
   deleteConfirm: 'Bạn có chắc chắn muốn xóa mục này?',
   deleteConfirmCount: 'Bạn có chắc chắn muốn xóa {{count}} {{item}}?',
+  deleteConfirmation: 'Bạn có chắc chắn muốn xóa "{{item}}"? Hành động này không thể hoàn tác.',
+  deleteBulkConfirmation: 'Bạn có chắc chắn muốn xóa {{count}} {{item}}? Hành động này không thể hoàn tác.',
+  deleteItem: 'Xóa {{item}}',
+  deleteItems: 'Xóa {{item}}',
   deleteWarning: 'Hành động này không thể hoàn tác.',
   unsavedChanges: 'Bạn có thay đổi chưa lưu',
   unsavedChangesWarning: 'Nếu rời đi, các thay đổi của bạn sẽ bị mất.',
@@ -154,6 +165,8 @@ const common = {
   completed: 'Hoàn thành',
   cancelled: 'Đã hủy',
   draft: 'Nháp',
+  maintenance: 'Bảo trì',
+  rented: 'Đang thuê',
   
   // Units
   pieces: 'cái',
@@ -164,6 +177,7 @@ const common = {
   centimeters: 'cm',
   meters: 'm',
   inches: 'in',
+  units: 'đơn vị',
   
   // Common Phrases
   yes: 'Có',
@@ -174,6 +188,13 @@ const common = {
   na: 'Không áp dụng',
   optional: 'Tùy chọn',
   required_field: 'Bắt buộc',
+  inventory: 'Tồn kho',
+  activeFilters: 'Bộ lọc đang dùng',
+  itemsSelected: 'Đã chọn {{count}}',
+  filterByStatus: 'Lọc theo trạng thái',
+  filterByType: 'Lọc theo loại',
+  allStatuses: 'Tất cả trạng thái',
+  allTypes: 'Tất cả loại',
   
   // Navigation
   menu: 'Menu',

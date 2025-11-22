@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslation } from 'react-i18next';
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
@@ -97,6 +98,7 @@ const formSchema = insertSupplierSchema.extend({});
 export default function AddSupplier() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { t } = useTranslation(['inventory', 'common']);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<InsertSupplier>({
@@ -122,15 +124,15 @@ export default function AddSupplier() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
       toast({ 
-        title: "Success",
-        description: "Supplier created successfully" 
+        title: t('common:success'),
+        description: t('inventory:supplierCreated') 
       });
       setLocation("/suppliers");
     },
     onError: () => {
       toast({ 
-        title: "Error",
-        description: "Failed to create supplier", 
+        title: t('common:error'),
+        description: t('inventory:updateError'), 
         variant: "destructive" 
       });
       setIsSubmitting(false);
@@ -156,8 +158,8 @@ export default function AddSupplier() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">Add New Supplier</h1>
-          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1 hidden sm:block">Create a new supplier profile with contact and business details</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">{t('inventory:addSupplier')}</h1>
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1 hidden sm:block">{t('inventory:manageProductsDescription')}</p>
         </div>
       </div>
 
@@ -170,7 +172,7 @@ export default function AddSupplier() {
               <AccordionTrigger className="px-6 py-4 hover:no-underline">
                 <div className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
                   <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  Basic Information
+                  {t('inventory:supplierInfo')}
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-6 pb-6 pt-0 space-y-4">
@@ -179,7 +181,7 @@ export default function AddSupplier() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Supplier Name *</FormLabel>
+                    <FormLabel>{t('inventory:supplierName')} *</FormLabel>
                     <FormControl>
                       <Input 
                         {...field} 
@@ -201,7 +203,7 @@ export default function AddSupplier() {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <User className="h-4 w-4 text-slate-500" />
-                        Contact Person
+                        {t('inventory:contactPerson')}
                       </FormLabel>
                       <FormControl>
                         <Input 
@@ -223,7 +225,7 @@ export default function AddSupplier() {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <Globe className="h-4 w-4 text-slate-500" />
-                        Country
+                        {t('inventory:supplierCountry')}
                       </FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
@@ -290,7 +292,7 @@ export default function AddSupplier() {
               <AccordionTrigger className="px-6 py-4 hover:no-underline">
                 <div className="flex items-center gap-2 text-lg font-semibold">
                   <Mail className="h-5 w-5 text-green-600" />
-                  Contact Details
+                  {t('inventory:contactInfo')}
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-6 pb-6 pt-0 space-y-4">
@@ -302,7 +304,7 @@ export default function AddSupplier() {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-slate-500" />
-                        Email Address
+                        {t('inventory:supplierEmail')}
                       </FormLabel>
                       <FormControl>
                         <Input 
@@ -371,7 +373,7 @@ export default function AddSupplier() {
               <AccordionTrigger className="px-6 py-4 hover:no-underline">
                 <div className="flex items-center gap-2 text-lg font-semibold">
                   <MapPin className="h-5 w-5 text-purple-600" />
-                  Address Information
+                  {t('inventory:addressInfo')}
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-6 pb-6 pt-0 space-y-4">
@@ -441,7 +443,7 @@ export default function AddSupplier() {
               <AccordionTrigger className="px-6 py-4 hover:no-underline">
                 <div className="flex items-center gap-2 text-lg font-semibold">
                   <FileText className="h-5 w-5 text-orange-600" />
-                  Additional Information
+                  {t('inventory:additionalInfo')}
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-6 pb-6 pt-0 space-y-4">
@@ -499,7 +501,7 @@ export default function AddSupplier() {
               disabled={isSubmitting}
               data-testid="button-cancel"
             >
-              Cancel
+              {t('common:cancel')}
             </Button>
             <Button 
               type="submit" 
@@ -510,10 +512,10 @@ export default function AddSupplier() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Creating...
+                  {t('common:creating')}...
                 </>
               ) : (
-                "Create Supplier"
+                t('inventory:addSupplier')
               )}
             </Button>
           </div>

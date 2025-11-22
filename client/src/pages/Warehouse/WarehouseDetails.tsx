@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -68,6 +69,7 @@ import { ObjectUploader } from "@/components/ObjectUploader";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 
 export default function WarehouseDetails() {
+  const { t } = useTranslation(['warehouse', 'common']);
   const { id } = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -115,8 +117,8 @@ export default function WarehouseDetails() {
       queryClient.invalidateQueries({ queryKey: ['/api/products', productToMove?.id] });
       
       toast({
-        title: "Success",
-        description: `Product moved to ${allWarehouses.find(w => w.id === targetWarehouseId)?.name}`,
+        title: t('common:success'),
+        description: t('warehouse:productMovedSuccess', { name: allWarehouses.find(w => w.id === targetWarehouseId)?.name }),
       });
       
       setShowMoveDialog(false);
@@ -125,8 +127,8 @@ export default function WarehouseDetails() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to move product",
+        title: t('common:error'),
+        description: error.message || t('warehouse:productMoveError'),
         variant: "destructive",
       });
     },
@@ -137,16 +139,16 @@ export default function WarehouseDetails() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/warehouses/${id}/files`] });
       toast({
-        title: "Success",
-        description: "File deleted successfully",
+        title: t('common:success'),
+        description: t('warehouse:fileDeletedSuccess'),
       });
       setShowDeleteFileDialog(false);
       setFileToDelete(null);
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to delete file",
+        title: t('common:error'),
+        description: error.message || t('warehouse:fileDeleteError'),
         variant: "destructive",
       });
     },
@@ -175,13 +177,13 @@ export default function WarehouseDetails() {
         
         queryClient.invalidateQueries({ queryKey: [`/api/warehouses/${id}/files`] });
         toast({
-          title: "Success",
-          description: "File uploaded successfully",
+          title: t('common:success'),
+          description: t('warehouse:fileUploadedSuccess'),
         });
       } catch (error: any) {
         toast({
-          title: "Error",
-          description: error.message || "Failed to save file",
+          title: t('common:error'),
+          description: error.message || t('warehouse:fileSaveError'),
           variant: "destructive",
         });
       }
@@ -208,20 +210,20 @@ export default function WarehouseDetails() {
   // Utility functions
   const getStatusBadge = (status: string) => {
     const config = {
-      active: { label: 'Active', className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' },
-      inactive: { label: 'Inactive', className: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200' },
-      maintenance: { label: 'Maintenance', className: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' },
-    }[status as keyof typeof config] || { label: 'Active', className: 'bg-emerald-100 text-emerald-800' };
+      active: { label: t('common:active'), className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' },
+      inactive: { label: t('common:inactive'), className: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200' },
+      maintenance: { label: t('common:maintenance'), className: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' },
+    }[status as keyof typeof config] || { label: t('common:active'), className: 'bg-emerald-100 text-emerald-800' };
     
     return <Badge className={config.className} data-testid={`badge-status-${status}`}>{config.label}</Badge>;
   };
 
   const getTypeBadge = (type: string) => {
     const config = {
-      fulfillment: { label: 'Fulfillment', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
-      storage: { label: 'Storage', className: 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200' },
-      transit: { label: 'Transit', className: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
-    }[type as keyof typeof config] || { label: 'Fulfillment', className: 'bg-blue-100 text-blue-800' };
+      fulfillment: { label: t('warehouse:type.fulfillment'), className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
+      storage: { label: t('warehouse:type.storage'), className: 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200' },
+      transit: { label: t('warehouse:type.transit'), className: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
+    }[type as keyof typeof config] || { label: t('warehouse:type.fulfillment'), className: 'bg-blue-100 text-blue-800' };
     
     return <Badge className={config.className} data-testid={`badge-type-${type}`}>{config.label}</Badge>;
   };
@@ -279,14 +281,14 @@ export default function WarehouseDetails() {
             className="shrink-0"
           >
             <ArrowLeft className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">Back</span>
+            <span className="hidden md:inline">{t('common:back')}</span>
           </Button>
           <div className="min-w-0 flex-1">
             <h1 className="text-xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate" data-testid="text-warehouse-name">
               {warehouse.name}
             </h1>
             <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mt-1">
-              Warehouse Management & Operations
+              {t('warehouse:warehouseManagement')}
             </p>
           </div>
         </div>
@@ -294,13 +296,13 @@ export default function WarehouseDetails() {
           <Link href={`/warehouses/${warehouse.id}/mapping`} className="flex-1 sm:flex-initial">
             <Button variant="outline" size="sm" data-testid="button-warehouse-mapping" className="w-full sm:w-auto">
               <MapPin className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Mapping</span>
+              <span className="hidden sm:inline">{t('warehouse:mapping')}</span>
             </Button>
           </Link>
           <Link href={`/warehouses/${warehouse.id}/edit`} className="flex-1 sm:flex-initial">
             <Button size="sm" data-testid="button-edit" className="w-full sm:w-auto">
               <Edit className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Edit</span>
+              <span className="hidden sm:inline">{t('common:edit')}</span>
             </Button>
           </Link>
         </div>
@@ -312,7 +314,7 @@ export default function WarehouseDetails() {
           <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Status</p>
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">{t('common:status')}</p>
                 {getStatusBadge(warehouse.status || 'active')}
               </div>
               <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
@@ -326,7 +328,7 @@ export default function WarehouseDetails() {
           <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Type</p>
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">{t('common:type')}</p>
                 {getTypeBadge(warehouse.type || 'fulfillment')}
               </div>
               <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-blue-50 to-sky-50 dark:from-blue-950 dark:to-sky-950">
@@ -340,7 +342,7 @@ export default function WarehouseDetails() {
           <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Total Products</p>
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">{t('warehouse:totalProducts')}</p>
                 <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate" data-testid="text-total-products">
                   {totalProducts.toLocaleString()}
                 </p>
@@ -356,7 +358,7 @@ export default function WarehouseDetails() {
           <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Total Units</p>
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">{t('warehouse:totalQuantity')}</p>
                 <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate" data-testid="text-total-quantity">
                   {totalQuantity.toLocaleString()}
                 </p>
@@ -374,18 +376,18 @@ export default function WarehouseDetails() {
         <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
           <TabsList className="inline-flex w-auto min-w-full md:min-w-0">
             <TabsTrigger value="details" data-testid="tab-details" className="flex-1 md:flex-initial">
-              <span className="text-xs md:text-sm">Details</span>
+              <span className="text-xs md:text-sm">{t('warehouse:overview')}</span>
             </TabsTrigger>
             <TabsTrigger value="inventory" data-testid="tab-inventory" className="flex-1 md:flex-initial">
-              <span className="text-xs md:text-sm">Inventory</span>
+              <span className="text-xs md:text-sm">{t('warehouse:products')}</span>
               <Badge variant="secondary" className="ml-1 md:ml-2 text-xs">{totalProducts}</Badge>
             </TabsTrigger>
             <TabsTrigger value="files" data-testid="tab-files" className="flex-1 md:flex-initial">
-              <span className="text-xs md:text-sm">Files</span>
+              <span className="text-xs md:text-sm">{t('warehouse:files')}</span>
               <Badge variant="secondary" className="ml-1 md:ml-2 text-xs">{files.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="contracts" data-testid="tab-contracts" className="flex-1 md:flex-initial">
-              <span className="text-xs md:text-sm">Contracts</span>
+              <span className="text-xs md:text-sm">{t('warehouse:financialContracts')}</span>
               <Badge variant="secondary" className="ml-1 md:ml-2 text-xs">{financialContracts.length}</Badge>
             </TabsTrigger>
           </TabsList>
@@ -399,7 +401,7 @@ export default function WarehouseDetails() {
               <CardHeader className="border-b border-slate-100 dark:border-slate-800 p-4 md:p-6">
                 <CardTitle className="text-base md:text-lg flex items-center gap-2">
                   <Building className="h-4 w-4 md:h-5 md:w-5 text-cyan-600 dark:text-cyan-400" />
-                  Basic Information
+                  {t('warehouse:basicInformation')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4 md:p-6 space-y-3 md:space-y-4">

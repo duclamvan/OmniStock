@@ -1525,8 +1525,8 @@ export default function AddOrder() {
     }
     
     toast({
-      title: "Success",
-      description: `Added ${variantsToAdd.length} variant(s) to order`,
+      title: t('common:success'),
+      description: t('orders:variantsAddedToOrder', { count: variantsToAdd.length }),
     });
     
     setShowVariantDialog(false);
@@ -1560,8 +1560,8 @@ export default function AddOrder() {
       const newFiles = Array.from(files);
       setUploadedFiles(prev => [...prev, ...newFiles]);
       toast({
-        title: "Success",
-        description: `${newFiles.length} file(s) uploaded successfully`,
+        title: t('common:success'),
+        description: t('orders:filesUploadedSuccessfully', { count: newFiles.length }),
       });
     }
   };
@@ -1569,8 +1569,8 @@ export default function AddOrder() {
   const removeUploadedFile = (index: number) => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
     toast({
-      title: "File removed",
-      description: "File has been removed from the upload list",
+      title: t('orders:fileRemoved'),
+      description: t('orders:fileRemovedFromList'),
     });
   };
 
@@ -1630,8 +1630,8 @@ export default function AddOrder() {
   const onSubmit = (data: z.infer<typeof addOrderSchema>) => {
     if (orderItems.length === 0) {
       toast({
-        title: "Error",
-        description: "Please add at least one item to the order",
+        title: t('common:error'),
+        description: t('orders:pleaseAddAtLeastOneItem'),
         variant: "destructive",
       });
       return;
@@ -2624,8 +2624,8 @@ export default function AddOrder() {
                                     const fullAddress = `${address.firstName} ${address.lastName}${address.company ? `\n${address.company}` : ''}\n${address.street}\n${address.city}, ${address.zipCode}\n${address.country}${address.tel ? `\nTel: ${address.tel}` : ''}${address.email ? `\nEmail: ${address.email}` : ''}`;
                                     navigator.clipboard.writeText(fullAddress);
                                     toast({
-                                      title: "Copied!",
-                                      description: "Address copied to clipboard",
+                                      title: t('orders:copied'),
+                                      description: t('orders:addressCopiedToClipboard'),
                                     });
                                   }}
                                   data-testid={`button-copy-address-${address.id}`}
@@ -2657,7 +2657,7 @@ export default function AddOrder() {
                     </RadioGroup>
                   ) : (
                     <div className="text-center py-4 text-slate-500 dark:text-slate-400">
-                      No shipping addresses found. Add one below.
+                      {t('orders:noShippingAddressesFound')}
                     </div>
                   )}
 
@@ -2672,7 +2672,7 @@ export default function AddOrder() {
                     data-testid="button-add-address"
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Add New Address
+                    {t('orders:addNewAddress')}
                   </Button>
                 </CardContent>
               </Card>
@@ -2682,7 +2682,7 @@ export default function AddOrder() {
             {showNewCustomerForm && (
               <div className="space-y-4 border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-medium text-slate-900 dark:text-slate-100">New Customer Details</h4>
+                  <h4 className="font-medium text-slate-900 dark:text-slate-100">{t('orders:newCustomerDetails')}</h4>
                   <Button
                     type="button"
                     variant="ghost"
@@ -2719,7 +2719,7 @@ export default function AddOrder() {
                 {/* Basic Information */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <Label htmlFor="customerName">Customer Name *</Label>
+                    <Label htmlFor="customerName">{t('orders:customerNameRequired')}</Label>
                     <Input
                       id="customerName"
                       value={newCustomer.name}
@@ -2733,12 +2733,12 @@ export default function AddOrder() {
                           facebookName: facebookNameManuallyEdited ? prev.facebookName : newName
                         }));
                       }}
-                      placeholder="Type here"
+                      placeholder={t('orders:typeHere')}
                       required
                     />
                   </div>
                   <div>
-                    <Label htmlFor="facebookName">Facebook Name</Label>
+                    <Label htmlFor="facebookName">{t('orders:facebookName')}</Label>
                     <Input
                       id="facebookName"
                       value={newCustomer.facebookName || ""}
@@ -2748,17 +2748,17 @@ export default function AddOrder() {
                         // Only mark as manually edited if value differs from Customer Name
                         setFacebookNameManuallyEdited(newValue !== newCustomer.name);
                       }}
-                      placeholder="Synced with Customer Name"
+                      placeholder={t('orders:syncedWithCustomerName')}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="facebookUrl">Facebook URL</Label>
+                    <Label htmlFor="facebookUrl">{t('orders:facebookUrl')}</Label>
                     <div className="relative">
                       <Input
                         id="facebookUrl"
                         value={newCustomer.facebookUrl}
                         onChange={(e) => setNewCustomer({ ...newCustomer, facebookUrl: e.target.value })}
-                        placeholder="Place URL or Type"
+                        placeholder={t('orders:placeUrlOrType')}
                         className="pr-10"
                       />
                       <Button
@@ -2770,13 +2770,13 @@ export default function AddOrder() {
                           if (newCustomer.name) {
                             setNewCustomer({ ...newCustomer, facebookUrl: newCustomer.name });
                             toast({
-                              title: "Name copied",
-                              description: "Customer name copied to Facebook URL",
+                              title: t('orders:nameCopied'),
+                              description: t('orders:customerNameCopiedToFacebookUrl'),
                             });
                           }
                         }}
                         disabled={!newCustomer.name}
-                        title="Copy customer name"
+                        title={t('orders:copyCustomerName')}
                         data-testid="button-copy-facebook-url"
                       >
                         <Copy className="h-4 w-4" />
@@ -2787,15 +2787,15 @@ export default function AddOrder() {
 
                 {/* Smart Paste */}
                 <div className="space-y-2">
-                  <Label htmlFor="rawNewCustomerAddress">Smart Paste</Label>
+                  <Label htmlFor="rawNewCustomerAddress">{t('orders:smartPaste')}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Paste any address info and we'll split it automatically
+                    {t('orders:pasteAnyAddressInfo')}
                   </p>
                   <Textarea
                     id="rawNewCustomerAddress"
                     value={rawNewCustomerAddress}
                     onChange={(e) => setRawNewCustomerAddress(e.target.value)}
-                    placeholder="e.g., Nguyen anh van, Potocni 1299 vejprty, Bưu điện 43191 vejprty, Sdt 607638460"
+                    placeholder={t('orders:smartPasteExample')}
                     className="min-h-[80px]"
                   />
                   <Button
@@ -2807,17 +2807,17 @@ export default function AddOrder() {
                     {parseNewCustomerAddressMutation.isPending ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Parsing...
+                        {t('orders:parsing')}
                       </>
                     ) : (
-                      'Parse & Fill'
+                      t('orders:parseFill')
                     )}
                   </Button>
                 </div>
 
                 {/* Address Autocomplete */}
                 <div className="space-y-2">
-                  <Label htmlFor="addressAutocomplete">Address Search (optional)</Label>
+                  <Label htmlFor="addressAutocomplete">{t('orders:addressSearchOptional')}</Label>
                   <div className="relative">
                     <Input
                       id="addressAutocomplete"
@@ -2837,7 +2837,7 @@ export default function AddOrder() {
                           setShowAddressDropdown(false);
                         }
                       }}
-                      placeholder="Start typing an address..."
+                      placeholder={t('orders:startTypingAddress')}
                       className="pr-10"
                     />
                     {addressAutocomplete && (
@@ -2861,12 +2861,12 @@ export default function AddOrder() {
                       <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg bg-white dark:bg-slate-800 max-h-72 overflow-y-auto z-50">
                         {isLoadingAddresses ? (
                           <div className="p-4 text-center text-slate-500 dark:text-slate-400">
-                            <div className="text-sm">Searching addresses...</div>
+                            <div className="text-sm">{t('orders:searchingAddresses')}</div>
                           </div>
                         ) : addressSuggestions.length > 0 ? (
                           <>
                             <div className="p-2 bg-slate-50 dark:bg-slate-700 border-b border-gray-200 dark:border-gray-700 text-xs text-slate-600 dark:text-slate-400">
-                              {addressSuggestions.length} address{addressSuggestions.length !== 1 ? 'es' : ''} found
+                              {t('orders:addressesFound', { count: addressSuggestions.length })}
                             </div>
                             {addressSuggestions.map((suggestion, index) => (
                               <div
@@ -2882,14 +2882,14 @@ export default function AddOrder() {
                           </>
                         ) : (
                           <div className="p-4 text-center text-slate-500 dark:text-slate-400">
-                            <div className="text-sm">No addresses found</div>
+                            <div className="text-sm">{t('orders:noAddressesFound')}</div>
                           </div>
                         )}
                       </div>
                     )}
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Search for an official address to auto-fill the fields below
+                    {t('orders:searchOfficialAddress')}
                   </p>
                 </div>
 
@@ -2897,7 +2897,7 @@ export default function AddOrder() {
 
                 {/* Customer Details Section Header */}
                 <div>
-                  <Label className="text-base">Customer Details</Label>
+                  <Label className="text-base">{t('orders:customerDetails')}</Label>
                 </div>
 
                 {/* First Name and Last Name */}
@@ -2907,7 +2907,7 @@ export default function AddOrder() {
                       id="firstName"
                       value={newCustomer.firstName || ""}
                       onChange={(e) => setNewCustomer({ ...newCustomer, firstName: e.target.value })}
-                      placeholder="First Name"
+                      placeholder={t('orders:firstName')}
                       data-testid="input-firstName"
                     />
                   </div>
@@ -2916,7 +2916,7 @@ export default function AddOrder() {
                       id="lastName"
                       value={newCustomer.lastName || ""}
                       onChange={(e) => setNewCustomer({ ...newCustomer, lastName: e.target.value })}
-                      placeholder="Last Name"
+                      placeholder={t('orders:lastName')}
                       data-testid="input-lastName"
                     />
                   </div>
@@ -2928,13 +2928,13 @@ export default function AddOrder() {
                     id="company"
                     value={newCustomer.company}
                     onChange={(e) => setNewCustomer({ ...newCustomer, company: e.target.value })}
-                    placeholder="Company (optional)"
+                    placeholder={t('orders:companyOptional')}
                   />
                 </div>
 
                 {/* Address Section Header */}
                 <div className="mt-6">
-                  <Label className="text-base">Address</Label>
+                  <Label className="text-base">{t('orders:address')}</Label>
                 </div>
 
                 {/* Street and House Number */}
@@ -2944,7 +2944,7 @@ export default function AddOrder() {
                       id="street"
                       value={newCustomer.street}
                       onChange={(e) => setNewCustomer({ ...newCustomer, street: e.target.value })}
-                      placeholder="Street"
+                      placeholder={t('orders:street')}
                     />
                   </div>
                   <div>
@@ -2952,7 +2952,7 @@ export default function AddOrder() {
                       id="streetNumber"
                       value={newCustomer.streetNumber}
                       onChange={(e) => setNewCustomer({ ...newCustomer, streetNumber: e.target.value })}
-                      placeholder="House Number"
+                      placeholder={t('orders:houseNumber')}
                     />
                   </div>
                 </div>
@@ -2964,7 +2964,7 @@ export default function AddOrder() {
                       id="zipCode"
                       value={newCustomer.zipCode}
                       onChange={(e) => setNewCustomer({ ...newCustomer, zipCode: e.target.value })}
-                      placeholder="Postal Code"
+                      placeholder={t('orders:postalCode')}
                     />
                   </div>
                   <div className="md:col-span-3">
@@ -2972,7 +2972,7 @@ export default function AddOrder() {
                       id="city"
                       value={newCustomer.city}
                       onChange={(e) => setNewCustomer({ ...newCustomer, city: e.target.value })}
-                      placeholder="City"
+                      placeholder={t('orders:city')}
                     />
                   </div>
                 </div>
@@ -2984,7 +2984,7 @@ export default function AddOrder() {
                     type="email"
                     value={newCustomer.email}
                     onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
-                    placeholder="Email (optional)"
+                    placeholder={t('orders:emailOptional')}
                     className="pr-10"
                     data-testid="input-customerEmail"
                   />
@@ -2996,11 +2996,11 @@ export default function AddOrder() {
                     onClick={() => {
                       setNewCustomer({ ...newCustomer, email: "davienails999@gmail.com" });
                       toast({
-                        title: "Default email pasted",
+                        title: t('orders:defaultEmailPasted'),
                         description: "davienails999@gmail.com",
                       });
                     }}
-                    title="Paste default email"
+                    title={t('orders:pasteDefaultEmail')}
                     data-testid="button-paste-default-email"
                   >
                     <Copy className="h-4 w-4" />
@@ -3012,31 +3012,31 @@ export default function AddOrder() {
                 {/* Additional Fields (Collapsible or Hidden) */}
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="customerPhone">Phone</Label>
+                    <Label htmlFor="customerPhone">{t('orders:phone')}</Label>
                     <Input
                       id="customerPhone"
                       value={newCustomer.phone}
                       onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
-                      placeholder="Type here"
+                      placeholder={t('orders:typeHere')}
                       data-testid="input-customerPhone"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="country">Country</Label>
+                    <Label htmlFor="country">{t('orders:country')}</Label>
                     <Input
                       id="country"
                       value={newCustomer.country}
                       onChange={(e) => setNewCustomer({ ...newCustomer, country: e.target.value })}
-                      placeholder="Type here"
+                      placeholder={t('orders:typeHere')}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="pickupPoint">Pickup Point</Label>
+                    <Label htmlFor="pickupPoint">{t('orders:pickupPoint')}</Label>
                     <Input
                       id="pickupPoint"
                       value={newCustomer.pickupPoint || ""}
                       onChange={(e) => setNewCustomer({ ...newCustomer, pickupPoint: e.target.value })}
-                      placeholder="Branch or pickup location"
+                      placeholder={t('orders:branchOrPickupLocation')}
                       data-testid="input-pickupPoint"
                     />
                   </div>
@@ -3738,11 +3738,11 @@ export default function AddOrder() {
                         <div>
                           <Label htmlFor={`mobile-notes-${item.id}`} className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
                             <MessageSquare className="h-3.5 w-3.5" />
-                            Shipping Notes (Optional)
+                            {t('orders:shippingNotesOptional')}
                           </Label>
                           <Textarea
                             id={`mobile-notes-${item.id}`}
-                            placeholder="Add special instructions for packing or shipping..."
+                            placeholder={t('orders:addSpecialInstructions')}
                             value={item.notes || ''}
                             onChange={(e) => updateOrderItem(item.id, 'notes', e.target.value)}
                             className="min-h-[80px] text-sm resize-none"
@@ -3752,7 +3752,7 @@ export default function AddOrder() {
                         
                         {/* Total Display */}
                         <div className="flex justify-between items-center pt-3 border-t border-slate-200 dark:border-slate-700">
-                          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Item Total:</span>
+                          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('orders:itemTotal')}</span>
                           <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
                             {formatCurrency(item.total, form.watch('currency'))}
                           </span>
@@ -3766,8 +3766,8 @@ export default function AddOrder() {
             ) : (
               <div className="text-center py-12 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/20 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700">
                 <ShoppingCart className="mx-auto h-12 w-12 mb-4 text-slate-400 dark:text-slate-600" />
-                <p className="font-medium text-slate-700 dark:text-slate-300">No items added to order yet</p>
-                <p className="text-sm mt-1">Search and select products above to add them</p>
+                <p className="font-medium text-slate-700 dark:text-slate-300">{t('orders:noItemsAddedYet')}</p>
+                <p className="text-sm mt-1">{t('orders:searchAndSelectProducts')}</p>
               </div>
             )}
           </CardContent>
@@ -3778,18 +3778,18 @@ export default function AddOrder() {
           <CardHeader className="p-3 border-b">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold">
               <CreditCard className="h-4 w-4 text-blue-600" />
-              Payment Details
+              {t('orders:paymentDetails')}
             </CardTitle>
-            <CardDescription className="text-xs sm:text-sm mt-1">Configure pricing and notes</CardDescription>
+            <CardDescription className="text-xs sm:text-sm mt-1">{t('orders:configurePricing')}</CardDescription>
           </CardHeader>
           <CardContent className="p-3 space-y-3">
             {/* Shipping & Payment Methods */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label htmlFor="shippingMethod" className="text-sm">Shipping Method</Label>
+                <Label htmlFor="shippingMethod" className="text-sm">{t('orders:shippingMethod')}</Label>
                 <Select value={watchedShippingMethod} onValueChange={(value) => form.setValue('shippingMethod', value as any)}>
                   <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select shipping" />
+                    <SelectValue placeholder={t('orders:selectShipping')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="GLS DE">GLS DE</SelectItem>
@@ -3801,10 +3801,10 @@ export default function AddOrder() {
               </div>
 
               <div>
-                <Label htmlFor="paymentMethod" className="text-sm">Payment Method</Label>
+                <Label htmlFor="paymentMethod" className="text-sm">{t('orders:paymentMethod')}</Label>
                 <Select value={watchedPaymentMethod} onValueChange={(value) => form.setValue('paymentMethod', value as any)}>
                   <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select payment" />
+                    <SelectValue placeholder={t('orders:selectPayment')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
@@ -3829,7 +3829,7 @@ export default function AddOrder() {
                 }}
               >
                 <Percent className="h-5 w-5 mr-2" />
-                Add Discount
+                {t('orders:addDiscount')}
                 {showDiscount ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
               </Button>
             </div>
@@ -3841,7 +3841,7 @@ export default function AddOrder() {
               {showDiscount && (
                 <div className="space-y-4 p-4 border-2 border-blue-100 rounded-lg bg-blue-50/30">
                   <div>
-                    <Label className="text-sm font-medium">Discount</Label>
+                    <Label className="text-sm font-medium">{t('orders:discount')}</Label>
                     <div className="flex gap-2 mt-1">
                       <Select 
                         value={form.watch('discountType')} 
@@ -3851,8 +3851,8 @@ export default function AddOrder() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="flat">Amount</SelectItem>
-                          <SelectItem value="rate">Percentage</SelectItem>
+                          <SelectItem value="flat">{t('orders:amount')}</SelectItem>
+                          <SelectItem value="rate">{t('orders:percentage')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <Input
@@ -3872,7 +3872,7 @@ export default function AddOrder() {
 
                     {/* Quick discount buttons */}
                     <div className="mt-2">
-                      <div className="text-xs text-gray-500 mb-1">Quick select:</div>
+                      <div className="text-xs text-gray-500 mb-1">{t('orders:quickSelect')}</div>
                       <div className="flex flex-wrap gap-1">
                         {form.watch('discountType') === 'rate' && [5, 10, 15, 20, 25].map(amount => (
                           <Button
@@ -3921,7 +3921,7 @@ export default function AddOrder() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div>
-                <Label htmlFor="shippingCost" className="text-sm">Shipping Cost</Label>
+                <Label htmlFor="shippingCost" className="text-sm">{t('orders:shippingCost')}</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -3938,7 +3938,7 @@ export default function AddOrder() {
                 />
                 {/* Quick shipping cost buttons */}
                 <div className="mt-2">
-                  <div className="text-xs text-gray-500 mb-1">Quick select:</div>
+                  <div className="text-xs text-gray-500 mb-1">{t('orders:quickSelect')}</div>
                   <div className="flex flex-wrap gap-1">
                     {form.watch('currency') === 'CZK' && [0, 100, 150, 250].map(amount => (
                       <Button
@@ -3969,7 +3969,7 @@ export default function AddOrder() {
               </div>
 
               <div>
-                <Label htmlFor="actualShippingCost" className="text-sm">Actual Shipping Cost</Label>
+                <Label htmlFor="actualShippingCost" className="text-sm">{t('orders:actualShippingCost')}</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -3977,11 +3977,11 @@ export default function AddOrder() {
                   className="mt-1"
                   data-testid="input-actual-shipping-cost"
                 />
-                <p className="text-xs text-gray-500 mt-1">Real cost from carrier</p>
+                <p className="text-xs text-gray-500 mt-1">{t('orders:realCostFromCarrier')}</p>
               </div>
 
               <div>
-                <Label htmlFor="adjustment" className="text-sm">Adjustment</Label>
+                <Label htmlFor="adjustment" className="text-sm">{t('orders:adjustment')}</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -3989,7 +3989,7 @@ export default function AddOrder() {
                   className="mt-1"
                   data-testid="input-adjustment"
                 />
-                <p className="text-xs text-gray-500 mt-1">Rounding or other adjustments</p>
+                <p className="text-xs text-gray-500 mt-1">{t('orders:roundingOrOtherAdjustments')}</p>
               </div>
             </div>
 
@@ -4012,7 +4012,7 @@ export default function AddOrder() {
                       {...form.register('codAmount', { valueAsNumber: true })}
                       data-testid="input-dobirka-amount"
                     />
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Cash on delivery amount (optional)</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('orders:cashOnDeliveryOptional')}</p>
                   </div>
 
                   <div>
@@ -4022,7 +4022,7 @@ export default function AddOrder() {
                       onValueChange={(value) => form.setValue('codCurrency', value as any)}
                     >
                       <SelectTrigger data-testid="select-dobirka-currency">
-                        <SelectValue placeholder="Select currency" />
+                        <SelectValue placeholder={t('orders:selectCurrency')} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="CZK">CZK</SelectItem>
@@ -4030,7 +4030,7 @@ export default function AddOrder() {
                         <SelectItem value="USD">USD</SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Currency for cash on delivery</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('orders:currencyForCod')}</p>
                   </div>
                 </div>
 
@@ -4039,10 +4039,10 @@ export default function AddOrder() {
             )}
 
             <div>
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{t('orders:notes')}</Label>
               <Textarea
                 {...form.register('notes')}
-                placeholder="Additional order notes..."
+                placeholder={t('orders:additionalOrderNotes')}
               />
             </div>
 
@@ -4058,7 +4058,7 @@ export default function AddOrder() {
                 }}
               >
                 <Plus className="h-5 w-5 mr-2" />
-                Add Tax Invoice Section
+                {t('orders:addTaxInvoiceSection')}
                 {showTaxInvoice ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
               </Button>
             </div>
@@ -4071,7 +4071,7 @@ export default function AddOrder() {
                 <div className="mt-4 p-4 border-2 border-blue-100 dark:border-blue-800 rounded-lg bg-blue-50/30 dark:bg-blue-950/30 space-y-4">
                   <div className="flex items-center gap-2 mb-4">
                     <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-300">Tax Invoice Information</h3>
+                    <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-300">{t('orders:taxInvoiceInformation')}</h3>
                   </div>
 
                   {form.watch('currency') === 'CZK' && (
@@ -4081,7 +4081,7 @@ export default function AddOrder() {
                         <div className="relative">
                           <Input
                             {...form.register('ico')}
-                            placeholder="Company identification number"
+                            placeholder={t('orders:companyIdentificationNumber')}
                           />
                           <Button
                             type="button"
@@ -4100,7 +4100,7 @@ export default function AddOrder() {
                         <div className="relative">
                           <Input
                             {...form.register('dic')}
-                            placeholder="Tax identification number"
+                            placeholder={t('orders:taxIdentificationNumber')}
                           />
                           <Button
                             type="button"
@@ -4119,7 +4119,7 @@ export default function AddOrder() {
                         <div className="relative">
                           <Textarea
                             {...form.register('nameAndAddress')}
-                            placeholder="Company name and address"
+                            placeholder={t('orders:companyNameAndAddress')}
                             rows={3}
                           />
                           <Button
@@ -4154,7 +4154,7 @@ export default function AddOrder() {
                         <div className="relative">
                           <Input
                             {...form.register('vatId')}
-                            placeholder="EU VAT identification number"
+                            placeholder={t('orders:euVatIdNumber')}
                           />
                           <Button
                             type="button"
@@ -4173,7 +4173,7 @@ export default function AddOrder() {
                         <div className="relative">
                           <Input
                             {...form.register('country')}
-                            placeholder="Country name"
+                            placeholder={t('orders:countryName')}
                           />
                           <Button
                             type="button"
@@ -4192,7 +4192,7 @@ export default function AddOrder() {
                         <div className="relative">
                           <Textarea
                             {...form.register('nameAndAddress')}
-                            placeholder="Company name and address"
+                            placeholder={t('orders:companyNameAndAddress')}
                             rows={3}
                           />
                           <Button
@@ -4262,10 +4262,10 @@ export default function AddOrder() {
                 <div>
                   <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                     <FileText className="h-4 w-4 text-blue-600" />
-                    Files & Documents
+                    {t('orders:filesDocuments')}
                   </CardTitle>
                   <CardDescription className="text-xs sm:text-sm mt-1">
-                    Upload files and manage product documents
+                    {t('orders:uploadFilesManageDocs')}
                   </CardDescription>
                 </div>
                 <div>
@@ -4286,7 +4286,7 @@ export default function AddOrder() {
                     data-testid="button-upload-file"
                   >
                     <Upload className="h-4 w-4 mr-2" />
-                    Upload
+                    {t('orders:upload')}
                   </Button>
                 </div>
               </div>
@@ -4299,7 +4299,7 @@ export default function AddOrder() {
                   <div>
                     <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
                       <Upload className="h-4 w-4" />
-                      Uploaded Files ({uploadedFiles.length})
+                      {t('orders:uploadedFiles', { count: uploadedFiles.length })}
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {uploadedFiles.map((file, index) => (
@@ -4342,8 +4342,8 @@ export default function AddOrder() {
                 {uploadedFiles.length === 0 && (
                   <div className="text-center py-8 bg-slate-50 dark:bg-slate-900/20 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700">
                     <FileText className="mx-auto h-12 w-12 mb-3 text-slate-400 dark:text-slate-600" />
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">No files yet</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Upload files or add products with files</p>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('orders:noFilesYet')}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('orders:uploadFilesOrAddProducts')}</p>
                   </div>
                 )}
               </div>
@@ -4363,12 +4363,12 @@ export default function AddOrder() {
                     <CardHeader className="p-3 border-b">
                       <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                         <MapPin className="h-4 w-4 text-blue-600" />
-                        Order Location
+                        {t('orders:orderLocation')}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-3">
                       <Input
-                        placeholder="e.g., Prague Warehouse, Main Office"
+                        placeholder={t('orders:orderLocationPlaceholder')}
                         value={form.watch('orderLocation') || ''}
                         onChange={(e) => form.setValue('orderLocation', e.target.value)}
                         data-testid="input-order-location"
@@ -4381,12 +4381,12 @@ export default function AddOrder() {
                     <CardHeader className="p-3 border-b">
                       <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                         <Settings className="h-4 w-4 text-blue-600" />
-                        Order Settings
+                        {t('orders:orderSettings')}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-3 space-y-3">
                       <div>
-                        <Label htmlFor="currency" className="text-xs">Currency</Label>
+                        <Label htmlFor="currency" className="text-xs">{t('orders:currency')}</Label>
                         <Select value={form.watch('currency')} onValueChange={(value) => form.setValue('currency', value as any)}>
                           <SelectTrigger className="mt-1 h-9" data-testid="select-currency">
                             <SelectValue />
@@ -4402,7 +4402,7 @@ export default function AddOrder() {
                       </div>
 
                       <div>
-                        <Label htmlFor="priority" className="text-xs">Priority</Label>
+                        <Label htmlFor="priority" className="text-xs">{t('orders:priority')}</Label>
                         <Select value={form.watch('priority')} onValueChange={(value) => form.setValue('priority', value as any)}>
                           <SelectTrigger className="mt-1 h-9">
                             <SelectValue />
@@ -4411,19 +4411,19 @@ export default function AddOrder() {
                             <SelectItem value="low">
                               <div className="flex items-center gap-2">
                                 <div className="h-2 w-2 bg-gray-500 rounded-full" />
-                                Low
+                                {t('orders:low')}
                               </div>
                             </SelectItem>
                             <SelectItem value="medium">
                               <div className="flex items-center gap-2">
                                 <div className="h-2 w-2 bg-yellow-500 rounded-full" />
-                                Medium
+                                {t('orders:medium')}
                               </div>
                             </SelectItem>
                             <SelectItem value="high">
                               <div className="flex items-center gap-2">
                                 <div className="h-2 w-2 bg-red-500 rounded-full" />
-                                High
+                                {t('orders:high')}
                               </div>
                             </SelectItem>
                           </SelectContent>
@@ -4433,7 +4433,7 @@ export default function AddOrder() {
                       {/* Order Status and Payment Status side by side */}
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <Label htmlFor="orderStatus" className="text-xs">Order Status</Label>
+                          <Label htmlFor="orderStatus" className="text-xs">{t('orders:orderStatus')}</Label>
                           <Select value={form.watch('orderStatus')} onValueChange={(value) => form.setValue('orderStatus', value as any)}>
                             <SelectTrigger className="mt-1 h-9">
                               <SelectValue />
@@ -4442,19 +4442,19 @@ export default function AddOrder() {
                               <SelectItem value="pending">
                                 <div className="flex items-center gap-2">
                                   <div className="h-2 w-2 bg-orange-500 rounded-full" />
-                                  Pending
+                                  {t('orders:pending')}
                                 </div>
                               </SelectItem>
                               <SelectItem value="to_fulfill">
                                 <div className="flex items-center gap-2">
                                   <div className="h-2 w-2 bg-blue-500 rounded-full" />
-                                  To Fulfill
+                                  {t('orders:toFulfill')}
                                 </div>
                               </SelectItem>
                               <SelectItem value="shipped">
                                 <div className="flex items-center gap-2">
                                   <div className="h-2 w-2 bg-green-500 rounded-full" />
-                                  Shipped
+                                  {t('orders:shipped')}
                                 </div>
                               </SelectItem>
                             </SelectContent>
@@ -4462,7 +4462,7 @@ export default function AddOrder() {
                         </div>
 
                         <div>
-                          <Label htmlFor="paymentStatus" className="text-xs">Payment Status</Label>
+                          <Label htmlFor="paymentStatus" className="text-xs">{t('orders:paymentStatus')}</Label>
                           <Select value={form.watch('paymentStatus')} onValueChange={(value) => form.setValue('paymentStatus', value as any)}>
                             <SelectTrigger className="mt-1 h-9" data-testid="select-payment-status">
                               <SelectValue />
@@ -4471,13 +4471,13 @@ export default function AddOrder() {
                               <SelectItem value="pending">
                                 <div className="flex items-center gap-2">
                                   <div className="h-2 w-2 bg-orange-500 rounded-full" />
-                                  Pending
+                                  {t('orders:pending')}
                                 </div>
                               </SelectItem>
                               <SelectItem value="paid">
                                 <div className="flex items-center gap-2">
                                   <div className="h-2 w-2 bg-green-500 rounded-full" />
-                                Paid
+                                {t('orders:paid')}
                               </div>
                             </SelectItem>
                             <SelectItem value="pay_later">
@@ -4578,7 +4578,7 @@ export default function AddOrder() {
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600 flex items-center gap-1">
                             <CreditCard className="h-3 w-3" />
-                            Store Credit:
+                            {t('orders:storeCredit')}:
                           </span>
                           <span className="font-medium text-blue-600">
                             -{formatCurrency(totals.storeCreditApplied, form.watch('currency'))}
@@ -4588,13 +4588,13 @@ export default function AddOrder() {
                     </div>
                     <div className="border-t pt-3 space-y-2">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-semibold">Grand Total:</span>
+                        <span className="text-sm font-semibold">{t('orders:grandTotalLabel')}</span>
                         <div className="flex items-center gap-1">
                           <Input
                             id="grandTotal"
                             type="number"
                             step="0.01"
-                            placeholder="Click to enter"
+                            placeholder={t('orders:clickToEnter')}
                             value={calculateGrandTotal().toFixed(2)}
                             onChange={(e) => {
                               const desiredTotal = parseFloat(e.target.value);
@@ -4612,8 +4612,8 @@ export default function AddOrder() {
                                 form.setValue('discountValue', Math.max(0, parseFloat(neededDiscount.toFixed(2))));
                                 
                                 toast({
-                                  title: "Total Adjusted",
-                                  description: `Discount set to ${formatCurrency(Math.max(0, neededDiscount), form.watch('currency'))}`,
+                                  title: t('orders:totalAdjusted'),
+                                  description: t('orders:discountSetTo', { amount: formatCurrency(Math.max(0, neededDiscount), form.watch('currency')) }),
                                 });
                               }
                             }}
@@ -4638,13 +4638,13 @@ export default function AddOrder() {
                                 }
                                 
                                 toast({
-                                  title: "Total Rounded Up",
-                                  description: `Adjustment: ${formatCurrency(difference, form.watch('currency'))}`,
+                                  title: t('orders:totalRoundedUp'),
+                                  description: t('orders:adjustmentAmount', { amount: formatCurrency(difference, form.watch('currency')) }),
                                 });
                               } else {
                                 toast({
-                                  title: "Already Rounded",
-                                  description: "Total is already a whole number",
+                                  title: t('orders:alreadyRounded'),
+                                  description: t('orders:totalAlreadyWhole'),
                                 });
                               }
                             }}
@@ -4798,7 +4798,7 @@ export default function AddOrder() {
                   <div className="flex justify-between">
                     <span className="text-gray-600 flex items-center gap-1">
                       <CreditCard className="h-3 w-3" />
-                      Store Credit:
+                      {t('orders:storeCredit')}:
                     </span>
                     <span className="font-medium text-blue-600">
                       -{formatCurrency(totals.storeCreditApplied, form.watch('currency'))}
@@ -4809,13 +4809,13 @@ export default function AddOrder() {
               <Separator />
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-semibold">Grand Total:</span>
+                  <span className="text-sm font-semibold">{t('orders:grandTotalLabel')}</span>
                   <div className="flex items-center gap-1">
                     <Input
                       id="grandTotalMobile"
                       type="number"
                       step="0.01"
-                      placeholder="Click to enter"
+                      placeholder={t('orders:clickToEnter')}
                       value={calculateGrandTotal().toFixed(2)}
                       onChange={(e) => {
                         const desiredTotal = parseFloat(e.target.value);
@@ -4833,8 +4833,8 @@ export default function AddOrder() {
                           form.setValue('discountValue', Math.max(0, parseFloat(neededDiscount.toFixed(2))));
                           
                           toast({
-                            title: "Total Adjusted",
-                            description: `Discount set to ${formatCurrency(Math.max(0, neededDiscount), form.watch('currency'))}`,
+                            title: t('orders:totalAdjusted'),
+                            description: t('orders:discountSetTo', { amount: formatCurrency(Math.max(0, neededDiscount), form.watch('currency')) }),
                           });
                         }
                       }}
@@ -4858,13 +4858,13 @@ export default function AddOrder() {
                           }
                           
                           toast({
-                            title: "Total Rounded Up",
-                            description: `Adjustment: ${formatCurrency(difference, form.watch('currency'))}`,
+                            title: t('orders:totalRoundedUp'),
+                            description: t('orders:adjustmentAmount', { amount: formatCurrency(difference, form.watch('currency')) }),
                           });
                         } else {
                           toast({
-                            title: "Already Rounded",
-                            description: "Total is already a whole number",
+                            title: t('orders:alreadyRounded'),
+                            description: t('orders:totalAlreadyWhole'),
                           });
                         }
                       }}
@@ -5026,12 +5026,12 @@ export default function AddOrder() {
                   id="note-text"
                   value={editingNoteText}
                   onChange={(e) => setEditingNoteText(e.target.value)}
-                  placeholder="Type your own note or select a predefined one below..."
+                  placeholder={t('orders:typeNoteOrSelectTemplate')}
                   className="mt-1 min-h-[120px]"
                   data-testid="textarea-item-note"
                 />
                 <div className="mt-3">
-                  <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Quick templates:</p>
+                  <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">{t('orders:quickTemplates')}</p>
                   <div className="flex flex-wrap gap-2">
                     {[
                       "Handle with care - fragile item",
@@ -5065,7 +5065,7 @@ export default function AddOrder() {
                   setEditingNoteText("");
                 }}
               >
-                Cancel
+                {t('common:cancel')}
               </Button>
               <Button
                 type="button"
@@ -5079,7 +5079,7 @@ export default function AddOrder() {
                 data-testid="button-save-note"
               >
                 <Save className="h-4 w-4 mr-2" />
-                Save Note
+                {t('orders:saveNote')}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -5109,8 +5109,8 @@ export default function AddOrder() {
                 setShowShippingModal(false);
                 setEditingAddress(null);
                 toast({
-                  title: "Success",
-                  description: "Address saved (will be created with customer)",
+                  title: t('common:success'),
+                  description: t('orders:addressSavedWithCustomer'),
                 });
               } else {
                 // For existing customers, save immediately
@@ -5120,8 +5120,8 @@ export default function AddOrder() {
           }}
           editingAddress={editingAddress}
           existingAddresses={Array.isArray(shippingAddresses) ? shippingAddresses : []}
-          title={editingAddress ? "Edit Shipping Address" : "Add Shipping Address"}
-          description={editingAddress ? "Update the shipping address details" : "Enter the new shipping address details"}
+          title={editingAddress ? t('orders:editShippingAddress') : t('orders:addShippingAddress')}
+          description={editingAddress ? t('orders:updateShippingAddressDetails') : t('orders:enterNewShippingAddressDetails')}
         />
       </div>
     </div>

@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { fuzzySearch } from '@/lib/fuzzySearch';
 import type { Product } from '@shared/schema';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useTranslation } from 'react-i18next';
 
 interface CartItem {
   id: string;
@@ -38,6 +39,7 @@ interface CartItem {
 }
 
 export default function POS() {
+  const { t } = useTranslation(['common', 'orders', 'products', 'financial']);
   const { toast } = useToast();
   const { financialHelpers } = useSettings();
   const [currency, setCurrency] = useState<'EUR' | 'CZK'>('EUR');
@@ -168,7 +170,7 @@ export default function POS() {
     }
     
     toast({
-      title: "Added to cart",
+      title: t('financial:addedToCart'),
       description: item.name,
     });
   };
@@ -204,7 +206,7 @@ export default function POS() {
   const createOrderMutation = useMutation({
     mutationFn: async () => {
       if (!selectedWarehouse) {
-        throw new Error('Please select a warehouse');
+        throw new Error(t('financial:pleaseSelectWarehouse'));
       }
 
       const orderData = {
@@ -235,16 +237,16 @@ export default function POS() {
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Sale completed successfully",
+        title: t('common:success'),
+        description: t('financial:saleCompletedSuccessfully'),
       });
       clearCart();
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to complete sale",
+        title: t('common:error'),
+        description: error.message || t('financial:failedToCompleteSale'),
         variant: "destructive",
       });
     },
@@ -253,8 +255,8 @@ export default function POS() {
   const handleCheckout = () => {
     if (cart.length === 0) {
       toast({
-        title: 'Cart Empty',
-        description: 'Please add items to cart',
+        title: t('financial:cartEmpty'),
+        description: t('financial:pleaseAddItemsToCart'),
         variant: 'destructive'
       });
       return;
@@ -262,8 +264,8 @@ export default function POS() {
 
     if (!selectedWarehouse) {
       toast({
-        title: 'Warehouse Required',
-        description: 'Please select a warehouse',
+        title: t('financial:warehouseRequired'),
+        description: t('financial:pleaseSelectWarehouse'),
         variant: 'destructive'
       });
       return;
@@ -279,7 +281,7 @@ export default function POS() {
         <div className="p-4 space-y-3">
           {/* Title and Currency */}
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold">POS</h1>
+            <h1 className="text-xl font-bold">{t('financial:pos')}</h1>
             <div className="flex items-center gap-2">
               <Select value={currency} onValueChange={(v) => setCurrency(v as 'EUR' | 'CZK')}>
                 <SelectTrigger className="w-20 h-9 bg-primary-foreground text-primary border-0">
@@ -296,7 +298,7 @@ export default function POS() {
           {/* Warehouse Selection */}
           <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
             <SelectTrigger className="w-full bg-primary-foreground text-primary border-0" data-testid="select-warehouse">
-              <SelectValue placeholder="Select Warehouse" />
+              <SelectValue placeholder={t('common:selectWarehouse')} />
             </SelectTrigger>
             <SelectContent>
               {warehouses.map((warehouse: any) => (
@@ -311,7 +313,7 @@ export default function POS() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
-              placeholder="Search items..."
+              placeholder={t('products:searchItems')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 h-11 bg-white dark:bg-slate-800 border-0"
@@ -402,7 +404,7 @@ export default function POS() {
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
               <ShoppingCart className="h-5 w-5 text-primary" />
-              <span className="font-semibold">{totalItems} Items</span>
+              <span className="font-semibold">{totalItems} {t('common:items')}</span>
             </div>
             <div className="text-lg font-bold text-primary">
               {currency} {total.toFixed(2)}
@@ -420,13 +422,13 @@ export default function POS() {
                   disabled={cart.length === 0}
                   data-testid="button-view-cart"
                 >
-                  View Cart
+                  {t('financial:viewCart')}
                 </Button>
               </SheetTrigger>
               <SheetContent side="bottom" className="h-[80vh]">
                 <SheetHeader>
                   <SheetTitle className="flex items-center justify-between">
-                    <span>Cart ({totalItems} items)</span>
+                    <span>{t('financial:cart')} ({totalItems} {t('common:items')})</span>
                     {cart.length > 0 && (
                       <Button
                         variant="ghost"
@@ -436,7 +438,7 @@ export default function POS() {
                         data-testid="button-clear-cart"
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
-                        Clear
+                        {t('common:clear')}
                       </Button>
                     )}
                   </SheetTitle>
@@ -446,7 +448,7 @@ export default function POS() {
                   {cart.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                       <ShoppingCart className="h-16 w-16 mb-4 opacity-30" />
-                      <p>Cart is empty</p>
+                      <p>{t('financial:cartIsEmpty')}</p>
                     </div>
                   ) : (
                     <ScrollArea className="h-[50vh]">
@@ -482,7 +484,7 @@ export default function POS() {
                                 <div className="flex items-center justify-between gap-3">
                                   {/* Unit Price */}
                                   <div className="text-sm">
-                                    <span className="text-muted-foreground">Unit: </span>
+                                    <span className="text-muted-foreground">{t('financial:unit')}: </span>
                                     <span className="font-semibold text-primary">
                                       {currency} {item.price.toFixed(2)}
                                     </span>
@@ -517,7 +519,7 @@ export default function POS() {
                                 {/* Subtotal & Remove */}
                                 <div className="flex items-center justify-between pt-1.5 border-t">
                                   <div className="text-sm">
-                                    <span className="text-muted-foreground">Subtotal: </span>
+                                    <span className="text-muted-foreground">{t('financial:subtotal')}: </span>
                                     <span className="font-bold text-base text-primary">
                                       {currency} {(item.price * item.quantity).toFixed(2)}
                                     </span>
@@ -530,7 +532,7 @@ export default function POS() {
                                     data-testid={`button-remove-${item.id}`}
                                   >
                                     <X className="h-4 w-4 mr-1" />
-                                    Remove
+                                    {t('common:remove')}
                                   </Button>
                                 </div>
                               </div>
@@ -546,7 +548,7 @@ export default function POS() {
                 {cart.length > 0 && (
                   <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t space-y-3">
                     <div className="flex items-center justify-between text-lg font-bold">
-                      <span>Total</span>
+                      <span>{t('financial:total')}</span>
                       <span className="text-primary">{currency} {total.toFixed(2)}</span>
                     </div>
                     <Button
@@ -557,11 +559,11 @@ export default function POS() {
                       data-testid="button-checkout"
                     >
                       {createOrderMutation.isPending ? (
-                        "Processing..."
+                        t('common:processing')
                       ) : (
                         <>
                           <Check className="mr-2 h-5 w-5" />
-                          Complete Sale
+                          {t('financial:completeSale')}
                         </>
                       )}
                     </Button>
@@ -578,11 +580,11 @@ export default function POS() {
               data-testid="button-quick-checkout"
             >
               {createOrderMutation.isPending ? (
-                "Processing..."
+                t('common:processing')
               ) : (
                 <>
                   <Check className="mr-2 h-5 w-5" />
-                  Checkout
+                  {t('financial:checkout')}
                 </>
               )}
             </Button>

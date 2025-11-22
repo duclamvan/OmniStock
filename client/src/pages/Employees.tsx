@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -95,6 +96,7 @@ const employeeFormSchema = z.object({
 type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
 
 export default function Employees() {
+  const { t } = useTranslation(['system', 'common']);
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -162,8 +164,8 @@ export default function Employees() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
       toast({
-        title: "Success",
-        description: selectedEmployee ? "Employee updated successfully" : "Employee created successfully",
+        title: t('common:success'),
+        description: selectedEmployee ? t('common:updateSuccess') : t('common:createSuccess'),
       });
       setDialogOpen(false);
       setSelectedEmployee(null);
@@ -171,8 +173,8 @@ export default function Employees() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to save employee",
+        title: t('common:error'),
+        description: error.message || t('common:saveFailed'),
         variant: "destructive",
       });
     },
@@ -187,16 +189,16 @@ export default function Employees() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
       toast({
-        title: "Success",
-        description: "Employee deleted successfully",
+        title: t('common:success'),
+        description: t('common:deleteSuccess'),
       });
       setDeleteDialogOpen(false);
       setSelectedEmployee(null);
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to delete employee",
+        title: t('common:error'),
+        description: error.message || t('common:deleteFailed'),
         variant: "destructive",
       });
     },
@@ -247,11 +249,11 @@ export default function Employees() {
 
   const getStatusBadge = (status: string) => {
     if (status === 'active') {
-      return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Active</Badge>;
+      return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">{t('system:active')}</Badge>;
     } else if (status === 'on_leave') {
-      return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">On Leave</Badge>;
+      return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">{t('system:onLeave')}</Badge>;
     }
-    return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Terminated</Badge>;
+    return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">{t('system:terminated')}</Badge>;
   };
 
   const getCurrencyIcon = (currency: string) => {
@@ -286,15 +288,15 @@ export default function Employees() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
-            Employees
+            {t('system:employees')}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage your team and payroll
+            {t('system:manageYourTeamAndPayroll')}
           </p>
         </div>
         <Button onClick={handleAddEmployee} data-testid="button-add-employee">
           <Plus className="h-4 w-4 mr-2" />
-          Add Employee
+          {t('system:addEmployee')}
         </Button>
       </div>
 
@@ -302,39 +304,39 @@ export default function Employees() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('system:totalEmployees')}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{activeEmployees.length}</div>
             <p className="text-xs text-muted-foreground">
-              Active staff members
+              {t('system:activeStaffMembers')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Payroll</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('system:monthlyPayroll')}</CardTitle>
             <Coins className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalMonthlyPayroll.toLocaleString()} CZK</div>
             <p className="text-xs text-muted-foreground">
-              Total monthly costs
+              {t('system:totalMonthlyCosts')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Annual Payroll</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('system:annualPayroll')}</CardTitle>
             <Coins className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalAnnualPayroll.toLocaleString()} CZK</div>
             <p className="text-xs text-muted-foreground">
-              Estimated yearly costs
+              {t('system:estimatedYearlyCosts')}
             </p>
           </CardContent>
         </Card>
@@ -345,7 +347,7 @@ export default function Employees() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            All Employees ({employees.length})
+            {t('system:allEmployees')} ({employees.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -358,13 +360,13 @@ export default function Employees() {
           ) : employees.length === 0 ? (
             <div className="text-center py-12">
               <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No employees yet</h3>
+              <h3 className="text-lg font-semibold mb-2">{t('system:noEmployeesYet')}</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Get started by adding your first employee
+                {t('system:getStartedByAddingFirstEmployee')}
               </p>
               <Button onClick={handleAddEmployee}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add Employee
+                {t('system:addEmployee')}
               </Button>
             </div>
           ) : (
@@ -372,14 +374,14 @@ export default function Employees() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Employee ID</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Position</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Hire Date</TableHead>
-                    <TableHead>Salary</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-[100px]">Actions</TableHead>
+                    <TableHead>{t('system:employeeId')}</TableHead>
+                    <TableHead>{t('common:name')}</TableHead>
+                    <TableHead>{t('system:position')}</TableHead>
+                    <TableHead>{t('system:department')}</TableHead>
+                    <TableHead>{t('system:hireDate')}</TableHead>
+                    <TableHead>{t('system:salary')}</TableHead>
+                    <TableHead>{t('common:status')}</TableHead>
+                    <TableHead className="w-[100px]">{t('common:actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -468,12 +470,12 @@ export default function Employees() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {selectedEmployee ? "Edit Employee" : "Add New Employee"}
+              {selectedEmployee ? t('system:editEmployee') : t('system:addEmployee')}
             </DialogTitle>
             <DialogDescription>
               {selectedEmployee
-                ? "Update employee information and payroll details."
-                : "Add a new team member to your organization."}
+                ? t('common:updateInformation')
+                : t('common:addNewMember')}
             </DialogDescription>
           </DialogHeader>
 
@@ -485,7 +487,7 @@ export default function Employees() {
                   name="employeeId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Employee ID</FormLabel>
+                      <FormLabel>{t('system:employeeId')}</FormLabel>
                       <FormControl>
                         <Input placeholder="EMP001" {...field} data-testid="input-employee-id" />
                       </FormControl>
@@ -499,17 +501,17 @@ export default function Employees() {
                   name="status"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Status</FormLabel>
+                      <FormLabel>{t('common:status')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-status">
-                            <SelectValue placeholder="Select status" />
+                            <SelectValue placeholder={t('common:selectStatus')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="on_leave">On Leave</SelectItem>
-                          <SelectItem value="terminated">Terminated</SelectItem>
+                          <SelectItem value="active">{t('system:active')}</SelectItem>
+                          <SelectItem value="on_leave">{t('system:onLeave')}</SelectItem>
+                          <SelectItem value="terminated">{t('system:terminated')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -522,7 +524,7 @@ export default function Employees() {
                   name="firstName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>First Name</FormLabel>
+                      <FormLabel>{t('system:firstName')}</FormLabel>
                       <FormControl>
                         <Input {...field} data-testid="input-first-name" />
                       </FormControl>
@@ -536,7 +538,7 @@ export default function Employees() {
                   name="lastName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Last Name</FormLabel>
+                      <FormLabel>{t('system:lastName')}</FormLabel>
                       <FormControl>
                         <Input {...field} data-testid="input-last-name" />
                       </FormControl>
@@ -550,7 +552,7 @@ export default function Employees() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>{t('system:email')}</FormLabel>
                       <FormControl>
                         <Input type="email" {...field} data-testid="input-email" />
                       </FormControl>
@@ -564,7 +566,7 @@ export default function Employees() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone</FormLabel>
+                      <FormLabel>{t('common:phone')}</FormLabel>
                       <FormControl>
                         <Input {...field} data-testid="input-phone" />
                       </FormControl>
@@ -578,7 +580,7 @@ export default function Employees() {
                   name="position"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Position</FormLabel>
+                      <FormLabel>{t('system:position')}</FormLabel>
                       <FormControl>
                         <Input placeholder="Warehouse Manager" {...field} data-testid="input-position" />
                       </FormControl>
@@ -592,7 +594,7 @@ export default function Employees() {
                   name="department"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Department</FormLabel>
+                      <FormLabel>{t('system:department')}</FormLabel>
                       <FormControl>
                         <Input placeholder="Warehouse" {...field} data-testid="input-department" />
                       </FormControl>
@@ -606,7 +608,7 @@ export default function Employees() {
                   name="hireDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Hire Date</FormLabel>
+                      <FormLabel>{t('system:hireDate')}</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} data-testid="input-hire-date" />
                       </FormControl>
@@ -620,7 +622,7 @@ export default function Employees() {
                   name="terminationDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Termination Date (Optional)</FormLabel>
+                      <FormLabel>{t('system:terminationDate')} ({t('common:optional')})</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} data-testid="input-termination-date" />
                       </FormControl>
@@ -634,7 +636,7 @@ export default function Employees() {
                   name="salary"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Salary</FormLabel>
+                      <FormLabel>{t('system:salary')}</FormLabel>
                       <FormControl>
                         <Input type="number" step="0.01" placeholder="30000" {...field} data-testid="input-salary" />
                       </FormControl>
@@ -648,17 +650,17 @@ export default function Employees() {
                   name="paymentFrequency"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Payment Frequency</FormLabel>
+                      <FormLabel>{t('system:paymentFrequency')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-payment-frequency">
-                            <SelectValue placeholder="Select frequency" />
+                            <SelectValue placeholder={t('system:selectFrequency')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="monthly">Monthly</SelectItem>
-                          <SelectItem value="biweekly">Bi-weekly</SelectItem>
-                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="monthly">{t('system:monthly')}</SelectItem>
+                          <SelectItem value="biweekly">{t('system:biweekly')}</SelectItem>
+                          <SelectItem value="weekly">{t('system:weekly')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -671,11 +673,11 @@ export default function Employees() {
                   name="currency"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Currency</FormLabel>
+                      <FormLabel>{t('financial:currency')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-currency">
-                            <SelectValue placeholder="Select currency" />
+                            <SelectValue placeholder={t('system:selectCurrency')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -694,7 +696,7 @@ export default function Employees() {
                   name="bankAccount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Bank Account</FormLabel>
+                      <FormLabel>{t('system:bankAccount')}</FormLabel>
                       <FormControl>
                         <Input {...field} data-testid="input-bank-account" />
                       </FormControl>
@@ -708,7 +710,7 @@ export default function Employees() {
                   name="bankName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Bank Name</FormLabel>
+                      <FormLabel>{t('system:bankName')}</FormLabel>
                       <FormControl>
                         <Input {...field} data-testid="input-bank-name" />
                       </FormControl>
@@ -722,7 +724,7 @@ export default function Employees() {
                   name="taxId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tax ID</FormLabel>
+                      <FormLabel>{t('system:taxId')}</FormLabel>
                       <FormControl>
                         <Input {...field} data-testid="input-tax-id" />
                       </FormControl>
@@ -736,7 +738,7 @@ export default function Employees() {
                   name="insuranceId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Insurance ID</FormLabel>
+                      <FormLabel>{t('system:insuranceId')}</FormLabel>
                       <FormControl>
                         <Input {...field} data-testid="input-insurance-id" />
                       </FormControl>
@@ -750,7 +752,7 @@ export default function Employees() {
                   name="emergencyContact"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Emergency Contact</FormLabel>
+                      <FormLabel>{t('system:emergencyContact')}</FormLabel>
                       <FormControl>
                         <Input {...field} data-testid="input-emergency-contact" />
                       </FormControl>
@@ -764,7 +766,7 @@ export default function Employees() {
                   name="emergencyPhone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Emergency Phone</FormLabel>
+                      <FormLabel>{t('system:emergencyPhone')}</FormLabel>
                       <FormControl>
                         <Input {...field} data-testid="input-emergency-phone" />
                       </FormControl>
@@ -779,7 +781,7 @@ export default function Employees() {
                 name="address"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Address</FormLabel>
+                    <FormLabel>{t('common:address')}</FormLabel>
                     <FormControl>
                       <Textarea {...field} data-testid="input-address" />
                     </FormControl>
@@ -793,7 +795,7 @@ export default function Employees() {
                 name="notes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Notes</FormLabel>
+                    <FormLabel>{t('common:notes')}</FormLabel>
                     <FormControl>
                       <Textarea {...field} data-testid="input-notes" />
                     </FormControl>
@@ -809,7 +811,7 @@ export default function Employees() {
                   onClick={() => setDialogOpen(false)}
                   data-testid="button-cancel"
                 >
-                  Cancel
+                  {t('common:cancel')}
                 </Button>
                 <Button
                   type="submit"
@@ -817,10 +819,10 @@ export default function Employees() {
                   data-testid="button-save-employee"
                 >
                   {saveEmployeeMutation.isPending
-                    ? "Saving..."
+                    ? t('system:saving')
                     : selectedEmployee
-                    ? "Update Employee"
-                    : "Add Employee"}
+                    ? t('system:updateEmployee')
+                    : t('system:addEmployee')}
                 </Button>
               </DialogFooter>
             </form>
@@ -832,18 +834,14 @@ export default function Employees() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent data-testid="dialog-delete-confirmation">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Employee</AlertDialogTitle>
+            <AlertDialogTitle>{t('system:deleteEmployee')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete{" "}
-              <strong>
-                {selectedEmployee?.firstName} {selectedEmployee?.lastName}
-              </strong>
-              ? This action cannot be undone.
+              {t('system:areYouSureDeleteEmployee')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel data-testid="button-cancel-delete">
-              Cancel
+              {t('common:cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => selectedEmployee && deleteEmployeeMutation.mutate(selectedEmployee.id)}
@@ -851,7 +849,7 @@ export default function Employees() {
               disabled={deleteEmployeeMutation.isPending}
               data-testid="button-confirm-delete"
             >
-              {deleteEmployeeMutation.isPending ? "Deleting..." : "Delete Employee"}
+              {deleteEmployeeMutation.isPending ? t('common:deleting') : t('system:deleteEmployee')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

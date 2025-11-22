@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
@@ -80,6 +81,7 @@ const getCountryFlag = (country: string): string => {
 export default function AllSuppliers() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { t } = useTranslation(['inventory', 'common']);
   const [deleteSupplier, setDeleteSupplier] = useState<Supplier | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSuppliers, setSelectedSuppliers] = useState<Supplier[]>([]);
@@ -130,12 +132,12 @@ export default function AllSuppliers() {
   useEffect(() => {
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to load suppliers. Please try again.",
+        title: t('common:error'),
+        description: t('inventory:loadError'),
         variant: "destructive",
       });
     }
-  }, [error, toast]);
+  }, [error, toast, t]);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -144,8 +146,8 @@ export default function AllSuppliers() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
       toast({ 
-        title: "Success",
-        description: "Supplier deleted successfully" 
+        title: t('common:success'),
+        description: t('inventory:supplierDeleted') 
       });
       setDeleteSupplier(null);
       setShowDeleteDialog(false);
@@ -153,10 +155,10 @@ export default function AllSuppliers() {
     },
     onError: (error: any) => {
       const message = error.message?.includes("being used")
-        ? "Cannot delete supplier - it's being used by products"
-        : "Failed to delete supplier";
+        ? t('inventory:deleteErrorReferenced')
+        : t('inventory:deleteError');
       toast({ 
-        title: "Error",
+        title: t('common:error'),
         description: message, 
         variant: "destructive" 
       });
@@ -177,8 +179,8 @@ export default function AllSuppliers() {
     try {
       if (!filteredSuppliers || filteredSuppliers.length === 0) {
         toast({
-          title: "No Data",
-          description: "No suppliers to export",
+          title: t('inventory:noDataToExport'),
+          description: t('inventory:noProductsToExport'),
           variant: "destructive",
         });
         return;
@@ -202,14 +204,14 @@ export default function AllSuppliers() {
       exportToXLSX(exportData, 'suppliers', 'Suppliers');
       
       toast({
-        title: "Success",
-        description: `Exported ${exportData.length} suppliers to XLSX`,
+        title: t('common:success'),
+        description: t('inventory:exportSuccessXLSX', { count: exportData.length }),
       });
     } catch (error) {
       console.error('Export error:', error);
       toast({
-        title: "Export Failed",
-        description: "Failed to export suppliers to XLSX",
+        title: t('inventory:exportFailed'),
+        description: t('inventory:exportFailedXLSX'),
         variant: "destructive",
       });
     }
@@ -219,8 +221,8 @@ export default function AllSuppliers() {
     try {
       if (!filteredSuppliers || filteredSuppliers.length === 0) {
         toast({
-          title: "No Data",
-          description: "No suppliers to export",
+          title: t('inventory:noDataToExport'),
+          description: t('inventory:noProductsToExport'),
           variant: "destructive",
         });
         return;
@@ -251,14 +253,14 @@ export default function AllSuppliers() {
       exportToPDF('Suppliers Report', exportData, columns, 'suppliers');
       
       toast({
-        title: "Success",
-        description: `Exported ${exportData.length} suppliers to PDF`,
+        title: t('common:success'),
+        description: t('inventory:exportSuccessPDF', { count: exportData.length }),
       });
     } catch (error) {
       console.error('Export error:', error);
       toast({
-        title: "Export Failed",
-        description: "Failed to export suppliers to PDF",
+        title: t('inventory:exportFailed'),
+        description: t('inventory:exportFailedPDF'),
         variant: "destructive",
       });
     }
@@ -340,7 +342,7 @@ export default function AllSuppliers() {
   const columns: DataTableColumn<Supplier>[] = [
     {
       key: "name",
-      header: "Supplier",
+      header: t('inventory:supplier'),
       cell: (supplier) => (
         <div className="min-w-[180px]">
           <Link href={`/suppliers/${supplier.id}`}>
@@ -356,7 +358,7 @@ export default function AllSuppliers() {
     },
     {
       key: "contact",
-      header: "Contact",
+      header: t('inventory:contactInfo'),
       cell: (supplier) => (
         <div className="space-y-1 min-w-[160px]">
           {supplier.email && (
@@ -391,7 +393,7 @@ export default function AllSuppliers() {
     },
     {
       key: "lastPurchaseDate",
-      header: "Last Purchase",
+      header: t('inventory:lastPurchaseDate'),
       cell: (supplier) => {
         const dateStr = formatDate(supplier.lastPurchaseDate);
         if (dateStr === '-') {
@@ -415,7 +417,7 @@ export default function AllSuppliers() {
     },
     {
       key: "totalPurchased",
-      header: "Total Value",
+      header: t('inventory:totalValue'),
       cell: (supplier) => {
         const amount = parseFloat(supplier.totalPurchased || '0');
         return (
@@ -427,7 +429,7 @@ export default function AllSuppliers() {
     },
     {
       key: "country",
-      header: "Location",
+      header: t('inventory:location'),
       cell: (supplier) => {
         if (!supplier.country) return <span className="text-slate-400">-</span>;
         return (
@@ -440,7 +442,7 @@ export default function AllSuppliers() {
     },
     {
       key: "status",
-      header: "Status",
+      header: t('inventory:status'),
       cell: (supplier) => getStatusBadge(supplier),
     },
     {
@@ -454,15 +456,15 @@ export default function AllSuppliers() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuLabel>{t('inventory:actions')}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => navigate(`/suppliers/${supplier.id}`)}>
               <Eye className="h-4 w-4 mr-2" />
-              View Details
+              {t('inventory:viewSupplier')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate(`/suppliers/${supplier.id}/edit`)}>
               <Pencil className="h-4 w-4 mr-2" />
-              Edit Supplier
+              {t('inventory:editSupplier')}
             </DropdownMenuItem>
             {supplier.supplierLink && (
               <DropdownMenuItem asChild>
@@ -486,7 +488,7 @@ export default function AllSuppliers() {
               className="text-red-600 focus:text-red-600"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Delete
+              {t('common:delete')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -502,7 +504,7 @@ export default function AllSuppliers() {
   const bulkActions = [
     {
       type: "button" as const,
-      label: "Delete Selected",
+      label: t('common:delete'),
       action: (selectedItems: Supplier[]) => {
         setSelectedSuppliers(selectedItems);
         setShowDeleteDialog(true);
@@ -519,7 +521,7 @@ export default function AllSuppliers() {
             <div className="absolute inset-0 border-4 border-cyan-200 dark:border-cyan-800 rounded-full"></div>
             <div className="absolute inset-0 border-4 border-cyan-600 dark:border-cyan-400 rounded-full border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-slate-600 dark:text-slate-400 font-medium">Loading suppliers...</p>
+          <p className="text-slate-600 dark:text-slate-400 font-medium">{t('inventory:loadingInventory')}</p>
         </div>
       </div>
     );
@@ -530,33 +532,33 @@ export default function AllSuppliers() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Suppliers</h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">Manage supplier relationships and purchase orders</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{t('inventory:suppliers')}</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">{t('inventory:manageProductsDescription')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="lg" data-testid="button-export">
                 <Download className="mr-2 h-5 w-5" />
-                Export
+                {t('inventory:export')}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>Export Format</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('inventory:exportFormat')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleExportXLSX} data-testid="button-export-xlsx">
                 <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
-                Export as XLSX
+                {t('inventory:exportAsXLSX')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExportPDF} data-testid="button-export-pdf">
                 <FileText className="h-4 w-4 mr-2 text-red-600" />
-                Export as PDF
+                {t('inventory:exportAsPDF')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button onClick={() => navigate('/suppliers/new')} size="lg" data-testid="button-add-supplier">
             <Plus className="mr-2 h-5 w-5" />
-            Add Supplier
+            {t('inventory:addSupplier')}
           </Button>
         </div>
       </div>
@@ -569,7 +571,7 @@ export default function AllSuppliers() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Total Suppliers
+                  {t('inventory:totalOrders')}
                 </p>
                 <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
                   {totalSuppliers}
@@ -588,7 +590,7 @@ export default function AllSuppliers() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Active
+                  {t('inventory:active')}
                 </p>
                 <p className="text-xl sm:text-2xl md:text-3xl font-bold text-emerald-600 dark:text-emerald-400 truncate">
                   {activeSuppliers.length}
@@ -607,7 +609,7 @@ export default function AllSuppliers() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Total Purchases
+                  {t('inventory:totalPurchases')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>

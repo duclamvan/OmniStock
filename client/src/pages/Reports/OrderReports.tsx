@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from 'react-i18next';
 import { useReports } from "@/contexts/ReportsContext";
 import { ReportHeader } from "@/components/reports/ReportHeader";
 import { MetricCard } from "@/components/reports/MetricCard";
@@ -16,6 +17,7 @@ import { format, eachMonthOfInterval, startOfMonth, subMonths } from "date-fns";
 
 export default function OrderReports() {
   const { toast } = useToast();
+  const { t } = useTranslation(['reports', 'common']);
   const { getDateRangeValues } = useReports();
   const { start: startDate, end: endDate } = getDateRangeValues();
 
@@ -180,8 +182,8 @@ export default function OrderReports() {
   return (
     <div className="space-y-6" data-testid="order-reports">
       <ReportHeader
-        title="Order Reports"
-        description="Order fulfillment and performance metrics"
+        title={t('reports.orderReportsTitle')}
+        description={t('reports.orderReportsDesc')}
         onExportExcel={handleExportExcel}
         onExportPDF={handleExportPDF}
       />
@@ -189,7 +191,7 @@ export default function OrderReports() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          title="Total Orders"
+          title={t('reports.totalOrders')}
           value={metrics.totalOrders}
           icon={ShoppingCart}
           iconColor="text-blue-600"
@@ -197,27 +199,27 @@ export default function OrderReports() {
           testId="metric-total-orders"
         />
         <MetricCard
-          title="To Fulfill"
+          title={t('reports.toFulfill')}
           value={metrics.toFulfill}
-          subtitle="pending"
+          subtitle={t('reports.pending')}
           icon={Truck}
           iconColor="text-orange-600"
           iconBgColor="bg-orange-100"
           testId="metric-to-fulfill"
         />
         <MetricCard
-          title="Shipped"
+          title={t('reports.shipped')}
           value={metrics.shipped}
-          subtitle="completed"
+          subtitle={t('reports.completed')}
           icon={CheckCircle}
           iconColor="text-green-600"
           iconBgColor="bg-green-100"
           testId="metric-shipped"
         />
         <MetricCard
-          title="Cancelled"
+          title={t('reports.cancelled')}
           value={metrics.cancelled}
-          subtitle="cancelled"
+          subtitle={t('reports.cancelled')}
           icon={XCircle}
           iconColor="text-red-600"
           iconBgColor="bg-red-100"
@@ -227,7 +229,7 @@ export default function OrderReports() {
 
       {/* Order Trends */}
       <TrendLineChart
-        title="Order Trends (Last 12 Months)"
+        title={t('reports.orderTrends')}
         data={monthlyOrderTrends}
         lines={[
           { dataKey: 'orders', name: 'Total Orders', color: '#3b82f6' },
@@ -240,12 +242,12 @@ export default function OrderReports() {
       {/* Order Status & Payment Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PieChartCard
-          title="Orders by Status"
+          title={t('reports.ordersByStatus')}
           data={ordersByStatus}
           testId="chart-orders-by-status"
         />
         <PieChartCard
-          title="Orders by Payment Status"
+          title={t('reports.ordersByPaymentStatus')}
           data={ordersByPaymentStatus}
           colors={['#10b981', '#ef4444', '#f59e0b']}
           testId="chart-payment-status"
@@ -254,7 +256,7 @@ export default function OrderReports() {
 
       {/* Orders by Currency */}
       <PieChartCard
-        title="Orders by Currency"
+        title={t('reports.ordersByCurrency')}
         data={ordersByCurrency}
         testId="chart-orders-by-currency"
       />

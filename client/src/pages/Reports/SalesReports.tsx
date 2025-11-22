@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from 'react-i18next';
 import { useReports } from "@/contexts/ReportsContext";
 import { ReportHeader } from "@/components/reports/ReportHeader";
 import { MetricCard } from "@/components/reports/MetricCard";
@@ -18,6 +19,7 @@ import { format } from "date-fns";
 
 export default function SalesReports() {
   const { toast } = useToast();
+  const { t } = useTranslation(['reports', 'common']);
   const { getDateRangeValues } = useReports();
   const { start: startDate, end: endDate } = getDateRangeValues();
 
@@ -113,24 +115,24 @@ export default function SalesReports() {
   const handleExportExcel = () => {
     try {
       const exportData = topSellingProducts.map(p => ({
-        'Product': p.productName,
-        'SKU': p.sku,
-        'Quantity Sold': p.quantity,
-        'Revenue': p.revenue.toFixed(2),
-        'Cost': p.cost.toFixed(2),
-        'Profit': p.profit.toFixed(2),
+        [t('reports.product')]: p.productName,
+        [t('reports.sku')]: p.sku,
+        [t('reports.quantitySold')]: p.quantity,
+        [t('reports.revenue')]: p.revenue.toFixed(2),
+        [t('reports.cost')]: p.cost.toFixed(2),
+        [t('reports.profit')]: p.profit.toFixed(2),
       }));
 
-      exportToXLSX(exportData, `Sales_Report_${format(new Date(), 'yyyy-MM-dd')}`, 'Sales Report');
+      exportToXLSX(exportData, `Sales_Report_${format(new Date(), 'yyyy-MM-dd')}`, t('reports.salesReport'));
       
       toast({
-        title: "Export Successful",
-        description: "Sales report exported to XLSX",
+        title: t('reports.exportSuccessful'),
+        description: t('reports.salesReportExportedXlsx'),
       });
     } catch (error) {
       toast({
-        title: "Export Failed",
-        description: "Failed to export sales report",
+        title: t('reports.exportFailed'),
+        description: t('reports.failedToExportSalesReport'),
         variant: "destructive",
       });
     }
@@ -146,27 +148,27 @@ export default function SalesReports() {
       }));
 
       const columns: PDFColumn[] = [
-        { key: 'product', header: 'Product' },
-        { key: 'quantity', header: 'Qty' },
-        { key: 'revenue', header: 'Revenue' },
-        { key: 'profit', header: 'Profit' },
+        { key: 'product', header: t('reports.product') },
+        { key: 'quantity', header: t('reports.qty') },
+        { key: 'revenue', header: t('reports.revenue') },
+        { key: 'profit', header: t('reports.profit') },
       ];
 
       exportToPDF(
         exportData,
         columns,
         `Sales_Report_${format(new Date(), 'yyyy-MM-dd')}`,
-        'Sales Report'
+        t('reports.salesReport')
       );
 
       toast({
-        title: "Export Successful",
-        description: "Sales report exported to PDF",
+        title: t('reports.exportSuccessful'),
+        description: t('reports.salesReportExportedPdf'),
       });
     } catch (error) {
       toast({
-        title: "Export Failed",
-        description: "Failed to export sales report to PDF",
+        title: t('reports.exportFailed'),
+        description: t('reports.failedToExportSalesReportPdf'),
         variant: "destructive",
       });
     }
@@ -189,8 +191,8 @@ export default function SalesReports() {
   return (
     <div className="space-y-6" data-testid="sales-reports">
       <ReportHeader
-        title="Sales Reports"
-        description="Sales performance and product analytics"
+        title={t('reports.salesReportsTitle')}
+        description={t('reports.salesReportsDesc')}
         onExportExcel={handleExportExcel}
         onExportPDF={handleExportPDF}
       />
@@ -198,7 +200,7 @@ export default function SalesReports() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          title="Total Orders"
+          title={t('reports.totalOrders')}
           value={metrics.totalOrders}
           icon={ShoppingCart}
           iconColor="text-blue-600"
@@ -206,7 +208,7 @@ export default function SalesReports() {
           testId="metric-total-orders"
         />
         <MetricCard
-          title="Total Revenue"
+          title={t('reports.totalRevenue')}
           value={formatCurrency(metrics.totalRevenue, 'CZK')}
           icon={Coins}
           iconColor="text-green-600"
@@ -214,7 +216,7 @@ export default function SalesReports() {
           testId="metric-total-revenue"
         />
         <MetricCard
-          title="Avg Order Value"
+          title={t('reports.avgOrderValue')}
           value={formatCurrency(metrics.avgOrderValue, 'CZK')}
           icon={TrendingUp}
           iconColor="text-purple-600"
@@ -222,7 +224,7 @@ export default function SalesReports() {
           testId="metric-avg-order-value"
         />
         <MetricCard
-          title="Units Sold"
+          title={t('reports.unitsSold')}
           value={metrics.totalUnitsSold}
           icon={Package}
           iconColor="text-orange-600"
@@ -233,11 +235,11 @@ export default function SalesReports() {
 
       {/* Sales Trends */}
       <TrendLineChart
-        title="Sales Trends"
+        title={t('reports.salesTrend')}
         data={salesTrends}
         lines={[
-          { dataKey: 'revenue', name: 'Revenue (CZK)', color: '#3b82f6' },
-          { dataKey: 'avgOrderValue', name: 'Avg Order Value', color: '#10b981' },
+          { dataKey: 'revenue', name: `${t('reports.revenue')} (CZK)`, color: '#3b82f6' },
+          { dataKey: 'avgOrderValue', name: t('reports.avgOrderValue'), color: '#10b981' },
         ]}
         formatValue={(value) => formatCurrency(value, 'CZK')}
         testId="chart-sales-trends"
@@ -245,10 +247,10 @@ export default function SalesReports() {
 
       {/* Top Products Bar Chart */}
       <BarChartCard
-        title="Top 10 Selling Products (by Quantity)"
+        title={t('reports.top10SellingProducts')}
         data={topProductsChartData}
         bars={[
-          { dataKey: 'quantity', name: 'Units Sold', color: '#3b82f6' },
+          { dataKey: 'quantity', name: t('reports.unitsSold'), color: '#3b82f6' },
         ]}
         testId="chart-top-products"
       />
@@ -256,7 +258,7 @@ export default function SalesReports() {
       {/* Sales by Category */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PieChartCard
-          title="Sales by Category"
+          title={t('reports.salesByCategory')}
           data={salesByCategory}
           formatValue={(value) => formatCurrency(value, 'CZK')}
           testId="chart-sales-by-category"
@@ -265,17 +267,17 @@ export default function SalesReports() {
         {/* Top Products Table */}
         <Card data-testid="table-top-products">
           <CardHeader>
-            <CardTitle>Top Selling Products</CardTitle>
+            <CardTitle>{t('reports.topSellingProducts')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Product</TableHead>
-                    <TableHead className="text-right">Qty</TableHead>
-                    <TableHead className="text-right">Revenue</TableHead>
-                    <TableHead className="text-right">Profit</TableHead>
+                    <TableHead>{t('reports.product')}</TableHead>
+                    <TableHead className="text-right">{t('reports.qty')}</TableHead>
+                    <TableHead className="text-right">{t('reports.revenue')}</TableHead>
+                    <TableHead className="text-right">{t('reports.profit')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef, createContext, useContext } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1526,6 +1527,7 @@ function EmptyState({ icon: Icon, title, description, action }: {
 export default function ReceivingList() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { t } = useTranslation(['inventory', 'common']);
   const [activeTab, setActiveTab] = useState("to-receive");
   const [searchQuery, setSearchQuery] = useState("");
   const [isScanning, setIsScanning] = useState(false);

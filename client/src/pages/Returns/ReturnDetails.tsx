@@ -1,5 +1,6 @@
 import { useLocation, useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +15,7 @@ import { Link } from "wouter";
 export default function ReturnDetails() {
   const [, navigate] = useLocation();
   const { id } = useParams();
+  const { t } = useTranslation(['inventory', 'common']);
 
   const { data: returnData, isLoading, error } = useQuery<any>({
     queryKey: [`/api/returns/${id}`],
@@ -60,24 +62,24 @@ export default function ReturnDetails() {
             className="mb-2"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Returns
+            {t('inventory:returns')}
           </Button>
-          <h1 className="text-2xl font-bold text-slate-900">Return Details</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t('inventory:returnDetails')}</h1>
           <p className="text-gray-600">Return ID: {returnData.returnId}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
             <Printer className="h-4 w-4 mr-2" />
-            Print
+            {t('common:print')}
           </Button>
           <Button variant="outline" size="sm">
             <Share2 className="h-4 w-4 mr-2" />
-            Share
+            {t('common:share')}
           </Button>
           <Link href={`/returns/${id}/edit`}>
             <Button variant="outline" size="sm">
               <Edit className="h-4 w-4 mr-2" />
-              Edit
+              {t('common:edit')}
             </Button>
           </Link>
         </div>

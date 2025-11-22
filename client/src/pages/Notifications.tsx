@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ const BADGE_VARIANT_MAP = {
 };
 
 export default function Notifications() {
+  const { t } = useTranslation(['system', 'common']);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
   const { data: notifications = [], isLoading } = useQuery<Notification[]>({
@@ -65,7 +67,7 @@ export default function Notifications() {
   if (isLoading) {
     return (
       <div className="container max-w-4xl mx-auto px-4 py-6 space-y-4">
-        <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">Notifications</h1>
+        <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">{t('system:notifications')}</h1>
         {[1, 2, 3].map((i) => (
           <Card key={i}>
             <CardHeader>
@@ -81,14 +83,14 @@ export default function Notifications() {
   return (
     <div className="container max-w-4xl mx-auto px-4 py-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2 text-gray-900 dark:text-gray-100" data-testid="heading-notifications">Notifications</h1>
-        <p className="text-muted-foreground dark:text-gray-400">View and manage your notifications</p>
+        <h1 className="text-2xl font-bold mb-2 text-gray-900 dark:text-gray-100" data-testid="heading-notifications">{t('system:notifications')}</h1>
+        <p className="text-muted-foreground dark:text-gray-400">{t('system:viewAndManageNotifications')}</p>
       </div>
 
       <Tabs value={filter} onValueChange={(v) => setFilter(v as 'all' | 'unread')} className="mb-6">
         <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="all" data-testid="tab-all">All</TabsTrigger>
-          <TabsTrigger value="unread" data-testid="tab-unread">Unread</TabsTrigger>
+          <TabsTrigger value="all" data-testid="tab-all">{t('common:all')}</TabsTrigger>
+          <TabsTrigger value="unread" data-testid="tab-unread">{t('system:unread')}</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -97,12 +99,12 @@ export default function Notifications() {
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Info className="h-12 w-12 text-muted-foreground dark:text-gray-400 mb-4" />
             <p className="text-lg font-medium text-muted-foreground dark:text-gray-300" data-testid="text-empty-state">
-              {filter === 'unread' ? 'No unread notifications' : 'No notifications yet'}
+              {filter === 'unread' ? t('system:noUnreadNotifications') : t('system:noNotificationsYet')}
             </p>
             <p className="text-sm text-muted-foreground dark:text-gray-400 mt-2">
               {filter === 'unread' 
-                ? "You're all caught up!" 
-                : 'Notifications will appear here when you receive them'}
+                ? t('system:allCaughtUp')
+                : t('system:notificationsWillAppear')}
             </p>
           </CardContent>
         </Card>
@@ -128,7 +130,7 @@ export default function Notifications() {
                           {notification.title}
                         </CardTitle>
                         <Badge variant={badgeVariant} className="flex-shrink-0" data-testid={`badge-${notification.type}`}>
-                          {notification.type}
+                          {t(`system:${notification.type}`)}
                         </Badge>
                       </div>
                       {notification.description && (
@@ -148,7 +150,7 @@ export default function Notifications() {
                             disabled={markAsReadMutation.isPending}
                             data-testid={`button-mark-read-${notification.id}`}
                           >
-                            Mark as read
+                            {t('system:markAsRead')}
                           </Button>
                         )}
                         {notification.actionUrl && notification.actionLabel && (

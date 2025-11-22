@@ -28,6 +28,7 @@ import { formatDate } from '@/lib/currencyUtils';
 import { fuzzySearch } from '@/lib/fuzzySearch';
 import { Package, XCircle, ExternalLink, Search, Eye, Filter, Truck, CheckCircle, XOctagon } from 'lucide-react';
 import { Link } from 'wouter';
+import { useTranslation } from 'react-i18next';
 
 interface ShipmentLabel {
   id: string;
@@ -48,6 +49,7 @@ interface ShipmentLabel {
 }
 
 export default function ShipmentLabels() {
+  const { t } = useTranslation(['shipping', 'common']);
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLabel, setSelectedLabel] = useState<ShipmentLabel | null>(null);
@@ -67,8 +69,8 @@ export default function ShipmentLabels() {
       }),
     onSuccess: () => {
       toast({
-        title: 'Label Cancelled',
-        description: 'The shipment label has been cancelled successfully.',
+        title: t('shipping:labelCancelled'),
+        description: t('shipping:labelCancelledSuccess'),
       });
       queryClient.invalidateQueries({ queryKey: ['/api/shipment-labels'] });
       setShowCancelDialog(false);
@@ -76,8 +78,8 @@ export default function ShipmentLabels() {
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to cancel shipment label',
+        title: t('shipping:error'),
+        description: error.message || t('shipping:failedToCancelLabel'),
         variant: 'destructive',
       });
     },
@@ -138,7 +140,7 @@ export default function ShipmentLabels() {
   const columns: DataTableColumn<ShipmentLabel>[] = [
     {
       key: 'orderId',
-      header: 'Order & Customer',
+      header: t('shipping:orderAndCustomer'),
       sortable: true,
       sortKey: 'customOrderId',
       cell: (label: ShipmentLabel) => (
@@ -161,7 +163,7 @@ export default function ShipmentLabels() {
     },
     {
       key: 'carrier',
-      header: 'Carrier',
+      header: t('shipping:carrier'),
       sortable: true,
       cell: (label: ShipmentLabel) => (
         <Badge variant="outline" data-testid={`badge-carrier-${label.id}`}>
@@ -171,7 +173,7 @@ export default function ShipmentLabels() {
     },
     {
       key: 'trackingNumbers',
-      header: 'Tracking Numbers',
+      header: t('shipping:trackingNumbers'),
       cell: (label: ShipmentLabel) => (
         <div className="space-y-1" data-testid={`text-tracking-${label.id}`}>
           {label.trackingNumbers.map((tn: string, index: number) => (
@@ -184,7 +186,7 @@ export default function ShipmentLabels() {
     },
     {
       key: 'status',
-      header: 'Status',
+      header: t('common:status'),
       sortable: true,
       cell: (label: ShipmentLabel) => (
         <Badge
@@ -196,13 +198,13 @@ export default function ShipmentLabels() {
           }
           data-testid={`badge-status-${label.id}`}
         >
-          {label.status}
+          {label.status === 'active' ? t('shipping:active') : t('shipping:cancelled')}
         </Badge>
       ),
     },
     {
       key: 'createdAt',
-      header: 'Created',
+      header: t('shipping:created'),
       sortable: true,
       cell: (label: ShipmentLabel) => (
         <span className="text-sm" data-testid={`text-created-${label.id}`}>
@@ -212,7 +214,7 @@ export default function ShipmentLabels() {
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: t('shipping:actions'),
       cell: (label: ShipmentLabel) => (
         <div className="flex items-center gap-2">
           <Button
@@ -235,7 +237,7 @@ export default function ShipmentLabels() {
             data-testid={`button-view-label-${label.id}`}
           >
             <Eye className="w-4 h-4 mr-1" />
-            View
+            {t('shipping:view')}
           </Button>
           {label.status === 'active' && (
             <Button
@@ -245,7 +247,7 @@ export default function ShipmentLabels() {
               data-testid={`button-cancel-${label.id}`}
             >
               <XCircle className="w-4 h-4 mr-1" />
-              Cancel
+              {t('shipping:cancel')}
             </Button>
           )}
         </div>
@@ -259,10 +261,10 @@ export default function ShipmentLabels() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2" data-testid="title-shipment-labels">
             <Package className="w-6 h-6" />
-            Shipment Labels
+            {t('shipping:shipmentLabels')}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Manage all shipping labels (PPL CZ, GLS DE, DHL DE) created for orders
+            {t('shipping:manageShippingLabels')}
           </p>
         </div>
       </div>
@@ -280,7 +282,7 @@ export default function ShipmentLabels() {
           <CardContent className="p-3">
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-muted-foreground truncate">All</p>
+                <p className="text-xs font-medium text-muted-foreground truncate">{t('shipping:all')}</p>
                 <p className="text-xl font-bold">{carrierStats.all}</p>
               </div>
               <Truck className="h-5 w-5 text-blue-600 flex-shrink-0" />
@@ -358,7 +360,7 @@ export default function ShipmentLabels() {
           <CardContent className="p-3">
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-muted-foreground truncate">Active</p>
+                <p className="text-xs font-medium text-muted-foreground truncate">{t('shipping:active')}</p>
                 <p className="text-xl font-bold">{statusStats.active}</p>
               </div>
               <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
@@ -376,7 +378,7 @@ export default function ShipmentLabels() {
           <CardContent className="p-3">
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-muted-foreground truncate">Cancelled</p>
+                <p className="text-xs font-medium text-muted-foreground truncate">{t('shipping:cancelled')}</p>
                 <p className="text-xl font-bold">{statusStats.cancelled}</p>
               </div>
               <XOctagon className="h-5 w-5 text-red-600 flex-shrink-0" />
@@ -389,9 +391,9 @@ export default function ShipmentLabels() {
         <CardHeader className="pb-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <CardTitle className="text-lg">Labels</CardTitle>
+              <CardTitle className="text-lg">{t('shipping:labels')}</CardTitle>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Showing {filteredLabels.length} of {labels.length}
+                {t('shipping:showing')} {filteredLabels.length} {t('shipping:of')} {labels.length}
               </p>
             </div>
             
@@ -401,7 +403,7 @@ export default function ShipmentLabels() {
                 <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                 <Input
                   type="text"
-                  placeholder="Search..."
+                  placeholder={t('shipping:search')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-8 h-8 text-sm w-full sm:w-[200px]"
@@ -423,7 +425,7 @@ export default function ShipmentLabels() {
                   data-testid="button-clear-filters"
                 >
                   <XCircle className="h-3.5 w-3.5 mr-1" />
-                  Clear
+                  {t('shipping:clear')}
                 </Button>
               )}
             </div>
@@ -432,11 +434,11 @@ export default function ShipmentLabels() {
         <CardContent className="p-0 sm:p-6">
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground" data-testid="loading-labels">
-              Loading labels...
+              {t('shipping:loadingLabels')}
             </div>
           ) : filteredLabels.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground" data-testid="empty-labels">
-              No shipment labels found
+              {t('shipping:noShipmentLabelsFound')}
             </div>
           ) : (
             <>
@@ -479,7 +481,7 @@ export default function ShipmentLabels() {
                             }
                             data-testid={`badge-status-mobile-${label.id}`}
                           >
-                            {label.status}
+                            {label.status === 'active' ? t('shipping:active') : t('shipping:cancelled')}
                           </Badge>
                         </div>
                       </div>
@@ -487,7 +489,7 @@ export default function ShipmentLabels() {
                       {/* Middle Row - Tracking and Details */}
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div>
-                          <p className="text-gray-500 dark:text-gray-400 text-xs">Tracking Number</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">{t('shipping:trackingNumber')}</p>
                           <div className="font-mono text-xs mt-0.5">
                             {label.trackingNumbers.map((tn, index) => (
                               <div key={index} className="font-medium text-gray-900 dark:text-gray-100">
@@ -497,7 +499,7 @@ export default function ShipmentLabels() {
                           </div>
                         </div>
                         <div>
-                          <p className="text-gray-500 dark:text-gray-400 text-xs">Created</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-xs">{t('shipping:created')}</p>
                           <p className="font-medium text-gray-900 dark:text-gray-100 mt-0.5">
                             {formatDate(label.createdAt)}
                           </p>
@@ -508,7 +510,7 @@ export default function ShipmentLabels() {
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         {label.shipmentCount && (
                           <div>
-                            <p className="text-gray-500 dark:text-gray-400 text-xs">Packages</p>
+                            <p className="text-gray-500 dark:text-gray-400 text-xs">{t('shipping:packages')}</p>
                             <p className="font-medium text-gray-900 dark:text-gray-100 mt-0.5">
                               {label.shipmentCount}
                             </p>
@@ -516,7 +518,7 @@ export default function ShipmentLabels() {
                         )}
                         {label.batchId && (
                           <div>
-                            <p className="text-gray-500 dark:text-gray-400 text-xs">Batch ID</p>
+                            <p className="text-gray-500 dark:text-gray-400 text-xs">{t('shipping:batchId')}</p>
                             <p className="font-medium text-gray-900 dark:text-gray-100 mt-0.5 truncate">
                               {label.batchId}
                             </p>
@@ -547,7 +549,7 @@ export default function ShipmentLabels() {
                           data-testid={`button-view-label-mobile-${label.id}`}
                         >
                           <Eye className="w-4 h-4 mr-1" />
-                          View Label
+                          {t('shipping:viewLabel')}
                         </Button>
                         {label.status === 'active' && (
                           <Button
@@ -558,7 +560,7 @@ export default function ShipmentLabels() {
                             data-testid={`button-cancel-mobile-${label.id}`}
                           >
                             <XCircle className="w-4 h-4 mr-1" />
-                            Cancel
+                            {t('shipping:cancel')}
                           </Button>
                         )}
                       </div>
@@ -584,20 +586,19 @@ export default function ShipmentLabels() {
       <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <AlertDialogContent data-testid="dialog-cancel-label">
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Shipment Label</AlertDialogTitle>
+            <AlertDialogTitle>{t('shipping:cancelShipmentLabel')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to cancel this shipment label? This action cannot be
-              undone and the label will no longer be valid.
+              {t('shipping:cancelShipmentConfirmation')}
               {selectedLabel && (
                 <div className="mt-4 bg-muted p-3 rounded-lg">
                   <p className="text-sm">
-                    <strong>Order ID:</strong> {selectedLabel.orderId}
+                    <strong>{t('common:orderId')}:</strong> {selectedLabel.orderId}
                   </p>
                   <p className="text-sm">
-                    <strong>Carrier:</strong> {selectedLabel.carrier}
+                    <strong>{t('shipping:carrier')}:</strong> {selectedLabel.carrier}
                   </p>
                   <p className="text-sm">
-                    <strong>Tracking:</strong>{' '}
+                    <strong>{t('shipping:trackingNumber')}:</strong>{' '}
                     {selectedLabel.trackingNumbers.join(', ')}
                   </p>
                 </div>
@@ -606,14 +607,14 @@ export default function ShipmentLabels() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel data-testid="button-cancel-dialog-no">
-              No, Keep Label
+              {t('common:no')}, {t('common:keepLabel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleCancelConfirm}
               className="bg-red-600 hover:bg-red-700"
               data-testid="button-cancel-dialog-yes"
             >
-              Yes, Cancel Label
+              {t('common:yes')}, {t('shipping:cancel')} {t('shipping:shippingLabel')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +44,7 @@ import { format, subDays, subMonths, startOfMonth, endOfMonth, startOfYear, endO
 
 export default function Reports() {
   const { toast } = useToast();
+  const { t } = useTranslation(['reports', 'common']);
   const [dateRange, setDateRange] = useState<string>("all");
 
   // Fetch all necessary data
@@ -290,17 +292,17 @@ export default function Reports() {
         },
       ];
 
-      exportToXLSX(exportData, `Report_${format(new Date(), 'yyyy-MM-dd')}`, 'Business Report');
+      exportToXLSX(exportData, `Report_${format(new Date(), 'yyyy-MM-dd')}`, t('reports.businessReports'));
       
       toast({
-        title: "Export Successful",
-        description: "Report exported to XLSX",
+        title: t('reports.exportSuccessful'),
+        description: t('reports.reportExportedXlsx'),
       });
     } catch (error) {
       console.error('Export error:', error);
       toast({
-        title: "Export Failed",
-        description: "Failed to export report",
+        title: t('reports.exportFailed'),
+        description: t('reports.failedToExportReport'),
         variant: "destructive",
       });
     }
@@ -324,17 +326,17 @@ export default function Reports() {
         { key: 'value', header: 'Value' },
       ];
 
-      exportToPDF('Business Report', exportData, columns, `Report_${format(new Date(), 'yyyy-MM-dd')}`);
+      exportToPDF(t('reports.businessReports'), exportData, columns, `Report_${format(new Date(), 'yyyy-MM-dd')}`);
       
       toast({
-        title: "Export Successful",
-        description: "Report exported to PDF",
+        title: t('reports.exportSuccessful'),
+        description: t('reports.reportExportedPdf'),
       });
     } catch (error) {
       console.error('Export error:', error);
       toast({
-        title: "Export Failed",
-        description: "Failed to export report",
+        title: t('reports.exportFailed'),
+        description: t('reports.failedToExportReport'),
         variant: "destructive",
       });
     }
@@ -346,10 +348,10 @@ export default function Reports() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-            Business Reports
+            {t('reports.businessReports')}
           </h1>
           <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
-            Comprehensive analytics for growth and financial insights
+            {t('reports.comprehensiveAnalytics')}
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -359,31 +361,31 @@ export default function Reports() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Time</SelectItem>
-              <SelectItem value="today">Today</SelectItem>
-              <SelectItem value="week">Last 7 Days</SelectItem>
-              <SelectItem value="month">Last 30 Days</SelectItem>
-              <SelectItem value="thisMonth">This Month</SelectItem>
-              <SelectItem value="year">This Year</SelectItem>
+              <SelectItem value="all">{t('reports.allTime')}</SelectItem>
+              <SelectItem value="today">{t('reports.today')}</SelectItem>
+              <SelectItem value="week">{t('reports.last7Days')}</SelectItem>
+              <SelectItem value="month">{t('reports.last30Days')}</SelectItem>
+              <SelectItem value="thisMonth">{t('reports.thisMonth')}</SelectItem>
+              <SelectItem value="year">{t('reports.thisYear')}</SelectItem>
             </SelectContent>
           </Select>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-full sm:w-auto" data-testid="button-export">
                 <FileDown className="h-4 w-4 mr-2" />
-                Export
+                {t('reports.export')}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('reports.exportOptions')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleExportXLSX} data-testid="button-export-xlsx">
                 <FileDown className="h-4 w-4 mr-2" />
-                Export as XLSX
+                {t('reports.exportAsXlsx')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExportPDF} data-testid="button-export-pdf">
                 <FileText className="h-4 w-4 mr-2" />
-                Export as PDF
+                {t('reports.exportAsPdf')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -394,7 +396,7 @@ export default function Reports() {
       <div>
         <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3 sm:mb-4 flex items-center gap-2">
           <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
-          Financial Overview
+          {t('reports.financialOverview')}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Total Revenue CZK */}
@@ -403,7 +405,7 @@ export default function Reports() {
               <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Revenue (CZK)
+                    {t('reports.revenue')} (CZK)
                   </p>
                   <TooltipProvider>
                     <Tooltip>
@@ -431,7 +433,7 @@ export default function Reports() {
               <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Revenue (EUR)
+                    {t('reports.revenue')} (EUR)
                   </p>
                   <TooltipProvider>
                     <Tooltip>
@@ -459,7 +461,7 @@ export default function Reports() {
               <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Profit (Est.)
+                    {t('reports.profitEst')}
                   </p>
                   <TooltipProvider>
                     <Tooltip>
@@ -491,7 +493,7 @@ export default function Reports() {
               <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Profit Margin
+                    {t('reports.profitMargin')}
                   </p>
                   <p className={`text-xl sm:text-2xl font-bold truncate ${financialMetrics.profitMargin >= 0 ? 'text-emerald-600' : 'text-red-600'}`} data-testid="stat-margin">
                     {financialMetrics.profitMargin.toFixed(1)}%
@@ -510,7 +512,7 @@ export default function Reports() {
       <div>
         <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3 sm:mb-4 flex items-center gap-2">
           <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-cyan-600" />
-          Sales & Orders
+          {t('reports.salesAndOrders')}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Total Orders */}
@@ -519,7 +521,7 @@ export default function Reports() {
               <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Total Orders
+                    {t('reports.totalOrders')}
                   </p>
                   <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-total-orders">
                     {formatCompactNumber(financialMetrics.totalOrders)}
@@ -538,7 +540,7 @@ export default function Reports() {
               <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Units Sold
+                    {t('reports.unitsSold')}
                   </p>
                   <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-units-sold">
                     {formatCompactNumber(productPerformance.totalUnitsSold)}
@@ -557,7 +559,7 @@ export default function Reports() {
               <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Avg Order (CZK)
+                    {t('reports.avgOrderCzk')}
                   </p>
                   <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-avg-order-czk">
                     {formatCompactNumber(financialMetrics.avgOrderValueCZK)} Kč
@@ -576,7 +578,7 @@ export default function Reports() {
               <div className="flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Active Customers
+                    {t('reports.activeCustomers')}
                   </p>
                   <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-active-customers">
                     {formatCompactNumber(customerAnalytics.activeCustomers)}
@@ -598,17 +600,17 @@ export default function Reports() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Star className="h-5 w-5 text-amber-500" />
-              Top Selling Products
+              {t('reports.topSellingProducts')}
             </CardTitle>
             <CardDescription>
-              Best performers by units sold
+              {t('reports.topSellingProductsDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {productPerformance.topProducts.length === 0 ? (
                 <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
-                  No sales data available
+                  {t('reports.noSalesDataAvailable')}
                 </p>
               ) : (
                 productPerformance.topProducts.map((item, index) => (
@@ -628,7 +630,7 @@ export default function Reports() {
                     </div>
                     <div className="text-right shrink-0">
                       <p className="font-bold text-emerald-600 dark:text-emerald-400">
-                        {item.quantity} units
+                        {item.quantity} {t('reports.units')}
                       </p>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
                         {formatCurrency(item.revenue, 'CZK')}
@@ -646,10 +648,10 @@ export default function Reports() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
-              Inventory Alerts
+              {t('reports.inventoryAlerts')}
             </CardTitle>
             <CardDescription>
-              Low stock and out of stock items
+              {t('reports.lowStockAndOutOfStock')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -657,13 +659,13 @@ export default function Reports() {
               {/* Summary */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-                  <p className="text-xs text-amber-700 dark:text-amber-300 mb-1">Low Stock</p>
+                  <p className="text-xs text-amber-700 dark:text-amber-300 mb-1">{t('reports.lowStock')}</p>
                   <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
                     {inventoryInsights.lowStockCount}
                   </p>
                 </div>
                 <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
-                  <p className="text-xs text-red-700 dark:text-red-300 mb-1">Out of Stock</p>
+                  <p className="text-xs text-red-700 dark:text-red-300 mb-1">{t('reports.outOfStock')}</p>
                   <p className="text-2xl font-bold text-red-600 dark:text-red-400">
                     {inventoryInsights.outOfStockCount}
                   </p>
@@ -672,10 +674,10 @@ export default function Reports() {
 
               {/* Low Stock List */}
               <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Low Stock Items:</p>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('reports.lowStockItems')}</p>
                 {inventoryInsights.lowStockProducts.length === 0 ? (
                   <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-2">
-                    All products are well stocked
+                    {t('reports.allProductsWellStocked')}
                   </p>
                 ) : (
                   inventoryInsights.lowStockProducts.slice(0, 5).map((product: any) => (
@@ -684,7 +686,7 @@ export default function Reports() {
                         {product.name}
                       </p>
                       <Badge variant="outline" className="text-amber-600 border-amber-600 shrink-0">
-                        {product.quantity} left
+                        {product.quantity} {t('reports.left')}
                       </Badge>
                     </div>
                   ))
@@ -700,17 +702,17 @@ export default function Reports() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5 text-violet-500" />
-            Top Customers
+            {t('reports.topCustomers')}
           </CardTitle>
           <CardDescription>
-            Highest value customers by total spending
+            {t('reports.highestValueCustomers')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {customerAnalytics.topCustomers.length === 0 ? (
               <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
-                No customer data available
+                {t('reports.noCustomerDataAvailable')}
               </p>
             ) : (
               customerAnalytics.topCustomers.map((item, index) => (
@@ -724,7 +726,7 @@ export default function Reports() {
                         {item.customer.name}
                       </p>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {item.orderCount} orders
+                        {item.orderCount} {t('reports.ordersLowercase')}
                       </p>
                     </div>
                   </div>
@@ -750,10 +752,10 @@ export default function Reports() {
               </div>
               <div>
                 <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  Total Inventory
+                  {t('reports.totalInventory')}
                 </p>
                 <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  {formatCompactNumber(inventoryInsights.totalStock)} units
+                  {formatCompactNumber(inventoryInsights.totalStock)} {t('reports.units')}
                 </p>
               </div>
             </div>
@@ -768,7 +770,7 @@ export default function Reports() {
               </div>
               <div>
                 <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  Stock Value
+                  {t('reports.stockValue')}
                 </p>
                 <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                   {formatCompactNumber(inventoryInsights.totalValue)} Kč
@@ -786,7 +788,7 @@ export default function Reports() {
               </div>
               <div>
                 <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  Product Varieties
+                  {t('reports.productVarieties')}
                 </p>
                 <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                   {formatCompactNumber((products as any[]).length)}

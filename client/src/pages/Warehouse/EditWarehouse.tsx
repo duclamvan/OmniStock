@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,47 +65,32 @@ import {
   type Warehouse 
 } from "@shared/schema";
 
-const warehouseSchema = z.object({
-  name: z.string().min(1, "Warehouse name is required"),
-  location: z.string().optional(),
-  status: z.enum(["active", "inactive", "maintenance", "rented"]).default("active"),
-  rentedFromDate: z.string().optional(),
-  expenseId: z.string().optional(),
-  contact: z.string().optional(),
-  notes: z.string().optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  country: z.string().default("Czech Republic"),
-  zipCode: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().email().optional().or(z.literal("")),
-  manager: z.string().optional(),
-  capacity: z.number().min(0).optional(),
-  type: z.enum(["main", "branch", "temporary"]).default("branch"),
-  floorArea: z.number().min(0).optional(),
-});
+type WarehouseFormData = {
+  name: string;
+  location?: string;
+  status: "active" | "inactive" | "maintenance" | "rented";
+  rentedFromDate?: string;
+  expenseId?: string;
+  contact?: string;
+  notes?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  zipCode?: string;
+  phone?: string;
+  email?: string;
+  manager?: string;
+  capacity?: number;
+  type: "main" | "branch" | "temporary";
+  floorArea?: number;
+};
 
-type WarehouseFormData = z.infer<typeof warehouseSchema>;
-
-// Contract form schema with validation
-const contractFormSchema = insertWarehouseFinancialContractSchema.omit({ warehouseId: true }).extend({
-  contractName: z.string().min(1, "Contract name is required"),
-  price: z.string().min(1, "Price is required"),
-  billingPeriod: z.enum(["monthly", "yearly", "quarterly", "custom"]),
-  customBillingDays: z.number().optional(),
-}).refine((data) => {
-  if (data.billingPeriod === "custom") {
-    return !!data.customBillingDays && data.customBillingDays > 0;
-  }
-  return true;
-}, {
-  message: "Custom billing days are required when billing period is custom",
-  path: ["customBillingDays"],
-});
-
-type ContractFormData = z.infer<typeof contractFormSchema>;
+type ContractFormData = InsertWarehouseFinancialContract & {
+  customBillingDays?: number;
+};
 
 export default function EditWarehouse() {
+  const { t } = useTranslation(['warehouse', 'common']);
   const { id } = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -112,6 +98,41 @@ export default function EditWarehouse() {
   const [contractDialogOpen, setContractDialogOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<WarehouseFinancialContract | null>(null);
   const [deleteContractId, setDeleteContractId] = useState<string | null>(null);
+
+  const warehouseSchema = z.object({
+    name: z.string().min(1, t('warehouse:warehouseNameRequired')),
+    location: z.string().optional(),
+    status: z.enum(["active", "inactive", "maintenance", "rented"]).default("active"),
+    rentedFromDate: z.string().optional(),
+    expenseId: z.string().optional(),
+    contact: z.string().optional(),
+    notes: z.string().optional(),
+    address: z.string().optional(),
+    city: z.string().optional(),
+    country: z.string().default("Czech Republic"),
+    zipCode: z.string().optional(),
+    phone: z.string().optional(),
+    email: z.string().email(t('common:invalidEmail')).optional().or(z.literal("")),
+    manager: z.string().optional(),
+    capacity: z.number().min(0).optional(),
+    type: z.enum(["main", "branch", "temporary"]).default("branch"),
+    floorArea: z.number().min(0).optional(),
+  });
+
+  const contractFormSchema = insertWarehouseFinancialContractSchema.omit({ warehouseId: true }).extend({
+    contractName: z.string().min(1, t('warehouse:contractNameRequired')),
+    price: z.string().min(1, t('warehouse:priceRequired')),
+    billingPeriod: z.enum(["monthly", "yearly", "quarterly", "custom"]),
+    customBillingDays: z.number().optional(),
+  }).refine((data) => {
+    if (data.billingPeriod === "custom") {
+      return !!data.customBillingDays && data.customBillingDays > 0;
+    }
+    return true;
+  }, {
+    message: t('warehouse:customBillingRequired'),
+    path: ["customBillingDays"],
+  });
 
   const { data: warehouse, isLoading } = useQuery<Warehouse>({
     queryKey: ['/api/warehouses', id],
@@ -227,15 +248,15 @@ export default function EditWarehouse() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/warehouses'] });
       toast({
-        title: "Success",
-        description: "Warehouse updated successfully",
+        title: t('common:success'),
+        description: t('warehouse:warehouseUpdatedSuccess'),
       });
       navigate("/warehouses");
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update warehouse",
+        title: t('common:error'),
+        description: error.message || t('warehouse:warehouseUpdateError'),
         variant: "destructive",
       });
     },
@@ -246,17 +267,17 @@ export default function EditWarehouse() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/warehouses'] });
       toast({
-        title: "Success",
-        description: "Warehouse deleted successfully",
+        title: t('common:success'),
+        description: t('warehouse:warehouseDeletedSuccess'),
       });
       navigate("/warehouses");
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t('common:error'),
         description: error.message.includes('referenced') || error.message.includes('constraint')
-          ? "Cannot delete warehouse - it's being used in existing records" 
-          : error.message || "Failed to delete warehouse",
+          ? t('common:cannotDeleteInUse') 
+          : error.message || t('warehouse:warehouseDeleteError'),
         variant: "destructive",
       });
     },
@@ -271,16 +292,16 @@ export default function EditWarehouse() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/warehouses', id, 'financial-contracts'] });
       toast({
-        title: "Success",
-        description: "Financial contract created successfully",
+        title: t('common:success'),
+        description: t('warehouse:contractCreatedSuccess'),
       });
       setContractDialogOpen(false);
       contractForm.reset();
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to create contract",
+        title: t('common:error'),
+        description: error.message || t('warehouse:contractCreateError'),
         variant: "destructive",
       });
     },
@@ -294,8 +315,8 @@ export default function EditWarehouse() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/warehouses', id, 'financial-contracts'] });
       toast({
-        title: "Success",
-        description: "Financial contract updated successfully",
+        title: t('common:success'),
+        description: t('warehouse:contractUpdatedSuccess'),
       });
       setContractDialogOpen(false);
       setEditingContract(null);
@@ -303,8 +324,8 @@ export default function EditWarehouse() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update contract",
+        title: t('common:error'),
+        description: error.message || t('warehouse:contractUpdateError'),
         variant: "destructive",
       });
     },
@@ -316,15 +337,15 @@ export default function EditWarehouse() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/warehouses', id, 'financial-contracts'] });
       toast({
-        title: "Success",
-        description: "Financial contract deleted successfully",
+        title: t('common:success'),
+        description: t('warehouse:contractDeletedSuccess'),
       });
       setDeleteContractId(null);
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to delete contract",
+        title: t('common:error'),
+        description: error.message || t('warehouse:contractDeleteError'),
         variant: "destructive",
       });
     },
@@ -494,9 +515,9 @@ export default function EditWarehouse() {
   if (!warehouse) {
     return (
       <div className="text-center py-8">
-        <p className="text-slate-600">Warehouse not found</p>
+        <p className="text-slate-600">{t('warehouse:warehouseNotFound')}</p>
         <Button className="mt-4" onClick={() => window.history.back()}>
-          Back to Warehouses
+          {t('warehouse:backToWarehouses')}
         </Button>
       </div>
     );
@@ -514,22 +535,22 @@ export default function EditWarehouse() {
             className="shrink-0"
           >
             <ArrowLeft className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">Back to Warehouses</span>
+            <span className="hidden md:inline">{t('warehouse:backToWarehouses')}</span>
           </Button>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Badge variant={warehouse?.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-            {warehouse?.status || 'active'}
+            {t(`common:${warehouse?.status || 'active'}`)}
           </Badge>
           <Badge variant="outline" className="text-xs">
-            {warehouse?.type || 'branch'}
+            {t(`warehouse:type.${warehouse?.type || 'branch'}`)}
           </Badge>
         </div>
       </div>
 
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">{warehouse?.name || 'Edit Warehouse'}</h1>
-        <p className="text-sm md:text-base text-slate-600 mt-1">Update warehouse details and manage attachments</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">{warehouse?.name || t('warehouse:editWarehouse')}</h1>
+        <p className="text-sm md:text-base text-slate-600 mt-1">{t('warehouse:editWarehouseDesc')}</p>
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
@@ -541,18 +562,18 @@ export default function EditWarehouse() {
               <CardHeader className="p-4 md:p-6">
                 <CardTitle className="flex items-center gap-2 text-base md:text-lg">
                   <Building2 className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
-                  Basic Information
+                  {t('warehouse:basicInformation')}
                 </CardTitle>
-                <CardDescription className="text-xs md:text-sm">Essential warehouse details and identification</CardDescription>
+                <CardDescription className="text-xs md:text-sm">{t('warehouse:basicInformationDesc')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 md:space-y-4 p-4 md:p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="name">Warehouse Name *</Label>
+                    <Label htmlFor="name">{t('warehouse:warehouseName')} *</Label>
                     <Input
                       id="name"
                       {...form.register("name")}
-                      placeholder="e.g., Berlin EU Distribution"
+                      placeholder={t('warehouse:warehouseNamePlaceholder')}
                       className="mt-1"
                     />
                     {form.formState.errors.name && (
@@ -561,15 +582,15 @@ export default function EditWarehouse() {
                   </div>
 
                   <div>
-                    <Label htmlFor="type">Warehouse Type</Label>
+                    <Label htmlFor="type">{t('warehouse:warehouseType')}</Label>
                     <Select value={form.watch("type")} onValueChange={(value: any) => form.setValue("type", value)}>
                       <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select type" />
+                        <SelectValue placeholder={t('warehouse:selectType')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="main">Main Hub</SelectItem>
-                        <SelectItem value="branch">Branch Location</SelectItem>
-                        <SelectItem value="temporary">Temporary Storage</SelectItem>
+                        <SelectItem value="main">{t('warehouse:type.main')}</SelectItem>
+                        <SelectItem value="branch">{t('warehouse:type.branch')}</SelectItem>
+                        <SelectItem value="temporary">{t('warehouse:type.temporary')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -577,34 +598,34 @@ export default function EditWarehouse() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="status">Operating Status</Label>
+                    <Label htmlFor="status">{t('warehouse:operatingStatus')}</Label>
                     <Select value={form.watch("status")} onValueChange={(value: any) => form.setValue("status", value)}>
                       <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select status" />
+                        <SelectValue placeholder={t('warehouse:selectStatus')} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="active">
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-2 bg-green-500 rounded-full" />
-                            Active
+                            {t('common:active')}
                           </div>
                         </SelectItem>
                         <SelectItem value="inactive">
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-2 bg-gray-500 rounded-full" />
-                            Inactive
+                            {t('common:inactive')}
                           </div>
                         </SelectItem>
                         <SelectItem value="maintenance">
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-2 bg-yellow-500 rounded-full" />
-                            Maintenance
+                            {t('common:maintenance')}
                           </div>
                         </SelectItem>
                         <SelectItem value="rented">
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-2 bg-blue-500 rounded-full" />
-                            Rented
+                            {t('common:rented')}
                           </div>
                         </SelectItem>
                       </SelectContent>
@@ -613,13 +634,13 @@ export default function EditWarehouse() {
                 </div>
 
                 <div>
-                  <Label htmlFor="manager">Warehouse Manager</Label>
+                  <Label htmlFor="manager">{t('warehouse:warehouseManager')}</Label>
                   <div className="relative mt-1">
                     <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
                       id="manager"
                       {...form.register("manager")}
-                      placeholder="e.g., John Smith"
+                      placeholder={t('warehouse:managerPlaceholder')}
                       className="pl-10"
                     />
                   </div>

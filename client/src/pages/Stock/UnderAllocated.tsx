@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ interface UnderAllocatedItem {
 }
 
 export default function UnderAllocated() {
+  const { t } = useTranslation(['inventory', 'common']);
   const { data: items = [], isLoading } = useQuery<UnderAllocatedItem[]>({
     queryKey: ['/api/under-allocated-items'],
     staleTime: 0,

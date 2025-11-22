@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useLocation, useParams } from "wouter";
@@ -103,6 +104,7 @@ export default function EditSupplier() {
   const [, setLocation] = useLocation();
   const { id } = useParams();
   const { toast } = useToast();
+  const { t } = useTranslation(['inventory', 'common']);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: supplier, isLoading } = useQuery<Supplier>({
@@ -207,15 +209,15 @@ export default function EditSupplier() {
       queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
       queryClient.invalidateQueries({ queryKey: [`/api/suppliers/${id}`] });
       toast({ 
-        title: "Success",
-        description: "Supplier updated successfully" 
+        title: t('common:success'),
+        description: t('inventory:supplierUpdated') 
       });
       setLocation("/suppliers");
     },
     onError: () => {
       toast({ 
-        title: "Error",
-        description: "Failed to update supplier", 
+        title: t('common:error'),
+        description: t('inventory:updateError'), 
         variant: "destructive" 
       });
       setIsSubmitting(false);
@@ -253,8 +255,8 @@ export default function EditSupplier() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Edit Supplier</h1>
-          <p className="text-sm sm:text-base text-slate-600 mt-1 hidden sm:block">Update supplier profile with contact and business details</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">{t('inventory:editSupplier')}</h1>
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1 hidden sm:block">{t('inventory:manageProductsDescription')}</p>
         </div>
       </div>
 
@@ -596,7 +598,7 @@ export default function EditSupplier() {
               disabled={isSubmitting}
               data-testid="button-cancel"
             >
-              Cancel
+              {t('common:cancel')}
             </Button>
             <Button 
               type="submit" 
@@ -607,10 +609,10 @@ export default function EditSupplier() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Updating...
+                  {t('common:updating')}...
                 </>
               ) : (
-                "Update Supplier"
+                t('inventory:editSupplier')
               )}
             </Button>
           </div>

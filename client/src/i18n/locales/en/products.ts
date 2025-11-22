@@ -83,7 +83,6 @@ const products = {
   physicalAttributes: 'Physical Attributes',
   packagingInfo: 'Packaging Information',
   costHistory: 'Cost History',
-  tieredPricing: 'Tiered Pricing',
   productLocations: 'Product Locations',
   productFiles: 'Product Files',
   productImages: 'Product Images',
@@ -257,6 +256,130 @@ const products = {
   discardChanges: 'Discard Changes',
   downloadInvoice: 'Download Invoice',
   printLabel: 'Print Label',
+  
+  // Search
+  searchItems: 'Search items...',
+  searchProducts: 'Search products...',
+  
+  // Variants - Extended
+  variants: {
+    addVariantButton: 'Add Variant',
+    uploadingImage: 'Uploading...',
+    addSeriesButton: 'Add Series',
+    addSeriesTitle: 'Add Variant Series',
+    addSeriesDescription: 'Create multiple variants using a pattern like "Size <1-10>"',
+    seriesPattern: 'Series Pattern',
+    seriesPatternPlaceholder: 'e.g., Size <1-10> or Color <1-5>',
+    seriesPatternHelp: 'Use <start-end> to generate a numbered series',
+    quantityPerVariant: 'Quantity per Variant',
+    variantPriceOptional: 'Variant Price (Optional)',
+    variantPriceHelper: "Leave blank to use product's default price. Enter value in any currency - others auto-convert.",
+    variantImportCostOptional: 'Variant Import Cost (Optional)',
+    variantImportCostHelper: "Leave blank to use product's default import cost. Enter value in any currency - others auto-convert.",
+    priceCzk: 'Price CZK',
+    priceEur: 'Price EUR',
+    importCostUsd: 'Import Cost USD',
+    importCostCzk: 'Import Cost CZK',
+    importCostEur: 'Import Cost EUR',
+    optional: 'Optional',
+    addVariantSeriesButton: 'Add Variant Series',
+    bulkScanBarcodesButton: 'Bulk Scan Barcodes',
+    deleteSelected: 'Delete Selected',
+    deleteVariantsTitle: 'Delete Variants',
+    deleteVariantsConfirm: 'Are you sure you want to delete {{count}} variant(s)?',
+    scanOrEnter: 'Scan or enter',
+    noVariants: 'No variants added yet',
+    noVariantsHelper: 'Click "Add Variant" to create product variations',
+    addVariantTitle: 'Add Product Variant',
+    addVariantDescription: 'Add a new variant with custom properties',
+    tableHeaders: {
+      image: 'Image',
+      name: 'Name',
+      barcode: 'Barcode',
+      quantity: 'Quantity',
+      priceCzk: 'Price CZK',
+      priceEur: 'Price EUR',
+      importCostUsd: 'Import Cost USD',
+      importCostCzk: 'Import Cost CZK',
+      importCostEur: 'Import Cost EUR',
+    },
+  },
+  
+  // Tiered Pricing - Extended
+  tieredPricing: {
+    title: 'Tiered Pricing',
+    dialogDescription: 'Set quantity-based pricing for this product',
+    addTier: 'Add Tier',
+    updateButton: 'Update Tier',
+    addButton: 'Add Tier',
+    units: 'units',
+    removeButton: 'Remove Tier',
+  },
+  
+  // Packing & Shipping
+  packing: {
+    title: 'Packing & Shipping Details',
+    description: 'Dimensions, materials, and handling instructions',
+    physicalSpecifications: 'Physical Specifications',
+    lengthCm: 'Length (cm)',
+    widthCm: 'Width (cm)',
+    heightCm: 'Height (cm)',
+    weightKg: 'Weight (kg)',
+    packingMaterials: 'Packing Materials',
+    handlingInstructions: 'Handling Instructions',
+  },
+  
+  // Files & Documents
+  files: {
+    title: 'Product Files & Documents',
+    description: 'Attached files and documentation',
+    filesTitle: 'Product Files',
+    filesDescription: 'Documents and files can be attached after creating the product. This includes PDFs, images, specifications, and other documentation.',
+  },
+  
+  // Form Submission
+  submit: {
+    updating: 'Updating...',
+    creating: 'Creating...',
+    cancel: 'Cancel',
+  },
+  
+  // Bulk Scan Dialog
+  bulkScan: {
+    title: 'Bulk Scan Barcodes',
+    description: 'Scan barcodes one by one. They will be automatically assigned to variants without barcodes (from first to last).',
+    scannedBarcodes: 'Scanned Barcodes',
+    placeholder: 'Scan or paste barcodes here (one per line)',
+    helperText: 'Enter one barcode per line. Barcodes will be assigned to variants in order.',
+    variantsWithoutBarcodes: 'variants without barcodes',
+    barcodesEntered: 'barcodes entered',
+    scannerReady: 'Scanner Ready',
+    scannerReadyDescription: 'Start scanning barcodes. Press Enter after each scan.',
+    scanning: 'Scanning...',
+    startScanning: 'Start Scanning',
+    assignBarcodes: 'Assign Barcodes',
+  },
+  
+  // Image Viewer
+  imageViewer: {
+    productImageAlt: 'Product image',
+    close: 'Close',
+    download: 'Download',
+    downloadStarted: 'Download Started',
+    downloadDescription: 'Your image is being downloaded.',
+  },
+  
+  // Form Errors
+  formErrors: {
+    title: 'Form Validation Errors',
+    invalidValue: 'Invalid value',
+  },
+  
+  // Warehouse Locations
+  warehouseLocations: {
+    title: 'Warehouse Locations',
+    infoMessage: 'Warehouse locations can be added after creating the product.',
+  },
   
 } as const;
 

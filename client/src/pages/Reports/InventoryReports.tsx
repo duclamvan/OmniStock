@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useTranslation } from 'react-i18next';
 import { useReports } from "@/contexts/ReportsContext";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ReportHeader } from "@/components/reports/ReportHeader";
@@ -23,6 +24,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 export default function InventoryReports() {
   const { toast } = useToast();
+  const { t } = useTranslation(['reports', 'common']);
   const { getDateRangeValues } = useReports();
   const [deadStockDays, setDeadStockDays] = useState(200);
   const [colorTrendsStartDate, setColorTrendsStartDate] = useState('');
@@ -209,8 +211,8 @@ export default function InventoryReports() {
   return (
     <div className="space-y-6" data-testid="inventory-reports">
       <ReportHeader
-        title="Inventory Reports"
-        description="Stock levels and inventory analysis"
+        title={t('reports.inventoryReportsTitle')}
+        description={t('reports.inventoryReportsDesc')}
         onExportExcel={handleExportExcel}
         onExportPDF={handleExportPDF}
       />
@@ -218,16 +220,16 @@ export default function InventoryReports() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          title="Total Stock"
+          title={t('reports.totalStock')}
           value={inventoryMetrics.totalStock}
-          subtitle="units"
+          subtitle={t('reports.units')}
           icon={Package}
           iconColor="text-blue-600"
           iconBgColor="bg-blue-100"
           testId="metric-total-stock"
         />
         <MetricCard
-          title="Total Value"
+          title={t('reports.totalValue')}
           value={formatCurrency(inventoryMetrics.totalValue, 'CZK')}
           icon={Coins}
           iconColor="text-green-600"
@@ -235,18 +237,18 @@ export default function InventoryReports() {
           testId="metric-total-value"
         />
         <MetricCard
-          title="Low Stock Items"
+          title={t('reports.lowStockItems')}
           value={inventoryMetrics.lowStockCount}
-          subtitle="products"
+          subtitle={t('reports.products')}
           icon={AlertTriangle}
           iconColor="text-orange-600"
           iconBgColor="bg-orange-100"
           testId="metric-low-stock"
         />
         <MetricCard
-          title="Out of Stock"
+          title={t('reports.outOfStockItems')}
           value={inventoryMetrics.outOfStockCount}
-          subtitle="products"
+          subtitle={t('reports.products')}
           icon={TrendingDown}
           iconColor="text-red-600"
           iconBgColor="bg-red-100"
@@ -257,13 +259,13 @@ export default function InventoryReports() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PieChartCard
-          title="Inventory Value by Category"
+          title={t('reports.inventoryValueByCategory')}
           data={stockByCategory}
           formatValue={(value) => formatCurrency(value, 'CZK')}
           testId="chart-stock-by-category"
         />
         <PieChartCard
-          title="Stock Level Distribution"
+          title={t('reports.stockLevelDistribution')}
           data={stockLevelData}
           colors={['#10b981', '#f59e0b', '#ef4444']}
           testId="chart-stock-levels"
@@ -273,18 +275,18 @@ export default function InventoryReports() {
       {/* Low Stock Alerts */}
       <Card data-testid="table-low-stock">
         <CardHeader>
-          <CardTitle>Low Stock Alerts</CardTitle>
+          <CardTitle>{t('reports.lowStockAlerts')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Product</TableHead>
-                  <TableHead>SKU</TableHead>
-                  <TableHead className="text-right">Current Stock</TableHead>
-                  <TableHead className="text-right">Alert Level</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t('reports.product')}</TableHead>
+                  <TableHead>{t('reports.sku')}</TableHead>
+                  <TableHead className="text-right">{t('reports.currentStock')}</TableHead>
+                  <TableHead className="text-right">{t('reports.alertLevel')}</TableHead>
+                  <TableHead>{t('reports.status')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -295,14 +297,14 @@ export default function InventoryReports() {
                     <TableCell className="text-right">{product.quantity}</TableCell>
                     <TableCell className="text-right">{product.lowStockAlert || 5}</TableCell>
                     <TableCell>
-                      <Badge variant="destructive">Low Stock</Badge>
+                      <Badge variant="destructive">{t('reports.lowStock')}</Badge>
                     </TableCell>
                   </TableRow>
                 ))}
                 {inventoryMetrics.lowStockProducts.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-slate-500">
-                      No low stock items
+                      {t('reports.noLowStockItems')}
                     </TableCell>
                   </TableRow>
                 )}
@@ -315,18 +317,18 @@ export default function InventoryReports() {
       {/* Top Value Products */}
       <Card data-testid="table-top-value">
         <CardHeader>
-          <CardTitle>Highest Value Inventory Items</CardTitle>
+          <CardTitle>{t('reports.highestValueInventory')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Product</TableHead>
-                  <TableHead className="text-right">Quantity</TableHead>
-                  <TableHead className="text-right">Unit Price</TableHead>
-                  <TableHead className="text-right">Total Value</TableHead>
-                  <TableHead className="text-right">Reorder Rate</TableHead>
+                  <TableHead>{t('reports.product')}</TableHead>
+                  <TableHead className="text-right">{t('reports.quantity')}</TableHead>
+                  <TableHead className="text-right">{t('reports.unitPrice')}</TableHead>
+                  <TableHead className="text-right">{t('reports.totalValue')}</TableHead>
+                  <TableHead className="text-right">{t('reports.reorderRate')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -354,12 +356,12 @@ export default function InventoryReports() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-slate-600" />
-                Dead Stock Report
+                {t('reports.deadStockReport')}
               </CardTitle>
-              <CardDescription>Products with 0 sales in the specified period</CardDescription>
+              <CardDescription>{t('reports.deadStockDesc')}</CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Label htmlFor="dead-stock-days" className="text-sm">Days threshold:</Label>
+              <Label htmlFor="dead-stock-days" className="text-sm">{t('reports.daysThreshold')}:</Label>
               <Input
                 id="dead-stock-days"
                 type="number"
@@ -380,11 +382,11 @@ export default function InventoryReports() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Product Name</TableHead>
-                    <TableHead>SKU</TableHead>
-                    <TableHead className="text-right">Days Since Last Sale</TableHead>
-                    <TableHead className="text-right">Current Stock</TableHead>
-                    <TableHead className="text-right">Value</TableHead>
+                    <TableHead>{t('reports.productName')}</TableHead>
+                    <TableHead>{t('reports.sku')}</TableHead>
+                    <TableHead className="text-right">{t('reports.daysSinceLastSale')}</TableHead>
+                    <TableHead className="text-right">{t('reports.currentStock')}</TableHead>
+                    <TableHead className="text-right">{t('reports.value')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -409,7 +411,7 @@ export default function InventoryReports() {
                   {(deadStockProducts as any[]).length === 0 && (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center text-slate-500">
-                        No dead stock products found
+                        {t('reports.noDeadStockFound')}
                       </TableCell>
                     </TableRow>
                   )}
@@ -427,9 +429,9 @@ export default function InventoryReports() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-orange-600" />
-                Reorder Alerts
+                {t('reports.reorderAlerts')}
               </CardTitle>
-              <CardDescription>Products below minimum stock level</CardDescription>
+              <CardDescription>{t('reports.reorderAlertsDesc')}</CardDescription>
             </div>
             <Button
               onClick={() => sendReorderAlertsMutation.mutate()}
@@ -440,7 +442,7 @@ export default function InventoryReports() {
               data-testid="button-send-email-alerts"
             >
               <Mail className="h-4 w-4" />
-              {sendReorderAlertsMutation.isPending ? 'Sending...' : 'Send Email Alert'}
+              {sendReorderAlertsMutation.isPending ? t('reports.sending') : t('reports.sendEmailAlert')}
             </Button>
           </div>
         </CardHeader>
@@ -452,12 +454,12 @@ export default function InventoryReports() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Product Name</TableHead>
-                    <TableHead>SKU</TableHead>
-                    <TableHead className="text-right">Current Stock</TableHead>
-                    <TableHead className="text-right">Min Level</TableHead>
-                    <TableHead className="text-right">Shortage</TableHead>
-                    <TableHead>Urgency</TableHead>
+                    <TableHead>{t('reports.productName')}</TableHead>
+                    <TableHead>{t('reports.sku')}</TableHead>
+                    <TableHead className="text-right">{t('reports.currentStock')}</TableHead>
+                    <TableHead className="text-right">{t('reports.minLevel')}</TableHead>
+                    <TableHead className="text-right">{t('reports.shortage')}</TableHead>
+                    <TableHead>{t('reports.urgency')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -480,7 +482,7 @@ export default function InventoryReports() {
                             variant={isUrgent ? "destructive" : "default"}
                             data-testid={`badge-urgency-${product.id}`}
                           >
-                            {isUrgent ? 'Critical' : 'Low'}
+                            {isUrgent ? t('reports.critical') : t('reports.low')}
                           </Badge>
                         </TableCell>
                       </TableRow>
@@ -489,7 +491,7 @@ export default function InventoryReports() {
                   {(reorderAlerts as any[]).length === 0 && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center text-slate-500">
-                        No reorder alerts
+                        {t('reports.noReorderAlerts')}
                       </TableCell>
                     </TableRow>
                   )}
@@ -506,12 +508,12 @@ export default function InventoryReports() {
           <div>
             <CardTitle className="flex items-center gap-2 mb-4">
               <Palette className="h-5 w-5 text-purple-600" />
-              Color Trend Tracking - Gel Polish
+              {t('reports.colorTrendTracking')}
             </CardTitle>
-            <CardDescription className="mb-4">Sales trends by color/variant for Gel Polish category</CardDescription>
+            <CardDescription className="mb-4">{t('reports.colorTrendDesc')}</CardDescription>
             <div className="flex flex-wrap gap-4">
               <div className="flex items-center gap-2">
-                <Label htmlFor="color-trends-start" className="text-sm">Start Date:</Label>
+                <Label htmlFor="color-trends-start" className="text-sm">{t('reports.startDate')}:</Label>
                 <Input
                   id="color-trends-start"
                   type="date"
@@ -522,7 +524,7 @@ export default function InventoryReports() {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <Label htmlFor="color-trends-end" className="text-sm">End Date:</Label>
+                <Label htmlFor="color-trends-end" className="text-sm">{t('reports.endDate')}:</Label>
                 <Input
                   id="color-trends-end"
                   type="date"
@@ -563,10 +565,10 @@ export default function InventoryReports() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Color/Variant</TableHead>
-                      <TableHead>Product</TableHead>
-                      <TableHead className="text-right">Total Sales</TableHead>
-                      <TableHead>Trend</TableHead>
+                      <TableHead>{t('reports.colorVariant')}</TableHead>
+                      <TableHead>{t('reports.product')}</TableHead>
+                      <TableHead className="text-right">{t('reports.totalSales')}</TableHead>
+                      <TableHead>{t('reports.trend')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -577,7 +579,7 @@ export default function InventoryReports() {
                         <TableCell className="text-right">{trend.totalQuantitySold} units</TableCell>
                         <TableCell>
                           <Badge variant={index < 3 ? "default" : "secondary"}>
-                            {index < 3 ? 'Top Seller' : 'Popular'}
+                            {index < 3 ? t('reports.topSeller') : t('reports.popular')}
                           </Badge>
                         </TableCell>
                       </TableRow>
@@ -585,7 +587,7 @@ export default function InventoryReports() {
                     {(colorTrends as any[]).length === 0 && (
                       <TableRow>
                         <TableCell colSpan={4} className="text-center text-slate-500">
-                          No color trend data available
+                          {t('reports.noColorTrendData')}
                         </TableCell>
                       </TableRow>
                     )}

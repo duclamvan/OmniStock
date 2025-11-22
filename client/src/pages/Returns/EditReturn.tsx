@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, useParams } from "wouter";
+import { useTranslation } from 'react-i18next';
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -62,6 +63,7 @@ export default function EditReturn() {
   const [, navigate] = useLocation();
   const { id } = useParams();
   const { toast } = useToast();
+  const { t } = useTranslation(['inventory', 'common']);
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
   const [orderSearchOpen, setOrderSearchOpen] = useState(false);
   const [productSearchOpen, setProductSearchOpen] = useState<number | null>(null);
@@ -233,7 +235,7 @@ export default function EditReturn() {
         </Button>
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Edit Return</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('inventory:editReturn')}</h1>
             <p className="text-gray-600 dark:text-gray-400">Update return information</p>
           </div>
           <Button

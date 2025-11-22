@@ -11,6 +11,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCompactNumber } from "@/lib/currencyUtils";
 import { Plus, Search, Edit, Wrench, Clock, PlayCircle, CheckCircle2, Filter, Settings, Check, Calendar, FileDown, FileText, Trash2 } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import {
   Tooltip,
@@ -68,6 +69,7 @@ interface Service {
 }
 
 export default function Services() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -109,12 +111,12 @@ export default function Services() {
   useEffect(() => {
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to load services",
+        title: t('common:error'),
+        description: t('common:failedToLoadData'),
         variant: "destructive",
       });
     }
-  }, [error, toast]);
+  }, [error, toast, t]);
 
   const deleteServiceMutation = useMutation({
     mutationFn: async (ids: string[]) => {
@@ -123,16 +125,16 @@ export default function Services() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/services'] });
       toast({
-        title: "Success",
-        description: `Deleted ${selectedServices.length} service(s) successfully`,
+        title: t('common:success'),
+        description: t('common:deleteSuccess', { count: selectedServices.length }),
       });
       setSelectedServices([]);
     },
     onError: (error: any) => {
       console.error("Service delete error:", error);
-      const errorMessage = error.message || "Failed to delete services";
+      const errorMessage = error.message || t('common:deleteError');
       toast({
-        title: "Error",
+        title: t('common:error'),
         description: errorMessage,
         variant: "destructive",
       });
@@ -176,7 +178,7 @@ export default function Services() {
   const columns: DataTableColumn<Service>[] = [
     {
       key: "name",
-      header: "Service",
+      header: t('financial:service'),
       sortable: true,
       className: "min-w-[200px]",
       cell: (service) => (
@@ -201,7 +203,7 @@ export default function Services() {
     },
     {
       key: "customer",
-      header: "Customer",
+      header: t('orders:customer'),
       sortable: true,
       className: "min-w-[150px]",
       cell: (service) => (
@@ -216,7 +218,7 @@ export default function Services() {
     },
     {
       key: "serviceCost",
-      header: "Service Cost",
+      header: t('financial:serviceFee'),
       sortable: true,
       className: "text-right",
       cell: (service) => (
@@ -227,7 +229,7 @@ export default function Services() {
     },
     {
       key: "partsCost",
-      header: "Parts Cost",
+      header: t('financial:cost'),
       sortable: true,
       className: "text-right",
       cell: (service) => (
@@ -238,7 +240,7 @@ export default function Services() {
     },
     {
       key: "totalCost",
-      header: "Total Cost",
+      header: t('financial:totalCost'),
       sortable: true,
       className: "text-right",
       cell: (service) => (
@@ -249,28 +251,28 @@ export default function Services() {
     },
     {
       key: "status",
-      header: "Status",
+      header: t('common:status'),
       sortable: true,
       className: "text-center",
       cell: (service) => {
         const statusConfig = {
           'pending': { 
-            label: 'Pending', 
+            label: t('financial:pending'), 
             icon: Clock,
             color: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800' 
           },
           'in_progress': { 
-            label: 'In Progress', 
+            label: t('common:inProgress'), 
             icon: PlayCircle,
             color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800' 
           },
           'completed': { 
-            label: 'Completed', 
+            label: t('common:completed'), 
             icon: CheckCircle2,
             color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800' 
           },
           'cancelled': { 
-            label: 'Cancelled', 
+            label: t('orders:cancelled'), 
             icon: CheckCircle2,
             color: 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' 
           },
@@ -293,7 +295,7 @@ export default function Services() {
     },
     {
       key: "createdAt",
-      header: "Created",
+      header: t('common:created'),
       sortable: true,
       className: "text-center",
       cell: (service) => (
@@ -328,7 +330,7 @@ export default function Services() {
   const bulkActions = [
     {
       type: "button" as const,
-      label: "Delete",
+      label: t('common:delete'),
       variant: "destructive" as const,
       action: (services: any[]) => {
         setSelectedServices(services);
@@ -337,11 +339,11 @@ export default function Services() {
     },
     {
       type: "button" as const,
-      label: "Export",
+      label: t('common:export'),
       action: (services: any[]) => {
         toast({
-          title: "Export",
-          description: `Exporting ${services.length} services...`,
+          title: t('common:export'),
+          description: t('common:exportingItems', { count: services.length }),
         });
       },
     },
@@ -374,14 +376,14 @@ export default function Services() {
       exportToXLSX(exportData, `Services_${format(new Date(), 'yyyy-MM-dd')}`, 'Services');
       
       toast({
-        title: "Export Successful",
-        description: `Exported ${exportData.length} service(s) to XLSX`,
+        title: t('common:exportSuccessful'),
+        description: t('common:exportedToXLSX', { count: exportData.length }),
       });
     } catch (error) {
       console.error('Export error:', error);
       toast({
-        title: "Export Failed",
-        description: "Failed to export services to XLSX",
+        title: t('common:exportFailed'),
+        description: t('common:exportError'),
         variant: "destructive",
       });
     }
@@ -420,14 +422,14 @@ export default function Services() {
       exportToPDF('Services Report', exportData, columns, `Services_${format(new Date(), 'yyyy-MM-dd')}`);
       
       toast({
-        title: "Export Successful",
-        description: `Exported ${exportData.length} service(s) to PDF`,
+        title: t('common:exportSuccessful'),
+        description: t('common:exportedToPDF', { count: exportData.length }),
       });
     } catch (error) {
       console.error('Export error:', error);
       toast({
-        title: "Export Failed",
-        description: "Failed to export services to PDF",
+        title: t('common:exportFailed'),
+        description: t('common:exportError'),
         variant: "destructive",
       });
     }
@@ -441,7 +443,7 @@ export default function Services() {
             <div className="absolute inset-0 border-4 border-cyan-200 dark:border-cyan-800 rounded-full"></div>
             <div className="absolute inset-0 border-4 border-cyan-600 dark:border-cyan-400 rounded-full border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-slate-600 dark:text-slate-400 font-medium">Loading services...</p>
+          <p className="text-slate-600 dark:text-slate-400 font-medium">{t('common:loading')}</p>
         </div>
       </div>
     );
@@ -453,10 +455,10 @@ export default function Services() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-            Services
+            {t('financial:services')}
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mt-1">
-            Track repair services and manage service bills
+            {t('financial:manageYourServices')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -464,26 +466,26 @@ export default function Services() {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" data-testid="button-export">
                 <FileDown className="h-4 w-4 mr-2" />
-                Export
+                {t('common:export')}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('common:exportOptions')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleExportXLSX} data-testid="button-export-xlsx">
                 <FileDown className="h-4 w-4 mr-2" />
-                Export as XLSX
+                {t('common:exportAsXLSX')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExportPDF} data-testid="button-export-pdf">
                 <FileText className="h-4 w-4 mr-2" />
-                Export as PDF
+                {t('common:exportAsPDF')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Link href="/services/add">
             <Button data-testid="button-add-service">
               <Plus className="h-4 w-4 mr-2" />
-              Add Service
+              {t('financial:addService')}
             </Button>
           </Link>
         </div>
@@ -497,7 +499,7 @@ export default function Services() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Total Services
+                  {t('financial:services')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>
@@ -525,7 +527,7 @@ export default function Services() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Pending
+                  {t('financial:pending')}
                 </p>
                 <TooltipProvider>
                   <Tooltip>

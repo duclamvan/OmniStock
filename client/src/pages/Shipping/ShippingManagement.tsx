@@ -27,6 +27,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
+import { useTranslation } from 'react-i18next';
 
 interface ShippingMethod {
   id: number;
@@ -80,6 +81,7 @@ interface PPLAddress {
 }
 
 export default function ShippingManagement() {
+  const { t } = useTranslation(['shipping', 'common']);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [testAddress, setTestAddress] = useState<TestAddress>({
@@ -224,15 +226,15 @@ export default function ShippingManagement() {
       }),
     onSuccess: () => {
       toast({
-        title: "Address Saved",
-        description: "Default PPL sender address has been saved successfully"
+        title: t('shipping:addressSaved'),
+        description: t('shipping:pplAddressSavedSuccess')
       });
       queryClient.invalidateQueries({ queryKey: ['/api/settings/ppl_default_sender_address'] });
     },
     onError: (error: any) => {
       toast({
-        title: "Failed to Save Address",
-        description: error.message || "Unknown error occurred",
+        title: t('shipping:failedToSaveAddress'),
+        description: error.message || t('shipping:unknownError'),
         variant: "destructive"
       });
     }
@@ -252,8 +254,8 @@ export default function ShippingManagement() {
     },
     onError: (error: any) => {
       toast({
-        title: "Failed to Save Address",
-        description: error.message || "Unknown error occurred",
+        title: t('shipping:failedToSaveAddress'),
+        description: error.message || t('shipping:unknownError'),
         variant: "destructive"
       });
     }
@@ -273,8 +275,8 @@ export default function ShippingManagement() {
     },
     onError: (error: any) => {
       toast({
-        title: "Failed to Save Address",
-        description: error.message || "Unknown error occurred",
+        title: t('shipping:failedToSaveAddress'),
+        description: error.message || t('shipping:unknownError'),
         variant: "destructive"
       });
     }
@@ -294,8 +296,8 @@ export default function ShippingManagement() {
     },
     onError: (error: any) => {
       toast({
-        title: "Failed to Save Bank Details",
-        description: error.message || "Unknown error occurred",
+        title: t('shipping:failedToSaveAddress'),
+        description: error.message || t('shipping:unknownError'),
         variant: "destructive"
       });
     }
@@ -307,15 +309,15 @@ export default function ShippingManagement() {
       apiRequest('POST', '/api/shipping/create-test-parcel', address) as unknown as Promise<CreateParcelResponse>,
     onSuccess: (data) => {
       toast({
-        title: "Test Parcel Created",
-        description: `Test parcel created successfully. Tracking: ${data.tracking_number || 'N/A'}`
+        title: t('shipping:testParcelCreated'),
+        description: `${t('shipping:testParcelCreatedSuccess')} ${data.tracking_number || 'N/A'}`
       });
       queryClient.invalidateQueries({ queryKey: ['/api/shipping'] });
     },
     onError: (error: any) => {
       toast({
-        title: "Failed to Create Test Parcel",
-        description: error.message || "Unknown error occurred",
+        title: t('shipping:failedToCreateTestParcel'),
+        description: error.message || t('shipping:unknownError'),
         variant: "destructive"
       });
     }
@@ -330,8 +332,8 @@ export default function ShippingManagement() {
     // Validate required fields
     if (!pplAddress.name || !pplAddress.street || !pplAddress.city || !pplAddress.zipCode || !pplAddress.country) {
       toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields (marked with *)",
+        title: t('shipping:validationError'),
+        description: t('shipping:fillAllRequiredFields'),
         variant: "destructive"
       });
       return;
@@ -344,8 +346,8 @@ export default function ShippingManagement() {
     // Validate required fields
     if (!glsAddress.street || !glsAddress.postalCode || !glsAddress.city) {
       toast({
-        title: "Validation Error",
-        description: "Please fill in street, postal code, and city",
+        title: t('shipping:validationError'),
+        description: t('shipping:fillRequiredFields'),
         variant: "destructive"
       });
       return;
@@ -358,8 +360,8 @@ export default function ShippingManagement() {
     // Validate required fields
     if (!dhlAddress.street || !dhlAddress.postalCode || !dhlAddress.city) {
       toast({
-        title: "Validation Error",
-        description: "Please fill in street, postal code, and city",
+        title: t('shipping:validationError'),
+        description: t('shipping:fillRequiredFields'),
         variant: "destructive"
       });
       return;
@@ -372,8 +374,8 @@ export default function ShippingManagement() {
     // Validate required fields
     if (!dhlBankDetails.iban || !dhlBankDetails.accountHolder) {
       toast({
-        title: "Validation Error",
-        description: "Please fill in IBAN and Account Holder",
+        title: t('shipping:validationError'),
+        description: t('shipping:fillIBANAndAccountHolder'),
         variant: "destructive"
       });
       return;
@@ -388,20 +390,20 @@ export default function ShippingManagement() {
       const result = await refetchPPL();
       if (result.data?.connected) {
         toast({
-          title: "PPL Connection Successful",
-          description: result.data.message || "Successfully connected to PPL API",
+          title: t('shipping:pplConnectionSuccess'),
+          description: result.data.message || t('shipping:successfullyConnected'),
         });
       } else {
         toast({
-          title: "PPL Connection Failed",
-          description: result.data?.error || "Failed to connect to PPL API",
+          title: t('shipping:pplConnectionFailed'),
+          description: result.data?.error || t('shipping:failedToConnect'),
           variant: "destructive"
         });
       }
     } catch (error: any) {
       toast({
-        title: "PPL Connection Error",
-        description: error.message || "An error occurred while testing PPL connection",
+        title: t('shipping:pplConnectionError'),
+        description: error.message || t('shipping:errorOccurredWhileTesting'),
         variant: "destructive"
       });
     } finally {
@@ -419,19 +421,19 @@ export default function ShippingManagement() {
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 md:space-y-8" data-testid="shipping-management">
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight" data-testid="title-shipping">Shipping Management</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">Manage multi-carrier shipping integrations and test API connections</p>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight" data-testid="title-shipping">{t('shipping:shippingManagement')}</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">{t('shipping:manageMultiCarrierShipping')}</p>
       </div>
 
       <Tabs defaultValue="connection" className="space-y-4 sm:space-y-6">
         <TabsList className="w-full grid grid-cols-2">
           <TabsTrigger value="connection" data-testid="tab-connection" className="text-xs sm:text-sm">
-            <span className="hidden sm:inline">Connection Status</span>
-            <span className="sm:hidden">Connection</span>
+            <span className="hidden sm:inline">{t('shipping:connectionStatus')}</span>
+            <span className="sm:hidden">{t('shipping:connection')}</span>
           </TabsTrigger>
           <TabsTrigger value="info" data-testid="tab-info" className="text-xs sm:text-sm">
-            <span className="hidden sm:inline">Shipping Information</span>
-            <span className="sm:hidden">Shipping Info</span>
+            <span className="hidden sm:inline">{t('shipping:shippingInformation')}</span>
+            <span className="sm:hidden">{t('shipping:shippingInfo')}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -446,20 +448,20 @@ export default function ShippingManagement() {
                       <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                     </div>
                     <div className="min-w-0">
-                      <CardTitle className="text-base sm:text-lg truncate">PPL CZ</CardTitle>
-                      <CardDescription className="text-xs mt-0.5">Czech Parcel Service</CardDescription>
+                      <CardTitle className="text-base sm:text-lg truncate">{t('shipping:ppl')}</CardTitle>
+                      <CardDescription className="text-xs mt-0.5">{t('shipping:czechParcelService')}</CardDescription>
                     </div>
                   </div>
                   {connectionStatus?.connected && (
                     <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
                       <CheckCircle className="w-3 h-3 mr-1" />
-                      Connected
+                      {t('shipping:connected')}
                     </Badge>
                   )}
                   {connectionStatus && !connectionStatus.connected && (
                     <Badge variant="destructive">
                       <XCircle className="w-3 h-3 mr-1" />
-                      Disconnected
+                      {t('shipping:disconnected')}
                     </Badge>
                   )}
                 </div>
@@ -469,7 +471,7 @@ export default function ShippingManagement() {
                   <div className="flex items-center justify-center py-6 sm:py-8" data-testid="status-testing">
                     <div className="flex flex-col items-center gap-3">
                       <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                      <span className="text-sm text-muted-foreground">Testing connection...</span>
+                      <span className="text-sm text-muted-foreground">{t('shipping:testingConnection')}</span>
                     </div>
                   </div>
                 ) : connectionStatus ? (
@@ -478,19 +480,19 @@ export default function ShippingManagement() {
                       <div className="space-y-3">
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div className="space-y-1">
-                            <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Provider</p>
+                            <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">{t('shipping:provider')}</p>
                             <p className="font-medium">{connectionStatus.provider || 'PPL'}</p>
                           </div>
                           <div className="space-y-1">
-                            <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Status</p>
+                            <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">{t('shipping:status')}</p>
                             <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-md px-3 py-1.5 animate-in fade-in duration-500">
                               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                              <p className="font-semibold text-green-700">Active</p>
+                              <p className="font-semibold text-green-700">{t('shipping:active')}</p>
                             </div>
                           </div>
                         </div>
                         <div className="pt-2 border-t">
-                          <p className="text-xs text-muted-foreground mb-1">Response</p>
+                          <p className="text-xs text-muted-foreground mb-1">{t('shipping:response')}</p>
                           <p className="text-sm">{connectionStatus.message}</p>
                         </div>
                       </div>
@@ -498,8 +500,8 @@ export default function ShippingManagement() {
                       <Alert variant="destructive" className="border-red-200">
                         <AlertCircle className="w-4 h-4" />
                         <AlertDescription>
-                          <p className="font-medium mb-1">Connection Failed</p>
-                          <p className="text-xs">{connectionStatus.error || 'Unable to connect to PPL API'}</p>
+                          <p className="font-medium mb-1">{t('shipping:connectionFailed')}</p>
+                          <p className="text-xs">{connectionStatus.error || t('shipping:unableToConnectToPPL')}</p>
                         </AlertDescription>
                       </Alert>
                     )}
@@ -508,7 +510,7 @@ export default function ShippingManagement() {
                   <Alert>
                     <AlertCircle className="w-4 h-4" />
                     <AlertDescription className="text-sm">
-                      No connection test performed yet. Click the button below to test.
+                      {t('shipping:noConnectionTestYet')}
                     </AlertDescription>
                   </Alert>
                 )}
@@ -524,12 +526,12 @@ export default function ShippingManagement() {
                     {isPPLTesting || isTestingConnection ? (
                       <>
                         <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                        Testing Connection...
+                        {t('shipping:testingConnection')}
                       </>
                     ) : (
                       <>
                         <RefreshCw className="w-4 h-4 mr-2" />
-                        Test Connection
+                        {t('shipping:testConnection')}
                       </>
                     )}
                   </Button>
@@ -551,8 +553,8 @@ export default function ShippingManagement() {
                         <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700" />
                       </div>
                       <div className="text-left min-w-0">
-                        <CardTitle className="text-base sm:text-lg truncate">PPL CZ Shipping</CardTitle>
-                        <CardDescription className="text-xs mt-0.5 hidden sm:block">Test label generation and view integration details</CardDescription>
+                        <CardTitle className="text-base sm:text-lg truncate">{t('shipping:pplShipping')}</CardTitle>
+                        <CardDescription className="text-xs mt-0.5 hidden sm:block">{t('shipping:testLabelGenerationAndView')}</CardDescription>
                       </div>
                     </div>
                     {isPPLOpen ? <ChevronUp className="w-5 h-5 text-muted-foreground flex-shrink-0" /> : <ChevronDown className="w-5 h-5 text-muted-foreground flex-shrink-0" />}
@@ -565,61 +567,61 @@ export default function ShippingManagement() {
                     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-5 border border-blue-100">
                   <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-blue-600" />
-                    Default PPL CZ Sender Address
+                    {t('shipping:defaultPPLSenderAddress')}
                   </h4>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Set the default sender address (your company) used for all PPL CZ label generation
+                    {t('shipping:setDefaultSenderAddress')}
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="ppl-name">
-                        Name <span className="text-red-500">*</span>
+                        {t('shipping:name')} <span className="text-red-500">*</span>
                       </Label>
                       <Input 
                         id="ppl-name"
                         value={pplAddress.name}
                         onChange={(e) => setPplAddress({ ...pplAddress, name: e.target.value })}
-                        placeholder="Recipient name"
+                        placeholder={t('shipping:recipientName')}
                         data-testid="input-ppl-name"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="ppl-name2">Company (name2)</Label>
+                      <Label htmlFor="ppl-name2">{t('shipping:companyName2')}</Label>
                       <Input 
                         id="ppl-name2"
                         value={pplAddress.name2}
                         onChange={(e) => setPplAddress({ ...pplAddress, name2: e.target.value })}
-                        placeholder="Company name (optional)"
+                        placeholder={t('shipping:companyName')}
                         data-testid="input-ppl-name2"
                       />
                     </div>
                     <div className="space-y-2 md:col-span-2">
                       <Label htmlFor="ppl-street">
-                        Street <span className="text-red-500">*</span>
+                        {t('shipping:street')} <span className="text-red-500">*</span>
                       </Label>
                       <Input 
                         id="ppl-street"
                         value={pplAddress.street}
                         onChange={(e) => setPplAddress({ ...pplAddress, street: e.target.value })}
-                        placeholder="Street address"
+                        placeholder={t('shipping:streetAddress')}
                         data-testid="input-ppl-street"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="ppl-city">
-                        City <span className="text-red-500">*</span>
+                        {t('shipping:city')} <span className="text-red-500">*</span>
                       </Label>
                       <Input 
                         id="ppl-city"
                         value={pplAddress.city}
                         onChange={(e) => setPplAddress({ ...pplAddress, city: e.target.value })}
-                        placeholder="City"
+                        placeholder={t('shipping:city')}
                         data-testid="input-ppl-city"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="ppl-zipcode">
-                        Zip Code <span className="text-red-500">*</span>
+                        {t('shipping:zipCode')} <span className="text-red-500">*</span>
                       </Label>
                       <Input 
                         id="ppl-zipcode"
@@ -631,7 +633,7 @@ export default function ShippingManagement() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="ppl-country">
-                        Country <span className="text-red-500">*</span>
+                        {t('shipping:country')} <span className="text-red-500">*</span>
                       </Label>
                       <Input 
                         id="ppl-country"
@@ -644,17 +646,17 @@ export default function ShippingManagement() {
                       <p className="text-xs text-muted-foreground">2-letter country code (e.g., CZ, SK, DE)</p>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="ppl-contact">Contact Person</Label>
+                      <Label htmlFor="ppl-contact">{t('shipping:contact')}</Label>
                       <Input 
                         id="ppl-contact"
                         value={pplAddress.contact}
                         onChange={(e) => setPplAddress({ ...pplAddress, contact: e.target.value })}
-                        placeholder="Contact name (optional)"
+                        placeholder={t('shipping:contactPersonName')}
                         data-testid="input-ppl-contact"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="ppl-phone">Phone</Label>
+                      <Label htmlFor="ppl-phone">{t('shipping:phone')}</Label>
                       <Input 
                         id="ppl-phone"
                         type="tel"
@@ -665,7 +667,7 @@ export default function ShippingManagement() {
                       />
                     </div>
                     <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="ppl-email">Email</Label>
+                      <Label htmlFor="ppl-email">{t('shipping:email')}</Label>
                       <Input 
                         id="ppl-email"
                         type="email"
@@ -687,12 +689,12 @@ export default function ShippingManagement() {
                       {savePPLAddressMutation.isPending ? (
                         <>
                           <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                          Saving...
+                          {t('shipping:saving')}
                         </>
                       ) : (
                         <>
                           <CheckCircle className="w-4 h-4 mr-2" />
-                          Save as Default Sender Address
+                          {t('shipping:saveDefaultAddress')}
                         </>
                       )}
                     </Button>
@@ -781,8 +783,8 @@ export default function ShippingManagement() {
                         <Package className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600" />
                       </div>
                       <div className="text-left min-w-0">
-                        <CardTitle className="text-base sm:text-lg truncate">DHL DE</CardTitle>
-                        <CardDescription className="text-xs mt-0.5 hidden sm:block">Configure sender address and bank details for manual DHL shipping</CardDescription>
+                        <CardTitle className="text-base sm:text-lg truncate">{t('shipping:dhlDE')}</CardTitle>
+                        <CardDescription className="text-xs mt-0.5 hidden sm:block">{t('shipping:configureGLSSenderAddress')}</CardDescription>
                       </div>
                     </div>
                     {isDHLOpen ? <ChevronUp className="w-5 h-5 text-muted-foreground flex-shrink-0" /> : <ChevronDown className="w-5 h-5 text-muted-foreground flex-shrink-0" />}
@@ -901,12 +903,12 @@ export default function ShippingManagement() {
                           {saveDHLAddressMutation.isPending ? (
                             <>
                               <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                              Saving...
+                              {t('shipping:saving')}
                             </>
                           ) : (
                             <>
                               <CheckCircle className="w-4 h-4 mr-2" />
-                              Save DHL Sender Address
+                              {t('shipping:saveDHLSenderAddress')}
                             </>
                           )}
                         </Button>
@@ -917,15 +919,15 @@ export default function ShippingManagement() {
                     <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg p-5 border border-yellow-100">
                       <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 text-yellow-600" />
-                        Bank Details for COD (Nachnahme)
+                        {t('shipping:dhlBankDetails')}
                       </h4>
                       <p className="text-sm text-muted-foreground mb-4">
-                        Bank account details for cash-on-delivery payments
+                        {t('shipping:dhlBankDetails')}
                       </p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2 md:col-span-2">
                           <Label htmlFor="dhl-iban">
-                            IBAN <span className="text-red-500">*</span>
+                            {t('shipping:iban')} <span className="text-red-500">*</span>
                           </Label>
                           <Input 
                             id="dhl-iban"
@@ -936,7 +938,7 @@ export default function ShippingManagement() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="dhl-bic">BIC</Label>
+                          <Label htmlFor="dhl-bic">{t('shipping:bic')}</Label>
                           <Input 
                             id="dhl-bic"
                             value={dhlBankDetails.bic}
@@ -947,7 +949,7 @@ export default function ShippingManagement() {
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="dhl-accountHolder">
-                            Account Holder (Kontoinhaber) <span className="text-red-500">*</span>
+                            {t('shipping:accountHolder')} <span className="text-red-500">*</span>
                           </Label>
                           <Input 
                             id="dhl-accountHolder"
@@ -969,12 +971,12 @@ export default function ShippingManagement() {
                           {saveDHLBankDetailsMutation.isPending ? (
                             <>
                               <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                              Saving...
+                              {t('shipping:saving')}
                             </>
                           ) : (
                             <>
                               <CheckCircle className="w-4 h-4 mr-2" />
-                              Save Bank Details
+                              {t('shipping:saveBankDetails')}
                             </>
                           )}
                         </Button>
@@ -985,14 +987,14 @@ export default function ShippingManagement() {
                     <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-5 border border-blue-100">
                       <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 text-blue-600" />
-                        How to Use DHL Manual Shipping
+                        {t('shipping:howToUseDHLManualShipping')}
                       </h4>
                       <ol className="text-sm space-y-2 list-decimal list-inside">
-                        <li>Save your sender address and bank details above</li>
-                        <li>Go to any order in Pick & Pack mode</li>
-                        <li>Click "Ship with DHL" to see shipping information</li>
-                        <li>Copy the pre-filled shipping information to DHL's website</li>
-                        <li>Create labels manually on DHL's shipping portal</li>
+                        <li>{t('shipping:saveYourSenderAddress')}</li>
+                        <li>{t('shipping:goToAnyOrder')}</li>
+                        <li>{t('shipping:clickShipWithDHL')}</li>
+                        <li>{t('shipping:copyPrefilledInfo')}</li>
+                        <li>{t('shipping:createLabelsManually')}</li>
                       </ol>
                     </div>
 
@@ -1000,28 +1002,28 @@ export default function ShippingManagement() {
                       <div className="space-y-4">
                         <h4 className="font-semibold text-sm flex items-center gap-2">
                           <CheckCircle className="w-4 h-4 text-yellow-600" />
-                          Features
+                          {t('shipping:features')}
                         </h4>
                         <div className="space-y-2">
                           <div className="flex items-start gap-2 text-sm">
                             <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 mt-1.5" />
-                            <span>Manual label workflow via DHL website</span>
+                            <span>{t('shipping:manualLabelWorkflowViaDHL')}</span>
                           </div>
                           <div className="flex items-start gap-2 text-sm">
                             <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 mt-1.5" />
-                            <span>No API integration required</span>
+                            <span>{t('shipping:noAPIIntegrationRequired')}</span>
                           </div>
                           <div className="flex items-start gap-2 text-sm">
                             <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 mt-1.5" />
-                            <span>Pre-filled shipping information for copy-paste</span>
+                            <span>{t('shipping:prefilledShippingInformation')}</span>
                           </div>
                           <div className="flex items-start gap-2 text-sm">
                             <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 mt-1.5" />
-                            <span>COD (Nachnahme) support with bank details</span>
+                            <span>{t('shipping:codSupportWithBankDetails')}</span>
                           </div>
                           <div className="flex items-start gap-2 text-sm">
                             <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 mt-1.5" />
-                            <span>Reliable delivery across Germany and Europe</span>
+                            <span>{t('shipping:reliableDelivery')}</span>
                           </div>
                         </div>
                       </div>
@@ -1029,11 +1031,11 @@ export default function ShippingManagement() {
                       <div className="space-y-4">
                         <h4 className="font-semibold text-sm flex items-center gap-2">
                           <Package className="w-4 h-4 text-yellow-600" />
-                          Why This Approach?
+                          {t('shipping:whyThisApproach')}
                         </h4>
                         <div className="bg-white border rounded-lg p-4">
                           <p className="text-sm text-muted-foreground">
-                            DHL manual shipping allows you to create labels through DHL's official portal while having all shipping information pre-filled in your Pick & Pack interface for quick copy-paste, reducing manual data entry errors.
+                            {t('shipping:dhlManualShippingExplanation')}
                           </p>
                         </div>
                       </div>
@@ -1042,27 +1044,27 @@ export default function ShippingManagement() {
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                       <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 text-amber-600" />
-                        Important Notes
+                        {t('shipping:importantNotes')}
                       </h4>
                       <p className="text-sm text-muted-foreground mb-3">
-                        DHL manual shipping workflow:
+                        {t('shipping:dhlManualWorkflow')}
                       </p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                         <div className="flex items-start gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
-                          <span>Labels created via DHL website</span>
+                          <span>{t('shipping:labelsCreatedViaDHLWebsite')}</span>
                         </div>
                         <div className="flex items-start gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
-                          <span>Shipping info pre-filled for copy-paste</span>
+                          <span>{t('shipping:shippingInfoPrefilledForCopyPaste')}</span>
                         </div>
                         <div className="flex items-start gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
-                          <span>Bank details stored for COD support</span>
+                          <span>{t('shipping:bankDetailsStoredForCOD')}</span>
                         </div>
                         <div className="flex items-start gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
-                          <span>Suitable for domestic and international shipping</span>
+                          <span>{t('shipping:suitableForDomesticAndInternational')}</span>
                         </div>
                       </div>
                     </div>
@@ -1083,8 +1085,8 @@ export default function ShippingManagement() {
                         <Package className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                       </div>
                       <div className="text-left min-w-0">
-                        <CardTitle className="text-base sm:text-lg truncate">GLS DE</CardTitle>
-                        <CardDescription className="text-xs mt-0.5 hidden sm:block">Configure sender address for manual GLS label workflow</CardDescription>
+                        <CardTitle className="text-base sm:text-lg truncate">{t('shipping:gls')}</CardTitle>
+                        <CardDescription className="text-xs mt-0.5 hidden sm:block">{t('shipping:configureGLSSenderAddress')}</CardDescription>
                       </div>
                     </div>
                     {isGLSOpen ? <ChevronUp className="w-5 h-5 text-muted-foreground flex-shrink-0" /> : <ChevronDown className="w-5 h-5 text-muted-foreground flex-shrink-0" />}
@@ -1097,24 +1099,24 @@ export default function ShippingManagement() {
                     <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-5 border border-green-100">
                       <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-green-600" />
-                        Default GLS DE Sender Address
+                        {t('shipping:defaultGLSSenderAddress')}
                       </h4>
                       <p className="text-sm text-muted-foreground mb-4">
-                        Set the default sender address used for GLS DE label autofill via bookmarklet
+                        {t('shipping:setGLSDefaultSenderAddress')}
                       </p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="gls-name">Contact Person Name</Label>
+                          <Label htmlFor="gls-name">{t('shipping:contactPersonName')}</Label>
                           <Input 
                             id="gls-name"
                             value={glsAddress.name}
                             onChange={(e) => setGlsAddress({ ...glsAddress, name: e.target.value })}
-                            placeholder="Your Name"
+                            placeholder={t('shipping:yourName')}
                             data-testid="input-gls-name"
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="gls-company">Company Name</Label>
+                          <Label htmlFor="gls-company">{t('shipping:companyName')}</Label>
                           <Input 
                             id="gls-company"
                             value={glsAddress.company}
@@ -1125,18 +1127,18 @@ export default function ShippingManagement() {
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="gls-street">
-                            Street <span className="text-red-500">*</span>
+                            {t('shipping:street')} <span className="text-red-500">*</span>
                           </Label>
                           <Input 
                             id="gls-street"
                             value={glsAddress.street}
                             onChange={(e) => setGlsAddress({ ...glsAddress, street: e.target.value })}
-                            placeholder="Street name"
+                            placeholder={t('shipping:streetName')}
                             data-testid="input-gls-street"
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="gls-houseNumber">House Number</Label>
+                          <Label htmlFor="gls-houseNumber">{t('shipping:houseNumber')}</Label>
                           <Input 
                             id="gls-houseNumber"
                             value={glsAddress.houseNumber}
@@ -1147,7 +1149,7 @@ export default function ShippingManagement() {
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="gls-postalCode">
-                            Postal Code <span className="text-red-500">*</span>
+                            {t('shipping:postalCode')} <span className="text-red-500">*</span>
                           </Label>
                           <Input 
                             id="gls-postalCode"
@@ -1159,7 +1161,7 @@ export default function ShippingManagement() {
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="gls-city">
-                            City <span className="text-red-500">*</span>
+                            {t('shipping:city')} <span className="text-red-500">*</span>
                           </Label>
                           <Input 
                             id="gls-city"
@@ -1170,7 +1172,7 @@ export default function ShippingManagement() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="gls-email">Email</Label>
+                          <Label htmlFor="gls-email">{t('shipping:email')}</Label>
                           <Input 
                             id="gls-email"
                             type="email"
@@ -1181,7 +1183,7 @@ export default function ShippingManagement() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="gls-phone">Phone</Label>
+                          <Label htmlFor="gls-phone">{t('shipping:phone')}</Label>
                           <Input 
                             id="gls-phone"
                             type="tel"
@@ -1203,12 +1205,12 @@ export default function ShippingManagement() {
                           {saveGLSAddressMutation.isPending ? (
                             <>
                               <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                              Saving...
+                              {t('shipping:saving')}
                             </>
                           ) : (
                             <>
                               <CheckCircle className="w-4 h-4 mr-2" />
-                              Save GLS Sender Address
+                              {t('shipping:saveGLSSenderAddress')}
                             </>
                           )}
                         </Button>
@@ -1218,20 +1220,20 @@ export default function ShippingManagement() {
                     <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-5 border border-blue-100">
                       <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 text-blue-600" />
-                        Desktop: How to Use GLS Autofill
+                        {t('shipping:desktopHowToUseGLS')}
                       </h4>
                       <ol className="text-sm space-y-2 list-decimal list-inside">
-                        <li>Save your sender address above</li>
-                        <li>Go to any order and click "Ship with GLS"</li>
-                        <li>Follow the one-time bookmarklet setup instructions</li>
-                        <li>Use the bookmarklet to auto-fill the GLS form anytime</li>
+                        <li>{t('shipping:glsDesktopStep1')}</li>
+                        <li>{t('shipping:glsDesktopStep2')}</li>
+                        <li>{t('shipping:glsDesktopStep3')}</li>
+                        <li>{t('shipping:glsDesktopStep4')}</li>
                       </ol>
                     </div>
 
                     <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-5 border border-purple-100">
                       <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 text-purple-600" />
-                        Mobile (Android): Tampermonkey Setup for Kiwi Browser
+                        {t('shipping:mobileAndroidSetup')}
                       </h4>
                       <ol className="text-sm space-y-2 list-decimal list-inside">
                         <li>Install <strong>Kiwi Browser</strong> from Google Play Store (supports Chrome extensions on mobile)</li>
@@ -1243,7 +1245,7 @@ export default function ShippingManagement() {
                         <li>Click "Ship with GLS" on any order - the GLS form will auto-fill when you arrive at their website!</li>
                       </ol>
                       <div className="mt-3 p-3 bg-purple-100 rounded-lg text-xs">
-                        <strong className="text-purple-900">Note:</strong> The mobile script works the same as the desktop bookmarklet but runs automatically when you visit the GLS website from an order.
+                        <strong className="text-purple-900">{t('shipping:importantNotes')}:</strong> {t('shipping:glsMobileNote')}
                       </div>
                     </div>
 
@@ -1251,28 +1253,28 @@ export default function ShippingManagement() {
                       <div className="space-y-4">
                         <h4 className="font-semibold text-sm flex items-center gap-2">
                           <CheckCircle className="w-4 h-4 text-green-600" />
-                          Features
+                          {t('shipping:features')}
                         </h4>
                         <div className="space-y-2">
                           <div className="flex items-start gap-2 text-sm">
                             <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5" />
-                            <span>Manual label workflow via GLS website</span>
+                            <span>{t('shipping:manualLabelWorkflowViaGLS')}</span>
                           </div>
                           <div className="flex items-start gap-2 text-sm">
                             <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5" />
-                            <span>No API integration required</span>
+                            <span>{t('shipping:noAPIIntegrationRequired')}</span>
                           </div>
                           <div className="flex items-start gap-2 text-sm">
                             <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5" />
-                            <span>Bookmarklet autofill for desktop</span>
+                            <span>{t('shipping:bookmarkletAutofill')}</span>
                           </div>
                           <div className="flex items-start gap-2 text-sm">
                             <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5" />
-                            <span>Tampermonkey script for mobile (Kiwi Browser)</span>
+                            <span>{t('shipping:tampermonkeyScriptForMobile')}</span>
                           </div>
                           <div className="flex items-start gap-2 text-sm">
                             <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5" />
-                            <span>Affordable rates from €3.29 within Germany</span>
+                            <span>{t('shipping:affordableRates')}</span>
                           </div>
                         </div>
                       </div>
@@ -1280,11 +1282,11 @@ export default function ShippingManagement() {
                       <div className="space-y-4">
                         <h4 className="font-semibold text-sm flex items-center gap-2">
                           <Package className="w-4 h-4 text-green-600" />
-                          Why This Approach?
+                          {t('shipping:whyThisApproach')}
                         </h4>
                         <div className="bg-white border rounded-lg p-4">
                           <p className="text-sm text-muted-foreground">
-                            GLS Germany doesn't offer a business API for private customer shipping. The bookmarklet approach allows you to automatically fill the GLS web form with order data, avoiding manual typing errors and speeding up your shipping workflow.
+                            {t('shipping:glsAutofillExplanation')}
                           </p>
                         </div>
                       </div>
@@ -1293,27 +1295,27 @@ export default function ShippingManagement() {
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                       <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 text-amber-600" />
-                        Important Notes
+                        {t('shipping:importantNotes')}
                       </h4>
                       <p className="text-sm text-muted-foreground mb-3">
-                        GLS manual shipping workflow:
+                        {t('shipping:glsManualWorkflow')}
                       </p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                         <div className="flex items-start gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
-                          <span>Labels created via GLS website</span>
+                          <span>{t('shipping:labelsCreatedViaGLSWebsite')}</span>
                         </div>
                         <div className="flex items-start gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
-                          <span>Bookmarklet auto-fills recipient data</span>
+                          <span>{t('shipping:bookmarkletAutoFills')}</span>
                         </div>
                         <div className="flex items-start gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
-                          <span>One-time bookmarklet setup required</span>
+                          <span>{t('shipping:oneTimeSetup')}</span>
                         </div>
                         <div className="flex items-start gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5" />
-                          <span>Best for German domestic shipments</span>
+                          <span>{t('shipping:bestForGermanDomestic')}</span>
                         </div>
                       </div>
                     </div>
